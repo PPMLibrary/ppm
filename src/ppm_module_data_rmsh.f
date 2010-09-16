@@ -1,38 +1,17 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_data_rmsh
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : rmsh module
-      !
-      !  Remarks      : 
-      !
-      !  References   : 
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_data_rmsh.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:57  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.3  2006/09/04 18:34:52  pchatela
-      !  Fixes and cleanups to make it compile for
-      !  release-1-0
-      !
-      !  Revision 1.2  2004/08/12 10:44:22  michaebe
-      !  changed some variable names
-      !
-      !  Revision 1.1  2004/08/09 16:19:14  michaebe
-      !  initial impl.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_data_rmsh
-
+      !!! This module holds data needed by the (re)meshing routines.
+      !!!
+      !!! [NOTE]
+      !!! The variables declared in this modules should not be directly accessed
+      !!! by the user. They are managed interally by the library.
         !-----------------------------------------------------------------------
         !  Includes
         !-----------------------------------------------------------------------

@@ -1,38 +1,18 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_data_io
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are PRIVATE to the IO routines.
-      !                 It also included those routines and provides
-      !                 INTERFACEs.
-      !                
-      !  Remarks      : 
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_data_io.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:57  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2004/07/26 11:48:10  ivos
-      !  Fixes to make it compile.
-      !
-      !  Revision 1.1  2004/07/26 07:28:17  ivos
-      !  Initial implementation. Originated from splitting the old ppm
-      !  modules.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_data_io
-
+      !!! This module contains data structures and definitions that
+      !!! are used in the PPM I/O routines.
+      !!!
+      !!! [NOTE]
+      !!! The members of this modules should not be accessed directly by the PPM
+      !!! client developer. They are managed internally by the library.
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------

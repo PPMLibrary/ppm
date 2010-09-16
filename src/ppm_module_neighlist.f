@@ -1,45 +1,79 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_neighlist
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains the user-callable functions 
-      !                 for the neighbor list routines.
-      !                
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_neighlist.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.6  2004/07/26 15:38:50  ivos
-      !  Inserted missing USE statements to resolve undefined references
-      !  at link stage.
-      !
-      !  Revision 1.5  2004/07/26 13:40:33  ivos
-      !  Initial implementation. These are meta-modules for the user-
-      !  callable functions. Only these mod files will be given away
-      !  to the user.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
+
       MODULE ppm_module_neighlist
+      !!! This module provides neighbor
+      !!! search routines (cell lists, Verlet lists).
+         
+         USE ppm_module_data_neighlist, ONLY: ppm_type_ptr_to_clist
+         
+         !----------------------------------------------------------------------
+         !  Temporary cell list memory
+         !----------------------------------------------------------------------
+         TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist
+         PRIVATE :: clist
+         
+         !----------------------------------------------------------------------
+         !  Define interface to ppm_clist_destroy
+         !----------------------------------------------------------------------
+         INTERFACE ppm_clist_destroy
+            MODULE PROCEDURE ppm_clist_destroy
+         END INTERFACE
 
          !----------------------------------------------------------------------
-         !  PPM modules
+         !  Define interface to ppm_neighlist_MkNeighIdx
          !----------------------------------------------------------------------
-         USE ppm_module_data_neighlist
-         USE ppm_module_neighlist_clist
-         USE ppm_module_clist_destroy
-         USE ppm_module_neighlist_vlist
-         USE ppm_module_neighlist_MkNeighIdx
-         
+         INTERFACE ppm_neighlist_MkNeighIdx
+            MODULE PROCEDURE ppm_neighlist_MkNeighIdx
+         END INTERFACE
+
+         INTERFACE ppm_neighlist_clist
+            MODULE PROCEDURE ppm_neighlist_clist_d
+            MODULE PROCEDURE ppm_neighlist_clist_s
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interface to ppm_neighlist_vlist
+         !----------------------------------------------------------------------
+         INTERFACE ppm_neighlist_vlist
+            MODULE PROCEDURE ppm_neighlist_vlist_d
+            MODULE PROCEDURE ppm_neighlist_vlist_s
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  include the source 
+         !----------------------------------------------------------------------
+         CONTAINS
+
+#include "neighlist/ppm_clist_destroy.f"
+
+#include "neighlist/ppm_neighlist_MkNeighIdx.f"
+
+#define __KIND __SINGLE_PRECISION
+#include "neighlist/ppm_neighlist_clist.f"
+#undef  __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "neighlist/ppm_neighlist_clist.f"
+#undef  __KIND
+
+#define __KIND __SINGLE_PRECISION
+#include "neighlist/ppm_neighlist_vlist.f"
+#undef  __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "neighlist/ppm_neighlist_vlist.f"
+#undef  __KIND
+
       END MODULE ppm_module_neighlist

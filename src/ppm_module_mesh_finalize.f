@@ -1,34 +1,8 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :             ppm_module_mesh_finalize
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are PRIVATE to the mesh routines.
-      !                 It also included those routines and provides
-      !                 INTERFACEs.
-      !                
-      !  Remarks      : The terminology distinguishes between meshes and
-      !                 fields (the data living on the meshes). Several
-      !                 fields can use the same mesh. Meshes are defined as
-      !                 ppm-internal TYPES, whereas fields are
-      !                 user-provided arrays.
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_mesh_finalize.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.1  2004/07/26 07:29:59  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
@@ -47,7 +21,14 @@
 #define __VFIELD                   10
 
       MODULE ppm_module_mesh_finalize
-
+      !!! This module contains the interface and the different implementations
+      !!! of ppm_mesh_finalize.
+      !!!
+      !!! [NOTE]
+      !!! The terminology distinguishes between meshes and fields
+      !!! (the data living on the meshes). Several fields can use the
+      !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
+      !!! fields are user-provided arrays.
          !----------------------------------------------------------------------
          !  Define interface to ppm_mesh_finalize
          !----------------------------------------------------------------------
@@ -60,6 +41,6 @@
          !----------------------------------------------------------------------
          CONTAINS
 
-#include "ppm_mesh_finalize.f"
+#include "mesh/ppm_mesh_finalize.f"
 
       END MODULE ppm_module_mesh_finalize

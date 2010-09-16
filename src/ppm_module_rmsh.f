@@ -1,39 +1,234 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_rmsh
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all user-callable routines
-      !                 needed for interpolation and remeshing
-      !                
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_rmsh.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.1  2004/12/02 10:03:13  ivos
-      !  Initial implementation.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      MODULE ppm_module_rmsh
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
+#define __2D               3
+#define __3D               4
+#define __VEC              5
+#define __SCA              6
 
+      MODULE ppm_module_rmsh
+      !!! This module contains all interfaces to the remeshing routines. For
+      !!! convenience all interpolation modules are `USE`d by this module.
+      !!! Therefore it's not necessary to include `ppm_module_interp_*` in the
+      !!! client application. 
          !----------------------------------------------------------------------
          !  PPM modules
          !----------------------------------------------------------------------
-         USE ppm_module_rmsh_comp_weights
-         USE ppm_module_rmsh_create_part
-         USE ppm_module_rmsh_remesh
          USE ppm_module_interp_m2p
          USE ppm_module_interp_p2m
          
+        !-----------------------------------------------------------------------
+        !  Define interface ppm_rmsh_comp_weights
+        !-----------------------------------------------------------------------
+        INTERFACE ppm_rmsh_comp_weights
+           MODULE PROCEDURE ppm_rmsh_comp_weights_s
+           MODULE PROCEDURE ppm_rmsh_comp_weights_d
+        END INTERFACE
+
+        !-----------------------------------------------------------------------
+        !  Define interface ppm_rmsh_create_part
+        !-----------------------------------------------------------------------
+        INTERFACE ppm_rmsh_create_part
+           ! 2d scalar
+           MODULE PROCEDURE ppm_rmsh_create_part_sss_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_ssv_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_dss_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_dsv_2d
+           ! 2d vector
+           MODULE PROCEDURE ppm_rmsh_create_part_svs_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_svv_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_dvs_2d
+           MODULE PROCEDURE ppm_rmsh_create_part_dvv_2d
+           ! 3d scalar
+           MODULE PROCEDURE ppm_rmsh_create_part_sss_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_ssv_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_dss_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_dsv_3d
+           ! 3d vector
+           MODULE PROCEDURE ppm_rmsh_create_part_svs_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_svv_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_dvs_3d
+           MODULE PROCEDURE ppm_rmsh_create_part_dvv_3d
+        END INTERFACE
+       
+        !-----------------------------------------------------------------------
+        !  Define interface ppm_rmsh_remesh
+        !-----------------------------------------------------------------------
+        INTERFACE ppm_rmsh_remesh
+           ! 2d scalar
+           MODULE PROCEDURE ppm_rmsh_remesh_ss_2d
+           MODULE PROCEDURE ppm_rmsh_remesh_ds_2d
+           ! 2d vector
+           MODULE PROCEDURE ppm_rmsh_remesh_sv_2d
+           MODULE PROCEDURE ppm_rmsh_remesh_dv_2d
+           ! 3d scalar
+           MODULE PROCEDURE ppm_rmsh_remesh_ss_3d
+           MODULE PROCEDURE ppm_rmsh_remesh_ds_3d
+           ! 3d vector
+           MODULE PROCEDURE ppm_rmsh_remesh_sv_3d
+           MODULE PROCEDURE ppm_rmsh_remesh_dv_3d
+        END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  include the source 
+         !----------------------------------------------------------------------
+        CONTAINS
+
+#define __KIND  __SINGLE_PRECISION
+#include "rmsh/ppm_rmsh_comp_weights.f"
+#undef  __KIND        
+#define __KIND __DOUBLE_PRECISION 
+#include "rmsh/ppm_rmsh_comp_weights.f"
+#undef  __KIND        
+
+#define __KIND  __SINGLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __SCA
+        ! 2D SCA SINGLE
+#define __MODE2  __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2  __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+
+#undef  __MODE
+#define __MODE  __VEC
+        ! 2D VEC SINGLE
+#define __MODE2  __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2  __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#undef  __DIME
+        
+#define __DIME  __3D
+#define __MODE  __SCA
+        ! 3D SCA SINGLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#define __MODE  __VEC
+        ! 3D VEC SINGLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND
+
+
+#define __KIND  __DOUBLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __SCA
+        ! 2D SCA DOUBLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#define __MODE  __VEC
+        ! 2D VEC DOUBLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#undef  __DIME
+        
+#define __DIME  __3D
+#define __MODE  __SCA
+        ! 3D SCA DOUBLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#define __MODE  __VEC
+        ! 3D VEC DOUBLE
+#define __MODE2 __SCA
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#define __MODE2 __VEC
+#include "rmsh/ppm_rmsh_create_part.f"
+#undef __MODE2
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND        
+
+#define __KIND  __SINGLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __SCA
+        ! 2D SCA SINGLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 2D VEC SINGLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#undef  __DIME
+        
+#define __DIME  __3D
+#define __MODE  __SCA
+        ! 3D SCA SINGLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 3D VEC SINGLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND
+
+
+#define __KIND  __DOUBLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __SCA
+        ! 2D SCA DOUBLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 2D VEC DOUBLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#undef  __DIME
+        
+#define __DIME  __3D
+#define __MODE  __SCA
+        ! 3D SCA DOUBLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 3D VEC DOUBLE
+#include "rmsh/ppm_rmsh_remesh.f"
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND        
+
+
       END MODULE ppm_module_rmsh

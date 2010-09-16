@@ -1,37 +1,17 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_data_loadbal
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module includes the source code for the routines
-      !                 concerned with load balancing. They are callable by
-      !                 the user.
-      !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_data_loadbal.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:57  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2004/07/26 11:48:10  ivos
-      !  Fixes to make it compile.
-      !
-      !  Revision 1.1  2004/07/26 07:28:17  ivos
-      !  Initial implementation. Originated from splitting the old ppm
-      !  modules.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
      
       MODULE ppm_module_data_loadbal
-
+      !!! This module holds data used by the load balancing routines.
+      !!!
+      !!! [NOTE]
+      !!! The variables declared in this modules should not be directly accessed
+      !!! by the user. They are managed interally by the library.
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------

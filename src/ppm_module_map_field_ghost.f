@@ -1,91 +1,52 @@
-#include "ppm_define.h"
-#ifdef __XLF
-@PROCESS NOOPT
-#endif
+      !--*- f90 -*--------------------------------------------------------------
+      !  Module       :           ppm_module_map_field_ghost
       !-------------------------------------------------------------------------
-      !  Module       :            ppm_module_map_field_ghost
-      !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are PRIVATE to the mesh routines.
-      !                 It also included those routines and provides
-      !                 INTERFACEs.
-      !                
-      !  Remarks      : The terminology distinguishes between meshes and
-      !                 fields (the data living on the meshes). Several
-      !                 fields can use the same mesh. Meshes are defined as
-      !                 ppm-internal TYPES, whereas fields are
-      !                 user-provided arrays.
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_map_field_ghost.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:59  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2005/05/24 23:29:42  ivos
-      !  Added __XLF directive for faster compilation.
-      !
-      !  Revision 1.1  2004/07/26 07:29:44  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      !-------------------------------------------------------------------------
-      !  Define types
-      !-------------------------------------------------------------------------
-#define __SINGLE_PRECISION         1
-#define __DOUBLE_PRECISION         2
-#define __INTEGER                  3
-#define __LOGICAL                  4
-#define __SINGLE_PRECISION_COMPLEX 5
-#define __DOUBLE_PRECISION_COMPLEX 6
-#define __2D                       7
-#define __3D                       8
-#define __SFIELD                   9
-#define __VFIELD                   10
-
       MODULE ppm_module_map_field_ghost
+      !!! This module contains interfaces to the field ghost mapping routines
+      !!! and all data structures and definitions that
+      !!! are `PRIVATE` to the mesh routines.
+      !!!
+      !!! [NOTE]
+      !!! The terminology distinguishes between meshes and fields
+      !!! (the data living on the meshes). Several fields can use the
+      !!! same mesh. Meshes are defined as per-topology ppm-internal types,
+      !!! whereas fields are user-provided arrays.
+         !----------------------------------------------------------------------
+         !  Work memory
+         !----------------------------------------------------------------------
+         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub,isendtosub
+         INTEGER, DIMENSION(:  ), POINTER :: sendbuf,recvbuf
+         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart,isendblksize,ioffset
+         ! sorted (according to proc-proc interaction order) offset list)
+         INTEGER, DIMENSION(:,:), POINTER :: mesh_ghost_offset
+
+         PRIVATE :: isendfromsub,isendtosub,sendbuf,recvbuf,isendblkstart
+         PRIVATE :: isendblksize,ioffset,mesh_ghost_offset
 
          !----------------------------------------------------------------------
-         !  Define interface to ppm_map_field_ghost
+         !  Define interface to ppm_map_field_ghost_init
          !----------------------------------------------------------------------
-         INTERFACE ppm_map_field_ghost
-             ! Versions for scalar fields
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_s
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_d
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_i
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_l
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_sc
-             MODULE PROCEDURE ppm_map_field_ghost_2d_sca_dc
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_s
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_d
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_i
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_l
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_sc
-             MODULE PROCEDURE ppm_map_field_ghost_3d_sca_dc
+         INTERFACE ppm_map_field_ghost_init
+             MODULE PROCEDURE ppm_map_field_ghost_init
+         END INTERFACE
 
-             ! Versions for vector fields
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_s
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_d
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_i
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_l
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_sc
-             MODULE PROCEDURE ppm_map_field_ghost_2d_vec_dc
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_s
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_d
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_i
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_l
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_sc
-             MODULE PROCEDURE ppm_map_field_ghost_3d_vec_dc
+         !----------------------------------------------------------------------
+         !  Define interface to ppm_map_field_ghost_get
+         !----------------------------------------------------------------------
+         INTERFACE ppm_map_field_ghost_get
+             MODULE PROCEDURE ppm_map_field_ghost_get
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interface to ppm_map_field_ghost_put
+         !----------------------------------------------------------------------
+         INTERFACE ppm_map_field_ghost_put
+             MODULE PROCEDURE ppm_map_field_ghost_put
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -93,116 +54,10 @@
          !----------------------------------------------------------------------
          CONTAINS
 
-#define __DIM __SFIELD
-#define __KIND __SINGLE_PRECISION
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
+#include "map/ppm_map_field_ghost_init.f"
 
-#define __KIND __DOUBLE_PRECISION
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-         
-#define __KIND __SINGLE_PRECISION_COMPLEX
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-         
-#define __KIND __DOUBLE_PRECISION_COMPLEX
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
+#include "map/ppm_map_field_ghost_get.f"
 
-#define __KIND __INTEGER
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __LOGICAL
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-#undef __DIM
-
-#define __DIM __VFIELD
-#define __KIND __SINGLE_PRECISION
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __SINGLE_PRECISION_COMPLEX
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION_COMPLEX
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __INTEGER
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-
-#define __KIND __LOGICAL
-#define __MESH_DIM  __2D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#define __MESH_DIM  __3D
-#include "ppm_map_field_ghost.f"
-#undef __MESH_DIM
-#undef __KIND
-#undef __DIM
+#include "map/ppm_map_field_ghost_put.f"
 
       END MODULE ppm_module_map_field_ghost

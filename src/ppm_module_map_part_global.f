@@ -1,31 +1,8 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :             ppm_module_map_part_global
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module includes the source code for the mapping
-      !                 routines. 
-      !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_map_part_global.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2004/11/11 15:26:19  ivos
-      !  Moved allocatable work arrays to module.
-      !
-      !  Revision 1.1  2004/07/26 07:29:53  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
      
@@ -36,7 +13,8 @@
 #define __DOUBLE_PRECISION         2
 
       MODULE ppm_module_map_part_global
-
+      !!! This module provides the mapping routines for global particle
+      !!! mapping
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
@@ -53,16 +31,32 @@
          END INTERFACE
 
          !----------------------------------------------------------------------
+         !  Define interfaces to ppm_map_part_remap
+         !----------------------------------------------------------------------
+         INTERFACE ppm_map_part_remap
+            MODULE PROCEDURE ppm_map_part_remap_d
+            MODULE PROCEDURE ppm_map_part_remap_s
+         END INTERFACE
+
+         !----------------------------------------------------------------------
          !  include the source 
          !----------------------------------------------------------------------
          CONTAINS
 
 #define __KIND __SINGLE_PRECISION
-#include "ppm_map_part_global.f"
+#include "map/ppm_map_part_global.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
-#include "ppm_map_part_global.f"
+#include "map/ppm_map_part_global.f"
+#undef __KIND
+
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_remap.f"
+#undef __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_remap.f"
 #undef __KIND
 
       END MODULE ppm_module_map_part_global

@@ -1,33 +1,13 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_util_invert_list
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module includes the source code for the utility
-      !                 routines.
-      !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_util_invert_list.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.1  2004/07/26 07:30:13  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
-      MODULE ppm_module_util_invert_list
 
+      MODULE ppm_module_util_invert_list
+      !!! This module provides the utility routines for inverting lists
          !----------------------------------------------------------------------
          !  Define interface to the list inversion routine
          !----------------------------------------------------------------------
@@ -36,10 +16,10 @@
          END INTERFACE
 
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
- 
-#include "ppm_util_invert_list.f"
+
+#include "util/ppm_util_invert_list.f"
 
       END MODULE ppm_module_util_invert_list

@@ -30,6 +30,7 @@ FC = @FC@
 CC = @CC@
 CXX = @CXX@
 DEBUG = @DEBUG@
+MODFLAG = @ax_cv_f90_modflag@
 
 # These variables are standard
 LIB_PPM := libppm.a
@@ -43,10 +44,15 @@ OBJ_DIR := $(builddir)/objects
 MODULES_DIR := $(builddir)/include
 VIZ_DIR := $(SRC_DIR)/vizing
 
+# These are paths that get included during pre-processing
+CPPVPATH := $(SRC_DIR):
+CPPVPATH += $(MODULES_DIR):
+CPPINCLS := $(patsubst %,-I%, $(subst :, ,$(CPPVPATH)))
+
 # These are paths that get included during compilation
-VPATH := $(SRC_DIR):
-VPATH += $(MODULES_DIR):
-INCLS := $(patsubst %,-I%,$(subst :, ,$(VPATH)))
+VPATH := $(patsubst %,-I%, $(subst :, ,$(SRC_DIR))):
+VPATH += $(patsubst %,$(MODFLAG)%, $(subst :, ,$(MODULES_DIR))):
+INCLS := $(subst :, ,$(VPATH))
 
 # These are the files that get generated and used during compilation
 SOURCES := $(notdir $(wildcard $(SRC_DIR)/ppm_module_*.f))
@@ -57,10 +63,13 @@ DEPENDENCIES := $(SOURCES:%.f=$(OBJ_DIR)/%.d)
 
 # This creates the install directories if they don't exist
 $(warning Checking for directories...)
-$(shell mkdir $(OBJ_DIR))
-$(shell mkdir $(MODULES_DIR))
-$(shell mkdir $(builddir)/lib)
-$(shell mkdir $(libdir))
+$(shell test -d $(OBJ_DIR) || mkdir $(OBJ_DIR))
+$(shell test -d $(MODULES_DIR) || mkdir $(MODULES_DIR))
+$(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
+$(shell test -d $(libdir) || mkdir $(libdir))
+$(warning done.)
+
+.PHONY: all clean install new test
 
 .DEFAULT: ;
 
@@ -71,7 +80,8 @@ vizinglib: $(VIZ_DIR)/adj.h $(VIZ_DIR)/Array.h\
 	$(VIZ_DIR)/Boolean.h $(VIZ_DIR)/color.h\
 	$(VIZ_DIR)/edge.h $(VIZ_DIR)/graph.h\
 	$(VIZ_DIR)/list.h $(VIZ_DIR)/vizing.cpp
-	$(CPP) -P $(VIZ_DIR)/vizing.cpp __vizing.cpp
+#	$(CPP) -P $(VIZ_DIR)/vizing.cpp __vizing.cpp
+	cp $(VIZ_DIR)/vizing.cpp __vizing.cpp
 	$(CXX) $(CFLAGS) -I$(VIZ_DIR) __vizing.cpp -c -o $@.o
 	@ar rvs libvizing.a $@.o
 	@mv $@.o $(OBJ_DIR)
@@ -88,12 +98,11 @@ $(TARGET): $(OBJECTS)
 # 2) we add the dependency file as a target
 # 3) find INCLUDE and USE statements that are not inside a comment
 $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
-	@echo '[ quietly making' $@ ']'
-	@$(CPP) $(INCLS) -M $< | \
+	@$(CPP) $(CPPINCLS) -M $< | \
         sed -e 's#$*.o#$(OBJ_DIR)/$*.o $@#' \
             -e 's#$$#\\#' \
             -e 's#\\\\#\\#' > $@
-	@$(CPP) -P $(INCLS) $< > $(OBJ_DIR)/__$*.f
+	@$(CPP) -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	@grep "INCLUDE " $(OBJ_DIR)/__$*.f | \
         sed -e 's#^[ \t]*##' \
             -e '/^!/d' \
@@ -114,7 +123,7 @@ $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
 
 # This handles the pre-processing and does the actual compiling
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.f
-	$(CPP) -P $(INCLS) $< > $(OBJ_DIR)/__$*.f
+	$(CPP) -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	$(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $(OBJ_DIR)/__$*.f
 	@mv $(builddir)/*.mod $(MODULES_DIR)
 	@rm $(OBJ_DIR)/__$*.f
@@ -135,5 +144,12 @@ install: all
 # This cleans, compiles, and copies the PPM library
 new: all install
 
+
+test: all
+	make --directory=src/interpolate/test FC=$(FC) \
+		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
+
 # This ensures all dependency files are up-to-date
-include $(DEPENDENCIES)
+# WARNING: The directive below will fail silently, in case of problems
+# remove the leading s: include $(DEPENDENCIES)
+sinclude $(DEPENDENCIES)

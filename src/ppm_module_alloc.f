@@ -1,34 +1,11 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                  ppm_module_alloc
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module includes the source code for the utility
-      !                 routines.
-      !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_alloc.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:56  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2004/11/11 15:23:01  ivos
-      !  Moved allocatable work data to the module.
-      !
-      !  Revision 1.1  2004/07/26 07:29:24  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+
       !-------------------------------------------------------------------------
       !  Define types
       !-------------------------------------------------------------------------
@@ -40,6 +17,12 @@
 #define __DOUBLE_PRECISION_COMPLEX   6
 
       MODULE ppm_module_alloc
+      !!! This module provides all PPM allocation routines. These routines allow
+      !!! for allocation, reallocation, growing and shrinking of one- to five-
+      !!! dimensional arrays in all intrinsic data types.
+      !!!
+      !!! When extending the PPM core or numerical routines these routines *must*
+      !!! be used. PPM clients may take advantage of these functionalities.
 
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
 
@@ -129,7 +112,7 @@
             MODULE PROCEDURE ppm_alloc_3dldc
             MODULE PROCEDURE ppm_alloc_3dli
             MODULE PROCEDURE ppm_alloc_3dll
-            
+
             MODULE PROCEDURE ppm_alloc_4ds
             MODULE PROCEDURE ppm_alloc_4dd
             MODULE PROCEDURE ppm_alloc_4dsc
@@ -155,89 +138,95 @@
             MODULE PROCEDURE ppm_alloc_5dldc
             MODULE PROCEDURE ppm_alloc_5dli
             MODULE PROCEDURE ppm_alloc_5dll
+
+            MODULE PROCEDURE ppm_alloc_topo
          END INTERFACE
 
          !----------------------------------------------------------------------
-         !  include the source 
+         !  include the source
          !----------------------------------------------------------------------
          CONTAINS
- 
+
 #define __KIND __SINGLE_PRECISION
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
 
 #define __KIND __SINGLE_PRECISION_COMPLEX
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
 
 #define __KIND __INTEGER
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
 
 #define __KIND __LOGICAL
-#include "ppm_alloc_1d.f"
-#include "ppm_alloc_2d.f"
-#include "ppm_alloc_3d.f"
-#include "ppm_alloc_4d.f"
-#include "ppm_alloc_5d.f"
-#include "ppm_alloc_1dl.f"
-#include "ppm_alloc_2dl.f"
-#include "ppm_alloc_3dl.f"
-#include "ppm_alloc_4dl.f"
-#include "ppm_alloc_5dl.f"
+#include "alloc/ppm_alloc_1d.f"
+#include "alloc/ppm_alloc_2d.f"
+#include "alloc/ppm_alloc_3d.f"
+#include "alloc/ppm_alloc_4d.f"
+#include "alloc/ppm_alloc_5d.f"
+#include "alloc/ppm_alloc_1dl.f"
+#include "alloc/ppm_alloc_2dl.f"
+#include "alloc/ppm_alloc_3dl.f"
+#include "alloc/ppm_alloc_4dl.f"
+#include "alloc/ppm_alloc_5dl.f"
 #undef __KIND
+
+#include "alloc/ppm_alloc_topo.f"
+
+#include "alloc/ppm_alloc_argcheck.f"
 
       END MODULE ppm_module_alloc

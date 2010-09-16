@@ -1,42 +1,20 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :            ppm_module_map_field_global
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are PRIVATE to the mesh routines.
-      !                 It also included those routines and provides
-      !                 INTERFACEs.
-      !                
-      !  Remarks      : The terminology distinguishes between meshes and
-      !                 fields (the data living on the meshes). Several
-      !                 fields can use the same mesh. Meshes are defined as
-      !                 ppm-internal TYPES, whereas fields are
-      !                 user-provided arrays.
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_map_field_global.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:59  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.2  2004/11/11 15:26:18  ivos
-      !  Moved allocatable work arrays to module.
-      !
-      !  Revision 1.1  2004/07/26 07:29:46  ivos
-      !  First commit after spitting the old modules into single-interface
-      !  units.
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_map_field_global
-
+      !!! This module contains the interface and the needed work arrays for the
+      !!! field global mappings.
+      !!!
+      !!! [NOTE]
+      !!! The terminology distinguishes between meshes and fields
+      !!! (the data living on the meshes). Several fields can use the
+      !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
+      !!! fields are user-provided arrays.
          !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
@@ -52,18 +30,37 @@
          !  Define interface to ppm_map_field_global
          !----------------------------------------------------------------------
          INTERFACE ppm_map_field_global
-             ! We do not need different accuracy versions since field
-             ! indices are always INTEGER. Moreover, there is no partial
-             ! mapping since mesh points cannot move. Every map is thus
-             ! going onto a new topology.
              MODULE PROCEDURE ppm_map_field_global
          END INTERFACE
 
+         INTERFACE ppm_map_field_global_symm
+            MODULE PROCEDURE ppm_map_field_global_symm
+         END INTERFACE
+
+         INTERFACE ppm_map_field_global_useperiod
+            MODULE PROCEDURE ppm_map_field_global_useperiod
+         END INTERFACE
+
+         INTERFACE ppm_map_field_global_useperiod_store
+            MODULE PROCEDURE ppm_map_field_global_useperiod_store
+         END INTERFACE
+
+         INTERFACE ppm_map_field_globalstored
+            MODULE PROCEDURE ppm_map_field_globalstored
+         END INTERFACE
          !----------------------------------------------------------------------
          !  Include the source
          !----------------------------------------------------------------------
          CONTAINS
 
-#include "ppm_map_field_global.f"
+#include "map/ppm_map_field_global.f"
+
+#include "map/ppm_map_field_global_symm.f"
+
+#include "map/ppm_map_field_global_useperiod.f"
+
+#include "map/ppm_map_field_global_useperiod_store.f"
+
+#include "map/ppm_map_field_globalstored.f"
 
       END MODULE ppm_module_map_field_global

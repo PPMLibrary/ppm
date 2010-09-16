@@ -11,18 +11,39 @@
 #  Revisions    : This autoconf was written by Justin Park  8.17.2009
 #-------------------------------------------------------------------------
 #  Parallel Particle Mesh Library (PPM)
-#  Institute of Computational Science
-#  ETH Zentrum, Hirschengraben 84
+#  ETH Zurich
 #  CH-8092 Zurich, Switzerland
 #-------------------------------------------------------------------------
 
 # Initialization
 AC_PREREQ(2.61)
 AC_INIT(PPM, 1.0.2)
-AC_CONFIG_SRCDIR([src/ppm_param.h])
 
-# Check architecture
-AC_CHECK_SIZEOF([long double])
+# Reset existing preprocessing flags
+touch ./src/ppm_define.h
+rm ./src/ppm_define.h
+touch ./src/ppm_define.h
+
+
+# if MPI is enabled try grabbing those compiler wrappers first
+use_mpi=no 
+AC_ARG_ENABLE([mpi],
+  [AS_HELP_STRING([--enable-mpi[[=impl.]]],
+  [use MPI (default is no), If the MPI implementation of your choice provides
+   compile wrappers that are in PATH, I can set them myself,  
+   choose: guess (I will choose the first implementation I can find), openmpi, 
+   lammpi, mpich, mpich2, intelmpi_gnu (Intel's MPI with GNU
+   Compilers), intelmpi_intel (Intel's MPI with Intel Compilers), sun (Sun MPI), ibm
+   (IBM AIX POE). Else, set this flag with no value and set CC, CXX and FC to
+   the appropriate compiler wrappers (safest)])],
+  [PPM_CHECK_MPI([$enableval])
+    # compilers should be chosen
+    use_mpi=yes],
+  [AC_MSG_NOTICE([MPI was not enabled. Building non-parallel version of PPM.])])
+
+: ${CFLAGS="-O3"}
+: ${CXXFLAGS="-O3"}
+: ${FCFLAGS="-O3"}
 
 # Checks for basic compiler and flags
 AC_PROG_CXX
@@ -32,23 +53,48 @@ AC_PROG_RANLIB
 AC_PROG_FC
 AC_FC_FREEFORM
 AC_FC_LIBRARY_LDFLAGS
+# Check architecture
+AC_CHECK_SIZEOF([long double])
 
-# Remove existing preprocessing flags
-touch ./src/ppm_define.h
-rm ./src/ppm_define.h
+AX_F90_MODULE_FLAG
+AC_SUBST([ax_cv_f90_modflag])
+
+if test "x${use_mpi}" == xyes; then
+    AC_MSG_CHECKING([if your MPI is usable])
+    AC_LANG([Fortran])
+    AC_LINK_IFELSE([
+                     program conftest_prog
+                     include 'mpif.h'
+                     call MPI_Init(ierr)
+                     end program conftest_prog],
+                     [echo "#define __MPI" >> ./src/ppm_define.h],
+                     [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
+    AC_MSG_RESULT([yes])
+#    AC_CHECK_LIB([],[MPI_Init],[
+#                  echo "#define __MPI" >> ./src/ppm_define.h],
+#                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
+    AC_LANG([C])
+fi
+
+# for now let's use the C compiler to check the vendor we're using here
+# this of course means that we HAVE to set all compiler flags to compilers of
+# the same vendor (which is anyway a good idea)
+AX_COMPILER_VENDOR
+
 
 # Checks for libraries and set preprocessing flags
 
-AC_CHECK_LIB([m],[sqrt])
+# this test should be omitted if the compiler is intel, they provide their own
+# math implementation
+if test "x${ax_cv_c_compiler_vendor}" != xintel; then
+  AC_CHECK_LIB([m],[sqrt])
+fi
 
 # Make sure that the libraries are compiled with Fortran
 AC_LANG([Fortran])
 
-# Check METIS library exists by testing the function METIS_PartGraphRecursive
-AC_CHECK_LIB([metis],[METIS_PartGraphRecursive])
+# Check for METIS
 have_metis=no
-
-# Search for the library and either give an error or append flag
 AC_SEARCH_LIBS([METIS_PartGraphRecursive],[metis],[have_metis=yes])
 if test "x${have_metis}" = xno; then
   echo "------------------------------------------"
@@ -62,106 +108,63 @@ else
   echo "#define __METIS" >> ./src/ppm_define.h
 fi
 
-# Check to see if mpi was enabled with -enable-mpi
-use_mpi=no
-AC_ARG_ENABLE([mpi],,[use_mpi=yes])
-
-# If it was enabled than check that the library exists
-if test "x${use_mpi}" = xyes; then
-  AC_CHECK_PROG([FC],[mpif90],[mpif90])
-  AC_CHECK_LIB([mpi],[MPI_Init])
-  have_mpi=no
-  AC_SEARCH_LIBS([MPI_Init],[mpi],[have_mpi=yes])
-  if test "x${have_mpi}" = xno; then
-    echo "------------------------------------------"
-    echo " The MPI library was not found."
-    echo " Creating Makefile without parallel support."
-    echo " Please download at:"
-    echo " http://www.open-mpi.org/software/ "
-    echo "------------------------------------------"
-  else
-    echo "#define __MPI" >> ./src/ppm_define.h
-  fi
-else
-  echo "MPI was not enabled. Building non-parallel version of PPM." 
-fi
 
 # Check to see if fftw3 was enabled with -enable-ffts3
-use_fftw3=no
-AC_ARG_ENABLE([fftw3],,[use_fftw3=yes])
-
-# If it was enabled than check that the library exists
-if test "x${use_fftw3}" = xyes; then
-  have_fftw=no
-  AC_CHECK_LIB([fftw3],[dfftw_execute])
-  AC_SEARCH_LIBS([dfftw_execute],[fftw3],[have_fftw=yes])
-  if test "x${have_fftw}" = xno; then
-    echo "------------------------------------------"
-    echo " You are trying to use FFTW to build PPM. "
-    echo " Either the library is missing or incorrectly compiled/linked."
-    echo " It can be downloaded at: http://www.fftw.org/download.html"
-    echo "------------------------------------------"
-    (exit 1); exit 1;
-  fi
-  echo "#define __FFTW" >> ./src/ppm_define.h
-fi
+#use_fftw3=no
+#AC_ARG_ENABLE([fftw3],,[use_fftw3=yes])
+#
+## If it was enabled than check that the library exists
+#if test "x${use_fftw3}" = xyes; then
+#  have_fftw=no
+#  AC_CHECK_LIB([fftw3],[dfftw_execute])
+#  AC_SEARCH_LIBS([dfftw_execute],[fftw3],[have_fftw=yes])
+#  if test "x${have_fftw}" = xno; then
+#    echo "------------------------------------------"
+#    echo " You are trying to use FFTW to build PPM. "
+#    echo " Either the library is missing or incorrectly compiled/linked."
+#    echo " It can be downloaded at: http://www.fftw.org/download.html"
+#    echo "------------------------------------------"
+#    (exit 1); exit 1;
+#  fi
+#  echo "#define __FFTW" >> ./src/ppm_define.h
+#fi
 
 # Check to see if linux was enabled with -enable-linux
-use_linux=no
-AC_ARG_ENABLE([linux],,[use_linux=yes])
-if test "x${use_linux}" = xyes; then
-  echo "#define __Linux" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([linux],[AS_HELP_STRING([--enable-linux],
+  [compile for linux (default is no)])],[echo "#define __Linux" >> ./src/ppm_define.h])
 
 # Check to see if etime was enabled with -enable-etime
-use_etime=no
-AC_ARG_ENABLE([etime],,[use_etime=yes])
-if test "x${use_etime}" = xyes; then
-  echo "#define __ETIME" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([etime],[AS_HELP_STRING([--enable-etime],
+  [use etime (default is no)])],[echo "#define __ETIME" >> ./src/ppm_define.h])
 
 # Check to see if vector was enabled with -enable-vector
-use_vector=no
-AC_ARG_ENABLE([vector],,[use_vector=yes])
-if test "x${use_vector}" = xyes; then
-  echo "#define __VECTOR" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([vector],[AS_HELP_STRING([--enable-vector],
+  [enable __VECTOR (default is no)])],
+  [echo "#define __VECTOR" >> ./src/ppm_define.h])
 
-use_mathkeisan=no
-AC_ARG_ENABLE([mathkeisan],,[use_mathkeisan=yes])
-if test "x${use_mathkeisan}" = xyes; then
-  echo "#define __MATHKEISAN" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([mathkeisan],[AS_HELP_STRING([--enable-mathkeisan],
+  [enable __MATHKEISAN (default is no)])],
+  [echo "#define __MATHKEISAN" >> ./src/ppm_define.h])
 
-use_sxf90=no
-AC_ARG_ENABLE([sxf90],,[use_sxf90=yes])
-if test "x${use_sxf90}" = xyes; then
-  echo "#define __SXF90" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([sxf90],[AS_HELP_STRING([--enable-sxf90],
+  [enable __SXF90 (default is no)])],
+  [echo "#define __SXF90" >> ./src/ppm_define.h])
 
-use_crayfishpack=no
-AC_ARG_ENABLE([crayfishpack],,[use_crayfishpack=yes])
-if test "x${use_crayfishpack}" = xyes; then
-  echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([crayfishpack],[AS_HELP_STRING([--enable-crayfishpack],
+  [enable __CRAYFISHPACK (default is no)])],
+  [echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h])
 
-use_hypre=no
-AC_ARG_ENABLE([hypre],,[use_hypre=yes])
-if test "x${use_hypre}" = xyes; then
-  echo "#define __HYPRE" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([hypre],[AS_HELP_STRING([--enable-hypre],
+  [enable __HYPRE (default is no)])],
+  [echo "#define __HYPRE" >> ./src/ppm_define.h])
 
-use_nomicroinstructions=no
-AC_ARG_ENABLE([nomicroinstructions],,[use_nomicroinstructions=yes])
-if test "x${use_nomicroinstructions}" = xyes; then
-  echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h
-fi
+AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
+  [enable __NOMICROINSTRUCTIONS (default is no)])],
+  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h])
 
-use_debug=no
-AC_ARG_ENABLE([debug],,[use_debug=yes])
-if test "x${use_debug}" = xyes; then
-  AC_SUBST(DEBUG,-O0)
-fi
+AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],
+  [enable debug mode (default is no)])],
+  [AC_SUBST(DEBUG,-O0)])
 
 # Switch language back to C for checking libraries
 AC_LANG([C])

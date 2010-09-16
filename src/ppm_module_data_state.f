@@ -1,33 +1,18 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_data_state
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are PRIVATE to the ppm_map_part_store
-      !                 and ppm_map_part_load routines.
-      !                
-      !  Remarks      : 
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_data_state.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:57  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.1  2006/10/10 21:25:38  walther
-      !  *** empty log message ***
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_data_state
-
+      !!! This module contains  data structures and definitions that
+      !!! are PRIVATE to the ppm_map_part_store and ppm_map_part_load routines.
+      !!!
+      !!! [NOTE]
+      !!! The variables declared in this modules should not be directly accessed
+      !!! by the user. They are managed interally by the library.
          !----------------------------------------------------------------------
          !  
          !----------------------------------------------------------------------

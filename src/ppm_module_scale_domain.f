@@ -1,26 +1,8 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_scale_domain
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : 
-      !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_scale_domain.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:00  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.1  2004/07/26 14:26:48  ivos
-      !  Initial implementation.
-      !
-      !-------------------------------------------------------------------------
       !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
      
@@ -31,7 +13,7 @@
 #define __DOUBLE_PRECISION 2
 
       MODULE ppm_module_scale_domain
-
+      !!! This module provides routines for scaling the domain
          !----------------------------------------------------------------------
          !  Define interfaces to the domain scaling routine
          !----------------------------------------------------------------------
@@ -46,11 +28,11 @@
          CONTAINS
 
 #define __KIND __SINGLE_PRECISION
-#include "ppm_scale_domain.f"
+#include "util/ppm_scale_domain.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
-#include "ppm_scale_domain.f"
+#include "util/ppm_scale_domain.f"
 #undef __KIND
 
       END MODULE ppm_module_scale_domain

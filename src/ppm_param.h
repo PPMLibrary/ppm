@@ -229,7 +229,7 @@
       !-------------------------------------------------------------------------
       !  Define statistics update methods
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_update_overwrite    = 1 
+      INTEGER, PARAMETER :: ppm_param_update_replace      = 1
       INTEGER, PARAMETER :: ppm_param_update_average      = 2
       INTEGER, PARAMETER :: ppm_param_update_expfavg      = 3
 
@@ -244,7 +244,6 @@
       INTEGER, PARAMETER :: ppm_param_decomp_zpencil      = 6
       INTEGER, PARAMETER :: ppm_param_decomp_cuboid       = 7
       INTEGER, PARAMETER :: ppm_param_decomp_user_defined = 8
-      INTEGER, PARAMETER :: ppm_param_decomp_null         = 9
       INTEGER, PARAMETER :: ppm_param_decomp_xy_slab      = 10
       INTEGER, PARAMETER :: ppm_param_decomp_xz_slab      = 11
       INTEGER, PARAMETER :: ppm_param_decomp_yz_slab      = 12
@@ -282,24 +281,6 @@
       INTEGER, PARAMETER :: ppm_param_mesh_refine         = 0
       INTEGER, PARAMETER :: ppm_param_mesh_coarsen        = 1
 
-      !------------------------------------------------------------------------
-      !  Define equation ppm solves 
-      !------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_eq_poisson          = 1 
-
-      !------------------------------------------------------------------------
-      !  Define order for finite difference
-      !------------------------------------------------------------------------ 
-      INTEGER, PARAMETER :: ppm_param_order_1             = 1
-      INTEGER, PARAMETER :: ppm_param_order_2             = 2
-      INTEGER, PARAMETER :: ppm_param_order_3             = 3
-      INTEGER, PARAMETER :: ppm_param_order_4             = 4
-
-      !------------------------------------------------------------------------
-      !  Define smoother
-      !------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_smooth_rbsor        = 1 
-
       !-------------------------------------------------------------------------
       !  Define boundary conditions
       !-------------------------------------------------------------------------
@@ -309,6 +290,7 @@
       INTEGER, PARAMETER :: ppm_param_bcdef_neumann       = 4
       INTEGER, PARAMETER :: ppm_param_bcdef_dirichlet     = 5
       INTEGER, PARAMETER :: ppm_param_bcdef_robin         = 6
+      INTEGER, PARAMETER :: ppm_param_bcdef_antisymmetry  = 7
 
       !-------------------------------------------------------------------------
       !  memory allocation options
@@ -360,7 +342,7 @@
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_undefined           = -1
       INTEGER, PARAMETER :: ppm_param_success             = 0
-
+      INTEGER, PARAMETER :: ppm_param_topo_undefined      = -1
       !-------------------------------------------------------------------------
       !  RMSH parameters
       !-------------------------------------------------------------------------

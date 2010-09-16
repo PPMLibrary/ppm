@@ -1,49 +1,18 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_data_tree
       !-------------------------------------------------------------------------
-      !
-      !  Purpose      : This module contains all data structures and
-      !                 definitions that are GLOBAL to all tree routines.
-      !                
-      !  Remarks      : 
-      !
-      !  References   :
-      !
-      !  Revisions    :
-      !-------------------------------------------------------------------------
-      !  $Log: ppm_module_data_tree.f,v $
-      !  Revision 1.1.1.1  2007/07/13 10:18:57  ivos
-      !  CBL version of the PPM library
-      !
-      !  Revision 1.6  2006/07/03 12:56:56  ivos
-      !  Added comments to explain all the variables.
-      !
-      !  Revision 1.5  2005/08/31 13:35:20  ivos
-      !  Moved daclaration of icut from here to ppm_tree since it is used
-      !  as argument to subroutines and is always small (ppm_dim).
-      !
-      !  Revision 1.4  2005/08/31 11:24:29  ivos
-      !  Further optimizations and bugfix in the maxcost computation.
-      !
-      !  Revision 1.3  2005/02/01 13:22:57  ivos
-      !  Moved declarations of lhbx_cut and lpdx_cut to module_data_tree.
-      !
-      !  Revision 1.2  2004/12/03 17:13:44  ivos
-      !  Added tree_lhbx and tree_lpdx.
-      !
-      !  Revision 1.1  2004/09/22 10:32:10  ivos
-      !  Initial implementation.
-      !
-      !
-      !-------------------------------------------------------------------------
-      !  Perallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
+      !  Parallel Particle Mesh Library (PPM)
+      !  ETH Zurich
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 #include "ppm_define.h"
       MODULE ppm_module_data_tree
-
+      !!! This module contains all data structures and
+      !!! definitions that are used in the tree routines.
+      !!!
+      !!! [NOTE]
+      !!! The variables declared in this modules should not be directly accessed
+      !!! by the user. They are managed interally by the library.
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
