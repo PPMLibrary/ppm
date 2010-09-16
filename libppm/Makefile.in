@@ -42,7 +42,6 @@ CPP := cpp
 SRC_DIR := $(builddir)/src
 OBJ_DIR := $(builddir)/objects
 MODULES_DIR := $(builddir)/include
-VIZ_DIR := $(SRC_DIR)/vizing
 
 # These are paths that get included during pre-processing
 CPPVPATH := $(SRC_DIR):
@@ -73,21 +72,7 @@ $(warning done.)
 
 .DEFAULT: ;
 
-all: vizinglib $(TARGET)
-
-# This creates the vizing library
-vizinglib: $(VIZ_DIR)/adj.h $(VIZ_DIR)/Array.h\
-	$(VIZ_DIR)/Boolean.h $(VIZ_DIR)/color.h\
-	$(VIZ_DIR)/edge.h $(VIZ_DIR)/graph.h\
-	$(VIZ_DIR)/list.h $(VIZ_DIR)/vizing.cpp
-#	$(CPP) -P $(VIZ_DIR)/vizing.cpp __vizing.cpp
-	cp $(VIZ_DIR)/vizing.cpp __vizing.cpp
-	$(CXX) $(CFLAGS) -I$(VIZ_DIR) __vizing.cpp -c -o $@.o
-	@ar rvs libvizing.a $@.o
-	@mv $@.o $(OBJ_DIR)
-	@mv libvizing.a lib
-	@rm -f __vizing.cpp
-	@ranlib $(builddir)/lib/libvizing.a
+all: $(TARGET)
 
 # This archives all of the objects in the PPM library
 $(TARGET): $(OBJECTS)
