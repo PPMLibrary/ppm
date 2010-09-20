@@ -9,6 +9,7 @@
 #  References   :
 #
 #  Revisions    : This autoconf was written by Justin Park  8.17.2009
+#                 Revised by Omar Awile
 #-------------------------------------------------------------------------
 #  Parallel Particle Mesh Library (PPM)
 #  ETH Zurich
