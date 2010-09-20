@@ -2,7 +2,7 @@
 #  File         :  Makefile.in
 #-------------------------------------------------------------------------
 #
-#  Purpose      :  Compilation
+#  Purpose      :  Makefile template
 #
 #  Remarks      :
 #
@@ -11,8 +11,7 @@
 #  Revisions    :
 #-------------------------------------------------------------------------
 #  Parallel Particle Mesh Library (PPM)
-#  Institute of Computational Science
-#  ETH Zentrum, Hirschengraben 84
+#  ETH Zurich
 #  CH-8092 Zurich, Switzerland
 #-------------------------------------------------------------------------
 
