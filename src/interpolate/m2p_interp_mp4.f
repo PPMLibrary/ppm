@@ -56,7 +56,7 @@
 #endif
 #endif
 #endif
-     !!! Mesh to particle interpolation following the M'4 scheme.
+     !!! Mesh to particle interpolation following the MP4 scheme.
      !!!
      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
      !!! increase performance the inner loops over the number of properties to
