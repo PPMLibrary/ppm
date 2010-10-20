@@ -70,7 +70,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_alloc_argcheck',t0,info)
+      !CALL substart('ppm_alloc_argcheck',t0,info)
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -108,6 +108,6 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_alloc_argcheck',t0,info)
+      !CALL substop('ppm_alloc_argcheck',t0,info)
       RETURN
       END SUBROUTINE ppm_alloc_argcheck
