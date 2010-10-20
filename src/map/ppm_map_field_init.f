@@ -890,4 +890,42 @@
  9999 CONTINUE
       CALL substop('ppm_map_field_init',t0,info)
       RETURN
+      CONTAINS
+      SUBROUTINE check
+          CALL ppm_check_topoid(topoid,ltop,info)
+          IF (.NOT. ltop) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_map_field_ghost_init',  &
+     &            'topoid out of range',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          CALL ppm_check_meshid(topoid,meshid,ltop,info)
+          IF (.NOT. ltop) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_map_field_ghost_init',  &
+     &            'meshid out of range',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          CALL ppm_check_topoid(target_topoid,ltop,info)
+          IF (.NOT. ltop) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_map_field_ghost_init',  &
+     &            'topoid out of range',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          CALL ppm_check_meshid(target_topoid,target_meshid,ltop,info)
+          IF (.NOT. ltop) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_map_field_ghost_init',  &
+     &            'meshid out of range',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (SIZE(ghostsize,1) .LT. ppm_dim) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_map_field_ghost_init',  &
+     &            'ghostsize must be at least of length ppm_dim',__LINE__,info)
+              GOTO 8888
+          ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
       END SUBROUTINE ppm_map_field_init
