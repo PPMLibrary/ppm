@@ -219,9 +219,9 @@
           DO j=1,topo%nneighsubs(i)
               jdom = topo%ineighsubs(j,i)
               ! source and destination meshes and topologies are identical
-              CALL ppm_mesh_block_intersect(idom,jdom,meshid,meshid,topoid, &
-     &            topoid,ond(1:pdim,1),ghostsize,nsendlist,isendfromsub,   &
-     &            isendtosub,isendblkstart,isendblksize,ioffset,info)
+              CALL ppm_mesh_block_intersect(topoid,topoid,meshid,meshid,       &
+     &           idom,jdom,ond(1:pdim,1),ghostsize,nsendlist,isendfromsub,     &
+     &           isendtosub,isendblkstart,isendblksize,ioffset,info)
               IF (info .NE. 0) GOTO 9999
           ENDDO
 
@@ -397,17 +397,16 @@
           DO k=1,nnd
               ! first with the original (non-shifted) image of itself
               jdom = idom
-              CALL ppm_mesh_block_intersect(idom,jdom,meshid,meshid,topoid, &
-     &            topoid,ond(1:pdim,k),ghostsize,nsendlist,isendfromsub,  &
-     &            isendtosub,isendblkstart,isendblksize,ioffset,info)
+              CALL ppm_mesh_block_intersect(topoid,topoid,meshid,meshid,       &
+     &           idom,jdom,ond(1:pdim,k),ghostsize,nsendlist,isendfromsub,     &
+     &           isendtosub,isendblkstart,isendblksize,ioffset,info)
               IF (info .NE. 0) GOTO 9999
               ! Then with all the neighbors
               DO j=1,topo%nneighsubs(i)
                   jdom = topo%ineighsubs(j,i)
-                  CALL ppm_mesh_block_intersect(idom,jdom,meshid,meshid,   &
-     &                topoid,topoid,ond(1:pdim,k),ghostsize,nsendlist,   &
-     &                isendfromsub,isendtosub,isendblkstart,isendblksize, &
-     &                ioffset,info)
+                  CALL ppm_mesh_block_intersect(topoid,topoid,meshid,meshid,   &
+     &                idom,jdom,ond(1:pdim,k),ghostsize,nsendlist,isendfromsub,&
+     &                isendtosub,isendblkstart,isendblksize,ioffset,info)
                   IF (info .NE. 0) GOTO 9999
               ENDDO
           ENDDO
