@@ -207,7 +207,7 @@
      &        'global recv rank list PPM_IRECVLIST',__LINE__,info)
           GOTO 9999
       ENDIF
-      ldu(1) = topo%ncommseq
+      ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
