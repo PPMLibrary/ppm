@@ -161,7 +161,7 @@
       !!! Returns number of grid POINTS in x,y[,z] (first index) of sub mesh
       !!! isub (second index). Includes the points ON the sub boundaries.
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
-      !!! Number of mesh POINTS (not cells) in each direction of the global
+      !!! Number of '''mesh points''' (not cells) in each direction of the global
       !!! computational domain (including points ON its boundaries)
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
