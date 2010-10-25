@@ -156,12 +156,24 @@
       !!! and return it here on exit.
       INTEGER , DIMENSION(:,:), POINTER       :: istart
       !!! Start indices (i,j[,k]) (first index) of sub mesh isub (second
-      !!! index) in global mesh.
+      !!! index) in *global* mesh.
+      !!!
+      !!! [CAUTION]
+      !!! This array holds the starting indeces for *all*
+      !!! subdomains in the *whole* physical domain (i.e. all processors).
+      !!! Use `topo%isublist` to find the indeces for the grids on the
+      !!! processor
       INTEGER , DIMENSION(:,:), POINTER       :: ndata
       !!! Returns number of grid POINTS in x,y[,z] (first index) of sub mesh
       !!! isub (second index). Includes the points ON the sub boundaries.
+      !!!
+      !!! [CAUTION]
+      !!! This array holds the number of points for *all* subdomains in the
+      !!! *whole* physical domain (i.e. all processors).
+      !!! Use `topo%isublist` to find the indeces for the grids on the
+      !!! processor
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
-      !!! Number of '''mesh points''' (not cells) in each direction of the global
+      !!! Number of *mesh points* (not cells) in each direction of the global
       !!! computational domain (including points ON its boundaries)
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
@@ -481,7 +493,6 @@
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
      &       max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
-
       !-------------------------------------------------------------------------
       !  Cuboids
       !-------------------------------------------------------------------------
