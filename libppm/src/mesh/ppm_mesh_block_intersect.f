@@ -291,13 +291,13 @@
      &            'offset must be at least of length ppm_dim',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF ((isub.LE.0).OR.(isub.GT.from_topo%nsubs)) THEN
+          IF ((isub.LE.0).OR.(isub.GT.ppm_topo(from_topoid)%t%nsubs)) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_mesh_block_intersect',  &
      &            'isub out of range',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF ((jsub.LE.0).OR.(jsub.GT.to_topo%nsubs)) THEN
+          IF ((jsub.LE.0).OR.(jsub.GT.ppm_topo(to_topoid)%t%nsubs)) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_mesh_block_intersect',  &
      &            'jsub out of range',__LINE__,info)
