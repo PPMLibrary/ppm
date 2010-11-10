@@ -88,7 +88,7 @@
       USE ppm_module_data
       USE ppm_module_data_mesh
       USE ppm_module_data_rmsh
-      USE ppm_module_typedef
+      USE ppm_module_check_id
 
       IMPLICIT NONE
 
@@ -667,9 +667,9 @@
       IF (info .NE. 0) GOTO 9999
 
 #if   __MODE == __SCA
-      CALL ppm_map_field_ghost(topoid,meshid,field_up,ghostsize,info)
+      CALL ppm_map_field_pop(topoid,meshid,field_up,ghostsize,info)
 #elif __MODE == __VEC
-      CALL ppm_map_field_ghost(topoid,meshid,field_up,lda,ghostsize,info)
+      CALL ppm_map_field_pop(topoid,meshid,field_up,lda,ghostsize,info)
 #endif
 
      !--------------------------------------------------------------------------
