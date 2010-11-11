@@ -118,7 +118,7 @@
 #ifdef __MPI
       ! MPI comm status
       INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
-      LOGICAL, DIMENSION(3)  				:: periods
+      LOGICAL, DIMENSION(3)                 :: periods
       INTEGER, DIMENSION(3)                 :: ndims
 #endif
       TYPE(ppm_t_topo),      POINTER        :: topo
@@ -181,8 +181,9 @@
       !  (need special care if one of the dim. is 1)
       !-----------------------------------------------------
       CALL MPI_CART_GET(ppm_comm, 3, ndims, periods, coords, info)
-      IF (ppm_debug .GT. 1) THEN
-         WRITE (mesg, '(A,3I3,A,3I3,A)') 'get neighbors for MPI-coordinates ', coords, ' (ndims = ', ndims, ')'
+      IF (ppm_debug .GT. 2) THEN
+         WRITE (mesg, '(A,3I3,A,3I3,A)') 'get neighbors for MPI-coordinates ',&
+    &           coords, ' (ndims = ', ndims, ')'
          CALL ppm_write(ppm_rank,'ppm_util_commopt_cart',mesg,info)
       ENDIF
       
