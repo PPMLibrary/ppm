@@ -118,6 +118,8 @@
 #ifdef __MPI
       ! MPI comm status
       INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
+      LOGICAL, DIMENSION(3)  				:: periods
+      INTEGER, DIMENSION(3)                 :: ndims
 #endif
       TYPE(ppm_t_topo),      POINTER        :: topo
       !-------------------------------------------------------------------------
@@ -173,6 +175,17 @@
       END IF
 
 #ifdef __MPI
+
+      !-----------------------------------------------------
+      !  Get our coordinates and the number of cpus per dimension
+      !  (need special care if one of the dim. is 1)
+      !-----------------------------------------------------
+      CALL MPI_CART_GET(ppm_comm, 3, ndims, periods, coords, info)
+      IF (ppm_debug .GT. 1) THEN
+         WRITE (mesg, '(A,3I3,A,3I3,A)') 'get neighbors for MPI-coordinates ', coords, ' (ndims = ', ndims, ')'
+         CALL ppm_write(ppm_rank,'ppm_util_commopt_cart',mesg,info)
+      ENDIF
+      
       !-----------------------------------------------------
       !  Allocate the checked array
       !-----------------------------------------------------
@@ -230,13 +243,14 @@
       !  modulate
       DO icpu=1,8
          DO idir=1,26
-            IF(ABS(displ(1,idir)).GT.0.0) THEN
+            idirect = 1
+            IF(ndims(1).GT.1 .AND. ABS(displ(1,idir)).GT.0.0) THEN
                idirect = 1
             END IF
-            IF(ABS(displ(2,idir)).GT.0.0) THEN
+            IF(ndims(2).GT.1 .AND. ABS(displ(2,idir)).GT.0.0) THEN
                idirect = 2
             END IF
-            IF(ABS(displ(3,idir)).GT.0.0) THEN
+            IF(ndims(3).GT.1 .AND. ABS(displ(3,idir)).GT.0.0) THEN
                idirect = 3
             END IF
             IF(MOD(lcoords(idirect,icpu),2).EQ.1) THEN
