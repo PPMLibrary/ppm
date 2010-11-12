@@ -1,7 +1,7 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :              ppm_module_define_subs_bc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Lab (ETH Zurich), 
+      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
       !
       !
