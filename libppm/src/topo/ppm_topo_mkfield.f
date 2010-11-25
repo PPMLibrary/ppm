@@ -29,12 +29,12 @@
 
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_mkfield_s(topoid,meshid,xp,Npart,decomp,assig,      &
-     &               min_phys,max_phys,bcdef,ghostsize,cost,                  &
+     &               min_phys,max_phys,bcdef,ighostsize,cost,                  &
      &               istart,ndata,Nm,info,ndom,pcost,user_minsub,user_maxsub, &
      &               user_nsubs,user_sub2proc)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_mkfield_d(topoid,meshid,xp,Npart,decomp,assig,      &
-     &               min_phys,max_phys,bcdef,ghostsize,cost,                  &
+     &               min_phys,max_phys,bcdef,ighostsize,cost,                  &
      &               istart,ndata,Nm,info,ndom,pcost,user_minsub,user_maxsub, &
      &               user_nsubs,user_sub2proc)
 #endif
@@ -144,7 +144,7 @@
       !!! Boundary conditions for the topology
       !!!
       !!! First index is 1-6 (each of the faces)
-      INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ghostsize
+      INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ighostsize
       !!! Size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Estimated cost associated with subdomains. Either user-defined on
@@ -313,10 +313,10 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1)         = REAL(ghostsize(1),MK)*meshdx(1)
-         gsvec(2)         = REAL(ghostsize(2),MK)*meshdx(2)
+         gsvec(1)         = REAL(ighostsize(1),MK)*meshdx(1)
+         gsvec(2)         = REAL(ighostsize(2),MK)*meshdx(2)
          IF (ppm_dim .GT. 2) THEN
-             gsvec(3)     = REAL(ghostsize(3),MK)*meshdx(3)
+             gsvec(3)     = REAL(ighostsize(3),MK)*meshdx(3)
          ENDIF
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -391,10 +391,10 @@
              IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
              IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
-             gsvec(1)         = REAL(ghostsize(1),MK)*meshdx(1)
-             gsvec(2)         = REAL(ghostsize(2),MK)*meshdx(2)
+             gsvec(1)         = REAL(ighostsize(1),MK)*meshdx(1)
+             gsvec(2)         = REAL(ighostsize(2),MK)*meshdx(2)
              IF (ppm_dim .GT. 2) THEN
-                 gsvec(3)     = REAL(ghostsize(3),MK)*meshdx(3)
+                 gsvec(3)     = REAL(ighostsize(3),MK)*meshdx(3)
              ENDIF
              minbox = ppm_nproc
              IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -466,10 +466,10 @@
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         gsvec(1)         = REAL(ghostsize(1),MK)*meshdx(1)
-         gsvec(2)         = REAL(ghostsize(2),MK)*meshdx(2)
+         gsvec(1)         = REAL(ighostsize(1),MK)*meshdx(1)
+         gsvec(2)         = REAL(ighostsize(2),MK)*meshdx(2)
          IF (ppm_dim .GT. 2) THEN
-             gsvec(3)     = REAL(ghostsize(3),MK)*meshdx(3)
+             gsvec(3)     = REAL(ighostsize(3),MK)*meshdx(3)
          ENDIF
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -515,10 +515,10 @@
          weights(3,1:2)     = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1)         = REAL(ghostsize(1),MK)*meshdx(1)
-         gsvec(2)         = REAL(ghostsize(2),MK)*meshdx(2)
+         gsvec(1)         = REAL(ighostsize(1),MK)*meshdx(1)
+         gsvec(2)         = REAL(ighostsize(2),MK)*meshdx(2)
          IF (ppm_dim .GT. 2) THEN
-             gsvec(3)         = REAL(ghostsize(3),MK)*meshdx(3)
+             gsvec(3)         = REAL(ighostsize(3),MK)*meshdx(3)
          ENDIF
          minbox = ppm_nproc
          IF (PRESENT(ndom)) minbox = MAX(ppm_nproc,ndom)
@@ -785,10 +785,10 @@
      &             'Nm must be > 1 in all dimensions',__LINE__, info)
                GOTO 8888
             ENDIF
-            IF(ghostsize(i) .LT. 0) THEN
+            IF(ighostsize(i) .LT. 0) THEN
                info = ppm_error_error
                CALL ppm_error(ppm_err_argument,'ppm_topo_mkfield', &
-     &             'ghostsize must be >= 0',__LINE__, info)
+     &             'ighostsize must be >= 0',__LINE__, info)
                GOTO 8888
             ENDIF
          ENDDO
