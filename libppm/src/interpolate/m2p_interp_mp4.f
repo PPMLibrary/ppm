@@ -96,9 +96,9 @@
       REAL(MK) , DIMENSION(:)         , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:    ) , INTENT(IN   )  :: field_up
+      REAL(MK) , DIMENSION(:,:,:    ) , POINTER        :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN   )  :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
 #endif
       !!! field from which to interpolate
 #elif __MODE == __VEC
@@ -107,9 +107,9 @@
       REAL(MK) , DIMENSION(:,:)       , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN   )  :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:,:) , INTENT(IN   )  :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:,:) , POINTER        :: field_up
 #endif
       !!! field from which to interpolate
 #endif
