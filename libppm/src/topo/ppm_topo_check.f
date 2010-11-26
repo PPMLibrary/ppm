@@ -33,7 +33,7 @@
       SUBROUTINE ppm_topo_check_d(topoid,xp,Npart,topo_ok,info)
 #endif
       !!! Checks if all particles are on the current topology.
-      !!! (on the ocal processor)
+      !!! (on the local processor)
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
