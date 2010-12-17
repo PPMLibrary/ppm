@@ -109,7 +109,7 @@
       !-------------------------------------------------------------------------
       !  Allocate memory for subdomain bc flags
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_grow_preserve
+      iopt   = ppm_param_alloc_fit
       ldc(1) = 2*ppm_dim
       ldc(2) = MAX(nsubs,1)
       CALL ppm_alloc(subs_bc,ldc,iopt,info)
