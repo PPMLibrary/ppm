@@ -628,6 +628,7 @@
       !  Find and define the boundary conditions on the subs on the local
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
+      NULLIFY(subs_bc)
       CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
      &                        nsubs,subs_bc,info)
       IF (info.NE.0) THEN
