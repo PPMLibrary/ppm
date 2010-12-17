@@ -6,4 +6,4 @@ targets=$(patsubst %.f,%,$(sources))
 all : $(targets)
 
 $(targets) : $(sources)
-	$(FC) $(OPTS) $(TESTINC) $(LDFLAGS) $(LIBS) -o $@ $< 
+	$(FC) $(OPTS) $< $(TESTINC) $(LDFLAGS) $(LIBS) -o $@ 
