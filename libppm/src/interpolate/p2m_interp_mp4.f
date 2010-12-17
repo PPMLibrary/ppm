@@ -140,7 +140,7 @@
       INTEGER                                :: jjdec,nb_sub,npart,ipart
       INTEGER                                :: kkdec,ip1,nlist1
       INTEGER                                :: ip2,ip3,iface
-      INTEGER                                :: isub,ifrom,ito,ip,dim,iopt,isubl
+      INTEGER                                :: isub,ifrom,ito,ip,iopt,isubl
       INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER                                :: nsubs
@@ -262,7 +262,7 @@
 
       dxxi = 1.0_mk/dx(1)
       dxyi = 1.0_mk/dx(2)
-      IF(dim.EQ.3) dxzi = 1.0_mk/dx(3)
+      IF(ppm_dim.EQ.3) dxzi = 1.0_mk/dx(3)
 
 
 #if __DIME == __3D
