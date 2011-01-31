@@ -30,32 +30,32 @@
 
 #if    __DIM ==1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_1ds(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1ds(pdata,Npart,newNpart,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_1dd(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1dd(pdata,Npart,newNpart,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_1dsc(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1dsc(pdata,Npart,newNpart,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_1ddc(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1ddc(pdata,Npart,newNpart,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_part_pop_1di(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1di(pdata,Npart,newNpart,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_part_pop_1dl(pdata,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_1dl(pdata,Npart,newNpart,info)
 #endif 
 
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_2ds(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2ds(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_2dd(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2dd(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_2dsc(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2dsc(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_2ddc(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2ddc(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_part_pop_2di(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2di(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_part_pop_2dl(pdata,lda,Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_pop_2dl(pdata,lda,Npart,newNpart,info)
 #endif
 #endif
       !!! This routine pops the contents of the receive buffer.
@@ -127,7 +127,7 @@
 #endif
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles (on the processor)
-      INTEGER                 , INTENT(IN   ) :: Mpart
+      INTEGER                 , INTENT(IN   ) :: newNpart
       !!! The new number of particles (on the processor)
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
@@ -256,9 +256,9 @@
       iopt   = ppm_param_alloc_grow_preserve
 #if   __DIM == 2 
       ldu(1) = edim
-      ldu(2) = Mpart
+      ldu(2) = newNpart
 #elif __DIM == 1
-      ldu(1) = Mpart
+      ldu(1) = newNpart
 #endif
       CALL ppm_alloc(pdata,ldu,iopt,info)
       IF (info .NE. 0) THEN
@@ -273,13 +273,13 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        'Mpart*bdim = ',Mpart*bdim
+     &        'newNpart*bdim = ',Mpart*bdim
           CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
       ENDIF
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
-         ppm_nrecvbuffer = ppm_nrecvbuffer - (Mpart - Npart)*bdim 
+         ppm_nrecvbuffer = ppm_nrecvbuffer - (newNpart - Npart)*bdim 
       ELSE
-         ppm_nrecvbuffer = ppm_nrecvbuffer - Mpart*bdim 
+         ppm_nrecvbuffer = ppm_nrecvbuffer - newNpart*bdim 
       ENDIF 
 
       !-------------------------------------------------------------------------
@@ -319,7 +319,7 @@
          !  Unrolled version of edim=1
          !----------------------------------------------------------------------
          IF (edim .EQ. 1) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -351,7 +351,7 @@
          !  Unrolled version of edim=2
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 2) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -402,7 +402,7 @@
          !  Unrolled version of edim=3
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 3) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -472,7 +472,7 @@
          !  Unrolled version of edim=4
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 4) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -561,7 +561,7 @@
          !  Unrolled version of edim=5
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 5) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -669,7 +669,7 @@
          !  For edim.GT.5 the vector length will be edim !!
          !----------------------------------------------------------------------
          ELSE
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -705,7 +705,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,Mpart
+         DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -743,7 +743,7 @@
          !  Unrolled verion for edim=1
          !----------------------------------------------------------------------
          IF (edim .EQ. 1) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -775,7 +775,7 @@
          !  Unrolled verion for edim=2
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 2) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -826,7 +826,7 @@
          !  Unrolled verion for edim=3
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 3) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -896,7 +896,7 @@
          !  Unrolled verion for edim=4
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 4) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -985,7 +985,7 @@
          !  Unrolled verion for edim=5
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 5) THEN
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -1093,7 +1093,7 @@
          !  For edim.GT.5 the vector length will be edim !!
          !----------------------------------------------------------------------
          ELSE
-            DO ipart=istart,Mpart
+            DO ipart=istart,newNpart
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -1129,7 +1129,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,Mpart
+         DO ipart=istart,newNpart
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -1203,10 +1203,10 @@
      &            'Npart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF (Mpart .LT. 0) THEN
+          IF (newNpart .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
-     &            'Mpart must be >=0',__LINE__,info)
+     &            'newNpart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
 #if   __DIM == 2
