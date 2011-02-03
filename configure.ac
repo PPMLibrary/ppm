@@ -142,10 +142,15 @@ AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
   [enable __NOMICROINSTRUCTIONS (default is no)])],
   [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h])
 
+debug_compile=no
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],
-  [enable debug mode (default is no)])],
-  [AC_SUBST(DEBUG,-O0)])
+  [enable debug mode (default is no)])],[debug_compile=yes])
+if test "x${debug_compile}" = xyes; then
+  echo"#define __DEBUG" >> ./src/ppm_define.h
+  AC_SUBST(DEBUG,-g)
+fi
 
-# Generate Makefiles
+  
+  # Generate Makefiles
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT
