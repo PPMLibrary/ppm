@@ -157,6 +157,7 @@
             ENDIF
         ENDIF
         topoid = ppm_next_avail_topo
+        ppm_next_avail_topo = ppm_next_avail_topo + 1
         !----------------------------------------------------------------------
         ! This was one hell of an ugly hack
         ! TODO: replace this by something much better later
