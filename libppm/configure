@@ -5877,14 +5877,20 @@ if test "${enable_no_microinstr+set}" = set; then :
 fi
 
 
+debug_compile=no
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then :
-  enableval=$enable_debug; DEBUG=-O0
+  enableval=$enable_debug; debug_compile=yes
+fi
+
+if test "x${debug_compile}" = xyes; then
+  echo"#define __DEBUG" >> ./src/ppm_define.h
+  DEBUG=-g
 
 fi
 
 
-# Generate Makefiles
+  # Generate Makefiles
 ac_config_files="$ac_config_files Makefile"
 
 cat >confcache <<\_ACEOF
