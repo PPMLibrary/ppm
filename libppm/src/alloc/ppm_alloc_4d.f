@@ -28,22 +28,25 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_alloc_4ds(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_s(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D real single arrays
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_alloc_4dd(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_d(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D real double arrays
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_4dsc(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_sc(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D complex single arrays
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_4ddc(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_dc(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D complex double arrays
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_alloc_4di(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_i(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_4d_li(adata,lda,iopt,info)
+      !!! (Re)allocates the memory of 4D 64bit integer arrays
 #elif __KIND == __LOGICAL
-      SUBROUTINE ppm_alloc_4dl(adata,lda,iopt,info)
+      SUBROUTINE alloc_4d_l(adata,lda,iopt,info)
       !!! (Re)allocates the memory of 4D logical arrays
 #endif
       !!! (pointers) based on the number of elements.
@@ -77,6 +80,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: adata
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:,:,:), POINTER :: adata
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:,:), POINTER :: adata
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:,:,:), POINTER :: adata
 #endif
@@ -106,6 +111,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: work
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:,:,:), POINTER :: work
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:,:), POINTER :: work
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:,:,:), POINTER :: work
 #endif
@@ -143,6 +150,8 @@
       work => work_4ddc
 #elif __KIND == __INTEGER
       work => work_4di
+#elif __KIND == __LONGINT
+      work => work_4dli
 #elif __KIND == __LOGICAL
       work => work_4dl
 #endif
@@ -435,16 +444,18 @@
       CALL substop('ppm_alloc_4d',t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_alloc_4ds
+      END SUBROUTINE alloc_4d_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_alloc_4dd
+      END SUBROUTINE alloc_4d_d
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_4dsc
+      END SUBROUTINE alloc_4d_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_4ddc
+      END SUBROUTINE alloc_4d_dc
 #elif __KIND == __INTEGER
-      END SUBROUTINE ppm_alloc_4di
+      END SUBROUTINE alloc_4d_i
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_4d_li
 #elif __KIND == __LOGICAL
-      END SUBROUTINE ppm_alloc_4dl
+      END SUBROUTINE alloc_4d_l
 #endif
 

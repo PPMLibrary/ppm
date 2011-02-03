@@ -40,6 +40,11 @@ program ppm_test_interp_m2p
 
     implicit none
 
+#include "../../ppm_define.h"
+#ifdef __MPI
+      INCLUDE 'mpif.h'
+#endif
+
     integer, parameter              :: debug = 0
     integer, parameter              :: MK = ppm_kind_double
     real(mk),parameter              :: pi = 3.1415926535897931_mk
@@ -95,6 +100,10 @@ program ppm_test_interp_m2p
 
     nullify(xp)
     nullify(wp)
+
+#ifdef __MPI
+    call MPI_Init(info)
+#endif
 
     call ppm_init(ndim,MK,tolexp,0,debug,info,99)
 
@@ -233,6 +242,10 @@ program ppm_test_interp_m2p
 
     call ppm_finalize(info)
 
+#ifdef __MPI
+    call MPI_Finalize(info)
+#endif
+    
     deallocate(xp,wp,field_wp,min_phys,max_phys,ghostsize,nm)
 
     print *, 'done.'

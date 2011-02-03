@@ -176,7 +176,8 @@
       INTEGER, PARAMETER :: ppm_integer         = 13
       INTEGER, PARAMETER :: ppm_logical         = 17
       INTEGER, PARAMETER :: ppm_char            = 256
-
+      INTEGER, PARAMETER :: ppm_kind_int32      = 4
+      INTEGER, PARAMETER :: ppm_kind_int64      = 8
       !-------------------------------------------------------------------------
       !  Mapping options
       !-------------------------------------------------------------------------
