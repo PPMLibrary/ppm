@@ -130,7 +130,7 @@ new: all install
 
 
 test: all
-	make --directory=src/interpolate/test FC=$(FC) \
+	make --directory=src/interpolate/test FC=$(FC) CPP="$(CPP)" \
 		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
 
 # This ensures all dependency files are up-to-date

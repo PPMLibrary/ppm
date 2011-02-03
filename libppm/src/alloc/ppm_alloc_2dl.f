@@ -28,22 +28,25 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_alloc_2dls(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_s(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D real single arrays
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_alloc_2dld(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_d(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D real double arrays
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_2dlsc(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_sc(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D complex single arrays
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_2dldc(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_dc(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D complex double arrays
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_alloc_2dli(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_i(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_2dl_li(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 2D 64bit integer arrays
 #elif __KIND == __LOGICAL
-      SUBROUTINE ppm_alloc_2dll(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_2dl_l(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 2D logical arrays
 #endif
       !!! (pointers) based on absolute lower and upper index bounds.
@@ -73,6 +76,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:), POINTER :: adata
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:), POINTER :: adata
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:), POINTER :: adata
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:), POINTER :: adata
 #endif
@@ -104,6 +109,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:), POINTER :: work
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:), POINTER :: work
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:), POINTER :: work
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:), POINTER :: work
 #endif
@@ -141,6 +148,8 @@
       work => work_2ddc
 #elif __KIND == __INTEGER
       work => work_2di
+#elif __KIND == __LONGINT
+      work => work_2dli
 #elif __KIND == __LOGICAL
       work => work_2dl
 #endif
@@ -390,15 +399,17 @@
       CALL substop('ppm_alloc_2dl',t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_alloc_2dls
+      END SUBROUTINE alloc_2dl_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_alloc_2dld
+      END SUBROUTINE alloc_2dl_d
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_2dlsc
+      END SUBROUTINE alloc_2dl_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_2dldc
+      END SUBROUTINE alloc_2dl_dc
 #elif __KIND == __INTEGER
-      END SUBROUTINE ppm_alloc_2dli
+      END SUBROUTINE alloc_2dl_i
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_2dl_li
 #elif __KIND == __LOGICAL
-      END SUBROUTINE ppm_alloc_2dll
+      END SUBROUTINE alloc_2dl_l
 #endif
