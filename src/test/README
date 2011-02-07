@@ -1,0 +1,4 @@
+The fortran code here serves as a unit test framework
+
+The makefile will not work in this directory but should be also used as a
+tamplate
