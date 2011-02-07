@@ -178,7 +178,19 @@
               NULLIFY(work_mesh(i)%istart)
               NULLIFY(work_mesh(i)%nnodes)
               NULLIFY(work_mesh(i)%Nm)
+              NULLIFY(work_mesh(i)%ghost_fromsub)
+              NULLIFY(work_mesh(i)%ghost_tosub)
+              NULLIFY(work_mesh(i)%ghost_blkstart)
+              NULLIFY(work_mesh(i)%ghost_blksize)
+              NULLIFY(work_mesh(i)%ghost_blk)
+              NULLIFY(work_mesh(i)%ghost_recvtosub)
+              NULLIFY(work_mesh(i)%ghost_recvblkstart)
+              NULLIFY(work_mesh(i)%ghost_recvblksize)
+              NULLIFY(work_mesh(i)%ghost_recvblk)
+              NULLIFY(work_mesh(i)%mapping)
               work_mesh(i)%ID = 0
+              work_mesh(i)%ghost_nsend = 0
+              work_mesh(i)%ghost_nrecv = 0
           ENDDO
       ENDIF
 
