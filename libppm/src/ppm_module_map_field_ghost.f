@@ -40,11 +40,15 @@
          !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub,isendtosub
-         INTEGER, DIMENSION(:  ), POINTER :: sendbuf,recvbuf
-         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart,isendblksize,ioffset
+         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: isendtosub    => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: sendbuf       => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: recvbuf       => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblksize  => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ioffset       => NULL()
          ! sorted (according to proc-proc interaction order) offset list)
-         INTEGER, DIMENSION(:,:), POINTER :: mesh_ghost_offset
+         INTEGER, DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
 
          PRIVATE :: isendfromsub,isendtosub,sendbuf,recvbuf,isendblkstart
          PRIVATE :: isendblksize,ioffset,mesh_ghost_offset

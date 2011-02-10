@@ -88,7 +88,8 @@
       INTEGER , DIMENSION(3)                     :: Nm
       INTEGER , DIMENSION(6)                     :: Ngl
       INTEGER , DIMENSION(2)                     :: ldc
-      INTEGER , DIMENSION(:  ), POINTER          :: lpdx,lhbx
+      INTEGER , DIMENSION(:  ), POINTER          :: lpdx => NULL()
+      INTEGER , DIMENSION(:  ), POINTER          :: lhbx => NULL()
       INTEGER                                    :: i,nbox,j,jdata,k,kdata
       INTEGER                                    :: iend,isize,iopt
       CHARACTER(LEN=ppm_char)                    :: mesg

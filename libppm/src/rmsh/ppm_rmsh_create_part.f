@@ -209,15 +209,16 @@
       !-------------------------------------------------------------------------
       INTEGER                                          :: isub, isubl
       INTEGER                                          :: dim
-      INTEGER ,  DIMENSION(:,:),        POINTER        :: istart
-      INTEGER ,  DIMENSION(:,:),        POINTER        :: ndata
+      INTEGER ,  DIMENSION(:,:),        POINTER        :: istart => NULL()
+      INTEGER ,  DIMENSION(:,:),        POINTER        :: ndata  => NULL()
       LOGICAL                                          :: reset
       INTEGER ,  DIMENSION(2  )                        :: ldu, ldl
       INTEGER                                          :: iopt
-      REAL(mk) , DIMENSION(:,:),        POINTER        :: min_sub
-      REAL(mk) , DIMENSION(:),          POINTER        :: min_phys, max_phys
+      REAL(mk) , DIMENSION(:,:),        POINTER        :: min_sub => NULL()
+      REAL(mk) , DIMENSION(:),          POINTER        :: min_phys => NULL()
+      REAL(mk) , DIMENSION(:),          POINTER        :: max_phys => NULL()
       REAL(mk)                                         :: dx,dy,dz
-      INTEGER,   DIMENSION(:  ),        POINTER        :: nm
+      INTEGER,   DIMENSION(:  ),        POINTER        :: nm => NULL()
       INTEGER                                          :: inp, nnx, nny, nnz
       INTEGER                                          :: startx, starty, startz
       INTEGER                                          :: i,j,k
@@ -229,8 +230,8 @@
       REAL(mk)                                         :: strength
       LOGICAL                                          :: lok,lslave
       LOGICAL                                          :: with_vol
-      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER                   :: topo
+      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER                   :: topo   => NULL()
 #if  __MODE == __VEC
       LOGICAL                                          :: with_weighting
 #endif

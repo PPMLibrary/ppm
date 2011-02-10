@@ -114,7 +114,7 @@
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
-      TYPE(ppm_t_topo), POINTER :: topo
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
       REAL(MK)                  :: t0
       !-------------------------------------------------------------------------
       !  Externals 

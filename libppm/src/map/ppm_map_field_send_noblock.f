@@ -78,14 +78,20 @@
       !  Non-blocking
       !-----------------------------------------------------
       INTEGER               :: kbuffer, kreq, rindex
-      INTEGER, DIMENSION(:), POINTER :: klist
-      INTEGER, DIMENSION(:), POINTER :: isendoff, irecvoff, request
+      INTEGER, DIMENSION(:), POINTER :: klist    => NULL()
+      INTEGER, DIMENSION(:), POINTER :: isendoff => NULL()
+      INTEGER, DIMENSION(:), POINTER :: irecvoff => NULL()
+      INTEGER, DIMENSION(:), POINTER :: request  => NULL()
       ! 3 lines for new separate request arrays
       INTEGER               :: kreqrecv, kreqsend
-      INTEGER, DIMENSION(:), POINTER :: sendreqs, recvreqs
-      INTEGER, DIMENSION(:), POINTER :: klistsend, klistrecv
-      REAL(ppm_kind_double), DIMENSION(:), POINTER :: isendd, irecvd
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: isends, irecvs
+      INTEGER, DIMENSION(:), POINTER :: sendreqs => NULL()
+      INTEGER, DIMENSION(:), POINTER :: recvreqs => NULL()
+      INTEGER, DIMENSION(:), POINTER :: klistsend => NULL()
+      INTEGER, DIMENSION(:), POINTER :: klistrecv => NULL()
+      REAL(ppm_kind_double), DIMENSION(:), POINTER :: isendd => NULL()
+      REAL(ppm_kind_double), DIMENSION(:), POINTER :: irecvd => NULL()
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: isends => NULL()
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: irecvs => NULL()
       
       LOGICAL               :: rflag
       REAL(ppm_kind_double) :: nonblock_time0, nonblock_timer, nonblock_timeout

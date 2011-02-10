@@ -77,7 +77,7 @@
       !-------------------------------------------------------------------------
 
       INTEGER, DIMENSION(3)          :: ldu
-      INTEGER, DIMENSION(:), POINTER :: bcdef
+      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
       INTEGER                        :: i,j,k,idom,ipart,nlist1,nlist2
       INTEGER                        :: sendrank,recvrank
       INTEGER                        :: nneighsubs, jdom
@@ -86,7 +86,7 @@
       CHARACTER(ppm_char)            :: mesg
       REAL(MK)                       :: t0
       LOGICAL                        :: valid
-      TYPE(ppm_t_topo)    , POINTER  :: topo
+      TYPE(ppm_t_topo)    , POINTER  :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
