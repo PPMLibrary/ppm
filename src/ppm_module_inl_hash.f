@@ -48,9 +48,9 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER       :: htable_keys
+        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: htable_keys => NULL()
         !!! Array for keeping hash table keys.
-        INTEGER,                 DIMENSION(:), POINTER       :: htable_borders_pos
+        INTEGER,          DIMENSION(:), POINTER :: htable_borders_pos => NULL()
         !!! Array for keeping positions of cells on "borders" array.
 
         !-------------------------------------------------------------------------

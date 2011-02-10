@@ -102,8 +102,10 @@
       REAL(ppm_kind_double)            :: t0
       LOGICAL, DIMENSION(3)            :: lsymm
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo,target_topo
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh,target_mesh
+      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

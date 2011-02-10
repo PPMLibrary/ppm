@@ -39,7 +39,9 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER :: ilist1,ilist2,part2proc
+         INTEGER, DIMENSION(:), POINTER :: ilist1    => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ilist2    => NULL()
+         INTEGER, DIMENSION(:), POINTER :: part2proc => NULL()
 
          PRIVATE :: ilist1,ilist2,part2proc
 

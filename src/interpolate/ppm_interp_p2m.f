@@ -151,9 +151,12 @@
      !-------------------------------------------------------------------------!
      ! Local variables
      !-------------------------------------------------------------------------!
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart, ndata
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1,ilist2
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys,max_phys
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata    => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
       REAL(mk), DIMENSION(ppm_dim)           :: dxi,dx
       REAL(mk)                               :: dxx,dxy,dxz,dxxi,dxyi,dxzi
       REAL(mk), DIMENSION(ppm_dim)           :: len_phys
@@ -174,7 +177,8 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub, max_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       REAL(mk)                               :: xp1,xp2,xp3
@@ -183,8 +187,8 @@
       REAL(mk)                               :: x01,x02,x03
       INTEGER                                :: ldn
       CHARACTER(len=256)                     :: msg
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER         :: topo
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
 
 
 

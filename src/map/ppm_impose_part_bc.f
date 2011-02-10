@@ -92,7 +92,7 @@
       CHARACTER(LEN=ppm_char)      :: mesg
       LOGICAL                      :: valid
       REAL(MK), DIMENSION(ppm_dim) :: len_phys,max_phys,min_phys
-      TYPE(ppm_t_topo), POINTER    :: topo
+      TYPE(ppm_t_topo), POINTER    :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

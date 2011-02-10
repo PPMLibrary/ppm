@@ -211,21 +211,24 @@
       INTEGER                           :: i,ul,iopt,j,treetype,nbox
       INTEGER                           :: isub,minbox
       INTEGER, DIMENSION(1)             :: ldc
-      INTEGER, DIMENSION(:,:), POINTER  :: ineigh,subs_bc
-      INTEGER, DIMENSION(:  ), POINTER  :: nneigh,nchld
+      INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
+      INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
+      INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec,meshdx
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
       REAL(MK), DIMENSION(3,2)          :: weights
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box,max_box
+      REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
       CHARACTER(LEN=ppm_char)           :: mesg
       INTEGER                           :: nsublist
-      INTEGER , DIMENSION(  :), POINTER :: isublist
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
+      INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER                           :: nsubs
-      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc
-      TYPE(ppm_t_topo)        , POINTER :: topo
+      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      TYPE(ppm_t_topo)       , POINTER  :: topo     => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

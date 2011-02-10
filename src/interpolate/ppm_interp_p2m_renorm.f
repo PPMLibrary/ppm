@@ -134,9 +134,12 @@
       !--------------------------------------------------------------------------
       ! Local variables
       !--------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart, ndata
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1,ilist2
-      REAL(MK), DIMENSION(:)       , POINTER :: min_phys,max_phys
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata    => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
       REAL(MK),  DIMENSION(ppm_dim)           :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)           :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -155,23 +158,24 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(MK), DIMENSION(:,:),      POINTER :: min_sub, max_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
       REAL(MK)                               :: myeps
       REAL(MK)                               :: tim1s, tim1e
       REAL(MK)                               :: xp1,xp2,xp3
       REAL(MK)                               :: wx1,wx2,wx3
       REAL(MK), DIMENSION(ppm_dim)           :: x0
       CHARACTER(len=256)                     :: msg
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER         :: topo
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
       !-----------------------------------------------------
       !                          Renormalization
       !-----------------------------------------------------
 #if __DIME == __2D
 #error two dimensional renormalization is not yet implemented
-      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno
+      REAL(MK), DIMENSION(:,:,:),   POINTER  :: field_reno => NULL()
 #elif __DIME == __3D
-      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno
+      REAL(MK), DIMENSION(:,:,:,:), POINTER  :: field_reno => NULL()
 #endif
       
       !-------------------------------------------------------------------------

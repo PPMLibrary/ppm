@@ -88,9 +88,11 @@
       !--------------------------------------------------------------------------
       ! Local variables
       !--------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1,ilist2
-      REAL(MK), DIMENSION(:)       , POINTER :: min_phys,max_phys
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
+      REAL(MK), DIMENSION(:)       , POINTER :: min_phys => NULL()
+      REAL(MK), DIMENSION(:)       , POINTER :: max_phys => NULL()
       REAL(MK),  DIMENSION(ppm_dim)           :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)           :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -109,14 +111,17 @@
       INTEGER, DIMENSION(6)                  :: bcdef
       LOGICAL                                :: internal_weights
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub, max_sub
-      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx1,wx2,wx3
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx1     => NULL()
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx2     => NULL()
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: wx3     => NULL()
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       CHARACTER(len=256)                     :: msg
       LOGICAL                                :: valid
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER         :: topo
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh  => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo    => NULL()
 
 
       !--------------------------------------------------------------------------

@@ -47,11 +47,11 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER,       DIMENSION(:),   POINTER :: own_plist
-        INTEGER,       DIMENSION(:),   POINTER :: neigh_plist
-        INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: empty_list
-        INTEGER,       DIMENSION(:,:), POINTER :: ncells
-        LOGICAL,       DIMENSION(:) ,  POINTER :: used
+        INTEGER,       DIMENSION(:),   POINTER :: own_plist => NULL()
+        INTEGER,       DIMENSION(:),   POINTER :: neigh_plist => NULL()
+        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: empty_list => NULL()
+        INTEGER,       DIMENSION(:,:), POINTER :: ncells => NULL()
+        LOGICAL,       DIMENSION(:) ,  POINTER :: used => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables
