@@ -130,7 +130,7 @@
       INTEGER                                 :: lda,iopt
       INTEGER, DIMENSION(2)                   :: ldc
       LOGICAL                                 :: valid
-      TYPE(ppm_t_topo)          , POINTER     :: topo
+      TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------

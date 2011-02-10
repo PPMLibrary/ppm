@@ -177,8 +177,8 @@
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo)     , POINTER  :: target_topo
-      TYPE(ppm_t_equi_mesh), POINTER  :: target_mesh
+      TYPE(ppm_t_topo)     , POINTER  :: target_topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER  :: target_mesh => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

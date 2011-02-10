@@ -101,7 +101,7 @@
       REAL(MK)                                :: t0
       INTEGER                                 :: nnbox,cd,i,j,iopt,Np,ip
       INTEGER , DIMENSION(2)                  :: ldc
-      INTEGER , DIMENSION(:), POINTER         :: pbox
+      INTEGER , DIMENSION(:), POINTER         :: pbox => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------

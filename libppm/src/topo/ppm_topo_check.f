@@ -73,8 +73,8 @@
       REAL(MK)                       :: t0
       INTEGER                        :: ipart,idom,j,ison
       LOGICAL                        :: valid
-      INTEGER, DIMENSION(:), POINTER :: bcdef
-      TYPE(ppm_t_topo)     , POINTER :: topo
+      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
+      TYPE(ppm_t_topo)     , POINTER :: topo  => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

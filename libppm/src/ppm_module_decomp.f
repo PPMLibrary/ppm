@@ -42,7 +42,8 @@
          !----------------------------------------------------------------------
          !  Local work arrays used in ppm_decomp_pruned_cell
          !----------------------------------------------------------------------
-         INTEGER , DIMENSION(:), POINTER, PRIVATE :: npbx,npbxg
+         INTEGER , DIMENSION(:), POINTER, PRIVATE :: npbx  => NULL()
+         INTEGER , DIMENSION(:), POINTER, PRIVATE :: npbxg => NULL()
 
          !----------------------------------------------------------------------
          !  Define interface to box split routine

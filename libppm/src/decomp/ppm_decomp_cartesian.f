@@ -123,7 +123,8 @@
       INTEGER , DIMENSION(ppm_dim)      :: nblocks
       INTEGER , DIMENSION(ppm_dim)      :: surface,volume,Nc
       ! number of grid points in each sub. index: (1:ppm_dim,1:nsub)
-      INTEGER , DIMENSION(:,:), POINTER :: Npx,Npxnew
+      INTEGER , DIMENSION(:,:), POINTER :: Npx    => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: Npxnew => NULL()
       REAL(MK)                          :: gs
       CHARACTER(LEN=ppm_char)           :: mesg
       INTEGER, DIMENSION(2)             :: ldu

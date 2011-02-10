@@ -78,17 +78,17 @@
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(2*ppm_dim)             :: actual_subdomain
-      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub
-      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub
-      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub
-      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub
-      INTEGER , DIMENSION(:)  , POINTER          :: p_id
+      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub     => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub => NULL()
+      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
+      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
+      INTEGER , DIMENSION(:)  , POINTER          :: p_id       => NULL()
       INTEGER                                    :: Np_sub
       INTEGER                                    :: Mp_sub
       INTEGER                                    :: rank_sub
       INTEGER                                    :: neigh_max
       INTEGER                                    :: n_part
-      TYPE(ppm_t_topo)        , POINTER          :: topo
+      TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
       LOGICAL                                    :: lst
       INTEGER                                    :: i
       INTEGER                                    :: isub
@@ -279,7 +279,7 @@
       !---------------------------------------------------------------------
           REAL(MK), DIMENSION(2*ppm_dim)             :: whole_domain
           ! Physical extent of whole domain including ghost layers.
-          TYPE(ppm_t_topo), POINTER                  :: topo
+          TYPE(ppm_t_topo), POINTER                  :: topo => NULL()
           ! Topology.
           INTEGER                                    :: i
           INTEGER                                    :: j
