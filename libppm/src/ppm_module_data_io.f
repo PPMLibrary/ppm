@@ -43,26 +43,26 @@
          !----------------------------------------------------------------------
          !  Mode (parallel or serial) for each unit (internal numbering)
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER          :: ppm_io_mode 
+         INTEGER, DIMENSION(:), POINTER :: ppm_io_mode  => NULL()
 
          !----------------------------------------------------------------------
          !  IO format (ASCII or binary) for each unit (internal numbering)
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER          :: ppm_io_format
+         INTEGER, DIMENSION(:), POINTER :: ppm_io_format  => NULL()
 
          !----------------------------------------------------------------------
          !  Inverse list of currently used unit numbers by ppm_module_io.
          !  Index is Fortran Unit number, value is index to above lists or
          !  0 if that particular Fortran unit is not used by ppm_io.
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER          :: ppm_io_unit
+         INTEGER, DIMENSION(:), POINTER :: ppm_io_unit  => NULL()
 
          !----------------------------------------------------------------------
          !  I/O buffers for single and double precision types
          !----------------------------------------------------------------------
-         REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: sbuffer
-         REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: dbuffer
-         COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: scbuffer
-         COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: dcbuffer
+         REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: sbuffer  => NULL()
+         REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: dbuffer  => NULL()
+         COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: scbuffer  => NULL()
+         COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: dcbuffer  => NULL()
 
       END MODULE ppm_module_data_io

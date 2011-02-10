@@ -104,9 +104,9 @@
       INTEGER , DIMENSION(2)                  :: ldc
       REAL(MK)                                :: t0,meshtotal,geomtotal,dm
       INTEGER                                 :: i,ip,iopt,j
-      REAL(MK), DIMENSION(:), POINTER         :: pcst
+      REAL(MK), DIMENSION(:), POINTER         :: pcst => NULL()
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER         :: pcsum
+      REAL(MK), DIMENSION(:), POINTER         :: pcsum => NULL()
       INTEGER                                 :: MPTYPE
 #endif
       !-------------------------------------------------------------------------

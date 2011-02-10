@@ -85,14 +85,15 @@
       INTEGER                             :: ipart,sendrank,recvrank
       INTEGER                             :: iopt,iset,ibuffer
       INTEGER                             :: tag1,tag2
-      INTEGER, DIMENSION(:), POINTER      :: bcdef
-      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub,max_sub
+      INTEGER, DIMENSION(:), POINTER      :: bcdef   => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER   :: max_sub => NULL()
       REAL(MK)                            :: t0
       LOGICAL                             :: valid
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
-      TYPE(ppm_t_topo)      , POINTER     :: topo
+      TYPE(ppm_t_topo)      , POINTER     :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

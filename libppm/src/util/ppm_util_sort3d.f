@@ -84,7 +84,7 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), POINTER      :: work
+      REAL(MK), DIMENSION(:,:), POINTER      :: work => NULL()
       ! timer
       REAL(MK)                               :: t0
       !  counters
@@ -95,9 +95,9 @@
       INTEGER, DIMENSION(2)                  :: lda
       INTEGER                                :: iopt
       ! index list of particles in cells (allocated within rank3d)
-      INTEGER, DIMENSION(:), POINTER         :: lpdx
+      INTEGER, DIMENSION(:), POINTER         :: lpdx => NULL()
       ! pointer to first particle in each cell (allocated within rank3d)
-      INTEGER, DIMENSION(:), POINTER         :: lhbx
+      INTEGER, DIMENSION(:), POINTER         :: lhbx => NULL()
       ! dummy array to store the number of ghost layers (0)
       INTEGER, DIMENSION(6)                  :: Ngl
       ! local info level

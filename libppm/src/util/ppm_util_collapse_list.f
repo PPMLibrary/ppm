@@ -67,8 +67,10 @@
       INTEGER                               :: iopt,l1,u1
       INTEGER                               :: i,j,tmpmin,inmin,inmax
       INTEGER                               :: tmpmax,tmpfact,prevdist
-      INTEGER, DIMENSION(:), POINTER        :: ids, sort
-      INTEGER, DIMENSION(:), POINTER        :: spans,mins
+      INTEGER, DIMENSION(:), POINTER        :: ids   => NULL()
+      INTEGER, DIMENSION(:), POINTER        :: sort  => NULL()
+      INTEGER, DIMENSION(:), POINTER        :: spans => NULL()
+      INTEGER, DIMENSION(:), POINTER        :: mins  => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------

@@ -47,24 +47,24 @@
          !----------------------------------------------------------------------
          !  buffers for communication
          !----------------------------------------------------------------------
-         REAL(ppm_kind_double), DIMENSION(  :), POINTER ::  ppm_sendbufferd 
+         REAL(ppm_kind_double),DIMENSION(:),POINTER :: ppm_sendbufferd => NULL()
          !!! send buffer for particles 
-         REAL(ppm_kind_double), DIMENSION(  :), POINTER ::  ppm_recvbufferd
+         REAL(ppm_kind_double),DIMENSION(:),POINTER :: ppm_recvbufferd => NULL()
          !!! recv buffer for particles
 
-         REAL(ppm_kind_single), DIMENSION(  :), POINTER ::  ppm_sendbuffers
+         REAL(ppm_kind_single),DIMENSION(:),POINTER :: ppm_sendbuffers => NULL()
          !!! send buffer for particles
-         REAL(ppm_kind_single), DIMENSION(  :), POINTER ::  ppm_recvbuffers
+         REAL(ppm_kind_single),DIMENSION(:),POINTER :: ppm_recvbuffers => NULL()
          !!! recv buffer for particles
 
-         INTEGER              , DIMENSION(:,:), POINTER ::  ppm_ghosthack
+         INTEGER            ,DIMENSION(:,:),POINTER :: ppm_ghosthack => NULL()
          !!! invert map of ghost for symmetry
 
-         INTEGER              , DIMENSION(  :), POINTER ::  ppm_psendbuffer
+         INTEGER             ,DIMENSION(:),POINTER :: ppm_psendbuffer => NULL()
          !!! pointer to particles within the send buffer
          !!!
          !!! In terms of particle *not* the actual position in the buffer
-         INTEGER              , DIMENSION(  :), POINTER ::  ppm_precvbuffer
+         INTEGER             ,DIMENSION(:),POINTER :: ppm_precvbuffer => NULL()
          !!! pointer to particles within the recv buffer
          !!!
          !!! In terms of particle *not* the actual position in the buffer
@@ -87,16 +87,16 @@
          !!! the total number of particle fields packed in
          !!! the send buffer, ie. xp, vp is two sets
 
-         INTEGER              , DIMENSION(  :), POINTER ::  ppm_buffer2part
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer2part => NULL()
          !!! Used for the original on-processor particle IDs in the order in which
          !!! they are in the sendbuffer. Used to push additional particle
          !!! data on the buffer in the correct order.
-         INTEGER              , DIMENSION(  :), POINTER ::  ppm_buffer_type
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_type => NULL()
          !!! types of the data on the sendbuffer
-         INTEGER              , DIMENSION(  :), POINTER ::  ppm_buffer_dim
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_dim => NULL()
          !!! dimensions of the original on-processor particle arrays. 
 
-         REAL(ppm_kind_single), DIMENSION(:), POINTER   ::  ppm_ghost_offsets
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offsets => NULL()
          !!! ghost offset
          !!!
          !!! ghost particles may have a spatial offset compared to their real
@@ -113,7 +113,7 @@
          !!! `ppm_ghost_offset(ibuffer+0) = xp_offset(1,)`                     +
          !!! `ppm_ghost_offset(ibuffer+1) = xp_offset(2,)`                     +
          !!! `ppm_ghost_offset(ibuffer+2) = xp_offset(3,)`
-         REAL(ppm_kind_double), DIMENSION(:), POINTER  ::  ppm_ghost_offsetd
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd => NULL()
          !!! ghost offset (double precison)
          !!!
          !!! ghost particles may have a spatial offset compared to their real
@@ -140,8 +140,8 @@
          INTEGER                        :: ppm_map_type 
          INTEGER                        :: ppm_nsendlist
          INTEGER                        :: ppm_nrecvlist
-         INTEGER, DIMENSION(:), POINTER :: ppm_isendlist
-         INTEGER, DIMENSION(:), POINTER :: ppm_irecvlist
+         INTEGER, DIMENSION(:), POINTER :: ppm_isendlist => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ppm_irecvlist => NULL()
 
          !----------------------------------------------------------------------
          !  Precision
@@ -160,7 +160,7 @@
          !----------------------------------------------------------------------
          ! Topologies
          !----------------------------------------------------------------------
-         TYPE(ppm_ptr_t_topo), DIMENSION(:), POINTER :: ppm_topo
+         TYPE(ppm_ptr_t_topo), DIMENSION(:), POINTER :: ppm_topo => NULL()
          !!! the PPM topologies array
 
          INTEGER :: ppm_next_avail_topo
@@ -191,7 +191,7 @@
          INTEGER :: ppm_rank
          INTEGER :: ppm_comm
          ! relative speeds of the processors (for load balancing)
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_proc_speed
+         REAL(ppm_kind_double),DIMENSION(:),POINTER :: ppm_proc_speed => NULL()
 
          !----------------------------------------------------------------------
          !  Numerical tolerance. Differences smaller than this are considered

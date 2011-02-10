@@ -101,8 +101,8 @@
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
 #endif
-      TYPE(ppm_t_topo), POINTER        :: topo
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_topo), POINTER        :: topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

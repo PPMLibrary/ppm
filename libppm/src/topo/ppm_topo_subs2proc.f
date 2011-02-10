@@ -86,11 +86,14 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       REAL(MK):: costsum,totalcost,t0
-      INTEGER , DIMENSION(:), POINTER :: list
-      LOGICAL , DIMENSION(:), POINTER :: not_assigned,not_listed
-      INTEGER , DIMENSION(ppm_dim) :: ldc
-      INTEGER :: i,j,ii,jj,k,iopt
-      INTEGER :: istat,isize,rank,nlist,ilist,isub,jsub,nassigned
+      INTEGER , DIMENSION(:), POINTER :: list         => NULL()
+      LOGICAL , DIMENSION(:), POINTER :: not_assigned => NULL()
+      LOGICAL , DIMENSION(:), POINTER :: not_listed   => NULL()
+      INTEGER , DIMENSION(ppm_dim)    :: ldc
+      INTEGER                         :: i,j,ii,jj,k,iopt
+      INTEGER                         :: istat,isize,rank
+      INTEGER                         :: nlist,ilist
+      INTEGER                         :: isub,jsub,nassigned
       CHARACTER(ppm_char) :: mesg
       INTEGER :: assignedtorank
       !-------------------------------------------------------------------------
