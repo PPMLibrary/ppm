@@ -215,6 +215,7 @@
               ENDDO
           END IF
       ENDDO
+      CALL substop('ppm_inl_vlist',t0,info)
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE inl_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
