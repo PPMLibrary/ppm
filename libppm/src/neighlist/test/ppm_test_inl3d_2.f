@@ -630,7 +630,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
-integer                         :: np,npgrid = 33
+integer                         :: np,npgrid = 7
 integer                         :: mp
 integer                         :: newnp
 integer, dimension(:),  pointer :: p_i
@@ -784,6 +784,8 @@ do ii=1,3
     call ppm_map_part_pop(rcp,np,mp,info)
     call ppm_map_part_pop(xp,ndim,np,mp,info)
 
+    call ppm_dbg_print(topoid,xp,mp,3,1,info)
+   stop 
     call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
         & lsymm,ghostlayer,info,vlist,nvlist)
 
