@@ -630,7 +630,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
-integer                         :: np = 10000
+integer                         :: np = 100
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp
@@ -735,6 +735,10 @@ call ppm_map_part_send(np,mp,info)
 call ppm_map_part_pop(rcp,np,mp,info)
 call ppm_map_part_pop(xp,ndim,np,mp,info)
 
+call ppm_dbg_print(topoid,xp,mp,2,1,info)
+
+stop
+
 call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
     & lsymm,ghostlayer,info,vlist,nvlist)
 
@@ -796,5 +800,6 @@ call MPI_finalize(info)
 deallocate(xp,rcp,min_phys,max_phys,len_phys,ghostsize,nm)
 
 if (rank.eq.0) print *, 'done.'
+
 
 end program ppm_test_inl
