@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :                ppm_module_user_util
+      !  Module       :              ppm_module_util_dbg
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -27,16 +27,35 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      MODULE ppm_module_user_util
-      !!! This module contains all user-callable utility routines.
-         !----------------------------------------------------------------------
-         !  PPM modules
-         !----------------------------------------------------------------------
-         USE ppm_module_init
-         USE ppm_module_finalize
-         USE ppm_module_find_duplicates
-         USE ppm_module_is_initialized
-         USE ppm_module_time
-         USE ppm_module_util_dbg
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
 
-      END MODULE ppm_module_user_util
+      MODULE ppm_module_util_dbg
+      !!! This module provides the routines
+      !!! that solve cubic equations with real roots.
+         !----------------------------------------------------------------------
+         !  Define interfaces to the main topology routine(s)
+         !----------------------------------------------------------------------
+         INTERFACE ppm_dbg_print
+            MODULE PROCEDURE ppm_dbg_print_s
+            MODULE PROCEDURE ppm_dbg_print_d
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  include the source
+         !----------------------------------------------------------------------
+         CONTAINS
+
+#define __KIND __SINGLE_PRECISION
+#include "util/ppm_dbg_print.f"
+#undef __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "util/ppm_dbg_print.f"
+#undef __KIND
+
+
+      END MODULE ppm_module_util_dbg
