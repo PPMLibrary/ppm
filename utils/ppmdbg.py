@@ -8,12 +8,15 @@ import sys
 
 # should do it for now, but should be replaced by a generic implementation that
 # picks arbitrary number of colors
-cmap = {1 : 'r',\
+cmap = {-1: 'k',\
+        1 : 'r',\
         2 : 'b',\
         3 : 'g',\
         4 : 'y',\
         5 : 'c',\
         6 : 'm'}
+
+halo = 0.0
 
 def sub2rect(minc,maxc):
     x1 = minc[0]
@@ -78,23 +81,32 @@ def sub2cube(minc,maxc):
 
 def plotsub3(ax,f,cpu):
     nc = len(cmap.keys())
-    ax.plot_surface(f[0][0],f[0][1],f[0][2],alpha=0.05,color=cmap[cpu%nc]) 
-    ax.plot_surface(f[1][0],f[1][1],f[1][2],alpha=0.05,color=cmap[cpu%nc]) 
-    ax.plot_surface(f[2][0],f[2][1],f[2][2],alpha=0.05,color=cmap[cpu%nc]) 
-    ax.plot_surface(f[3][0],f[3][1],f[3][2],alpha=0.05,color=cmap[cpu%nc]) 
-    ax.plot_surface(f[4][0],f[4][1],f[4][2],alpha=0.05,color=cmap[cpu%nc]) 
-    ax.plot_surface(f[5][0],f[5][1],f[5][2],alpha=0.05,color=cmap[cpu%nc])
+    for i in range(6):
+        ax.plot_surface(f[i][0],f[i][1],f[i][2],alpha=0.05,color=cmap[cpu%(nc+1)+1]) 
+
+def plotgl3(ax,gl):
+    for i in range(6):
+        ax.plot_surface(gl[i][0],gl[i][1],gl[i][2],alpha=0.01,\
+                color='k',linewidth=0) 
 
 def plotsub2(ax,f,cpu):
     nc = len(cmap.keys())
-    p = Polygon(f,alpha=0.05,color=cmap[cpu%nc])
+    p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc+1)+1],linewidth=0)
+    ax.add_patch(p)
+    p = Polygon(f,fill=False,linewidth=1,ec='k')
+    ax.add_patch(p)
+
+def plotgl2(ax,gl):
+    p = Polygon(gl,alpha=0.01,color='k')
+    ax.add_patch(p)
+    p = Polygon(gl,fill=False,linewidth=0.4,linestyle='dashed',ec='k')
     ax.add_patch(p)
 
 def plotdat2(ax,x,y,tag):
-    ax.scatter(x,y,s=10,c=[cmap[t] for t in tag],linewidths=0)
+    ax.scatter(x,y,s=5,c=[cmap[t] for t in tag],linewidths=0)
 
 def plotdat3(ax,x,y,z,tag):
-    ax.scatter(x,y,z,s=30,c=[cmap[t] for t in tag],linewidths=0)
+    ax.scatter(x,y,z,s=10,c=[cmap[t] for t in tag],linewidths=0)
 
 def main():
     subfilen = sys.argv[1]
@@ -104,9 +116,10 @@ def main():
 
     subfile = open(subfilen)
     l1 = subfile.readline()
-    dim = (len(l1.strip().split()) - 1)/2
+    dim = float(l1.strip())
     print dim
-    subfile.seek(0)
+    l2 = subfile.readline()
+    halo = float(l2.strip())
     
     if dim == 2:
         ax = fig.add_subplot(111)
@@ -115,6 +128,10 @@ def main():
             min_sub = [float(r[0]),float(r[1])]
             max_sub = [float(r[2]),float(r[3])]
             proc = int(r[4])
+            if (halo > 0.0):
+                glfaces = sub2rect([min_sub[0]-halo,min_sub[1]-halo], \
+                        [max_sub[0]+halo,max_sub[1]+halo])
+                plotgl2(ax,glfaces)
             faces = sub2rect(min_sub,max_sub)
             plotsub2(ax,faces,proc)
     elif dim == 3:
@@ -124,6 +141,10 @@ def main():
             min_sub = [float(r[0]),float(r[1]),float(r[2])]
             max_sub = [float(r[3]),float(r[4]),float(r[5])]
             proc = int(r[6])
+            if (halo > 0.0):
+                glfaces = sub2cube([min_sub[i]-halo for i in range(len(min_sub))], \
+                        [max_sub[i]+halo for i in range(len(max_sub))])
+                plotgl3(ax,glfaces)
             faces = sub2cube(min_sub,max_sub)
             plotsub3(ax,faces,proc)
     subfile.close()
