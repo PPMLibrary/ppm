@@ -735,9 +735,8 @@ call ppm_map_part_send(np,mp,info)
 call ppm_map_part_pop(rcp,np,mp,info)
 call ppm_map_part_pop(xp,ndim,np,mp,info)
 
-call ppm_dbg_print(topoid,xp,mp,2,1,info)
+call ppm_dbg_print(topoid,xp,mp,0.0_mk,2,1,info)
 
-stop
 
 call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
     & lsymm,ghostlayer,info,vlist,nvlist)

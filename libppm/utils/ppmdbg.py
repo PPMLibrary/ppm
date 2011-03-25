@@ -1,10 +1,19 @@
-#!/usr/bin/env python
-
 from mpl_toolkits.mplot3d import Axes3D 
 from matplotlib.patches import Polygon
+from matplotlib.colors import *
+import matplotlib.cm as cm
 import matplotlib.pyplot as plt 
 import numpy as np 
 import sys
+
+# should do it for now, but should be replaced by a generic implementation that
+# picks arbitrary number of colors
+cmap = {1 : 'r',\
+        2 : 'b',\
+        3 : 'g',\
+        4 : 'y',\
+        5 : 'c',\
+        6 : 'm'}
 
 def sub2rect(minc,maxc):
     x1 = minc[0]
@@ -67,23 +76,25 @@ def sub2cube(minc,maxc):
     return [(f1x,f1y,f1z),(f2x,f2y,f2z),(f3x,f3y,f3z),(f4x,f4y,f4z),\
             (f5x,f5y,f5z),(f6x,f6y,f6z)]
 
-def plotsub3(ax,f):
-    ax.plot_surface(f[0][0],f[0][1],f[0][2],alpha=0.1) 
-    ax.plot_surface(f[1][0],f[1][1],f[1][2],alpha=0.1) 
-    ax.plot_surface(f[2][0],f[2][1],f[2][2],alpha=0.1) 
-    ax.plot_surface(f[3][0],f[3][1],f[3][2],alpha=0.1) 
-    ax.plot_surface(f[4][0],f[4][1],f[4][2],alpha=0.1) 
-    ax.plot_surface(f[5][0],f[5][1],f[5][2],alpha=0.1)
+def plotsub3(ax,f,cpu):
+    nc = len(cmap.keys())
+    ax.plot_surface(f[0][0],f[0][1],f[0][2],alpha=0.05,color=cmap[cpu%nc]) 
+    ax.plot_surface(f[1][0],f[1][1],f[1][2],alpha=0.05,color=cmap[cpu%nc]) 
+    ax.plot_surface(f[2][0],f[2][1],f[2][2],alpha=0.05,color=cmap[cpu%nc]) 
+    ax.plot_surface(f[3][0],f[3][1],f[3][2],alpha=0.05,color=cmap[cpu%nc]) 
+    ax.plot_surface(f[4][0],f[4][1],f[4][2],alpha=0.05,color=cmap[cpu%nc]) 
+    ax.plot_surface(f[5][0],f[5][1],f[5][2],alpha=0.05,color=cmap[cpu%nc])
 
-def plotsub2(ax,f):
-    p = Polygon(f,alpha=0.1)
+def plotsub2(ax,f,cpu):
+    nc = len(cmap.keys())
+    p = Polygon(f,alpha=0.05,color=cmap[cpu%nc])
     ax.add_patch(p)
 
 def plotdat2(ax,x,y,tag):
-    ax.scatter(x,y,s=2,c=tag,linewidths=0)
+    ax.scatter(x,y,s=10,c=[cmap[t] for t in tag],linewidths=0)
 
 def plotdat3(ax,x,y,z,tag):
-    ax.scatter(x,y,z,s=4,linewidths=0)
+    ax.scatter(x,y,z,s=30,c=[cmap[t] for t in tag],linewidths=0)
 
 def main():
     subfilen = sys.argv[1]
@@ -103,16 +114,18 @@ def main():
             r = l.strip().split()
             min_sub = [float(r[0]),float(r[1])]
             max_sub = [float(r[2]),float(r[3])]
+            proc = int(r[4])
             faces = sub2rect(min_sub,max_sub)
-            plotsub2(ax,faces)
+            plotsub2(ax,faces,proc)
     elif dim == 3:
         ax = Axes3D(fig)
         for l in subfile:
             r = l.strip().split()
             min_sub = [float(r[0]),float(r[1]),float(r[2])]
             max_sub = [float(r[3]),float(r[4]),float(r[5])]
+            proc = int(r[6])
             faces = sub2cube(min_sub,max_sub)
-            plotsub3(ax,faces)
+            plotsub3(ax,faces,proc)
     subfile.close()
 
     datfile = open(datfilen)
