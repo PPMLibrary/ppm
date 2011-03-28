@@ -74,6 +74,11 @@
       !!!
       !!! [WARNING]
       !!! This routine assumes that `field_up` is already allocated.
+      !!!
+      !!! [TIP]
+      !!! There is no need to perform a `ghost_get` before calling this routine
+      !!! as the routine calls itself a `ghost_put` to the field after
+      !!! interpolating from particles to the field.
       !------------------------------------------------------------------------!
       !  INCLUDES
       !------------------------------------------------------------------------!

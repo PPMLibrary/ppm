@@ -37,6 +37,8 @@ program ppm_test_interp_m2p
     use ppm_module_init
     use ppm_module_finalize
     use ppm_module_map
+    USE ppm_module_data_rmsh
+    USE ppm_module_data_mesh
 
     implicit none
 
@@ -55,8 +57,8 @@ program ppm_test_interp_m2p
     real(MK)                        :: tol
     integer                         :: info
     integer                         :: topoid,meshid
-    integer,  parameter             :: ngrid = 513
-    integer,  parameter             :: npgrid = 1025
+    integer,  parameter             :: ngrid = 2383
+    integer,  parameter             :: npgrid = 3029
     real(MK),dimension(:,:),pointer :: xp,wp
     real(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
     integer, dimension(:  ),pointer :: ghostsize
@@ -72,6 +74,7 @@ program ppm_test_interp_m2p
     real(MK),dimension(:,:,:,:  ), pointer :: field_wp ! 2d  field_up(ldn,i,j,isub)
     !real(MK),dimension(:,:,:,:,:), pointer :: field_up ! 3d  field_up(ldn,i,j,k,isub)
     real(MK),dimension(:  ),pointer :: field_x
+    real(mk),dimension(2)           :: x
     type(ppm_t_topo), pointer       :: topo
     real(MK)                        :: maxm3
     integer, parameter              :: nmom = 10
@@ -81,8 +84,8 @@ program ppm_test_interp_m2p
     !----------------
     ! setup
     !----------------
-    tol = 10.0_mk*epsilon(1.0_mk)
-    tolexp = int(log10(epsilon(1.0_mk)))
+    tol = 10.0_mk**-6 !100000.0_mk*epsilon(1.0_mk)
+    tolexp = int(log10(tol))
     ndim = 2
     nspec = 1
     data ((alpha(ai,aj), ai=1,2), aj=1,nmom) /0,0, 1,0, 0,1, 2,0, 0,2, &
@@ -93,10 +96,10 @@ program ppm_test_interp_m2p
 
     do i=1,ndim
         min_phys(i) = 0.0_mk
-        max_phys(i) = 1.0_mk
+        max_phys(i) = 10.0_mk
         ghostsize(i) = 2
     enddo
-    bcdef(1:6) = ppm_param_bcdef_freespace
+    bcdef(1:6) = ppm_param_bcdef_periodic
 
     nullify(xp)
     nullify(wp)
@@ -173,21 +176,26 @@ program ppm_test_interp_m2p
     !----------------
 
     do i=1,ndim
-        mu(i) = (max_phys(i) - min_phys(i))/2.0_mk
+        mu(i) = 0.0_mk !(max_phys(i) - min_phys(i))/2.0_mk
     enddo
-    sigma = 0.2_mk
+    sigma = 2.5_mk
 
     do j=1,ndata(2,1)
         do i=1,ndata(1,1)
             field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
             field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
-            field_wp(1,i,j,1) = 1.0_mk/(2.0_mk*pi*sigma(1)*sigma(2))*&
+            field_wp(1,i,j,1) = 0.01_mk/(2.0_mk*pi*sigma(1)*sigma(2))*&
    &                 exp(-0.5_mk*(((field_x(1)-mu(1))**2/sigma(1)**2)+  &
    &                              ((field_x(2)-mu(2))**2/sigma(2)**2)))
         enddo
     enddo
 
     print *, 'finished initialization'
+
+   call ppm_map_field_ghost_get(topoid,meshid,ghostsize,info)
+   call ppm_map_field_push(topoid,meshid,field_wp,1,info)
+   call ppm_map_field_send(info)
+   call ppm_map_field_pop(topoid,meshid,field_wp,1,ghostsize,info)
 
     !----------------
     ! m --> p
@@ -200,17 +208,23 @@ program ppm_test_interp_m2p
     f_moments = 0.0_mk
     p_moments = 0.0_mk
     do p_i = 1,np
+        x = xp(:,p_i)
+        if (xp(1,p_i).ge.0.5) x(1)  = xp(1,p_i) - (max_phys(1)-min_phys(1))
+        if (xp(2,p_i).ge.0.5) x(2)  = xp(2,p_i) - (max_phys(2)-min_phys(2))
         do aj = 2,nmom
-            p_moments(aj) = p_moments(aj) + wp(1,p_i)*xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
+            p_moments(aj) = p_moments(aj) + p_h(1)*p_h(2)*wp(1,p_i)*x(1)**alpha(1,aj)*x(2)**alpha(2,aj)
         enddo
         p_moments(1) = p_moments(1) + wp(1,p_i)*p_h(1)*p_h(2)
     enddo
-    do j=1,ndata(2,1)
-        do i=1,ndata(1,1)
-            do aj = 2,nmom
+    do j=1,ndata(2,1)-1
+        do i=1,ndata(1,1)-1
                field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
                field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
-               f_moments(aj) = f_moments(aj) + field_wp(1,i,j,1)*field_x(1)**alpha(1,aj)*field_x(2)**alpha(2,aj)
+               x = field_x
+               if (field_x(1).ge.0.5) x(1)  = field_x(1) - (max_phys(1)-min_phys(1))
+               if (field_x(2).ge.0.5) x(2)  = field_x(2) - (max_phys(2)-min_phys(2))
+               do aj = 2,nmom
+                   f_moments(aj) = f_moments(aj) +h(1)*h(2)*field_wp(1,i,j,1)*x(1)**alpha(1,aj)*x(2)**alpha(2,aj)
             enddo
             f_moments(1) = f_moments(1) + field_wp(1,i,j,1)*h(1)*h(2)
         enddo
@@ -224,14 +238,6 @@ program ppm_test_interp_m2p
             stop 'ERROR: m2p interpolation: moments not conserved.'
         endif
     enddo
-    do aj = 7,10
-        if (abs(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
-            maxm3 = abs(f_moments(aj) - p_moments(aj))
-        endif
-    enddo
-
-
-    !print *, 'Maximum 3rd moment diff / h^3', maxm3/h**3
 
 
     !----------------
