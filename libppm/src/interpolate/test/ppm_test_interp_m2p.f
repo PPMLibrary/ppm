@@ -60,7 +60,7 @@ program ppm_test_interp_m2p
     integer,  parameter             :: ngrid = 2383
     integer,  parameter             :: npgrid = 3029
     real(MK),dimension(:,:),pointer :: xp,wp
-    real(MK),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
+    real(MK),dimension(:  ),pointer :: min_phys,max_phys,len_phys,h,p_h
     integer, dimension(:  ),pointer :: ghostsize
     integer                         :: i,j,ai,aj,p_i
     integer, dimension(6)           :: bcdef
@@ -91,13 +91,14 @@ program ppm_test_interp_m2p
     data ((alpha(ai,aj), ai=1,2), aj=1,nmom) /0,0, 1,0, 0,1, 2,0, 0,2, &
    &                                          1,1, 3,0, 0,3, 2,1, 1,2/
 
-    allocate(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
+    allocate(len_phys(ndim),min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
    &         nm(ndim),h(ndim),p_h(ndim),field_x(ndim),stat=info)
 
     do i=1,ndim
         min_phys(i) = 0.0_mk
         max_phys(i) = 10.0_mk
         ghostsize(i) = 2
+        len_phys(i) = max_phys(i) - min_phys(i)
     enddo
     bcdef(1:6) = ppm_param_bcdef_periodic
 
@@ -184,7 +185,7 @@ program ppm_test_interp_m2p
         do i=1,ndata(1,1)
             field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
             field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
-            field_wp(1,i,j,1) = 0.01_mk/(2.0_mk*pi*sigma(1)*sigma(2))*&
+            field_wp(1,i,j,1) = 0.0001_mk/(2.0_mk*pi*sigma(1)*sigma(2))*&
    &                 exp(-0.5_mk*(((field_x(1)-mu(1))**2/sigma(1)**2)+  &
    &                              ((field_x(2)-mu(2))**2/sigma(2)**2)))
         enddo
@@ -209,10 +210,12 @@ program ppm_test_interp_m2p
     p_moments = 0.0_mk
     do p_i = 1,np
         x = xp(:,p_i)
-        if (xp(1,p_i).ge.0.5) x(1)  = xp(1,p_i) - (max_phys(1)-min_phys(1))
-        if (xp(2,p_i).ge.0.5) x(2)  = xp(2,p_i) - (max_phys(2)-min_phys(2))
+        if (xp(1,p_i).ge.len_phys(1)) x(1)  = xp(1,p_i) - len_phys(1)
+        if (xp(2,p_i).ge.len_phys(2)) x(2)  = xp(2,p_i) - len_phys(2)
         do aj = 2,nmom
-            p_moments(aj) = p_moments(aj) + p_h(1)*p_h(2)*wp(1,p_i)*x(1)**alpha(1,aj)*x(2)**alpha(2,aj)
+            p_moments(aj) = p_moments(aj) + &
+ &                      p_h(1)*p_h(2)*wp(1,p_i)*x(1)**alpha(1,aj)* &
+ &                      x(2)**alpha(2,aj)
         enddo
         p_moments(1) = p_moments(1) + wp(1,p_i)*p_h(1)*p_h(2)
     enddo
@@ -221,10 +224,12 @@ program ppm_test_interp_m2p
                field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
                field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
                x = field_x
-               if (field_x(1).ge.0.5) x(1)  = field_x(1) - (max_phys(1)-min_phys(1))
-               if (field_x(2).ge.0.5) x(2)  = field_x(2) - (max_phys(2)-min_phys(2))
+               if (field_x(1).ge.len_phys(1)) x(1)  = field_x(1) - len_phys(1)
+               if (field_x(2).ge.len_phys(2)) x(2)  = field_x(2) - len_phys(2)
                do aj = 2,nmom
-                   f_moments(aj) = f_moments(aj) +h(1)*h(2)*field_wp(1,i,j,1)*x(1)**alpha(1,aj)*x(2)**alpha(2,aj)
+                   f_moments(aj) = f_moments(aj) + &
+ &                      h(1)*h(2)*field_wp(1,i,j,1)*x(1)**alpha(1,aj)* &
+ &                      x(2)**alpha(2,aj)
             enddo
             f_moments(1) = f_moments(1) + field_wp(1,i,j,1)*h(1)*h(2)
         enddo
