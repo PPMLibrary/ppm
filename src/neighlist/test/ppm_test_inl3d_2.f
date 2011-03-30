@@ -564,7 +564,7 @@ call ppm_finalize(info)
 call MPI_finalize(info)
 #endif
 
-deallocate(xp,rcp,min_phys,max_phys,len_phys,minsub,maxsub,cost,sub2proc)
+deallocate(xp,rcp)
 
 if (rank.eq.0) print *, 'done.'
 
