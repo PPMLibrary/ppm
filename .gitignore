@@ -1,0 +1,24 @@
+
+# /libppm/
+/libppm/configure
+/libppm/config.status
+/libppm/include
+/libppm/objects
+/libppm/autom4te.cache
+/libppm/lib
+/libppm/aclocal.m4
+
+# output files
+*.out
+*.sub
+*.dat
+
+# /libppm/src/interpolate/test/
+/libppm/src/interpolate/test/ppm_test_interp_m2p
+/libppm/src/interpolate/test/ppm_test_interp_p2m
+
+# /libppm/src/neighlist/test/
+/libppm/src/neighlist/test/ppm_test_inl2d
+/libppm/src/neighlist/test/ppm_test_inl2d_2
+/libppm/src/neighlist/test/ppm_test_inl3d
+/libppm/src/neighlist/test/ppm_test_inl3d_2
