@@ -7,6 +7,7 @@
 /libppm/autom4te.cache
 /libppm/lib
 /libppm/aclocal.m4
+/libppm/src/ppm_define.h
 
 # output files
 *.out
