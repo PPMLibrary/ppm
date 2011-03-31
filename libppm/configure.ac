@@ -77,11 +77,6 @@ if test "x${use_mpi}" == xyes; then
     AC_LANG([C])
 fi
 
-# for now let's use the C compiler to check the vendor we're using here
-# this of course means that we HAVE to set all compiler flags to compilers of
-# the same vendor (which is anyway a good idea)
-AX_COMPILER_VENDOR
-
 
 # Checks for libraries and set preprocessing flags
 
@@ -93,6 +88,22 @@ AX_COMPILER_VENDOR
 
 # Make sure that the libraries are compiled with Fortran
 AC_LANG([Fortran])
+
+# Check the compiler vendor.. this list should be extended of course
+# but let's hope that this will work in most cases
+AC_MSG_CHECKING([your Fortran compiler vendor])
+vendor=none
+for vendorkp in gnu:gfortran intel:Intel sun:Sun portland:Portland; do
+    str=`echo $vendorkp | cut -d: -f2`
+    if `$FC -V 2>&1 | grep -q $str`; then 
+        vendor=`echo $vendorkp | cut -d: -f1`;
+        AC_MSG_RESULT([$vendor])
+        break;
+    fi; 
+done
+if test "x${vendor}" = xnone; then
+    AC_MSG_RESULT([unknown])
+fi;
 
 # Check for METIS
 have_metis=no
@@ -142,13 +153,33 @@ AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
   [enable __NOMICROINSTRUCTIONS (default is no)])],
   [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h])
 
+dev_compile=no
+AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
+  [enable development mode (default is no)])],[dev_compile=yes])
+if test "x${dev_compile}" = xyes; then
+    if test "x${vendor}" == xintel; then
+        AC_SUBST(DEBUG,["-g -check pointers -check bounds -traceback"])
+    elif test "x${vendor}" == xgnu; then
+      AC_SUBST(DEBUG,["-g -fbounds-check -fbacktrace"])
+    else
+      AC_SUBST(DEBUG,["-g"])
+    fi
+fi
+
 debug_compile=no
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],
   [enable debug mode (default is no)])],[debug_compile=yes])
 if test "x${debug_compile}" = xyes; then
-  echo"#define __DEBUG" >> ./src/ppm_define.h
-  AC_SUBST(DEBUG,-g)
+    echo "#define __DEBUG" >> ./src/ppm_define.h
+    if test "x${vendor}" == xintel; then
+        AC_SUBST(DEBUG,["-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"])
+    elif test "x${vendor}" == xgnu; then
+      AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
+    else
+      AC_SUBST(DEBUG,["-O1 -g"])
+    fi
 fi
+
 
   
   # Generate Makefiles
