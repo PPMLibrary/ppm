@@ -89,7 +89,7 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER , DIMENSION(ppm_dim) :: ldc
-      INTEGER                      :: i,j,k,iopt
+      INTEGER                      :: i,iopt
       REAL(MK)                     :: t0
       REAL(MK)                     :: lmyeps
       !-------------------------------------------------------------------------
