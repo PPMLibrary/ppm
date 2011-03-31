@@ -224,9 +224,6 @@
       INTEGER , DIMENSION(ppm_dim)            :: thisNm
       INTEGER , DIMENSION(2*ppm_dim)          :: ghostNm
       INTEGER , DIMENSION(2)                  :: ldc
-      INTEGER , DIMENSION(1)                  :: ldc1
-      INTEGER , DIMENSION(3)                  :: cutdir
-      REAL(MK), DIMENSION(3)                  :: cutpos,boxlen
       REAL(MK), DIMENSION(:  ), POINTER       :: cpos  => NULL()
       REAL(MK), DIMENSION(:  ), POINTER       :: costc => NULL()
       INTEGER , DIMENSION(:  ), POINTER       :: icut  => NULL()
@@ -243,14 +240,11 @@
       LOGICAL                                 :: up,nofixed,simpleweights
       LOGICAL                                 :: lcontinue
       INTEGER                                 :: i,j,k,l,iopt,inext,ncut,nbpd
-      INTEGER                                 :: ibox,nboxold,nsubs
+      INTEGER                                 :: ibox,nsubs
       INTEGER                                 :: inextboxlist,lctr
       INTEGER                                 :: nboxlistalloc
       INTEGER                                 :: info2,mxlev,bpc,istart,iend
       CHARACTER(LEN=ppm_char)                 :: mesg
-#ifdef __MPI
-      INTEGER                                 :: MPTYPE
-#endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
