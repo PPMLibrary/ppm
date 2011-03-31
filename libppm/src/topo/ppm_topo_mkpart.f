@@ -142,7 +142,7 @@
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
-      INTEGER                 , INTENT(INOUT) :: decomp
+      INTEGER                 , INTENT(IN   ) :: decomp
       !!! The type of decomposition. One of:
       !!!
       !!! *  ppm_param_decomp_pruned_cell
@@ -731,11 +731,11 @@
           ENDDO ! for each dimension
           IF (assig .EQ. ppm_param_assign_user_defined) THEN
               IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-                  info = ppm_error_warning
+                  info = ppm_error_error
                   CALL ppm_error(ppm_err_argument,'ppm_topo_mkpart', &
      &                'decomp type set to user_defined for this assignment',&
      &                __LINE__, info)
-                  decomp = ppm_param_decomp_user_defined
+                  GOTO 8888
               ENDIF ! test decomp user_defined
               IF (.NOT.PRESENT(user_nsubs)) THEN
                   info = ppm_error_error
