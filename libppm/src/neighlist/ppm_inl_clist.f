@@ -81,8 +81,6 @@
       ! Parameter used for recursive function for first level only.
       INTEGER                                       :: level
       ! Depth level.
-      TYPE(ppm_t_topo),        POINTER              :: topo => NULL()
-      ! Topology.
 
       !---------------------------------------------------------------------
       !  Parameters for ppm_alloc
@@ -355,7 +353,6 @@
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-      INTEGER                             :: i          ! Counter
       INTEGER                             :: depth      ! Local variable
       INTEGER(ppm_kind_int64)             :: idx        ! Local variable
 
@@ -976,8 +973,6 @@
       INTEGER                                            :: bzBottomRight
       INTEGER                                            :: bzTopLeft
       INTEGER                                            :: bzTopRight
-      REAL(MK)                                           :: minRC
-      REAL(MK)                                           :: minSideLength
       INTEGER                                            :: i
       INTEGER                                            :: info
 

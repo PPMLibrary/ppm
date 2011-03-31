@@ -95,8 +95,6 @@
           ! Depth of the particle
           INTEGER                              :: c_depth
           ! Depth of cell
-          LOGICAL                              :: cellEmpty
-          ! TRUE if cell is empty
 
       !-------------------------------------------------------------------------
       !  Counters
@@ -463,8 +461,6 @@
           ! Depth of the particle
           INTEGER                              :: c_depth
           ! Depth of cell
-          LOGICAL                              :: cellEmpty
-          ! TRUE if cell is empty
 
       !-------------------------------------------------------------------------
       !  Counters

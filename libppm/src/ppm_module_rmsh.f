@@ -40,7 +40,7 @@
       MODULE ppm_module_rmsh
       !!! This module contains all interfaces to the remeshing routines. For
       !!! convenience all interpolation modules are `USE`d by this module.
-      !!! Therefore it's not necessary to include `ppm_module_interp_*` in the
+      !!! Therefore its not necessary to include `ppm_module_interp_*` in the
       !!! client application. 
          !----------------------------------------------------------------------
          !  PPM modules

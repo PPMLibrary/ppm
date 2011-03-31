@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-      SUBROUTINE ppm_color_edge(numV, numE, edge_array, coloring)
+      SUBROUTINE ppm_color_edge(numV, edge_array, coloring)
       !!! Given the edge array as input and coloring array to be
       !!! modified, colors edges and updates coloring array such that
       !!! coloring array looks like (p1,p2,c1, ..., pX,pY,cZ)
@@ -41,7 +41,6 @@
       !  Arguments
       !---------------------------------------------------------------------
       INTEGER, intent(in) :: numV
-      INTEGER, intent(in) :: numE
       INTEGER, dimension(:), intent(inout) :: edge_array
       INTEGER, dimension(:), intent(inout) :: coloring
 
@@ -50,7 +49,6 @@
       !---------------------------------------------------------------------
       INTEGER             :: i
       INTEGER             :: idx
-      INTEGER             :: degMax
 
       nvertices = numV
       !-------------------------------------------------------------------------

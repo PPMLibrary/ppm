@@ -36,7 +36,7 @@
 
       MODULE ppm_module_interp_p2m
       !!! Contains the particle to mesh interpolation routines. Currently we
-      !!! support 2nd order B-spline and M'4 interpolation schemes.
+      !!! support 2nd order B-spline and MP4 interpolation schemes.
       
         !-----------------------------------------------------------------------
         !  Interface

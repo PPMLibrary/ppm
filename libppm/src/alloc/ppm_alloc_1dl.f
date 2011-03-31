@@ -113,7 +113,7 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:), POINTER :: work
 #endif
-      INTEGER               :: i,k,lda,ldb,ldc,ldd,ldl_new,ldu_new
+      INTEGER               :: i,lda,ldb,ldc,ldd,ldl_new,ldu_new
       LOGICAL               :: lcopy,lalloc,lrealloc
       REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------
