@@ -114,7 +114,7 @@
       LOGICAL                 , DIMENSION(:,:), POINTER :: work
 #endif
       INTEGER, DIMENSION(2) :: ldb,ldc,lda_new
-      INTEGER               :: i,j,k
+      INTEGER               :: i,j
       LOGICAL               :: lcopy,lalloc,lrealloc
       REAL(ppm_kind_double) :: t0
       !-------------------------------------------------------------------------

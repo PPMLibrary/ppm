@@ -68,7 +68,7 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       integer,            intent(in)    :: topoid
       !!! topology ID to which we are currently mapped
       real(mk),           intent(in)    :: ghostlayer
-      !!! ghostlayer, can be set to 0 if we don't care about it
+      !!! ghostlayer, can be set to 0 if we dont care about it
       integer,            intent(in)    :: step
       !!! parameter can be used to create distinct output dump files for each
       !!! timestep
