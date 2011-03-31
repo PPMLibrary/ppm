@@ -55,8 +55,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank
 integer                         :: topoid
-integer                         :: np
-integer                         :: npgrid = 100
+integer                         :: np = 100000
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp
@@ -77,6 +76,7 @@ integer,  dimension(:),allocatable :: seed
 real(mk), dimension(:),allocatable :: randnb
 integer                          :: isymm = 0
 logical                          :: lsymm = .false.,ok
+real(mk)                         :: t0,t1,t2,t3
 
 !----------------
 ! setup
@@ -85,7 +85,6 @@ tol = 10.0_mk*epsilon(1.0_mk)
 tolexp = int(log10(epsilon(1.0_mk)))
 min_rcp = 0.01_mk
 max_rcp = 0.1_mk
-np = npgrid*npgrid
 
 allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
     &         ghostsize(ndim),ghostlayer(2*ndim),&
@@ -126,28 +125,28 @@ allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
 xp = 0.0_mk
 rcp = 0.0_mk
 
-p_h = len_phys / real(npgrid,mk)
-do j=1,npgrid
-    do i=1,npgrid
-        p_i = i + (j-1)*npgrid
-        xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
-        xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
-        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
-        do k=1,pdim
-            wp(k,i) = rcp(i)*REAL(k,MK)
-        enddo
-    enddo
-enddo
-!do i=1,np
-!    do j=1,ndim
-!        xp(j,i) = min_phys(j)+&
-!            len_phys(j)*randnb((ndim+1)*i-(ndim-j))
-!    enddo
-!    rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
-!    do j=1,pdim
-!        wp(j,i) = rcp(i)*REAL(j,MK)
+!p_h = len_phys / real(npgrid,mk)
+!do j=1,npgrid
+!    do i=1,npgrid
+!        p_i = i + (j-1)*npgrid
+!        xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
+!        xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
+!        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
+!        do k=1,pdim
+!            wp(k,i) = rcp(i)*REAL(k,MK)
+!        enddo
 !    enddo
 !enddo
+do i=1,np
+    do j=1,ndim
+        xp(j,i) = min_phys(j)+&
+            len_phys(j)*randnb((ndim+1)*i-(ndim-j))
+    enddo
+    rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
+    do j=1,pdim
+        wp(j,i) = rcp(i)*REAL(j,MK)
+    enddo
+enddo
 
 !----------------
 ! make topology
@@ -175,7 +174,6 @@ print *,rank,'done'
 call ppm_topo_check(topoid,xp,np,ok,info)
 if (.not. ok) write(*,*) '[',rank,'] topo_check failed'
 
-print *,rank,'ghost map:'
 call ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,max_rcp,info)
 call ppm_map_part_push(rcp,np,info)
 call ppm_map_part_push(wp,pdim,np,info)
@@ -183,7 +181,7 @@ call ppm_map_part_send(np,mp,info)
 call ppm_map_part_pop(wp,pdim,np,mp,info)
 call ppm_map_part_pop(rcp,np,mp,info)
 call ppm_map_part_pop(xp,ndim,np,mp,info)
-
+print *,rank,'np: ',np,' ghosts: ',mp -np
 print *,rank,'done'
 
 call ppm_dbg_print(topoid,max_rcp,1,1,info,xp,np,mp)
