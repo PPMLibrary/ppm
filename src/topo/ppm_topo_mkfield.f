@@ -106,7 +106,7 @@
       !!! guided by particle locations
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! Number of particles. <=0 if no xp is given to guide the decomposition
-      INTEGER                 , INTENT(INOUT) :: decomp
+      INTEGER                 , INTENT(IN   ) :: decomp
       !!! The valid decomposition types are:
       !!!
       !!! * ppm_param_decomp_bisection
