@@ -86,7 +86,7 @@
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
-      INTEGER                 , INTENT(INOUT) :: decomp
+      INTEGER                 , INTENT(IN   ) :: decomp
       !!! The valid decomposition types are:
       !!!
       !!! * ppm_param_decomp_bisection
