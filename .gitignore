@@ -9,7 +9,7 @@ lib
 Makefile
 aclocal.m4
 src/ppm_define.h
-ppm_define.h
+
 
 # output files
 *.out
