@@ -237,6 +237,13 @@
 
             TYPE(ppm_t_equi_mesh), DIMENSION(:  ), POINTER :: mesh => NULL()
             !!! List of meshes defined on this topology. Index: meshid
+
+            REAL(ppm_kind_single)                          :: ghostsizes
+            !!! max ghostsize width used when creating this topology (single)
+            REAL(ppm_kind_double)                          :: ghostsized
+            !!! max ghostsize width used when creating this topology (double)
+            !!! using a larger cutoff when calling routines such as ghost_get
+            !!! should ideally raise a warning
          END TYPE ppm_t_topo
 
          !----------------------------------------------------------------------
