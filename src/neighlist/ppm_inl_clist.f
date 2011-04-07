@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_clist_s(xp, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, info, clist)
+     & ghost_extend, lsymm, clist, info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_clist_d(xp, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, info, clist)
+     & ghost_extend, lsymm, clist, info)
 #endif
       !!! Given particle coordinates(xp), number of all particles including
       !!! ghost particles(Mp), cutoff radii of particles(cutoff), skin parameter

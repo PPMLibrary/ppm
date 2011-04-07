@@ -1,5 +1,5 @@
      !-------------------------------------------------------------------------
-     !  Subroutines :               ppm_inl_vlist
+     !  Subroutines :               ppm_inl_xset_vlist
      !-------------------------------------------------------------------------
      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
      !                    Center for Fluid Dynamics (DTU)
@@ -29,11 +29,13 @@
 
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE inl_vlist_s(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
-     & ghostlayer, info, vlist, nvlist, lstore)
+      SUBROUTINE inl_xset_vlist_s(topoid,red,nred,mred, &
+ &                   blue,nblue,mblue,rcblue,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE inl_vlist_d(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
-     & ghostlayer, info, vlist, nvlist, lstore)
+      SUBROUTINE inl_xset_vlist_d(topoid,red,nred,mred,&
+ &                   blue,nblue,mblue,rcblue,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
 #endif
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
@@ -46,20 +48,22 @@
       !-------------------------------------------------------------------------
       INTEGER,  INTENT(IN)                       :: topoid
       !!! ID of the topology.
-      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
-      !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-      INTEGER , INTENT(IN)                       :: Np
-      !!! Number of real particles
-      INTEGER , INTENT(IN)                       :: Mp
-      !!! Number of all particles including ghost particles
-      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
-      !!! Particle cutoff radii array
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: red
+      !!! Coordinates array for reference particles (red)
+      INTEGER , INTENT(IN)                       :: nred
+      !!! Number of real red particles
+      INTEGER , INTENT(IN)                       :: mred
+      !!! Number of all red particles including ghost particles
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: blue
+      !!! Coordinates array for neighbor particle set (blue)
+      INTEGER , INTENT(IN)                       :: nblue
+      !!! Number of real blue particles
+      INTEGER , INTENT(IN)                       :: mblue
+      !!! Number of all blue particles including ghost particles
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
+      !!! Blue particle cutoff radii array
       REAL(MK), INTENT(IN)                       :: skin
       !!! Skin parameter
-      LOGICAL,  INTENT(IN)                       :: lsymm
-      !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
-      !!! layers only in (+) directions in all axes. Else, we have ghost
-      !!! layers in all directions.
       REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: ghostlayer
       !!! Extra area/volume over the actual domain introduced by
       !!! ghost layers.
@@ -77,14 +81,19 @@
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(2*ppm_dim)             :: actual_subdomain
-      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub     => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub => NULL()
+      REAL(MK), DIMENSION(2*ppm_dim)             :: curr_sub
+      REAL(MK), DIMENSION(:,:), POINTER          :: red_sub    => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER          :: blue_sub   => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER          :: rcred_sub => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER          :: rcblue_sub => NULL()
       INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
       INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: p_id       => NULL()
-      INTEGER                                    :: Np_sub
-      INTEGER                                    :: Mp_sub
+      INTEGER , DIMENSION(:)  , POINTER          :: red_p_id   => NULL()
+      INTEGER , DIMENSION(:)  , POINTER          :: blue_p_id  => NULL()
+      INTEGER                                    :: nred_sub
+      INTEGER                                    :: mred_sub
+      INTEGER                                    :: nblue_sub
+      INTEGER                                    :: mblue_sub
       INTEGER                                    :: rank_sub
       INTEGER                                    :: neigh_max
       INTEGER                                    :: n_part
@@ -94,6 +103,8 @@
       INTEGER                                    :: isub
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
+      REAL(MK), POINTER   , DIMENSION(:)         :: rcred
+      REAL(MK)                                   :: max_phys
 
       !-------------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
@@ -105,18 +116,8 @@
 
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
-      !---------------------------------------------------------------------
-      ! In symmetric verlet lists, we need to allocate nvlist for all
-      ! particles including ghost particles (Mp). Otherwise, we need to store
-      ! verlet lists of real particles only, hence we allocate nvlist for
-      ! real particles (Np) only.
-      !---------------------------------------------------------------------
-      IF(lsymm)   THEN
-          lda(1) = Mp
-      ELSE
-          lda(1) = Np
-      ENDIF
-
+      
+      lda(1) = nred
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
       IF (info .NE. 0) THEN
@@ -124,7 +125,22 @@
           CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
     &                       'nvlist',__LINE__,info)
       END IF
-
+      CALL ppm_alloc(rcred, lda, iopt, info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
+    &                       'rcred',__LINE__,info)
+      END IF
+      !---------------------------------------------------------------------
+      ! set rcred to a large value to make sure all red particles are on the
+      ! top level of the cell tree
+      !---------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      max_phys = MAXVAL(topo%max_physs-topo%min_physs)
+#elif   __KIND == __DOUBLE_PRECISION
+      max_phys = MAXVAL(topo%max_physd-topo%min_physd)
+#endif
+      rcred(1:nred) = max_phys
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
       ! (neigh_max) is set to 0.
@@ -141,13 +157,13 @@
           !-----------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
           DO i = 1, ppm_dim
-              actual_subdomain(2*i-1) = topo%min_subs(i, isub)
-              actual_subdomain(2*i)   = topo%max_subs(i, isub)
+              curr_sub(2*i-1) = topo%min_subs(i, isub)
+              curr_sub(2*i)   = topo%max_subs(i, isub)
           ENDDO
 #elif __KIND == __DOUBLE_PRECISION
           DO i = 1, ppm_dim
-              actual_subdomain(2*i-1) = topo%min_subd(i, isub)
-              actual_subdomain(2*i)   = topo%max_subd(i, isub)
+              curr_sub(2*i-1) = topo%min_subd(i, isub)
+              curr_sub(2*i)   = topo%max_subd(i, isub)
           ENDDO
 #endif
 
@@ -156,8 +172,13 @@
           ! of real particles (Np_sub) and total number of particles (Mp_sub)
           ! of this subdomain.
           !-----------------------------------------------------------------
-          CALL getSubdomainParticles(xp,Np,Mp,cutoff,lsymm,actual_subdomain,&
- &                 ghostlayer, xp_sub, cutoff_sub, Np_sub,Mp_sub,p_id)
+          CALL getSubdomainParticles(red,nred,mred,rcred,.FALSE.,&
+ &                 curr_sub,ghostlayer, red_sub, rcred_sub, &
+ &                 nred_sub,mred_sub,red_p_id)
+          
+          CALL getSubdomainParticles(blue,nblue,mblue,rcblue,.FALSE.,&
+ &                 curr_sub,ghostlayer, blue_sub, rcblue_sub, &
+ &                 nblue_sub,mblue_sub,blue_p_id)
 
           !-----------------------------------------------------------------
           ! Create verlet lists for particles of this subdomain which will
@@ -169,29 +190,21 @@
               lst = .TRUE.
           END IF
 
-          CALL create_inl_vlist(xp_sub, Np_sub, Mp_sub, cutoff_sub,   &
-     &             skin, lsymm, actual_subdomain, ghostlayer, info, vlist_sub,&
-     &             nvlist_sub,lst)
+          CALL create_inl_xset_vlist(red_sub,nred_sub,mred_sub,rcred_sub, &
+ &                 blue_sub,nblue_sub,mblue_sub,rcblue_sub,skin,&
+ &                 curr_sub,ghostlayer,info,vlist_sub,nvlist_sub,lst)
 
-          IF(lsymm)  THEN
-              n_part = Mp_sub
-          ELSE
-              n_part = Np_sub
-          END IF
+          n_part = nred_sub
 
           DO i = 1, n_part
-              nvlist(p_id(i)) = nvlist_sub(i)
+              nvlist(red_p_id(i)) = nvlist_sub(i)
           ENDDO
 
           IF(lst)  THEN
               IF(neigh_max .LT. MAXVAL(nvlist_sub))  THEN
                   neigh_max = MAXVAL(nvlist_sub)
                   lda(1) = neigh_max
-                  IF(lsymm)  THEN
-                      lda(2) = Mp
-                  ELSE
-                      lda(2) = Np
-                  ENDIF
+                  lda(2) = nred
 
                   iopt = ppm_param_alloc_grow_preserve
                   CALL ppm_alloc(vlist, lda, iopt, info)
@@ -202,32 +215,30 @@
                   END IF
               ENDIF
 
-              IF(lsymm)  THEN
-                  n_part = Mp_sub
-              ELSE
-                  n_part = Np_sub
-              ENDIF
+              n_part = nred_sub
 
               DO i = 1, n_part
                   DO j = 1, nvlist_sub(i)
-                      vlist(j, p_id(i)) = p_id(vlist_sub(j, i))
+                      vlist(j, red_p_id(i)) = red_p_id(vlist_sub(j, i))
                   END DO
               ENDDO
           END IF
       ENDDO
       CALL substop('ppm_inl_vlist',t0,info)
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE inl_vlist_s
+      END SUBROUTINE inl_xset_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE inl_vlist_d
+      END SUBROUTINE inl_xset_vlist_d
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE create_inl_vlist_s(xp, Np, Mp, cutoff, skin, lsymm, &
-     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      SUBROUTINE create_inl_xset_vlist_s(red,nred,mred,rcred,blue,nblue,&
+ &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+ &                        vlist, nvlist, lstore)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE create_inl_vlist_d(xp, Np, Mp, cutoff, skin, lsymm, &
-     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      SUBROUTINE create_inl_xset_vlist_d(red,nred,mred,rcred,blue,nblue,&
+ &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+ &                        vlist, nvlist, lstore)
 #endif
       !!! This subroutine creates verlet lists for particles whose coordinates
       !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -245,21 +256,25 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
-          !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          INTEGER , INTENT(IN)                       :: Np
-          !!! Number of real particles
-          INTEGER , INTENT(IN)                       :: Mp
-          !!! Number of all particles including ghost particles
-          REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
-          !!! Particles cutoff radii
+          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: red
+          !!! Coordinates array for refernece particles (red)
+          INTEGER , INTENT(IN)                       :: nred
+          !!! Number of real red particles
+          INTEGER , INTENT(IN)                       :: mred
+          !!! Number of all red particles
+          REAL(MK), INTENT(IN), DIMENSION(:)         :: rcred
+          !!! Red particles cutoff radii
+          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: blue
+          !!! Coordinates array for refernece particles (blue)
+          INTEGER , INTENT(IN)                       :: nblue
+          !!! Number of real blue particles
+          INTEGER , INTENT(IN)                       :: mblue
+          !!! Number of all blue particles
+          REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
+          !!! blue particles cutoff radii
           REAL(MK), INTENT(IN)                       :: skin
           !!! Skin parameter
-          LOGICAL,  INTENT(IN)                       :: lsymm
-          !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
-          !!! layers only in (+) directions in all axes. Else, we have ghost
-          !!! layers in all directions.
-          REAL(MK), DIMENSION(2*ppm_dim)             :: actual_domain
+          REAL(MK), DIMENSION(2*ppm_dim)             :: curr_dom
           ! Physical extent of actual domain without ghost layers.
           REAL(MK), INTENT(IN), DIMENSION(ppm_dim)   :: ghostlayer
           !!! Extra area/volume over the actual domain introduced by
@@ -294,29 +309,30 @@
       !<<<<<<<<<<<<<<<<<<<<<<<<< Start of the code >>>>>>>>>>>>>>>>>>>>>>>>>!
           CALL substart('ppm_neighlist_clist',t0,info)
 
-          IF(lsymm .EQV. .TRUE.)  THEN
-              DO i = 1, ppm_dim
-                  whole_domain(2*i-1) = actual_domain(2*i-1)
-                  whole_domain(2*i)   = actual_domain(2*i) + ghostlayer(i)
-              END DO
-          ELSE
-              DO i = 1, ppm_dim
-                  whole_domain(2*i-1) = actual_domain(2*i-1) - ghostlayer(i)
-                  whole_domain(2*i)   = actual_domain(2*i)   + ghostlayer(i)
-              END DO
-          END IF
+          DO i = 1, ppm_dim
+              whole_domain(2*i-1) = curr_dom(2*i-1) - ghostlayer(i)
+              whole_domain(2*i)   = curr_dom(2*i)   + ghostlayer(i)
+          END DO
 
-          clist%n_real_p = Np !Set number of real particles
 
       !-------------------------------------------------------------------------
-      !  Create inhomogeneous cell list
+      !  Create inhomogeneous cell list for red and for blue
       !-------------------------------------------------------------------------
-          CALL ppm_create_inl_clist(xp, Mp, cutoff, skin, actual_domain, &
-     & ghostlayer, lsymm, clist, info)
+          CALL ppm_create_inl_clist(red, mred, rcred, skin, curr_dom, &
+     & ghostlayer, .FALSE., red_clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
-     &                       'ppm_create_inl_clist',__LINE__,info)
+     &                    'ppm_create_inl_clist with red',__LINE__,info)
+              GOTO 9999
+          END IF
+          
+          CALL ppm_create_inl_clist(blue, mblue, rcblue, skin, curr_dom, &
+     & ghostlayer, .FALSE., blue_clist, info)
+          IF(info .NE. 0) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
+     &                    'ppm_create_inl_clist with blue',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -328,12 +344,19 @@
       !  there is no more need for that.
       !-------------------------------------------------------------------------
           iopt   = ppm_param_alloc_fit
-          lda(1) = clist%n_all_p
-          CALL ppm_alloc(own_plist, lda, iopt, info)
+          lda(1) = red_clist%n_all_p
+          CALL ppm_alloc(own_red, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'own_plist',__LINE__,info)
+     &                       'own_red',__LINE__,info)
+             GOTO 9999
+          END IF
+          CALL ppm_alloc(own_blue, lda, iopt, info)
+          IF (info.NE.0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
+     &                       'own_blue',__LINE__,info)
              GOTO 9999
           END IF
 
@@ -344,11 +367,19 @@
       !  hence it is defined in the module and allocated here, then deallocated
       !  in the end when there is no more need for that.
       !-------------------------------------------------------------------------
-          CALL ppm_alloc(neigh_plist, lda, iopt, info)
+          lda(1) = blue_clist%n_all_p
+          CALL ppm_alloc(neigh_red, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'neigh_plist',__LINE__,info)
+     &                       'neigh_red',__LINE__,info)
+              GOTO 9999
+          END IF
+          CALL ppm_alloc(neigh_blue, lda, iopt, info)
+          IF (info.NE.0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
+     &                       'neigh_blue',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -381,7 +412,7 @@
       !  If not large enough, it will be regrowed in putInEmptyList subroutine.
       !-------------------------------------------------------------------------
           iopt = ppm_param_alloc_fit
-          lda(1) = 10*clist%max_depth
+          lda(1) = 10*blue_clist%max_depth
           CALL ppm_alloc(empty_list, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
@@ -391,7 +422,7 @@
           END IF
 
       !-------------------------------------------------------------------------
-      !  Call getVerletLists subroutine. If lstore is not present, default case
+      !  Call get_xset_VerletLists subroutine. If lstore is not present, default case
       !  which is lstore = TRUE is applied.
       !-------------------------------------------------------------------------
           IF(present(lstore)) THEN
@@ -400,12 +431,13 @@
               lst = .TRUE.
           END IF
 
-          CALL getVerletLists(xp, cutoff, clist, skin, lsymm, whole_domain, &
-     &                        actual_domain, vlist, nvlist, lst,info)
+          CALL get_xset_VerletLists(red, rcred, red_clist, blue, rcblue, blue_clist, &
+ &                            skin, whole_domain, &
+     &                        curr_dom, vlist, nvlist, lst,info)
           IF (info.NE.0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
-     &                       'call to getVerletLists failed',__LINE__,info)
+     &                       'call to get_xset_VerletLists failed',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -436,29 +468,50 @@
       !-------------------------------------------------------------------------
       !  Deallocate own_plist.
       !-------------------------------------------------------------------------
-          CALL ppm_alloc(own_plist, lda, iopt, info)
+          CALL ppm_alloc(own_red, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
-     &                       'own_plist',__LINE__,info)
+     &                       'own_red',__LINE__,info)
+              GOTO 9999
+          END IF
+          CALL ppm_alloc(own_blue, lda, iopt, info)
+          IF (info.NE.0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
+     &                       'own_blue',__LINE__,info)
               GOTO 9999
           END IF
 
       !-------------------------------------------------------------------------
       !  Deallocate neigh_plist.
       !-------------------------------------------------------------------------
-          CALL ppm_alloc(neigh_plist, lda, iopt, info)
+          CALL ppm_alloc(neigh_red, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
-     &                       'neigh_plist',__LINE__,info)
+     &                       'neigh_red',__LINE__,info)
               GOTO 9999
           END IF
-          CALL ppm_destroy_inl_clist(clist,info)
+          CALL ppm_alloc(neigh_blue, lda, iopt, info)
+          IF (info.NE.0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
+     &                       'neigh_blue',__LINE__,info)
+              GOTO 9999
+          END IF
+          CALL ppm_destroy_inl_clist(red_clist,info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',   &
-     &                       'ppm_destroy_inl_clist',__LINE__,info)
+     &                       'ppm_destroy_inl_clist red',__LINE__,info)
+              GOTO 9999
+          END IF
+          CALL ppm_destroy_inl_clist(blue_clist,info)
+          IF (info.NE.0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',   &
+     &                       'ppm_destroy_inl_clist blue',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -466,23 +519,24 @@
       CALL substop('create_inl_vlist',t0,info)
 
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE create_inl_vlist_s
+      END SUBROUTINE create_inl_xset_vlist_s
 #elif   __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE create_inl_vlist_d
+      END SUBROUTINE create_inl_xset_vlist_d
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain,    &
-     & actual_domain, vlist, nvlist, lstore,info)
+      SUBROUTINE get_xset_VerletLists_s(red, rcred, red_clist, blue, rcblue, &
+ &                                blue_clist, skin, whole_domain,    &
+ &                                curr_dom, vlist, nvlist, lstore,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain,    &
-     & actual_domain, vlist, nvlist, lstore,info)
+      SUBROUTINE get_xset_VerletLists_d(red, rcred, red_clist, blue, rcblue, &
+ &                                blue_clist, skin, whole_domain,    &
+ &                                curr_dom, vlist, nvlist, lstore,info)
 #endif
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
       !!! vlist array and fills it with neighbor particles IDs for each
-      !!! particle. Depending on lsymm parameter, it calls the appropriate
-      !!! subroutine.
+      !!! particle. 
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -492,22 +546,23 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: xp
-          !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
-          !!! Particles cutoff radii
+          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: red
+          !!! coordinates array of red particles
+          REAL(MK), INTENT(IN), DIMENSION(:)    :: rcred
+          !!! Red particles cutoff radii
+          TYPE(ppm_clist), INTENT(IN)           :: red_clist
+          !!! Red particle cell list
+          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: blue
+          !!! coordinates array of blue particles
+          REAL(MK), INTENT(IN), DIMENSION(:)    :: rcblue
+          !!! Blue particles cutoff radii
+          TYPE(ppm_clist), INTENT(IN)           :: blue_clist
+          !!! Blue particle cell list
           REAL(MK), INTENT(IN)                  :: skin
           !!! Skin parameter
-          TYPE(ppm_clist), INTENT(IN)           :: clist
-          !!! cell list
-          LOGICAL,  INTENT(IN)                  :: lsymm
-          !!! Logical parameter to define whether lists are symmetric or not
-          !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
-          !!! layers only in (+) directions in all axes. Else, we have ghost
-          !!! layers in all directions.
           REAL(MK), DIMENSION(2*ppm_dim)        :: whole_domain
           !!! Physical extent of whole domain including ghost layers.
-          REAL(MK), DIMENSION(2*ppm_dim)        :: actual_domain
+          REAL(MK), DIMENSION(2*ppm_dim)        :: curr_dom
           !!! Physical extent of actual domain without ghost layers.
           INTEGER , POINTER,    DIMENSION(:, :) :: vlist
           !!! Verlet lists of particles. vlist(j, i) corresponds to jth neighbor
@@ -539,27 +594,22 @@
       !  initialize it to FALSE.
       !-------------------------------------------------------------------------
 
-      CALL substart('getVerletLists',t0,info)
+      CALL substart('get_xset_VerletLists',t0,info)
           iopt = ppm_param_alloc_fit
-          lda(1) = clist%n_all_p
+          lda(1) = red_clist%n_all_p
           CALL ppm_alloc(used, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
+              CALL ppm_error(ppm_err_alloc,'get_xset_VerletLists',     &
         &                       'used',__LINE__,info)
               GOTO 9999
           END IF
           used = .FALSE.
 
       !-------------------------------------------------------------------------
-      !  Set size of nvlist. If lsymm = TRUE, we also need to store number of
-      !  neighbors of some ghost particles.
+      !  Set size of nvlist. 
       !-------------------------------------------------------------------------
-          IF(lsymm .EQV. .TRUE.)  THEN
-              lda(1) = clist%n_all_p  ! Store number of neighbors also of ghost particles
-          ELSE
-              lda(1) = clist%n_real_p ! Store number of neighbors of real particles only
-          ENDIF
+          lda(1) = red_clist%n_real_p ! Store number of neighbors of real particles only
 
       !-------------------------------------------------------------------------
       !  Allocate nvlist array and initialize it to 0.
@@ -567,7 +617,7 @@
           CALL ppm_alloc(nvlist, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
+              CALL ppm_error(ppm_err_alloc,'get_xset_VerletLists',     &
         &                       'nvlist',__LINE__,info)
               GOTO 9999
           END IF
@@ -576,17 +626,12 @@
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
       !-------------------------------------------------------------------------
-          IF(lsymm .EQV. .TRUE.)   THEN ! If lists are symmetric
-              DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,       &
-                  & actual_domain, xp, cutoff, skin, vlist, nvlist)
-              END DO
-          ELSE                          ! If lists are not symmetric
-              DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, xp, cutoff,    &
-                  & skin, vlist, nvlist)
-              END DO
-          END IF
+          DO i = 1, red_clist%n_all_p
+              p_idx = red_clist%rank(i)
+              CALL count_xset_neigh(p_idx, red_clist, blue_clist, &
+ &                 whole_domain, &
+ &                 red, rcred, blue, rcblue, skin, vlist, nvlist)
+          END DO
 
       !-------------------------------------------------------------------------
       !  If vlist will be stored,
@@ -611,23 +656,14 @@
               !  number of rows in vlist can be this number.
               !-----------------------------------------------------------------
               lda(1) = max_nneigh
-              !-----------------------------------------------------------------
-              !  If we have symmetric lists, we also need to store verlet list
-              !  of some ghost particles, so we allocate columns of vlist
-              !  by number of all particles.
-              !-----------------------------------------------------------------
-              IF(lsymm .EQV. .TRUE.)  THEN
-                  lda(2) = clist%n_all_p
-              ELSE
-                  lda(2) = clist%n_real_p
-              ENDIF
+              lda(2) = red_clist%n_real_p
               !-----------------------------------------------------------------
               !  Allocate vlist
               !-----------------------------------------------------------------
               CALL ppm_alloc(vlist, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
+                  CALL ppm_error(ppm_err_alloc,'get_xset_VerletLists',     &
             &                       'vlist',__LINE__,info)
                   GOTO 9999
               END IF
@@ -636,24 +672,19 @@
               !  Fill in verlet lists depending on whether lists will be
               !  symmetric or not.
               !-----------------------------------------------------------------
-              IF(lsymm .EQV. .TRUE.)    THEN ! If symmetric
-                  DO p_idx = 1, clist%n_all_p
-                      CALL get_neigh_sym(clist%rank(p_idx),clist, &
-                      & whole_domain, actual_domain, xp, cutoff, skin, vlist, nvlist)
-                  END DO
-              ELSE                           ! If not symmetric
-                  DO p_idx = 1, clist%n_all_p
-                      CALL get_neigh(clist%rank(p_idx), clist,whole_domain,  &
-                      & xp, cutoff, skin, vlist, nvlist)
-                  END DO
-              END IF
+              DO i = 1, red_clist%n_all_p
+                  p_idx = red_clist%rank(i)
+                  CALL get_xset_neigh(p_idx, red_clist, blue_clist, & 
+ &                     whole_domain,  &
+ &                     red, rcred, blue, rcblue, skin, vlist, nvlist)
+              END DO
           END IF
 
 9999      CONTINUE
-          CALL substop('getVerletLists',t0,info)
+          CALL substop('get_xset_VerletLists',t0,info)
 
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE getVerletLists_s
+      END SUBROUTINE get_xset_VerletLists_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE getVerletLists_d
+      END SUBROUTINE get_xset_VerletLists_d
 #endif
