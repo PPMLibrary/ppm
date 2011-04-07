@@ -44,7 +44,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       TYPE(ppm_htable), INTENT(INOUT) :: table
-      !!! The hashtable to create. The pointer must not be NULL
+      !!! The hashtable to create.
       INTEGER, INTENT(IN   )   :: nelement
       !!! Number of desired elements.
       INTEGER, INTENT(  OUT)  :: info

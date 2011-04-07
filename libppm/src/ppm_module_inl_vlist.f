@@ -56,10 +56,11 @@
         !-------------------------------------------------------------------------
         !  Declaration of variables
         !-------------------------------------------------------------------------
-        INTEGER    :: own_nplist
-        INTEGER    :: neigh_nplist
-        INTEGER    :: empty_pos
-        INTEGER    :: max_nneigh
+        TYPE(ppm_clist), SAVE :: clist
+        INTEGER               :: own_nplist
+        INTEGER               :: neigh_nplist
+        INTEGER               :: empty_pos
+        INTEGER               :: max_nneigh
 
         !-------------------------------------------------------------------------
         !  Declaration of interfaces
