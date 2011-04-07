@@ -480,7 +480,7 @@
       !-------------------------------------------------------------------------
       !  Destroy hash table.
       !-------------------------------------------------------------------------
-          CALL destroy_htable(info)
+          CALL destroy_htable(lookup,info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
