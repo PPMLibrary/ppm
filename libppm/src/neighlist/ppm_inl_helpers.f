@@ -488,9 +488,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getParticlesInCell_s(cell_idx, xp, list, nlist)
+      SUBROUTINE getParticlesInCell_s(cell_idx, xp, clist, list, nlist)
 #elif   __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getParticlesInCell_d(cell_idx, xp, list, nlist)
+      SUBROUTINE getParticlesInCell_d(cell_idx, xp, clist, list, nlist)
 #endif
       !!! Given the cell index, this subroutine modifies the list array such
       !!! that it contains the particle IDs of this cell and sets nlist to
@@ -504,10 +504,11 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER(ppm_kind_int64), INTENT(IN)                    :: cell_idx
-          REAL(MK),                INTENT(IN),    DIMENSION(:,:) :: xp
-          INTEGER,                 INTENT(INOUT), DIMENSION(:)   :: list
-          INTEGER,                 INTENT(INOUT)                 :: nlist
+          INTEGER(ppm_kind_int64),  INTENT(IN)                   :: cell_idx
+          REAL(MK), DIMENSION(:,:), INTENT(IN)                   :: xp
+          TYPE(ppm_clist),          INTENT(IN)                   :: clist
+          INTEGER,   DIMENSION(:),  INTENT(INOUT)                :: list
+          INTEGER,                  INTENT(INOUT)                :: nlist
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
@@ -522,7 +523,7 @@
           parentIdx  = parent(cell_idx)
 
           ! Get position on borders array that the parent is located in.
-          border_idx = hash_search(lookup,parentIdx)
+          border_idx = hash_search(clist%lookup,parentIdx)
 
           ! Initialize number of particles to 0.
           nlist = 0
@@ -538,7 +539,7 @@
           IF(ppm_dim .EQ. 2)    THEN
               ! If the cell does not contain any particles that are in deeper
               ! levels in its region ...
-              IF(borders(6, border_idx) .EQ. 1)  THEN
+              IF(clist%borders(6, border_idx) .EQ. 1)  THEN
                   ! Put it in empty list
                   CALL putInEmptyList(cell_idx)
               END IF
@@ -558,7 +559,7 @@
           ELSEIF(ppm_dim .EQ. 3)   THEN
               ! If the cell does not contain any particles that are in deeper
               ! levels in its region ...
-              IF(borders(10, border_idx) .EQ. 1)  THEN
+              IF(clist%borders(10, border_idx) .EQ. 1)  THEN
                   ! Put it in empty list
                   CALL putInEmptyList(cell_idx)
               END IF
@@ -577,9 +578,10 @@
           END IF
 
           ! From first column to last, get all particles and put them in the list
-          DO i = (borders(left_end, border_idx) + 1), borders(right_end, border_idx)
+          DO i = (clist%borders(left_end, border_idx) + 1), &
+ &                clist%borders(right_end, border_idx)
               nlist = nlist + 1
-              list(nlist) = rank(i)
+              list(nlist) = clist%rank(i)
           END DO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getParticlesInCell_s
