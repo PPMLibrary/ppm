@@ -28,15 +28,15 @@
      !-------------------------------------------------------------------------
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE count_neigh_s(p_idx, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE count_neigh_s(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE count_neigh_d(p_idx, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE count_neigh_d(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE get_neigh_s(p_idx, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE get_neigh_s(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE get_neigh_d(p_idx, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE get_neigh_d(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
 #endif
 #endif
       !!! Given the particle index, this subroutine locates the cell that this
@@ -53,6 +53,8 @@
       !-------------------------------------------------------------------------
           INTEGER,  INTENT(IN)                 :: p_idx
           !!! Particle index
+          TYPE(ppm_clist)  , INTENT(IN)        :: clist
+          !!! cell list
           REAL(MK), DIMENSION(2*ppm_dim)       :: domain
           !!! Pysical extent of whole domain including ghost layers
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
@@ -127,7 +129,8 @@
           !---------------------------------------------------------------------
           !  Get coordinates and depth of the particle
           !---------------------------------------------------------------------
-          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth,info)
+          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, & 
+ &                               clist%max_depth, info)
 
           !---------------------------------------------------------------------
           !  Compute offset coordinates, which will be used to find neighbor cells
@@ -159,13 +162,13 @@
               n_idx = getCellIdx(n_coor, c_depth, domain)
 
               ! Store in empty list if empty
-              IF(isEmpty(n_idx))     CALL putInEmptyList(n_idx)
+              IF(isEmpty(n_idx,clist%lookup))     CALL putInEmptyList(n_idx)
           END DO
 
           !---------------------------------------------------------------------
           !  Get particles that are in the same cell with input particle.
           !---------------------------------------------------------------------
-          CALL getParticlesInCell(c_idx, xp, own_plist, own_nplist)
+          CALL getParticlesInCell(c_idx, xp, clist, own_plist, own_nplist)
 
           !---------------------------------------------------------------------
           !  At the center cell, every particle in the same cell is compared
@@ -183,7 +186,7 @@
                   ! If they are neighbors and ...
                   IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin))  THEN
                       ! If the reference particle is a real particle ...
-                      IF(p_ref .LE. n_real_p)   THEN
+                      IF(p_ref .LE. clist%n_real_p)   THEN
                           ! Store neighbor particle in verlet list of reference
                           ! particle
                           nvlist(p_ref) = nvlist(p_ref) + 1
@@ -193,7 +196,7 @@
                       ENDIF
 
                       !If the neighbor particle is a real particle ...
-                      IF(p_neigh .LE. n_real_p)   THEN
+                      IF(p_neigh .LE. clist%n_real_p)   THEN
                           ! Store reference particle in verlet list of neighbor
                           ! particle
                           nvlist(p_neigh) = nvlist(p_neigh) + 1
@@ -227,7 +230,7 @@
               n_idx = getCellIdx(n_coor, c_depth, domain)
 
               ! Get particles in the neighbor cell
-              CALL getParticlesInCell(n_idx, xp, neigh_plist, neigh_nplist)
+              CALL getParticlesInCell(n_idx, xp, clist, neigh_plist, neigh_nplist)
 
               ! For each particle in the reference cell
               DO m = 1, own_nplist
@@ -240,7 +243,7 @@
                       ! If particles are neighbors and ...
                       IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin)) THEN
                           ! If reference particle is a real particle ...
-                          IF(p_ref .LE. n_real_p)   THEN
+                          IF(p_ref .LE. clist%n_real_p)   THEN
                               ! Store neighbor particle in verlet list of
                               ! reference particle
                               nvlist(p_ref)   = nvlist(p_ref)   + 1
@@ -250,7 +253,7 @@
                           END IF
 
                           ! If neighbor particle is a real particle ...
-                          IF(p_neigh .LE. n_real_p) THEN
+                          IF(p_neigh .LE. clist%n_real_p) THEN
                               ! Store reference particle in verlet list of
                               ! neighbor particle
                               nvlist(p_neigh) = nvlist(p_neigh) + 1
@@ -283,7 +286,7 @@
               p_depth = p_depth + 1
 
               ! Until we reach the maximum depth ...
-              DO WHILE(p_depth .LE. max_depth)
+              DO WHILE(p_depth .LE. clist%max_depth)
                   ! Get the child cell this particle is located in
                   c_idx = getCellIdx(p_coor, p_depth, domain)
                   ! Get index of parent cell to check whether parent is empty or not
@@ -294,7 +297,8 @@
                      CALL putInEmptyList(c_idx)
                   ENDIF
                   ! Get cell coordinates and depth
-                  CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth,info)
+                  CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
+ &                                       clist%max_depth, info)
 
                   ! Compute offset coordinates to compute midpoint coordinates
                   ! of neighbor cells at this depth.
@@ -335,7 +339,7 @@
                       !         depth, but no deeper particles, it will again
                       !         be saved in the empty list just  before returning.
                       !-----------------------------------------------------
-                      CALL getParticlesInCell(n_idx, xp, neigh_plist, neigh_nplist)
+                      CALL getParticlesInCell(n_idx, xp, clist, neigh_plist, neigh_nplist)
 
                       ! For each neighbor element
                       DO n = 1, neigh_nplist
@@ -344,7 +348,7 @@
                           ! If they are neighbors and ...
                           IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin))  THEN
                               ! If reference particle is real ...
-                              IF(p_ref .LE. n_real_p) THEN
+                              IF(p_ref .LE. clist%n_real_p) THEN
                                   ! Store neighbor particle in verlet list
                                   ! of reference particle
                                   nvlist(p_ref) = nvlist(p_ref) + 1
@@ -354,7 +358,7 @@
                               END IF
 
                               ! If neighbor particle is real ...
-                              IF(p_neigh .LE. n_real_p) THEN
+                              IF(p_neigh .LE. clist%n_real_p) THEN
                                   ! Store reference particle in verlet list
                                   ! of neighbor particle
                                   nvlist(p_neigh) = nvlist(p_neigh) + 1
@@ -390,18 +394,18 @@
 
 #if  __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
-          SUBROUTINE count_neigh_sym_s(p_idx, domain, actual_domain,   &
+          SUBROUTINE count_neigh_sym_s(p_idx, clist, domain, actual_domain,   &
           &xp, cutoff, skin, vlist, nvlist)
 #elif   __KIND == __DOUBLE_PRECISION
-          SUBROUTINE count_neigh_sym_d(p_idx, domain, actual_domain,   &
+          SUBROUTINE count_neigh_sym_d(p_idx, clist, domain, actual_domain,   &
           &xp, cutoff, skin, vlist, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
-          SUBROUTINE get_neigh_sym_s(p_idx, domain, actual_domain,   &
+          SUBROUTINE get_neigh_sym_s(p_idx, clist, domain, actual_domain,   &
           &xp, cutoff, skin, vlist, nvlist)
 #elif   __KIND == __DOUBLE_PRECISION
-          SUBROUTINE get_neigh_sym_d(p_idx, domain, actual_domain,   &
+          SUBROUTINE get_neigh_sym_d(p_idx, clist, domain, actual_domain,   &
           &xp, cutoff, skin, vlist, nvlist)
 #endif
 #endif
@@ -416,6 +420,8 @@
       !-------------------------------------------------------------------------
           INTEGER,  INTENT(IN)                 :: p_idx
           !!! Particle index
+          TYPE(ppm_clist)  , INTENT(IN)        :: clist
+          !!! cell list
           REAL(MK), DIMENSION(2*ppm_dim)       :: domain
           !!! Pysical extent of whole domain including ghost layers
           REAL(MK)   , DIMENSION(2*ppm_dim)    :: actual_domain
@@ -493,7 +499,8 @@
           !---------------------------------------------------------------------
           !  Get coordinates and depth of the particle
           !---------------------------------------------------------------------
-          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth,info)
+          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
+ &                               clist%max_depth, info)
 
           !---------------------------------------------------------------------
           !  Compute offset coordinates, which will be used to find neighbor cells
@@ -525,13 +532,13 @@
               n_idx = getCellIdx(n_coor, c_depth, domain)
 
               ! Store in empty list if empty
-              IF(isEmpty(n_idx))     CALL putInEmptyList(n_idx)
+              IF(isEmpty(n_idx,clist%lookup))     CALL putInEmptyList(n_idx)
           END DO
 
           !---------------------------------------------------------------------
           !  Get particles that are in the same cell with input particle.
           !---------------------------------------------------------------------
-          CALL getParticlesInCell(c_idx, xp, own_plist, own_nplist)
+          CALL getParticlesInCell(c_idx, xp, clist, own_plist, own_nplist)
 
           !---------------------------------------------------------------------
           !  At the center cell, every particle in the same cell is compared
@@ -555,7 +562,7 @@
                   IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin)) THEN
                       ! If reference particle is real, no matter what neighbor
                       ! particle is ...
-                      IF(p_ref .LE. n_real_p)   THEN
+                      IF(p_ref .LE. clist%n_real_p)   THEN
                           ! add neighbor particle to verlet list of reference
                           ! particle.
                           nvlist(p_ref) = nvlist(p_ref)   + 1
@@ -565,7 +572,7 @@
                       ! If reference particle is ghost and ...
                       ELSE
                           ! neighbor particle is real,
-                          IF(p_neigh .LE. n_real_p) THEN
+                          IF(p_neigh .LE. clist%n_real_p) THEN
                                ! add reference particle to verlet list of
                                ! neighbor particle.
                                nvlist(p_neigh) = nvlist(p_neigh)   + 1
@@ -617,7 +624,7 @@
               n_idx = getCellIdx(n_coor, c_depth, domain)
 
               ! Get particles in the neighbor cell
-              CALL getParticlesInCell(n_idx, xp, neigh_plist, neigh_nplist)
+              CALL getParticlesInCell(n_idx, xp, clist, neigh_plist, neigh_nplist)
 
               ! For each particle in the reference cell
               DO m = 1, own_nplist
@@ -631,7 +638,7 @@
                       IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin)) THEN
                           ! If reference particle is real, no matter what neighbor
                           ! particle is ...
-                          IF(p_ref .LE. n_real_p)   THEN
+                          IF(p_ref .LE. clist%n_real_p)   THEN
                               ! add neighbor particle to verlet list of reference
                               ! particle.
                               nvlist(p_ref) = nvlist(p_ref) + 1
@@ -641,7 +648,7 @@
                           ! If reference particle is ghost and ...
                           ELSE
                               ! neighbor particle is real,
-                              IF(p_neigh .LE. n_real_p)  THEN
+                              IF(p_neigh .LE. clist%n_real_p)  THEN
                                   ! add reference particle to verlet list of
                                   ! neighbor particle.
                                   nvlist(p_neigh) = nvlist(p_neigh) + 1
@@ -692,7 +699,7 @@
               p_depth = p_depth + 1
 
               ! Until we reach the maximum depth ...
-              DO WHILE(p_depth .LE. max_depth)
+              DO WHILE(p_depth .LE. clist%max_depth)
                   ! Get the child cell this particle is located in
                   c_idx = getCellIdx(p_coor, p_depth, domain)
                   ! Get index of parent cell to check whether parent is empty or not
@@ -703,7 +710,8 @@
                      CALL putInEmptyList(c_idx)
                   ENDIF
                   ! Get cell coordinates and depth
-                  CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth,info)
+                  CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
+ &                                       clist%max_depth, info)
 
                   ! Compute offset coordinates to compute midpoint coordinates
                   ! of neighbor cells at this depth.
@@ -744,7 +752,7 @@
                       !         depth, but no deeper particles, it will again
                       !         be saved in the empty list just  before returning.
                       !-----------------------------------------------------
-                      CALL getParticlesInCell(n_idx, xp, neigh_plist, neigh_nplist)
+                      CALL getParticlesInCell(n_idx, xp, clist, neigh_plist, neigh_nplist)
 
                       ! For each neighbor element
                       DO n = 1, neigh_nplist
@@ -754,7 +762,7 @@
                           IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin))  THEN
                           ! If reference particle is real, no matter what neighbor
                           ! particle is ...
-                              IF(p_ref .LE. n_real_p)   THEN
+                              IF(p_ref .LE. clist%n_real_p)   THEN
                                   ! add neighbor particle to verlet list of
                                   ! reference particle.
                                   nvlist(p_ref) = nvlist(p_ref) + 1
@@ -764,7 +772,7 @@
                               ! If reference particle is ghost and ...
                               ELSE
                                   ! neighbor particle is real,
-                                  IF(p_neigh .LE. n_real_p)  THEN
+                                  IF(p_neigh .LE. clist%n_real_p)  THEN
                                       ! add reference particle to verlet
                                       ! list of neighbor particle.
                                       nvlist(p_neigh) = nvlist(p_neigh) + 1

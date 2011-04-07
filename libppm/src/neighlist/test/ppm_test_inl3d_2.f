@@ -337,7 +337,7 @@ use ppm_module_topo_get
 use ppm_module_init
 use ppm_module_finalize
 use ppm_module_user
-use ppm_module_inl_vlist, rank_dum=>rank
+use ppm_module_inl_vlist
 use old_inl
 
 implicit none

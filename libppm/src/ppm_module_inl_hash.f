@@ -57,7 +57,7 @@
           !---------------------------------------------------------------------
           !  Declaration of variables
           !--------------------------------------------------------------------
-          INTEGER                                              :: nrow
+          INTEGER                                              :: nrow = 0
           !!! number of rows in hash table
 !          CONTAINS
 !              PROCEDURE :: create => create_htable

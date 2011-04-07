@@ -306,13 +306,13 @@
               END DO
           END IF
 
-          n_real_p = Np !Set number of real particles
+          clist%n_real_p = Np !Set number of real particles
 
       !-------------------------------------------------------------------------
       !  Create inhomogeneous cell list
       !-------------------------------------------------------------------------
           CALL ppm_create_inl_clist(xp, Mp, cutoff, skin, actual_domain, &
-     & ghostlayer, lsymm, info)
+     & ghostlayer, lsymm, info,clist)
           IF(info .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
@@ -328,7 +328,7 @@
       !  there is no more need for that.
       !-------------------------------------------------------------------------
           iopt   = ppm_param_alloc_fit
-          lda(1) = n_all_p
+          lda(1) = clist%n_all_p
           CALL ppm_alloc(own_plist, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
@@ -381,7 +381,7 @@
       !  If not large enough, it will be regrowed in putInEmptyList subroutine.
       !-------------------------------------------------------------------------
           iopt = ppm_param_alloc_fit
-          lda(1) = 10*max_depth
+          lda(1) = 10*clist%max_depth
           CALL ppm_alloc(empty_list, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
@@ -400,7 +400,7 @@
               lst = .TRUE.
           END IF
 
-          CALL getVerletLists(xp, cutoff, skin, lsymm, whole_domain, &
+          CALL getVerletLists(xp, cutoff, clist, skin, lsymm, whole_domain, &
      &                        actual_domain, vlist, nvlist, lst,info)
           IF (info.NE.0) THEN
               info = ppm_error_error
@@ -419,28 +419,6 @@
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
      &                       'empty_list',__LINE__,info)
-              GOTO 9999
-          END IF
-
-      !-------------------------------------------------------------------------
-      !  Deallocate borders array which contains cell lists.
-      !-------------------------------------------------------------------------
-          CALL ppm_alloc(borders, lda, iopt, info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
-     &                       'borders',__LINE__,info)
-              GOTO 9999
-          END IF
-
-      !-------------------------------------------------------------------------
-      !  Deallocate rank array.
-      !-------------------------------------------------------------------------
-          CALL ppm_alloc(rank,    lda, iopt, info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
-     &                       'rank',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -476,15 +454,11 @@
      &                       'neigh_plist',__LINE__,info)
               GOTO 9999
           END IF
-
-      !-------------------------------------------------------------------------
-      !  Destroy hash table.
-      !-------------------------------------------------------------------------
-          CALL destroy_htable(lookup,info)
+          CALL ppm_destroy_inl_clist(clist,info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
-     &            'Could not destroy htable',__LINE__,info)
+              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',   &
+     &                       'ppm_destroy_inl_clist',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -498,10 +472,10 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getVerletLists_s(xp, cutoff, skin, lsymm, whole_domain,    &
+      SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain,    &
      & actual_domain, vlist, nvlist, lstore,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getVerletLists_d(xp, cutoff, skin, lsymm, whole_domain,    &
+      SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain,    &
      & actual_domain, vlist, nvlist, lstore,info)
 #endif
       !!! This subroutine allocates nvlist and fills it with number of
@@ -524,6 +498,8 @@
           !!! Particles cutoff radii
           REAL(MK), INTENT(IN)                  :: skin
           !!! Skin parameter
+          TYPE(ppm_clist), INTENT(IN)           :: clist
+          !!! cell list
           LOGICAL,  INTENT(IN)                  :: lsymm
           !!! Logical parameter to define whether lists are symmetric or not
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
@@ -565,7 +541,7 @@
 
       CALL substart('getVerletLists',t0,info)
           iopt = ppm_param_alloc_fit
-          lda(1) = n_all_p
+          lda(1) = clist%n_all_p
           CALL ppm_alloc(used, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
@@ -580,9 +556,9 @@
       !  neighbors of some ghost particles.
       !-------------------------------------------------------------------------
           IF(lsymm .EQV. .TRUE.)  THEN
-              lda(1) = n_all_p  ! Store number of neighbors also of ghost particles
+              lda(1) = clist%n_all_p  ! Store number of neighbors also of ghost particles
           ELSE
-              lda(1) = n_real_p ! Store number of neighbors of real particles only
+              lda(1) = clist%n_real_p ! Store number of neighbors of real particles only
           ENDIF
 
       !-------------------------------------------------------------------------
@@ -601,15 +577,13 @@
       !  Fill nvlist array with number of neighbors.
       !-------------------------------------------------------------------------
           IF(lsymm .EQV. .TRUE.)   THEN ! If lists are symmetric
-              DO i = 1, n_all_p
-                  p_idx = rank(i)
-                  CALL count_neigh_sym(p_idx, whole_domain,       &
+              DO p_idx = 1, clist%n_all_p
+                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,       &
                   & actual_domain, xp, cutoff, skin, vlist, nvlist)
               END DO
           ELSE                          ! If lists are not symmetric
-              DO i = 1, n_all_p
-                  p_idx = rank(i)
-                  CALL count_neigh(p_idx, whole_domain, xp, cutoff,    &
+              DO p_idx = 1, clist%n_all_p
+                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, xp, cutoff,    &
                   & skin, vlist, nvlist)
               END DO
           END IF
@@ -643,9 +617,9 @@
               !  by number of all particles.
               !-----------------------------------------------------------------
               IF(lsymm .EQV. .TRUE.)  THEN
-                  lda(2) = n_all_p
+                  lda(2) = clist%n_all_p
               ELSE
-                  lda(2) = n_real_p
+                  lda(2) = clist%n_real_p
               ENDIF
               !-----------------------------------------------------------------
               !  Allocate vlist
@@ -663,13 +637,13 @@
               !  symmetric or not.
               !-----------------------------------------------------------------
               IF(lsymm .EQV. .TRUE.)    THEN ! If symmetric
-                  DO p_idx = 1, n_all_p
-                      CALL get_neigh_sym(rank(p_idx),       &
+                  DO p_idx = 1, clist%n_all_p
+                      CALL get_neigh_sym(clist%rank(p_idx),clist, &
                       & whole_domain, actual_domain, xp, cutoff, skin, vlist, nvlist)
                   END DO
               ELSE                           ! If not symmetric
-                  DO p_idx = 1, n_all_p
-                      CALL get_neigh(rank(p_idx), whole_domain,  &
+                  DO p_idx = 1, clist%n_all_p
+                      CALL get_neigh(clist%rank(p_idx), clist,whole_domain,  &
                       & xp, cutoff, skin, vlist, nvlist)
                   END DO
               END IF
