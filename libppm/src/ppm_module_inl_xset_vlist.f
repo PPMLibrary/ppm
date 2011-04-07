@@ -1,5 +1,5 @@
      !-------------------------------------------------------------------------
-     !  Module   :                  ppm_module_inl_vlist
+     !  Module   :                  ppm_module_inl_xset_vlist
      !-------------------------------------------------------------------------
      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
      !                    Center for Fluid Dynamics (DTU)
@@ -26,7 +26,7 @@
      ! ETH Zurich
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
-      MODULE ppm_module_inl_vlist
+      MODULE ppm_module_inl_xset_vlist
       !!! This module contains routines and functions used in creating verlet lists
       !!! by use of inhomogeneous cell lists.
 
@@ -47,8 +47,10 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER,       DIMENSION(:),   POINTER :: own_plist => NULL()
-        INTEGER,       DIMENSION(:),   POINTER :: neigh_plist => NULL()
+        INTEGER,       DIMENSION(:),   POINTER :: own_red => NULL()
+        INTEGER,       DIMENSION(:),   POINTER :: neigh_red => NULL()
+        INTEGER,       DIMENSION(:),   POINTER :: own_blue => NULL()
+        INTEGER,       DIMENSION(:),   POINTER :: neigh_blue => NULL()
         INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: empty_list => NULL()
         INTEGER,       DIMENSION(:,:), POINTER :: ncells => NULL()
         LOGICAL,       DIMENSION(:) ,  POINTER :: used => NULL()
@@ -56,84 +58,45 @@
         !-------------------------------------------------------------------------
         !  Declaration of variables
         !-------------------------------------------------------------------------
-        TYPE(ppm_clist), SAVE :: clist
-        INTEGER               :: own_nplist
-        INTEGER               :: neigh_nplist
+        TYPE(ppm_clist), SAVE :: red_clist
+        TYPE(ppm_clist), SAVE :: blue_clist
+        INTEGER               :: own_nred
+        INTEGER               :: neigh_nred
+        INTEGER               :: own_nblue
+        INTEGER               :: neigh_nblue
         INTEGER               :: empty_pos
         INTEGER               :: max_nneigh
 
         !-------------------------------------------------------------------------
         !  Declaration of interfaces
         !-------------------------------------------------------------------------
-        INTERFACE ppm_inl_vlist
-            MODULE PROCEDURE inl_vlist_s
-            MODULE PROCEDURE inl_vlist_d
+        INTERFACE ppm_inl_xset_vlist
+            MODULE PROCEDURE inl_xset_vlist_s
+            MODULE PROCEDURE inl_xset_vlist_d
         END INTERFACE
 
-        INTERFACE create_inl_vlist
-            MODULE PROCEDURE create_inl_vlist_s
-            MODULE PROCEDURE create_inl_vlist_d
+        INTERFACE create_inl_xset_vlist
+            MODULE PROCEDURE create_inl_xset_vlist_s
+            MODULE PROCEDURE create_inl_xset_vlist_d
         END INTERFACE
 
-        INTERFACE getVerletLists
-            MODULE PROCEDURE getVerletLists_s
-            MODULE PROCEDURE getVerletLists_d
+        INTERFACE get_xset_VerletLists
+            MODULE PROCEDURE get_xset_VerletLists_s
+            MODULE PROCEDURE get_xset_VerletLists_d
         END INTERFACE
 
-        INTERFACE inDomain
-            MODULE PROCEDURE inDomain_s
-            MODULE PROCEDURE inDomain_d
+
+        INTERFACE count_xset_neigh
+            MODULE PROCEDURE count_xset_neigh_s
+            MODULE PROCEDURE count_xset_neigh_d
         END INTERFACE
 
-        INTERFACE isNeighbor
-            MODULE PROCEDURE isNeighbor_s
-            MODULE PROCEDURE isNeighbor_d
-        END INTERFACE
-        
-        INTERFACE is_xset_Neighbor
-            MODULE PROCEDURE is_xset_Neighbor_s
-            MODULE PROCEDURE is_xset_Neighbor_d
+        INTERFACE get_xset_neigh
+            MODULE PROCEDURE get_xset_neigh_s
+            MODULE PROCEDURE get_xset_neigh_d
         END INTERFACE
 
-        INTERFACE cross_neighbor
-            MODULE PROCEDURE cross_neighbor_s
-            MODULE PROCEDURE cross_neighbor_d
-        END INTERFACE
 
-        INTERFACE count_neigh
-            MODULE PROCEDURE count_neigh_s
-            MODULE PROCEDURE count_neigh_d
-        END INTERFACE
-
-        INTERFACE count_neigh_sym 
-            MODULE PROCEDURE count_neigh_sym_s
-            MODULE PROCEDURE count_neigh_sym_d
-        END INTERFACE
-
-        INTERFACE get_neigh
-            MODULE PROCEDURE get_neigh_s
-            MODULE PROCEDURE get_neigh_d
-        END INTERFACE
-
-        INTERFACE get_neigh_sym
-            MODULE PROCEDURE get_neigh_sym_s
-            MODULE PROCEDURE get_neigh_sym_d
-        END INTERFACE
-
-        INTERFACE getParticleCoorDepth
-            MODULE PROCEDURE getParticleCoorDepth_s
-            MODULE PROCEDURE getParticleCoorDepth_d
-        END INTERFACE
-
-        INTERFACE getParticlesInCell
-            MODULE PROCEDURE getParticlesInCell_s
-            MODULE PROCEDURE getParticlesInCell_d
-        END INTERFACE
-
-        INTERFACE getSubdomainParticles
-            MODULE PROCEDURE getSubdomainParticles_s
-            MODULE PROCEDURE getSubdomainParticles_d
-        END INTERFACE
 
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters
@@ -143,23 +106,21 @@
         CONTAINS
 
 #define __KIND __SINGLE_PRECISION
-#include "neighlist/ppm_inl_vlist.f"
-#include "neighlist/ppm_inl_helpers.f"
+#include "neighlist/ppm_inl_xset_vlist.f"
 #define __ACTION __COUNT
-#include "neighlist/ppm_inl_vlist_build.f"
+#include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
 #define __ACTION __GET
-#include "neighlist/ppm_inl_vlist_build.f"
+#include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
 #undef  __KIND
 #define __KIND __DOUBLE_PRECISION
-#include "neighlist/ppm_inl_vlist.f"
-#include "neighlist/ppm_inl_helpers.f"
+#include "neighlist/ppm_inl_xset_vlist.f"
 #define __ACTION __COUNT
-#include "neighlist/ppm_inl_vlist_build.f"
+#include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
 #define __ACTION __GET
-#include "neighlist/ppm_inl_vlist_build.f"
+#include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
 #undef  __KIND
 
@@ -167,4 +128,4 @@
 #undef __DOUBLE_PRECISION
 #undef __COUNT
 #undef __GET
-      END MODULE ppm_module_inl_vlist
+      END MODULE ppm_module_inl_xset_vlist
