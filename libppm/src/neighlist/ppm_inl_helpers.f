@@ -522,7 +522,7 @@
           parentIdx  = parent(cell_idx)
 
           ! Get position on borders array that the parent is located in.
-          border_idx = hash_search(parentIdx)
+          border_idx = hash_search(lookup,parentIdx)
 
           ! Initialize number of particles to 0.
           nlist = 0
