@@ -1,7 +1,7 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_neighlist_hash
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Lab (ETH Zurich),
+      ! Copyright (c) 2011 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-      SUBROUTINE create_htable(nelement,info)
+      SUBROUTINE create_htable(table,nelement,info)
       !!! Given number of rows of the table, creates the hash table. Number of
       !!! rows will be greater than nelement, as we use the first value that is
       !!! power of 2 and greater than nelement.
@@ -43,6 +43,8 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
+      TYPE(ppm_htable), INTENT(INOUT) :: table
+      !!! The hashtable to create. The pointer must not be NULL
       INTEGER, INTENT(IN   )   :: nelement
       !!! Number of desired elements.
       INTEGER, INTENT(  OUT)  :: info
@@ -56,15 +58,15 @@
 
       CALL substart('create_htable',t0,info)
 
-      ht_nrow = 2**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
+      table%nrow = 2**(CEILING(LOG(REAL(nelement))/LOG(2.0)))
       
-      lda(1) = ht_nrow
+      lda(1) = table%nrow
       iopt   = ppm_param_alloc_fit
 
       !---------------------------------------------------------------------
       !  Allocate array for hash table keys.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(htable_keys, lda, iopt, info)
+      CALL ppm_alloc(table%keys, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'create_htable',     &
@@ -75,7 +77,7 @@
       !---------------------------------------------------------------------
       !  Allocate array for positions on "borders" array.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(htable_borders_pos, lda, iopt, info)
+      CALL ppm_alloc(table%borders_pos, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'create_htable',     &
@@ -86,15 +88,15 @@
       !---------------------------------------------------------------------
       !  Set everything to NULL.
       !---------------------------------------------------------------------
-      htable_keys        = htable_null
-      htable_borders_pos = htable_null
+      table%keys        = htable_null
+      table%borders_pos = htable_null
       
  9999 CONTINUE
       CALL substop('create_htable',t0,info)
       END SUBROUTINE create_htable
 
 
-      SUBROUTINE destroy_htable(info)
+      SUBROUTINE destroy_htable(table,info)
       USE ppm_module_data
       USE ppm_module_alloc
       USE ppm_module_error
@@ -102,10 +104,15 @@
       USE ppm_module_substop
       IMPLICIT NONE
       !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      TYPE(ppm_htable), INTENT(INOUT) :: table
+      !!! The hashtable to create. The pointer must not be NULL
+      INTEGER, INTENT(OUT)    :: info
+      !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)   :: t0
-      INTEGER, INTENT(OUT)    :: info
       INTEGER                 :: iopt
       INTEGER, DIMENSION(1)   :: lda
 
@@ -117,7 +124,7 @@
       !---------------------------------------------------------------------
       !  Deallocate array for hash table keys.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(htable_keys, lda, iopt, info)
+      CALL ppm_alloc(table%keys, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'destroy_htable',     &
@@ -128,7 +135,7 @@
       !---------------------------------------------------------------------
       !  Deallocate array for positions on "borders" array.
       !---------------------------------------------------------------------
-      CALL ppm_alloc(htable_borders_pos, lda, iopt, info)
+      CALL ppm_alloc(table%borders_pos, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'destroy_htable',     &
@@ -140,11 +147,13 @@
       CALL substop('destroy_htable',t0,info)
       END SUBROUTINE destroy_htable
 
-      ELEMENTAL FUNCTION h_func(key, seed) result(hash_val)
+      ELEMENTAL FUNCTION h_func(table, key, seed) result(hash_val)
           IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
+          TYPE(ppm_htable), INTENT(IN) :: table
+          !!! The hashtable to create. The pointer must not be NULL
           INTEGER(ppm_kind_int64), INTENT(in) :: key
           !!! Input key
           INTEGER(ppm_kind_int64), INTENT(in) :: seed
@@ -208,18 +217,20 @@
           h = IEOR(h, ISHFT(h, -13))
           h = h*m
           h = IEOR(h, ISHFT(h, -15))
-          h = IAND(h, ht_nrow - 1)
+          h = IAND(h, table%nrow - 1)
 
           hash_val = h
       END FUNCTION
 
-      ELEMENTAL FUNCTION h_key(key, jump) result(address)
+      ELEMENTAL FUNCTION h_key(table, key, jump) result(address)
       !!! Given the key and jump value, returns corresponding address on
       !!! "borders" array.
       IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
+      TYPE(ppm_htable), INTENT(IN)        :: table
+      !!! The hashtable to create. The pointer must not be NULL
       INTEGER(ppm_kind_int64), INTENT(in) :: key
       !!! Input key, which corresponds to address requested
       INTEGER,                 INTENT(in) :: jump
@@ -231,12 +242,12 @@
       ! a valid array index
       INTEGER                             :: address
       !!! Address that corresponds to given key
-      int_addr = 1 + MOD((h_func(key, seed1) + jump*h_func(key,  &
- &                  seed2)), ht_nrow)
+      int_addr = 1 + MOD((h_func(table, key, seed1) + jump*h_func(table, key,  &
+ &                  seed2)), table%nrow)
       address = int_addr
       END FUNCTION h_key
 
-      SUBROUTINE hash_insert(key, value, info)
+      SUBROUTINE hash_insert(table, key, value, info)
       !!! Given the key and the value, stores both in the hash table. Info is
       !!! set to -1 if size of the hash table is not sufficient.
       !!!
@@ -248,6 +259,8 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
+      TYPE(ppm_htable), INTENT(INOUT)      :: table
+      !!! The hashtable to create. The pointer must not be NULL
       INTEGER(ppm_kind_int64), INTENT(in)  :: key
       !!! Key to be stored
       INTEGER,                 INTENT(in)  :: value
@@ -270,14 +283,14 @@
       info = 0
       jump = 0
       ! Keep on searching withing bounds of hash table.
-      DO WHILE(jump .LT. ht_nrow)
+      DO WHILE(jump .LT. table%nrow)
           ! Get the address corresponding to given key
-          spot = h_key(key, jump)
+          spot = h_key(table, key, jump)
           ! If an empty slot found ...
-          IF(htable_keys(spot) .EQ. htable_null)  THEN
+          IF(table%keys(spot) .EQ. htable_null)  THEN
               ! Store the key and the corresponding value and RETURN.
-              htable_keys(spot) = key
-              htable_borders_pos(spot) = value
+              table%keys(spot) = key
+              table%borders_pos(spot) = value
               GOTO 9999
           ! If the current slot is occupied, jump to next key that results
           ! in same hash function.
@@ -298,7 +311,7 @@
 
       END SUBROUTINE hash_insert
 
-      ELEMENTAL FUNCTION hash_search(key) result(value)
+      ELEMENTAL FUNCTION hash_search(table,key) result(value)
       !!! Given the key, searchs the key on the hash table and returns the
       !!! corresponding value.
       !!!
@@ -310,6 +323,8 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
+      TYPE(ppm_htable), INTENT(IN)          :: table
+      !!! The hashtable to create. The pointer must not be NULL
       INTEGER(ppm_kind_int64), INTENT(in)   :: key
       !!! Input key, which the corresponding value is asked for
       INTEGER                               :: value
@@ -332,15 +347,15 @@
       value = htable_null
       jump = 0
 
-      spot = h_key(key, jump)
+      spot = h_key(table, key, jump)
       ! Keep on searching while we don't come across a NULL value or we don't
       ! exceed bounds of hash table.
-      DO WHILE((jump .LT. ht_nrow) .AND. (htable_keys(spot)  &
+      DO WHILE((jump .LT. table%nrow) .AND. (table%keys(spot)  &
                &.NE. htable_null))
           ! If key matches ...
-          IF(htable_keys(spot) .EQ. key)  THEN
+          IF(table%keys(spot) .EQ. key)  THEN
               ! Set the return value and return
-              value = htable_borders_pos(spot)
+              value = table%borders_pos(spot)
               RETURN
           ! Otherwise, keep on incrementing jump distance
           ELSE
@@ -348,7 +363,7 @@
           END IF
           ! Get the other key that results in same hash key as for the input
           ! key.
-          spot = h_key(key, jump)
+          spot = h_key(table, key, jump)
       END DO
 
 #ifdef __DEBUG
