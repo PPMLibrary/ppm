@@ -132,7 +132,7 @@
 
 
         PRIVATE :: create_inl_vlist
-        PRIVATE :: get_VerletLists
+        PRIVATE :: getVerletLists
         PRIVATE :: count_neigh, count_neigh_sym
         PRIVATE :: get_neigh, get_neigh_sym
         PRIVATE :: getSubdomainParticles
