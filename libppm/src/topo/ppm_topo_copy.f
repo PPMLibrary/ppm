@@ -44,6 +44,7 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_typedef
+      USE ppm_module_topo_alloc
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -93,7 +94,7 @@
       !-------------------------------------------------------------------------
       !  Allocate result topology
       !-------------------------------------------------------------------------
-      CALL ppm_topo_alloc(outtopo,nsubs,nsublist,maxneigh,prec,info)
+      CALL ppm_topo_alloc(outtopo%ID,nsubs,nsublist,maxneigh,prec,info)
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &
