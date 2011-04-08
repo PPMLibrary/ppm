@@ -90,11 +90,6 @@
             MODULE PROCEDURE isNeighbor_d
         END INTERFACE
         
-        INTERFACE is_xset_Neighbor
-            MODULE PROCEDURE is_xset_Neighbor_s
-            MODULE PROCEDURE is_xset_Neighbor_d
-        END INTERFACE
-
         INTERFACE cross_neighbor
             MODULE PROCEDURE cross_neighbor_s
             MODULE PROCEDURE cross_neighbor_d
@@ -135,6 +130,16 @@
             MODULE PROCEDURE getSubdomainParticles_d
         END INTERFACE
 
+
+        PRIVATE :: create_inl_vlist
+        PRIVATE :: get_VerletLists
+        PRIVATE :: count_neigh, count_neigh_sym
+        PRIVATE :: get_neigh, get_neigh_sym
+        PRIVATE :: getSubdomainParticles
+        PRIVATE :: getParticlesInCell
+        PRIVATE :: getParticleCoorDepth
+        PRIVATE :: inDomain
+        PRIVATE :: isNeighbor
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters
         !-------------------------------------------------------------------------

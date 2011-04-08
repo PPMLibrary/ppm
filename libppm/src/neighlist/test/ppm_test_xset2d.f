@@ -322,7 +322,7 @@ use old_xset
 
 implicit none
 #include "../../ppm_define.h"
-#ifdef __mpi
+#ifdef __MPI
 include 'mpif.h'
 #endif
 
@@ -380,7 +380,7 @@ ghostlayer(1:2*ndim) = max_rcp
 bcdef(1:6) = ppm_param_bcdef_periodic
 
 
-#ifdef __mpi
+#ifdef __MPI
 comm = mpi_comm_world
 call mpi_init(info)
 call mpi_comm_rank(comm,rank,info)
@@ -522,7 +522,7 @@ endif
 8000 continue
 
 call ppm_finalize(info)
-#ifdef __mpi
+#ifdef __MPI
 call mpi_finalize(info)
 #endif
 

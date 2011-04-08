@@ -117,7 +117,7 @@
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
       
-      lda(1) = nred
+      lda(1) = mred
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
       IF (info .NE. 0) THEN
@@ -195,7 +195,6 @@
  &                 curr_sub,ghostlayer,info,vlist_sub,nvlist_sub,lst)
 
           n_part = nred_sub
-
           DO i = 1, n_part
               nvlist(red_p_id(i)) = nvlist_sub(i)
           ENDDO
@@ -318,7 +317,7 @@
       !-------------------------------------------------------------------------
       !  Create inhomogeneous cell list for red and for blue
       !-------------------------------------------------------------------------
-          CALL ppm_create_inl_clist(red, mred, rcred, skin, curr_dom, &
+          CALL ppm_create_inl_clist(red, nred, mred, rcred, skin, curr_dom, &
      & ghostlayer, .FALSE., red_clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
@@ -327,7 +326,7 @@
               GOTO 9999
           END IF
           
-          CALL ppm_create_inl_clist(blue, mblue, rcblue, skin, curr_dom, &
+          CALL ppm_create_inl_clist(blue, nblue, mblue, rcblue, skin, curr_dom, &
      & ghostlayer, .FALSE., blue_clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
@@ -610,7 +609,7 @@
       !  Set size of nvlist. 
       !-------------------------------------------------------------------------
           lda(1) = red_clist%n_real_p ! Store number of neighbors of real particles only
-
+      print *,'red_clist%n_real_p: ',red_clist%n_real_p
       !-------------------------------------------------------------------------
       !  Allocate nvlist array and initialize it to 0.
       !-------------------------------------------------------------------------
@@ -622,6 +621,7 @@
               GOTO 9999
           END IF
           nvlist = 0
+          
 
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
