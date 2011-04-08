@@ -47,7 +47,6 @@
       !!! cell is located in, gathers all particles in these cells and updates
       !!! verlet lists of all these particles.
           
-          USE ppm_module_inl_vlist
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: mk = ppm_kind_single
