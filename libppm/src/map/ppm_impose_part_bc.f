@@ -76,10 +76,10 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
-      !!! Particle coordinates
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
+      !!! Particle coordinates
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! Number of particles
       INTEGER                 , INTENT(  OUT) :: info

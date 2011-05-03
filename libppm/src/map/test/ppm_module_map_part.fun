@@ -13,7 +13,7 @@ integer,parameter               :: ndim=2
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
-integer                         :: info,comm,rank
+integer                         :: info,comm,rank,nproc
 integer                         :: topoid
 integer                         :: np = 100000
 integer                         :: mp
@@ -59,8 +59,10 @@ real(mk)                         :: t0,t1,t2,t3
         comm = mpi_comm_world
         call mpi_init(info)
         call mpi_comm_rank(comm,rank,info)
+        call mpi_comm_size(comm,nproc,info)
 #else
         rank = 0
+        nproc = 1
 #endif
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
@@ -90,10 +92,22 @@ real(mk)                         :: t0,t1,t2,t3
         enddo
         call random_seed(put=seed)
         call random_number(randnb)
+        
+        allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
 
     end setup
+        
+
+    teardown
+        
+        deallocate(xp,rcp,wp,stat=info)
+        deallocate(seed,randnb)
+
+    end teardown
 
     test global
+        ! test global mapping
+
         use ppm_module_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
@@ -102,7 +116,6 @@ real(mk)                         :: t0,t1,t2,t3
         ! create particles
         !----------------
 
-        allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
         xp = 0.0_mk
         rcp = 0.0_mk
 
@@ -157,6 +170,73 @@ real(mk)                         :: t0,t1,t2,t3
     end test
 
 
+    test partial
+        ! test partial mapping
 
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_topo_check
+
+        !----------------
+        ! create particles
+        !----------------
+
+        xp = 0.0_mk
+        rcp = 0.0_mk
+
+        do i=1,np
+            do j=1,ndim
+                xp(j,i) = min_phys(j)+&
+                len_phys(j)*randnb((ndim+1)*i-(ndim-j))
+            enddo
+            rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
+            do j=1,pdim
+                wp(j,i) = rcp(i)*REAL(j,MK)
+            enddo
+        enddo
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
+        &               max_rcp,cost,info)
+
+        call ppm_map_part_global(topoid,xp,np,info)
+        call ppm_map_part_push(rcp,np,info)
+        call ppm_map_part_push(wp,pdim,np,info)
+        call ppm_map_part_send(np,newnp,info)
+        call ppm_map_part_pop(wp,pdim,np,newnp,info)
+        call ppm_map_part_pop(rcp,np,newnp,info)
+        call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        np=newnp
+
+        ! move all particles
+
+        do i=1,np
+            do j=1,ndim
+                xp(j,i) = xp(j,i) + (len_phys(j)/REAL(nproc,mk))*&
+                &         randnb((ndim+1)*i-(ndim-j))
+            enddo
+        enddo
+
+        ! do local mapping
+        call ppm_map_part_partial(topoid,xp,np,info)
+        call ppm_map_part_push(rcp,np,info)
+        call ppm_map_part_push(wp,pdim,np,info)
+        call ppm_map_part_send(np,newnp,info)
+        call ppm_map_part_pop(wp,pdim,np,newnp,info)
+        call ppm_map_part_pop(rcp,np,newnp,info)
+        call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        np=newnp
+
+        call ppm_topo_check(topoid,xp,np,ok,info)
+        assert_true(ok)
+        
+    end test
 
 end test_suite
