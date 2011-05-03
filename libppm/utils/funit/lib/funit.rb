@@ -46,7 +46,7 @@ module Funit
       Dir.chdir original_dir
     }
     compile_tests(test_suites,prog_source_dirs)
-    exit 1 unless system "PATH=.:$PATH TestRunner 1>/dev/null"
+    exit 1 unless system "PATH=.:$PATH TestRunner"
     clean_genFiles
   end
 
