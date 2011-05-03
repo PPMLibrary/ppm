@@ -1,0 +1,19 @@
+
+# makefile to compile TestRunner.f90
+#
+# funit generated this file on Wed Apr 27 14:23:08 +0200 2011.
+
+OBJ=FluxFunctions.o FluxFunctions_fun.o TestRunner.o
+
+all:testrunner
+
+testrunner: $(OBJ)
+	gfortran   -o TestRunner $(OBJ)
+
+FluxFunctions.o: FluxFunctions.f90 
+	(cd .; gfortran   -c FluxFunctions.f90)
+FluxFunctions_fun.o: FluxFunctions_fun.f90 FluxFunctions.o
+	(cd .; gfortran   -c FluxFunctions_fun.f90)
+TestRunner.o: TestRunner.f90 FluxFunctions_fun.o
+	(cd .; gfortran   -c TestRunner.f90)
+  
