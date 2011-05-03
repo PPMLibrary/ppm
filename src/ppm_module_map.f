@@ -40,13 +40,7 @@
          !----------------------------------------------------------------------
 
          USE ppm_module_map_connect
-         USE ppm_module_map_field_ghost
-         USE ppm_module_map_field_global
          USE ppm_module_map_field
-         USE ppm_module_map_part_util
-         USE ppm_module_map_part_ghost
-         USE ppm_module_map_part_global
-         USE ppm_module_map_part_partial
          USE ppm_module_map_part
          USE ppm_module_impose_part_bc
       CONTAINS
