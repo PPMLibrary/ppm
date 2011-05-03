@@ -59,13 +59,13 @@ module Funit
 
     <% file_dependencies.each do |source,dep| -%>
     <%= "#{source.sub(/\.f/i,'.o')}: #{source} #{dep.map{ |d| d.sub(/\.f/i,'.o') }.join(' ')}" %>
-    <%= "\t(cd #{File.dirname(source)}; #{ENV['CPP']} #{ENV['DEFINE']} -DFUNIT_TEST -traditional-cpp -P #{File.basename(source)} __#{File.basename(source)} && #{ENV['FC']} #{ENV['FCFLAGS']} #{sourceflag} -c __#{File.basename(source)} -o #{File.basename(source, '.*')}.o)" %>
+    <%= "\t(cd #{File.dirname(source)}; #{ENV['CPP']} #{ENV['DEFINE']} -DFUNIT_TEST -traditional-cpp -P #{File.basename(source)} __#{File.basename(source)} && #{ENV['FC']} #{ENV['FCFLAGS']} #{sourceflag} -c __#{File.basename(source)} -o #{File.basename(source, '.*')}.o && rm __#{File.basename(source)})" %>
     <% end -%>
   }.gsub(/^    /,''), nil, '-' ) # turn off newlines for <% -%>
 
   def requested_modules(module_names)
     if module_names.empty?
-      module_names = Dir["*.fun"].each{ |mod| mod.chomp! ".fun" }
+      module_names = Dir["**/test/*.fun"].each{ |mod| mod.chomp! ".fun" }
     end
     module_names
   end
@@ -131,6 +131,7 @@ module Funit
     print "compiling..."
     compile = "make -f makeTestRunner > test_compile.log"
     raise "Compile failed." unless system compile
+    system "rm test_compile.log"
     puts " done!"
   end
 
