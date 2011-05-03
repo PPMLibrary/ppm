@@ -37,6 +37,13 @@
  &                   blue,nblue,mblue,rcblue,skin,    &
  &                   ghostlayer,info,vlist,nvlist,lstore)
 #endif
+      !!! Inhomogeneous cross-set neighborlists. This routine provides
+      !!! Verlet-list-like neighbor lists of particles of one set (blue) to a
+      !!! set of other particles (red). The neighborlists are built analogous to
+      !!! the inhomogenous neighborlists described in Awile2011. The red
+      !!! particles are assumed to have interaction radius = domain size and we
+      !!! use the same neighborhood relation as in INL.
+
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: mk = ppm_kind_single
