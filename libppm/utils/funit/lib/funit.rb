@@ -35,7 +35,7 @@ module Funit
         ts_content = $2
         ts_trailing = $3
         if((!File.exist?(ts_name+"_fun.f")) || File.mtime(ts_name+"_fun.f") < File.mtime(test_file+".fun")) then
-          if ( File.read(ts_name+'.f').match(/\s*module\s+#{ts_name}/i) ) then
+          if ( File.read('../../'+ts_name+'.f').match(/\s*module\s+#{ts_name}/i) ) then
             TestSuite.new(ts_name, ts_content, ts_trailing, false)
           else
             TestSuite.new(ts_name, ts_content, ts_trailing, true)
@@ -46,7 +46,7 @@ module Funit
       Dir.chdir original_dir
     }
     compile_tests(test_suites,prog_source_dirs)
-    exit 1 unless system "env PATH='.' TestRunner"
+    exit 1 unless system "PATH=.:$PATH TestRunner 1>/dev/null"
     clean_genFiles
   end
 

@@ -55,6 +55,8 @@
          !----------------------------------------------------------------------
          !  Includes
          !----------------------------------------------------------------------
+         USE ppm_module_map_field_ghost
+         USE ppm_module_map_field_global
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_data_mesh
          PRIVATE :: ppm_kind_single,ppm_kind_double
