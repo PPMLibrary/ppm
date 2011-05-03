@@ -128,7 +128,7 @@ install: all
 	@mkdir -p $(includedir)/ppm
 	@cp $(MODULES_DIR)/* $(includedir)/ppm
 
-# This cleans, compiles, and copies the PPM library
+# This compiles, and copies the PPM library
 new: all install
 
 
