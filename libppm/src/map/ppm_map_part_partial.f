@@ -34,6 +34,9 @@
       !!! This routine maps the particles onto the topology using a local map
       !!! (i.e. each processor only communicates with its neighbors).
       !!!
+      !!! The routine takes care of periodic boundary conditions (using
+      !!! `ppm_impose_part_bc`). So no need for the user to do this manually.
+      !!!
       !!! [NOTE]
       !!! The first part of the buffer contains the on processor data.
 
