@@ -30,6 +30,7 @@ FC = @FC@
 CC = @CC@
 CXX = @CXX@
 DEBUG = @DEBUG@
+FUNIT_FLAGS = @FUNIT_FLAGS@
 MODFLAG = @ax_cv_f90_modflag@
 
 # These variables are standard
@@ -135,7 +136,7 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
-	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT)
+	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS)
 
 test: all
 	make --directory=src/map/test FC=$(FC) CPP="$(CPP)" \
