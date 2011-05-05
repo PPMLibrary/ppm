@@ -19,9 +19,9 @@ module Funit
   ##
   # run all tests
 
-  def run_tests(prog_source_dirs=['.'])
+  def run_tests(prog_source_dirs=['.'],use_mpi=false)
     Compiler.new# a test for compiler env set (FIXME: remove this later)
-    write_test_runner( test_files = parse_command_line )
+    write_test_runner( test_files = parse_command_line,use_mpi)
     test_suites = []
     test_files.each{ |test_file|
       original_dir = Dir.pwd
