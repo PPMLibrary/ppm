@@ -40,5 +40,6 @@
                       WRAP(DTYPE)_args(i)%variable = .FALSE.
                    END IF
 #endif
+                   WRAP(DTYPE)_args(i)%clf_supplied = .TRUE.
                 END IF
              END DO

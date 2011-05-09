@@ -353,6 +353,7 @@ test_suite ppm_module_ctrl
     CALL reset
     ! define
     CALL arg(idefault, 'idefault', ctrl_name = 'idefault')
+    CALL arg(iflag,    'iflag',    ctrl_name = 'iflag', flag='-f')
     CALL arg(rdefault, 'rdefault', ctrl_name = 'rdefault')
     CALL arg(cdefault, 'cdefault', ctrl_name = 'cdefault')
     CALL arg(ldefault, 'ldefault', ctrl_name = 'ldefault')
@@ -364,6 +365,7 @@ test_suite ppm_module_ctrl
     OPEN(20, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
     Assert_Equal(ios, 0)
     WRITE(20,'(A)') 'idefault = 42'
+    WRITE(20,'(A)') 'iflag    = 42'
     WRITE(20,'(A)') 'rdefault = 0.1337'
     WRITE(20,'(A)') 'cdefault = hrkljus'
     WRITE(20,'(A)') 'ldefault = T'
@@ -374,10 +376,12 @@ test_suite ppm_module_ctrl
     CLOSE(20)
     ! supply arg
     CALL add_cmd('src/ctrl/test/__test_ctrl')
+    CALL add_cmd('-f', '1337')
     ! parse
     CALL parse_args(info)
     ! test
     Assert_Equal(idefault,   42)
+    Assert_Equal(iflag,      1337) ! flags override control file !
     Assert_Equal(rdefault,   0.1337)
     Assert_Equal(cdefault,   'hrkljus')
     Assert_True(ldefault)
