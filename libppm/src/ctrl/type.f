@@ -42,6 +42,7 @@
      LOGICAL                                      :: ctrl_name_set = .FALSE.
      CHARACTER(LEN=ppm_char)                      :: help
      LOGICAL                                      :: help_set      = .FALSE.
+     LOGICAL                                      :: clf_supplied  = .FALSE.
      INTEGER                                      :: group
      INTEGER                                      :: group_i
 #ifdef ARRAY
