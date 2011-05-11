@@ -11,6 +11,7 @@ module Funit
 
     def assert_true(line)
       line.match(/\((.+)\)/)
+      @line = line
       @type = 'Assert_True'
       @condition = ".not.(#$1)"
       @message = "\"#$1 is not true\""
@@ -20,6 +21,7 @@ module Funit
 
     def assert_false(line)
       line.match(/\((.+)\)/)
+      @line = line
       @type = 'Assert_False'
       @condition = "#$1"
       @message = "\"#$1 is not false\""
@@ -29,6 +31,7 @@ module Funit
 
     def assert_real_equal(line)
       line.match(/\((.*)\)/)
+      @line = line
       expected, actual = *(get_args($1))
       @type = 'Assert_Real_Equal'
       @condition = ".not.( (#{expected} &\n        +2*spacing(real(#{expected})) ) &\n        .ge. &\n        (#{actual}) &\n            .and. &\n     (#{expected} &\n      -2*spacing(real(#{expected})) ) &\n      .le. &\n       (#{actual}) )"
@@ -39,6 +42,7 @@ module Funit
 
     def assert_equal_within(line)
       line.match(/\((.*)\)/)
+      @line = line
       expected, actual, tolerance = *(get_args($1))
       @type = 'Assert_Equal_Within'
       @condition = ".not.((#{actual} &\n     +#{tolerance}) &\n     .ge. &\n     (#{expected}) &\n             .and. &\n     (#{actual} &\n     -#{tolerance}) &\n     .le. &\n     (#{expected}) )"
@@ -49,6 +53,7 @@ module Funit
 
     def assert_equal(line)
       line.match(/\((\w+\(.*\)|[^,]+),(.+)\)/)
+      @line = line
       @type = 'Assert_Equal'
       @condition = ".not.(#$1==#$2)"
       @message = "\"#$1 (\",#$1,\") is not\", #$2"
@@ -58,6 +63,7 @@ module Funit
     
     def assert_array_equal(line)
       line.match(/\(\s*(\w+)\s*,\s*(\w+|\(\/.*\/\))\s*\)/)
+      @line = line
       @type = 'Assert_Array_Equal'
       @condition = ".not. all(#$1==#$2)"
       @message = "\"array #$1 is not #$2\""
@@ -67,6 +73,7 @@ module Funit
 
     def assert_larray_equal(line)
       line.match(/\(\s*(\w+)\s*,\s*(\w+|\(\/.*\/\))\s*\)/)
+      @line = line
       @type = 'Assert_Array_Equal'
       @condition = ".not. all(#$1.eqv.#$2)"
       @message = "\"array #$1 is not #$2\""
@@ -107,14 +114,21 @@ module Funit
   ! #@type assertion
   numAsserts = numAsserts + 1
   if (noAssertFailed) then
+    write(log,'(A)', advance='no') "trying assert #{@line.gsub(/"/, "'")}"
     if (#@condition) then
+      write(log,*) " failed!"
       print *, " *#@type failed* in test #@test_name &
               &[#{@suite_name}.fun:#{@line_number.to_s}]"
       print *, "  ", #@message
       print *, ""
+      write(log,*) " *#@type failed* in test #@test_name &
+              &[#{@suite_name}.fun:#{@line_number.to_s}]"
+      write(log,*) "  ", #@message
+      write(log,*) ""
       noAssertFailed = .false.
       numFailures    = numFailures + 1
     else
+      write(log,*) " success!"
       numAssertsTested = numAssertsTested + 1
     endif
   endif
