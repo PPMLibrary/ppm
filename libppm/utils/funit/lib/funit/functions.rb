@@ -20,6 +20,8 @@ module Funit
       <% end -%>
 
       integer, dimension(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
+      character(len=*), parameter               :: log_file_name = 'test_runner.log'
+      integer                                   :: log = 20
 
       <% if use_mpi -%>
       integer :: mpiinfo
@@ -27,14 +29,22 @@ module Funit
       call mpi_init(mpiinfo)
       <% end -%>
 
+      OPEN(log, FILE=log_file_name, ACTION='WRITE')
+      write(log,*) "Starting new test run..."
+
       <% test_suites.each_with_index do |test_suite,i| -%>
       write(*,*)
       write(*,*) "<%= File.basename(test_suite) %> test suite:"
+      write(log,*)
+      write(log,*) "<%= File.basename(test_suite) %> test suite:"
+
       call test_<%= File.basename(test_suite) %> &
-        ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), numFailures(<%= i+1 %>) )
+        ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), numFailures(<%= i+1 %>), log)
       write(*,1) numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
         numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
    <%= i+1 %> format('Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
+      write(log,1) numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
+        numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
       <% end -%>
 
       <% if use_mpi -%>
@@ -43,16 +53,22 @@ module Funit
       
       write(*,*)
       write(*,'(a)') "==========[ SUMMARY ]=========="
+      write(log,*)
+      write(log,'(a)') "==========[ SUMMARY ]=========="
       <% max_length = test_suites.empty? ? 0 : test_suites.max.length -%>
       <% test_suites.each_with_index do |test_suite,i| -%>
       write(*,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
+      write(log,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
       if ( numFailures(<%= i+1 %>) == 0 ) then
         write(*,*) " passed"
+        write(log,*) " passed"
       else
         write(*,*) " failed   <<<<<"
+        write(log,*) " failed   <<<<<"
       end if
       <% end -%>
       write(*,*)
+      write(log,*)
 
       if ( sum(numFailures) /= 0 ) stop 1
 
