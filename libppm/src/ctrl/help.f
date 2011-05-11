@@ -10,7 +10,7 @@
                   WRITE (*,*) "                  short flag :  ", &
 #if defined(ARRAY)
                   WRAP(DTYPE)_args(j)%flag(1:2), " <v1,v2,...>"
-#elif !defined(BOOL)
+#elif !defined(__LOGICAL)
                   WRAP(DTYPE)_args(j)%flag(1:2), " <value>"
 #else
                   WRAP(DTYPE)_args(j)%flag(1:2)
@@ -20,7 +20,7 @@
 #if defined(ARRAY)
                   WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
                   " <v1,v2,...>"
-#elif !defined(BOOL)
+#elif !defined(__LOGICAL)
                   WRAP(DTYPE)_args(j)%long_flag(1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), &
                   " <value>"
 #else
@@ -36,7 +36,7 @@
 #endif
              IF (WRAP(DTYPE)_args(j)%default_set) THEN
                 WRITE (*,'(A)',advance='no') "                default value : "
-#ifdef STRING
+#ifdef __STRING
 #ifdef ARRAY
                 WRITE (*,'(A)',advance='no') ' '
                 DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
@@ -55,8 +55,7 @@
                 WRITE(*,*) WRAP(DTYPE)_args(j)%default
 #endif
              END IF
-#ifndef STRING
-#ifndef BOOL
+#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
              IF (WRAP(DTYPE)_args(j)%min_set) &
                   WRITE (*,*) "               minimum value :  ", &
                   WRAP(DTYPE)_args(j)%min
@@ -64,7 +63,13 @@
                   WRITE (*,*) "               maximum value :  ", &
                   WRAP(DTYPE)_args(j)%max
 #endif
-#endif
              CYCLE group_loop
           END IF
        END DO
+#undef DTYPE
+#undef __INTEGER
+#undef __LONGINT
+#undef __SINGLE
+#undef __DOUBLE
+#undef __LOGICAL
+#undef __STRING

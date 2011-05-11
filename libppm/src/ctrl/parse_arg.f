@@ -4,18 +4,18 @@
                 ! short flag
                 ok = .FALSE.
                 IF (WRAP(DTYPE)_args(i)%flag_set) THEN
-#if defined(ARRAY) || !defined(BOOL)
-                   CALL find_flag(WRAP(DTYPE)_args(i)%flag(1:2), ok, value)
+#ifndef __LOGICAL
+                   CALL find_flag(WRAP(DTYPE)_args(i)%flag(1:2), ok, value, err)
 #else
                    CALL find_flag(WRAP(DTYPE)_args(i)%flag(1:2), ok)
 #endif
                 END IF
                 IF ((.NOT. ok) .AND. (WRAP(DTYPE)_args(i)%long_flag_set)) THEN
                    ! long flag
-#if defined(ARRAY) || !defined(BOOL)
+#ifndef __LOGICAL
                    CALL find_flag(WRAP(DTYPE)_args(i) &
                         %long_flag(1:LEN_TRIM(WRAP(DTYPE)_args(i) &
-                        %long_flag)), ok, value)
+                        %long_flag)), ok, value, err)
 #else
                    CALL find_flag(WRAP(DTYPE)_args(i) &
                         %long_flag(1:LEN_TRIM(WRAP(DTYPE)_args(i) &
@@ -23,14 +23,15 @@
 #endif
                 END IF
                 IF (ok) THEN
-#if defined(ARRAY) || !defined(BOOL)
+#ifndef __LOGICAL
                    ! match found - convert the arg
                    READ (value,*,IOSTAT=ios) WRAP(DTYPE)_args(i)%variable
                    ! check for failure
                    IF (ios .NE. 0) THEN
-                      WRITE (*,*) 'Invalid argument (', value(1:LEN_TRIM(value)), ') for arg ', &
+                      WRITE (cvar,*) 'Invalid argument (', value(1:LEN_TRIM(value)), ') for arg ', &
                            WRAP(DTYPE)_args(i)%name(1:LEN_TRIM(WRAP(DTYPE)_args(i)%name))
-                      info = 1
+                      info = ppm_error_fatal
+                      CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
                       GOTO 9999
                    END IF
 #else
@@ -41,5 +42,13 @@
                    END IF
 #endif
                    WRAP(DTYPE)_args(i)%clf_supplied = .TRUE.
+                ELSE IF (err) THEN
+                   info = ppm_error_fatal
+                   WRITE (cvar,*) 'Flag ', value(1:LEN_TRIM(value)), &
+                        ' has to be supplied with a value.'
+                   CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
+                   GOTO 9999
                 END IF
              END DO
+#undef DTYPE
+#undef __LOGICAL
