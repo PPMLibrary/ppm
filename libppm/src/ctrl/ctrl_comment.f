@@ -21,7 +21,7 @@
 #if defined(ARRAY)
                       WRITE(*,'(A,A)',advance='no') &
                            WRAP(DTYPE)_args(j)%flag(1:2), " {v1,v2,...}"
-#elif !defined(BOOL)
+#elif !defined(__LOGICAL)
                       WRITE(*,'(A,A)',advance='no') &
                            WRAP(DTYPE)_args(j)%flag(1:2), " {value}"
 #else
@@ -36,15 +36,14 @@
                         WRITE(*,*) WRAP(DTYPE)_args(j)%long_flag &
 #if defined(ARRAY)
                         (1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), " {v1,v2,...}"
-#elif !defined(BOOL)
+#elif !defined(__LOGICAL)
                         (1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag))), " {value}"
 #else
                         (1:(LEN_TRIM(WRAP(DTYPE)_args(j)%long_flag)))
 #endif
                 END IF
 
-#ifndef STRING
-#ifndef BOOL
+#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
                 IF (WRAP(DTYPE)_args(j)%min_set .OR. &
                      WRAP(DTYPE)_args(j)%max_set) THEN
                    WRITE (*,'(A)',advance='no') "#                   "
@@ -56,8 +55,14 @@
                         WRAP(DTYPE)_args(j)%max
                 END IF
 #endif
-#endif
              END IF
              CYCLE comment_loop
           END IF
        END DO
+#undef DTYPE
+#undef __INTEGER
+#undef __LONGINT
+#undef __SINGLE
+#undef __DOUBLE
+#undef __LOGICAL
+#undef __STRING
