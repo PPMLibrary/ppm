@@ -34,6 +34,8 @@
 #define __DOUBLE_PRECISION 2
 #define __COUNT 3
 #define __GET 4
+#define __INL 5
+#define __HNL 6
         !-------------------------------------------------------------------------
         !  Used modules
         !-------------------------------------------------------------------------
@@ -73,6 +75,8 @@
         INTERFACE ppm_inl_xset_vlist
             MODULE PROCEDURE inl_xset_vlist_s
             MODULE PROCEDURE inl_xset_vlist_d
+            MODULE PROCEDURE hnl_xset_vlist_s
+            MODULE PROCEDURE hnl_xset_vlist_d
         END INTERFACE
 
         INTERFACE create_inl_xset_vlist
@@ -140,7 +144,12 @@
         CONTAINS
 
 #define __KIND __SINGLE_PRECISION
+#define __MODE __INL
 #include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#define __MODE __HNL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
 #include "neighlist/ppm_inl_helpers.f"
 #define __ACTION __COUNT
 #include "neighlist/ppm_inl_xset_vlist_build.f"
@@ -150,7 +159,12 @@
 #undef __ACTION
 #undef  __KIND
 #define __KIND __DOUBLE_PRECISION
+#define __MODE __INL
 #include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#define __MODE __HNL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
 #include "neighlist/ppm_inl_helpers.f"
 #define __ACTION __COUNT
 #include "neighlist/ppm_inl_xset_vlist_build.f"
@@ -164,4 +178,6 @@
 #undef __DOUBLE_PRECISION
 #undef __COUNT
 #undef __GET
+#undef __INL
+#undef __HNL
       END MODULE ppm_module_inl_xset_vlist

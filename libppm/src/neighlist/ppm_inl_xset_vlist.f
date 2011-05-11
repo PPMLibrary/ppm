@@ -29,13 +29,25 @@
 
 
 #if   __KIND == __SINGLE_PRECISION
+#if   __MODE == __INL
       SUBROUTINE inl_xset_vlist_s(topoid,red,nred,mred, &
  &                   blue,nblue,mblue,rcblue,skin,    &
  &                   ghostlayer,info,vlist,nvlist,lstore)
+#elif __MODE == __HNL
+      SUBROUTINE hnl_xset_vlist_s(topoid,red,nred,mred, &
+ &                   blue,nblue,mblue,cutoff,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#endif
 #elif __KIND == __DOUBLE_PRECISION
+#if   __MODE == __INL
       SUBROUTINE inl_xset_vlist_d(topoid,red,nred,mred,&
  &                   blue,nblue,mblue,rcblue,skin,    &
  &                   ghostlayer,info,vlist,nvlist,lstore)
+#elif __MODE == __HNL
+      SUBROUTINE hnl_xset_vlist_d(topoid,red,nred,mred,&
+ &                   blue,nblue,mblue,cutoff,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#endif
 #endif
       !!! Inhomogeneous cross-set neighborlists. This routine provides
       !!! Verlet-list-like neighbor lists of particles of one set (blue) to a
@@ -67,8 +79,13 @@
       !!! Number of real blue particles
       INTEGER , INTENT(IN)                       :: mblue
       !!! Number of all blue particles including ghost particles
+#if   __MODE == __INL
       REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
       !!! Blue particle cutoff radii array
+#elif __MODE == __HNL
+      REAL(MK), INTENT(IN)                       :: cutoff
+      !!! Blue particle cutoff radii scalar
+#endif
       REAL(MK), INTENT(IN)                       :: skin
       !!! Skin parameter
       REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: ghostlayer
@@ -112,6 +129,9 @@
       REAL(MK)                                   :: t0
       REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
       REAL(MK)                                   :: max_phys
+#if   __MODE == __HNL
+      REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
+#endif
 
       !-------------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
@@ -121,6 +141,20 @@
 
       CALL substart('ppm_inl_vlist',t0,info)
 
+#if   __MODE == __HNL
+      !create an array of homogeneous cutoffs
+      ! TODO: this is an inefficient hack
+      ! (one would need to use the routines for homogeneous lists instead)
+      lda(1) = mblue
+      iopt = ppm_param_alloc_grow
+      CALL ppm_alloc(rcblue,lda,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
+    &                       'rcblue',__LINE__,info)
+      END IF
+      rcblue = cutoff
+#endif
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
       
@@ -233,11 +267,21 @@
       ENDDO
       CALL substop('ppm_inl_vlist',t0,info)
 #if   __KIND == __SINGLE_PRECISION
+#if   __MODE == __INL
       END SUBROUTINE inl_xset_vlist_s
+#elif __MODE == __HNL
+      END SUBROUTINE hnl_xset_vlist_s
+#endif
 #elif __KIND == __DOUBLE_PRECISION
+#if   __MODE == __INL
       END SUBROUTINE inl_xset_vlist_d
+#elif __MODE == __HNL
+      END SUBROUTINE hnl_xset_vlist_d
+#endif
 #endif
 
+      !if __MODE == _HNL -> skip till end of file
+#if   __MODE == __INL
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_xset_vlist_s(red,nred,mred,rcred,blue,nblue,&
  &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
@@ -693,4 +737,5 @@
       END SUBROUTINE get_xset_VerletLists_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE get_xset_VerletLists_d
+#endif
 #endif
