@@ -93,6 +93,7 @@
      LOGICAL                                             :: long_flag_set = .FALSE.
      CHARACTER(LEN=256)                                  :: ctrl_name
      LOGICAL                                             :: ctrl_name_set = .FALSE.
+     LOGICAL                                             :: settable      = .FALSE.
      CHARACTER(LEN=ppm_char)                             :: help
      LOGICAL                                             :: help_set      = .FALSE.
      LOGICAL                                             :: clf_supplied  = .FALSE.
