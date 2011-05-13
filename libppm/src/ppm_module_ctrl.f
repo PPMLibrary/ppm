@@ -353,6 +353,7 @@ MODULE ppm_module_ctrl
   ! arg groups
   CHARACTER(LEN=ppm_char),  POINTER, DIMENSION(:) :: groups         => NULL()
   INTEGER,                  POINTER, DIMENSION(:) :: group_size     => NULL()
+  INTEGER,                  POINTER, DIMENSION(:) :: group_max_len  => NULL()
   LOGICAL,                  POINTER, DIMENSION(:) :: group_has_ctrl => NULL()
   LOGICAL,                  POINTER, DIMENSION(:) :: group_has_arg  => NULL()
   INTEGER                                         :: groups_i       =  -1
@@ -407,7 +408,7 @@ CONTAINS
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_argument, caller, &
                'Applying defaults failed!', __LINE__, info)
-          GOTO 9999
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  Read in the command line
@@ -418,7 +419,7 @@ CONTAINS
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_alloc, caller, &
                   'Reading command line args failed!', __LINE__, info)
-             GOTO 9999
+             GOTO 100
           END IF
        END IF
        !-------------------------------------------------------------------
@@ -430,7 +431,7 @@ CONTAINS
           IF (ok) THEN
              CALL print_help
              info = exit_gracefully
-             GOTO 9999
+             GOTO 100
           END IF
        END IF
        !-------------------------------------------------------------------
@@ -441,7 +442,7 @@ CONTAINS
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_argument, caller, &
                   'Parsing command line args failed!', __LINE__, info)
-          GOTO 9999
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  Control file
@@ -451,7 +452,7 @@ CONTAINS
           IF (ok) THEN
              CALL print_ctrl
              info = exit_gracefully
-             GOTO 9999
+             GOTO 100
           END IF
           CALL find_arg(1, ok, ctrl_file_name)
           !----------------------------------------------------------------
@@ -462,7 +463,7 @@ CONTAINS
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_argument, caller, &
                   'Parsing control file failed!', __LINE__, info)
-             GOTO 9999
+             GOTO 100
           END IF
        END IF
        !-------------------------------------------------------------------
@@ -473,7 +474,7 @@ CONTAINS
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_argument, caller, &
                'Calling default functions failed!', __LINE__, info)
-          GOTO 9999
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  Check minmax
@@ -483,7 +484,7 @@ CONTAINS
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_argument, caller, &
                'Min/max check failed!', __LINE__, info)
-          GOTO 9999
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  Run validators
@@ -493,7 +494,7 @@ CONTAINS
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_argument, caller, &
                'Calling validator functions failed!', __LINE__, info)
-          GOTO 9999
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  DONE!
@@ -1219,36 +1220,46 @@ CONTAINS
 !!! Group name
     CHARACTER(LEN=256), POINTER, DIMENSION(:)  :: temp_g
     INTEGER,            POINTER, DIMENSION(:)  :: temp_s
+    INTEGER,            POINTER, DIMENSION(:)  :: temp_m
     LOGICAL,            POINTER, DIMENSION(:)  :: temp_c
     LOGICAL,            POINTER, DIMENSION(:)  :: temp_a
     groups_i = groups_i + 1
     IF (.NOT. ASSOCIATED(groups)) THEN
        ALLOCATE(groups(0:di))
        ALLOCATE(group_size(0:di))
+       ALLOCATE(group_max_len(0:di))
        ALLOCATE(group_has_ctrl(0:di))
        ALLOCATE(group_has_arg(0:di))
     ELSE IF (groups_i+1 .GT. SIZE(groups)) THEN
        ALLOCATE(temp_g(0:(SIZE(groups)+di)))
        ALLOCATE(temp_s(0:(SIZE(groups)+di)))
+       ALLOCATE(temp_m(0:(SIZE(groups)+di)))
        ALLOCATE(temp_c(0:(SIZE(groups)+di)))
        ALLOCATE(temp_a(0:(SIZE(groups)+di)))
        temp_g(0:SIZE(groups)) = groups(0:SIZE(groups))
        temp_s(0:SIZE(groups)) = group_size(0:SIZE(groups))
+       temp_m(0:SIZE(groups)) = group_max_len(0:SIZE(groups))
        temp_c(0:SIZE(groups)) = group_has_ctrl(0:SIZE(groups))
        temp_a(0:SIZE(groups)) = group_has_arg(0:SIZE(groups))
        DEALLOCATE(groups)
        DEALLOCATE(group_size)
+       DEALLOCATE(group_max_len)
        DEALLOCATE(group_has_ctrl)
        DEALLOCATE(group_has_arg)
        groups         => temp_g
        group_size     => temp_s
+       group_max_len  => temp_m
        group_has_ctrl => temp_c
        group_has_arg  => temp_a
     END IF
     groups(groups_i)         = name
     group_size(groups_i)     = 0
+    group_max_len(groups_i)  = 0
     group_has_ctrl(groups_i) = .false.
     group_has_arg(groups_i)  = .false.
+    IF (groups_i .EQ. 0 .AND. (help_enabled .OR. ctrl_enabled)) THEN
+       group_has_arg(0) = .true.
+    END IF
   END SUBROUTINE arg_group
   !------------------------------------------------------------------------
   !  Print command line help
@@ -1256,25 +1267,27 @@ CONTAINS
   SUBROUTINE print_help
 !!! Prints usage information to the standard output.
     INTEGER  :: i, j, k, l
+    CHARACTER(LEN=ppm_char) :: scratch
     IF (ctrl_enabled) THEN
-       WRITE (*,'(A)') "Usage: progname {ctrl-file} [options]"
+       WRITE (*,'(A)') "Usage: progname {ctrl-file} [options] [args]"
     ELSE
-       WRITE (*,'(A)') "Usage: progname [options]"
+       WRITE (*,'(A)') "Usage: progname [options] [args]"
     END IF
     DO k=0,groups_i
+       IF (.NOT. group_has_arg(k)) CYCLE
        WRITE (*,'(/A)') groups(k)
-       IF (k .EQ. 0 .AND. i .EQ. 1) THEN
+       IF (k .EQ. 0) THEN
           IF (help_enabled) THEN
-             WRITE (*,'(/A)') '   help                          Print &
-                  &this help message and exit.'
-             WRITE (*,*) '                  short flag :  -h'
-             WRITE (*,*) '                   long flag :  --help'
+             WRITE (*,'(A,/A,/A)') &
+'  help                          Print this help message and exit.',&
+'                  short flag :  -h',&
+'                   long flag :  --help'
           END IF
           IF (ctrl_enabled) THEN
-             WRITE (*,'(/A)') '   control file                  Print &
-                  &sample control file and exit.'
-             WRITE (*,*) '                   long flag :  --print-ctrl'
-          END IF  
+             WRITE (*,'(A,/A)') &
+'  control file                  Print sample control file and exit.',&
+'                   long flag :  --print-ctrl'
+          END IF
        END IF
        group_loop: DO i=1,group_size(k)
           ! scalar
@@ -1334,6 +1347,8 @@ CONTAINS
   SUBROUTINE print_ctrl
 !!! Prints a sample control file to standard output.
     INTEGER  :: i, j, k, l
+    CHARACTER(LEN=ppm_char) :: scratch
+    LOGICAL                 :: in_line
     IF (groups_i .EQ. -1) THEN
        WRITE (*,*) "No args have been defined..."
        RETURN
@@ -1345,18 +1360,23 @@ CONTAINS
     WRITE (*,'(A)') "#"
     WRITE (*,'(A)') "#--------------------------------------------------------------------------"
     DO k=0,groups_i
+       IF (.NOT. group_has_ctrl(k)) CYCLE
        WRITE (*,'(/A)') "#--------------------------------------------------------------------------"
        WRITE (*,'(2A)') "#  ", groups(k)(1:LEN_TRIM(groups(k)))
 
        comment_loop: DO i=1,group_size(k)
           ! scalar
 #define DTYPE INTEGER
+#define __INTEGER
 #include "ctrl/ctrl_comment.f"
 #define DTYPE LONGINT
+#define __LONGINT
 #include "ctrl/ctrl_comment.f"
 #define DTYPE SINGLE
+#define __SINGLE
 #include "ctrl/ctrl_comment.f"
 #define DTYPE DOUBLE
+#define __DOUBLE
 #include "ctrl/ctrl_comment.f"
 #define DTYPE LOGICAL
 #define __LOGICAL
@@ -1371,12 +1391,16 @@ CONTAINS
           ! array
 #define ARRAY
 #define DTYPE INTEGER_array
+#define __INTEGER
 #include "ctrl/ctrl_comment.f"
 #define DTYPE LONGINT_array
+#define __LONGINT
 #include "ctrl/ctrl_comment.f"
 #define DTYPE SINGLE_array
+#define __SINGLE
 #include "ctrl/ctrl_comment.f"
 #define DTYPE DOUBLE_array
+#define __DOUBLE
 #include "ctrl/ctrl_comment.f"
 #define DTYPE LOGICAL_array
 #define __LOGICAL

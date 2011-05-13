@@ -4,8 +4,8 @@
               WRAP(DTYPE)_args(j)%group_i .EQ. i) THEN
 
              IF (WRAP(DTYPE)_args(j)%ctrl_name_set) THEN
-
-                WRITE (*,'(A)',advance='no') &
+                WRITE (scratch, *) group_max_len(k)
+                WRITE (*,'(A' // scratch(1:LEN_TRIM(scratch)) // ')',advance='no') &
                      WRAP(DTYPE)_args(j)%ctrl_name &
                      (1:LEN_TRIM(WRAP(DTYPE)_args(j)%ctrl_name))
 
@@ -26,7 +26,9 @@
                         (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default))
 #endif
 #else
-                   WRITE (*,*) "=", WRAP(DTYPE)_args(j)%default
+                   WRITE (scratch, *) WRAP(DTYPE)_args(j)%default
+                   scratch = ADJUSTL(scratch)
+                   WRITE (*,*) "= ", scratch(1:LEN_TRIM(scratch))
 #endif
                 END IF
              END IF
