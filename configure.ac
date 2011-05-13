@@ -60,9 +60,59 @@ AC_CHECK_SIZEOF([long double])
 AX_F90_MODULE_FLAG
 AC_SUBST([ax_cv_f90_modflag])
 
+# Check for Fortran2003 support
+AC_MSG_CHECKING([if Fortran 2003 is properly supported])
+AC_LANG([Fortran])
+use_f03=no 
+AC_RUN_IFELSE([
+      program procedure_test
+        type container
+           integer,         pointer         :: var
+           procedure(func), pointer, nopass :: f
+        end type container
+        
+        interface add
+           procedure sample
+        end interface
+      
+        abstract interface
+           logical function func(var)
+             integer, pointer :: var
+           end function func
+        end interface
+      
+        type(container)            :: c
+        integer                    :: var
+        procedure(func)            :: test
+      
+        call add(var, test)
+        if (c%f(c%var)) stop 0
+        stop 1
+      
+      contains
+        subroutine sample(var, f)
+          integer,         target    :: var
+          procedure(func), optional  :: f
+          c%var => var
+          c%f   => f
+        end subroutine sample
+      end program procedure_test
+      
+      logical function test(var)
+        integer, pointer :: var
+        test = .true.
+      end function test],
+               [use_f03=yes],
+               [use_f03=no])
+if test "x${use_f03}" = xyes; then
+    echo "#define __F2003" >> ./src/ppm_define.h
+    AC_MSG_RESULT([yes])
+else
+    AC_MSG_RESULT([no])
+fi
+
 if test "x${use_mpi}" == xyes; then
     AC_MSG_CHECKING([if your MPI is usable])
-    AC_LANG([Fortran])
     AC_LINK_IFELSE([
                      program conftest_prog
                      include 'mpif.h'
@@ -74,8 +124,8 @@ if test "x${use_mpi}" == xyes; then
 #    AC_CHECK_LIB([],[MPI_Init],[
 #                  echo "#define __MPI" >> ./src/ppm_define.h],
 #                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
-    AC_LANG([C])
 fi
+AC_LANG([C])
 
 if test "x${use_mpi}" == xyes; then
     AC_SUBST(FUNIT_FLAGS,["--with-mpi"])
