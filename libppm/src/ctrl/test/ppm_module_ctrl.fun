@@ -503,7 +503,7 @@ test_suite ppm_module_ctrl
     CALL reset
     ! define
     CALL arg(idefault, 'idefault', ctrl_name = 'idefault')
-    CALL arg(iflag,    'iflag',    ctrl_name = 'iflag', flag='-f')
+    CALL arg(iflag,    '   iflag', ctrl_name = 'iflag', flag='-f')
     CALL arg(gdefault, 'gdefault', ctrl_name = 'gdefault')
     CALL arg(rdefault, 'rdefault', ctrl_name = 'rdefault')
     CALL arg(ddefault, 'ddefault', ctrl_name = 'ddefault')
@@ -511,14 +511,14 @@ test_suite ppm_module_ctrl
     CALL arg(ldefault, 'ldefault', ctrl_name = 'ldefault')
     CALL arg(pdefault, 'pdefault', ctrl_name = 'pdefault')
     CALL arg(xdefault, 'xdefault', ctrl_name = 'xdefault')
-    CALL arg(iarray,   'iarray',   ctrl_name = 'iarray')
-    CALL arg(garray,   'garray',   ctrl_name = 'garray')
-    CALL arg(rarray,   'rarray',   ctrl_name = 'rarray')
-    CALL arg(darray,   'darray',   ctrl_name = 'darray')
-    CALL arg(carray,   'carray',   ctrl_name = 'carray')
-    CALL arg(larray,   'larray',   ctrl_name = 'larray')
-    CALL arg(parray,   'parray',   ctrl_name = 'parray')
-    CALL arg(xarray,   'xarray',   ctrl_name = 'xarray')
+    CALL arg(iarray,   '  iarray', ctrl_name = 'iarray')
+    CALL arg(garray,   '  garray', ctrl_name = 'garray')
+    CALL arg(rarray,   '  rarray', ctrl_name = 'rarray')
+    CALL arg(darray,   '  darray', ctrl_name = 'darray')
+    CALL arg(carray,   '  carray', ctrl_name = 'carray')
+    CALL arg(larray,   '  larray', ctrl_name = 'larray')
+    CALL arg(parray,   '  parray', ctrl_name = 'parray')
+    CALL arg(xarray,   '  xarray', ctrl_name = 'xarray')
     ! open file for writing
     scf = 123
     OPEN(scf, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')

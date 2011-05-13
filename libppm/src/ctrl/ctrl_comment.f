@@ -8,15 +8,22 @@
 
                 WRITE (*,'(A,A15)',advance='no') "#  ", &
                      WRAP(DTYPE)_args(j)%name(1:LEN_TRIM(WRAP(DTYPE)_args(j)%name))
+                in_line = .TRUE.
 
-                IF (WRAP(DTYPE)_args(j)%help_set) &
-                     WRITE (*,'(A,A)') ": ", &
-                     WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+                IF (WRAP(DTYPE)_args(j)%help_set) THEN
+                   WRITE (*,'(A,A)') ": ", &
+                        WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+                   in_line = .FALSE.
+                END IF
 
                 IF (WRAP(DTYPE)_args(j)%flag_set .OR. &
                      WRAP(DTYPE)_args(j)%long_flag_set) THEN
-                   WRITE (*,'(A)',advance='no') "#                   "
-
+                   IF (in_line) THEN
+                      WRITE (*,'(A)',advance='no') ": "
+                   ELSE
+                      WRITE (*,'(A)',advance='no') "#                   "
+                   END IF
+                   in_line = .FALSE.
                    IF (WRAP(DTYPE)_args(j)%flag_set) THEN
 #if defined(ARRAY)
                       WRITE(*,'(A,A)',advance='no') &
@@ -28,8 +35,11 @@
                       WRITE(*,'(A)',advance='no') &
                            WRAP(DTYPE)_args(j)%flag(1:2)
 #endif
-                      IF (WRAP(DTYPE)_args(j)%long_flag_set) &
-                           WRITE(*,'(A)',advance='no') ', '
+                      IF (WRAP(DTYPE)_args(j)%long_flag_set) THEN
+                         WRITE (*,'(A)',advance='no') ', '
+                      ELSE
+                         WRITE (*,*) ''
+                      END IF
                    END IF
 
                    IF (WRAP(DTYPE)_args(j)%long_flag_set) &
@@ -46,15 +56,31 @@
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
                 IF (WRAP(DTYPE)_args(j)%min_set .OR. &
                      WRAP(DTYPE)_args(j)%max_set) THEN
-                   WRITE (*,'(A)',advance='no') "#                   "
+                   IF (in_line) THEN
+                      WRITE (*,'(A)',advance='no') ": "
+                   ELSE
+                      WRITE (*,'(A)',advance='no') "#                   "
+                   END IF
+                   in_line = .FALSE.
+                   IF (WRAP(DTYPE)_args(j)%min_set) THEN
+                      WRITE (scratch, *) WRAP(DTYPE)_args(j)%min
+                      scratch = ADJUSTL(scratch)
+                      WRITE (*,'(A,A)',advance='no') scratch(1:LEN_TRIM(scratch)) , ' < '
+                   END IF
 #ifdef ARRAY
-                   WRITE (*,*) WRAP(DTYPE)_args(j)%min, ' < {v1,v2,...} < ', &
+                   WRITE (*,'(A)',advance='no') '{v1,v2,...}'
 #else
-                   WRITE (*,*) WRAP(DTYPE)_args(j)%min, ' < {value} < ', &
+                   WRITE (*,'(A)',advance='no') '{value}'
 #endif
-                        WRAP(DTYPE)_args(j)%max
+                   IF (WRAP(DTYPE)_args(j)%max_set) THEN
+                      WRITE (scratch, *) WRAP(DTYPE)_args(j)%max
+                      scratch = ADJUSTL(scratch)
+                      WRITE (*,'(A,A)',advance='no') ' < ', scratch(1:LEN_TRIM(scratch))
+                   END IF
+                   WRITE(*,*) ''
                 END IF
 #endif
+                IF (in_line) WRITE (*,*) ''
              END IF
              CYCLE comment_loop
           END IF
