@@ -3,9 +3,12 @@
           IF (WRAP(DTYPE)_args(j)%group .EQ. k .AND. &
               WRAP(DTYPE)_args(j)%group_i .EQ. i) THEN
              WRITE (*,'(/2A)',advance='no') "  ", WRAP(DTYPE)_args(j)%name(1:28)
-             IF (WRAP(DTYPE)_args(j)%help_set) &
-                  WRITE (*,*) "  ", &
-                  WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+             IF (WRAP(DTYPE)_args(j)%help_set) THEN
+                WRITE (*,*) "  ", &
+                     WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+             ELSE
+                WRITE (*,*) ''
+             END IF
              IF (WRAP(DTYPE)_args(j)%flag_set) &
                   WRITE (*,*) "                  short flag :  ", &
 #if defined(ARRAY)
