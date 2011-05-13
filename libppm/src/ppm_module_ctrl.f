@@ -73,8 +73,8 @@ MODULE ppm_module_ctrl
 !!! --)
 !!! ctrl_name :: [_'name'_] name of the control file varible
 !!! default :: [_42_] default value
-!!! min :: [_4_] minimum value for numeric types, or length for strings
-!!! max :: [_30_] maximum value/length
+!!! min :: [_4_] minimum value for numeric types
+!!! max :: [_30_] maximum value
 !!! default_func :: [_external_func_] custom function to compute the
 !!! value of the variable after other globals have been set
 !!! validator :: [_external_func_] custom function to validate the
@@ -118,13 +118,6 @@ MODULE ppm_module_ctrl
        &    enabling_flag, disabling_flag, exit_gracefully
 
   PRIVATE
-
-  ! TEMP FIX
-!   INTEGER, PARAMETER :: ppm_kind_int32      = 4
-!   INTEGER, PARAMETER :: ppm_kind_int64      = 8
-!   INTEGER, PARAMETER :: ppm_kind_single     = KIND(1.0E0)
-!   INTEGER, PARAMETER :: ppm_kind_double     = KIND(1.0D0)
-
 
 #ifdef __MPI
   INCLUDE 'mpif.h'
@@ -953,6 +946,9 @@ CONTAINS
 #include "ctrl/minmax.f"
 #define DTYPE DOUBLE
 #include "ctrl/minmax.f"
+! #define DTYPE STRING
+! #define __STRING
+! #include "ctrl/minmax.f"
 #define ARRAY
 #define DTYPE INTEGER_array
 #include "ctrl/minmax.f"
@@ -962,6 +958,9 @@ CONTAINS
 #include "ctrl/minmax.f"
 #define DTYPE DOUBLE_array
 #include "ctrl/minmax.f"
+! #define DTYPE STRING_array
+! #define __STRING
+! #include "ctrl/minmax.f"
 #undef ARRAY
 9999 CONTINUE
   END SUBROUTINE check_minmax
