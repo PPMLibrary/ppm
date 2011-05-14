@@ -61,7 +61,7 @@ AX_F90_MODULE_FLAG
 AC_SUBST([ax_cv_f90_modflag])
 
 # Check for Fortran2003 support
-AC_MSG_CHECKING([if Fortran 2003 is properly supported])
+AC_MSG_CHECKING([whether your compiler properly supports Fortran 2003])
 AC_LANG([Fortran])
 use_f03=no 
 AC_RUN_IFELSE([
@@ -70,10 +70,6 @@ AC_RUN_IFELSE([
            integer,         pointer         :: var
            procedure(func), pointer, nopass :: f
         end type container
-        
-        interface add
-           procedure sample
-        end interface
       
         abstract interface
            logical function func(var)
@@ -88,14 +84,14 @@ AC_RUN_IFELSE([
         call add(var, test)
         if (c%f(c%var)) stop 0
         stop 1
-      
+
       contains
-        subroutine sample(var, f)
+        subroutine add(var,f)
           integer,         target    :: var
           procedure(func), optional  :: f
           c%var => var
           c%f   => f
-        end subroutine sample
+        end subroutine add
       end program procedure_test
       
       logical function test(var)
