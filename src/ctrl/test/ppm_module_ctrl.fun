@@ -24,6 +24,8 @@ test_suite ppm_module_ctrl
 
   integer :: info, ios, scf
 
+#include "../../ppm_define.h"
+
   setup
     CALL disable_ctrl
   !  CALL arg_group("Integer Tests")
@@ -569,6 +571,7 @@ test_suite ppm_module_ctrl
   end test
 
   test default_funcs
+#ifdef __F2003
     ! procedure declarations
     procedure(integer_func)        int_def
     procedure(integer_func)        revert_on_fail
@@ -628,10 +631,14 @@ test_suite ppm_module_ctrl
     Assert_LArray_Equal(larray, (/.true., .false., .true./))
     Assert_Array_Equal( parray, (/(1,0),(0,1),(-1,0)/))
     Assert_Array_Equal( xarray, (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
+#else
+    write(*,*) "WARNING: Default functions and validators are not supported!!!"
+#endif
   end test
 
 end test_suite
 
+#ifdef __F2003
 logical function int_def(var)
   integer, pointer, intent(in) :: var
   var = 42
@@ -732,3 +739,4 @@ logical function dcpa_def(var)
   var = (/(1,0),(0,1),(-1,0)/)
   dcpa_def = .true.
 end function dcpa_def
+#endif
