@@ -76,9 +76,10 @@ MODULE ppm_module_ctrl
 !!! min :: [_4_] minimum value for numeric types
 !!! max :: [_30_] maximum value
 !!! default_func :: [_external_func_] custom function to compute the
-!!! value of the variable after other globals have been set
+!!! value of the variable after other globals have been set (only
+!!! available when compiled with F2003 support)
 !!! validator :: [_external_func_] custom function to validate the
-!!! variable value
+!!! variable value (only available when compiled with F2003 support)
 !!!
 !!! By default the module supports _-h_ and _--help_ flags for
 !!! printing the help message, and _--print-ctrl_ for printing a
@@ -102,24 +103,27 @@ MODULE ppm_module_ctrl
   USE ppm_module_substop
   USE ppm_module_error
   IMPLICIT NONE
+
+#include "ppm_define.h"
+
   !------------------------------------------------------------------------
   !  Interface
   !------------------------------------------------------------------------
   PUBLIC :: arg, arg_group, parse_args, disable_help, disable_ctrl, &
        &    set_ctrl_name,                                          &
+#ifdef __F2003
        &    integer_func, longint_func, single_func, double_func,   & 
        &    logical_func, string_func, complex_func, dcomplex_func, & 
        &    integer_array_func, longint_array_func,                 &
        &    single_array_func, double_array_func,                   &
        &    logical_array_func, string_array_func,                  &
        &    complex_array_func, dcomplex_array_func,                &
+#endif
        &    reset, add_cmd, ctrl_file_test,                         &
        &    find_arg, find_flag, arg_count,                         &
        &    enabling_flag, disabling_flag, exit_gracefully
 
   PRIVATE
-
-#include "ppm_define.h"
 
 #ifdef __MPI
   INCLUDE 'mpif.h'
@@ -164,35 +168,35 @@ MODULE ppm_module_ctrl
   ! array
 #define ARRAY
 
-#define DTYPE INTEGER
+#define DTYPE INTEGER_array
 #define __INTEGER
 #include "ctrl/type.f"
 
-#define DTYPE LONGINT
+#define DTYPE LONGINT_array
 #define __LONGINT
 #include "ctrl/type.f"
 
-#define DTYPE SINGLE
+#define DTYPE SINGLE_array
 #define __SINGLE
 #include "ctrl/type.f"
 
-#define DTYPE DOUBLE
+#define DTYPE DOUBLE_array
 #define __DOUBLE
 #include "ctrl/type.f"
 
-#define DTYPE LOGICAL
+#define DTYPE LOGICAL_array
 #define __LOGICAL
 #include "ctrl/type.f"
 
-#define DTYPE STRING
+#define DTYPE STRING_array
 #define __STRING
 #include "ctrl/type.f"
 
-#define DTYPE COMPLEX
+#define DTYPE COMPLEX_array
 #define __COMPLEX
 #include "ctrl/type.f"
 
-#define DTYPE DCOMPLEX
+#define DTYPE DCOMPLEX_array
 #define __DCOMPLEX
 #include "ctrl/type.f"
 
@@ -222,6 +226,7 @@ MODULE ppm_module_ctrl
      MODULE PROCEDURE DCOMPLEX_array_add_arg
   END INTERFACE
 
+#ifdef __F2003
   ABSTRACT INTERFACE
      !---------------------------------------------------------------------
      !  Defaults and Validators
@@ -293,6 +298,7 @@ MODULE ppm_module_ctrl
      END FUNCTION DCOMPLEX_array_func
 
   END INTERFACE
+#endif
   !------------------------------------------------------------------------
   !  Constants
   !------------------------------------------------------------------------
@@ -466,6 +472,7 @@ CONTAINS
              GOTO 100
           END IF
        END IF
+#ifdef __F2003
        !-------------------------------------------------------------------
        !  Call default funcs
        !-------------------------------------------------------------------
@@ -476,6 +483,7 @@ CONTAINS
                'Calling default functions failed!', __LINE__, info)
           GOTO 100
        END IF
+#endif
        !-------------------------------------------------------------------
        !  Check minmax
        !-------------------------------------------------------------------
@@ -486,6 +494,7 @@ CONTAINS
                'Min/max check failed!', __LINE__, info)
           GOTO 100
        END IF
+#ifdef __F2003
        !-------------------------------------------------------------------
        !  Run validators
        !-------------------------------------------------------------------
@@ -496,6 +505,7 @@ CONTAINS
                'Calling validator functions failed!', __LINE__, info)
           GOTO 100
        END IF
+#endif
        !-------------------------------------------------------------------
        !  DONE!
        !-------------------------------------------------------------------
@@ -945,6 +955,7 @@ CONTAINS
     CLOSE(iUnit)
     RETURN
   END SUBROUTINE parse_ctrl_file
+#ifdef __F2003
   !------------------------------------------------------------------------
   !  Call default funcs
   !------------------------------------------------------------------------
@@ -987,6 +998,7 @@ CONTAINS
 #include "ctrl/default_func.f"
 9999 CONTINUE
   END SUBROUTINE call_default_funcs
+#endif
   !------------------------------------------------------------------------
   !  Check min max
   !------------------------------------------------------------------------
@@ -1021,6 +1033,7 @@ CONTAINS
 #undef ARRAY
 9999 CONTINUE
   END SUBROUTINE check_minmax
+#ifdef __F2003
   !------------------------------------------------------------------------
   !  Call validator functions
   !------------------------------------------------------------------------
@@ -1065,6 +1078,7 @@ CONTAINS
 #include "ctrl/validate.f"
 9999 CONTINUE
   END SUBROUTINE call_validator_funcs
+#endif
   !------------------------------------------------------------------------
   !  Special args
   !------------------------------------------------------------------------
