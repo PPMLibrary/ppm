@@ -65,7 +65,7 @@
                    IF (WRAP(DTYPE)_args(j)%min_set) THEN
                       WRITE (scratch, *) WRAP(DTYPE)_args(j)%min
                       scratch = ADJUSTL(scratch)
-                      WRITE (*,'(A,A)',advance='no') scratch(1:LEN_TRIM(scratch)) , ' < '
+                      WRITE (*,'(A,A)',advance='no') scratch(1:LEN_TRIM(scratch)) , ' <= '
                    END IF
 #ifdef ARRAY
                    WRITE (*,'(A)',advance='no') '{v1,v2,...}'
@@ -75,7 +75,7 @@
                    IF (WRAP(DTYPE)_args(j)%max_set) THEN
                       WRITE (scratch, *) WRAP(DTYPE)_args(j)%max
                       scratch = ADJUSTL(scratch)
-                      WRITE (*,'(A,A)',advance='no') ' < ', scratch(1:LEN_TRIM(scratch))
+                      WRITE (*,'(A,A)',advance='no') ' <= ', scratch(1:LEN_TRIM(scratch))
                    END IF
                    WRITE(*,*) ''
                 END IF
