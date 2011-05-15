@@ -27,10 +27,10 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-subroutine ppm_dbg_print_s(topoid,ghostlayer,step,colortag,info,xp,np,mp)
+SUBROUTINE ppm_dbg_print_s(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 #elif __KIND == __DOUBLE_PRECISION
-subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
-#endif
+SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
+#ENDIF
       !!! This routine provides a simple means to visualize particles and
       !!! domain decompositions for debugging and monitoring purposes.
       !!!
@@ -56,51 +56,51 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 #include "ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
-#endif 
+#ENDIF 
 
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+#ENDIF
     
       ! arguments
-      integer,            intent(in)    :: topoid
+      INTEGER,            INTENT(IN)    :: topoid
       !!! topology ID to which we are currently mapped
-      real(mk),           intent(in)    :: ghostlayer
+      REAL(mk),           INTENT(IN)    :: ghostlayer
       !!! ghostlayer, can be set to 0 if we dont care about it
-      integer,            intent(in)    :: step
+      INTEGER,            INTENT(IN)    :: step
       !!! parameter can be used to create distinct output dump files for each
       !!! timestep
-      integer,            intent(in)    :: colortag
+      INTEGER,            INTENT(IN)    :: colortag
       !!! a tag to be able to print out different groups of particles
-      integer,            intent(out)   :: info
-      real(mk), dimension(:,:), pointer,optional :: xp
+      INTEGER,            INTENT(OUT)   :: info
+      REAL(mk), DIMENSION(:,:), POINTER,OPTIONAL :: xp
       !!! a particle position array, this argument is optional
-      integer,            intent(in),optional    :: np
+      INTEGER,            INTENT(IN),OPTIONAL    :: np
       !!! number of particles
       !!! if xp is provided, then this one must e provided too
-      integer,            intent(in),optional    :: mp
+      INTEGER,            INTENT(IN),OPTIONAL    :: mp
       !!! number of particles including ghost particles
       !!! if omitted it is assumed that np=mp
       ! local vars
-      character(128)                     :: sfmt,pfmt
-      character(64)                     :: sfname,pfname
-      type(ppm_t_topo), pointer         :: topo => NULL()
-      integer                           :: i
-      integer                           :: iunit
-      real(mk)                          :: t0
-      integer                           :: mpart
+      CHARACTER(128)                     :: sfmt,pfmt
+      CHARACTER(64)                     :: sfname,pfname
+      TYPE(ppm_t_topo), POINTER         :: topo => NULL()
+      INTEGER                           :: i
+      INTEGER                           :: iunit
+      REAL(mk)                          :: t0
+      INTEGER                           :: mpart
 #ifdef __MPI
-      integer, dimension(:),    pointer :: allnp => NULL()
-      integer, dimension(:),    pointer :: allmp => NULL()
-      real(mk), dimension(:,:,:),pointer:: allxp => NULL()
-      integer, dimension(:,:),  pointer :: buf   => NULL()
-      integer, dimension(3)             :: lda
-      integer                           :: maxmp
-      integer                           :: iproc
-      integer, dimension(:),  pointer   :: req => NULL()
-#endif
+      INTEGER, DIMENSION(:),    POINTER :: allnp => NULL()
+      INTEGER, DIMENSION(:),    POINTER :: allmp => NULL()
+      REAL(mk), DIMENSION(:,:,:),POINTER:: allxp => NULL()
+      INTEGER, DIMENSION(:,:),  POINTER :: buf   => NULL()
+      INTEGER, DIMENSION(3)             :: lda
+      INTEGER                           :: maxmp
+      INTEGER                           :: iproc
+      INTEGER, DIMENSION(:),  POINTER   :: req => NULL()
+#ENDIF
        
       CALL substart('ppm_dbg_print',t0,info)
 
@@ -121,29 +121,29 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       !------------------------------------------------------------------------
 
 #ifdef __MPI
-      if (ppm_rank.eq.0) then
-#endif
-      call ppm_topo_get(topoid,topo,info)
+      IF (ppm_rank.eq.0) THEN
+#ENDIF
+      CALL ppm_topo_get(topoid,topo,info)
       open(iunit,file=sfname)
    
       write(iunit,'(I1)') ppm_dim
       write(iunit,'(F12.8)') ghostlayer
-      do i=1,topo%nsubs
+      DO i=1,topo%nsubs
           write(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i),&
  &                          topo%sub2proc(i),&
  &                          topo%subs_bc(:,i)
-      enddo
+      ENDDO
       close(iunit)
 #ifdef __MPI
-      endif
-#endif
+      ENDIF
+#ENDIF
       
-      if (present(xp).and.present(np)) then
-          if (present(mp)) then
+      IF (present(xp).AND.present(np)) THEN
+          IF (present(mp)) THEN
               mpart = mp
-          else
+          ELSE
               mpart = np
-          endif
+          ENDIF
 
 #ifdef __MPI
           !--------------------------------------------------------------------
@@ -151,107 +151,107 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
           !--------------------------------------------------------------------
           ! first allocate the size info arrays
           lda(1) = ppm_nproc
-          call ppm_alloc(allnp,lda,ppm_param_alloc_fit,info)
-          call ppm_alloc(allmp,lda,ppm_param_alloc_fit,info)
-          if (info .NE. 0) then
+          CALL ppm_alloc(allnp,lda,ppm_param_alloc_fit,info)
+          CALL ppm_alloc(allmp,lda,ppm_param_alloc_fit,info)
+          IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
      &            'failed to allocate allnp or allmp',__LINE__,info)
-              goto 9999
-          endif
+              GOTO 9999
+          ENDIF
           ! gather the np and mp at the root
-          call mpi_gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
-          call mpi_gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
-          if (info .NE. 0) then
+          CALL mpi_gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
+          CALL mpi_gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
+          IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_mpi_fail,'ppm_dbg_print',     &
      &            'failed to gather allnp or allmp',__LINE__,info)
-              goto 9999
-          endif
+              GOTO 9999
+          ENDIF
           
-          if (ppm_rank.eq.0) then
+          IF (ppm_rank.eq.0) THEN
               ! allocate allxp array
               maxmp = maxval(allmp)
               lda(1) = ppm_dim
               lda(2) = maxmp
               lda(3) = ppm_nproc
-              call ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
-              call ppm_alloc(buf,lda,ppm_param_alloc_fit,info)
-              if (info .NE. 0) then
+              CALL ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
+              CALL ppm_alloc(buf,lda,ppm_param_alloc_fit,info)
+              IF (info .NE. 0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
          &            'failed to allocate allxp or buf',__LINE__,info)
-                  goto 9999
-              endif
+                  GOTO 9999
+              ENDIF
               
               lda(1) = ppm_nproc
-              call ppm_alloc(req,lda,ppm_param_alloc_fit,info)
-              if (info .NE. 0) then
+              CALL ppm_alloc(req,lda,ppm_param_alloc_fit,info)
+              IF (info .NE. 0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
          &            'failed to allocate req',__LINE__,info)
-                  goto 9999
-              endif
+                  GOTO 9999
+              ENDIF
               
-              do i=1,allmp(1)
+              DO i=1,allmp(1)
                   allxp(:,i,1) = xp(:,i)
-              enddo
+              ENDDO
 
-          ! now let all procs communicate with rank 0
-              do iproc=1,ppm_nproc-1
-!                  call mpi_irecv(buf,allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
+              ! now let all procs communicate with rank 0
+              DO iproc=1,ppm_nproc-1
+!                  CALL mpi_irecv(buf,allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
 ! &                              0,ppm_comm,req(iproc+1),info)
-                  call mpi_recv(allxp(:,:,iproc+1),allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
+                  CALL mpi_recv(allxp(:,:,iproc+1),allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
  &                              0,ppm_comm,MPI_STATUS_IGNORE,info)
-                  if (info .NE. 0) then
+                  IF (info .NE. 0) THEN
                       info = ppm_error_fatal
-                      call ppm_error(ppm_err_mpi_fail,'ppm_dbg_print',   &
+                      CALL ppm_error(ppm_err_mpi_fail,'ppm_dbg_print',   &
      &                'failed to sendrecv xp',__LINE__,info)
-                      goto 9999
-                  endif
-              enddo
+                      GOTO 9999
+                  ENDIF
+              ENDDO
 !              do iproc=1,ppm_nproc-1
-!                  call mpi_wait(req(iproc+1),MPI_STATUS_IGNORE,info)
+!                  CALL mpi_wait(req(iproc+1),MPI_STATUS_IGNORE,info)
 !                  do i=1,allmp(iproc+1)
 !                      allxp(:,i,iproc+1) = buf(:,i)
-!                  enddo
+!                  ENDDO
 !                  print *,'xp',iproc,allxp(:,1:allmp(iproc+1),iproc+1)
-!              enddo
+!              ENDDO
               
               open(iunit,file=pfname,access='append')
-              do iproc=1,ppm_nproc
-                  do i=1,allnp(iproc)
+              DO iproc=1,ppm_nproc
+                  DO i=1,allnp(iproc)
                       write(iunit,pfmt) allxp(:,i,iproc),colortag
-                  enddo
-                  do i=allnp(iproc)+1,allmp(iproc)
+                  ENDDO
+                  DO i=allnp(iproc)+1,allmp(iproc)
                       write(iunit,pfmt) allxp(:,i,iproc),-1
-                  enddo
-              enddo
+                  ENDDO
+              ENDDO
               close(iunit)
-              call ppm_alloc(allxp,lda,ppm_param_dealloc,info)
-              call ppm_alloc(buf,lda,ppm_param_dealloc,info)
-          else
-              call mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
-          endif
+              CALL ppm_alloc(allxp,lda,ppm_param_dealloc,info)
+              CALL ppm_alloc(buf,lda,ppm_param_dealloc,info)
+          ELSE
+              CALL mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
+          ENDIF
 #else  
           open(iunit,file=pfname,access='append')
-          do i=1,np
+          DO i=1,np
               write(iunit,pfmt) xp(:,i),colortag
-          enddo
-          do i=np+1,mpart
+          ENDDO
+          DO i=np+1,mpart
               write(iunit,pfmt) xp(:,i),-1
-          enddo
+          ENDDO
           close(iunit)
-#endif
-      endif
+#ENDIF
+      ENDIF
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------
-9999  continue
+9999  CONTINUE
       CALL substop('ppm_dbg_print',t0,info)
 
 #if   __KIND == __SINGLE_PRECISION
-end subroutine ppm_dbg_print_s
+end SUBROUTINE ppm_dbg_print_s
 #elif __KIND == __DOUBLE_PRECISION
-end subroutine ppm_dbg_print_d
-#endif
+end SUBROUTINE ppm_dbg_print_d
+#ENDIF
