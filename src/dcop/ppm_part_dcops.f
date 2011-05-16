@@ -15,6 +15,12 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
     USE ppm_module_particles
     IMPLICIT NONE
 
+#if    __KIND == __SINGLE_PRECISION 
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif  __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
     !---------------------------------------------------------
     ! arguments
     !---------------------------------------------------------
@@ -379,7 +385,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
             DO ineigh = 1,nvlist(ip)
                 !rescaled nearest-neighbour distance  
                 iq = vlist(ineigh,ip)
-                dist2 = SUM((xp1(1:ndim,ip) - xp2(1:ndim,iq))**2)
+                dist2 = SUM((xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))**2)
                 eta(ineigh,ip) = &
                     primitive(SQRT(dist2/nn_sq(iq)) / 0.9_MK)
 

@@ -126,7 +126,6 @@ CONTAINS
 #undef __UNIFORM
 #undef __3D
 
-#ifdef __TYPE_PARTICLES
 #define __2D 1
 #include "dcop/ppm_part_dcops.f"
 #undef __2D
@@ -134,7 +133,6 @@ CONTAINS
 #define __3D 1
 #include "dcop/ppm_part_dcops.f"
 #undef __3D
-#endif
 
 #undef __KIND
 
