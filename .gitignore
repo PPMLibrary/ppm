@@ -1,0 +1,7 @@
+*.swp
+Makefile
+config.*
+include/
+lib/
+objects/
+ppm_define.h
