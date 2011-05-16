@@ -26,9 +26,23 @@
                         (1:LEN_TRIM(WRAP(DTYPE)_args(j)%default))
 #endif
 #else
+#ifdef ARRAY
+                   DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
+                        UBOUND(WRAP(DTYPE)_args(j)%default,1)
+                      WRITE(scratch,*) WRAP(DTYPE)_args(j)%default(l)
+                      WRITE (*,'(A)',advance='no') &
+                           scratch(1:LEN_TRIM(scratch))
+                      IF (l .EQ. UBOUND(WRAP(DTYPE)_args(j)%default,1)) THEN
+                         WRITE (*,*) ''
+                      ELSE
+                         WRITE (*,'(A)',advance='no') ', '
+                      END IF
+                   END DO
+#else
                    WRITE (scratch, *) WRAP(DTYPE)_args(j)%default
                    scratch = ADJUSTL(scratch)
                    WRITE (*,*) "= ", scratch(1:LEN_TRIM(scratch))
+#endif
 #endif
                 END IF
              END IF
