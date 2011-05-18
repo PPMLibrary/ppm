@@ -41,7 +41,8 @@ CPP := cpp
 FUNIT = ./utils/funit/bin/funit
 
 # These are important build directories
-SRC_DIR := $(builddir)/src
+#SRC_DIR := $(builddir)/src
+SRC_DIR := $(builddir)/@srcdir@
 OBJ_DIR := $(builddir)/objects
 MODULES_DIR := $(builddir)/include
 
