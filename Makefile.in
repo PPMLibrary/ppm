@@ -1,0 +1,153 @@
+#-------------------------------------------------------------------------
+#  File         :  Makefile.in
+#-------------------------------------------------------------------------
+#
+#  Purpose      :  Makefile template
+#
+#  Remarks      :
+#
+#  References   :
+#
+#  Revisions    :
+#-------------------------------------------------------------------------
+#  Parallel Particle Mesh Library (PPM)
+#  ETH Zurich
+#  CH-8092 Zurich, Switzerland
+#-------------------------------------------------------------------------
+
+# These variables are set when configure is ran
+prefix = @prefix@
+exec_prefix = @exec_prefix@
+libdir = @libdir@
+includedir = @includedir@
+builddir = @builddir@
+LIBS = @LIBS@
+LDFLAGS = @LDFLAGS@
+CFLAGS = @CFLAGS@
+FCLIBS = @FCLIBS@
+FCFLAGS = @FCFLAGS@
+FC = @FC@
+CC = @CC@
+CXX = @CXX@
+DEBUG = @DEBUG@
+FUNIT_FLAGS = @FUNIT_FLAGS@
+MODFLAG = @ax_cv_f90_modflag@
+
+# These variables are standard
+LIB_PPM := libppm.a
+TARGET  := $(builddir)/lib/$(LIB_PPM)
+SHELL := /bin/sh
+CPP := cpp
+FUNIT = ./utils/funit/bin/funit
+
+# These are important build directories
+#SRC_DIR := $(builddir)/src
+SRC_DIR := $(builddir)/@srcdir@
+OBJ_DIR := $(builddir)/objects
+MODULES_DIR := $(builddir)/include
+
+# These are paths that get included during pre-processing
+CPPVPATH := $(SRC_DIR):
+CPPVPATH += $(MODULES_DIR):
+CPPINCLS := $(patsubst %,-I%, $(subst :, ,$(CPPVPATH)))
+
+# These are paths that get included during compilation
+VPATH := $(patsubst %,-I%, $(subst :, ,$(SRC_DIR))):
+VPATH += $(patsubst %,$(MODFLAG)%, $(subst :, ,$(MODULES_DIR))):
+INCLS := $(subst :, ,$(VPATH))
+
+# These are the files that get generated and used during compilation
+SOURCES := $(notdir $(wildcard $(SRC_DIR)/ppm_module_*.f))
+OBJECTS := $(SOURCES:%.f=$(OBJ_DIR)/%.o)
+MODULES := $(SOURCES:%.f=$(MODULES_DIR)/%.mod)
+MODSRCS := $(SOURCES:%.f=$(MODULES_DIR)/__%.f)
+DEPENDENCIES := $(SOURCES:%.f=$(OBJ_DIR)/%.d)
+
+# This creates the install directories if they don't exist
+$(warning Checking for directories...)
+$(shell test -d $(OBJ_DIR) || mkdir $(OBJ_DIR))
+$(shell test -d $(MODULES_DIR) || mkdir $(MODULES_DIR))
+$(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
+$(shell test -d $(libdir) || mkdir $(libdir))
+$(warning done.)
+
+.PHONY: all clean install new test
+
+.DEFAULT: ;
+
+all: $(TARGET)
+
+# This archives all of the objects in the PPM library
+$(TARGET): $(OBJECTS)
+	ar crus $@ $(OBJECTS)
+
+# This creates the file dependencies
+# 1) we use the preprocessor to find the includes
+# 2) we add the dependency file as a target
+# 3) find INCLUDE and USE statements that are not inside a comment
+$(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
+	@$(CPP) $(CPPINCLS) -M $< | \
+        sed -e 's#$*.o#$(OBJ_DIR)/$*.o $@#' \
+            -e 's#$$#\\#' \
+            -e 's#\\\\#\\#' > $@
+	@$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	@grep "INCLUDE " $(OBJ_DIR)/__$*.f | \
+        sed -e 's#^[ \t]*##' \
+            -e '/^!/d' \
+            -e '/mpif.h/d' \
+            -e 's#INCLUDE #$(SRC_DIR)/#' \
+            -e 's#$$# \\#' \
+            -e "s#'##g" >> $@
+	@echo '# end of source dependencies for .o and .d files' >> $@
+	@echo ''$(OBJ_DIR)/$*.o': \' >> $@
+	@grep "USE " $(OBJ_DIR)/__$*.f | \
+        sed -e 's#^[ \t]*##' \
+            -e '/^!/d' \
+            -e 's#,.*##' \
+            -e 's#USE #$(OBJ_DIR)/#' \
+            -e 's#$$#.o \\#' >> $@
+	@echo '# end of module dependencies for .o file' >> $@
+	@rm $(OBJ_DIR)/__$*.f
+
+# This handles the pre-processing and does the actual compiling
+$(OBJ_DIR)/%.o: $(SRC_DIR)/%.f
+	$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	$(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $(OBJ_DIR)/__$*.f
+	@mv $(builddir)/*.mod $(MODULES_DIR)
+	@rm $(OBJ_DIR)/__$*.f
+
+# This is used to clean up the files created when running make
+clean:
+	rm -fR $(OBJ_DIR)
+	rm -fR $(MODULES_DIR)
+	rm -fR $(builddir)/lib
+
+# This copies the PPM library into libdir
+install: all
+	@echo '[ deploying to '$(libdir)']'
+	@cp $(TARGET) $(libdir)
+	@ranlib $(libdir)/$(LIB_PPM)
+	@echo '[ deploying modules to '$(includedir)/ppm']'
+	@mkdir -p $(includedir)/ppm
+	@cp $(MODULES_DIR)/* $(includedir)/ppm
+
+# This compiles, and copies the PPM library
+new: all install
+
+ftest: all
+	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
+	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
+	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS)
+
+test: all
+	make --directory=src/map/test FC=$(FC) CPP="$(CPP)" \
+		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
+	make --directory=src/interpolate/test FC=$(FC) CPP="$(CPP)" \
+		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
+	make --directory=src/neighlist/test FC=$(FC) CPP="$(CPP)" \
+		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
+
+# This ensures all dependency files are up-to-date
+# WARNING: The directive below will fail silently, in case of problems
+# remove the leading s: include $(DEPENDENCIES)
+sinclude $(DEPENDENCIES)

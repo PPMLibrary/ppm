@@ -1,0 +1,275 @@
+PPM core package README
+=======================
+v1.2, September 2010
+
+
+Introduction
+------------
+
+This is the PPM core source package.
+
+
+Package contents
+----------------
+
+The `.tar.gz` package you have downloaded should contain on the toplevel the
+following files and directories:
+
+----------------------------------
+    34K COPYING       The License
+   7.5K COPYING.LESSER
+   4.2K Makefile.in   The Makefile template used by configure
+   610B NOTICE
+    11K README        This file
+    25K README.html   The HTML version of this file
+   717B aclocal.m4
+    44K config.guess
+    33K config.sub
+   203K configure     The build configure script
+   5.1K configure.ac  Thie build configure script template
+    13K install-sh
+   204B m4            Contains build scripts
+   3.6K src           Contains the source code
+----------------------------------
+
+After you compile PPM core there will be further directories for the binaries
+and include files.
+
+
+Requirements for building PPM core
+----------------------------------
+
+- METIS 4: You may download the latest release of METIS 4 from
+  http://glaros.dtc.umn.edu/gkhome/metis/metis/download, alternatively you can
+  get from the PPM website the version of METIS that has been extensively tested
+  with our code.
+- an MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
+  compliant MPI library. If you are compiling PPM on a cluster, most likely your
+  sysadmin will have already an MPI installed on the system.
+
+Make sure that all requirements are compiled with the same compiler that you
+will be using to build PPM core.
+
+
+Building PPM core
+-----------------
+
+PPM core is built in 3 simple steps:
+
+Step 1: Confuring PPM core
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Run the `configure` script to allow the build system to determine the correct
+options to compile PPM core.
+
+It is very important to give `configure` the correct settings to make sure PPM
+core is compiled correctly. To find out which settings are supported type
+
+~~~~~~~~~~
+$ ./configure --help
+~~~~~~~~~~
+
+This is what will be returned:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+`configure' configures PPM 1.2.0 to adapt to many kinds of systems.
+
+Usage: ./configure [OPTION]... [VAR=VALUE]...
+
+To assign environment variables (e.g., CC, CFLAGS...), specify them as
+VAR=VALUE.  See below for descriptions of some of the useful variables.
+
+Defaults for the options are specified in brackets.
+
+Configuration:
+  -h, --help              display this help and exit
+      --help=short        display options specific to this package
+      --help=recursive    display the short help of all the included packages
+  -V, --version           display version information and exit
+  -q, --quiet, --silent   do not print `checking ...' messages
+      --cache-file=FILE   cache test results in FILE [disabled]
+  -C, --config-cache      alias for `--cache-file=config.cache'
+  -n, --no-create         do not create output files
+      --srcdir=DIR        find the sources in DIR [configure dir or `..']
+
+Installation directories:
+  --prefix=PREFIX         install architecture-independent files in PREFIX
+                          [/usr/local]
+  --exec-prefix=EPREFIX   install architecture-dependent files in EPREFIX
+                          [PREFIX]
+
+By default, `make install' will install all the files in
+`/usr/local/bin', `/usr/local/lib' etc.  You can specify
+an installation prefix other than `/usr/local' using `--prefix',
+for instance `--prefix=$HOME'.
+
+For better control, use the options below.
+
+Fine tuning of the installation directories:
+  --bindir=DIR            user executables [EPREFIX/bin]
+  --sbindir=DIR           system admin executables [EPREFIX/sbin]
+  --libexecdir=DIR        program executables [EPREFIX/libexec]
+  --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
+  --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
+  --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --libdir=DIR            object code libraries [EPREFIX/lib]
+  --includedir=DIR        C header files [PREFIX/include]
+  --oldincludedir=DIR     C header files for non-gcc [/usr/include]
+  --datarootdir=DIR       read-only arch.-independent data root [PREFIX/share]
+  --datadir=DIR           read-only architecture-independent data [DATAROOTDIR]
+  --infodir=DIR           info documentation [DATAROOTDIR/info]
+  --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]
+  --mandir=DIR            man documentation [DATAROOTDIR/man]
+  --docdir=DIR            documentation root [DATAROOTDIR/doc/ppm]
+  --htmldir=DIR           html documentation [DOCDIR]
+  --dvidir=DIR            dvi documentation [DOCDIR]
+  --pdfdir=DIR            pdf documentation [DOCDIR]
+  --psdir=DIR             ps documentation [DOCDIR]
+
+Optional Features:
+  --disable-option-checking  ignore unrecognized --enable/--with options
+  --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
+  --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-mpi[=impl.]    use MPI (default is no), If the MPI implementation
+                          of your choice provides compile wrappers that are in
+                          PATH, I can set them myself, choose: guess (I will
+                          choose the first implementation I can find),
+                          openmpi, lammpi, mpich, mpich2, intelmpi_gnu
+                          (Intel's MPI with GNU Compilers), intelmpi_intel
+                          (Intel's MPI with Intel Compilers), sun (Sun MPI),
+                          ibm (IBM AIX POE). Else, set this flag with no value
+                          and set CC, CXX and FC to the appropriate compiler
+                          wrappers (safest)
+  --enable-linux          compile for linux (default is no)
+  --enable-etime          use etime (default is no)
+  --enable-vector         enable __VECTOR (default is no)
+  --enable-mathkeisan     enable __MATHKEISAN (default is no)
+  --enable-sxf90          enable __SXF90 (default is no)
+  --enable-crayfishpack   enable __CRAYFISHPACK (default is no)
+  --enable-hypre          enable __HYPRE (default is no)
+  --enable-no-microinstr  enable __NOMICROINSTRUCTIONS (default is no)
+  --enable-debug          enable debug mode (default is no)
+
+Some influential environment variables:
+  CXX         C++ compiler command
+  CXXFLAGS    C++ compiler flags
+  LDFLAGS     linker flags, e.g. -L<lib dir> if you have libraries in a
+              nonstandard directory <lib dir>
+  LIBS        libraries to pass to the linker, e.g. -l<library>
+  CPPFLAGS    (Objective) C/C++ preprocessor flags, e.g. -I<include dir> if
+              you have headers in a nonstandard directory <include dir>
+  CC          C compiler command
+  CFLAGS      C compiler flags
+  CPP         C preprocessor
+  FC          Fortran compiler command
+  FCFLAGS     Fortran compiler flags
+
+Use these variables to override the choices made by `configure' or to help
+it to find libraries and programs with nonstandard names/locations.
+
+Report bugs to the package provider.
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Following options are especially important:
+
+- `--enable-mpi`: If you will be running PPM clients on a parallel environment
+  (a cluster) using MPI, you must specify which MPI implementation you are
+  using. If your system is properly configured then this should be enough
+  information for PPM core build system to find the MPI libraries and compiler
+  wrappers needed. If this goes wrong, you may ommit this option and set
+  compiler wrapper and libraries in `FC` and `LDFLAGS` respectively.
+- `--enable-linux`: Set this if you're compiling/running on a Linux system
+- `--prefix`: If you like to install PPM and the target directory is not the
+  system's standard directory (`/usr/`) then you have to define this directory
+  here. You must provide the full path. It is not necessary to install PPM.
+  Building it and leaving it in the compilation directory is sufficient. If you
+  provide a directory here it must already exist - it will not be created by the
+  build system.
+- `FC` etc.: If you wish to not use MPI or you have to specify exactly which
+  compiler executable should be used, then you can use this flag to set your
+  compiler.
+- `LDFLAGS`: If metis was not installed in one of the system's standard library
+  directories (e.g. `/usr/lib`) you must specify the directory to the libmetis.a
+  file here.
+
+Here two examples on how you could run the configure command
+
+`.configure` on Linux cluster using OpenMPI (and intel compilers, wrapped)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ ./configure --enable-mpi=openmpi LDFLAGS=-L../../metis/lib --enable-linux
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+`./configure` on Mac OS X workstation with the MacPorts gcc compilers
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ ./configure CC=gcc-mp-4.4 FC=gfortran-mp-4.4 CXX=g++-mp-4.4 \
+              LDFLAGS=-L/Users/omar/sw/metis/gcc/lib 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+(while the CC and CXX flags are not really needed)
+
+Step 2: Compiling PPM core
+~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the configure process finished successfully you should see on your screen a
+message that the Makefile has been generated (and you can now find this
+Makefile in this directory).
+
+Now you can simply run make to compile PPM core:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ make
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you encounter problems in the compilation process (compile errors) please,
+first check if you have set everything correctly in your environment. If the
+error persists, please send us a bug-report detailing the previous steps you
+have performed. Also, please include the `config.log` file and the output of
+`export`. Finally, if yu are using MPI, please include which MPI library you are
+using.
+
+
+Step 3: Installing PPM core (optional)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If you wish to install PPM core you can now use the `make install` command to do
+so:
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ make install
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+If the target directory is part of the system, you will most probably get a
+message that you have insufficient rights. If you have a root account you can
+use in this case the sudo command to override this security setting.
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+$ sudo make install
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Your PPM core distribution is installed.
+
+Compiling PPM client code against PPM core
+------------------------------------------
+When compiling your PPM client code you need to first include the PPM core modules: 
+
+- in `include/` relative to this directory. Check which compiler flag needs to
+  be used to include Fortran module directories.
+
+and link against libppm.a:
+
+- in `lib/` relative to this directory. Add -L[path to lib] -lppm to the
+  linking command of your compilation process.
+
+
+Enjoy the PPM experience!
+
+
+Contributors
+------------
+
+The PPM library is being maintained and developed by the CSE-lab (group of
+Professor Petros Koumoutsakos) and the MOSAIC group (Professor Ivo F.
+Sbalzarini) at ETH Zurich, and the Center for Fluid Dynamics at DTU (group of
+Professor Jens Walther).
+
+PPM core package maintainer: Omar Awile <omar.awile@inf.ethz.ch>
+
