@@ -10,7 +10,6 @@ Makefile
 aclocal.m4
 src/ppm_define.h
 
-
 # output files
 *.out
 *.sub
@@ -18,12 +17,11 @@ src/ppm_define.h
 *.o
 *.mod
 
-
 # src/interpolate/test/
 src/interpolate/test/ppm_test_interp_m2p
 src/interpolate/test/ppm_test_interp_p2m
 
-# src/neighlist/test/
+# /libppm/src/neighlist/test/
 src/neighlist/test/ppm_test_inl2d
 src/neighlist/test/ppm_test_inl2d_2
 src/neighlist/test/ppm_test_inl3d
