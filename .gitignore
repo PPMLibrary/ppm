@@ -1,32 +1,34 @@
 
 # /libppm/
-/libppm/configure
-/libppm/config.status
-/libppm/include
-/libppm/objects
-/libppm/autom4te.cache
-/libppm/lib
-/libppm/aclocal.m4
-/libppm/src/ppm_define.h
+configure
+config.status
+config.log
+include
+objects
+autom4te.cache
+lib
+Makefile
+aclocal.m4
+src/ppm_define.h
+ppm_define.h
 
 # output files
 *.out
 *.sub
 *.dat
+*.o
+*.mod
 
 # /libppm/src/interpolate/test/
-/libppm/src/interpolate/test/ppm_test_interp_m2p
-/libppm/src/interpolate/test/ppm_test_interp_p2m
+src/interpolate/test/ppm_test_interp_m2p
+src/interpolate/test/ppm_test_interp_p2m
 
 # /libppm/src/neighlist/test/
-/libppm/src/neighlist/test/ppm_test_inl2d
-/libppm/src/neighlist/test/ppm_test_inl2d_2
-/libppm/src/neighlist/test/ppm_test_inl3d
-/libppm/src/neighlist/test/ppm_test_inl3d_2
+src/neighlist/test/ppm_test_inl2d
+src/neighlist/test/ppm_test_inl2d_2
+src/neighlist/test/ppm_test_inl3d
+src/neighlist/test/ppm_test_inl3d_2
+
+# temporary files
 *.swp
-Makefile
-config.*
-include/
-lib/
-objects/
-ppm_define.h
+*~
