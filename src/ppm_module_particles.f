@@ -26,10 +26,16 @@ LOGICAL           :: verbose = .FALSE.
 
 TYPE pnt_array_1d
     REAL(ppm_kind_double), DIMENSION(:), POINTER :: vec => NULL()
+    !!! array where the scalar-value property is stored
+    CHARACTER(len=ppm_char)                      :: name
+    !!! name of the scalar-valued property
 END TYPE pnt_array_1d
 
 TYPE pnt_array_2d
     REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: vec =>NULL()
+    !!! array where the vector-value property is stored
+    CHARACTER(len=ppm_char)                        :: name
+    !!! name of the vector-valued property
 END TYPE pnt_array_2d
 
 TYPE ppm_t_particles
@@ -610,7 +616,23 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     RETURN
 END SUBROUTINE ppm_alloc_particles
 
-SUBROUTINE particles_allocate_wps(Particles,wp_id,info,with_ghosts,zero,iopt)
+FUNCTION particles_dflt_pptname(i,ndim)
+    CHARACTER(LEN=ppm_char)   :: particles_dflt_pptname
+    INTEGER                   :: i,ndim
+    CHARACTER(LEN=ppm_char)   :: buf
+
+    WRITE(buf,*) i
+    IF (ndim .EQ. 1) THEN
+        WRITE(particles_dflt_pptname,*) 'property_s',ADJUSTL(TRIM(buf))
+    ELSE
+        WRITE(particles_dflt_pptname,*) 'property_v',ADJUSTL(TRIM(buf))
+    ENDIF
+    RETURN
+END FUNCTION
+
+
+SUBROUTINE particles_allocate_wps(Particles,wp_id,info,with_ghosts,&
+        zero,iopt,name)
     USE ppm_module_substart
     USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
@@ -642,6 +664,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! if true, then allocate with Mpart instead of the default size of Npart
     LOGICAL , OPTIONAL                                     :: zero
     !!! if true, then initialise the array to zero
+    CHARACTER(LEN=ppm_char) , OPTIONAL                     :: name
+    !!! give a name to this vector-valued property
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -669,6 +693,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF(.NOT.ASSOCIATED(Particles%wps)) THEN
         !allocate memory
         ALLOCATE(Particles%wps(20),STAT=info)
+        DO i=1,20
+            Particles%wps(i)%name = particles_dflt_pptname(i,1)
+        ENDDO
         ALLOCATE(Particles%wps_g(20),STAT=info)
         ALLOCATE(Particles%wps_m(20),STAT=info)
         !set defaults
@@ -733,6 +760,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%wps_m(wp_id) = -1
         Particles%wps_g(wp_id) = -1
         Particles%wps(wp_id)%vec => NULL()
+        !reset the label of this property to its default value
+        !Commented out for now - not sure whether we want this or no
+        !Particles%wps(wp_id)%name = particles_dflt_pptname(wp_id,1)
         !Decrement number of properties
         Particles%nwps = Particles%nwps-1
         IF (wp_id .GE. Particles%max_wpsid) THEN
@@ -805,6 +835,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !-----------------------------------------------------------------
         ! Update state
         !-----------------------------------------------------------------
+        !Set the name of the property
+        IF (PRESENT(name)) Particles%wps(wp_id)%name = name
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wps_m(wp_id) = 1
@@ -849,7 +881,7 @@ END SUBROUTINE particles_allocate_wps
 
 
 SUBROUTINE particles_allocate_wpv(Particles,wp_id,lda,info, & 
-        with_ghosts,zero,iopt)
+        with_ghosts,zero,iopt,name)
     USE ppm_module_substart
     USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
@@ -883,6 +915,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! if true, then allocate with Mpart instead of the default size of Npart
     LOGICAL , OPTIONAL                                     :: zero
     !!! if true, then initialise the array to zero
+    CHARACTER(LEN=ppm_char) , OPTIONAL                     :: name
+    !!! give a name to this vector-valued property
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -911,6 +945,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF(.NOT.ASSOCIATED(Particles%wpv)) THEN
         !allocate memory
         ALLOCATE(Particles%wpv(20),STAT=info)
+        DO i=1,20
+            Particles%wpv(i)%name = particles_dflt_pptname(i,2)
+        ENDDO
         ALLOCATE(Particles%wpv_g(20),STAT=info)
         ALLOCATE(Particles%wpv_m(20),STAT=info)
         ALLOCATE(Particles%wpv_s(20),STAT=info)
@@ -977,6 +1014,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%wpv_g(wp_id) = -1
         Particles%wpv_s(wp_id) = 0
         Particles%wpv(wp_id)%vec => NULL()
+        !reset the label of this property to its default value
+        !Commented out for now - not sure whether we want this or no
+        !Particles%wpv(wp_id)%name = particles_dflt_pptname(wp_id,2)
         !Decrement number of properties
         Particles%nwpv = Particles%nwpv-1
         IF (wp_id .GE. Particles%max_wpvid) THEN
@@ -1041,7 +1081,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
         ENDIF
 
+        !-----------------------------------------------------------------
         ! Update state
+        !-----------------------------------------------------------------
+        !Set the name of the property
+        IF (PRESENT(name)) Particles%wpv(wp_id)%name = name
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpv_m(wp_id) = 1
