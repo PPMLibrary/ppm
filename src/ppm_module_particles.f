@@ -1864,9 +1864,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             !New number of particles, after deleting some
             Npart = Npart - del_part
         ELSE
-            CALL pwrite(ppm_rank,caller,&
-                & 'this type of BC is not implemented/tested in this version',info)
-            info=-1
+            info = ppm_error_fatal
+            CALL ppm_error(999,caller,   &
+                & 'this type of BC is not implemented/tested in this version',&
+                &  __LINE__,info)
             GOTO 9999
         ENDIF
     ENDDO
@@ -3229,8 +3230,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     IF (ppm_rank .EQ. 0) THEN
         OPEN(23,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'opening file failed.',info)
-            info = -1
+            info = ppm_error_fatal
+            CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
             GOTO 9999
         ENDIF
     ENDIF
@@ -3242,8 +3243,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !when all the debug flags are turned on...
     ALLOCATE(Npart_vec(ppm_nproc),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'allocation failed.',info)
-        info = -1
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -3256,8 +3257,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     CALL MPI_Gather(Npart_local,1,MPI_INTEGER,Npart_vec,1,&
         MPI_INTEGER,0,ppm_comm,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'MPI_Gather failed.',info)
-        info = -1
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_alloc,caller,'MPI_Gather failed',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -3270,14 +3271,14 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 ALLOCATE(xp_iproc(ppm_dim,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,'allocation failed.',info)
-                    info = -1
+                    info = ppm_error_fatal
+                    CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
                 ALLOCATE(propp_iproc(ndim2,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,'allocation failed.',info)
-                    info = -1
+                    info = ppm_error_fatal
+                    CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
                 IF (MK .EQ. 4) THEN
@@ -3308,8 +3309,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
                 IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,'allocation failed.',info)
-                    info = -1
+                    info = ppm_error_fatal
+                    CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
 
@@ -3354,8 +3355,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
         CLOSE(23,IOSTAT=info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'closing file failed.',info)
-            info = -1
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,caller,'failed to close file',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -3367,16 +3368,16 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(Particles%xp,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'MPI_Send failed.',info)
-                info = -1
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ELSE
             CALL MPI_Send(Particles%xp,count,MPI_DOUBLE_PRECISION,0,&
                 ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'MPI_Send failed.',info)
-                info = -1
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ENDIF
@@ -3384,8 +3385,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         count = ndim2*Npart_local
         ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'allocation failed.',info)
-            info = -1
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -3415,16 +3416,16 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(propp_iproc,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'MPI_Send failed.',info)
-                info = -1
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ELSE
             CALL MPI_Send(propp_iproc,count,MPI_DOUBLE_PRECISION,0,&
                 ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'MPI_Send failed.',info)
-                info = -1
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ENDIF
@@ -3513,8 +3514,9 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
     IF (to_id.EQ.0) THEN
         CALL particles_allocate_wps(Particles,to_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_allocate_wps failed.',info)
-            info = -1
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'particles_allocate_wps failed',__LINE__,info)
             GOTO 9999
         ENDIF
     ENDIF
