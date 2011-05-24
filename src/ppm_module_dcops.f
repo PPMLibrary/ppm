@@ -26,8 +26,8 @@
 #define __LOGICAL                  4
 #define __SINGLE_PRECISION_COMPLEX 5
 #define __DOUBLE_PRECISION_COMPLEX 6
-#undef __2D
-#undef __3D
+#define __UNIFORM 1
+#define __ADAPTIVE 2
 
 !temporary hack.
 !Comment out if you dont have/use/want ppm_module_particles
@@ -106,67 +106,64 @@ CONTAINS
 
 #define __KIND __DOUBLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"
-#define __2D 1
-#define __ADAPTIVE 1
-#include "dcop/ppm_dcops.f"
-#undef __ADAPTIVE
 
-#define __UNIFORM 1
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 2
+#define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#undef __UNIFORM
-#undef __2D
-
-#define __3D 1
-#define __ADAPTIVE 1
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 2
+#define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
-#undef __ADAPTIVE
 
-#define __UNIFORM 1
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 3
+#define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#undef __UNIFORM
-#undef __3D
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 3
+#define __MODE __UNIFORM
+#include "dcop/ppm_dcops.f"
 
-#define __2D 1
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 2
+#include "dcop/ppm_part_dcops_build.f"
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 3
+#include "dcop/ppm_part_dcops_build.f"
+
+#define __KIND __DOUBLE_PRECISION
 #include "dcop/ppm_part_dcops.f"
-#undef __2D
 
-#define __3D 1
-#include "dcop/ppm_part_dcops.f"
-#undef __3D
-
-#undef __KIND
 
 #define __KIND __SINGLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"
 
-#define __2D 1
-#define __ADAPTIVE 1
+#define __KIND __SINGLE_PRECISION
+#define __DIM 2
+#define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#undef __ADAPTIVE
+#define __KIND __SINGLE_PRECISION
+#define __DIM 2
+#define __MODE __UNIFORM
+#include "dcop/ppm_dcops.f"
 
-#define __UNIFORM 1
+#define __KIND __SINGLE_PRECISION
+#define __DIM 3
+#define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#undef __UNIFORM
-#undef __2D
-
-#define __3D 1
-#define __ADAPTIVE 1
+#define __KIND __SINGLE_PRECISION
+#define __DIM 3
+#define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
-#undef __ADAPTIVE
-
-#define __UNIFORM 1
-#include "dcop/ppm_dcops.f"
-#undef __UNIFORM
-#undef __3D
 
 #ifdef __TYPE_PARTICLES
-#define __2D 1
-#include "dcop/ppm_part_dcops.f"
-#undef __2D
-
-#define __3D 1
-#include "dcop/ppm_part_dcops.f"
-#undef __3D
+#define __KIND __SINGLE_PRECISION
+#define __DIM 2
+#include "dcop/ppm_part_dcops_build.f"
+#define __KIND __SINGLE_PRECISION
+#define __DIM 3
+#include "dcop/ppm_part_dcops_build.f"
 #endif
 
 #undef __KIND
