@@ -11,6 +11,7 @@ USE ppm_module_error
 USE ppm_module_data, ONLY: ppm_dim
 
 IMPLICIT NONE
+#include "ppm_define.h"
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
@@ -38,6 +39,14 @@ TYPE pnt_array_2d
     !!! name of the vector-valued property
 END TYPE pnt_array_2d
 
+TYPE ppm_t_operator
+    TYPE(pnt_array_2d), DIMENSION(:),       POINTER :: ker => NULL()
+    !!! array of pointers to where the operators are stored
+    TYPE(pnt_array_2d), DIMENSION(:),       POINTER :: desc => NULL()
+    !!! array of pointers to small matrices that describe what 
+    !!! each operator does
+END TYPE ppm_t_operator
+
 TYPE ppm_t_particles
 
     REAL(prec), DIMENSION(:,:), POINTER             :: xp => NULL()
@@ -46,11 +55,6 @@ TYPE ppm_t_particles
     !!! pseudo-boolean for the positions
     !!! takes value 1 if the ghost values have been computed
     !!! 0 if they have not, and -1 if they do not need to be updated
-    INTEGER                                         :: xp_m 
-    !!! pseudo-boolean for the positions
-    !!! takes value 1 if the real particles are mapped one-to-one
-    !!! onto the xp array, 0 if they are not, and -1 if they do 
-    !!! not need to be updated
     INTEGER                                         :: Npart
     !!! Number of real particles on this processor
     INTEGER                                         :: Mpart
@@ -125,6 +129,8 @@ TYPE ppm_t_particles
 
     
     ! xset Neighbor lists
+    TYPE(ppm_t_particles),POINTER                   :: Particles_cross=> NULL()
+    !!! Pointer to a second set of Particles (not necessary)
     INTEGER              , DIMENSION(:  ), POINTER  :: nvlist_cross=> NULL()
     !!! Number of neighbors of each particles
     INTEGER              , DIMENSION(:,:), POINTER  :: vlist_cross=> NULL()
@@ -147,6 +153,9 @@ TYPE ppm_t_particles
     ! DC-PSE
     INTEGER                                         :: eta_id
     !!! index of the wpv array where the current DC operators are stored
+    !!! Will soon be depreciated by this:
+    TYPE(ppm_t_operator),  POINTER                  :: ops
+    !!! structure that contains the discrete operators
 
     ! Adaptive particles
     LOGICAL                                         :: adaptive
@@ -225,6 +234,8 @@ FUNCTION get_xp(Particles,with_ghosts)
         ENDIF
     ENDIF
 
+    !TODO (Check whether the following is ok)
+    !get_xp => Particles%xp(1:Particles%Npart)
     get_xp => Particles%xp
 
 END FUNCTION get_xp
@@ -526,7 +537,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         ALLOCATE(Particles,STAT=info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
                 &           'Allocating Particles',__LINE__,info)
             GOTO 9999
@@ -566,7 +577,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%active_topoid = -1
         ! Particles are not yet mapped on any topology
         Particles%ontopology = .FALSE.
-        Particles%xp_m = 0
         ! Neighbour lists are not yet computed
         Particles%neighlists = .FALSE.
         Particles%nneighmin = 0
@@ -748,7 +758,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ldc = 0
         CALL ppm_alloc(Particles%wps(wp_id)%vec,ldc,ppm_param_dealloc,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
                 'ppm_alloc (deallocate) failed',__LINE__,info)
             GOTO 9999
@@ -1003,7 +1013,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ldc(2) = 0
         CALL ppm_alloc(Particles%wpv(wp_id)%vec,ldc,ppm_param_dealloc,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
                 'ppm_alloc (deallocate) failed',__LINE__,info)
             GOTO 9999
@@ -1179,14 +1189,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.Particles%areinside) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
@@ -1202,7 +1212,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ELSE
         CALL ppm_map_part_global(topoid,Particles%xp,Particles%Npart,info) 
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_global failed',__LINE__,info)
             GOTO 9999
@@ -1213,7 +1223,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                     Particles%Npart,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_push failed',__LINE__,info)
                     GOTO 9999
@@ -1226,7 +1236,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_push failed',__LINE__,info)
                     GOTO 9999
@@ -1246,7 +1256,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_pop failed',__LINE__,info)
                     GOTO 9999
@@ -1258,7 +1268,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
                     Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_pop failed',__LINE__,info)
                     GOTO 9999
@@ -1269,7 +1279,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
             Npart_new,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_pop failed',__LINE__,info)
             GOTO 9999
@@ -1282,7 +1292,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%active_topoid = topoid
         ! Particles are now mapped on the active topology
         Particles%ontopology = .TRUE.
-        Particles%xp_m = 1
         !   values for some scalar arrays have been mapped and ghosts
         !   are no longer up-to-date
         DO prop_id = 1,Particles%max_wpsid
@@ -1370,14 +1379,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.Particles%areinside) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
@@ -1397,7 +1406,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ELSE
         CALL ppm_map_part_partial(topoid,Particles%xp,Particles%Npart,info) 
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_global failed',__LINE__,info)
             GOTO 9999
@@ -1410,7 +1419,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                     Particles%Npart,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_push failed',__LINE__,info)
                     GOTO 9999
@@ -1425,7 +1434,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_push failed',__LINE__,info)
                     GOTO 9999
@@ -1435,7 +1444,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         CALL ppm_map_part_send(Particles%Npart,Npart_new,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_send failed',__LINE__,info)
             GOTO 9999
@@ -1448,7 +1457,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_pop failed',__LINE__,info)
                     GOTO 9999
@@ -1462,7 +1471,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
                     Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(999,caller,&
                         'ppm_map_part_pop failed',__LINE__,info)
                     GOTO 9999
@@ -1473,7 +1482,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
             Npart_new,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_pop failed',__LINE__,info)
             GOTO 9999
@@ -1486,7 +1495,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%active_topoid = topoid
         ! Particles are now mapped on the active topology
         Particles%ontopology = .TRUE.
-        Particles%xp_m = 1
         !   values for some scalar arrays have been mapped and ghosts
         !   are no longer up-to-date
         DO prop_id = 1,Particles%max_wpsid
@@ -1577,7 +1585,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -1586,22 +1594,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     IF (.NOT.Particles%ontopology .OR. Particles%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Do a partial/global mapping before doing a ghost mapping',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-    IF (Particles%xp_m .NE. 1) THEN
-        !Particles have not been mapped onto this topology
-        info = ppm_error_fatal
-        CALL ppm_error(999,caller,   &
-            &  'Real particles are not mapped one-to-one with xp',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
     IF (.NOT.Particles%areinside) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
@@ -1615,7 +1615,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
             &  __LINE__,info)
@@ -1627,7 +1627,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         write(*,*) cutoff
         write(*,*) topo%ghostsized
 
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
             &  __LINE__,info)
@@ -1653,7 +1653,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             CALL ppm_map_part_ghost_get(topoid,Particles%xp,ppm_dim,&
                 Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_map_part_ghost_get failed',__LINE__,info)
                 GOTO 9999
@@ -1672,7 +1672,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                         Particles%Npart,info)
                     IF (info .NE. 0) THEN
-                        info = ppm_error_fatal
+                        info = ppm_error_error
                         CALL ppm_error(999,caller,&
                             'ppm_map_part_push failed',__LINE__,info)
                         GOTO 9999
@@ -1688,7 +1688,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                         Particles%wpv_s(prop_id), Particles%Npart,info)
                     IF (info .NE. 0) THEN
-                        info = ppm_error_fatal
+                        info = ppm_error_error
                         CALL ppm_error(999,caller,&
                             'ppm_map_part_push failed',__LINE__,info)
                         GOTO 9999
@@ -1699,7 +1699,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                 'ppm_map_part_send failed',__LINE__,info)
             GOTO 9999
@@ -1714,7 +1714,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         Particles%wpv_s(prop_id),Particles%Npart, &
                         Particles%Mpart,info)
                     IF (info .NE. 0) THEN
-                        info = ppm_error_fatal
+                        info = ppm_error_error
                         CALL ppm_error(999,caller,&
                             'ppm_map_part_pop failed',__LINE__,info)
                         GOTO 9999
@@ -1730,7 +1730,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
                         Particles%Npart,Particles%Mpart,info)
                     IF (info .NE. 0) THEN
-                        info = ppm_error_fatal
+                        info = ppm_error_error
                         CALL ppm_error(999,caller,&
                             'ppm_map_part_pop failed',__LINE__,info)
                         GOTO 9999
@@ -1743,7 +1743,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
                 Particles%Mpart,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_map_part_pop failed',__LINE__,info)
                 GOTO 9999
@@ -1828,7 +1828,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -1836,18 +1836,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     IF (Particles%active_topoid.NE.topoid) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'WARNING: this topoid is not the one for which &
             & these particles were mapped',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-
-    IF (Particles%xp_m .NE. 1) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(999,caller,   &
-            &  'Real particles are not mapped one-to-one with xp',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -1908,7 +1900,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             !New number of particles, after deleting some
             Npart = Npart - del_part
         ELSE
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,   &
                 & 'this type of BC is not implemented/tested in this version',&
                 &  __LINE__,info)
@@ -1980,7 +1972,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2020,6 +2012,9 @@ SUBROUTINE particles_neighlists(Particles,topoid,info,lstore)
     USE ppm_module_substop
     USE ppm_module_neighlist
     USE ppm_module_inl_vlist
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2063,7 +2058,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2072,7 +2067,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     IF (.NOT.Particles%ontopology .OR. Particles%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Do a partial/global mapping before',&
             &  __LINE__,info)
@@ -2080,7 +2075,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     IF (Particles%xp_g.NE.1) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Ghosts have not been updated. They are needed for neighlists',&
             &  __LINE__,info)
@@ -2105,7 +2100,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 symmetry,ghostlayer,info,Particles%vlist,&
                 Particles%nvlist)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_inl_vlist failed',__LINE__,info)
                 GOTO 9999
@@ -2115,7 +2110,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles%cutoff,Particles%skin,symmetry,Particles%vlist,&
                 Particles%nvlist,info,lstore=lstore)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
@@ -2127,13 +2122,20 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     Particles%neighlists = .TRUE.
     !
 
-    ! TODO:
-    !WARNING: does not work with several processors!
-    ! would require an MPI_GATHER
-    ! Since this is mainly for debugging/warnings, I am not sure
-    ! if it is really needed
     Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
     Particles%nneighmax = MAXVAL(Particles%nvlist(1:Particles%Npart))
+
+    ! TODO: maybe the MPI_Allreduce is not really needed for production runs
+    ! This is mainly used for debugging/warnings
+    CALL MPI_Allreduce(Particles%nneighmin,Particles%nneighmin,1,&
+        MPI_INTEGER,MPI_MIN,ppm_comm,info)
+    CALL MPI_Allreduce(Particles%nneighmax,Particles%nneighmax,1,&
+        MPI_INTEGER,MPI_MAX,ppm_comm,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,'MPI_Allreduce failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
 
     IF (verbose) &
         write(*,*) 'computed neighlists'
@@ -2203,14 +2205,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles_1).OR..NOT.ASSOCIATED(Particles_2)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.ASSOCIATED(Particles_1%xp).OR..NOT.ASSOCIATED(Particles_2%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles positions had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2219,7 +2221,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     IF (.NOT.Particles_1%ontopology .OR. Particles_1%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Do a partial/global mapping for Particles_1 before',&
             &  __LINE__,info)
@@ -2227,7 +2229,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
     IF (.NOT.Particles_2%ontopology .OR. Particles_2%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Do a partial/global mapping for Particles_2 before',&
             &  __LINE__,info)
@@ -2235,7 +2237,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     IF (Particles_2%xp_g.NE.1) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Ghosts for Particles_2have not been updated.&
             & They are needed for neighlists',&
@@ -2256,7 +2258,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
                 Particles_1%nvlist_cross,lstore)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_inl_xset_vlist failed',__LINE__,info)
                 GOTO 9999
@@ -2269,7 +2271,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
                 Particles_1%nvlist_cross,lstore)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,&
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
@@ -2319,7 +2321,9 @@ SUBROUTINE particles_updated_positions(Particles,info)
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
     USE ppm_module_substart
     USE ppm_module_substop
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2349,7 +2353,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2357,11 +2361,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     ! Update states
+    ! particles may be outside of the computational domain
+    Particles%areinside=.FALSE.
     ! particles may no longer be on the right processor
     Particles%ontopology=.FALSE.
     ! note that there is still a one-to-one relationship between real particles
     !  and indices. They can still be used for computing stuff or for
-    ! being written to output (so we keep Particles%xp_m as it is)
+    ! being written to output.
     ! ghosts are now wrong (some particles may have entered the ghost layers)
      Particles%xp_g = 0
     ! and we have to throw away the neighbour lists (we dont destroy
@@ -2403,7 +2409,9 @@ SUBROUTINE particles_updated_nb_part(Particles,info,&
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
     USE ppm_module_substart
     USE ppm_module_substop
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2442,7 +2450,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2471,7 +2479,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     DO prop_id = 1,SIZE(preserve_wps)
         id = preserve_wps(prop_id)
         IF (id.GT.Particles%max_wpsid) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,   &
                 &  'id in preserve_wps is larger than max id for Particles',&
                 &  __LINE__,info)
@@ -2490,7 +2498,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     DO prop_id = 1,SIZE(preserve_wpv)
         id = preserve_wpv(prop_id)
         IF (id.GT.Particles%max_wpvid) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,   &
                 &  'id in preserve_wpv is larger than max id for Particles',&
                 &  __LINE__,info)
@@ -2539,7 +2547,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_updated_nb_part
 
-SUBROUTINE particles_updated_cutoff(Particles,info)
+SUBROUTINE particles_updated_cutoff(Particles,info,cutoff_new)
     !-----------------------------------------------------------------
     !  routine to call when cutoffs have changed
     !-----------------------------------------------------------------
@@ -2555,7 +2563,9 @@ SUBROUTINE particles_updated_cutoff(Particles,info)
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
     USE ppm_module_substart
     USE ppm_module_substop
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2569,6 +2579,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
+    REAL(MK),OPTIONAL                                      :: cutoff_new
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -2585,32 +2596,36 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
 
-    IF (.NOT.Particles%adaptive .OR. Particles%rcp_id.EQ.0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(999,caller,   &
-            &  'Particles are not adaptive, cannot update cutoff',&
-            &  __LINE__,info)
-        GOTO 9999
+    IF (PRESENT(cutoff_new)) THEN
+        cutoff = cutoff_new
+    ELSE
+        IF (Particles%adaptive) THEN
+
+            cutoff = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
+
+            CALL MPI_Allreduce(cutoff,cutoff,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,   &
+                    &  'MPI_Allreduce failed',&
+                    &  __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            info = ppm_error_error
+            CALL ppm_error(999,caller,   &
+                &  'need to provide new cutoff value',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
     ENDIF
-
-    cutoff = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
-
-    CALL MPI_Allreduce(cutoff,cutoff,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(999,caller,   &
-            &  'MPI_Allreduce failed',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-
 
     ! Update states
     ! If cutoff has increased, then ghosts may no longer be 
@@ -2654,7 +2669,9 @@ SUBROUTINE particles_compute_hmin(Particles,info)
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
     USE ppm_module_substart
     USE ppm_module_substop
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2687,7 +2704,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -2695,14 +2712,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     IF (.NOT.Particles%neighlists) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Please construct neighbour lists first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (Particles%xp_g.NE.1) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Please update ghost positions first',&
             &  __LINE__,info)
@@ -2725,7 +2742,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     CALL MPI_Allreduce(hmin2,hmin2,1,ppm_mpi_kind,MPI_MIN,ppm_comm,info)
     IF (info .NE. 0) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'MPI_Allreduce failed',&
             &  __LINE__,info)
@@ -2745,7 +2762,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_compute_hmin
 
-SUBROUTINE particles_initialise(Particles,Npart_global,info,&
+SUBROUTINE particles_initialize(Particles,Npart_global,info,&
         distrib,topoid,minphys,maxphys)
     !-----------------------------------------------------------------------
     ! Set initial particle positions
@@ -2773,7 +2790,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
     !-------------------------------------------------------------------------
     INTEGER,OPTIONAL,                   INTENT(IN   )      :: distrib
     !!! type of initial distribution. One of
-    !!! ppm_param_part_init_cartesian
+    !!! ppm_param_part_init_cartesian (default)
     !!! ppm_param_part_init_random
     INTEGER,OPTIONAL,                   INTENT(IN   )      :: topoid
     !!! topology id (used only to get the extent of the physical domain)
@@ -2788,7 +2805,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
     INTEGER                               :: ip,i,j,k,Npart
     INTEGER                               :: nijk(ppm_dim),nijk_global(ppm_dim)
     CHARACTER(LEN = ppm_char)              :: filename,cbuf
-    CHARACTER(LEN = ppm_char)              :: caller = 'particles_initialise'
+    CHARACTER(LEN = ppm_char)              :: caller = 'particles_initialize'
     REAL(MK)                              :: y,z,h
     REAL(KIND(1.D0))                      :: t0
     INTEGER                               :: remaining_rows
@@ -2817,7 +2834,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
 
     !Get boundaries of computational domain
     IF (PRESENT(topoid) .AND. (PRESENT(minphys).OR.PRESENT(maxphys))) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,&
                'probable conflict of optional arguments. Use topoid OR minphys'&
                ,__LINE__,info)
@@ -2831,7 +2848,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
         min_phys = minphys
         max_phys = maxphys
     ELSE
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,&
             'optional arguments needed to define the domain boundaries'&
             ,__LINE__,info)
@@ -2861,7 +2878,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
     IF (ASSOCIATED(Particles)) THEN
         CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
                 'ppm_alloc_particles (deallocate) failed',__LINE__,info)
             GOTO 9999
@@ -2870,7 +2887,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
 
     CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,info)
     IF (info .NE. 0) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,&
             'ppm_alloc_particles (allocate) failed',__LINE__,info)
         GOTO 9999
@@ -3083,6 +3100,8 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
     Particles%areinside = .TRUE.
     ! neighbour lists not updated
     Particles%neighlists = .FALSE.
+    ! set cutoff to a default value
+    Particles%cutoff = 2.1_MK * Particles%h_avg
 
     !-----------------------------------------------------------------------
     ! Finalize
@@ -3091,7 +3110,7 @@ SUBROUTINE particles_initialise(Particles,Npart_global,info,&
 
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE particles_initialise
+END SUBROUTINE particles_initialize
 
 
 SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
@@ -3106,7 +3125,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_comm
 
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -3168,7 +3189,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     ! Checks
     !-------------------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
@@ -3186,14 +3207,14 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         wps_l=wps_list
         DO i=1,nb_wps
             IF (wps_l(i).GT.Particles%max_wpsid) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,   &
                     &  'property index exceeds size of property array',&
                     &  __LINE__,info)
                 GOTO 9999
             ENDIF
             IF (Particles%wps_m(wps_l(i)).NE.1) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,   &
                     &  'trying to printout a property that is not mapped &
                     & to the particles',&
@@ -3222,14 +3243,14 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         wpv_l=wpv_list
         DO i=1,nb_wpv
             IF (wpv_l(i).GT.Particles%max_wpvid) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,   &
                     &  'property index exceeds size of property array',&
                     &  __LINE__,info)
                 GOTO 9999
             ENDIF
             IF (Particles%wpv_m(wpv_l(i)).NE.1) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(999,caller,   &
                     &  'trying to printout a property that is not mapped &
                     & to the particles',&
@@ -3274,7 +3295,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     IF (ppm_rank .EQ. 0) THEN
         OPEN(23,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -3287,7 +3308,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !when all the debug flags are turned on...
     ALLOCATE(Npart_vec(ppm_nproc),STAT=info)
     IF (info .NE. 0) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
@@ -3301,7 +3322,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     CALL MPI_Gather(Npart_local,1,MPI_INTEGER,Npart_vec,1,&
         MPI_INTEGER,0,ppm_comm,info)
     IF (info .NE. 0) THEN
-        info = ppm_error_fatal
+        info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,'MPI_Gather failed',__LINE__,info)
         GOTO 9999
     ENDIF
@@ -3315,13 +3336,13 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 ALLOCATE(xp_iproc(ppm_dim,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
                 ALLOCATE(propp_iproc(ndim2,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
@@ -3353,7 +3374,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
                 IF (info .NE. 0) THEN
-                    info = ppm_error_fatal
+                    info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
@@ -3399,7 +3420,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
         CLOSE(23,IOSTAT=info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,'failed to close file',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -3412,7 +3433,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(Particles%xp,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -3420,7 +3441,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             CALL MPI_Send(Particles%xp,count,MPI_DOUBLE_PRECISION,0,&
                 ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -3429,7 +3450,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         count = ndim2*Npart_local
         ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -3460,7 +3481,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(propp_iproc,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -3468,7 +3489,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             CALL MPI_Send(propp_iproc,count,MPI_DOUBLE_PRECISION,0,&
                 ppm_rank,ppm_comm,info)
             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
+                info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,'MPI_Send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -3500,7 +3521,9 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
     USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank
 
+#ifdef __MPI
     INCLUDE "mpif.h"
+#endif
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -3558,7 +3581,7 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
     IF (to_id.EQ.0) THEN
         CALL particles_allocate_wps(Particles,to_id,info)
         IF (info .NE. 0) THEN
-            info = ppm_error_fatal
+            info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,&
                 'particles_allocate_wps failed',__LINE__,info)
             GOTO 9999
@@ -3613,5 +3636,6 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
 
 END SUBROUTINE particles_apply_dcops
 
-
 END MODULE ppm_module_particles
+
+#undef __KIND

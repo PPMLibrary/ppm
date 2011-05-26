@@ -32,3 +32,11 @@ src/neighlist/test/ppm_test_inl3d_2
 # temporary files
 *.swp
 *~
+
+# funit
+TestRunner*
+makeTestRunner
+src/*/*/*_fun.*
+test__genmod.f90
+test_runner.*
+
