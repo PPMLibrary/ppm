@@ -65,6 +65,7 @@ real(mk)                         :: t0,t1,t2,t3
         rank = 0
         nproc = 1
 #endif
+        tolexp = INT(LOG10(EPSILON(1._MK)))+10
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
