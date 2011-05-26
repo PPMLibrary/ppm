@@ -14,7 +14,8 @@ real(mk),parameter              :: skin = 0._mk
 integer,parameter               :: ndim=2
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+real(mk)                        :: tol
+real(mk)                        :: cutoff = 0.05_mk
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
 integer                         :: np = 100000
@@ -52,7 +53,7 @@ real(mk)                         :: t0,t1,t2,t3
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
-        ghostlayer(1:2*ndim) = max_rcp
+        ghostlayer(1:2*ndim) = cutoff
         bcdef(1:6) = ppm_param_bcdef_periodic
         
         nullify(xp,rcp,wp)
@@ -65,6 +66,7 @@ real(mk)                         :: t0,t1,t2,t3
         rank = 0
         nproc = 1
 #endif
+        tolexp = INT(LOG10(EPSILON(1._mk)))+10
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
@@ -84,13 +86,12 @@ real(mk)                         :: t0,t1,t2,t3
 
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
-        allocate(randnb((1+ndim)*np),stat=info)
         do i=1,seedsize
             seed(i)=10+i*i*(rank+1)
         enddo
         call random_seed(put=seed)
+        allocate(randnb((1+ndim)*np),stat=info)
         call random_number(randnb)
-        
         allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
 
     end setup
@@ -103,12 +104,11 @@ real(mk)                         :: t0,t1,t2,t3
 
     end teardown
 
-    test global
-        ! test global mapping
+    test cuboid
+        ! test cuboid decomposition
 
         use ppm_module_typedef
         use ppm_module_mktopo
-        use ppm_module_topo_check
 
         !----------------
         ! create particles
@@ -126,8 +126,7 @@ real(mk)                         :: t0,t1,t2,t3
         topoid = 0
 
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               max_rcp,cost,info)
-
+        &               cutoff,cost,info)
         Assert_Equal(info,0)
 
     end test
