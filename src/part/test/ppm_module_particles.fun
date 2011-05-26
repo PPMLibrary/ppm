@@ -11,12 +11,12 @@ integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np_global = 1000 !100000
+integer                         :: np_global = 10000 !100000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.1_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -103,7 +103,6 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
     teardown
         
-        deallocate(xp,stat=info)
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
 
     end teardown
