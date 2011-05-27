@@ -214,6 +214,13 @@ TYPE ppm_ptr_t_Particles
     TYPE(ppm_t_particles), POINTER  :: t => NULL()
 END TYPE ppm_ptr_t_Particles
 
+
+!----------------------------------------------------------------------
+! Private variables for the module
+!----------------------------------------------------------------------
+    INTEGER , PRIVATE, DIMENSION(3)    :: ldc
+    !!! Number of elements in all dimensions for allocation
+
 CONTAINS
 
 FUNCTION get_xp(Particles,with_ghosts)
@@ -447,7 +454,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Local variables
     !-------------------------------------------------------------------------
 
-    INTEGER, DIMENSION(2)                           :: ldc
     LOGICAL                                         :: lalloc,ldealloc
     INTEGER                                         :: i
     REAL(KIND(1.D0))                                :: t0
@@ -526,6 +532,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_dealloc,caller,   &
                     &          'Deallocating Particles',__LINE__,info)
+                GOTO 9999
             ENDIF
         ENDIF
     ENDIF
@@ -557,7 +564,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !-----------------------------------------------------------------
         ldc(1) = ppm_dim
         ldc(2) = Npart
-        CALL ppm_alloc(Particles%xp,ldc,ppm_param_alloc_fit,info)
+        CALL ppm_alloc(Particles%xp,ldc(1:2),ppm_param_alloc_fit,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
@@ -679,8 +686,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)    :: ldc
-    !!! Number of elements in all dimensions for allocation
     LOGICAL                   :: lalloc,ldealloc,incr_nb_wp
     INTEGER                   :: iopt_l
     CHARACTER(LEN = ppm_char) :: caller = 'particles_allocate_wps'
@@ -826,7 +831,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         IF (PRESENT(with_ghosts)) THEN
             IF (with_ghosts) ldc(1) = Particles%Mpart
         ENDIF
-        CALL ppm_alloc(Particles%wps(wp_id)%vec,ldc,iopt_l,info)
+        CALL ppm_alloc(Particles%wps(wp_id)%vec,ldc(1:1),iopt_l,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
@@ -930,8 +935,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)    :: ldc
-    !!! Number of elements in all dimensions for allocation
     LOGICAL                   :: lalloc,ldealloc,incr_nb_wp
     INTEGER                   :: iopt_l
     !!! allocation mode, see one of ppm_alloc_* subroutines.
@@ -1011,7 +1014,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF (ldealloc) THEN
         ldc(1) = 0
         ldc(2) = 0
-        CALL ppm_alloc(Particles%wpv(wp_id)%vec,ldc,ppm_param_dealloc,info)
+        CALL ppm_alloc(Particles%wpv(wp_id)%vec,ldc(1:2),ppm_param_dealloc,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
@@ -1171,10 +1174,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)    :: ldc
-    !!! Number of elements in all dimensions for allocation
-    INTEGER                   :: iopt
-    !!! allocation mode, see one of ppm_alloc_* subroutines.
     INTEGER                   :: Npart_new
     !!! new number of particles on this processor
     INTEGER                   :: prop_id
@@ -1358,10 +1357,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)    :: ldc
-    !!! Number of elements in all dimensions for allocation
-    INTEGER                   :: iopt
-    !!! allocation mode, see one of ppm_alloc_* subroutines.
     INTEGER                   :: Npart_new
     !!! new number of particles on this processor
     INTEGER                   :: prop_id
@@ -1561,10 +1556,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)                    :: ldc
-    !!! Number of elements in all dimensions for allocation
-    INTEGER                                   :: iopt
-    !!! allocation mode, see one of ppm_alloc_* subroutines.
     INTEGER                                   :: prop_id
     !!! index variable
     REAL(ppm_kind_double)                     :: cutoff
@@ -1611,7 +1602,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     topo=>ppm_topo(topoid)%t
 
-    cutoff = Particles%cutoff + Particles%skin
+    cutoff = Particles%cutoff + Particles%skin 
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
@@ -1864,10 +1855,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     DO di=1,ppm_dim
         IF (topo%bcdef(di) .EQ. ppm_param_bcdef_periodic) THEN
             DO ip=1,Npart
-                IF (xp(di,ip) .GE. max_phys(di)) &
+                IF (xp(di,ip) .EQ. max_phys(di)) &
                     xp(di,ip) = xp(di,ip) - len_phys(di)*almostone
+                IF (xp(di,ip) .GT. max_phys(di)) &
+                    xp(di,ip) = xp(di,ip) - len_phys(di)
                 IF (xp(di,ip) .LT. min_phys(di)) &
-                    xp(di,ip) = xp(di,ip) + len_phys(di)*almostone
+                    xp(di,ip) = xp(di,ip) + len_phys(di)
             ENDDO
         ELSE IF (topo%bcdef(di) .EQ. ppm_param_bcdef_freespace) THEN
             del_part = 0
@@ -2038,10 +2031,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)                    :: ldc
-    !!! Number of elements in all dimensions for allocation
-    INTEGER                                   :: iopt
-    !!! allocation mode, see one of ppm_alloc_* subroutines.
     INTEGER                                   :: prop_id
     !!! index variable
     LOGICAL                                   :: symmetry
@@ -2185,8 +2174,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER , DIMENSION(3)                    :: ldc
-    !!! Number of elements in all dimensions for allocation
     INTEGER                                   :: iopt
     !!! allocation mode, see one of ppm_alloc_* subroutines.
     INTEGER                                   :: prop_id
@@ -2762,8 +2749,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_compute_hmin
 
+#define __DIM 2
+#include "part/ppm_particles_initialize.f"
+#define __DIM 3
+#include "part/ppm_particles_initialize.f"
+
+
+!!temporary hack to deal with both 2d and 3d
 SUBROUTINE particles_initialize(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys)
+        distrib,topoid,minphys,maxphys,cutoff)
     !-----------------------------------------------------------------------
     ! Set initial particle positions
     !-----------------------------------------------------------------------
@@ -2798,318 +2792,16 @@ SUBROUTINE particles_initialize(Particles,Npart_global,info,&
     !!! extent of the physical domain. Only if topoid is not present.
     REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: maxphys
     !!! extent of the physical domain. Only if topoid is not present.
-    !-------------------------------------------------------------------------
-    !  Local variables
-    !-------------------------------------------------------------------------
+    REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
+    !!! cutoff of the particles
 
-    INTEGER                               :: ip,i,j,k,Npart
-    INTEGER                               :: nijk(ppm_dim),nijk_global(ppm_dim)
-    CHARACTER(LEN = ppm_char)              :: filename,cbuf
-    CHARACTER(LEN = ppm_char)              :: caller = 'particles_initialize'
-    REAL(MK)                              :: y,z,h
-    REAL(KIND(1.D0))                      :: t0
-    INTEGER                               :: remaining_rows
-
-    REAL(MK)                              :: shift
-    INTEGER                               :: distribution
-    TYPE(ppm_t_topo),POINTER              :: topo => NULL()
-    REAL(MK), DIMENSION(ppm_dim)          :: min_phys,max_phys,len_phys
-
-    REAL(MK), DIMENSION(:,:), POINTER     :: xp
-    REAL(MK), DIMENSION(:  ), ALLOCATABLE :: randnb
-    INTEGER,  DIMENSION(:  ), ALLOCATABLE :: seed
-    INTEGER                               :: seedsize
-
-
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
-
-    IF(PRESENT(distrib)) THEN
-        distribution=distrib
+    IF (ppm_dim .eq. 2) THEN
+        CALL  particles_initialize2d(Particles,Npart_global,info,&
+            distrib,topoid,minphys,maxphys,cutoff)
     ELSE
-        distribution=ppm_param_part_init_cartesian
+        CALL  particles_initialize3d(Particles,Npart_global,info,&
+            distrib,topoid,minphys,maxphys,cutoff)
     ENDIF
-
-    !Get boundaries of computational domain
-    IF (PRESENT(topoid) .AND. (PRESENT(minphys).OR.PRESENT(maxphys))) THEN
-            info = ppm_error_error
-            CALL ppm_error(999,caller,&
-               'probable conflict of optional arguments. Use topoid OR minphys'&
-               ,__LINE__,info)
-            GOTO 9999
-    ENDIF
-    IF (PRESENT(topoid)) THEN
-        topo => ppm_topo(topoid)%t
-        min_phys = topo%min_physd
-        max_phys = topo%max_physd
-    ELSE IF (PRESENT(minphys).AND.PRESENT(maxphys)) THEN
-        min_phys = minphys
-        max_phys = maxphys
-    ELSE
-        info = ppm_error_error
-        CALL ppm_error(999,caller,&
-            'optional arguments needed to define the domain boundaries'&
-            ,__LINE__,info)
-        GOTO 9999
-    ENDIF
-    len_phys=max_phys-min_phys
-
-
-    h = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))
-    nijk_global = FLOOR(len_phys/h)
-    Npart_global = PRODUCT(nijk_global)
-    remaining_rows = MOD(nijk_global(ppm_dim),ppm_nproc)
-
-    !number of particles along x 
-    nijk(1:ppm_dim-1) = nijk_global(1:ppm_dim-1)
-    !number of particles along y 
-    nijk(ppm_dim) = nijk_global(ppm_dim)/ppm_nproc
-
-    !number of particles on this processor
-    Npart = PRODUCT(nijk)
-    !proc 0 takes care of the additional rows (remainder)
-    IF (ppm_rank.EQ.0) THEN
-        Npart = Npart + remaining_rows * PRODUCT(nijk(1:ppm_dim-1))
-    ENDIF
-
-    !Deallocate Particles if already allocated
-    IF (ASSOCIATED(Particles)) THEN
-        CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,caller,&
-                'ppm_alloc_particles (deallocate) failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
-
-    CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,&
-            'ppm_alloc_particles (allocate) failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    !use a shortcut, for convenience
-    xp => Particles%xp
-
-#ifdef same_random_sequence_nproc
-    ALLOCATE(randnb(ppm_dim*Npart_global))
-#else if
-    ALLOCATE(randnb(ppm_dim*Npart))
-#endif
-    CALL RANDOM_SEED(SIZE=seedsize)
-    ALLOCATE(seed(seedsize))
-    DO i=1,seedsize
-        seed(i)=i*i*i*i
-    ENDDO
-    CALL RANDOM_SEED(PUT=seed)
-    CALL RANDOM_NUMBER(randnb)
-
-    !-----------------------------------------------------------------------
-    ! set particles
-    !-----------------------------------------------------------------------
-    ip = 0
-    shift = 0._MK !shifts positions of the particles. Set to 0.5 to place
-    !particles in the middle of each cell, set to 0 to place them in the lower
-    !left corner
-
-    if_cartesian: IF (distribution .EQ. ppm_param_part_init_cartesian) THEN
-#ifdef __3D
-        DO k = 1,nijk(3)
-            h = len_phys(3)/REAL(nijk(3),MK)
-            z = min_phys(3) + h*(k-1) + shift*h
-#endif
-        DO j = 1,nijk(2)
-            h = len_phys(2)/REAL(nijk_global(2),MK)
-            y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2)) + shift*h
-            DO i = 1,nijk(1)
-                h = len_phys(1)/REAL(nijk(1),MK)
-
-                ip = ip + 1
-                xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
-                xp(2,ip) = y                  
-#ifdef __3D
-                xp(3,ip) = z 
-#endif
-
-                ! impose periodic boundaries:
-                IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
-#ifdef __3D
-                IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
-#endif
-
-            ENDDO
-        ENDDO
-#ifdef __3D
-        ENDDO
-#endif
-
-        IF(ppm_rank.EQ.0) THEN
-#ifdef __3D
-        DO k = 1,nijk(3)
-            h = len_phys(3)/REAL(nijk(3),MK)
-            z = min_phys(3) + h*(k-1) + shift*h
-#endif
-            DO j = 1,remaining_rows
-                h = len_phys(2)/REAL(nijk_global(2),MK)
-                y = min_phys(2) + h*(j-1 + ppm_nproc*nijk(2)) + shift*h
-                DO i = 1,nijk(1)
-                    h = len_phys(1)/REAL(nijk(1),MK)
-
-                    ip = ip + 1
-                    xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
-                    xp(2,ip) = y                  
-#ifdef __3D
-                    xp(3,ip) = z 
-#endif
-
-                    ! impose periodic boundaries:
-                    IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                    IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                    IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                    IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
-#ifdef __3D
-                    IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                    IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
-#endif
-
-                ENDDO
-            ENDDO
-#ifdef __3D
-        ENDDO
-#endif
-        ENDIF
-        Particles%cartesian = .TRUE.
-    ELSE !random distribution
-#ifdef __3D
-        DO k = 1,nijk(3)
-            h = len_phys(3)/REAL(nijk(3),MK)
-            z = min_phys(3) + h*(k-1) + shift*h
-#endif
-        DO j = 1,nijk(2)
-            h = len_phys(2)/REAL(nijk_global(2),MK)
-            y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2))  + shift* h
-
-            DO i = 1,nijk(1)
-                h = len_phys(1)/REAL(nijk(1),MK)
-
-                ip = ip + 1
-                ! uniformly random in cells
-#ifdef same_random_sequence_nproc
-                xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                    randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 1)*h
-                xp(2,ip) = y                   + &
-                    randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip    )*h
-#ifdef __3D
-                xp(3,ip) = z                   + &
-                    randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 2)*h
-#endif
-#else if
-                xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                    randnb(ppm_dim*ip - 1)*h
-                xp(2,ip) = y                   + &
-                    randnb(ppm_dim*ip    )*h
-#ifdef __3D
-                xp(3,ip) = z                   + &
-                    randnb(ppm_dim*ip - 2)*h
-#endif
-#endif
-                ! impose periodic boundaries:
-                IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
-#ifdef __3D
-                IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
-#endif
-            ENDDO
-        ENDDO
-#ifdef __3D
-        ENDDO
-#endif
-        IF(ppm_rank.EQ.0) THEN
-#ifdef __3D
-        DO k = 1,nijk(3)
-            h = len_phys(3)/REAL(nijk(3),MK)
-            z = min_phys(3) + h*(k-1) + shift*h
-#endif
-            DO j = 1,remaining_rows
-                h = len_phys(2)/REAL(nijk_global(2),MK)
-                y = min_phys(2) + h*(j-1 + ppm_nproc*nijk(2)) + shift*h
-                DO i = 1,nijk(1)
-                    h = len_phys(1)/REAL(nijk(1),MK)
-
-                    ip = ip + 1
-                    ! uniformly random in cells
-#ifdef same_random_sequence_nproc
-                    xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                        randnb(ppm_dim*(ppm_nproc-1)*&
-                        PRODUCT(nijk)+ppm_dim*ip - 1)*h
-                    xp(2,ip) = y                   + &
-                        randnb(ppm_dim*(ppm_nproc-1)*&
-                        PRODUCT(nijk)+ppm_dim*ip    )*h
-#ifdef __3D
-                    xp(3,ip) = z                   + &
-                        randnb(ppm_dim*(ppm_nproc-1)*&
-                        PRODUCT(nijk)+ppm_dim*ip - 2)*h
-#endif
-#else if
-                    xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                        randnb(ppm_dim*ip - 1)*h
-                    xp(2,ip) = y                   + &
-                        randnb(ppm_dim*ip    )*h
-#ifdef __3D
-                    xp(3,ip) = z                   + &
-                        randnb(ppm_dim*ip - 2)*h
-#endif
-#endif
-                    ! impose periodic boundaries:
-                    IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                    IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                    IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                    IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
-#ifdef __3D
-                    IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                    IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
-#endif
-                ENDDO
-            ENDDO
-#ifdef __3D
-        ENDDO
-#endif
-        ENDIF
-        Particles%cartesian = .FALSE.
-    ENDIF if_cartesian
-
-    xp=>NULL()
-    DEALLOCATE(randnb,seed)
-
-    ! (global) average interparticle spacing
-    Particles%h_avg = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim)) 
-    ! min interparticle spacing (not needed now)
-    Particles%h_min = -1._MK
-
-    Particles%areinside = .TRUE.
-    ! neighbour lists not updated
-    Particles%neighlists = .FALSE.
-    ! set cutoff to a default value
-    Particles%cutoff = 2.1_MK * Particles%h_avg
-
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
 END SUBROUTINE particles_initialize
 
 
