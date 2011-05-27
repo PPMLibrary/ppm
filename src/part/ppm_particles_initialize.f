@@ -227,7 +227,7 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
         iopt = ppm_param_alloc_fit
 #ifdef same_random_sequence_nproc
         ldc(1) = ppm_dim*Npart_global
-#else if
+#else
         ldc(1) = ppm_dim*Npart
 #endif
         CALL ppm_alloc(randnb,ldc(1:1),iopt,info)
@@ -275,7 +275,7 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
                 xp(3,ip) = z                   + &
                     randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 2)*h
 #endif
-#else if
+#else
                 xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
                     randnb(ppm_dim*ip - 1)*h
                 xp(2,ip) = y                   + &
@@ -325,7 +325,7 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
                         randnb(ppm_dim*(ppm_nproc-1)*&
                         PRODUCT(nijk)+ppm_dim*ip - 2)*h
 #endif
-#else if
+#else
                     xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
                         randnb(ppm_dim*ip - 1)*h
                     xp(2,ip) = y                   + &
