@@ -1930,6 +1930,67 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_apply_bc
 
+SUBROUTINE particles_move(Particles,disp,info)
+    !-----------------------------------------------------------------
+    !  Move all particles according to some displacement field
+    !-----------------------------------------------------------------
+    USE ppm_module_data, ONLY: ppm_topo,ppm_rank
+    USE ppm_module_substart
+    USE ppm_module_substop
+#if   __KIND == __SINGLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles),    POINTER,  INTENT(INOUT)     :: Particles
+    !!! Data structure containing the particles
+    REAL(MK), DIMENSION(:,:), POINTER,  INTENT(IN   )     :: disp
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)     :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    REAL(ppm_kind_double)                                 :: t0
+    INTEGER                                               :: ip
+    CHARACTER(LEN = ppm_char)                 :: caller ='particles_move'
+    REAL(MK),DIMENSION(:,:),POINTER                       :: xp=>NULL()
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+    !-----------------------------------------------------------------
+    !  checks
+    !-----------------------------------------------------------------
+    IF (.NOT.ASSOCIATED(Particles)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            &  'Particles structure had not been defined. Call allocate first',&
+            &  __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+
+    xp => Particles%xp
+    FORALL (ip=1:Particles%Npart) &
+            xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
+    xp => NULL()
+
+    !-----------------------------------------------------------------
+    !  update states
+    !-----------------------------------------------------------------
+    CALL particles_have_moved(Particles,info)
+
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE particles_move
+
 SUBROUTINE particles_have_moved(Particles,info)
     !-----------------------------------------------------------------
     !  Update states when particles have moved 
