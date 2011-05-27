@@ -61,7 +61,7 @@
      !TODO: duplicate everything such that it works also
      ! for single precision
 
-     PRIVATE::
+     PRIVATE
 
      INTEGER, PARAMETER :: prec = ppm_kind_double
 
