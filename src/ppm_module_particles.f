@@ -2177,6 +2177,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     ! TODO: maybe the MPI_Allreduce is not really needed for production runs
     ! This is mainly used for debugging/warnings
+#ifdef __MPI
     CALL MPI_Allreduce(Particles%nneighmin,Particles%nneighmin,1,&
         MPI_INTEGER,MPI_MIN,ppm_comm,info)
     CALL MPI_Allreduce(Particles%nneighmax,Particles%nneighmax,1,&
@@ -2186,6 +2187,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         CALL ppm_error(999,caller,'MPI_Allreduce failed',__LINE__,info)
         GOTO 9999
     ENDIF
+#endif
 
     IF (verbose) &
         write(*,*) 'computed neighlists'
@@ -2658,6 +2660,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
             cutoff = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
 
+#ifdef __MPI
             CALL MPI_Allreduce(cutoff,cutoff,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
@@ -2666,6 +2669,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     &  __LINE__,info)
                 GOTO 9999
             ENDIF
+#endif
         ELSE
             info = ppm_error_error
             CALL ppm_error(999,caller,   &
@@ -2788,6 +2792,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     nvlist=>NULL()
     vlist=>NULL()
 
+#ifdef __MPI
     CALL MPI_Allreduce(hmin2,hmin2,1,ppm_mpi_kind,MPI_MIN,ppm_comm,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -2796,6 +2801,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             &  __LINE__,info)
         GOTO 9999
     ENDIF
+#endif
 
 
     ! Update states
