@@ -267,10 +267,23 @@
      &            'max extent of subs TOPO%MAX_SUBS',__LINE__,info)
               GOTO 9999
           ENDIF
+          !<<<< haeckic begin >>>>!
+          CALL ppm_alloc(topo%ghost_reqs,ldc,iopt,info)
+          IF (info .NE. ppm_param_success) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+     &            'max extent of subs TOPO%GHOST_REQS',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          !<<<< haeckic end >>>>!
           IF (ASSOCIATED(topo%min_subd)) DEALLOCATE(topo%min_subd,STAT=info)
           NULLIFY(topo%min_subd)
           IF (ASSOCIATED(topo%max_subd)) DEALLOCATE(topo%max_subd,STAT=info)
           NULLIFY(topo%max_subd)
+          !<<<< haeckic begin >>>>!
+          IF (ASSOCIATED(topo%ghost_reqd)) DEALLOCATE(topo%ghost_reqd,STAT=info)
+          NULLIFY(topo%ghost_reqd)
+          !<<<< haeckic end >>>>!
       ELSE
           CALL ppm_alloc(topo%min_subd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
@@ -286,10 +299,23 @@
      &            'max extent of subs TOPO%MAX_SUBD',__LINE__,info)
               GOTO 9999
           ENDIF
+          !<<<< haeckic begin >>>>!
+          CALL ppm_alloc(topo%ghost_reqd,ldc,iopt,info)
+          IF (info .NE. ppm_param_success) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+     &            'max extent of subs TOPO%GHOST_REQS',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          !<<<< haeckic end >>>>!
           IF (ASSOCIATED(topo%min_subs)) DEALLOCATE(topo%min_subs,STAT=info)
           NULLIFY(topo%min_subs)
           IF (ASSOCIATED(topo%max_subs)) DEALLOCATE(topo%max_subs,STAT=info)
           NULLIFY(topo%max_subs)
+          !<<<< haeckic begin >>>>!
+          IF (ASSOCIATED(topo%ghost_reqs)) DEALLOCATE(topo%ghost_reqs,STAT=info)
+          NULLIFY(topo%ghost_reqs)
+          !<<<< haeckic end >>>>!
       ENDIF
 
       !-------------------------------------------------------------------------

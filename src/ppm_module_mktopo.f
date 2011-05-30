@@ -42,6 +42,10 @@
          INTERFACE ppm_mktopo
             MODULE PROCEDURE ppm_topo_mkpart_s
             MODULE PROCEDURE ppm_topo_mkpart_d
+      !<<<< haeckic begin >>>>!
+            MODULE PROCEDURE ppm_topo_mkpart_inhom_s
+            MODULE PROCEDURE ppm_topo_mkpart_inhom_d
+      !<<<< haeckic end >>>>!
             MODULE PROCEDURE ppm_topo_mkfield_s
             MODULE PROCEDURE ppm_topo_mkfield_d
             MODULE PROCEDURE ppm_topo_mkgeom_s
@@ -57,6 +61,9 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "topo/ppm_topo_mkpart.f"
+!<<<< haeckic begin >>>>!
+#include "topo/ppm_topo_mkpart_inhom.f"
+!<<<< haeckic end >>>>!
 #include "topo/ppm_topo_mkfield.f"
 #include "topo/ppm_topo_mkgeom.f"
 #include "topo/ppm_topo_mktree.f"
@@ -64,6 +71,9 @@
 
 #define __KIND __DOUBLE_PRECISION
 #include "topo/ppm_topo_mkpart.f"
+!<<<< haeckic begin >>>>!
+#include "topo/ppm_topo_mkpart_inhom.f"
+!<<<< haeckic end >>>>!
 #include "topo/ppm_topo_mkfield.f"
 #include "topo/ppm_topo_mkgeom.f"
 #include "topo/ppm_topo_mktree.f"

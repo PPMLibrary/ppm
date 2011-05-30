@@ -157,7 +157,7 @@
       topo => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
-      !  store min_phys and max_phys
+      !  store min_phys and max_phys, store ghostsizes for subs
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
@@ -168,6 +168,16 @@
          topo%min_physs(k) = min_phys(k)
          topo%max_physs(k) = max_phys(k)
       ENDDO
+
+      !<<<< haeckic begin >>>>!
+      ! For all subdomains the same ghostsize
+      DO k=1,nsublist
+         DO i=1,ppm_dim
+            topo%ghost_reqs(i,k) = ghostsize
+         ENDDO
+      ENDDO
+      !<<<< haeckic end >>>>!
+
       topo%ghostsizes = ghostsize
 #else
       !-------------------------------------------------------------------------
@@ -177,6 +187,16 @@
          topo%min_physd(k) = min_phys(k)
          topo%max_physd(k) = max_phys(k)
       ENDDO
+
+      !<<<< haeckic begin >>>>!
+      ! For all subdomains the same ghostsize
+      DO k=1,nsublist
+         DO i=1,ppm_dim
+            topo%ghost_reqd(i,k) = ghostsize
+         ENDDO
+      ENDDO
+      !<<<< haeckic end >>>>!
+
       topo%ghostsized = ghostsize
 #endif
 

@@ -256,7 +256,9 @@
       !-------------------------------------------------------------------------
       !  Compute the maximum number of levels 
       !-------------------------------------------------------------------------
-      nlevel = INT(LOG(MINVAL(len_phys)/minboxsize)/LOG(2.0_MK)) + 1
+      !<<<< haeckic begin >>>>!
+      nlevel = INT(LOG(MINVAL(len_phys)/minboxsize)/LOG(2.0_MK))
+      !<<<< haeckic end >>>>!
 
       !-------------------------------------------------------------------------
       !  Split the boxes, starting at level 0 (the full box)

@@ -1,6 +1,8 @@
-TESTINC=-I../../../include -L../../../lib -lppm
+TESTINC=-I../../../include -I/usr/local/include -L../../../lib -lppm
 sources=$(wildcard *.f)
 targets=$(patsubst %.f,%,$(sources))
+CPP = cpp
+FC = mpif90
 
 new : clean all
 

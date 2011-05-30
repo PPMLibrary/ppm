@@ -106,7 +106,7 @@ def plotgl3(ax,gl):
 
 def plotsub2(ax,f,cpu):
     nc = len(cmap.keys())
-    p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc+1)+1],linewidth=0)
+    p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc-1)+1],linewidth=0)
     ax.add_patch(p)
     p = Polygon(f,fill=False,linewidth=1,ec='k')
     ax.add_patch(p)
@@ -126,7 +126,8 @@ def plotdat3(ax,x,y,z,tag):
 def main():
     subfilen = sys.argv[1]
     datfilen = sys.argv[2]
-    
+    plotp = sys.argv[3]
+
     fig = plt.figure()
 
     subfile = open(subfilen)
@@ -135,6 +136,9 @@ def main():
     print dim
     l2 = subfile.readline()
     halo = float(l2.strip())
+
+# add parameters to get ranges of axes
+
     if dim == 2:
         ax = fig.add_subplot(111)
         for l in subfile:
@@ -163,30 +167,37 @@ def main():
             faces = sub2cube(min_sub,max_sub)
             plotsub3(ax,faces,proc)
     subfile.close()
-    datfile = open(datfilen)
-    x = []
-    y = []
-    if dim == 3:
-        z = []
-    c = []
+
+    # a dummy particle to adjust axes ranges
     if dim == 2:
-        for l in datfile:
-            r = l.strip().split()
-            x.append(float(r[0]))
-            y.append(float(r[1]))
-            c.append(int(r[2]))
-        plotdat2(ax,x,y,c)
+        plotdat2(ax,[0],[0],[1])
     elif dim == 3:
-        for l in datfile:
-            r = l.strip().split()
-            x.append(float(r[0]))
-            y.append(float(r[1]))
-            z.append(float(r[2]))
-            c.append(int(r[3]))
-        plotdat3(ax,x,y,z,c)
-    datfile.close()
-   
-    
+	plotdat3(ax,[0],[0],[0],[1])
+
+    if (int(plotp) == 1):
+        datfile = open(datfilen)
+        x = []
+        y = []
+        if dim == 3:
+        	z = []
+        c = []
+        if dim == 2:
+    	    for l in datfile:
+	        r = l.strip().split()
+	        x.append(float(r[0]))
+                y.append(float(r[1]))
+                c.append(int(r[2]))
+	    plotdat2(ax,x,y,c)
+        elif dim == 3:
+	    for l in datfile:
+	        r = l.strip().split()
+	        x.append(float(r[0]))
+	        y.append(float(r[1]))
+	        z.append(float(r[2]))
+	        c.append(int(r[3]))
+	    plotdat3(ax,x,y,z,c)
+        datfile.close()
+           
     ax.set_xlabel('x')
     ax.set_ylabel('y')
     if dim == 3:

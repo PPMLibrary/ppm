@@ -1,6 +1,21 @@
-TESTINC=-I../../../include -L../../../lib -lppm
+#----------------------------------------------------------------------
+# PATHS (need to be adjusted)
+#----------------------------------------------------------------------
+# PPM Library
+PPMDIR     = ../../..
+# METIS Library
+METISDIR   = ../../../../metis4
+# MPI Library
+MPIDIR     = /usr/local
+
+CPP = cpp
+FC = mpif90
+#----------------------------------------------------------------------
+
+TESTINC=-I$(PPMDIR)/include -I$(MPIDIR)/include -L$(PPMDIR)/lib -lppm -L$(METISDIR)/lib -lmetis
 sources=$(wildcard *.f)
 targets=$(patsubst %.f,%,$(sources))
+
 
 new : clean all
 

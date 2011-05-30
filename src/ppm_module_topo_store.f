@@ -41,6 +41,10 @@
          INTERFACE ppm_topo_store
             MODULE PROCEDURE ppm_topo_store_s
             MODULE PROCEDURE ppm_topo_store_d
+            !<<<< haeckic begin >>>>!
+            MODULE PROCEDURE ppm_topo_store_s
+            MODULE PROCEDURE ppm_topo_store_d
+            !<<<< haeckic end >>>>!
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -50,10 +54,16 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "topo/ppm_topo_store.f"
+!<<<< haeckic begin >>>>!
+#include "topo/ppm_topo_store_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
 #include "topo/ppm_topo_store.f"
+!<<<< haeckic begin >>>>!
+#include "topo/ppm_topo_store_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 
       END MODULE ppm_module_topo_store

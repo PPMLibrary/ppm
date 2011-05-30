@@ -733,6 +733,9 @@
               ENDIF
           ENDIF
 
+
+          print *, lctr, inext, ppm_rank, tree_lhbx(2,inext)-tree_lhbx(1,inext) + 1, boxcost(inext), nboxlist
+
           !---------------------------------------------------------------------
           !  Determine best cut direction(s)
           !---------------------------------------------------------------------

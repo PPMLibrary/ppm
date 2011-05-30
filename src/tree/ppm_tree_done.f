@@ -139,8 +139,10 @@
           !  THIS SHOULD GO TO THE DECOMP ROUTINE AND NOT INTO THE GENERIC
           !  TREE !!!
           !---------------------------------------------------------------------
+
           IF (nsubs .LT. minboxes) THEN
               info = ppm_error_error
+
               CALL ppm_error(ppm_err_few_subs,'ppm_tree_done',     &
      &            'Could not create the minimum number of non-empty boxes!', &
      &            __LINE__,info)

@@ -244,6 +244,17 @@
             !!! max ghostsize width used when creating this topology (double)
             !!! using a larger cutoff when calling routines such as ghost_get
             !!! should ideally raise a warning
+
+            !<<<< haeckic begin >>>>!
+            REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: ghost_reqs => NULL()
+            !!! Required ghostsizes of subs (single) in each dimension
+            !!! Note: 1st index: x,y,(z), 2nd: subID
+            REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: ghost_reqd => NULL()
+            !!! Required ghostsizes of subs (double) in each dimension
+            !!! Note: 1st index: x,y,(z), 2nd: subID
+            !<<<< haeckic end >>>>!
+
+
          END TYPE ppm_t_topo
 
          !----------------------------------------------------------------------

@@ -46,6 +46,12 @@
             MODULE PROCEDURE ppm_tree_alloc_td
             MODULE PROCEDURE ppm_tree_alloc_ds
             MODULE PROCEDURE ppm_tree_alloc_dd
+            !<<<< haeckic begin >>>>!
+            MODULE PROCEDURE ppm_tree_alloc_inhom_ts
+            MODULE PROCEDURE ppm_tree_alloc_inhom_td
+            MODULE PROCEDURE ppm_tree_alloc_inhom_ds
+            MODULE PROCEDURE ppm_tree_alloc_inhom_dd
+            !<<<< haeckic end >>>>!
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -56,18 +62,30 @@
 #define __TYPE __TREE
 #define __KIND __SINGLE_PRECISION
 #include "tree/ppm_tree_alloc.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_alloc_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "tree/ppm_tree_alloc.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_alloc_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 #undef __TYPE
 
 #define __TYPE __DECOMP
 #define __KIND __SINGLE_PRECISION
 #include "tree/ppm_tree_alloc.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_alloc_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "tree/ppm_tree_alloc.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_alloc_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 #undef __TYPE
 

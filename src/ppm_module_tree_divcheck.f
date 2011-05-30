@@ -42,6 +42,10 @@
          INTERFACE ppm_tree_divcheck
             MODULE PROCEDURE ppm_tree_divcheck_s
             MODULE PROCEDURE ppm_tree_divcheck_d
+            !<<<< haeckic begin >>>>!
+            MODULE PROCEDURE ppm_tree_divcheck_inhom_s
+            MODULE PROCEDURE ppm_tree_divcheck_inhom_d
+            !<<<< haeckic end >>>>!
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -51,10 +55,16 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "tree/ppm_tree_divcheck.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_divcheck_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
 #include "tree/ppm_tree_divcheck.f"
+!<<<< haeckic begin >>>>!
+#include "tree/ppm_tree_divcheck_inhom.f"
+!<<<< haeckic end >>>>!
 #undef __KIND
 
       END MODULE ppm_module_tree_divcheck
