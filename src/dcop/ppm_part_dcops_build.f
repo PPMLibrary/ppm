@@ -228,7 +228,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
     IF (ip.NE.ncoeff) THEN
         WRITE(cbuf,*) 'Something wrong when computing coefficients. Theory: ',&
             ncoeff,', we have ',ip
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
@@ -245,41 +245,41 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
     ENDIF
 
     IF (nneighmin .LT. ncoeff) THEN
-        CALL pwrite(ppm_rank,caller,'Not enough neighbours',info)
+        CALL ppm_write(ppm_rank,caller,'Not enough neighbours',info)
         WRITE(cbuf,*) 'For this DC-operator, we need ',&
             ncoeff,' neighbours. We have ',nneighmin
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
 
     ALLOCATE(d2_one2all(nneighmax))
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(dx(ppm_dim,nneighmax))
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(Z(ncoeff,ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(b(ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(b_0(ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -287,7 +287,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
     CALL particles_allocate_wpv(Particles,eta_id,nneighmax,info,&
         zero=.TRUE.,iopt=ppm_param_alloc_grow)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'particles_allocate_wpv failed.',info)
+        CALL ppm_write(ppm_rank,caller,'particles_allocate_wpv failed.',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -406,7 +406,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
         ! now b contain the solution to the LSEs A*x=b 
 
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'solveLSE failed',info)
+            CALL ppm_write(ppm_rank,caller,'solveLSE failed',info)
             info = -1
             GOTO 9999
         ENDIF

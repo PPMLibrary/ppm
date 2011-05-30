@@ -70,6 +70,9 @@ MODULE ppm_module_dcops
     !-------------------------------------------------------------------------
     USE ppm_module_data, ONLY: ppm_rank,ppm_dim
     USE ppm_module_typedef
+    USE ppm_module_write
+
+#include "ppm_define.h"
 
     INTERFACE ppm_dcops_2d
         MODULE PROCEDURE ppm_dcops_adapt_2d_s

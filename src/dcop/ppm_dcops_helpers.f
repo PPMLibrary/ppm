@@ -3,7 +3,6 @@
 ! Primitive function as defined in Chen et al., 
 !             Int. J. Numer. Meth. Engng 2003; 56:935–960.
 ! (here, the quartic spline)
-! For use in correct_diff_operator_interp
 !-------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
 FUNCTION primitive_s(x)
@@ -138,7 +137,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     ! this case will be dealt with below when checking for singularities
     IF (info .LT. 0) THEN
         WRITE(cbuf,'(A,I2)') ' getrf failed with info = ', info
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
@@ -242,7 +241,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
             ENDIF
 
             !print the error message
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
 
             info = -1
             GOTO 9999
@@ -255,7 +254,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -310,17 +309,17 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #endif
         IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'Error in moment conditions too large.',info)
             WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
                 SUM(ABS(real_b - exact_b))
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             DO i=1,n
                 DO j=1,n
                     WRITE(9001,'(1(E30.22))') A(i,j)
                 ENDDO
             ENDDO
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'moment matrix written in file fort.9001',info)
             info = -1
             GOTO 9999
@@ -452,7 +451,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     ! this case will be dealt with below when checking for singularities
     IF (info .LT. 0) THEN
         WRITE(cbuf,'(A,I2)') ' getrf failed with info = ', info
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
@@ -563,7 +562,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             ENDIF
 
             !print the error message
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -575,7 +574,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -586,7 +585,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -654,17 +653,17 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #endif
         IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'Error in moment conditions 1 too large.',info)
             WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
                 SUM(ABS(real_b - exact_b))
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             DO i=1,n
                 DO j=1,n
                     WRITE(9001,'(1(E30.22))') A(i,j)
                 ENDDO
             ENDDO
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'moment matrix written in file fort.9001',info)
             info = -1
             GOTO 9999
@@ -677,11 +676,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #endif
         IF (SUM(ABS(real_b - exact_b_2)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'Error in moment conditions 2 too large.',info)
             WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
                 SUM(ABS(real_b - exact_b_2))
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -807,7 +806,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! this case will be dealt with below when checking for singularities
     IF (info .LT. 0) THEN
         WRITE(cbuf,'(A,I2)') ' getrf failed with info = ', info
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
@@ -911,7 +910,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
             ENDIF
 
             !print the error message
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -924,7 +923,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #endif
             IF (info .NE. 0) THEN
                 WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-                CALL pwrite(ppm_rank,caller,cbuf,info)
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -965,7 +964,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #endif
             IF (info .NE. 0) THEN
                 WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
-                CALL pwrite(ppm_rank,caller,cbuf,info)
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -987,17 +986,17 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
             
             IF (SUM(ABS(real_b - exact_b_n(:,k))) .GT. tolerance_LSE) THEN
                 WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'Error in moment conditions 1 too large.',info)
                 WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
                     SUM(ABS(real_b - exact_b_n(:,k)))
-                CALL pwrite(ppm_rank,caller,cbuf,info)
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
                 DO i=1,n
                     DO j=1,n
                         WRITE(9001,'(1(E30.22))') A(i,j)
                     ENDDO
                 ENDDO
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'moment matrix written in file fort.9001',info)
                 info = -1
                 GOTO 9999

@@ -237,41 +237,41 @@ SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
     gamma = alpha
 
     IF (nneighmin .LT. ncoeff) THEN
-        CALL pwrite(ppm_rank,caller,'Not enough neighbours',info)
+        CALL ppm_write(ppm_rank,caller,'Not enough neighbours',info)
         WRITE(cbuf,*) 'For this DC-operator, we need ',&
             ncoeff,' neighbours. We have ',nneighmin
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
         info = -1
         GOTO 9999
     ENDIF
 
     ALLOCATE(d2_one2all(nneighmax))
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(dx(ppm_dim,nneighmax))
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(Z(ncoeff,ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(b(ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
     ALLOCATE(b_0(ncoeff),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -279,7 +279,7 @@ SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
     IF (ALLOCATED(eta)) DEALLOCATE(eta)
     ALLOCATE(eta(nneighmax,Npart))
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'Allocation failed.',info)
+        CALL ppm_write(ppm_rank,caller,'Allocation failed.',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -356,7 +356,7 @@ SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
         ! now b contain the solution to the LSEs A*x=b 
 
         IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,'solveLSE failed',info)
+                    CALL ppm_write(ppm_rank,caller,'solveLSE failed',info)
                     info = -1
                     GOTO 9999
         ENDIF
