@@ -15,9 +15,7 @@
 SUBROUTINE sop_fuse_particles(Particles,opts,info,&
         level_fun,wp_fun,nb_fun,printp)
 
-    USE ppm_module_user
     USE ppm_module_alloc, ONLY: ppm_alloc
-    USE ppm_module_sop_typedef
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -109,7 +107,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
 
     IF (opts%level_set) THEN
         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            CALL pwrite(ppm_rank,caller,'incompatible optional arguments',info)
+            CALL ppm_write(ppm_rank,caller,'incompatible optional arguments',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -262,10 +260,12 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     !! Finalize
     !!-------------------------------------------------------------------------!
 #if debug_verbosity > 1
+#ifdef __MPI
     CALL MPI_Allreduce(del_part,del_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+#endif
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,I8,A)') 'Deleting ', del_part,' particles'
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
 

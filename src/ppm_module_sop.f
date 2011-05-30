@@ -33,24 +33,29 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
+#define debug_verbosity 2
 
      USE ppm_module_data
      USE ppm_module_typedef
      USE ppm_module_particles
      USE ppm_module_sop_typedef
+     USE ppm_module_write
+     USE ppm_module_substart
+     USE ppm_module_substop
+#include "ppm_define.h"
 
      IMPLICIT NONE
 
-     !INTERFACE sop_approx_wp
-     !MODULE PROCEDURE sop_approx_wp_1d
-     !MODULE PROCEDURE sop_approx_wp_2d
-     !END INTERFACE
-     !INTERFACE sop_dump_debug
-     !MODULE PROCEDURE sop_dump_1d
-     !MODULE PROCEDURE sop_dump_1di
-     !MODULE PROCEDURE sop_dump_2d
-     !MODULE PROCEDURE sop_dump_2di
-     !END INTERFACE
+     INTERFACE sop_approx_wp
+         MODULE PROCEDURE sop_approx_wp_1d
+         MODULE PROCEDURE sop_approx_wp_2d
+     END INTERFACE
+     INTERFACE sop_dump_debug
+         MODULE PROCEDURE sop_dump_1d
+         MODULE PROCEDURE sop_dump_1di
+         MODULE PROCEDURE sop_dump_2d
+         MODULE PROCEDURE sop_dump_2di
+     END INTERFACE
      !INTERFACE sop_check_debug
      !MODULE PROCEDURE sop_check_1d
      !MODULE PROCEDURE sop_check_1di
@@ -91,6 +96,7 @@
      REAL(prec),PARAMETER :: PI = ACOS(-1._prec)
 
 
+     PUBLIC sop_adapt_particles, sop_init_opts
 
      CONTAINS
 
@@ -162,7 +168,8 @@
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_compute_D.f"
 
-     !!#include "sop/sop_dump_debug.f"
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_dump_debug.f"
 
      !!#include "sop/sop_check_debug.f"
 
@@ -172,26 +179,29 @@
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_gradient_descent.f"
 
-     !#define __KIND __DOUBLE_PRECISION
-     !#include "sop/sop_gradient_psi.f"
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_gradient_psi.f"
 
-     !#define __KIND __DOUBLE_PRECISION
-     !#include "sop/sop_interpolate_particles.f"
+!#define __KIND __DOUBLE_PRECISION
+!#include "sop/sop_interpolate_particles.f"
 
-     !#define __KIND __DOUBLE_PRECISION
-     !#define __DIM 2
-     !#include "sop/sop_interpolate.f"
-     !#define __KIND __DOUBLE_PRECISION
-     !#define __DIM 3
-     !#include "sop/sop_interpolate.f"
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_interpolate.f"
 
-
-     !#define __KIND __DOUBLE_PRECISION
-     !#include "sop/sop_potential_psi.f"
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_potential_psi.f"
 
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_spawn_particles.f"
+
+#define __KIND __DOUBLE_PRECISION
+#define __LDA 1
+#include "sop/sop_approx_wp.f"
+#define __KIND __DOUBLE_PRECISION
+#define __LDA 2
+#include "sop/sop_approx_wp.f"
+
 
 #undef __KIND
 #undef __DIM

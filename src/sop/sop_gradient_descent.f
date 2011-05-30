@@ -17,7 +17,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         wp_fun,D_fun,wp_grad_fun,threshold,no_derivatives)
 
     USE ppm_module_inl_xset_vlist
-    USE ppm_module_sop_typedef
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -52,7 +51,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     OPTIONAL                                               :: wp_grad_fun
     ! argument-functions need an interface
     INTERFACE
-        FUNCTION D_fun(f,dfdx,lap_f,opts)
+        FUNCTION D_fun(f,dfdx,opts,lap_f)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
             USE ppm_module_sop_typedef
@@ -64,8 +63,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             REAL(MK)                                     :: D_fun
             REAL(MK),                         INTENT(IN) :: f
             REAL(MK),DIMENSION(ppm_dim),      INTENT(IN) :: dfdx
+            TYPE(sop_t_opts),POINTER,         INTENT(IN) :: opts
             REAL(MK),OPTIONAL,                INTENT(IN) :: lap_f
-            TYPE(sop_t_opts),OPTIONAL,POINTER,INTENT(IN) :: opts
         END FUNCTION D_fun
 
         FUNCTION wp_grad_fun(pos)
@@ -170,7 +169,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         WRITE(cbuf,'(A)') 'Using analytical expressions to compute D'
         IF (.NOT. PRESENT(D_fun)) THEN
             WRITE(cbuf,'(A)') 'Incompatible options. D_fun must be present'
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -178,7 +177,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         WRITE(cbuf,'(A)') 'Using interpolation routines to compute D'
     ENDIF
     IF (ppm_rank .EQ.0) THEN
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
     IF (PRESENT(no_derivatives)) THEN
@@ -217,7 +216,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     IF (ASSOCIATED(Gradient_Psi)) DEALLOCATE(Gradient_Psi)
     ALLOCATE(Gradient_Psi(ppm_dim,Particles%Mpart),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'allocation failed',info)
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -258,7 +257,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !Particles%wps(Particles%D_id)%vec,Particles%Npart,Particles%nvlist,&
             !Particles%vlist,fuse_radius,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_fuse_particles failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_fuse_particles failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -266,14 +265,14 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !Insert (spawn) new particles where needed
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_spawn_particles failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_spawn_particles failed.',info)
             info = -1
             GOTO 9999
         ENDIF
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_updated_positions failed',info)
             info = -1
             GOTO 9999
@@ -285,7 +284,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -293,7 +292,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         CALL particles_mapping_partial(Particles,topo_id,info,debug=.TRUE.)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -301,7 +300,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -315,7 +314,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
                 info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'particles_allocate_wps failed',info)
                 info = -1
                 GOTO 9999
@@ -333,12 +332,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             IF (need_derivatives) THEN
                 DO ip=1,Particles%Mpart
                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),&
-                        wp_grad_fun(xp(1:ppm_dim,ip)))
+                        wp_grad_fun(xp(1:ppm_dim,ip)),opts)
                     Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
                 ENDDO
             ELSE
                 DO ip=1,Particles%Mpart
-                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad)
+                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
                     Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
                 ENDDO
             ENDIF
@@ -378,7 +377,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !---------------------------------------------------------------------!
             CALL particles_updated_cutoff(Particles,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'particles_updated_cutoff failed',info)
+                CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -386,7 +385,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !have to reconstruct ghosts
             CALL particles_mapping_ghosts(Particles,topo_id,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
+                CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -396,7 +395,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !---------------------------------------------------------------------!
             CALL particles_neighlists(Particles,topo_id,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'particles_neighlists failed.',info)
+                CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -441,7 +440,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             D_old = D_old / opts%rcp_over_D
             D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'ppm_inl_xset_vlist failed.',info)
                 info = -1
                 GOTO 9999
@@ -475,7 +474,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_updated_cutoff failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -484,7 +483,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -494,7 +493,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_neighlists failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -520,7 +519,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             DEALLOCATE(Gradient_Psi)
             ALLOCATE(Gradient_Psi(ppm_dim,Particles%Mpart),STAT=info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'allocation failed',info)
+                CALL ppm_write(ppm_rank,caller,'allocation failed',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -531,20 +530,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! (need ghosts for xp and D)
         !! (on output, the ghost values for Gradient_Psi have been updated)
         !!---------------------------------------------------------------------!
-        !D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-        !CALL sop_gradient_psi(Particles%xp,D,Particles%nvlist,Particles%vlist,&
-            !Particles%Npart,Particles%Mpart,Gradient_Psi,Psi_global,Psi_max,&
-            !info,h_min=Particles%h_min) !needs ghosts and vlist to be up-to-date
-        !IF (info .NE. 0) THEN
-            !CALL pwrite(ppm_rank,caller,'sop_gradient_psi failed.',info)
-            !info = -1
-            !GOTO 9999
-        !ENDIF
-        !D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-
-        CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,Psi_max,info) 
+        CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
+            Psi_max,opts,info) 
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_gradient_psi failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -583,12 +572,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             write(*,*) 'DBG: ',MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Mpart)))
 
             D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-            !CALL sop_potential_psi(Particles%xp,D,&
-                !Particles%nvlist,Particles%vlist,Particles%Npart,Particles%Mpart,&
-                !Psi_global,Psi_max,info)!needs ghosts and vlist to be up-to-date
-            CALL sop_potential_psi(Particles,Psi_global,Psi_max,info)
+            CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'sop_potential_psi failed.',info)
+                CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -643,17 +629,19 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         xp =>NULL()
 
 #if debug_verbosity > 2
+#ifdef __MPI
         CALL MPI_Allreduce(step*MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Npart))),&
             tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
             WRITE(cbuf,*) 'Moved particles: max displacement= ',tmpvar2
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
         ENDIF
+#endif
 #endif
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_updated_positions failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_updated_positions failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -674,7 +662,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !CALL sop_io(it_adapt+1000,debugdir,xp,ppm_dim,Particles%Npart,Particles%Mpart,info,&
                 !rcp=rcp,D=D)
             !IF (info .NE. 0) THEN
-                !CALL pwrite(ppm_rank,caller,'sop_io failed.',info)
+                !CALL ppm_write(ppm_rank,caller,'sop_io failed.',info)
                 !info = -1
                 !GOTO 9999
             !ENDIF
@@ -683,7 +671,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !CALL sop_io_xyz(it_adapt+1000,debugdir,xp,ppm_dim,Particles%Npart,&
                 !Particles%Mpart,info,rcp=rcp,D=D)
             !IF (info .NE. 0) THEN
-                !CALL pwrite(ppm_rank,caller,'sop_io_xyz failed.',info)
+                !CALL ppm_write(ppm_rank,caller,'sop_io_xyz failed.',info)
                 !info = -1
                 !GOTO 9999
             !ENDIF
@@ -695,6 +683,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #endif
 
 #if debug_verbosity > 0
+#ifdef __MPI
         CALL MPI_Allreduce(Psi_max,tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
         CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
         CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
@@ -704,8 +693,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ' Psi_mean= ',Psi_global/REAL(tmpvari1,MK),' Psi_max= ',tmpvar2, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
                 'Np=',tmpvari1,' Mp=',tmpvari2,' step=',step
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
         ENDIF
+#endif
 #endif
 
     ENDDO it_adapt_loop
@@ -715,7 +705,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !------------------------------------------------------------------
     CALL particles_apply_bc(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
@@ -723,21 +713,21 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     CALL particles_mapping_partial(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
     ENDIF
     CALL particles_mapping_ghosts(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
     ENDIF
     CALL particles_neighlists(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_neighlists failed',info)
         info = -1
         GOTO 9999
@@ -748,11 +738,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !------------------------------------------------------------------
     IF (Particles%nneighmin .LT. opts%nneigh_critical) THEN
         IF (it_adapt .LT. 9999) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'min nb of neighbr not enough. Going back to adaptation loop',info)
             GOTO 7099
         ELSE
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'not enough neighbours and max nb of iterations exceeded. Major Fail.',&
                 info)
             info = -1
@@ -761,7 +751,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     ELSE
 #if debug_verbosity > 0
         IF (ppm_rank.EQ.0) & 
-            CALL pwrite(ppm_rank,caller,'enough neighbours, we are good to go.',info)
+            CALL ppm_write(ppm_rank,caller,'enough neighbours, we are good to go.',info)
 #endif
     ENDIF
 
@@ -770,7 +760,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
 #endif
 
     !returns number of iterations
@@ -851,7 +841,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     !Gradient of the level function (usually known only during initialisation)
     ! argument-functions need an interface
     INTERFACE
-        FUNCTION D_fun(f1,dfdx,f2,opts)
+        FUNCTION D_fun(f1,dfdx,opts,f2)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
             USE ppm_module_sop_typedef
@@ -860,11 +850,11 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 #elif __KIND == __DOUBLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-            REAL(MK)                              :: D_fun
-            REAL(MK),                INTENT(IN)   :: f1
-            REAL(MK),DIMENSION(ppm_dim),INTENT(IN):: dfdx
-            REAL(MK),OPTIONAL,       INTENT(IN)   :: f2
-            TYPE(sop_t_opts),OPTIONAL,POINTER,INTENT(IN) :: opts
+            REAL(MK)                               :: D_fun
+            REAL(MK),                   INTENT(IN) :: f1
+            REAL(MK),DIMENSION(ppm_dim),INTENT(IN) :: dfdx
+            TYPE(sop_t_opts),POINTER,   INTENT(IN) :: opts
+            REAL(MK),OPTIONAL,          INTENT(IN) :: f2
         END FUNCTION D_fun
 
         !Function that returns the width of the narrow band
@@ -1013,7 +1003,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         WRITE(cbuf,'(A)') 'Using analytical expressions to compute D'
         IF (.NOT. PRESENT(D_fun)) THEN
             WRITE(cbuf,'(A)') 'Incompatible options. D_fun must be present'
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1021,7 +1011,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         WRITE(cbuf,'(A)') 'Using interpolation routines to compute D'
     ENDIF
     IF (ppm_rank .EQ.0) THEN
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
 
@@ -1062,7 +1052,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     IF (ASSOCIATED(Gradient_Psi)) DEALLOCATE(Gradient_Psi)
     ALLOCATE(Gradient_Psi(ppm_dim,Particles%Mpart),STAT=info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'allocation failed',info)
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -1102,7 +1092,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         CALL sop_fuse_particles(Particles,opts,info,wp_fun=wp_fun,&
             level_fun=level_fun,nb_fun=nb_fun,printp=it_adapt)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_fuse_particles failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_fuse_particles failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1111,14 +1101,14 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun,&
             level_fun=level_fun,nb_fun=nb_fun,printp=it_adapt)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_spawn_particles failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_spawn_particles failed.',info)
             info = -1
             GOTO 9999
         ENDIF
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_updated_positions failed',info)
             info = -1
             GOTO 9999
@@ -1130,7 +1120,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -1138,7 +1128,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         CALL particles_mapping_partial(Particles,topo_id,info,debug=.TRUE.)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -1146,7 +1136,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
             info = -1
             GOTO 9999
@@ -1164,7 +1154,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 level_grad_fun=level_grad_fun,D_needs_gradients=need_derivatives,&
                 nb_fun=nb_fun)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'sop_compute_D failed',info)
+                CALL ppm_write(ppm_rank,caller,'sop_compute_D failed',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -1192,7 +1182,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 Particles_old%Npart,D_old,Particles%skin,&
                 ghostlayer,info,vlist_cross,nvlist_cross)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'ppm_inl_xset_vlist failed.',info)
                 info = -1
                 GOTO 9999
@@ -1200,7 +1190,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
 #if debug_verbosity > 0
             IF (MINVAL(nvlist_cross(1:Particles%Npart)).EQ.0) THEN
-                CALL pwrite(ppm_rank,caller,'xlist empty dumping some debug data',info)
+                CALL ppm_write(ppm_rank,caller,'xlist empty dumping some debug data',info)
                 DO ip=1,Particles%Npart
                     write(801,*) Particles%xp(1:ppm_dim,ip), nvlist_cross(ip)
                 ENDDO
@@ -1234,7 +1224,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             CALL sop_approx_wp_1d(Particles_old%xp,wp_old,D_old,Particles%xp,&
                 wp,Particles%Npart,Particles%Mpart,nvlist_cross,vlist_cross,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'sop_approx_wp_1d failed.',info)
                 info = -1
                 GOTO 9999
@@ -1244,10 +1234,12 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             wp    => Set_wps(Particles,Particles%adapt_wpid)
 
             IF (Particles%level_id.EQ.0) THEN
-                    CALL pwrite(ppm_rank,caller,'NOT sure this can ever happen. &
+                    !removme
+                    CALL ppm_write(ppm_rank,caller,'NOT sure this can ever happen. &
                         &level_id should not be zero here',info)
                     info = -1
                     GOTO 9999
+                    !removme
             ELSE
                 level => Get_wps(Particles,Particles%level_id)
                 level_grad => Get_wpv(Particles,Particles%level_grad_id)
@@ -1264,7 +1256,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                     D,Particles%Npart,Particles%Mpart,&
                     nvlist_cross,vlist_cross,info)
                 IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,&
+                    CALL ppm_write(ppm_rank,caller,&
                         'sop_approx_wp failed.',info)
                     info = -1
                     GOTO 9999
@@ -1278,7 +1270,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                     Particles%xp,level_grad,Particles%Npart,Particles%Mpart,&
                     nvlist_cross,vlist_cross,info)
                 IF (info .NE. 0) THEN
-                    CALL pwrite(ppm_rank,caller,&
+                    CALL ppm_write(ppm_rank,caller,&
                         'sop_approx_wp failed.',info)
                     info = -1
                     GOTO 9999
@@ -1364,7 +1356,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_updated_cutoff failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1373,7 +1365,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1383,7 +1375,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_neighlists failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1417,7 +1409,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             DEALLOCATE(Gradient_Psi)
             ALLOCATE(Gradient_Psi(ppm_dim,Particles%Mpart),STAT=info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'allocation failed',info)
+                CALL ppm_write(ppm_rank,caller,'allocation failed',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -1428,19 +1420,10 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !! (need ghosts for xp and D)
         !! (on output, the ghost values for Gradient_Psi have been updated)
         !!---------------------------------------------------------------------!
-        !D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-        !CALL sop_gradient_psi(Particles%xp,D,Particles%nvlist,Particles%vlist,&
-            !Particles%Npart,Particles%Mpart,Gradient_Psi,Psi_global,Psi_max,&
-            !info,h_min=Particles%h_min) !needs ghosts and vlist to be up-to-date
-        !IF (info .NE. 0) THEN
-            !CALL pwrite(ppm_rank,caller,'sop_gradient_psi failed.',info)
-            !info = -1
-            !GOTO 9999
-        !ENDIF
-        !D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-        CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,Psi_max,info) 
+        CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
+            Psi_max,opts,info) 
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'sop_gradient_psi failed.',info)
+            CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1449,7 +1432,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
         IF (Particles%level_id.EQ.0) THEN
             IF (.NOT. PRESENT(level_fun).OR. .NOT. PRESENT(level_grad_fun)) THEN
-                CALL pwrite(ppm_rank,caller,&
+                CALL ppm_write(ppm_rank,caller,&
                     'need both level_grad_fun and level_fun here',info)
                 info = -1
                 GOTO 9999
@@ -1549,12 +1532,9 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
             !re-compute potential
             D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-            !CALL sop_potential_psi(Particles%xp,D,&
-                !Particles%nvlist,Particles%vlist,Particles%Npart,Particles%Mpart,&
-                !Psi_global,Psi_max,info)!needs ghosts and vlist to be up-to-date
-            CALL sop_potential_psi(Particles,Psi_global,Psi_max,info)
+            CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'sop_potential_psi failed.',info)
+                CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -1634,17 +1614,19 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         xp => Set_xp(Particles)
 
 #if debug_verbosity > 2
+#ifdef __MPI
         CALL MPI_Allreduce(step*MAXVAL(ABS(Gradient_Psi(1:ppm_dim, &
             1:Particles%Npart))),tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
             WRITE(cbuf,*) 'Moved particles: max displacement= ',tmpvar2
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
         ENDIF
+#endif
 #endif
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'particles_updated_positions failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_updated_positions failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1665,7 +1647,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             !CALL sop_io(it_adapt+1000,debugdir,xp,ppm_dim,&
                 !Particles%Npart,Particles%Mpart,info,rcp=rcp,D=D)
             !IF (info .NE. 0) THEN
-                !CALL pwrite(ppm_rank,caller,'sop_io failed.',info)
+                !CALL ppm_write(ppm_rank,caller,'sop_io failed.',info)
                 !info = -1
                 !GOTO 9999
             !ENDIF
@@ -1674,7 +1656,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             !CALL sop_io_xyz(it_adapt+1000,debugdir,xp,ppm_dim,Particles%Npart,&
                 !Particles%Mpart,info,rcp=rcp,D=D)
             !IF (info .NE. 0) THEN
-                !CALL pwrite(ppm_rank,caller,'sop_io_xyz failed.',info)
+                !CALL ppm_write(ppm_rank,caller,'sop_io_xyz failed.',info)
                 !info = -1
                 !GOTO 9999
             !ENDIF
@@ -1686,6 +1668,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 #endif
 
 #if debug_verbosity > 0
+#ifdef __MPI
         CALL MPI_Allreduce(Psi_max,tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
         CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
         CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
@@ -1695,8 +1678,9 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 ' Psi_mean= ',Psi_global/REAL(tmpvari1,MK),' Psi_max= ',tmpvar2, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
                 'Np=',tmpvari1,' Mp=',tmpvari2,' step=',step
-            CALL pwrite(ppm_rank,caller,cbuf,info)
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
         ENDIF
+#endif
 #endif
 
     ENDDO it_adapt_loop
@@ -1709,7 +1693,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
             info,iopt=ppm_param_dealloc)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'particles_allocate_wps (dealloc) failed',info)
             info = -1
             GOTO 9999
@@ -1721,7 +1705,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     !------------------------------------------------------------------
     CALL particles_apply_bc(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
@@ -1729,21 +1713,21 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
     CALL particles_mapping_partial(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
     ENDIF
     CALL particles_mapping_ghosts(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
     ENDIF
     CALL particles_neighlists(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,&
+        CALL ppm_write(ppm_rank,caller,&
             'particles_neighlists failed',info)
         info = -1
         GOTO 9999
@@ -1755,11 +1739,11 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     !------------------------------------------------------------------
     IF (Particles%nneighmin .LT. opts%nneigh_critical) THEN
         IF (it_adapt .LT. 9999) THEN
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'min nb of neighbr not enough. Going back to adaptation loop',info)
             GOTO 7099
         ELSE
-            CALL pwrite(ppm_rank,caller,&
+            CALL ppm_write(ppm_rank,caller,&
                 'not enough neighbours and max nb of iterations exceeded. Major Fail.',&
                 info)
             info = -1
@@ -1768,7 +1752,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     ELSE
 #if debug_verbosity > 0
         IF (ppm_rank.EQ.0) & 
-            CALL pwrite(ppm_rank,caller,'enough neighbours, we are good to go.',info)
+            CALL ppm_write(ppm_rank,caller,'enough neighbours, we are good to go.',info)
 #endif
     ENDIF
 
@@ -1777,7 +1761,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
-        CALL pwrite(ppm_rank,caller,cbuf,info)
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
 #endif
 
     !returns number of iterations

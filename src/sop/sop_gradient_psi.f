@@ -2,16 +2,9 @@
 !!! Compute gradient of the potential w.r.t particles' positions
 !!! Get ghost values for Gradient_Psi
 !!!----------------------------------------------------------------------------!
-
-!SUBROUTINE sop_gradient_psi(xp,D,nvlist,vlist,Npart,Mpart,&
-        !Gradient_Psi,Psi_global,Psi_max,info,gradD,h_min)
-
 SUBROUTINE sop_gradient_psi(Particles,topo_id,&
-        Gradient_Psi,Psi_global,Psi_max,info,gradD)
+        Gradient_Psi,Psi_global,Psi_max,opts,info,gradD)
 
-    USE sop_global, ONLY:maximum_D,&
-        & attractive_radius0,nneigh_critical,param_a
-    USE client_global, ONLY: MAXCHAR,cutoff,MPPREC
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_particles
 
@@ -32,6 +25,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     REAL(MK),DIMENSION(:,:),POINTER,     INTENT(INOUT)   :: Gradient_Psi
     REAL(MK),                            INTENT(  OUT)   :: Psi_global
     REAL(MK),                            INTENT(  OUT)   :: Psi_max
+    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
     INTEGER,                             INTENT(  OUT)   :: info
 
     ! Optional arguments
@@ -43,8 +37,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     REAL(MK)                              :: dist2,rr,meanD,nn,rd
     REAL(MK),DIMENSION(ppm_dim)              :: dist
     REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
-    CHARACTER (LEN = MAXCHAR)             :: caller='sop_gradient_psi'
-    CHARACTER (LEN = MAXCHAR)             :: filename,cbuf
+    CHARACTER (LEN = ppm_char)             :: caller='sop_gradient_psi'
+    CHARACTER (LEN = ppm_char)             :: filename,cbuf
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
     REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
@@ -77,7 +71,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
-        CALL pwrite(ppm_rank,caller,'need to compute neighbour lists first',info)
+        CALL ppm_write(ppm_rank,caller,'need to compute neighbour lists first',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -100,7 +94,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !attractive_radius = attractive_radius0 * &
             !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
             IF (nvlist(ip).GT.30) THEN
-                attractive_radius = attractive_radius0
+                attractive_radius = opts%attractive_radius0
             ELSE
                 attractive_radius = 0._MK
             ENDIF
@@ -116,7 +110,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 WRITE(cbuf,*) 'Distance between particles less than 1e-12! ',&
                 rr, ' ',ip,' ',iq,' xp = ',xp(1,ip),xp(2,ip),&
                     ' xq = ',xp(1,iq),xp(2,iq)
-                CALL pwrite(ppm_rank,caller,cbuf,info)
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -131,7 +125,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             meanD = MIN(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. 2._MK * maximum_D) CYCLE
+            IF (meanD .GT. 2._MK * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
@@ -173,9 +167,9 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
         !ENDIF
         !ENDDO
-        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,cutoff**2)) THEN
+        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
-                MIN(nn,cutoff)* 0.9_MK / &
+                MIN(nn,Particles%cutoff)* 0.9_MK / &
                 SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
         ENDIF
 
@@ -223,13 +217,15 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     !! (it can be viewed as an objective function)
     !!-------------------------------------------------------------------------!
 
+#ifdef __MPI
     CALL MPI_Allreduce(Psi_global,Psi_global,1,ppm_mpi_kind,MPI_SUM,ppm_comm,info)
     CALL MPI_Allreduce(Psi_max,Psi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'MPI_Allreduce failed',info)
+        CALL ppm_write(ppm_rank,caller,'MPI_Allreduce failed',info)
         info = -1
         GOTO 9999
     ENDIF
+#endif
 
     !!-------------------------------------------------------------------------!
     !! Get ghosts for gradient_psi (then, during the linesearch, 
@@ -237,29 +233,10 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     !!-------------------------------------------------------------------------!
     CALL particles_mapping_ghosts(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'mapping_ghosts failed.',info)
+        CALL ppm_write(ppm_rank,caller,'mapping_ghosts failed.',info)
         info = -1
         GOTO 9999
     ENDIF
-
-    !CALL ppm_map_part_push(Gradient_Psi,ppm_dim,Npart,info)
-    !IF (info .NE. 0) THEN
-        !CALL pwrite(ppm_rank,caller,'ppm_map_part_ghost (push) failed.',info)
-        !info = -1
-        !GOTO 9999
-    !ENDIF
-    !CALL ppm_map_part_send(Npart,Mpart,info)
-    !IF (info .NE. 0) THEN
-        !CALL pwrite(ppm_rank,caller,'ppm_map_part_ghost (send) failed.',info)
-        !info = -1
-        !GOTO 9999
-    !ENDIF
-    !CALL ppm_map_part_pop(Gradient_Psi,ppm_dim,Npart,Mpart,info)
-    !IF (info .NE. 0) THEN
-        !CALL pwrite(ppm_rank,caller,'ppm_map_part_ghost (pop) failed.',info)
-        !info = -1
-        !GOTO 9999
-    !ENDIF
 
     !!-------------------------------------------------------------------------!
     !! Finalize

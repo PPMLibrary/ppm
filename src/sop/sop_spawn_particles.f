@@ -10,9 +10,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     !!! Call impose_boundary_conditions to fix this.
     !!!----------------------------------------------------------------------------!
 
-    USE ppm_module_user
     USE ppm_module_alloc, ONLY: ppm_alloc
-    USE ppm_module_sop_typedef
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -96,7 +94,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     INTEGER                                :: add_part
     INTEGER,        DIMENSION(2)           :: lda
     INTEGER,        DIMENSION(1)           :: lda1
-    INTEGER                                :: add_part_global
     INTEGER, PARAMETER                     :: nb_new_part = 3
     !!! number of new particles that are generated locally
 
@@ -110,7 +107,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 
     IF (opts%level_set) THEN
         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            CALL pwrite(ppm_rank,caller,'incompatible optional arguments',info)
+            CALL ppm_write(ppm_rank,caller,'incompatible optional arguments',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -185,7 +182,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         lda = (/ppm_dim,Npart+add_part/)
         CALL ppm_alloc(Particles%xp,lda,ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'allocation failed',info)
+            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -193,14 +190,14 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         CALL ppm_alloc(Particles%wps(Particles%D_id)%vec,lda1,&
             ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'allocation failed',info)
+            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
             info = -1
             GOTO 9999
         ENDIF
         CALL ppm_alloc(Particles%wps(Particles%rcp_id)%vec,lda1,&
             ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL pwrite(ppm_rank,caller,'allocation failed',info)
+            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -214,7 +211,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
             DEALLOCATE(randnb)
             ALLOCATE(randnb(nb_new_part*ppm_dim*(Npart+add_part)),STAT=info)
             IF (info .NE. 0) THEN
-                CALL pwrite(ppm_rank,caller,'allocation failed.',info)
+                CALL ppm_write(ppm_rank,caller,'allocation failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -239,9 +236,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     D => Get_wps(Particles,Particles%D_id)
     rcp => Get_wps(Particles,Particles%rcp_id)
     nvlist => Particles%nvlist
-    IF (.NOT. PRESENT(level_fun)) THEN
-        level => Get_wps(Particles,Particles%level_id)
-        wp    => Get_wps(Particles,Particles%adapt_wpid)
+    IF (opts%level_set) THEN
+        IF (.NOT. PRESENT(level_fun)) THEN
+            level => Get_wps(Particles,Particles%level_id)
+            wp    => Get_wps(Particles,Particles%adapt_wpid)
+        ENDIF
     ENDIF
 
     IF (ppm_dim .EQ. 2) THEN
@@ -249,7 +248,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 
             IF (nvlist(ip) .LT. nvlist_theoretical) THEN
                 !FOR LEVEL SETS ONLY
-                IF (Particles%level_set) THEN
+                IF (opts%level_set) THEN
                     IF (PRESENT(wp_fun)) THEN
                         lev = level_fun(xp(1:ppm_dim,ip))
                         IF (ABS(lev) .GE. opts%nb_width*&
@@ -340,9 +339,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         ENDDO add_particles3d
     ENDIF
 
-    IF (.NOT. PRESENT(level_fun)) THEN
-        level => Set_wps(Particles,Particles%level_id)
-        wp    => Set_wps(Particles,Particles%adapt_wpid)
+    IF (opts%level_set) THEN
+        IF (.NOT. PRESENT(level_fun)) THEN
+            level => Set_wps(Particles,Particles%level_id)
+            wp    => Set_wps(Particles,Particles%adapt_wpid)
+        ENDIF
     ENDIF
     !!-------------------------------------------------------------------------!
     !!new size Npart
@@ -358,7 +359,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         preserve_wps=(/Particles%D_id,Particles%rcp_id/),&
         preserve_wpv=(/ INTEGER :: /))
     IF (info .NE.0) THEN
-        CALL pwrite(ppm_rank,caller,'particles_updated_nb_part failed',info)
+        CALL ppm_write(ppm_rank,caller,'particles_updated_nb_part failed',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -375,10 +376,12 @@ ENDIF
 !! Finalize
 !!-------------------------------------------------------------------------!
 #if debug_verbosity > 1
-CALL MPI_Allreduce(add_part,add_part_global,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+#ifdef __MPI
+CALL MPI_Allreduce(add_part,add_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+#endif
 IF (ppm_rank .EQ.0) THEN
-    WRITE(cbuf,'(A,I8,A)') 'Adding ', add_part_global,' particles'
-    CALL pwrite(ppm_rank,caller,cbuf,info)
+    WRITE(cbuf,'(A,I8,A)') 'Adding ', add_part,' particles'
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
 ENDIF
 #endif
 

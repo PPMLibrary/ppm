@@ -5,13 +5,9 @@
 !SUBROUTINE sop_potential_psi(xp,D,nvlist,vlist,Npart,Mpart,&
         !Psi_global,Psi_max,info)
 
-SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
+SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
-    USE sop_global, ONLY: maximum_D,attractive_radius0,param_a
-
-    USE ppm_module_user
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
-    USE ppm_module_particles
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -28,6 +24,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
     INTEGER,                             INTENT(  OUT)   :: info
     REAL(MK),                            INTENT(  OUT)   :: Psi_global
     REAL(MK),                            INTENT(  OUT)   :: Psi_max
+    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
@@ -65,7 +62,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
-        CALL pwrite(ppm_rank,caller,'need to compute neighbour lists first',info)
+        CALL ppm_write(ppm_rank,caller,'need to compute neighbour lists first',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -77,7 +74,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
         !attractive_radius = attractive_radius0 * &
             !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
             IF (nvlist(ip).GT.30) THEN
-                attractive_radius = attractive_radius0
+                attractive_radius = opts%attractive_radius0
             ELSE
                 attractive_radius = 0._MK
             ENDIF
@@ -93,7 +90,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles too small', &
                     rr,ip,iq,D(ip), D(iq)
-                CALL pwrite(ppm_rank,caller,cbuf,info)
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -104,7 +101,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
             !meanD = MAX(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. 2._MK * maximum_D) CYCLE
+            IF (meanD .GT. 2._MK * opts%maximum_D) CYCLE
 
             rd = rr / meanD
 
@@ -125,13 +122,15 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,info)
     !! Compute the global potential of the particles (NOT normalized)
     !!-------------------------------------------------------------------------!
 
+#ifdef __MPI
     CALL MPI_Allreduce(Psi_global,Psi_global,1,ppm_mpi_kind,MPI_SUM,ppm_comm,info)
     CALL MPI_Allreduce(Psi_max,Psi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     IF (info .NE. 0) THEN
-        CALL pwrite(ppm_rank,caller,'MPI_Allreduce failed',info)
+        CALL ppm_write(ppm_rank,caller,'MPI_Allreduce failed',info)
         info = -1
         GOTO 9999
     ENDIF
+#endif
 
     !!-------------------------------------------------------------------------!
     !! Finalize

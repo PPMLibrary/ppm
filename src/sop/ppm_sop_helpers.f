@@ -2,7 +2,6 @@
 SUBROUTINE sop_init_opts(opts,info)
     !!! constructor for sop options derived type
     USE ppm_module_error
-    USE ppm_module_sop_typedef
 
     IMPLICIT NONE
 
@@ -33,6 +32,9 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%param_nb = 1._MK
     opts%diff_eq => NULL()
     opts%order_approx = 4
+    opts%maximum_D = 1._MK
+    opts%minimum_D = 0.01_MK     
+    opts%nb_grad_desc_steps = 0
 
     9999 CONTINUE
 
