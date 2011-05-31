@@ -127,10 +127,10 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_partial(Particles,topoid,info)
         Assert_Equal(info,0)
 
-        call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.)
+        call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.,name='rcp')
         Assert_Equal(info,0)
         wp_id = 0
-        call particles_allocate_wps(Particles,wp_id,info,zero=.true.)
+        call particles_allocate_wps(Particles,wp_id,info,zero=.true.,name='wp')
         Assert_Equal(info,0)
 
         xp => get_xp(Particles)
@@ -152,22 +152,29 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_neighlists(Particles,topoid,info)
         Assert_True(info.eq.0)
 
+        write(dirname,*) './'
+        call particles_io_xyz(Particles,0,dirname,info)
+        Assert_Equal(info,0)
+
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
 
-        opts%scale_D = 1._mk
-        opts%minimum_D = 0.01_mk
+        opts%scale_D = 0.05_mk
+        opts%minimum_D = 0.005_mk
         opts%maximum_D = 0.05_mk
         opts%adaptivity_criterion = 6._mk
         opts%fuse_radius = 0.2_mk
         opts%attractive_radius0 = 0.4_mk
+        opts%rcp_over_D = 2.4_mk
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
 
-        write(dirname,*) './'
-        call particles_io_xyz(Particles,0,dirname,info)
+        call particles_io_xyz(Particles,1,dirname,info)
         Assert_Equal(info,0)
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,D_needs_gradients=.true.)
+        Assert_Equal(info,0)
+        call particles_io_xyz(Particles,2,dirname,info)
 
     end test
 
@@ -182,7 +189,7 @@ pure function f0_fun(pos)
     centre = 0.5_mk
     centre(2) = 0.75_mk
     radius=0.15_mk
-    eps = 0.05_mk
+    eps = 0.01_mk
 
     f0_fun = tanh((sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius)/eps)
 
@@ -199,9 +206,9 @@ pure function f0_grad_fun(pos)
     centre = 0.5_mk
     centre(2) = 0.75_mk
     radius=0.15_mk
-    eps = 0.05_mk
+    eps = 0.01_mk
 
-    d = sqrt(sum(pos(1:ppm_dim)-centre)**2)
+    d = sqrt(sum((pos(1:ppm_dim)-centre)**2))
     f0 = tanh((d - radius)/eps)
     f0_grad_fun = (1._mk - f0**2) * (pos(1:ppm_dim)-centre)/(eps*d)
 
@@ -209,9 +216,10 @@ end function f0_grad_fun
 
 pure function level0_fun(pos)
 
+    use ppm_module_data, ONLY: ppm_dim
     real(mk)                              :: level0_fun
-    real(mk), dimension(ndim), intent(in) :: pos
-    real(mk), dimension(ndim)             :: centre
+    real(mk), dimension(ppm_dim), intent(in) :: pos
+    real(mk), dimension(ppm_dim)             :: centre
     real(mk)                              :: radius
 
     centre = 0.5_mk
@@ -223,6 +231,7 @@ pure function level0_fun(pos)
 end function level0_fun
 
 pure function D_fun(wp,wp_grad,opts,level)
+    use ppm_module_data, ONLY: ppm_dim
     real(mk)                               :: D_fun
     real(mk),                   intent(in) :: wp
     real(mk),dimension(ppm_dim),intent(in) :: wp_grad
