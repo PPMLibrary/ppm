@@ -152,14 +152,15 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_neighlists(Particles,topoid,info)
         Assert_True(info.eq.0)
 
-write(*,*) 'ok before adapt, ', Particles%nneighmin, Particles%nneighmax
-
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
 
         opts%scale_D = 1._mk
-        opts%minimum_D = 0.05_mk
-        opts%maximum_D = 0.10_mk
+        opts%minimum_D = 0.01_mk
+        opts%maximum_D = 0.05_mk
+        opts%adaptivity_criterion = 6._mk
+        opts%fuse_radius = 0.2_mk
+        opts%attractive_radius0 = 0.4_mk
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
