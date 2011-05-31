@@ -14,7 +14,7 @@
 SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         nvlist_cross,vlist_cross,    &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
-        wp_fun,D_fun,wp_grad_fun,threshold,no_derivatives)
+        wp_fun,D_fun,wp_grad_fun,threshold,need_deriv)
 
     USE ppm_module_inl_xset_vlist
 
@@ -33,7 +33,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     TYPE(ppm_t_particles), POINTER,        INTENT(INOUT)   :: Particles
     INTEGER,      DIMENSION(:),  POINTER,  INTENT(INOUT)   :: nvlist_cross
     INTEGER,      DIMENSION(:,:),POINTER,  INTENT(INOUT)   :: vlist_cross
-    !REAL(MK),  DIMENSION(:,:),ALLOCATABLE, INTENT(INOUT)   :: eta
     INTEGER,                               INTENT(INOUT)   :: nneighmax_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmin_cross
     INTEGER,                               INTENT(  OUT)   :: num_it
@@ -42,7 +41,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     !optional arguments
     REAL(MK), OPTIONAL,                    INTENT(IN)      :: threshold
-    LOGICAL,  OPTIONAL,                    INTENT(IN)      :: no_derivatives
+    LOGICAL,  OPTIONAL,                    INTENT(IN)      :: need_deriv
     !Monitor function
     OPTIONAL                                               :: D_fun
     !Field function (usually known only during initialisation)
@@ -180,8 +179,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
-    IF (PRESENT(no_derivatives)) THEN
-        need_derivatives=no_derivatives
+    IF (PRESENT(need_deriv)) THEN
+        need_derivatives=need_deriv
     ELSE
         need_derivatives=.TRUE.
     ENDIF
@@ -329,7 +328,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
             xp => Get_xp(Particles)
             Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.FALSE.)
-            IF (need_derivatives) THEN
+            IF (PRESENT(wp_grad_fun)) THEN
                 DO ip=1,Particles%Mpart
                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),&
                         wp_grad_fun(xp(1:ppm_dim,ip)),opts)
@@ -468,7 +467,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         DO ip=1,Particles%Npart
             rcp(ip) = opts%rcp_over_D * D(ip)
         ENDDO
-
         D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
         rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
 
@@ -487,6 +485,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
+
 
         !---------------------------------------------------------------------!
         ! Update neighbour lists
@@ -799,7 +798,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         nvlist_cross,vlist_cross,   &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,level_fun,level_grad_fun,&
-        threshold,no_derivatives,nb_fun)
+        threshold,need_deriv,nb_fun)
 
     USE ppm_module_inl_xset_vlist
     USE ppm_module_sop_typedef
@@ -819,7 +818,6 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     TYPE(ppm_t_particles), POINTER,        INTENT(INOUT)   :: Particles
     INTEGER,      DIMENSION(:),  POINTER,  INTENT(INOUT)   :: nvlist_cross
     INTEGER,      DIMENSION(:,:),POINTER,  INTENT(INOUT)   :: vlist_cross
-    !REAL(MK),  DIMENSION(:,:),ALLOCATABLE, INTENT(INOUT)   :: eta
     INTEGER,                               INTENT(INOUT)   :: nneighmax_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmin_cross
     INTEGER,                               INTENT(  OUT)   :: num_it
@@ -828,7 +826,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
     !optional arguments
     REAL(MK), OPTIONAL,                    INTENT(IN)      :: threshold
-    LOGICAL,  OPTIONAL,                    INTENT(IN)      :: no_derivatives
+    LOGICAL,  OPTIONAL,                    INTENT(IN)      :: need_deriv
     OPTIONAL                                               :: D_fun
     !Monitor function
     OPTIONAL                                               :: wp_fun
@@ -1015,8 +1013,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     ENDIF
 #endif
 
-    IF (PRESENT(no_derivatives)) THEN
-        need_derivatives=no_derivatives
+    IF (PRESENT(need_deriv)) THEN
+        need_derivatives=need_deriv
     ELSE
         need_derivatives=.TRUE.
     ENDIF

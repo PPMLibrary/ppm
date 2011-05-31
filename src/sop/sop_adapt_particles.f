@@ -403,8 +403,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
-write(*,*) 'ok 1'
-
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
     IF (D_needs_grad) THEN
@@ -446,8 +444,6 @@ write(*,*) 'ok 1'
     ! Start the actual computations
     !-------------------------------------------------------------------------!
 
-write(*,*) 'ok 2'
-
     !!-------------------------------------------------------------------------!
     !! Compute D (desired resolution)
     !!-------------------------------------------------------------------------!
@@ -462,11 +458,10 @@ write(*,*) 'ok 2'
         GOTO 9999
     ENDIF
 
-write(*,*) 'ok 3'
-
     !REMOVME???
     rcp => Get_wps(Particles,Particles%rcp_id)
     D => Get_wps(Particles,Particles%D_id)
+
     DO ip=1,Particles%Npart
         rcp(ip) = opts%rcp_over_D * D(ip)
     ENDDO
@@ -495,6 +490,7 @@ write(*,*) 'ok 3'
             ENDIF
 
     CALL particles_updated_cutoff(Particles,info)
+
     rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 
@@ -739,13 +735,13 @@ write(*,*) 'ok 3'
             nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
             D_fun=D_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
             level_grad_fun=level_grad_fun,threshold=Psi_threshold,&
-            no_derivatives=need_derivatives,nb_fun=nb_fun)
+            need_deriv=need_derivatives,nb_fun=nb_fun)
     ELSE
         CALL sop_gradient_descent(Particles_old,Particles, &
             nvlist_cross,vlist_cross,                &
             nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
             D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
-            no_derivatives=need_derivatives)
+            need_deriv=need_derivatives)
     ENDIF
     IF (info .NE. 0) THEN
         CALL ppm_write(ppm_rank,caller,'sop_gradient_descent failed.',info)
@@ -866,6 +862,7 @@ write(*,*) 'ok 3'
 #endif
 
     9999 CONTINUE ! jump here upon error
+
 
 END SUBROUTINE sop_adapt_particles
 
