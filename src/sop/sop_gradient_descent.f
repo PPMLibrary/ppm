@@ -311,7 +311,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !! Get D directly from a given function
             !!-----------------------------------------------------------------!
             CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
-                info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow)
+                info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,&
                     'particles_allocate_wps failed',info)

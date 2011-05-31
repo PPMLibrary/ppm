@@ -415,7 +415,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 !no array has already been specified for wp_grad
                 !need to allocate one
                 CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
-                    ppm_dim,info,with_ghosts=.FALSE.)
+                    ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
@@ -443,7 +443,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Start the actual computations
     !-------------------------------------------------------------------------!
-
     !!-------------------------------------------------------------------------!
     !! Compute D (desired resolution)
     !!-------------------------------------------------------------------------!
@@ -515,7 +514,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     IF (.NOT.PRESENT(wp_fun)) THEN
         nn2_id = 0
-        CALL particles_allocate_wps(Particles,nn2_id,info)
+        CALL particles_allocate_wps(Particles,nn2_id,info,name='nn2')
         IF (info.NE.0) THEN
             info = ppm_error_error
             CALL ppm_error(999,caller,'particles_allocate_wps failed',&
@@ -585,15 +584,9 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     ! Set all arrays to unmapped
     Particles%wps => NULL()
-    !DO i=1,Particles%max_wpsid
-        !NULLIFY(Particles%wps(i)%vec)
-    !ENDDO
     Particles%wps_m => NULL()
     Particles%wps_g => NULL()
     IF (Particles%nwpv.GT.0) THEN
-        !DO i=1,Particles%max_wpvid
-            !NULLIFY(Particles%wpv(i)%vec)
-        !ENDDO
         Particles%wpv => NULL()
         Particles%wpv_m => NULL()
         Particles%wpv_g => NULL()
@@ -620,6 +613,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
+    Particles%wps(Particles%D_id)%name = Particles_old%wps(Particles_old%D_id)%name
     CALL particles_allocate_wps(Particles,Particles%rcp_id,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
     IF (info.NE.0) THEN
@@ -628,6 +622,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
+    Particles%wps(Particles%rcp_id)%name = Particles_old%wps(Particles_old%rcp_id)%name
     Particles%nwps=2
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
@@ -662,6 +657,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
+        Particles%wps(Particles%level_id)%name = &
+            Particles_old%wps(Particles_old%level_id)%name
         Particles%nwps = Particles%nwps + 1
         CALL particles_allocate_wpv(Particles,Particles%level_grad_id,&
             ppm_dim,info,zero=.TRUE.,iopt=ppm_param_alloc_fit)
@@ -671,6 +668,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
+        Particles%wpv(Particles%level_grad_id)%name = &
+            Particles_old%wpv(Particles_old%level_grad_id)%name
         Particles%nwpv = Particles%nwpv + 1
 
         level => Get_wps(Particles,Particles%level_id,with_ghosts=.FALSE.)
@@ -702,6 +701,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
+        Particles%wps(Particles%adapt_wpid)%name = &
+            Particles_old%wps(Particles_old%adapt_wpid)%name
         Particles%nwps = Particles%nwps + 1
 
         wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.FALSE.)

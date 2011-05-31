@@ -175,16 +175,13 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,nn2_id,info)
             IF (i.EQ.Particles_old%rcp_id) CYCLE
             IF (i.EQ.Particles_old%Dtilde_id) CYCLE
             prop_id = 0
-            CALL particles_allocate_wps(Particles,prop_id,info)
+            CALL particles_allocate_wps(Particles,prop_id,info,&
+                name=Particles_old%wps(i)%name)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,'particles_allocate_wps failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
-            !wp     => Get_wps(Particles,prop_id)
-            !wp_old => Get_wps(Particles_old,i,with_ghosts=.TRUE.)
-            !xp     => Get_xp(Particles)
-            !xp_old => Get_xp(Particles,with_ghosts=.TRUE.)
 
             CALL particles_apply_dcops(Particles,prop_id,prop_id,Particles%eta_id,0,&
                 info,Particles_old,i)
@@ -193,18 +190,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,nn2_id,info)
                 info = -1
                 GOTO 9999
             ENDIF
-            !CALL sop_interpolate_particles(&
-                !xp,wp_old,xp,Particles%Npart,nvlist_cross,&
-                !vlist_cross,eta,eta_interp,opts,info,wp=wp)
-            !IF (info .NE. 0) THEN
-                !CALL ppm_write(ppm_rank,caller,'sop_interp_particles failed.',info)
-                !info = -1
-                !GOTO 9999
-            !ENDIF
-            !wp     => Set_wps(Particles,prop_id)
-            !wp_old => Set_wps(Particles_old,i,read_only=.TRUE.)
-            !xp     => Set_xp(Particles,read_only=.TRUE.)
-            !xp_old => Set_xp(Particles,read_only=.TRUE.)
+
         ENDIF
     ENDDO
 

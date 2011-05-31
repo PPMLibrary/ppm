@@ -314,7 +314,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 !no array has already been specified for wp_grad
                 !need to allocate one
                 CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
-                    ppm_dim,info,with_ghosts=.FALSE.)
+                    ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_fatal
                     CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
@@ -389,7 +389,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     ! re-activate Dtilde_id if it had already been used
     CALL particles_allocate_wps(Particles,Particles%Dtilde_id,info,&
-        with_ghosts=.TRUE.,zero=.TRUE.,iopt=ppm_param_alloc_grow_preserve)
+        with_ghosts=.TRUE.,zero=.TRUE.,iopt=ppm_param_alloc_grow_preserve,&
+        name='D_tilde')
     IF (info .NE. 0) THEN
         CALL ppm_write(ppm_rank,caller,'allocation failed',info)
         info = -1
@@ -612,7 +613,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !---------------------------------------------------------------------!
     IF (Particles%D_id .EQ. 0 ) THEN
         CALL particles_allocate_wps(Particles,Particles%D_id,&
-            info,with_ghosts=.TRUE.)
+            info,with_ghosts=.TRUE.,name='D')
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,'particles_allocate_wps failed',info)
             info = -1
