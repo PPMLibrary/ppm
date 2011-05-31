@@ -7,7 +7,10 @@ MODULE ppm_module_particles
 
 USE ppm_module_typedef
 USE ppm_module_alloc
+USE ppm_module_substart
+USE ppm_module_substop
 USE ppm_module_error
+USE ppm_module_write
 USE ppm_module_data, ONLY: ppm_dim
 
 IMPLICIT NONE
@@ -427,9 +430,6 @@ SUBROUTINE ppm_alloc_particles(Particles,Npart,iopt,info)
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
-    USE ppm_module_substart
-    USE ppm_module_substop
-    USE ppm_module_error
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -650,8 +650,6 @@ END FUNCTION
 
 SUBROUTINE particles_allocate_wps(Particles,wp_id,info,with_ghosts,&
         zero,iopt,name)
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -897,8 +895,6 @@ END SUBROUTINE particles_allocate_wps
 
 SUBROUTINE particles_allocate_wpv(Particles,wp_id,lda,info, & 
         with_ghosts,zero,iopt,name)
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1154,8 +1150,6 @@ SUBROUTINE particles_mapping_global(Particles,topoid,info)
     !   (otherwise -> "unassigned particle error")
     !
     USE ppm_module_map
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1332,8 +1326,6 @@ SUBROUTINE particles_mapping_partial(Particles,topoid,info,debug)
     !   (otherwise -> "unassigned particle error")
     !
     USE ppm_module_map
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1531,8 +1523,6 @@ SUBROUTINE particles_mapping_ghosts(Particles,topoid,info,debug)
     !
     USE ppm_module_data, ONLY: ppm_topo
     USE ppm_module_map
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1778,8 +1768,6 @@ SUBROUTINE particles_apply_bc(Particles,topoid,info)
     ! * Particles positions need to have been mapped onto the topology
     !
     USE ppm_module_data, ONLY: ppm_topo,ppm_rank
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1935,8 +1923,6 @@ SUBROUTINE particles_move(Particles,disp,info)
     !  Move all particles according to some displacement field
     !-----------------------------------------------------------------
     USE ppm_module_data, ONLY: ppm_topo,ppm_rank
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1997,8 +1983,6 @@ SUBROUTINE particles_have_moved(Particles,info)
     !   (assuming they have moved across processor boundaries)
     !-----------------------------------------------------------------
     USE ppm_module_data, ONLY: ppm_topo,ppm_rank
-    USE ppm_module_substart
-    USE ppm_module_substop
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2062,8 +2046,6 @@ SUBROUTINE particles_neighlists(Particles,topoid,info,lstore)
     ! * Particles positions need to have been mapped onto the topology
     ! * Ghost positions have been computed
     !
-    USE ppm_module_substart
-    USE ppm_module_substop
     USE ppm_module_neighlist
     USE ppm_module_inl_vlist
 #ifdef __MPI
@@ -2209,8 +2191,6 @@ SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,lstore)
     ! * Particles (1 and 2) need to have been mapped onto the topology
     ! * Ghost positions for Particles_2 have been computed
     !
-    USE ppm_module_substart
-    USE ppm_module_substop
     USE ppm_module_inl_xset_vlist
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -2369,8 +2349,6 @@ SUBROUTINE particles_updated_positions(Particles,info)
     ! Note:
     ! * Does an MPI_Allreduce for to get the maximum cutoff
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
-    USE ppm_module_substart
-    USE ppm_module_substop
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2457,8 +2435,6 @@ SUBROUTINE particles_updated_nb_part(Particles,info,&
     !    and the positions of all particles are set properly
     !-----------------------------------------------------------------
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
-    USE ppm_module_substart
-    USE ppm_module_substop
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2611,8 +2587,6 @@ SUBROUTINE particles_updated_cutoff(Particles,info,cutoff_new)
     ! Note:
     ! * Does an MPI_Allreduce for to get the maximum cutoff
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
-    USE ppm_module_substart
-    USE ppm_module_substop
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2719,8 +2693,6 @@ SUBROUTINE particles_compute_hmin(Particles,info)
     !   for such variables is done only when the variable is actually needed)
     !  (maybe set a flag Particles%synchronized=.FALSE./.TRUE. ? )
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
-    USE ppm_module_substart
-    USE ppm_module_substop
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2828,8 +2800,6 @@ SUBROUTINE particles_initialize(Particles,Npart_global,info,&
     !-----------------------------------------------------------------------
     ! Set initial particle positions
     !-----------------------------------------------------------------------
-    USE ppm_module_substart
-    USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_topo
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -2879,9 +2849,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !!! All data is gathered to rank 0 and then written as one single file.
     !!!
     !!! NOT to be used with large number of processors!...
+    !!!  use the vtk module with ppm_io instead
     !!!------------------------------------------------------------------------!
-    USE ppm_module_substart
-    USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_comm
 
 #ifdef __MPI
@@ -2991,9 +2960,10 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ALLOCATE(wps_l(nb_wps),STAT=info)
         nb_wps = 0
         DO i=1,Particles%max_wpsid
-            IF (Particles%wps_m(i).EQ.1) &
+            IF (Particles%wps_m(i).EQ.1) THEN
                 nb_wps = nb_wps + 1
                 wps_l(nb_wps) = i
+            ENDIF
         ENDDO
     ENDIF
     IF(PRESENT(wpv_list)) THEN
@@ -3027,9 +2997,10 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ALLOCATE(wpv_l(nb_wpv),STAT=info)
         nb_wpv = 0
         DO i=1,Particles%max_wpvid
-            IF (Particles%wpv_m(i).EQ.1) &
+            IF (Particles%wpv_m(i).EQ.1) THEN
                 nb_wpv = nb_wpv + 1
                 wpv_l(nb_wpv) = i
+            ENDIF
         ENDDO
     ENDIF
 
@@ -3257,8 +3228,10 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         DEALLOCATE(propp_iproc)
     ENDIF
 
-    call MPI_barrier(ppm_comm,info)
-    If (ppm_rank.EQ.0) write(*,*) 'Wrote ',ip,' particles to file'
+    IF (ppm_rank.EQ.0) THEN
+        WRITE(cbuf,*) 'Wrote ',ip,' particles to file'
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
+    ENDIF
 
     !-------------------------------------------------------------------------
     !  Finalize
@@ -3276,8 +3249,6 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
     !!! Apply DC kernel stored in eta_id to the scalar property stored
     !!! prop_from_id and store the results in prop_to_id
     !!!------------------------------------------------------------------------!
-    USE ppm_module_substart
-    USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank
 
 #ifdef __MPI
