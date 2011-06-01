@@ -1,10 +1,11 @@
 test_suite ppm_module_sop
+use ppm_module_particles
+use ppm_module_sop_typedef
 #include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
-
 
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
