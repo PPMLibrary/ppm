@@ -679,7 +679,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! if true, then allocate with Mpart instead of the default size of Npart
     LOGICAL , OPTIONAL                                     :: zero
     !!! if true, then initialise the array to zero
-    CHARACTER(LEN=ppm_char) , OPTIONAL                     :: name
+    CHARACTER(LEN=*) , OPTIONAL                     :: name
     !!! give a name to this vector-valued property
     !-------------------------------------------------------------------------
     !  Local variables
@@ -849,7 +849,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wps(wp_id)%name = name
+        IF (PRESENT(name)) Particles%wps(wp_id)%name = TRIM(name)
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wps_m(wp_id) = 1
@@ -926,7 +926,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! if true, then allocate with Mpart instead of the default size of Npart
     LOGICAL , OPTIONAL                                     :: zero
     !!! if true, then initialise the array to zero
-    CHARACTER(LEN=ppm_char) , OPTIONAL                     :: name
+    CHARACTER(LEN=*) , OPTIONAL                     :: name
     !!! give a name to this vector-valued property
     !-------------------------------------------------------------------------
     !  Local variables
@@ -1094,7 +1094,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wpv(wp_id)%name = name
+        IF (PRESENT(name)) Particles%wpv(wp_id)%name = TRIM(name)
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpv_m(wp_id) = 1
@@ -2892,7 +2892,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     INTEGER,DIMENSION(:),ALLOCATABLE           :: Npart_vec
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: propp_iproc
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: xp_iproc
-    INTEGER                                    :: count,iproc,i,j,ip
+    INTEGER                                    :: count,iproc,i,j,ip,di
     INTEGER,DIMENSION(MPI_STATUS_SIZE)         :: status
     REAL(KIND(1.D0))                           :: t0
     INTEGER                                    :: ndim2,wpv_s,Npart_local
@@ -3021,9 +3021,16 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
     !====================================================================!
     ! open file
-    WRITE(filename,'(A,A,I6.6,A)') TRIM(writedir),'Particles_',itnum,'.xyz'
     IF (ppm_rank .EQ. 0) THEN
+        WRITE(filename,'(A,A,I6.6,A)') TRIM(writedir),'Particles_',itnum,'.xyz'
         OPEN(23,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        WRITE(filename,'(A,A,I6.6,A)') TRIM(writedir),'Particles_',itnum,'.txt'
+        OPEN(24,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
@@ -3143,12 +3150,40 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
                 DEALLOCATE(propp_iproc)
             ENDIF
 
+            !Write a small description file
+            WRITE (24, '(A)') 'Column| Variable name'
+            WRITE (24, '(A)') '---------------------'
+            DO di=1,ppm_dim
+                WRITE (24, '(I2,A,I1)') di,': xp_',di
+            ENDDO
+            ndim2= ppm_dim+1
+            DO i=1,nb_wps
+                WRITE (24, '(I2,A,A)') ndim2,': ',TRIM(ADJUSTL(Particles%wps(wps_l(i))%name))
+                ndim2 = ndim2 + 1
+            ENDDO
+            DO i=1,nb_wpv
+                wpv_s=Particles%wpv_s(wpv_l(i))
+                DO di=1,wpv_s
+                    WRITE (24, '(I2,A,A,A,I2.2)') ndim2,': ',&
+                        TRIM(ADJUSTL(Particles%wpv(wpv_l(i))%name)),'_',di
+                    ndim2=ndim2+1
+                ENDDO
+            ENDDO
+            IF (ghosts) THEN
+                WRITE (24, '(I2,A,I1)') ndim2,': is_a_ghost'
+            ENDIF
         ENDDO
 
         !==================================================================!
         ! close file
 
         CLOSE(23,IOSTAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,'failed to close file',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        CLOSE(24,IOSTAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,'failed to close file',__LINE__,info)

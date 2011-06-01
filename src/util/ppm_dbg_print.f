@@ -42,10 +42,10 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       !  Modules 
       !-------------------------------------------------------------------------
 
-      use ppm_module_data
-      use ppm_module_topo
-      use ppm_module_alloc
-      use ppm_module_error
+      USE ppm_module_data
+      USE ppm_module_topo
+      USE ppm_module_alloc
+      USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
       
