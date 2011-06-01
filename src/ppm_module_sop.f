@@ -37,6 +37,7 @@
 
      USE ppm_module_data
      USE ppm_module_typedef
+     USE ppm_module_particles_typedef
      USE ppm_module_particles
      USE ppm_module_sop_typedef
      USE ppm_module_write

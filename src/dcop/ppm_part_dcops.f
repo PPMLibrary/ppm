@@ -4,7 +4,7 @@ SUBROUTINE ppm_part_dcops(Particles,eta_id,c,info,&
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_error
-    USE ppm_module_particles
+    USE ppm_module_particles_typedef
     IMPLICIT NONE
 
 #if    __KIND == __SINGLE_PRECISION 

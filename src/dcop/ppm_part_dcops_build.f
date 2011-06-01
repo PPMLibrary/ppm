@@ -10,6 +10,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_error
+    USE ppm_module_particles_typedef
     USE ppm_module_particles
     IMPLICIT NONE
 
