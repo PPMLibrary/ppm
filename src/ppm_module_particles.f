@@ -233,6 +233,30 @@ FUNCTION set_wpv(Particles,wpv_id,read_only,ghosts_ok)
 
 END FUNCTION set_wpv
 
+FUNCTION get_dcop(Particles,eta_id)
+    TYPE(ppm_t_particles)            :: Particles
+    INTEGER                          :: eta_id
+    REAL(prec),DIMENSION(:,:),POINTER  :: get_dcop
+
+    IF (eta_id .LE. 0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
+        write(*,*) 'ERROR: failed to get operator for id ',eta_id
+        get_dcop => NULL()
+        RETURN
+    ENDIF
+
+    get_dcop => Particles%ops%ker(eta_id)%vec
+
+END FUNCTION get_dcop
+
+FUNCTION set_dcop(Particles,eta_id)
+    TYPE(ppm_t_particles)            :: Particles
+    INTEGER                          :: eta_id
+    REAL(prec),DIMENSION(:,:),POINTER:: set_dcop
+
+    set_dcop => NULL()
+
+END FUNCTION set_dcop
+
 SUBROUTINE ppm_alloc_particles(Particles,Npart,iopt,info)
     !!! (Re)allocates the memory of ppm_t_particles data type
     !-------------------------------------------------------------------------
@@ -326,7 +350,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 DO i=1,Particles%max_wpsid
                     IF (ASSOCIATED(Particles%wps(i)%vec)) &
                         DEALLOCATE(Particles%wps(i)%vec,STAT=info)
-                        NULLIFY(Particles%wps(i)%vec)
+                    NULLIFY(Particles%wps(i)%vec)
                 ENDDO
                 DEALLOCATE(Particles%wps,STAT=info)
             ENDIF
@@ -334,9 +358,30 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 DO i=1,Particles%max_wpvid
                     IF (ASSOCIATED(Particles%wpv(i)%vec)) &
                         DEALLOCATE(Particles%wpv(i)%vec,STAT=info)
-                        NULLIFY(Particles%wpv(i)%vec)
+                    NULLIFY(Particles%wpv(i)%vec)
                 ENDDO
                 DEALLOCATE(Particles%wpv,STAT=info)
+            ENDIF
+            IF (ASSOCIATED(Particles%ops)) THEN
+                DO i=1,Particles%ops%max_opsid
+                    IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
+                        CALL particles_dcop_free(Particles,i,info)
+                        IF (info .NE. 0) THEN
+                            info = ppm_error_error
+                            CALL ppm_error(ppm_err_dealloc,caller,   &
+                                &    'freeing Particles%ops(i)',__LINE__,info)
+                            GOTO 9999
+                        ENDIF
+                    ENDIF
+                ENDDO
+                DEALLOCATE(Particles%ops,STAT=info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_dealloc,caller,   &
+                        &          'Deallocating Particles%ops',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+                NULLIFY(Particles%ops)
             ENDIF
             DEALLOCATE(Particles,stat=info)
             NULLIFY(Particles)
@@ -416,6 +461,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%eta_id = 0
         Particles%D_id = 0
         Particles%Dtilde_id = 0
+        Particles%nn_sq_id = 0
         ! Particles do not represent a level-set function
         Particles%level_set = .FALSE.
         Particles%level_id = 0
@@ -456,6 +502,16 @@ FUNCTION particles_dflt_pptname(i,ndim)
     ELSE
         WRITE(particles_dflt_pptname,*) 'property_v',ADJUSTL(TRIM(buf))
     ENDIF
+    RETURN
+END FUNCTION
+
+FUNCTION particles_dflt_opname(i)
+    CHARACTER(LEN=ppm_char)   :: particles_dflt_opname
+    INTEGER                   :: i
+    CHARACTER(LEN=ppm_char)   :: buf
+
+    WRITE(buf,*) i
+    WRITE(particles_dflt_opname,*) 'operator_',ADJUSTL(TRIM(buf))
     RETURN
 END FUNCTION
 
@@ -645,7 +701,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'Could not allocate ppm_topo elements',__LINE__,info)
+                &            'Could not allocate wps elements',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -891,7 +947,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'Could not allocate ppm_topo elements',__LINE__,info)
+                &            'Could not allocate wpv elements',__LINE__,info)
             GOTO 9999
         ENDIF
         IF (PRESENT(zero)) THEN
@@ -3089,6 +3145,316 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     9999  CONTINUE ! jump here upon error
 
 END SUBROUTINE particles_io_xyz
+
+SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
+        info,name)
+    !!!------------------------------------------------------------------------!
+    !!! Define a DC operator as a linear combination (with scalar coefficients)
+    !!! of nterms partial derivatives of arbitrary degrees. These are given by a matrix
+    !!! of integers where each row represents one term of the linear combination
+    !!! and each of the ppm_dim columns is the order of differentiation in that
+    !!! dimension.
+    !!! The definition of the operator is stored in the ppm_t_operator derived 
+    !!! type under the index eta_id. 
+    !!! The operator itself is computed elsewhere and will be stored in 
+    !!! the same data structure.
+    !!!
+    !!! Usage example:
+    !!!
+    !!!   The differential operator:
+    !!!   3.0 df/dx -7.0 d^4f/dxdydz^2 + 8.0 d^3f/dx^2dz
+    !!!   would be defined by calling particles_dcop_define with
+    !!!   coeffs = (/3.0, -7.0, 8.0/)
+    !!!   degree = (/1,0,0,  1,1,2,  2,0,1 /)
+    !!!   order =  (/2,      1,      3     /)
+    !!!   nterms = 3
+    !!!------------------------------------------------------------------------!
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(INOUT)   :: eta_id
+    !!! id where the data is stored
+    REAL(MK),DIMENSION(:),              INTENT(IN   )   :: coeffs
+    !!! multiplicative coefficients of each term in the linear combination of
+    !!! differential operators
+    INTEGER,DIMENSION(:),               INTENT(IN   )   :: degree
+    !!! Degree of differentiation of each term
+    INTEGER,DIMENSION(:),               INTENT(IN   )   :: order
+    !!! Order of approxmiation for each term
+    INTEGER,                            INTENT(IN   )   :: nterms
+    !!! Number of terms in the linear combination
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! Optional argument
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN=*),OPTIONAL,          INTENT(IN   )   :: name
+    !!! Descriptive name for this operator
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_define'
+    INTEGER,DIMENSION(3)                       :: ldc
+    REAL(KIND(1.D0))                           :: t0
+    INTEGER                                    :: i
+
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. ASSOCIATED(Particles%ops)) THEN
+    !allocate operators data structure
+        ALLOCATE(Particles%ops,STAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &            'failed to allocate Particles%ops',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        Particles%ops%nb_ops = 0
+        Particles%ops%max_opsid = 0
+        ALLOCATE(Particles%ops%ker(20),STAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &            'failed to allocate Particles%ops%ker',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        ALLOCATE(Particles%ops%desc(20),STAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &            'failed to allocate Particles%ops%desc',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        DO i=1,20
+            Particles%ops%desc(i)%name = particles_dflt_opname(i)
+            Particles%ops%desc(i)%nterms = 0
+        ENDDO
+    ENDIF
+    IF (MINVAL(degree).LT.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'invalid degree: must be positive',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (MINVAL(order).LT.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'invalid approx order: must be positive',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (SIZE(degree).LT.ppm_dim*nterms) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'not enough terms in degree argument',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (SIZE(order).LT.nterms) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'not enough terms in order argument',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (SIZE(coeffs).LT.nterms) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'not enough terms in coeffs argument',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (eta_id.EQ.0) THEN
+        eta_id = 1
+        DO WHILE (ASSOCIATED(Particles%ops%desc(eta_id)%degree))
+            eta_id = eta_id + 1
+        ENDDO
+    ELSE
+        CALL particles_dcop_free(Particles,eta_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &            'failed to free Particles%ops',__LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+
+
+    !allocate operators descriptors
+    ldc(1) = ppm_dim * nterms
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%degree,ldc(1:1),&
+        ppm_param_alloc_fit,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to allocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    ldc(1) = nterms
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%order,ldc(1:1),&
+        ppm_param_alloc_fit,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to allocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    ldc(1) = nterms
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%coeffs,ldc(1:1),&
+        ppm_param_alloc_fit,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to allocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    Particles%ops%desc(eta_id)%degree = degree 
+    Particles%ops%desc(eta_id)%order = order 
+    Particles%ops%desc(eta_id)%coeffs = coeffs 
+    Particles%ops%desc(eta_id)%nterms = nterms 
+    IF (PRESENT(name)) THEN
+        Particles%ops%desc(eta_id)%name = name
+    ENDIF
+
+    !update states
+    Particles%ops%nb_ops = Particles%ops%nb_ops+1
+    IF (Particles%ops%nb_ops .GT. Particles%ops%max_opsid) &
+        Particles%ops%max_opsid = Particles%ops%max_opsid+1
+
+    !-------------------------------------------------------------------------
+    ! Finalize
+    !-------------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_dcop_define
+
+SUBROUTINE particles_dcop_free(Particles,eta_id,info)
+    !!!------------------------------------------------------------------------!
+    !!! Remove an operator from the Particles data structure
+    !!!------------------------------------------------------------------------!
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN   )   :: eta_id
+    !!! id where the data is stored
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_free'
+    INTEGER,DIMENSION(3)                       :: ldc
+    REAL(KIND(1.D0))                           :: t0
+
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. ASSOCIATED(Particles%ops)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'No operator data structure found - cannot free element',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (eta_id.LE.0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'invalid value for ops id - cannot free element',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    !free memory
+    ldc = 0
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%degree,ldc,&
+        ppm_param_dealloc,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to deallocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%order,ldc,&
+        ppm_param_dealloc,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to deallocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL ppm_alloc(Particles%ops%desc(eta_id)%coeffs,ldc,&
+        ppm_param_dealloc,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to deallocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL ppm_alloc(Particles%ops%ker(eta_id)%vec,ldc,&
+        ppm_param_dealloc,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to deallocate ops%ker',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    Particles%ops%desc(eta_id)%degree => NULL()
+    Particles%ops%desc(eta_id)%order => NULL()
+    Particles%ops%desc(eta_id)%coeffs => NULL()
+    Particles%ops%desc(eta_id)%name = particles_dflt_opname(eta_id)
+    Particles%ops%desc(eta_id)%nterms = 0
+    Particles%ops%ker(eta_id)%vec=> NULL()
+
+    !update indices
+    Particles%ops%nb_ops = Particles%ops%nb_ops - 1
+    DO WHILE (.NOT.ASSOCIATED(Particles%ops%desc(Particles%ops%max_opsid)%degree))
+        Particles%ops%max_opsid = Particles%ops%max_opsid - 1
+        IF (Particles%ops%max_opsid .LE. 0) EXIT
+    ENDDO
+
+    !-------------------------------------------------------------------------
+    ! Finalize
+    !-------------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_dcop_free
 
 SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
         info,Particles_old,from_old_id)
