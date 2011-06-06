@@ -17,18 +17,20 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 10000
+integer                         :: np_global = 1000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: rcp,wp
-integer                         :: i,j,k,isum1,isum2,ip,wp_id,eta_id,eta2_id
-real(mk)                        :: rsum1,rsum2
-integer                         :: nstep
+real(mk),dimension(:  ),pointer :: rcp,wp,dwp
+integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh
+integer                         :: wp_id,dwp_id,eta_id,eta2_id
+real(mk)                        :: coeff,err,exact,linf
+integer                         :: nterms
 real(mk),dimension(:),pointer   :: delta
 integer,dimension(3)            :: ldc
+integer,dimension(ndim)         :: dg
 integer,dimension(:),allocatable:: degree,degree2,order,order2
 real(mk),dimension(:),allocatable:: coeffs,coeffs2
 integer, dimension(6)           :: bcdef
@@ -38,6 +40,7 @@ integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
 type(ppm_t_particles),pointer   :: Particles=>NULL()
+type(ppm_t_particles),pointer   :: Particles2=>NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -111,7 +114,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
     end teardown
 
     test allocate_operator
-        ! test data structure
+        ! test data structure (mostly define and free)
 
         call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
@@ -170,97 +173,420 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
     end test
 
     test compute_operator
-        ! test if we can compute the dc operators
+        ! test if we can compute the dc operators, then evaluate them on some test functions
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        allocate(disp(ndim,Particles%Npart))
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles,disp,info)
+        call particles_apply_bc(Particles,topoid,info)
         Assert_Equal(info,0)
+        Particles%cutoff = Particles%h_avg * 3.3_mk
         call particles_mapping_global(Particles,topoid,info)
-        Assert_Equal(info,0)
-
-        allocate(degree(3*ndim),coeffs(3),order(3),degree2(7*ndim),coeffs2(7),order2(7))
-        if (ndim .eq. 2) then
-               degree =  (/0,0,    1,1,     0,1  /)
-               degree2=  (/0,0,   0,1,   2,1,   2,2,   0,2,   1,2,   1,1/)
-        else 
-               degree =  (/0,0,0,  1,1,1,  2,0,1 /)
-               degree2=  (/0,0,0, 2,1,0, 0,1,1, 2,1,1, 1,0,1, 2,2,2, 1,1,1/)
-        endif
-        coeffs = (/2.0_mk, 1.0_mk, -3.2_mk/)
-        order =  (/2,       1,       1  /)
-        coeffs2 = (/0.1_mk, -1.0_mk, -3.8_mk, -3.3_mk, 0.001_mk, 10._mk, 4._mk/)
-        order2=  (/2,       2,       2,        2,      1,        2,      1/)
-
-        eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test")
-        Assert_Equal(info,0)
-        eta2_id = 0
-        call particles_dcop_define(Particles,eta2_id,coeffs2,degree2,order2,7,info,name="test2")
-        Assert_Equal(info,0)
-
-        call particles_dcop_compute(Particles,eta_id,info)
-        Assert_False(info.eq.0)
-
+        wp_id=0
+        call particles_allocate_wps(Particles,wp_id,info)
+        wp => Get_wps(Particles,wp_id)
+        xp => Get_xp(Particles)
+        FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
+        wp => Set_wps(Particles,wp_id)
+        xp => Set_xp(Particles,read_only=.TRUE.)
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_neighlists(Particles,topoid,info)
+        dwp_id=0
+        call particles_allocate_wps(Particles,dwp_id,info)
+
+!check d2dx2
+        nterms=1
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/2,0/)
+        else 
+               degree =  (/2,0,0/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="d2dx2")
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
-        call particles_dcop_compute(Particles,eta2_id,info)
+
+        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
         Assert_Equal(info,0)
 
-        deallocate(degree,coeffs,order,degree2,coeffs2,order2)
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles,dwp_id)
+        xp => Get_xp(Particles)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            write(101,'(5(E20.10,2X))') xp(1:ndim,ip),wp(ip),exact,dwp(ip)
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+!check Laplacian
+        nterms=ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/2,0,   0,2/)
+        else 
+               degree =  (/2,0,0, 0,2,0, 0,0,2/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="laplacian")
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles,dwp_id)
+        xp => Get_xp(Particles)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            write(102,'(5(E20.10,2X))') xp(1:ndim,ip),wp(ip),exact,dwp(ip)
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+
+!check something more complicated
+        nterms= ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/1,1,   4,1/)
+        else 
+               degree =  (/2,0,0, 1,2,0, 0,1,2/)
+        endif
+        coeffs = 1.0_mk
+        coeffs(2) = 4.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="test")
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles,dwp_id)
+        xp => Get_xp(Particles)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            write(103,'(5(E20.10,2X))') xp(1:ndim,ip),wp(ip),exact,dwp(ip)
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
     end test
 
-pure function f0_fun(pos)
+    test compute_operator_interp
+        ! test if we can compute the dc operators with interpolating properties
+        ! then evaluate them on some test functions
 
-    use ppm_module_data, ONLY: ppm_dim
-    real(mk)                                 :: f0_fun
-    real(mk), dimension(ppm_dim), intent(in) :: pos
-    real(mk), dimension(ppm_dim)             :: centre
-    real(mk)                                 :: radius,eps
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles2,np_global,info,ppm_param_part_init_cartesian,topoid)
+        allocate(disp(ndim,Particles%Npart))
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles,disp,info)
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles2,disp,info)
+        call particles_apply_bc(Particles,topoid,info)
+        call particles_apply_bc(Particles2,topoid,info)
+        Particles%cutoff = Particles%h_avg * 2.1_mk
+        Particles2%cutoff = Particles2%h_avg * 2.1_mk
+        call particles_mapping_global(Particles,topoid,info)
+        call particles_mapping_global(Particles2,topoid,info)
 
-    centre = 0.5_mk
-    centre(2) = 0.75_mk
-    radius=0.15_mk
-    eps = 0.01_mk
+        wp_id=0
+        call particles_allocate_wps(Particles,wp_id,info)
+        wp => Get_wps(Particles,wp_id)
+        xp => Get_xp(Particles)
+        FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
+        wp => Set_wps(Particles,wp_id)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_neighlists(Particles,topoid,info)
 
-    f0_fun = tanh((sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius)/eps)
+!compute nearest-neigbour distances
+        call particles_allocate_wps(Particles,Particles%nn_sq_id,info)
+        wp => Get_wps(Particles,Particles%nn_sq_id)
+        xp => Get_xp(Particles)
+         forall(ip=1:Particles%Npart)  wp(ip) = huge(1._mk)
+        do ip=1,Particles%Npart
+            do ineigh=1,Particles%nvlist(ip)
+                iq=Particles%vlist(ineigh,ip)
+                wp(ip) = min(wp(ip),sum((xp(1:ndim,ip)-xp(1:ndim,iq))**2))
+            enddo
+        enddo
+        wp => Set_wps(Particles,Particles%nn_sq_id)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_mapping_ghosts(Particles2,topoid,info)
+        call particles_neighlists(Particles2,topoid,info)
+        call particles_neighlists_xset(Particles2,Particles,topoid,info)
 
+        dwp_id=0
+        call particles_allocate_wps(Particles2,dwp_id,info)
+
+!check data interpolation
+        nterms=1
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/0,0/)
+        else 
+               degree =  (/0,0,0/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="interpolation",interp=.true.)
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles2,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles2,dwp_id)
+        xp => Get_xp(Particles2)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles2%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles2%ops%desc(eta_id)%coeffs(i)
+                dg = Particles2%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles2,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+        
+
+!check data interpolation with derivatives
+        call particles_updated_cutoff(Particles,info,Particles%h_avg*3.1_mk)
+        call particles_updated_cutoff(Particles2,info,Particles2%h_avg*3.1_mk)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_mapping_ghosts(Particles2,topoid,info)
+        call particles_neighlists_xset(Particles2,Particles,topoid,info)
+        nterms=2
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/0,0, 1,0/)
+        else 
+               degree =  (/0,0,0, 1,0,0/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+        eta_id = 0
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="interp",interp=.true.)
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles2,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles2,dwp_id)
+        xp => Get_xp(Particles2)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles2%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles2%ops%desc(eta_id)%coeffs(i)
+                dg = Particles2%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles2,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+!check data interpolation with derivatives of several degrees
+        nterms=5
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/0,0, 1,0, 2,0, 1,2, 0,4/)
+        else 
+               degree =  (/0,0,0, 1,0,0, 2,0,0, 2,0,2, 1,1,2/)
+        endif
+        coeffs = (/1._mk, -3._mk, 1.3_mk, 2.1_mk, 0.1_mk/)
+        order =  (/2, 1, 3, 1, 2/)
+        eta_id = 0
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="everything",interp=.true.)
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles2,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles2,dwp_id)
+        xp => Get_xp(Particles2)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles2%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles2%ops%desc(eta_id)%coeffs(i)
+                dg = Particles2%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles2,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+    end test
+
+!-------------------------------------------------------------
+! test function
+!-------------------------------------------------------------
+pure function f0_fun(pos,ndim)
+
+    real(mk)                              :: f0_fun
+    integer                 ,  intent(in) :: ndim
+    real(mk), dimension(ndim), intent(in) :: pos
+
+    f0_fun =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) 
 end function f0_fun
 
-pure function f0_grad_fun(pos)
+!-------------------------------------------------------------
+! derivatives of the test function
+!-------------------------------------------------------------
+function df0_fun(pos,order_deriv,ndim)
 
-    use ppm_module_data, ONLY: ppm_dim
-    real(mk), dimension(ppm_dim)             :: f0_grad_fun
-    real(mk), dimension(ppm_dim), intent(in) :: pos
-    real(mk), dimension(ppm_dim)             :: centre
-    real(mk)                                 :: radius,eps,f0,d
+    real(mk)                                  :: df0_fun
+    integer                     , intent(in)  :: ndim
+    real(mk), dimension(ppm_dim), intent(in)  :: pos
+    integer,  dimension(ppm_dim), intent(in)  :: order_deriv
 
-    centre = 0.5_mk
-    centre(2) = 0.75_mk
-    radius=0.15_mk
-    eps = 0.01_mk
+    select case (order_deriv(1))
+    case (0)
+        df0_fun =    sin (2._mk*pi * pos(1)) 
+    case (1)
+        df0_fun =    2._mk*pi*cos(2._mk*pi * pos(1))
+    case (2)
+        df0_fun =  -(2._mk*pi)**2*sin(2._mk*pi * pos(1))
+    case (3)
+        df0_fun =  -(2._mk*pi)**3*cos(2._mk*pi * pos(1))
+    case (4)
+        df0_fun =   (2._mk*pi)**4*sin(2._mk*pi * pos(1))
+    case default
+        df0_fun =  0._mk
+    endselect
 
-    d = sqrt(sum((pos(1:ppm_dim)-centre)**2))
-    f0 = tanh((d - radius)/eps)
-    f0_grad_fun = (1._mk - f0**2) * (pos(1:ppm_dim)-centre)/(eps*d)
+    select case (order_deriv(2))
+    case (0)
+        df0_fun =   df0_fun * cos (2._mk*pi * pos(2)) 
+    case (1)
+        df0_fun =   df0_fun * (-2._mk*pi)*sin(2._mk*pi * pos(2))
+    case (2)
+        df0_fun =  df0_fun * (-(2._mk*pi)**2)*cos(2._mk*pi * pos(2))
+    case (3)
+        df0_fun =  df0_fun * ( (2._mk*pi)**3)*sin(2._mk*pi * pos(2))
+    case (4)
+        df0_fun =  df0_fun * ( (2._mk*pi)**4)*cos(2._mk*pi * pos(2))
+    case default
+        df0_fun =  0._mk
+    endselect
 
-end function f0_grad_fun
+    if (ndim .eq. 3 ) then
+        select case (order_deriv(3))
+        case (0)
+            df0_fun =   df0_fun * sin (2._mk*pi * pos(3)) 
+        case (1)
+            df0_fun =   df0_fun * (2._mk*pi)*cos(2._mk*pi * pos(3))
+        case (2)
+            df0_fun =  df0_fun * (-(2._mk*pi)**2)*sin(2._mk*pi * pos(3))
+        case (3)
+            df0_fun =  df0_fun * (-(2._mk*pi)**3)*cos(2._mk*pi * pos(3))
+        case (4)
+            df0_fun =  df0_fun * ( (2._mk*pi)**4)*sin(2._mk*pi * pos(3))
+        case default
+            df0_fun =  0._mk
+        endselect
+    endif
 
-pure function level0_fun(pos)
-
-    use ppm_module_data, ONLY: ppm_dim
-    real(mk)                              :: level0_fun
-    real(mk), dimension(ppm_dim), intent(in) :: pos
-    real(mk), dimension(ppm_dim)             :: centre
-    real(mk)                              :: radius
-
-    centre = 0.5_mk
-    centre(2) = 0.75_mk
-    radius=0.15_mk
-
-    level0_fun = sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius
-
-end function level0_fun
+end function df0_fun
 
 end test_suite
