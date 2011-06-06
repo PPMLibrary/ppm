@@ -48,6 +48,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     INTEGER                               :: ncoeff,n_odd
     CHARACTER(LEN = 256)                  :: caller='ppm_part_dcops'
     CHARACTER(LEN = 256)                  :: cbuf
+    CHARACTER(LEN = 32)                   :: myformat
     REAL(KIND(1.D0))                      :: t0
     REAL(MK)                              :: expo,byh
     REAL(MK),DIMENSION(:),ALLOCATABLE     :: byh0powerbeta
@@ -170,6 +171,9 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
         ELSE 
             ncoeff = binomial(degree_poly+ppm_dim,ppm_dim)
         ENDIF
+
+        !write(*,*) 'degree: ',degree, sum_degree(i)
+        !write(*,*) 'degree_poly: ',degree_poly, ncoeff
     ENDDO
 
     IF (ncoeff.LE.0) THEN
@@ -384,8 +388,29 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
         CALL solveLSE_n(Z,b,nterms,info)
         ! now b contain the solutions to the LSEs A*x_i=b_i for i=1:nterms
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'solveLSE_n failed',info)
-            info = -1
+            !writes the coordinate of the stencil that lead to the error
+            IF (ppm_dim .EQ. 2 ) THEN
+                myformat = TRIM(ADJUSTL('(2(E30.22))'))
+            ELSE
+                myformat = TRIM(ADJUSTL('(3(E30.22))'))
+            ENDIF
+            WRITE(9000,myformat) xp1(1:ppm_dim,ip)
+            DO ineigh = 1,nvlist(ip)
+                WRITE(9000,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))
+            ENDDO
+            CALL ppm_write(ppm_rank,caller,&
+                'stencil written in file fort.9000',info)
+
+            WRITE(9003,myformat) xp1(1:ppm_dim,ip)*byh
+            DO ineigh = 1,nvlist(ip)
+                WRITE(9003,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))*byh
+            ENDDO
+            CALL ppm_write(ppm_rank,caller,&
+                'h-scaled stencil written in file fort.9003',info)
+
+
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'Failed to solve the LSE', __LINE__,info)
             GOTO 9999
         ENDIF
 
