@@ -41,8 +41,11 @@ TYPE pnt_array_desc
     !!! differential ops are stored
     INTEGER                                        :: nterms
     !!! number of terms
-    CHARACTER(len=ppm_char)                        :: name
+    CHARACTER(LEN=ppm_char)                        :: name
     !!! name of the vector-valued property
+    LOGICAL                                        :: interp
+    !!! True if the operator interpolates data from one set of particles
+    !!! to another.
 END TYPE pnt_array_desc
 
 TYPE ppm_t_operator

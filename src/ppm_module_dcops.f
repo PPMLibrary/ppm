@@ -117,8 +117,7 @@ MODULE ppm_module_dcops
 !-------------------------------------------------------------------------
 PUBLIC :: solveLSE,solveLSE_2,solveLSE_n, &
         & ppm_dcops_2d,ppm_dcops_3d,      &
-        & ppm_part_dcops_2d,ppm_part_dcops_3d, &
-        & ppm_part_dcop_compute2d,ppm_part_dcop_compute3d
+        & ppm_part_dcops_2d,ppm_part_dcops_3d
 
 CONTAINS
 
@@ -200,7 +199,7 @@ CONTAINS
 
 #undef __KIND
 
-SUBROUTINE particles_dcop_compute(Particles,eta_id,info,interp,c)
+SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_particles_typedef
@@ -218,9 +217,6 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,interp,c)
     !---------------------------------------------------------
     ! Optional arguments
     !---------------------------------------------------------
-    LOGICAL,OPTIONAL                                     :: interp
-    !!! true if the operator is to be computed using interpolating methods
-    !!! (with data stored in another set of particles Particles%Particles_cross)
     REAL(ppm_kind_double),OPTIONAL                                    :: c
     !!! ratio h/epsilon (default is 1.0)
     !---------------------------------------------------------
@@ -228,7 +224,7 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,interp,c)
     !---------------------------------------------------------
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_compute'
     REAL(KIND(1.D0))                        :: t0
-    LOGICAL                                 :: isinterp
+    LOGICAL                                 :: interp
 
     !-------------------------------------------------------------------------
     ! Initialize
@@ -263,16 +259,21 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,interp,c)
             __LINE__,info)
         GOTO 9999
     ENDIF
-    IF (PRESENT(interp)) THEN
-        isinterp = interp
-    ELSE
-        isinterp = .FALSE.
-    ENDIF
-    IF (isinterp) THEN
-        IF (.NOT. Particles%neighlists_cross) THEN
+
+    interp = Particles%ops%desc(eta_id)%interp
+    IF (interp) THEN
+        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,   &
-                & 'Compute xset neighbor lists first',&
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to specify which set of particles &
+                &   (particles_cross) should be used for interpolation',&
+                & __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT. (Particles%neighlists_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please compute xset neighbor lists first',&
                 __LINE__,info)
             GOTO 9999
         ENDIF

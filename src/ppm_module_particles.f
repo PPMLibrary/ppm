@@ -3150,7 +3150,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 END SUBROUTINE particles_io_xyz
 
 SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
-        info,name)
+        info,name,interp)
     !!!------------------------------------------------------------------------!
     !!! Define a DC operator as a linear combination (with scalar coefficients)
     !!! of nterms partial derivatives of arbitrary degrees. These are given by a matrix
@@ -3205,6 +3205,9 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     !-------------------------------------------------------------------------
     CHARACTER(LEN=*),OPTIONAL,          INTENT(IN   )   :: name
     !!! Descriptive name for this operator
+    LOGICAL,OPTIONAL,                   INTENT(IN   )   :: interp
+    !!! True if the operator interpolates data from one set of particles to
+    !!! another. Default is false.
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -3247,6 +3250,7 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
         ENDIF
         DO i=1,20
             Particles%ops%desc(i)%name = particles_dflt_opname(i)
+            Particles%ops%desc(i)%interp = .FALSE.
             Particles%ops%desc(i)%nterms = 0
         ENDDO
     ENDIF
@@ -3331,6 +3335,11 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     Particles%ops%desc(eta_id)%nterms = nterms 
     IF (PRESENT(name)) THEN
         Particles%ops%desc(eta_id)%name = name
+    ENDIF
+    IF (PRESENT(interp)) THEN
+        Particles%ops%desc(eta_id)%interp = interp
+    ELSE
+        Particles%ops%desc(eta_id)%interp = .FALSE.
     ENDIF
 
     !update states
@@ -3439,6 +3448,7 @@ SUBROUTINE particles_dcop_free(Particles,eta_id,info)
     Particles%ops%desc(eta_id)%order => NULL()
     Particles%ops%desc(eta_id)%coeffs => NULL()
     Particles%ops%desc(eta_id)%name = particles_dflt_opname(eta_id)
+    Particles%ops%desc(eta_id)%interp = .FALSE.
     Particles%ops%desc(eta_id)%nterms = 0
     Particles%ops%ker(eta_id)%vec=> NULL()
 
@@ -3459,9 +3469,150 @@ SUBROUTINE particles_dcop_free(Particles,eta_id,info)
 
 END SUBROUTINE particles_dcop_free
 
+SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
+    !!!------------------------------------------------------------------------!
+    !!! NEW version
+    !!! Apply DC kernel stored in eta_id to the scalar property stored
+    !!! prop_from_id and store the results in prop_to_id
+    !!!------------------------------------------------------------------------!
+    USE ppm_module_data, ONLY: ppm_rank
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN   )   :: from_id
+    !!! id where the data is stored
+    INTEGER,                            INTENT(INOUT)   :: to_id
+    !!! id where the result should be stored (0 if it needs to be allocated)
+    INTEGER,                            INTENT(IN   )   :: eta_id
+    !!! id where the DC kernel has been stored
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: cbuf,filename
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
+    INTEGER                                    :: ip,iq,ineigh
+    REAL(KIND(1.D0))                           :: t0
+    REAL(MK),DIMENSION(:,:),POINTER            :: xp1 => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER            :: xp2 => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
+    REAL(MK),DIMENSION(:),  POINTER            :: wp1 => NULL()
+    REAL(MK),DIMENSION(:),  POINTER            :: wp2 => NULL()
+    REAL(MK),DIMENSION(:),  POINTER            :: dwp => NULL()
+    INTEGER, DIMENSION(:),  POINTER            :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER            :: vlist => NULL()
+    REAL(MK)                                   :: sig
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+    IF (to_id.EQ.0) THEN
+        CALL particles_allocate_wps(Particles,to_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'particles_allocate_wps failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+    IF (.NOT. ASSOCIATED(Particles%ops)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'No operator data structure found',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (eta_id.LE.0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'invalid value for ops id',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+
+    dwp => Get_wps(Particles,to_id)
+    eta => Get_dcop(Particles,eta_id)
+
+    DO ip = 1,Particles%Npart 
+        dwp(ip) = 0._MK
+    ENDDO
+
+    IF (Particles%ops%desc(eta_id)%interp) THEN
+        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to specify which set of particles &
+                &   (particles_cross) should be used for interpolation',&
+                & __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT. (Particles%neighlists_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please compute xset neighbor lists first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        wp2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+        nvlist => Particles%nvlist_cross
+        vlist => Particles%vlist_cross
+        DO ip = 1,Particles%Npart
+            DO ineigh = 1,nvlist(ip)
+                iq = vlist(ineigh,ip)
+                dwp(ip) = dwp(ip) + wp2(iq) * eta(ineigh,ip)
+            ENDDO
+        ENDDO
+        wp2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
+    ELSE
+        wp1 => Get_wps(Particles,from_id)
+        xp1 => Get_xp(Particles)
+        nvlist => Particles%nvlist
+        vlist => Particles%vlist
+        sig = -1._mk !TODO FIXME
+        DO ip = 1,Particles%Npart
+            DO ineigh = 1,nvlist(ip)
+                iq = vlist(ineigh,ip)
+                dwp(ip) = dwp(ip) + (wp1(iq)+sig*(wp1(ip))) * eta(ineigh,ip)
+            ENDDO
+        ENDDO
+        wp1 => Set_wps(Particles,from_id,read_only=.TRUE.)
+    ENDIF
+
+    eta => Set_dcop(Particles,eta_id)
+    dwp => Set_wps(Particles,to_id)
+    nvlist => NULL()
+    vlist => NULL()
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_dcop_apply
+
 SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
         info,Particles_old,from_old_id)
     !!!------------------------------------------------------------------------!
+    !!! OLD version
     !!! Apply DC kernel stored in eta_id to the scalar property stored
     !!! prop_from_id and store the results in prop_to_id
     !!!------------------------------------------------------------------------!
