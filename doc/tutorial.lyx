@@ -1,0 +1,3325 @@
+#LyX 2.0 created this file. For more info see http://www.lyx.org/
+\lyxformat 413
+\begin_document
+\begin_header
+\textclass memoir
+\begin_preamble
+%\usepackage[latin1]{inputenc}
+\usepackage{amsthm}
+\usepackage{placeins}
+\usepackage{algorithmic}
+\usepackage{listings}
+\usepackage{courier}
+ \lstset{
+         basicstyle=\small\ttfamily, % Standardschrift
+         %basicstyle=\footnotesize\ttfamily, % Standardschrift
+         %numbers=left,               % Ort der Zeilennummern
+         numberstyle=\tiny,          % Stil der Zeilennummern
+         %stepnumber=2,               % Abstand zwischen den Zeilennummern
+         numbersep=5pt,              % Abstand der Nummern zum Text
+         tabsize=2,                  % Groesse von Tabs
+         extendedchars=true,         %
+         breaklines=true            % Zeilen werden Umgebrochen
+ %        keywordstyle=[1]\textbf,    % Stil der Keywords
+ %        keywordstyle=[2]\textbf,    %
+ %        keywordstyle=[3]\textbf,    %
+ %        keywordstyle=[4]\textbf,   \sqrt{\sqrt{}} %
+%         stringstyle=\color{white}\ttfamily, % Farbe der String
+%         showspaces=false,           % Leerzeichen anzeigen ?
+%         showtabs=false,             % Tabs anzeigen ?
+%         xleftmargin=17pt,
+%         framexleftmargin=17pt,
+%         framexrightmargin=5pt,
+%         framexbottommargin=4pt,
+         %backgroundcolor=\color{lightgray},
+%         showstringspaces=false      % Leerzeichen in Strings anzeigen ?        
+ }
+\lstloadlanguages{% Check Dokumentation for further languages ...
+         %[Visual]Basic
+         %Pascal
+         %C
+         %C++
+         %XML
+         %HTML
+        % Java
+        [95]Fortran
+ }
+%opening
+\makeatother
+\chapterstyle{southall}
+\usepackage{babel}
+\end_preamble
+\options pdfauthor=(OmarAwile),pdftitle=(PPM UserGuide)
+\use_default_options false
+\begin_modules
+figs-within-sections
+logicalmkup
+eqs-within-sections
+\end_modules
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding latin9
+\fontencoding global
+\font_roman default
+\font_sans default
+\font_typewriter default
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100
+\font_tt_scale 100
+
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize 10
+\spacing single
+\use_hyperref false
+\papersize a4paper
+\use_geometry false
+\use_amsmath 2
+\use_esint 1
+\use_mhchem 1
+\use_mathdots 1
+\cite_engine basic
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\use_refstyle 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\quotes_language english
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+PPM User's guide
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset toc
+LatexCommand tableofcontents
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chapter
+Introduction
+\end_layout
+
+\begin_layout Standard
+The PPM library 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Sbalzarini:2006b,Sbalzarini:2006c"
+
+\end_inset
+
+ defines the state of the art in middleware for distributed-memory particle-mesh
+ simulations.
+ It hides MPI from the application programmer by introducing an additional,
+ transparent layer beneath the user's simulation programs (called 
+\begin_inset Quotes eld
+\end_inset
+
+PPM clients
+\begin_inset Quotes erd
+\end_inset
+
+).
+ Since PPM reduces the knowledge gap, the resulting simulations often outperform
+ hand-parallelized codes 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Sbalzarini:2006b,Sbalzarini:2010"
+
+\end_inset
+
+.
+ The PPM library is independent of specific applications, provided the simulatio
+n is phrased in terms of particles, meshes, or a combination of the two.
+ PPM implements modules for adaptive domain decomposition, communication
+ through halo layers, load balancing, particle-mesh interpolation, and communica
+tion scheduling.
+ All of this is done transparently without participation of the user program.
+ 
+\end_layout
+
+\begin_layout Standard
+Recently PPM has undergone some major design changes: 
+\end_layout
+
+\begin_layout Itemize
+The PPM library has been split up into two libraries.
+ The first part is PPM core, which provides the core parallel framework
+ consisting of abstractions for topologies, mappings, particles and meshes.
+ The second part is PPM numerics.
+ This new library provides all the numerical methods that were implemented
+ based on the PPM abstractions.
+ In this tutorial we shall concentrate on PPM core.
+ 
+\end_layout
+
+\begin_layout Itemize
+Using the PPM core library has been greatly simplified.
+ The number of arguments that must be passed to PPM routines has been reduced,
+ topologies are now handled internally by the library.
+ 
+\end_layout
+
+\begin_layout Itemize
+We spent some time reorganizing the code and generating an API reference.
+ 
+\end_layout
+
+\begin_layout Itemize
+Installing PPM has become much simpler, thanks to the use of GNU Autoconf
+ and Automake.
+ 
+\end_layout
+
+\begin_layout Chapter
+Obtaining and installing PPM
+\end_layout
+
+\begin_layout Standard
+PPM is distributed in source packages for the user to compile and setup
+ on his environment.
+ We do not offer any pre-built packages.
+ Go to 
+\family typewriter
+
+\begin_inset Newline linebreak
+\end_inset
+
+http://www.ppm-library.org
+\family default
+ to download the latest version of PPM core from the 
+\begin_inset Quotes eld
+\end_inset
+
+Downloads
+\begin_inset Quotes erd
+\end_inset
+
+ section.
+ PPM has been tested with Mac OS X 10.5/10.6, Ubuntu Linux (x86-64) and Gentoo
+ Linux (x86-64).
+ It should however work on any Unix system, provided all dependencies are
+ present and installed.
+ In essence PPM requires following packages to be installed: 
+\end_layout
+
+\begin_layout Itemize
+A FORTRAN 95 compiler.
+ For systems with Intel CPUs we recommend the latest Intel Fortran compiler
+ (v.
+ 11.x).
+ You can also use GCC's 
+\family typewriter
+gfortran
+\family default
+.
+ Many high-performance clusters provide also vendor-specific compilers (e.g.
+ IBM XL Fortran, Sun studio Fortran, NEC Fortran compiler).
+ 
+\end_layout
+
+\begin_layout Itemize
+An MPI library.
+ We have tested PPM with several versions of OpenMPI, but any MPI-2 compliant
+ library should work.
+ It is important to compile PPM with the same Fortran compiler as the MPI
+ library.
+ PPM can be also compiled without MPI support.
+ 
+\end_layout
+
+\begin_layout Itemize
+The METIS library.
+ METIS is a library for graph partitioning and fill-reducing matrix ordering.
+ You can either download it from
+\begin_inset Newline newline
+\end_inset
+
+ 
+\family typewriter
+http://glaros.dtc.umn.edu/gkhome/metis/metis/download
+\family default
+ or from the PPM website along with the PPM core source package.
+ 
+\end_layout
+
+\begin_layout Itemize
+The 
+\family typewriter
+make
+\family default
+ command and functioning shell.
+ To build PPM we make use of Makefiles that are interpreted by 
+\family typewriter
+make
+\family default
+.
+ Along with the compilers the environment where PPM core will be compiled
+ has to provide the standard unix shell tools and make.
+ 
+\end_layout
+
+\begin_layout Standard
+After you have downloaded the PPM core 
+\family typewriter
+.tar.gz
+\family default
+ source archive to your system and prepared the requirements you must unpack,
+ configure and compile the code.
+ In the following snipped we assume you are using OpenMPI.
+ Please issue the 
+\family typewriter
+./configure --help
+\family default
+ command to find out about how to customize PPM core: 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=bash"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+tar xzvpf ppmcore1.2.tar.gz cd libppm 
+\end_layout
+
+\begin_layout Plain Layout
+
+./configure --enable-mpi=openmpi --enable-linux --prefix=/where/ppm/shall/be/inst
+alled LDFLAGS=-L/directory/to/metis/lib
+\end_layout
+
+\end_inset
+
+ Note: For most standard installations it is not necessary to specify the
+ compiler, as the install scripts will try to find them automatically.
+\end_layout
+
+\begin_layout Remark*
+the 
+\family typewriter
+--prefix
+\family default
+ argument requires the given directory to be already created, otherwise
+ the build process will fail.
+\end_layout
+
+\begin_layout Standard
+If you have correctly installed all PPM dependencies and specified the correct
+ paths in the above command the configuration process should exit after
+ generating the Makefile: 
+\begin_inset listings
+lstparams "language=bash"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+configure: creating ./config.status 
+\end_layout
+
+\begin_layout Plain Layout
+
+config.status: creating Makefile
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The next step is to compile PPM.
+\end_layout
+
+\begin_layout Section
+Development
+\end_layout
+
+\begin_layout Standard
+For development and debugging, configure can be called with the --enable-dev
+ and the --enable-debug flags respectively.
+\end_layout
+
+\begin_layout Chapter
+Understanding the PPM parallelism
+\end_layout
+
+\begin_layout Standard
+TODO: It would be useful to have a summary of what PPM actually does and
+ how it does it.
+ What are the different abstractions and how are they organized.
+ Some diagrams/sketches would probably help a lot...
+\end_layout
+
+\begin_layout Standard
+For now, the reader is referred to the seminal papers 
+\begin_inset CommandInset citation
+LatexCommand cite
+key "Sbalzarini:2006b,Sbalzarini:2010"
+
+\end_inset
+
+.
+\end_layout
+
+\begin_layout Chapter
+Sample PPM Client Application
+\end_layout
+
+\begin_layout Standard
+PPM offers a rich functionality for parallelizing the computations that
+ can be used in PPM clients by calling the respective subroutines.
+ A 
+\begin_inset Quotes eld
+\end_inset
+
+skeleton
+\begin_inset Quotes erd
+\end_inset
+
+ of a typical PPM client consists of the following steps: 
+\end_layout
+
+\begin_layout Enumerate
+Read program configuration from a control file 
+\end_layout
+
+\begin_layout Enumerate
+Initialize the PPM library 
+\end_layout
+
+\begin_layout Enumerate
+Create the topology and fill it in with particles :
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Perform the domain decomposition 
+\end_layout
+
+\begin_layout Enumerate
+Generate particles 
+\end_layout
+
+\begin_layout Enumerate
+Map the particles onto the topology 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Initialize the ODE module and create an ODE mode 
+\end_layout
+
+\begin_layout Enumerate
+Enter the main cycle of the client :
+\end_layout
+
+\begin_deeper
+\begin_layout Enumerate
+Communicate the particles on ghost layers between all processes 
+\end_layout
+
+\begin_layout Enumerate
+Build neighbor lists only taking into account particles lying within cut-off
+ range 
+\end_layout
+
+\begin_layout Enumerate
+Performing main calculations:
+\end_layout
+
+\begin_deeper
+\begin_layout Itemize
+Calculate approximations of the time derivatives using the ODE solver 
+\emph on
+or
+\end_layout
+
+\begin_layout Itemize
+Perform particle--particle interactions 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Calculate other quantities using the results of previous step 
+\end_layout
+
+\begin_layout Enumerate
+Update positions of individual particles 
+\end_layout
+
+\end_deeper
+\begin_layout Enumerate
+Output the results 
+\end_layout
+
+\begin_layout Enumerate
+Finalize the PPM Library 
+\end_layout
+
+\begin_layout Standard
+The first step is done by means of a simple subroutine, which reads the
+ control file and extracts the parameter values and program configuration.
+ The default control file has the following format: each non-blank line,
+ except those that begin with a 
+\family typewriter
+'#'
+\family default
+ character, is considered as significant and containing a pair of parameter
+ name and value.
+ A sample control file is given below: 
+\family typewriter
+
+\begin_inset listings
+lstparams "language=bash"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+#----------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+# Sample control file 
+\end_layout
+
+\begin_layout Plain Layout
+
+#
+\end_layout
+
+\begin_layout Plain Layout
+
+# This line is a comment
+\end_layout
+
+\begin_layout Plain Layout
+
+#----------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+<parameter_name> = <parameter_value> 
+\end_layout
+
+\begin_layout Plain Layout
+
+...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+The second step is done by calling the 
+\family typewriter
+ppm_init
+\family default
+ subroutine.
+ To open the log unit a subsequent call to 
+\family typewriter
+ppm_io_set_unit
+\family default
+ is required.
+\end_layout
+
+\begin_layout Standard
+The topology is created using 
+\family typewriter
+ppm_mktopo
+\family default
+ subroutine, which is the topology creation routine for particles.
+ It performs the decomposition of the physical space based on the position
+ of the particles and returns the topology id to the calling program.
+ The subdomains are mapped onto the processors and a neighbour list is created.
+ The topology itself can be obtained by subsequent call to 
+\family typewriter
+ppm_topo_get
+\family default
+ with the topology id as the first parameter and a pointer to the topology
+ itself.
+ This allows access and modify the fields of the topology structure directly,
+ however, usually there is no need to do so as 
+\family typewriter
+ppm_mktopo
+\family default
+ and other library functions should provide all the necessary functionality
+ for that.
+\end_layout
+
+\begin_layout Standard
+The next step to perform is to fill this geometry with particles, which
+ is problem-specific and may be done in a variety of ways.
+\end_layout
+
+\begin_layout Standard
+The mapping the particles onto topology is performed in several steps.
+ First 
+\family typewriter
+ppm_map_part_global
+\family default
+ maps the particles onto the given topology using a global mapping (i.e.
+ every processor communicates with every other).
+ Then a call to 
+\family typewriter
+ppm_map_part_push
+\family default
+ would push the any relevant particle data onto the send buffer that is
+ communicated to the other processes via 
+\family typewriter
+ppm_map_part_send
+\family default
+.
+ Other processes can access this data by subsequent calls to 
+\family typewriter
+ppm_map_part_pop
+\family default
+, which would return the particle data (positions, strength, etc) in the
+ order it was put into the buffer.
+\end_layout
+
+\begin_layout Standard
+It should be stressed out that if no geometric decomposition of the domain
+ is required, the two previous steps should be skipped.
+\end_layout
+
+\begin_layout Standard
+Problems that are solved by using PPM are ususally governed by a set of
+ ODEs.
+ For example, a typical transport problem of the form 
+\begin_inset Formula 
+\begin{align}
+\frac{Df}{Dt}=\frac{\partial f}{\partial t}+\nabla\cdot\left(\mathbf{u}f\right) & =\mathcal{L}\left(f\right),\label{eq:transport equation}
+\end{align}
+
+\end_inset
+
+ leads to the system of ODEs for the positions 
+\begin_inset Formula $\mathbf{x}_{p}$
+\end_inset
+
+, strengths 
+\begin_inset Formula $\omega_{p}$
+\end_inset
+
+, and volumes 
+\begin_inset Formula $v_{p}$
+\end_inset
+
+ of the particles:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\begin{align}
+\frac{d\mathbf{x}_{p}}{dt} & =\mathbf{u}_{p}\left(t\right)\label{eq:System of ODEs}\\
+\frac{d\omega_{p}}{dt} & =v_{p}\mathcal{L}\left(f\right)(\mathbf{x}_{p})+\frac{dv_{p}}{dt}f\left(x_{p}\right)\nonumber \\
+\frac{dv_{p}}{dt} & =v_{p}\nabla\cdot\mathbf{u}\nonumber 
+\end{align}
+
+\end_inset
+
+ with 
+\begin_inset Formula $\omega_{p}=v_{p}f\left(\mathbf{x}_{p}\right)$
+\end_inset
+
+.
+ The differential operator 
+\begin_inset Formula $\mathcal{L}$
+\end_inset
+
+ can be, e.g.
+ a diffusion operator.
+\end_layout
+
+\begin_layout Standard
+To faciliate the matter, PPM library provides subroutines that give the
+ necessary functionality: 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+ppm_ode_init(topo_id,info)
+\family default
+ -- initializes the ode solver variable and registers the ID of the topology
+ to be used for the ODE solver 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+ppm_ode_create_ode
+\family default
+, which creates an ODE solver for the given integration scheme, kick-off
+ scheme and sets whether the solver is adaptive, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+ppm_ode_start
+\family default
+ -- should be called before the first step of numerical integration.
+ It check whether all solvers are ready then sets them into kick-off state
+ thus allowing the numerical integration to begin, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+ppm_ode_step
+\family default
+ is the very heart of ODE solver.
+ This routine implements Euler, Runge-Kutta 2 and Runge-Kutta 4 numerical
+ intgration schemes.
+ It should be called inside the main cycle of the client, to provide tnumerical
+ approximations of governing variable for the next timestep.
+ 
+\end_layout
+
+\begin_layout Standard
+The main cycle of a typical client that involves solving a system of ODEs
+ also needs means for calculating the quantities that characterize the evolution
+ of the flow in time.
+ To calculate such quantities at particle's positions, e.g.
+ concentrations of chemical species, flow vorticities \SpecialChar \ldots{}
+, particle strength's
+ of the neighbouring particles are usually required.
+ In the PPM library such data can be obtained by means of 
+\shape italic
+neighbour lists
+\shape default
+.
+ To avoid boundary effects, especially when run on parallel processors,
+ particles that are close to the boundary of the (sub)domain get additional
+ neighbours from the particles lying in adjacent subdomain within some distance
+ (called 
+\shape italic
+cutt-off distance
+\shape default
+) that implemented as particles on ghost layers.
+ Each subdomain that is assigned to a separate processor has several ghost
+ layers, each for one of his neighbours on other processors.
+\end_layout
+
+\begin_layout Standard
+Having computed the values of all physical quantities and updated the positions
+ of all particles means that one cycle of the main cycle of the client is
+ finished and, after storing the results of the calculations, the client
+ is ready to proceede to the next step.
+\end_layout
+
+\begin_layout Standard
+Main cycle of a client that solves a problem involving many particle-to-particle
+ interactions usually requires many communication between all the processors.
+ To reduce the communication overhead, \SpecialChar \ldots{}
+
+\end_layout
+
+\begin_layout Standard
+Each step of the simple will be discussed in more detail.
+\end_layout
+
+\begin_layout Section
+Typical variable names
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline true
+status open
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+Npart
+\end_layout
+
+\end_inset
+
+: number of real particles
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline true
+status open
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+Mpart
+\end_layout
+
+\end_inset
+
+: number of (real+ghosts) particles
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline true
+status open
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+xp
+\end_layout
+
+\end_inset
+
+: array of particles' positions
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline true
+status open
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+wp
+\end_layout
+
+\end_inset
+
+: array of particles' strengths
+\end_layout
+
+\begin_layout Section
+Reading the control file
+\end_layout
+
+\begin_layout Standard
+In this simple case, control file governs these main aspects of the simulation:
+ 
+\end_layout
+
+\begin_layout Itemize
+grid stepping -- defined using the parameter:
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Labeling
+\labelwidthstring 00.00.0000
+
+Ngrid = 43,43,43
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+name and how often an output file will be written:
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+freqoutput = 100000  
+\end_layout
+
+\begin_layout Plain Layout
+
+outputfile = pseoutput  
+\end_layout
+
+\begin_layout Plain Layout
+
+outputfmt  = UNFORMATTED
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+settings for continuing the simulation (restart):
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+restart     = FALSE 
+\end_layout
+
+\begin_layout Plain Layout
+
+restartfile = pse_restart00000011.rst 
+\end_layout
+
+\begin_layout Plain Layout
+
+freqrestart = 1000
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+problem parameters, e.g.
+ number of spatial dimensions, size of computational domain, number of particle
+ species, isotropic diffusion constants for all species 
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+dimensions  = 3 
+\end_layout
+
+\begin_layout Plain Layout
+
+domain      = 0.0, 0.0, 0.0, 4.0, 4.0, 4.0 
+\end_layout
+
+\begin_layout Plain Layout
+
+species     = 1 
+\end_layout
+
+\begin_layout Plain Layout
+
+isodiff     = 0.03
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Itemize
+PSE method parameters like the kernel function to use, core radius of the
+ kernel, cut-off distance of particle-particle interaction, etc
+\end_layout
+
+\begin_layout Standard
+These sections are ones that should be necessary to perform almost any simulatio
+n using PPM library.
+ In general, the control file is fine-tailored for the specific aspects
+ simulation and may contain some additional problem-specific sections.
+ Next step is to load all this data into PPM.
+\end_layout
+
+\begin_layout Section
+Initializing PPM
+\end_layout
+
+\begin_layout Standard
+Before calling any of the PPM routines, a call to 
+\family typewriter
+ppm_init
+\family default
+ is mandatory.
+ It takes several parameters: 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+in
+\family default
+ dimensionality of the problem, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+in
+\family default
+ precision, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+in
+\family default
+ cutoff tolerance, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+in
+\family default
+ MPI communicator, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+in
+\family default
+ flag indicating a debug run, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+out
+\family default
+ parameter to return the status of the call, 
+\end_layout
+
+\begin_layout Itemize
+
+\family typewriter
+out
+\family default
+ handle to log unit 
+\end_layout
+
+\begin_layout Standard
+For example, consider this FORTRAN 95 code : 
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran,numbers=left"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!---------------------------------------    
+\end_layout
+
+\begin_layout Plain Layout
+
+!  Initialise the ppm library       
+\end_layout
+
+\begin_layout Plain Layout
+
+!---------------------------------------     
+\end_layout
+
+\begin_layout Plain Layout
+
+tolexp = INT(LOG10(EPSILON(cutoff)))+10       
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_init(ndim,MK,tolexp,comm,debug,info,ppm_log_unit)       
+\end_layout
+
+\begin_layout Plain Layout
+
+IF (info .NE.
+ 0) THEN           
+\end_layout
+
+\begin_layout Plain Layout
+
+	CALL pwrite(rank,'pse_init','Failed to initialize ppm library.',info)  
+         
+\end_layout
+
+\begin_layout Plain Layout
+
+	GOTO 9999       
+\end_layout
+
+\begin_layout Plain Layout
+
+ENDIF       
+\end_layout
+
+\begin_layout Plain Layout
+
+!---------------------------------------   
+\end_layout
+
+\begin_layout Plain Layout
+
+!  Set ppm log file unit        
+\end_layout
+
+\begin_layout Plain Layout
+
+!---------------------------------------    
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_io_set_unit(6,0,ppm_log_unit,info)       
+\end_layout
+
+\begin_layout Plain Layout
+
+IF (info .NE.
+ 0) GOTO 9999
+\end_layout
+
+\begin_layout Plain Layout
+
+...
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chapter
+Basic routines and data structures
+\end_layout
+
+\begin_layout Standard
+A topology is defined as a partition of the computational domain into several
+ subdomains and the assignment of each subdomain to a processor.
+ The data structures of the computational elements, particles and meshes,
+ are constructed relative to one given topology.
+ Ideally, the goal is for this topology to be built so as to equi-distribute
+ the computational load amongst all the processors and to minimize the communica
+tion overhead between the compute nodes.
+\end_layout
+
+\begin_layout Standard
+PPM does not yet fully achieve this goal but it is being developped in that
+ direction.
+ To 
+\end_layout
+
+\begin_layout Section
+Domain decomposition 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Float figure
+wide false
+sideways false
+status open
+
+\begin_layout Plain Layout
+\begin_inset Graphics
+	filename pics/ppm_decomp.png
+	lyxscale 20
+	width 50col%
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename pics/ppm_slab_decomp.png
+	lyxscale 20
+	width 50col%
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+\begin_inset Caption
+
+\begin_layout Plain Layout
+Example of slab domain decomposition based on particles
+\begin_inset CommandInset label
+LatexCommand label
+name "fig:slab_domain_decomp"
+
+\end_inset
+
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Distinguish: Mesh / Field 
+\end_layout
+
+\begin_layout Standard
+Meshes are created on subdomains.
+ Therefore the subs extents must be compatible with the mesh spacing in
+ all spatial dimensions.
+ This means: the sub extent must be an integer multiple of the mesh spacing.
+ 
+\end_layout
+
+\begin_layout Standard
+User defines the number of mesh points (not cells!) of the global mesh in
+ all dimensions.
+ The mesh spacing is then computed internally from this number and the extent
+ of the physical domain.
+ There is always a grid point placed right ON the boundary of the computational
+ domain (PUT A SKETCH HERE).
+ 
+\end_layout
+
+\begin_layout Standard
+Due to above-mentioned compatibility contraint, sub boundary faces always
+ collocate with mesh planes (lines in 2D).
+ The mesh points ON these planes belon to BOTH subs.
+ This seemingly unneccessary duplication of points is motivated by: 
+\end_layout
+
+\begin_layout Enumerate
+provide a convergence criterion for the Multigrid 
+\end_layout
+
+\begin_layout Enumerate
+in the case of periodic outer B.C.
+ the situation is consistent (the points coincide around the boundary.
+ 
+\end_layout
+
+\begin_layout Enumerate
+internal boundaries (between subs) and external ones (comput.
+ domain) can be treated the same and the solvers do not need to care about
+ where there subs are locates.
+ 
+\end_layout
+
+\begin_layout Enumerate
+M'4 remeshing needs a ghostlayer of size 1 on all sides.
+ Otherwise it would have needed size 1 on one side and 2 on the other.
+ Asymmetric ghost layers are a pain for the mapping functions.
+ 
+\end_layout
+
+\begin_layout Standard
+Circumvent by: not computing the same point twice (or compute and use as
+ convergence detection).
+ 
+\end_layout
+
+\begin_layout Standard
+When doing a field or field ghost mapping, the values on the duplicated
+ mesh nodes are actually exchanged (replaced with the value on the same
+ mesh point on the other sub or added for the ghost put).
+ This always applies to all internal sub boundaries and in case of periodic
+ boundary conditions also for the mesh points right on the boundary of the
+ computational domain.
+ (of course only in periodic directions).
+ This whole paragraph is maybe too messy and there should be a better way
+ to describe this.
+ Maybe also add a figure.
+\end_layout
+
+\begin_layout Subsection
+Particle Based 
+\end_layout
+
+\begin_layout Standard
+The domain decomposition can be driven by the positions of the particles.
+ In that case PPM creates subdomains such that each of them contains a similar
+ number of particles.
+ To better equidistribute the computational load between the processors,
+ a cost-per-particle can be given as an input argument.
+ PPM will then adjust the sizes of the subdomains such that the cost is
+ equidistributed.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef,ghostsize,cost
+,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Field Based 
+\end_layout
+
+\begin_layout Standard
+If a mesh is provided in the argument list, then the subdomains are created
+ such that their boundaries coincide with the grid lines of the mesh.
+ This is necessary if one wants to use PPM's data structure for meshes.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,bcdef,ghostsi
+ze,cost,istart,ndata,nm,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsubsection
+Different decompositions
+\end_layout
+
+\begin_layout Standard
+the fifth parameter of 
+\family typewriter
+the ppm_mktopo
+\family default
+ subroutine provides a variety of methods for domain decomposition, which
+ are listed below : 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_pruned_cell 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_tree 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_bisection 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_xpencil 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_ypencil 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_zpencil 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_xy_slab 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_xz_slab 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_yz_slab 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_cuboid 
+\end_layout
+
+\begin_layout Itemize
+ppm_param_decomp_user_defined 
+\end_layout
+
+\begin_layout Subsubsection
+Load balancing
+\end_layout
+
+\begin_layout Section
+Meshes
+\end_layout
+
+\begin_layout Standard
+Example: defining a topology containing a mesh and allocating a field array
+ with the right size (accounting for ghost layers).
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran,numbers=left"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,bcdef,ghostsi
+ze,cost,istart,ndata,nm,info)
+\end_layout
+
+\begin_layout Plain Layout
+
+ALLOCATE(field_wp(nspec,(1-ghostsize(1)):(ndata(1,1)+ghostsize(1)),(1-ghostsize(
+2)):(ndata(2,1)+ghostsize(2)),1))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Mapping between particles and processors
+\end_layout
+
+\begin_layout Standard
+Redistributes particles to their corresponding processor (as defined by
+ the topology).
+\end_layout
+
+\begin_layout Subsection
+Global mapping
+\end_layout
+
+\begin_layout Standard
+All-to-all communication.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_global(topoid,xp,Npart_old,info) ! positions         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp1,Npart_old,info) ! strengths         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp2,dim2,Npart_old,info) ! vector property      
+   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_send(Npart_old,Npart_new,info) ! send         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp2,dim2,Npart_old,Npart_new,info)         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp1,Npart_old,Npart_new,info)          
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(xp,ndim,Npart_old,Npart_new,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Partial mapping
+\end_layout
+
+\begin_layout Standard
+Communication restricted to neighboring processors.
+ This is much faster and is generally used to update the mappings when particles
+ have moved (this assumes that no particle has moved further than the width
+ of one subdomain).
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_partial(topoid,xp,Npart_old,info) ! positions        
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp1,Npart_old,info) ! strengths         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp2,dim2,Npart_old,info) ! vector property      
+   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_send(Npart_old,Npart_new,info) ! send         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp2,dim2,Npart_old,Npart_new,info)         
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp1,Npart_old,Npart_new,info)          
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(xp,ndim,Npart_old,Npart_new,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Ghost layers - mappings
+\end_layout
+
+\begin_layout Subsection
+Description of ghost layers
+\end_layout
+
+\begin_layout Subsection
+Communications to and from ghost layers
+\end_layout
+
+\begin_layout Standard
+Explain how the data in the ghost layers is communicated across processors
+\end_layout
+
+\begin_layout Subsection
+Ghost mappings for meshes
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!-------------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+!update the ghosts of velocity and vorticity fields   
+\end_layout
+
+\begin_layout Plain Layout
+
+!-------------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_ghost_get(topoid,mesh_id,ghostsize,info)   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_push(topoid,mesh_id,field_vorticity,vdime,info)   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_push(topoid,mesh_id,field_velocity,vdime,info)   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_send(info)   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_pop(topoid,mesh_id,field_velocity,vdime,ghostsize,info)
+   
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_field_pop(topoid,mesh_id,field_vorticity,vdime,ghostsize,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Ghost mappings for particles
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!-------------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+!update the properties wp1 and wp2 on the ghost particles
+\end_layout
+
+\begin_layout Plain Layout
+
+!-------------------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_ghost_get(topoid,xp,ndim,Npart,isymm,cutoff,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp1,Npart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_push(wp2,Npart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_send(Npart,Mpart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp2,Npart,Mpart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(wp1,Npart,Mpart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part_pop(xp,ndim,Npart,Mpart,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Other routines
+\end_layout
+
+\begin_layout Standard
+ppm_map_type_isactive: query the current map type.
+\end_layout
+
+\begin_layout Standard
+This can be used to check if we are currently mapping ghost_gets and can
+ skip the the ghost_get itself only issuing push/send/pops.
+ Useful when particles have not moved.
+\end_layout
+
+\begin_layout Section
+Neighbour lists
+\end_layout
+
+\begin_layout Subsection
+Homogeneous neighbour lists
+\end_layout
+
+\begin_layout Standard
+Here the variable cutoff is a real.
+ All the particles have the same cutoff radius.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_neighlist_vlist(topoid,xp,Mpart,cutoff,skin,symmetry,vlist,nvlist,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Inhomoneneous neigbour lists (multiresolution)
+\end_layout
+
+\begin_layout Standard
+Here the variable cutoff is an array (every particle has its own cutoff
+ radius)
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_inl_vlist(topo_id,xp,Npart,Mpart,cutoff,skin,symmetry,ghostlayer,info,v
+list,nvlist) 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Cross-set inhomoneneous neigbour lists (multiresolution)
+\end_layout
+
+\begin_layout Standard
+Construct the list of neighbours of one set of particles (blue particles)
+ for each particle of another set (red particles).
+ Here the variable cutoff is an array (every particle has its own cutoff
+ radius)
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_xset_inl_vlist(topo_id,xp_red,Np_red,Mp_red,xp_blue,Np_blue,Mp_blue,cut
+off_blue,skin,ghostlayer,info,vlist,nvlist) 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Boundary conditions
+\end_layout
+
+\begin_layout Standard
+The topology data structure contains information about the boundaries of
+ each subdomain.
+ Each subdomain has 4 or 6 boundaries (in 2d and 3d, respectively), which
+ can be independently internal or external.
+ TODO: describe this in more detail? (see source code of the data structure
+ for more).
+\end_layout
+
+\begin_layout Standard
+Example: enforcing a Dirichlet boundary condition on a field.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!Boundary condition on phi     
+\end_layout
+
+\begin_layout Plain Layout
+
+dirichlet_value = -1._MK
+\end_layout
+
+\begin_layout Plain Layout
+
+DO isub=1,topo%nsublist         
+\end_layout
+
+\begin_layout Plain Layout
+
+	isubl = topo%isublist(isub)
+\end_layout
+
+\begin_layout Plain Layout
+
+    !Check whether this subdomain has external boundaries         
+\end_layout
+
+\begin_layout Plain Layout
+
+	! if so, applies dirichlet boundary condition      
+\end_layout
+
+\begin_layout Plain Layout
+
+	
+\end_layout
+
+\begin_layout Plain Layout
+
+	!west boundary?
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(1,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,1,:,:,isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+	!east boundary?         
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(2,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,ndata(1,isubl),:,:,isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+	!south boundary?
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(3,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,:,1,:,isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+	!north boundary?         
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(4,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,:,ndata(2,isubl),:,isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+	!bottom boundary?         
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(5,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,:,:,1,isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+	!top boundary?         
+\end_layout
+
+\begin_layout Plain Layout
+
+	IF (topo%subs_bc(6,isubl) .NE.
+ 0) THEN             
+\end_layout
+
+\begin_layout Plain Layout
+
+		field_wp(1,:,:,ndata(3,isubl),isub) = dirichlet_value         
+\end_layout
+
+\begin_layout Plain Layout
+
+	ENDIF
+\end_layout
+
+\begin_layout Plain Layout
+
+END DO 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chapter
+Numerical methods
+\end_layout
+
+\begin_layout Section
+ODE solver
+\end_layout
+
+\begin_layout Standard
+
+\series bold
+NOTE: this section's tutorial uses the old PPM datastructure and should
+ be updated to the new one.
+\end_layout
+
+\begin_layout Standard
+Example: we want to integrate 
+\begin_inset Formula 
+\begin{equation}
+\frac{du_{p}}{dt}=-\lambda u_{p}
+\end{equation}
+
+\end_inset
+
+ on the particles using the 4th order Runge-Kutta of the ODE suite.
+\end_layout
+
+\begin_layout Standard
+We'll assume that we have 
+\begin_inset listings
+inline true
+status open
+
+\begin_layout Plain Layout
+
+np
+\end_layout
+
+\end_inset
+
+ particles with positions 
+\begin_inset listings
+inline true
+status open
+
+\begin_layout Plain Layout
+
+xp
+\end_layout
+
+\end_inset
+
+ and values 
+\begin_inset listings
+inline true
+status open
+
+\begin_layout Plain Layout
+
+up
+\end_layout
+
+\end_inset
+
+ already allocated and initialized.
+ 
+\end_layout
+
+\begin_layout Subsection
+Local variables
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+REAL(mk), DIMENSION(:,:), POINTER :: dup ! du/dt on particles 
+\end_layout
+
+\begin_layout Plain Layout
+
+REAL(mk), DIMENSION(:,:), POINTER :: bfr ! storage space for the stages
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+REAL(mk), DIMENSION(4) :: time ! time things 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: istage ! stage counter 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: nstages ! number of stages 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: bfrsz ! size of the buffer "bfr" 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: scheme ! which scheme to use 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: odeid ! handle on the solver 
+\end_layout
+
+\begin_layout Plain Layout
+
+LOGICAL :: adapt ! use adaptive time step 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: lda ! leading dimension of our mode 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER, EXTERNAL :: MyRHS ! your implementation of the RHS
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Initialize the ODE Suite
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+! Initialize the Ode solver 
+\end_layout
+
+\begin_layout Plain Layout
+
+!------------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_init (info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Create Mode
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+scheme = PPM_PARAM_ODE_SCHEME_RK4 ! we want the 4th order RK scheme 
+\end_layout
+
+\begin_layout Plain Layout
+
+odeid = -1 ! let the PPM choose an ID for us 
+\end_layout
+
+\begin_layout Plain Layout
+
+adapt = .FALSE.! don't need adaptive time stepping 
+\end_layout
+
+\begin_layout Plain Layout
+
+lda = 2 
+\end_layout
+
+\begin_layout Plain Layout
+
+!----------------------------------------------- 
+\end_layout
+
+\begin_layout Plain Layout
+
+! Create the mode 
+\end_layout
+
+\begin_layout Plain Layout
+
+!-----------------------------------------------
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_create_ode(odeid, bfrsz, nstages, scheme, scheme, adapt, info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Allocate space for the stages
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+ALLOCATE(bfr(bfrsz*lda,np))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Set the time
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+dt = 0.1 
+\end_layout
+
+\begin_layout Plain Layout
+
+time(1) = 0.0 
+\end_layout
+
+\begin_layout Plain Layout
+
+! set the start time 
+\end_layout
+
+\begin_layout Plain Layout
+
+time(2) = 1.0 
+\end_layout
+
+\begin_layout Plain Layout
+
+! set the end time 
+\end_layout
+
+\begin_layout Plain Layout
+
+time(3) = 0.0 
+\end_layout
+
+\begin_layout Plain Layout
+
+! set the current time 
+\end_layout
+
+\begin_layout Plain Layout
+
+time(4) = dt 
+\end_layout
+
+\begin_layout Plain Layout
+
+! set the time step size
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Start the ode solver
+\end_layout
+
+\begin_layout Standard
+Once all the modes have been created, start the ode solver.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_start(info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Start the time integration
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+DO WHILE(.NOT.ppm_ode_alldone(info))
+\end_layout
+
+\begin_layout Plain Layout
+
+DO istage=1,nstages
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_step(odeid, xp, up, dup, lda, np, & & bfr, istage, time, MyRHS,
+ info=info)
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- say particles move, then we need to map after each stage 
+\end_layout
+
+\begin_layout Plain Layout
+
+maptype = ppm_param_map_partial 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(xp,3,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+maptype = ppm_param_map_push 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(up,lda,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(dup,lda,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- now have the ode suite map the stages 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_map_push(odeid,bfr,lda,np,mpart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- send maptype = ppm_param_map_send 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(dup,lda,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- pop in the reverse order 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_map_pop(odeid,bfr,lda,np,mpart,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+maptype = ppm_param_map_pop 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(dup,lda,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(up,lda,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_map_part(xp,3,np,mpart,topo_id,maptype,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+END DO
+\end_layout
+
+\begin_layout Plain Layout
+
+END DO
+\end_layout
+
+\begin_layout Plain Layout
+
+CALL ppm_ode_finalize(info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+The right-hand side
+\end_layout
+
+\begin_layout Standard
+A possible implementation of the function MyRHS
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+FUNCTION MyRHS(vxp, vup, vdup, vdime, vnp, rpack, ipack, lpack, info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+USE myGlobalData
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- Arguments 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER, INTENT(in) :: vdime, vnp 
+\end_layout
+
+\begin_layout Plain Layout
+
+REAL(mk),DIMENSION(:,:),POINTER :: vxp, vup, vdup 
+\end_layout
+
+\begin_layout Plain Layout
+
+REAL(MK),DIMENSION(:,:), POINTER,OPTIONAL :: rpack 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER, DIMENSION(:,:), POINTER,OPTIONAL :: ipack 
+\end_layout
+
+\begin_layout Plain Layout
+
+LOGICAL, DIMENSION(:,:), POINTER,OPTIONAL :: lpack 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER, INTENT(inout) :: info INTEGER :: MyRHS
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- Local variables 
+\end_layout
+
+\begin_layout Plain Layout
+
+INTEGER :: p
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- Compute the right-hand side 
+\end_layout
+
+\begin_layout Plain Layout
+
+! assuming the parameter REAL(mk), DIMENSION(2) :: lambda 
+\end_layout
+
+\begin_layout Plain Layout
+
+! is specified in the module myGlobalData 
+\end_layout
+
+\begin_layout Plain Layout
+
+DO p=1,vnp 
+\end_layout
+
+\begin_layout Plain Layout
+
+	dup(1,p) = -lambda(1) * up(1,p) dup(2,p) = -lambda(2) * up(2,p) 
+\end_layout
+
+\begin_layout Plain Layout
+
+END DO
+\end_layout
+
+\begin_layout Plain Layout
+
+!-- bogus return value MyRHS = 123456 
+\end_layout
+
+\begin_layout Plain Layout
+
+RETURN 
+\end_layout
+
+\begin_layout Plain Layout
+
+END FUNCTION MyRHS 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Particle remeshing
+\end_layout
+
+\begin_layout Subsection
+mesh-to-particle interpolation (ppm_interp_m2p) 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,field_wp,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+NOTE: there is no need to update the ghost layers (for field_wp) prior to
+ this call.
+ 
+\end_layout
+
+\begin_layout Subsection
+particle-to-mesh interpolation (ppm_interp_p2m)
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+CALL ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,field_wp,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+NOTE: there is no need to update the ghost particles (for xp) prior to this
+ call.
+ ppm_interp_p2m uses the ghost_put mapping routines internally.
+ 
+\end_layout
+
+\begin_layout Section
+Particle--particle interactions
+\end_layout
+
+\begin_layout Chapter
+I/O and visualisation
+\end_layout
+
+\begin_layout Section
+Parallel I/O
+\end_layout
+
+\begin_layout Standard
+ppm_io, ASCII, binary, etc...
+\end_layout
+
+\begin_layout Standard
+Not many formats are supported 
+\begin_inset Quotes eld
+\end_inset
+
+out-of-the-box
+\begin_inset Quotes erd
+\end_inset
+
+, but some are under development and should be available soon (e.g.
+ VTK, HDF5).
+\end_layout
+
+\begin_layout Section
+Tools
+\end_layout
+
+\begin_layout Standard
+[Under development] Visualisation of the domain decomposition, positions
+ of the particles (ghost and/or real particles) and of the ghost layers
+ (e.g.
+ see figure 
+\begin_inset CommandInset ref
+LatexCommand ref
+reference "fig:slab_domain_decomp"
+
+\end_inset
+
+).
+\end_layout
+
+\begin_layout Chapter
+Data structure for particles
+\end_layout
+
+\begin_layout Standard
+In the 
+\begin_inset Quotes eld
+\end_inset
+
+dcops
+\begin_inset Quotes erd
+\end_inset
+
+ branch of PPM, there is a derived type for particles (ppm_t_particles)
+ and a collection of routines that perform some standard/basic operations
+ on these particles.
+ 
+\end_layout
+
+\begin_layout Section
+Data
+\end_layout
+
+\begin_layout Itemize
+xp: array of positions
+\end_layout
+
+\begin_layout Itemize
+wp1: array of pointers to 1D properties
+\end_layout
+
+\begin_layout Itemize
+wp2: array of pointers to 2D properties
+\end_layout
+
+\begin_layout Itemize
+ops: container for DC operators
+\end_layout
+
+\begin_layout Itemize
+nvlist
+\end_layout
+
+\begin_layout Itemize
+vlist
+\end_layout
+
+\begin_layout Section
+Sizes
+\end_layout
+
+\begin_layout Itemize
+Npart
+\end_layout
+
+\begin_layout Itemize
+Mpart
+\end_layout
+
+\begin_layout Itemize
+nwp1: number of scalar properties
+\end_layout
+
+\begin_layout Itemize
+nwp2: number of vector properties
+\end_layout
+
+\begin_layout Section
+Variables and parameters
+\end_layout
+
+\begin_layout Subsection
+Neighbour lists
+\end_layout
+
+\begin_layout Itemize
+cutoff
+\end_layout
+
+\begin_layout Itemize
+skin
+\end_layout
+
+\begin_layout Itemize
+isymm
+\end_layout
+
+\begin_layout Subsection
+Adaptive particles
+\end_layout
+
+\begin_layout Itemize
+rcp_id: index where cutoff radii are stored
+\end_layout
+
+\begin_layout Itemize
+D_id: index where preferred distance D is stored
+\end_layout
+
+\begin_layout Itemize
+Dtilde_id: index where local monitor function is stored
+\end_layout
+
+\begin_layout Itemize
+adapt_wpid: index where the field on which the monitor function depends
+ is stored
+\end_layout
+
+\begin_layout Itemize
+adapt_wpgradid: index where the gradient of that field is stored
+\end_layout
+
+\begin_layout Itemize
+G_id: index where the anisotropy tensor is stored
+\end_layout
+
+\begin_layout Subsection
+Level sets
+\end_layout
+
+\begin_layout Itemize
+level_id: index where the level function is stored
+\end_layout
+
+\begin_layout Section
+Logical flags/markers
+\end_layout
+
+\begin_layout Itemize
+areinside: all particles are inside the computational box
+\end_layout
+
+\begin_layout Itemize
+active_topoid: active topology for the particles
+\end_layout
+
+\begin_layout Itemize
+ontopology: all particles are on their corresponding processor (ie.
+ Npart is correct)
+\end_layout
+
+\begin_layout Itemize
+neighlists: neighbour lists are up-to-date
+\end_layout
+
+\begin_layout Itemize
+adaptive: particles are adaptive particles
+\end_layout
+
+\begin_layout Itemize
+anisotropic: particles are anisotropic
+\end_layout
+
+\begin_layout Itemize
+level_set: particles carry a level set function
+\end_layout
+
+\begin_layout Itemize
+xp_g: ghost particles have been fetched
+\end_layout
+
+\begin_layout Itemize
+wp1_m: property is active (one-to-one mapping between property and real
+ particles)
+\end_layout
+
+\begin_layout Itemize
+wp1_g: ghost values are up-to-date for this property (assumes wp1_m = 1)
+\end_layout
+
+\begin_layout Itemize
+wp2_m: property is active (one-to-one mapping between property and real
+ particles)
+\end_layout
+
+\begin_layout Itemize
+wp2_g: ghost values are up-to-date for this property (assumes wp1_m = 1)
+\end_layout
+
+\begin_layout Subsection
+mapping_global
+\end_layout
+
+\begin_layout Subsection
+mapping_partial
+\end_layout
+
+\begin_layout Subsection
+mapping_ghosts
+\end_layout
+
+\begin_layout Itemize
+Needs particles to be mapped onto the topology
+\end_layout
+
+\begin_layout Itemize
+Update ghosts for the wp1 and wp2 flagged with _g = 0
+\end_layout
+
+\begin_layout Itemize
+Sets those with flags _g=1 back to _g = 0 (these fields will not have the
+ right size and should not be accessed again for ip>Npart)
+\end_layout
+
+\begin_layout Subsection
+allocate_wp1
+\end_layout
+
+\begin_layout Subsection
+allocate_wp2
+\end_layout
+
+\begin_layout Subsection
+updated_cutoff
+\end_layout
+
+\begin_layout Itemize
+If cutoff has increased, then assumes that ghosts have to be recomputed
+\end_layout
+
+\begin_layout Subsection
+updated_positions
+\end_layout
+
+\begin_layout Subsection
+updated_nb_part
+\end_layout
+
+\begin_layout Itemize
+number of particles has changed (from insertion or deletion)
+\end_layout
+
+\begin_layout Itemize
+we need to specify which properties have been updated and/or which haven't.
+ The latter should no longer be used.
+\end_layout
+
+\begin_layout Subsection
+neighlists
+\end_layout
+
+\begin_layout Section
+Usage examples
+\end_layout
+
+\begin_layout Standard
+Let's solve a PDE of the form
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+\frac{\partial w}{\partial t}=\frac{\partial^{2}w}{\partial x^{2}}-\frac{\partial w}{\partial y}+2\frac{\partial^{4}w}{\partial x\partial y^{3}}
+\]
+
+\end_inset
+
+in a periodic box.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "breaklines=true,language=Fortran"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+!Load necessary modules
+\end_layout
+
+\begin_layout Plain Layout
+
+USE ppm_module_particles
+\end_layout
+
+\begin_layout Plain Layout
+
+USE ppm_modules_dcops
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Create a topology based on geometry (ie.
+ define a simple box)
+\end_layout
+
+\begin_layout Plain Layout
+
+topoid = 0
+\end_layout
+
+\begin_layout Plain Layout
+
+call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+ 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Initialize N particles inside the computational domain
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian
+,topoid)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Move them around randomly by an amount of 0.15*h
+\end_layout
+
+\begin_layout Plain Layout
+
+allocate(disp(ndim,Particles%Npart)) 
+\end_layout
+
+\begin_layout Plain Layout
+
+call random_number(disp) 
+\end_layout
+
+\begin_layout Plain Layout
+
+disp=0.15_mk*Particles%h_avg*disp 
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_move(Particles,disp,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Put particles back into the box using periodic boundary conditions
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_apply_bc(Particles,topoid,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Define particles cutoff
+\end_layout
+
+\begin_layout Plain Layout
+
+Particles%cutoff = Particles%h_avg * 3.3_mk 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Global mapping
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_mapping_global(Particles,topoid,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Allocate and initialize one property on these particles (using an external
+ function f0_fun)
+\end_layout
+
+\begin_layout Plain Layout
+
+wp_id=0 
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_allocate_wps(Particles,wp_id,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+wp => Get_wps(Particles,wp_id); xp => Get_xp(Particles) 
+\end_layout
+
+\begin_layout Plain Layout
+
+FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim) 
+\end_layout
+
+\begin_layout Plain Layout
+
+wp => Set_wps(Particles,wp_id); xp => Set_xp(Particles,read_only=.TRUE.) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Get ghost particles and update values for wp
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_mapping_ghosts(Particles,topoid,info)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Compute neighbor lists
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_neighlists(Particles,topoid,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Allocate another field dwp
+\end_layout
+
+\begin_layout Plain Layout
+
+dwp_id=0 
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_allocate_wps(Particles,dwp_id,info)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Define a DC operator to compute the RHS of the PDE
+\end_layout
+
+\begin_layout Plain Layout
+
+nterms=3 
+\end_layout
+
+\begin_layout Plain Layout
+
+allocate(degree(nterms*ndim),coeffs(nterms),order(nterms)) 
+\end_layout
+
+\begin_layout Plain Layout
+
+degree = (/2,0, 0,1, 1,3/) 
+\end_layout
+
+\begin_layout Plain Layout
+
+coeffs = (/1.0_mk, -1._mk, 2._mk/) 
+\end_layout
+
+\begin_layout Plain Layout
+
+order = (/2, 2, 2/)
+\end_layout
+
+\begin_layout Plain Layout
+
+eta_id = 0 
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name
+="my_rhs") 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Compute the DC operator
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_dcop_compute(Particles,eta_id,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+DO WHILE (t < t_end)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	!Evaluate the DC operator using wp as input data and store the result in
+ dwp
+\end_layout
+
+\begin_layout Plain Layout
+
+	call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	!Update wp using a forward Euler scheme
+\end_layout
+
+\begin_layout Plain Layout
+
+	wp => Get_wps(Particles,wp_id)
+\end_layout
+
+\begin_layout Plain Layout
+
+	dwp => Get_wps(Particles,dwp_id)
+\end_layout
+
+\begin_layout Plain Layout
+
+	FORALL(ip=1:Particles%Npart)
+\end_layout
+
+\begin_layout Plain Layout
+
+		wp(ip) = wp(ip) + dt * dwp(ip)
+\end_layout
+
+\begin_layout Plain Layout
+
+	END FORALL
+\end_layout
+
+\begin_layout Plain Layout
+
+	wp => Set_wps(Particles,wp_id) 
+\end_layout
+
+\begin_layout Plain Layout
+
+	dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+	!Update ghost values for wp (without recomputing the ghost mappings)
+\end_layout
+
+\begin_layout Plain Layout
+
+	call particles_mapping_ghosts(Particles,topoid,info)
+\end_layout
+
+\begin_layout Plain Layout
+
+ENDDO
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Free memory from this DC operator
+\end_layout
+
+\begin_layout Plain Layout
+
+call particles_dcop_free(Particles,eta_id,info) 
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+!Free memory from the particles
+\end_layout
+
+\begin_layout Plain Layout
+
+call ppm_alloc_particles(Particles,N,ppm_param_dealloc,info)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Chapter
+Examples
+\end_layout
+
+\begin_layout Standard
+\begin_inset CommandInset bibtex
+LatexCommand bibtex
+bibfiles "tutorial"
+options "plain"
+
+\end_inset
+
+
+\end_layout
+
+\end_body
+\end_document
