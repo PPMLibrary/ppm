@@ -234,8 +234,8 @@ FUNCTION set_wpv(Particles,wpv_id,read_only,ghosts_ok)
 END FUNCTION set_wpv
 
 FUNCTION get_dcop(Particles,eta_id)
-    TYPE(ppm_t_particles)            :: Particles
-    INTEGER                          :: eta_id
+    TYPE(ppm_t_particles)              :: Particles
+    INTEGER                            :: eta_id
     REAL(prec),DIMENSION(:,:),POINTER  :: get_dcop
 
     IF (eta_id .LE. 0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
@@ -249,9 +249,9 @@ FUNCTION get_dcop(Particles,eta_id)
 END FUNCTION get_dcop
 
 FUNCTION set_dcop(Particles,eta_id)
-    TYPE(ppm_t_particles)            :: Particles
-    INTEGER                          :: eta_id
-    REAL(prec),DIMENSION(:,:),POINTER:: set_dcop
+    TYPE(ppm_t_particles)             :: Particles
+    INTEGER                           :: eta_id
+    REAL(prec),DIMENSION(:,:),POINTER :: set_dcop
 
     set_dcop => NULL()
 
@@ -1899,6 +1899,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDDO
 
     Particles%ontopology = .FALSE.
+    Particles%cartesian = .FALSE.
 
     CALL substop(caller,t0,info)
 
@@ -2190,6 +2191,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         MINVAL(Particles_1%nvlist_cross(1:Particles_1%Npart))
     Particles_1%nneighmax_cross = &
         MAXVAL(Particles_1%nvlist_cross(1:Particles_1%Npart))
+    Particles_1%Particles_cross => Particles_2
 
     IF (verbose) &
         write(*,*) 'computed xset neighlists'
@@ -2261,6 +2263,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     Particles%areinside=.FALSE.
     ! particles may no longer be on the right processor
     Particles%ontopology=.FALSE.
+    Particles%cartesian = .FALSE.
     ! note that there is still a one-to-one relationship between real particles
     !  and indices. They can still be used for computing stuff or for
     ! being written to output.
@@ -3187,7 +3190,7 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     INTEGER,                            INTENT(INOUT)   :: eta_id
     !!! id where the data is stored
     REAL(MK),DIMENSION(:),              INTENT(IN   )   :: coeffs
-    !!! multiplicative coefficients of each term in the linear combination of
+    !!! Multiplicative coefficients of each term in the linear combination of
     !!! differential operators
     INTEGER,DIMENSION(:),               INTENT(IN   )   :: degree
     !!! Degree of differentiation of each term

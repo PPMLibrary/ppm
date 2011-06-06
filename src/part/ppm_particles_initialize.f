@@ -372,6 +372,9 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     ELSE
         Particles%cutoff = 2.1_MK * Particles%h_avg
     ENDIF
+    IF (PRESENT(topoid)) THEN
+        Particles%active_topoid = topoid
+    ENDIF
 
     !-----------------------------------------------------------------------
     ! Finalize
