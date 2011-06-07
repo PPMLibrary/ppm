@@ -2447,12 +2447,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_updated_nb_part
 
-SUBROUTINE particles_updated_cutoff(Particles,info,cutoff_new)
+SUBROUTINE particles_updated_cutoff(Particles,info,cutoff)
     !-----------------------------------------------------------------
     !  routine to call when cutoffs have changed
     !-----------------------------------------------------------------
     !  Effects:
-    ! * update cutoff to maxval(rcp)
+    ! * update cutoff to maxval(rcp) or to cutoff (if present)
     ! * discard neighbour lists
     !  Assumptions:
     ! * Particles positions need to have been mapped onto the topology
@@ -2477,13 +2477,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
-    REAL(MK),OPTIONAL                                      :: cutoff_new
+    REAL(MK),OPTIONAL                                      :: cutoff
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
     !!!
     CHARACTER(LEN = ppm_char)             :: caller = 'particles_updated_cutoff'
-    REAL(MK)                              :: cutoff
+    REAL(MK)                              :: cutoff_new
     REAL(KIND(1.D0))                      :: t0
     INTEGER                               :: prop_id
     !-------------------------------------------------------------------------
@@ -2501,27 +2501,28 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         GOTO 9999
     ENDIF
 
-    IF (PRESENT(cutoff_new)) THEN
-        cutoff = cutoff_new
+    IF (PRESENT(cutoff)) THEN
+        cutoff_new = cutoff
+        IF (Particles%adaptive) THEN
+            Particles%wps(Particles%rcp_id)%vec = cutoff
+        ENDIF
     ELSE
         IF (Particles%adaptive) THEN
 
-            cutoff = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
+            cutoff_new = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
 
 #ifdef __MPI
-            CALL MPI_Allreduce(cutoff,cutoff,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(cutoff_new,cutoff_new,1,ppm_mpi_kind,&
+                MPI_MAX,ppm_comm,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(999,caller,   &
-                    &  'MPI_Allreduce failed',&
-                    &  __LINE__,info)
+                CALL ppm_error(999,caller,'MPI_Allreduce failed',__LINE__,info)
                 GOTO 9999
             ENDIF
 #endif
         ELSE
             info = ppm_error_error
-            CALL ppm_error(999,caller,   &
-                &  'need to provide new cutoff value',&
+            CALL ppm_error(999,caller,'need to provide new cutoff value',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
@@ -2530,7 +2531,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ! Update states
     ! If cutoff has increased, then ghosts may no longer be 
     ! up to date
-    IF (Particles%cutoff .LT. cutoff) THEN
+    IF (Particles%cutoff .LT. cutoff_new) THEN
         Particles%xp_g = 0
         !   ghosts values for some scalar arrays have been computed
         DO prop_id = 1,Particles%max_wpsid
@@ -2544,7 +2545,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ! neighbour lists have to be thrown away
     Particles%neighlists=.FALSE.
     !store new cutoff value
-    Particles%cutoff = cutoff
+    Particles%cutoff = cutoff_new
 
     !-----------------------------------------------------------------------
     ! Finalize
