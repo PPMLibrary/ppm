@@ -297,7 +297,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (.NOT.Particles%adaptive) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
-            &  'these particles have not been specified as adaptive',&
+            &  'These particles have not been declared as adaptive',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -306,7 +306,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (.NOT.Particles%areinside) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
-            &  'some particles may be outside the domain. Apply BC first',&
+            &  'Some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -315,7 +315,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (.NOT.Particles%neighlists) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
-            &  'neighbour lists are not up-to-date. Call neighlists first',&
+            &  'Neighbour lists are not up-to-date. Call neighlists first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -326,7 +326,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         IF (info.NE.0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
-                &  'allocation failed for opts',&
+                &  'Allocation failed for opts',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
@@ -366,6 +366,13 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             info = ppm_error_error
             CALL ppm_error(999,caller,   &
                 &  'need to define adapt_wpid first',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (Particles%wps_g(Particles%adapt_wpid).NE.1) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,   &
+                &  'need to get the ghosts for adapt_wpid',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF

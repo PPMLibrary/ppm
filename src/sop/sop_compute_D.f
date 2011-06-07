@@ -129,7 +129,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     INTEGER                                    :: i,ip,ineigh,iq
     CHARACTER(LEN = 64)                        :: myformat
     CHARACTER(LEN = 256)                       :: cbuf
-    CHARACTER(LEN = 256)    :: caller='sop_compute_D'
+    CHARACTER(LEN = 256)                       :: caller='sop_compute_D'
     REAL(KIND(1.D0))                           :: t0
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
@@ -149,7 +149,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:,:), POINTER      :: wp_grad => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: level => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad => NULL()
-
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
     REAL(MK)                                   :: min_D
@@ -206,7 +205,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     IF (.NOT.Particles%adaptive) THEN
         info = ppm_error_fatal
         CALL ppm_error(999,caller,   &
-            &  'these particles have not been specified as adaptive',&
+            &  'These particles have not been declared as adaptive',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -215,7 +214,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     IF (.NOT.Particles%areinside) THEN
         info = ppm_error_fatal
         CALL ppm_error(999,caller,   &
-            &  'some particles may be outside the domain. Apply BC first',&
+            &  'Some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -339,17 +338,16 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     IF (need_derivatives .AND. Particles%nneighmin.LT.opts%nneigh_critical) THEN
         xp => Get_xp(Particles)
         rcp => Get_wps(Particles,Particles%rcp_id)
-        WRITE(cbuf,*) 'Verlet lists should be up-to-date on entry. ',&
-            'Neighbours are needed to compute nn2'
+        WRITE(cbuf,*) 'Not enough neighbours'
         CALL ppm_write(ppm_rank,caller,cbuf,info)
         WRITE(cbuf,'(2(A,I5,2X))') 'nneigh_critical ',opts%nneigh_critical,&
             'nneigh_toobig ',opts%nneigh_toobig
         CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(cbuf,'(A,I5)') 'nneighmin: ',Particles%nneighmin
+        WRITE(cbuf,'(A,I5)') 'We have nneighmin = ',Particles%nneighmin
         CALL ppm_write(ppm_rank,caller,cbuf,info)
         WRITE(cbuf,*) 'Writing debug data to file fort.123'
         CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(myformat,'(I1,A)') ppm_dim+1,'(E30.16,2X),I4'
+        WRITE(myformat,'(A,I1,A)') '(',ppm_dim+1,'(E30.16,2X),I4)'
         DO ip=1,Particles%Npart
             WRITE(123,myformat) xp(1:ppm_dim,ip),rcp(ip),Particles%nvlist(ip)
         ENDDO
