@@ -116,9 +116,14 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
         Assert_Equal(info,0)
-        Assert_Equal(Particles%active_topoid,-1)
+        Assert_Equal(Particles%active_topoid,topoid)
         Assert_False(Particles%adaptive)
+        Assert_False(Particles%ontopology)
+#ifdef __MPI
         call MPI_Allreduce(Particles%Npart,npart_g,1,MPI_INTEGER,MPI_SUM,comm,info)
+#else
+        npart_g = Particles%Npart
+#endif
         Assert_Equal(npart_g,np_global)
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
         Assert_Equal(info,0)
@@ -139,7 +144,11 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
         Assert_False(Particles%adaptive)
+#ifdef __MPI
         call MPI_Allreduce(Particles%Npart,npart_g,1,MPI_INTEGER,MPI_SUM,comm,info)
+#else
+        npart_g = Particles%Npart
+#endif
         Assert_Equal(npart_g,np_global)
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
         Assert_Equal(info,0)
@@ -296,7 +305,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
         Assert_Equal(Particles%nneighmin,nneigh_theo)
 
-        call particles_updated_cutoff(Particles,info,cutoff_new=1.5_mk*Particles%h_avg)
+        call particles_updated_cutoff(Particles,info,cutoff=1.5_mk*Particles%h_avg)
         Assert_Equal(info,0)
         call particles_neighlists(Particles,topoid,info)
         Assert_Equal(info,0)
@@ -307,7 +316,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
         Assert_Equal(Particles%nneighmin,nneigh_theo)
 
-        call particles_updated_cutoff(Particles,info,cutoff_new=1.1_mk*Particles%h_avg)
+        call particles_updated_cutoff(Particles,info,cutoff=1.1_mk*Particles%h_avg)
         Assert_Equal(info,0)
         call particles_neighlists(Particles,topoid,info)
         Assert_Equal(info,0)

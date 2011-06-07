@@ -130,21 +130,11 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.,name='rcp')
         Assert_Equal(info,0)
-        wp_id = 0
-        call particles_allocate_wps(Particles,wp_id,info,zero=.true.,name='wp')
-        Assert_Equal(info,0)
-
-        xp => get_xp(Particles)
-        wp => get_wps(Particles,wp_id)
         rcp => get_wps(Particles,Particles%rcp_id)
-        Assert_True(associated(xp))
         FORALL(ip=1:Particles%Npart) 
-            wp(ip) = f0_fun(xp(1:ndim,ip)) 
             rcp(ip) = 1.9_mk*Particles%h_avg
         END FORALL
-        xp => set_xp(Particles,read_only=.true.)
         rcp => set_wps(Particles,Particles%rcp_id)
-        wp => set_wps(Particles,wp_id)
 
         call particles_updated_cutoff(Particles,info)
         Assert_Equal(info,0)
@@ -167,12 +157,28 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         opts%fuse_radius = 0.2_mk
         opts%attractive_radius0 = 0.4_mk
         opts%rcp_over_D = 2.4_mk
-        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-            D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
-        Assert_Equal(info,0)
+        !call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
+        !    D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+        !Assert_Equal(info,0)
 
         call particles_io_xyz(Particles,1,dirname,info)
         Assert_Equal(info,0)
+
+        call particles_allocate_wps(Particles,Particles%adapt_wpid,info,name='wp')
+        wp_id = Particles%adapt_wpid
+        Assert_Equal(info,0)
+        xp => get_xp(Particles)
+        wp => get_wps(Particles,wp_id)
+        FORALL(ip=1:Particles%Npart) 
+            wp(ip) = f0_fun(xp(1:ndim,ip)) 
+        END FORALL
+        xp => set_xp(Particles,read_only=.true.)
+        wp => set_wps(Particles,wp_id)
+
+        call particles_updated_cutoff(Particles,info,cutoff=4.5_mk*Particles%h_avg)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_neighlists(Particles,topoid,info)
+
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,D_needs_gradients=.true.)
         Assert_Equal(info,0)
         call particles_io_xyz(Particles,2,dirname,info)
