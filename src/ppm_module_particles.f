@@ -46,7 +46,7 @@ FUNCTION get_xp(Particles,with_ghosts)
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             IF (Particles%xp_g.EQ.1) THEN
-                get_xp => Particles%xp
+                get_xp => Particles%xp(1:ppm_dim,1:Particles%Mpart)
             ELSE
                 write(*,*) 'WARNING: tried to get xp with ghosts &
                     & when ghosts are not up-to-date'
@@ -58,7 +58,7 @@ FUNCTION get_xp(Particles,with_ghosts)
 
     !TODO (Check whether the following is ok)
     !get_xp => Particles%xp(1:Particles%Npart)
-    get_xp => Particles%xp
+    get_xp => Particles%xp(1:ppm_dim,1:Particles%Npart)
 
 END FUNCTION get_xp
 
@@ -108,7 +108,7 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
             IF (PRESENT(with_ghosts)) THEN
                 IF (with_ghosts) THEN
                     IF (Particles%wps_g(wps_id).EQ.1) THEN
-                        get_wps => Particles%wps(wps_id)%vec
+                        get_wps => Particles%wps(wps_id)%vec(1:Particles%Mpart)
                     ELSE
                         write(*,*) 'ERROR: tried to get wps with ghosts &
                             & when ghosts are not up-to-date. Returning NULL pointer'
@@ -118,7 +118,7 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
                     RETURN
                 ENDIF
             ENDIF
-            get_wps => Particles%wps(wps_id)%vec
+            get_wps => Particles%wps(wps_id)%vec(1:Particles%Npart)
             RETURN
         ENDIF
     ENDIF
@@ -163,7 +163,7 @@ END FUNCTION set_wps
 
 FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
     TYPE(ppm_t_particles)            :: Particles
-    INTEGER                          :: wpv_id
+    INTEGER                          :: wpv_id,lda
     LOGICAL,OPTIONAL                 :: with_ghosts
     REAL(prec),DIMENSION(:,:),POINTER:: get_wpv
 
@@ -174,12 +174,15 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
         RETURN
     ENDIF
 
+    lda = Particles%wpv_s(wpv_id)
+
     IF (wpv_id .LE. Particles%max_wpvid) THEN
         IF (Particles%wpv_m(wpv_id).EQ.1) THEN
             IF (PRESENT(with_ghosts)) THEN
                 IF (with_ghosts) THEN
                     IF (Particles%wpv_g(wpv_id).EQ.1) THEN
-                        get_wpv => Particles%wpv(wpv_id)%vec
+                        get_wpv => &
+                            Particles%wpv(wpv_id)%vec(1:lda,1:Particles%Mpart)
                     ELSE
                         write(*,*) 'ERROR: tried to get wpv with ghosts &
                             & when ghosts are not up-to-date. Returning NULL pointer'
@@ -189,7 +192,7 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
                     RETURN
                 ENDIF
             ENDIF
-            get_wpv => Particles%wpv(wpv_id)%vec
+            get_wpv => Particles%wpv(wpv_id)%vec(1:lda,1:Particles%Npart)
             RETURN
         ENDIF
     ENDIF
@@ -244,7 +247,7 @@ FUNCTION get_dcop(Particles,eta_id)
         RETURN
     ENDIF
 
-    get_dcop => Particles%ops%ker(eta_id)%vec
+    get_dcop => Particles%ops%ker(eta_id)%vec(:,1:Particles%Npart)
 
 END FUNCTION get_dcop
 
@@ -2885,9 +2888,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     IF (ghosts) ndim2 = ndim2 + 1
 
 #ifdef highprec_writeout
-    WRITE(myformat,'(A,I2,A)') '( ',ppm_dim+ndim2,'E24.13E3)'
+    WRITE(myformat,'(A,I4,A)') '( ',ppm_dim+ndim2,'E24.13E3)'
 #else
-    WRITE(myformat,'(A,I2,A)') '( ',ppm_dim+ndim2,'E17.7E3)'
+    WRITE(myformat,'(A,I4,A)') '( ',ppm_dim+ndim2,'E17.7E3)'
 #endif
 
     !====================================================================!
