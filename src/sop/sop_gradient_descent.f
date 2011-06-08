@@ -247,6 +247,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_apply_bc(Particles,topo_id,info)
         CALL particles_mapping_partial(Particles,topo_id,info,debug=.FALSE.)
         CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
+        CALL particles_neighlists(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_neighlists failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
 
 
         !Delete (fuse) particles that are too close to each other
@@ -256,24 +263,26 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !Particles%wps(Particles%D_id)%vec,Particles%Npart,Particles%nvlist,&
             !Particles%vlist,fuse_radius,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_fuse_particles failed.',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'sop_fuse_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         !Insert (spawn) new particles where needed
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_spawn_particles failed.',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'sop_spawn_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_updated_positions failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_updated_positions failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -283,25 +292,25 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_apply_bc failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         CALL particles_mapping_partial(Particles,topo_id,info,debug=.TRUE.)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_mapping_partial failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -313,9 +322,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
                 info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
             IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,&
-                    'particles_allocate_wps failed',info)
-                info = -1
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,&
+                    'particles_allocate_wps failed',__LINE__,info)
                 GOTO 9999
             ENDIF
 
@@ -620,7 +629,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
-        xp => Get_xp(Particles)
+        xp => Get_xp(Particles,with_ghosts=.TRUE.)
         DO ip=1,Particles%Mpart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
@@ -1604,7 +1613,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
-        xp => Get_xp(Particles)
+        xp => Get_xp(Particles,with_ghosts=.TRUE.)
         DO ip=1,Particles%Mpart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)

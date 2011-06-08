@@ -41,6 +41,10 @@ TYPE pnt_array_desc
     !!! differential ops are stored
     INTEGER                                        :: nterms
     !!! number of terms
+    LOGICAL                                        :: vector
+    !!! true if each term represents a component (ie. the result
+    !!! of the operator should be a vector field, like for the gradient)
+    !!! false if the components are added up (like for the divergence)
     CHARACTER(LEN=ppm_char)                        :: name
     !!! name of the vector-valued property
     LOGICAL                                        :: interp
