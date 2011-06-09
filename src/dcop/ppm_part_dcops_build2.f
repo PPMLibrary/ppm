@@ -325,7 +325,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     ENDIF
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-        nn_sq => Get_wps(Particles_cross,Particles_cross%nn_sq_id)
+        nn_sq => Get_wps(Particles_cross,Particles_cross%nn_sq_id,&
+            with_ghosts=.TRUE.)
         !!! nearest-neighbour distances within Particles_cross 
         !!! (they must have been already computed)
     ENDIF

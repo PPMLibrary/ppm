@@ -134,7 +134,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !nn2    => Get_wps(Particles_old,nn2_id)
     !xp_old => Get_xp(Particles_old)
     IF (opts%order_approx .GE. 0) THEN
-        ALLOCATE(order(ppm_dim),degree(ppm_dim))
+        ALLOCATE(order(1),degree(ppm_dim))
         order = opts%order_approx
         degree = 0
         CALL particles_dcop_define(Particles,Particles%eta_id,(/1._MK/),degree,&

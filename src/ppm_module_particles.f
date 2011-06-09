@@ -2832,8 +2832,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)                  :: cbuf,filename
-    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_io_xyz'
+    CHARACTER(LEN=ppm_char)                    :: cbuf
+    CHARACTER(LEN=2*ppm_char)                  :: filename
+    CHARACTER(LEN=ppm_char)                    :: caller = 'particles_io_xyz'
     CHARACTER(LEN=128)                         :: myformat
     INTEGER,DIMENSION(:),ALLOCATABLE           :: Npart_vec
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: propp_iproc
@@ -2968,18 +2969,19 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !====================================================================!
     ! open file
     IF (ppm_rank .EQ. 0) THEN
-        WRITE(filename,'(A,A,I6.6,A)') TRIM(writedir),'Particles_',itnum,'.xyz'
-        OPEN(23,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
+        WRITE(filename,'(A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),'Particles_',itnum,'.xyz'
+        OPEN(23,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
+            write(*,*) info, TRIM(ADJUSTL(filename))
             info = ppm_error_error
-            CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
+            CALL ppm_error(999,caller,'failed to open file 23',__LINE__,info)
             GOTO 9999
         ENDIF
-        WRITE(filename,'(A,A,I6.6,A)') TRIM(writedir),'Particles_',itnum,'.txt'
-        OPEN(24,FILE=filename,FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
+        WRITE(filename,'(A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),'Particles_',itnum,'.txt'
+        OPEN(24,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'failed to open file',__LINE__,info)
+            CALL ppm_error(999,caller,'failed to open file 24',__LINE__,info)
             GOTO 9999
         ENDIF
     ENDIF
@@ -3344,22 +3346,22 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
             &            'invalid approx order: must be positive',__LINE__,info)
         GOTO 9999
     ENDIF
-    IF (SIZE(degree).LT.ppm_dim*nterms) THEN
+    IF (SIZE(degree).NE.ppm_dim*nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'not enough terms in degree argument',__LINE__,info)
+            &            'wrong number of terms in degree argument',__LINE__,info)
         GOTO 9999
     ENDIF
-    IF (SIZE(order).LT.nterms) THEN
+    IF (SIZE(order).NE.nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'not enough terms in order argument',__LINE__,info)
+            &            'wrong number of terms in order argument',__LINE__,info)
         GOTO 9999
     ENDIF
-    IF (SIZE(coeffs).LT.nterms) THEN
+    IF (SIZE(coeffs).NE.nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'not enough terms in coeffs argument',__LINE__,info)
+            &            'wrong number of terms in coeffs argument',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -3701,12 +3703,11 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
             wps2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
         ENDIF
     ELSE
-        xp1 => Get_xp(Particles)
         nvlist => Particles%nvlist
         vlist => Particles%vlist
         sig = -1._mk !TODO FIXME
         IF (vector) THEN
-            wpv1 => Get_wpv(Particles%Particles_cross,from_id)
+            wpv1 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)
@@ -3717,7 +3718,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
             ENDDO
             wpv1 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
         ELSE
-            wps1 => Get_wps(Particles,from_id)
+            wps1 => Get_wps(Particles,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)

@@ -106,8 +106,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     Npart_global = PRODUCT(nijk_global)
     remaining_rows = MOD(nijk_global(ppm_dim),ppm_nproc)
 
-    !number of particles along x 
-    nijk(1:ppm_dim) = nijk_global(1:ppm_dim-1)
+    !number of particles along x and z
+    nijk(1:ppm_dim) = nijk_global(1:ppm_dim)
     !number of particles along y 
     nijk(2) = nijk_global(ppm_dim)/ppm_nproc
 
