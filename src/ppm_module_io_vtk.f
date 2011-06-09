@@ -291,11 +291,14 @@
            ! create a vertex for every point
            WRITE(iUnit,'(A)') "      <Verts>"
            ! connectivity
+           N = N - 1
 #define VTK_RANGE N
+#define VTK_RANGE_START 0
 #define VTK_NAME "connectivity"
 #define VTK_TYPE "Int32"
 #include "vtk/print_data_array.f"
            ! offsets
+           N = N + 1
 #define VTK_RANGE N
 #define VTK_NAME "offsets"
 #define VTK_TYPE "Int32"

@@ -27,7 +27,10 @@
 #endif
            WRITE(iUnit,'(A)') ">"
 #ifdef VTK_RANGE
-           DO i=1,VTK_RANGE
+#ifndef VTK_RANGE_START
+#define VTK_RANGE_START 1
+#endif
+           DO i=VTK_RANGE_START,VTK_RANGE
               WRITE(iUnit,'(I0)',advance='no') i
               IF (i .LT. VTK_RANGE) &
                    WRITE(iUnit,'(A)',advance='no') " "
@@ -72,6 +75,7 @@
 #undef VTK_NDIM
 #undef VTK_OFFSET
 #undef VTK_RANGE
+#undef VTK_RANGE_START
 #undef VTK_SCALAR
 #undef VTK_VECTOR
 #undef APPEND_ZEROS
