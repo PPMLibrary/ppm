@@ -560,7 +560,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         !Compute D on real particles
 
         xp => Get_xp(Particles)
-        wp_grad => Get_wpv(Particles,Particles%adapt_wpgradid)
         Dtilde => Get_wps(Particles,Particles%Dtilde_id)
 
         IF (PRESENT(wp_fun)) THEN
@@ -569,15 +568,16 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                     wp_grad_fun(xp(1:ppm_dim,ip)),opts)
             ENDDO
         ELSE
+            wp_grad => Get_wpv(Particles,Particles%adapt_wpgradid)
             wp => Get_wps(Particles,Particles%adapt_wpid)
             DO ip=1,Particles%Npart
                 Dtilde(ip) = D_fun(wp(ip),wp_grad(:,ip),opts)
             ENDDO
             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid,read_only=.TRUE.)
         ENDIF
 
         Dtilde => Set_wps(Particles,Particles%Dtilde_id)
-        wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
 
         ! Get ghosts for D_tilde
@@ -698,7 +698,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-write(*,*) 'ok 2.6'
     !---------------------------------------------------------------------!
     ! Update neighbour lists
     !---------------------------------------------------------------------!
@@ -709,7 +708,6 @@ write(*,*) 'ok 2.6'
         GOTO 9999
     ENDIF
 
-write(*,*) 'ok 2.7'
     !---------------------------------------------------------------------!
     ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
     !---------------------------------------------------------------------!
@@ -737,7 +735,6 @@ write(*,*) 'ok 2.7'
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 #endif
 
-write(*,*) 'ok 2.8'
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)
