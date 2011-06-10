@@ -540,7 +540,9 @@
       ! Rank of the child
       REAL(MK)                                        :: t0
 
-      CALL substart('GetCellCoor_Depth',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substart('GetCellCoor_Depth',t0,info)
+      ENDIF
 
 
       ! Set minimum and maximum physical extent of first cell,
@@ -602,7 +604,9 @@
           END DO
       END DO
 
-      CALL substop('GetCellCoor_Depth',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substop('GetCellCoor_Depth',t0,info)
+      ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getCellCoor_Depth_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -791,7 +795,9 @@
       INTEGER                         :: j
       REAL(MK)                        :: t0
 
-      CALL substart('setSubregions',t0,info)
+      IF(ppm_debug.GE.3)THEN
+          CALL substart('setSubregions',t0,info)
+      ENDIF
       
       ! Initialize minimum and maximum physical extents to be
       ! assigned to subregions.
@@ -814,7 +820,9 @@
           END DO
       END DO
 
-      CALL substop('setSubregions',t0,info)
+      IF(ppm_debug.GE.3)THEN
+          CALL substop('setSubregions',t0,info)
+      ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE setSubregions_s
 #elif __KIND == __DOUBLE_PRECISION

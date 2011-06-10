@@ -95,7 +95,7 @@
 
       ! skip if the buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
-        IF (ppm_debug .GT. 1) THEN
+        IF (ppm_debug .GT. 2) THEN
             CALL ppm_write(ppm_rank,'ppm_map_part_send',  &
      &          'Buffer is empty: skipping send!',info)
         ENDIF
@@ -219,7 +219,7 @@
          ! (only needed in the partial mapping).
          IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
              tag1 = 100
-             IF (ppm_debug .GT. 1) THEN
+             IF (ppm_debug .GT. 2) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'sending to ',   &
      &               ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend(k)
                  CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
@@ -231,7 +231,7 @@
              ! Compute nrecv(k) from precv(k)
              nrecv(k) = sbdim*precv(k)
 
-             IF (ppm_debug .GT. 1) THEN
+             IF (ppm_debug .GT. 2) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
      &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
                  CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
@@ -266,7 +266,7 @@
       DO k=2,ppm_nsendlist
          Mpart           = Mpart           + precv(k)
       ENDDO
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug .GT. 2) THEN
           WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
           CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
           WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',ppm_nrecvbuffer
@@ -332,7 +332,7 @@
       !-------------------------------------------------------------------------
       !  Debugging print of the number of sets in the buffer
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug .GT. 2) THEN
           WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
           CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
       ENDIF
@@ -359,7 +359,7 @@
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nsendlist
             qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
-            IF (ppm_debug .GT. 1) THEN
+            IF (ppm_debug .GT. 2) THEN
                 WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
             ENDIF
@@ -389,7 +389,7 @@
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nsendlist
             pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
-            IF (ppm_debug .GT. 1) THEN
+            IF (ppm_debug .GT. 2) THEN
                 WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
                 WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',precv(j-1),', bdim=',bdim
