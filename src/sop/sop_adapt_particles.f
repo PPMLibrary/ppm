@@ -63,7 +63,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !!! topology
     TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
     !!! particles
-    !REAL(MK),  DIMENSION(:,:),ALLOCATABLE,INTENT(  OUT)   :: eta
     TYPE(sop_t_opts),  POINTER,           INTENT(INOUT)   :: opts
     !!! options
     INTEGER,                              INTENT(  OUT)   :: info
@@ -558,19 +557,21 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     !destroy DC operators
     IF (ASSOCIATED(Particles%ops)) THEN
-        DO i=1,Particles%ops%max_opsid
-            IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
-                CALL particles_dcop_free(Particles,i,info)
+        CALL particles_dcop_deallocate(Particles,info)
+        !DO i=1,Particles%ops%max_opsid
+            !IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
+                !CALL particles_dcop_free(Particles,i,info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_dealloc,caller,   &
                         &    'freeing Particles%ops(i)',__LINE__,info)
                     GOTO 9999
                 ENDIF
-            ENDIF
-        ENDDO
-        Particles%ops%max_opsid = 0
-        Particles%ops%nb_ops = 0
+            !ENDIF
+        !ENDDO
+        !Particles%ops%max_opsid = 0
+        !Particles%ops%nb_ops = 0
+        !NULLIFY(Particles%ops)
     ENDIF
 
     Particles_old => Particles
@@ -844,6 +845,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         !info = -1
         !GOTO 9999
     !ENDIF
+
+    Particles%Particles_cross => NULL()
 
     CALL ppm_alloc_particles(Particles_old,Particles%Npart,&
         ppm_param_dealloc,info)

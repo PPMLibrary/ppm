@@ -27,7 +27,7 @@ IMPLICIT NONE
     INTEGER, PARAMETER :: ppm_param_part_init_random = 2
 
 !for debugging
-LOGICAL,PRIVATE           :: verbose = .TRUE.
+LOGICAL,PRIVATE           :: verbose = .FALSE.
 
 
 !----------------------------------------------------------------------
@@ -38,27 +38,25 @@ LOGICAL,PRIVATE           :: verbose = .TRUE.
 
 CONTAINS
 
-FUNCTION get_xp(Particles,with_ghosts)
+FUNCTION Get_xp(Particles,with_ghosts)
     TYPE(ppm_t_particles)            :: Particles
     LOGICAL,OPTIONAL                 :: with_ghosts
-    REAL(prec),DIMENSION(:,:),POINTER:: get_xp
+    REAL(prec),DIMENSION(:,:),POINTER:: Get_xp
 
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             IF (Particles%xp_g.EQ.1) THEN
-                get_xp => Particles%xp(1:ppm_dim,1:Particles%Mpart)
+                Get_xp => Particles%xp(1:ppm_dim,1:Particles%Mpart)
             ELSE
                 write(*,*) 'WARNING: tried to get xp with ghosts &
                     & when ghosts are not up-to-date'
-                get_xp => NULL()
+                Get_xp => NULL()
             ENDIF
             RETURN
         ENDIF
     ENDIF
 
-    !TODO (Check whether the following is ok)
-    !get_xp => Particles%xp(1:Particles%Npart)
-    get_xp => Particles%xp(1:ppm_dim,1:Particles%Npart)
+    Get_xp => Particles%xp(1:ppm_dim,1:Particles%Npart)
 
 END FUNCTION get_xp
 
@@ -171,6 +169,7 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
         write(*,*) 'ERROR: failed to get wpv for property &
             & wpv_id = ',wpv_id
         get_wpv => NULL()
+        stop
         RETURN
     ENDIF
 
@@ -373,7 +372,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         &          'Deallocating ops',__LINE__,info)
                     GOTO 9999
                 ENDIF
-                NULLIFY(Particles%ops)
             ENDIF
             DEALLOCATE(Particles,stat=info)
             NULLIFY(Particles)
@@ -476,12 +474,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 
     ENDIF
+
     !-------------------------------------------------------------------------
-    !  Return
+    !  Finalize
     !-------------------------------------------------------------------------
-    9999 CONTINUE
     CALL substop(caller,t0,info)
-    RETURN
+
+    9999 CONTINUE
+
 END SUBROUTINE ppm_alloc_particles
 
 SUBROUTINE particles_dcop_deallocate(Particles,info)
@@ -518,49 +518,51 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     CALL substart(caller,t0,info)
 
-    IF (ASSOCIATED(Particles%ops%desc)) THEN
-        write(*,*) 'ops has ',Particles%ops%nb_ops,' operators'
-        write(*,*) 'max_opsid = ',Particles%ops%max_opsid
-        DO i=1,Particles%ops%max_opsid
-            IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
-                CALL particles_dcop_free(Particles,i,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_dealloc,caller,   &
-                        &    'freeing Particles%ops(i)',__LINE__,info)
-                    GOTO 9999
+    IF (ASSOCIATED(Particles%ops)) THEN
+        IF (ASSOCIATED(Particles%ops%desc)) THEN
+            DO i=1,Particles%ops%max_opsid
+                IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
+                    CALL particles_dcop_free(Particles,i,info)
+                    IF (info .NE. 0) THEN
+                        info = ppm_error_error
+                        CALL ppm_error(ppm_err_dealloc,caller,   &
+                            &    'freeing Particles%ops%desc(i)',__LINE__,info)
+                        GOTO 9999
+                    ENDIF
                 ENDIF
+            ENDDO
+            DEALLOCATE(Particles%ops%desc,STAT=info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_dealloc,caller,   &
+                    &          'Deallocating Particles%ops%desc',__LINE__,info)
+                GOTO 9999
             ENDIF
-        ENDDO
-        DEALLOCATE(Particles%ops%desc,STAT=info)
+            DEALLOCATE(Particles%ops%ker,STAT=info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_dealloc,caller,   &
+                    &          'Deallocating Particles%ops%ker',__LINE__,info)
+                GOTO 9999
+            ENDIF
+            NULLIFY(Particles%ops%ker,Particles%ops%desc)
+        ENDIF
+        DEALLOCATE(Particles%ops,STAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,   &
-                &          'Deallocating Particles%ops%desc',__LINE__,info)
+                &          'Deallocating Particles%ops',__LINE__,info)
             GOTO 9999
         ENDIF
-        DEALLOCATE(Particles%ops%ker,STAT=info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,caller,   &
-                &          'Deallocating Particles%ops%ker',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        NULLIFY(Particles%ops%ker,Particles%ops%desc)
-    ENDIF
-    DEALLOCATE(Particles%ops,STAT=info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_dealloc,caller,   &
-            &          'Deallocating Particles%ops',__LINE__,info)
-        GOTO 9999
+        NULLIFY(Particles%ops)
     ENDIF
     !-------------------------------------------------------------------------
-    !  Return
+    !  Finalize
     !-------------------------------------------------------------------------
-    9999 CONTINUE
     CALL substop(caller,t0,info)
-    RETURN
+
+    9999 CONTINUE
+
 END SUBROUTINE particles_dcop_deallocate
 
 FUNCTION particles_dflt_pptname(i,ndim)
@@ -828,6 +830,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             write(*,*) 'Allocated wps with size=',ldc(1),&
             ' id=',wp_id, 'name = ', TRIM(ADJUSTL(Particles%wps(wp_id)%name))
     ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Finalize
+    !-----------------------------------------------------------------------
+    CALL substop(caller,t0,info)
 
     9999 CONTINUE
 
@@ -1913,6 +1920,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-----------------------------------------------------------------
     CALL particles_have_moved(Particles,info)
 
+    !-----------------------------------------------------------------
+    !  Finalize
+    !-----------------------------------------------------------------
     CALL substop(caller,t0,info)
 
     9999 CONTINUE ! jump here upon error
@@ -1975,6 +1985,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     Particles%ontopology = .FALSE.
     Particles%cartesian = .FALSE.
 
+    !-----------------------------------------------------------------
+    !  Finalize
+    !-----------------------------------------------------------------
     CALL substop(caller,t0,info)
 
     9999 CONTINUE ! jump here upon error
@@ -2970,9 +2983,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     ! open file
     IF (ppm_rank .EQ. 0) THEN
         WRITE(filename,'(A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),'Particles_',itnum,'.xyz'
-        OPEN(23,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
+        OPEN(23,FILE=TRIM(ADJUSTL(filename)),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
-            write(*,*) info, TRIM(ADJUSTL(filename))
             info = ppm_error_error
             CALL ppm_error(999,caller,'failed to open file 23',__LINE__,info)
             GOTO 9999
@@ -3106,7 +3118,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             ENDDO
             ndim2= ppm_dim+1
             DO i=1,nb_wps
-                WRITE (24, '(I2,A,A)') ndim2,': ',TRIM(ADJUSTL(Particles%wps(wps_l(i))%name))
+                WRITE (24, '(I2,A,A)') ndim2,': ',&
+                    TRIM(ADJUSTL(Particles%wps(wps_l(i))%name))
                 ndim2 = ndim2 + 1
             ENDDO
             DO i=1,nb_wpv
@@ -3137,8 +3150,6 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             CALL ppm_error(ppm_err_alloc,caller,'failed to close file',__LINE__,info)
             GOTO 9999
         ENDIF
-
-        DEALLOCATE(Npart_vec)
 
     ELSE
 
@@ -3210,6 +3221,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
         DEALLOCATE(propp_iproc)
     ENDIF
+
+    DEALLOCATE(Npart_vec)
+
 
     IF (ppm_rank.EQ.0) THEN
         WRITE(cbuf,*) 'Wrote ',ip,' particles to file'
@@ -3371,12 +3385,14 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
             eta_id = eta_id + 1
         ENDDO
     ELSE
-        CALL particles_dcop_free(Particles,eta_id,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'failed to free Particles%ops',__LINE__,info)
-            GOTO 9999
+        IF (ASSOCIATED(Particles%ops%desc(eta_id)%degree)) THEN
+            CALL particles_dcop_free(Particles,eta_id,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,   &
+                    &            'failed to free Particles%ops',__LINE__,info)
+                GOTO 9999
+            ENDIF
         ENDIF
     ENDIF
 
@@ -3429,8 +3445,8 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
 
     !update states
     Particles%ops%nb_ops = Particles%ops%nb_ops+1
-    IF (Particles%ops%nb_ops .GT. Particles%ops%max_opsid) &
-        Particles%ops%max_opsid = Particles%ops%max_opsid+1
+    IF (eta_id .GT. Particles%ops%max_opsid) &
+        Particles%ops%max_opsid = eta_id
 
     !-------------------------------------------------------------------------
     ! Finalize
@@ -3593,8 +3609,6 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
     INTEGER                                    :: ip,iq,ineigh,lda
     REAL(KIND(1.D0))                           :: t0
-    REAL(MK),DIMENSION(:,:),POINTER            :: xp1 => NULL()
-    REAL(MK),DIMENSION(:,:),POINTER            :: xp2 => NULL()
     REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
     REAL(MK),DIMENSION(:),  POINTER            :: wps1 => NULL(),wps2=>NULL()
     REAL(MK),DIMENSION(:,:),POINTER            :: wpv1 => NULL(),wpv2=>NULL()
