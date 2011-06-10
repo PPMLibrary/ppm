@@ -132,6 +132,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         coeffs2 = (/0.1_mk, -1.0_mk, -3.8_mk, -3.3_mk, 0.001_mk, 10._mk, 4._mk/)
         order2=  (/2,       2,       2,        2,      1,        2,      1/)
 
+        call particles_dcop_deallocate(Particles,info) !this should do nothing
+        Assert_Equal(info,0)
+
         eta_id = 0
         call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test")
         Assert_Equal(info,0)
@@ -150,6 +153,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal_Within(sum(abs(Particles%ops%desc(eta2_id)%coeffs-coeffs2)),0,1e-5)
         Assert_Equal(Particles%ops%nb_ops,2)
 
+!free the first operator and reallocate a new one
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
         Assert_Equal(Particles%ops%nb_ops,1)
@@ -168,6 +172,19 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
         call particles_dcop_free(Particles,eta2_id,info)
         Assert_Equal(info,0)
+        
+!deallocate all operators when there are no operators defined
+        call particles_dcop_deallocate(Particles,info)
+        Assert_Equal(info,0)
+!defining an operator with an id that was not used before
+        eta_id = 3
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test1")
+        Assert_Equal(info,0)
+        Assert_Equal(eta_id,3)
+!redefining an operator with an id that was already used before (overwritting)
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test1")
+        Assert_Equal(info,0)
+        Assert_Equal(eta_id,3)
 
         deallocate(degree,coeffs,order,degree2,coeffs2,order2)
     end test
@@ -185,7 +202,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Particles%cutoff = Particles%h_avg * 3.3_mk
         call particles_mapping_global(Particles,topoid,info)
         wp_id=0
-        call particles_allocate_wps(Particles,wp_id,info)
+        call particles_allocate_wps(Particles,wp_id,info,name='wp')
         wp => Get_wps(Particles,wp_id)
         xp => Get_xp(Particles)
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
@@ -194,7 +211,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_neighlists(Particles,topoid,info)
         dwp_id=0
-        call particles_allocate_wps(Particles,dwp_id,info)
+        call particles_allocate_wps(Particles,dwp_id,info,name='dwp')
 
 !check d2dx2
         nterms=1
@@ -330,6 +347,51 @@ write(*,*) 'error is ', err/linf
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
 
+!check vector-valued operators (like the gradient)
+        nterms= ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/1,1,   4,1/)
+        else 
+               degree =  (/2,0,0, 1,2,0, 0,1,2/)
+        endif
+        coeffs = 1.0_mk
+        coeffs(2) = 4.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="test")
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        dwp => Get_wps(Particles,dwp_id)
+        xp => Get_xp(Particles)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles%Npart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            write(103,'(5(E20.10,2X))') xp(1:ndim,ip),wp(ip),exact,dwp(ip)
+            err = MAX(err,abs(dwp(ip) - exact))
+            linf = MAX(linf,abs(exact))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
     end test
 
     test compute_operator_interp
@@ -353,7 +415,7 @@ write(*,*) 'error is ', err/linf
         call particles_mapping_global(Particles2,topoid,info)
 
         wp_id=0
-        call particles_allocate_wps(Particles,wp_id,info)
+        call particles_allocate_wps(Particles,wp_id,info,name='wp')
         wp => Get_wps(Particles,wp_id)
         xp => Get_xp(Particles)
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
@@ -363,9 +425,9 @@ write(*,*) 'error is ', err/linf
         call particles_neighlists(Particles,topoid,info)
 
 !compute nearest-neigbour distances
-        call particles_allocate_wps(Particles,Particles%nn_sq_id,info)
+        call particles_allocate_wps(Particles,Particles%nn_sq_id,info,name='nn_sq')
         wp => Get_wps(Particles,Particles%nn_sq_id)
-        xp => Get_xp(Particles)
+        xp => Get_xp(Particles,with_ghosts=.true.)
          forall(ip=1:Particles%Npart)  wp(ip) = huge(1._mk)
         do ip=1,Particles%Npart
             do ineigh=1,Particles%nvlist(ip)
@@ -381,7 +443,7 @@ write(*,*) 'error is ', err/linf
         call particles_neighlists_xset(Particles2,Particles,topoid,info)
 
         dwp_id=0
-        call particles_allocate_wps(Particles2,dwp_id,info)
+        call particles_allocate_wps(Particles2,dwp_id,info,name='dwp')
 
 !check data interpolation
         nterms=1
