@@ -18,57 +18,57 @@ IMPLICIT NONE
 #include "ppm_define.h"
 
 #if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
+INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
+INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
 #endif
 
     INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
     INTEGER, PARAMETER :: ppm_param_part_init_random = 2
 
-!for debugging
-LOGICAL,PRIVATE           :: verbose = .FALSE.
 
+    !----------------------------------------------------------------------
+    ! Private variables for the module
+    !----------------------------------------------------------------------
+    !for debugging
+    LOGICAL,PRIVATE           :: verbose = .FALSE.
 
-!----------------------------------------------------------------------
-! Private variables for the module
-!----------------------------------------------------------------------
     INTEGER , PRIVATE, DIMENSION(3)    :: ldc
     !!! Number of elements in all dimensions for allocation
 
 CONTAINS
 
-FUNCTION Get_xp(Particles,with_ghosts)
+FUNCTION get_xp(Particles,with_ghosts)
     TYPE(ppm_t_particles)            :: Particles
     LOGICAL,OPTIONAL                 :: with_ghosts
-    REAL(prec),DIMENSION(:,:),POINTER:: Get_xp
+    REAL(prec),DIMENSION(:,:),POINTER:: get_xp
 
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             IF (Particles%xp_g.EQ.1) THEN
-                Get_xp => Particles%xp(1:ppm_dim,1:Particles%Mpart)
+                get_xp => Particles%xp(1:ppm_dim,1:Particles%Mpart)
             ELSE
                 write(*,*) 'WARNING: tried to get xp with ghosts &
                     & when ghosts are not up-to-date'
-                Get_xp => NULL()
+                get_xp => NULL()
             ENDIF
             RETURN
         ENDIF
     ENDIF
 
-    Get_xp => Particles%xp(1:ppm_dim,1:Particles%Npart)
+    get_xp => Particles%xp(1:ppm_dim,1:Particles%Npart)
 
 END FUNCTION get_xp
 
-FUNCTION Set_xp(Particles,read_only,ghosts_ok)
+FUNCTION set_xp(Particles,read_only,ghosts_ok)
     TYPE(ppm_t_particles)            :: Particles
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
-    REAL(prec),DIMENSION(:,:),POINTER:: Set_xp
+    REAL(prec),DIMENSION(:,:),POINTER:: set_xp
 
     IF (PRESENT(ghosts_ok)) THEN
         IF (ghosts_ok) THEN
-            Set_xp => NULL()
+            set_xp => NULL()
             RETURN
         ENDIF
     ENDIF
@@ -84,9 +84,9 @@ FUNCTION Set_xp(Particles,read_only,ghosts_ok)
             Particles%xp_g = 0
         ENDIF
     ENDIF
-    Set_xp => NULL()
+    set_xp => NULL()
 
-END FUNCTION Set_xp
+END FUNCTION set_xp
 
 FUNCTION get_wps(Particles,wps_id,with_ghosts)
     TYPE(ppm_t_particles)            :: Particles
@@ -259,8 +259,10 @@ FUNCTION set_dcop(Particles,eta_id)
 
 END FUNCTION set_dcop
 
-SUBROUTINE ppm_alloc_particles(Particles,Npart,iopt,info)
+SUBROUTINE ppm_alloc_particles(Particles,Npart,iopt,info,name)
+
     !!! (Re)allocates the memory of ppm_t_particles data type
+
     !-------------------------------------------------------------------------
     !  Includes
     !-------------------------------------------------------------------------
@@ -289,6 +291,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     INTEGER,                         INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
     !-------------------------------------------------------------------------
+    !  Optional arguments
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN=*) , OPTIONAL                     :: name
+    !!! give a name to this Particle set
+    !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
 
@@ -304,8 +311,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Check arguments
     !-------------------------------------------------------------------------
-    ! maybe add some sanity checks later
-
 
     !-------------------------------------------------------------------------
     !  Check the allocation type
@@ -423,6 +428,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%Mpart = Npart
         Particles%xp_g = 0
 
+        ! Give a default name to this Particle set
+        IF (PRESENT(name)) THEN
+            Particles%name = name
+        ELSE
+            Particles%name = particles_dflt_partname()
+        ENDIF
         ! No properties defined yet
         Particles%nwps = 0
         Particles%nwpv = 0
@@ -485,7 +496,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE ppm_alloc_particles
 
 SUBROUTINE particles_dcop_deallocate(Particles,info)
+
     !!! Deallocates the memory of ppm_t_operator data type
+
     !-------------------------------------------------------------------------
     !  Includes
     !-------------------------------------------------------------------------
@@ -565,7 +578,23 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_dcop_deallocate
 
+FUNCTION particles_dflt_partname(i)
+    !!! Default name for a set of particles
+    CHARACTER(LEN=ppm_char)   :: particles_dflt_partname
+    INTEGER,OPTIONAL          :: i
+    CHARACTER(LEN=ppm_char)   :: buf
+
+    IF (PRESENT(i)) THEN
+        WRITE(buf,*) i
+        WRITE(particles_dflt_partname,*) 'Particles_',ADJUSTL(TRIM(buf))
+    ELSE
+        WRITE(particles_dflt_partname,*) 'Particles'
+    ENDIF
+    RETURN
+END FUNCTION
+
 FUNCTION particles_dflt_pptname(i,ndim)
+    !!! Default name for a scalar or vector property
     CHARACTER(LEN=ppm_char)   :: particles_dflt_pptname
     INTEGER                   :: i,ndim
     CHARACTER(LEN=ppm_char)   :: buf
@@ -580,6 +609,7 @@ FUNCTION particles_dflt_pptname(i,ndim)
 END FUNCTION
 
 FUNCTION particles_dflt_opname(i)
+    !!! Default name for an operator
     CHARACTER(LEN=ppm_char)   :: particles_dflt_opname
     INTEGER                   :: i
     CHARACTER(LEN=ppm_char)   :: buf
@@ -592,6 +622,13 @@ END FUNCTION
 
 SUBROUTINE particles_allocate_wps(Particles,wp_id,info,with_ghosts,&
         zero,iopt,name)
+
+    !!! Allocate a scalar property in this Particles data structure
+    !!! If _wp_id_ is zero, a new id is generated
+    !!! otherwise, the property wp_id is overwritten
+    !!! The array can be of size Npart or Mpart (if _with_ghosts_ is
+    !!! true) and initialized to zero (if _zero_ is true) or not.
+
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -622,7 +659,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     LOGICAL , OPTIONAL                                     :: zero
     !!! if true, then initialise the array to zero
     CHARACTER(LEN=*) , OPTIONAL                     :: name
-    !!! give a name to this vector-valued property
+    !!! give a name to this scalar-valued property
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -843,6 +880,13 @@ END SUBROUTINE particles_allocate_wps
 
 SUBROUTINE particles_allocate_wpv(Particles,wp_id,lda,info, & 
         with_ghosts,zero,iopt,name)
+
+    !!! Allocate a vector valued property in this Particles data structure
+    !!! If _wp_id_ is zero, a new id is generated
+    !!! otherwise, the property wp_id is overwritten
+    !!! The array can be of size Npart or Mpart (if _with_ghosts_ is
+    !!! true) and initialized to zero (if _zero_ is true) or not.
+
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1091,13 +1135,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_allocate_wpv
 
 SUBROUTINE particles_mapping_global(Particles,topoid,info)
-    !-----------------------------------------------------------------
-    !  Global mapping for particles
-    !-----------------------------------------------------------------
-    !  Assumptions:
-    ! * All the particles have to be inside the domain
-    !   (otherwise -> "unassigned particle error")
-    !
+
+    !!!  Global mapping for particles
+    !!!  Assumptions:
+    !!! * All the particles have to be inside the domain
+    !!!   (otherwise -> "unassigned particle error")
+
     USE ppm_module_map
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -1267,13 +1310,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_mapping_global
 
 SUBROUTINE particles_mapping_partial(Particles,topoid,info,debug)
-    !-----------------------------------------------------------------
-    !  Partial mapping for particles
-    !-----------------------------------------------------------------
-    !  Assumptions:
-    ! * All the particles have to be inside the domain
-    !   (otherwise -> "unassigned particle error")
-    !
+
+    !!!  Partial mapping for particles
+    !!!  Assumptions:
+    !!! * All the particles have to be inside the domain
+    !!!   (otherwise -> "unassigned particle error")
+
     USE ppm_module_map
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -1464,12 +1506,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_mapping_partial
 
 SUBROUTINE particles_mapping_ghosts(Particles,topoid,info,debug)
-    !-----------------------------------------------------------------
-    !  Ghost mapping for particles
-    !-----------------------------------------------------------------
-    !  Assumptions:
-    ! * Particles positions need to have been mapped onto the topology
-    !
+
+    !!!  Ghost mapping for particles
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!!
     USE ppm_module_data, ONLY: ppm_topo
     USE ppm_module_map
 #if   __KIND == __SINGLE_PRECISION
@@ -1710,12 +1751,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_mapping_ghosts
 
 SUBROUTINE particles_apply_bc(Particles,topoid,info)
-    !-----------------------------------------------------------------
-    !  Apply boundary conditions for particles positions
-    !-----------------------------------------------------------------
-    !  Assumptions:
-    ! * Particles positions need to have been mapped onto the topology
-    !
+
+    !!!  Apply boundary conditions for particles positions
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+
     USE ppm_module_data, ONLY: ppm_topo,ppm_rank
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -1868,9 +1908,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_apply_bc
 
 SUBROUTINE particles_move(Particles,disp,info)
-    !-----------------------------------------------------------------
-    !  Move all particles according to some displacement field
-    !-----------------------------------------------------------------
+
+    !!!  Move all particles according to some displacement field
+    !!!  The size of disp must match the size of xp
+
     USE ppm_module_data, ONLY: ppm_topo,ppm_rank
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -1910,10 +1951,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
 
-    xp => Particles%xp
+    xp => get_xp(Particles)
     FORALL (ip=1:Particles%Npart) &
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
-    xp => NULL()
+    xp => set_xp(Particles)
 
     !-----------------------------------------------------------------
     !  update states
@@ -2982,14 +3023,16 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !====================================================================!
     ! open file
     IF (ppm_rank .EQ. 0) THEN
-        WRITE(filename,'(A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),'Particles_',itnum,'.xyz'
+        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+            TRIM(ADJUSTL(Particles%name)),'_',itnum,'.xyz'
         OPEN(23,FILE=TRIM(ADJUSTL(filename)),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(999,caller,'failed to open file 23',__LINE__,info)
             GOTO 9999
         ENDIF
-        WRITE(filename,'(A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),'Particles_',itnum,'.txt'
+        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+            TRIM(ADJUSTL(Particles%name)),'_',itnum,'.txt'
         OPEN(24,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -3000,9 +3043,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
     !====================================================================!
     ! rank 0 collects data and writes out sequentially
-    !FIXME these lines should not need to be commented
-    !had to do this otherwise ifort complains at run time
-    !when all the debug flags are turned on...
+    ! FIXME
     ALLOCATE(Npart_vec(ppm_nproc),STAT=info)
     IF (info .NE. 0) THEN
         info = ppm_error_error

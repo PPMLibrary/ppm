@@ -18,6 +18,7 @@ ppm_define.h
 *.dat
 *.o
 *.mod
+fort.*
 
 # /libppm/src/interpolate/test/
 src/interpolate/test/ppm_test_interp_m2p
