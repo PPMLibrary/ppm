@@ -258,7 +258,7 @@
                           IF(red_idx .LE. red_clist%n_real_p)   THEN
                               ! Store neighbor particle in verlet list of
                               ! reference particle
-                              nvlist(red_idx)   = nvlist(blue_idx)   + 1
+                              nvlist(red_idx)   = nvlist(red_idx)   + 1
 #if __ACTION == __GET
                               vlist(nvlist(red_idx), red_idx) = blue_idx
 #endif
