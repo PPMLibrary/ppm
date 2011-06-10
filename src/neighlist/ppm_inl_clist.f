@@ -219,7 +219,7 @@
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
       !-------------------------------------------------------------------------
-      clist%max_depth = getMaxDepth(cutoff, clist, whole_domain)
+      clist%max_depth = MAX(getMaxDepth(cutoff, clist, whole_domain),1)
 
       !-------------------------------------------------------------------------
       !  Allocate rc_borders array, in order to store borders on rank
@@ -1483,7 +1483,7 @@
 
       rc_min = cutoff(clist%rank(size(clist%rank)))
       minSideLength = getMinimumSideLength(domain)
-      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2.0))
+      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2._MK))
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMaxDepth_s
 #elif __KIND == __DOUBLE_PRECISION
