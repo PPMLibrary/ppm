@@ -245,8 +245,15 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ! There MAY be a better way of doing this...
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
-        CALL particles_mapping_partial(Particles,topo_id,info,debug=.FALSE.)
-        CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
+        CALL particles_mapping_partial(Particles,topo_id,info)
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
+        CALL particles_neighlists(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_neighlists failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
 
 
         !Delete (fuse) particles that are too close to each other
@@ -256,24 +263,26 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !Particles%wps(Particles%D_id)%vec,Particles%Npart,Particles%nvlist,&
             !Particles%vlist,fuse_radius,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_fuse_particles failed.',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'sop_fuse_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         !Insert (spawn) new particles where needed
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_spawn_particles failed.',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'sop_spawn_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_updated_positions failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_updated_positions failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -283,25 +292,25 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_apply_bc failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
-        CALL particles_mapping_partial(Particles,topo_id,info,debug=.TRUE.)
+        CALL particles_mapping_partial(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_mapping_partial failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
-        CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'particles_apply_bc failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(999,caller,&
+                'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -313,62 +322,56 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
                 info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
             IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,&
-                    'particles_allocate_wps failed',info)
-                info = -1
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,&
+                    'particles_allocate_wps failed',__LINE__,info)
                 GOTO 9999
             ENDIF
 
             !---------------------------------------------------------------------!
             ! Compute D_tilde
             !---------------------------------------------------------------------!
-            !TODO WE dont need to go to Mpart here
-            ! I dont think we need the ghosts until the next
-            ! ghost update
 
             xp => Get_xp(Particles)
-            Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.FALSE.)
+            Dtilde => Get_wps(Particles,Particles%Dtilde_id)
             IF (PRESENT(wp_grad_fun)) THEN
-                DO ip=1,Particles%Mpart
+                DO ip=1,Particles%Npart
                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),&
                         wp_grad_fun(xp(1:ppm_dim,ip)),opts)
                     Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
                 ENDDO
             ELSE
-                DO ip=1,Particles%Mpart
+                DO ip=1,Particles%Npart
                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
                     Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
                 ENDDO
             ENDIF
-            Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.FALSE.,&
-                ghosts_ok=.TRUE.)
+            Dtilde => Set_wps(Particles,Particles%Dtilde_id)
             xp => Set_xp(Particles,read_only=.TRUE.)
 
             !---------------------------------------------------------------------!
             ! Increase the desired resolution where it is needed
             ! D^(n+1) = Min(D^(n),D_tilde^(n+1))
             !---------------------------------------------------------------------!
-            D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-            Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
-            DO ip=1,Particles%Mpart
+            D => Get_wps(Particles,Particles%D_id)
+            Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+            DO ip=1,Particles%Npart
                 D(ip) = MIN(D(ip),Dtilde(ip))
             ENDDO
-            D => Set_wps(Particles,Particles%D_id,read_only=.FALSE.,&
-                ghosts_ok=.TRUE.)
+            D => Set_wps(Particles,Particles%D_id)
             Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
             !---------------------------------------------------------------------!
             ! Update cutoff radii
             !---------------------------------------------------------------------!
 
-            D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-            rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
-            DO ip=1,Particles%Mpart
+            D => Get_wps(Particles,Particles%D_id)
+            rcp => Get_wps(Particles,Particles%rcp_id)
+            DO ip=1,Particles%Npart
                 rcp(ip) = opts%rcp_over_D * D(ip)
             ENDDO
             D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-            rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.,&
-                ghosts_ok=.TRUE.)
+            rcp => Set_wps(Particles,Particles%rcp_id)
 
 
             !---------------------------------------------------------------------!
@@ -402,7 +405,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !---------------------------------------------------------------------!
             ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
             !---------------------------------------------------------------------!
-            D => Get_wps(Particles,Particles%D_id,with_ghosts=.FALSE.)
+            D => Get_wps(Particles,Particles%D_id)
             Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
             DO ip=1,Particles%Npart
                 D(ip)=Dtilde(ip)
@@ -411,7 +414,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                     IF (Dtilde(iq).LT.D(ip)) D(ip)=Dtilde(iq)
                 ENDDO
             ENDDO
-            D => Set_wps(Particles,Particles%D_id,read_only=.FALSE.)
+            D => Set_wps(Particles,Particles%D_id)
             Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
         ELSE
@@ -445,8 +448,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 GOTO 9999
             ENDIF
 
-            D     => Get_wps(Particles,    Particles%D_id,    with_ghosts=.FALSE.)
-            D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.FALSE.)
+            D     => Get_wps(Particles,    Particles%D_id)
+            D_old => Get_wps(Particles_old,Particles_old%D_id)
             DO ip=1,Particles%Npart
                 minDold=HUGE(1._MK)
                 DO ineigh=1,nvlist_cross(ip)
@@ -455,20 +458,20 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ENDDO
                 D(ip) = MAX(D(ip),minDold)
             ENDDO
-            D     => Set_wps(Particles,    Particles%D_id,    read_only=.FALSE.)
+            D     => Set_wps(Particles,    Particles%D_id)
             D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
         ENDIF
 
         !---------------------------------------------------------------------!
         ! Update cutoff radii
         !---------------------------------------------------------------------!
-        D => Get_wps(Particles,Particles%D_id,with_ghosts=.FALSE.)
-        rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=.FALSE.)
+        D => Get_wps(Particles,Particles%D_id)
+        rcp => Get_wps(Particles,Particles%rcp_id)
         DO ip=1,Particles%Npart
             rcp(ip) = opts%rcp_over_D * D(ip)
         ENDDO
         D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-        rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
+        rcp => Set_wps(Particles,Particles%rcp_id)
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
@@ -620,7 +623,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
-        xp => Get_xp(Particles)
+        xp => Get_xp(Particles,with_ghosts=.TRUE.)
         DO ip=1,Particles%Mpart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
@@ -1081,8 +1084,9 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         ! There MAY be a better way of doing this...
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
-        CALL particles_mapping_partial(Particles,topo_id,info,debug=.FALSE.)
-        CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
+        CALL particles_mapping_partial(Particles,topo_id,info)
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
+        CALL particles_neighlists(Particles,topo_id,info)
 
 
         !Delete (fuse) particles that are too close to each other
@@ -1124,7 +1128,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-        CALL particles_mapping_partial(Particles,topo_id,info,debug=.TRUE.)
+        CALL particles_mapping_partial(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
@@ -1132,7 +1136,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-        CALL particles_mapping_ghosts(Particles,topo_id,info,debug=.FALSE.)
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,&
                 'particles_apply_bc failed',info)
@@ -1203,8 +1207,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             D_old = D_old / opts%rcp_over_D
             D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
 
-            D     => Get_wps(Particles,    Particles%D_id,    with_ghosts=.FALSE.)
-            D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.FALSE.)
+            D     => Get_wps(Particles,    Particles%D_id)
+            D_old => Get_wps(Particles_old,Particles_old%D_id)
             DO ip=1,Particles%Npart
                 minDold=HUGE(1._MK)
                 DO ineigh=1,nvlist_cross(ip)
@@ -1213,12 +1217,12 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 ENDDO
                 D(ip) = MAX(D(ip),minDold)
             ENDDO
-            D     => Set_wps(Particles,    Particles%D_id,    read_only=.FALSE.)
+            D     => Set_wps(Particles,    Particles%D_id)
             D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
 
             wp     => Get_wps(Particles,Particles%adapt_wpid)
             wp_old => Get_wps(Particles_old,Particles_old%adapt_wpid)
-            D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.FALSE.)
+            D_old => Get_wps(Particles_old,Particles_old%D_id)
             CALL sop_approx_wp_1d(Particles_old%xp,wp_old,D_old,Particles%xp,&
                 wp,Particles%Npart,Particles%Mpart,nvlist_cross,vlist_cross,info)
             IF (info .NE. 0) THEN
@@ -1248,8 +1252,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 !! (either the state of Particles should be updated
                 !! accordingly, or this should be moved outside of the
                 !! routine)
-                D     => Get_wps(Particles,    Particles%D_id,    with_ghosts=.FALSE.)
-                D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.FALSE.)
+                D     => Get_wps(Particles,    Particles%D_id)
+                D_old => Get_wps(Particles_old,Particles_old%D_id)
                 CALL sop_approx_wp_1d(Particles_old%xp,D_old,D_old,Particles%xp,&
                     D,Particles%Npart,Particles%Mpart,&
                     nvlist_cross,vlist_cross,info)
@@ -1273,7 +1277,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                     info = -1
                     GOTO 9999
                 ENDIF
-                D => Set_wps(Particles,    Particles%D_id,    read_only=.FALSE.)
+                D => Set_wps(Particles,    Particles%D_id)
                 D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
 
                 xp => Get_xp(Particles,with_ghosts=.TRUE.)
@@ -1313,8 +1317,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         ! Update cutoff radii
         !---------------------------------------------------------------------!
-        D => Get_wps(Particles,Particles%D_id,with_ghosts=.FALSE.)
-        rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=.FALSE.)
+        D => Get_wps(Particles,Particles%D_id)
+        rcp => Get_wps(Particles,Particles%rcp_id)
         DO ip=1,Particles%Npart
             rcp(ip) = opts%rcp_over_D * D(ip)
         ENDDO
@@ -1350,7 +1354,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             ENDIF
 
         D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-        rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
+        rcp => Set_wps(Particles,Particles%rcp_id)
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
@@ -1604,7 +1608,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
-        xp => Get_xp(Particles)
+        xp => Get_xp(Particles,with_ghosts=.TRUE.)
         DO ip=1,Particles%Mpart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)

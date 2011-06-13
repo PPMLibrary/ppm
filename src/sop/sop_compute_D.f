@@ -22,7 +22,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ! arguments
     TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
     !!! particles
-    !REAL(MK),  DIMENSION(:,:),ALLOCATABLE,INTENT(INOUT)   :: eta
     TYPE(sop_t_opts),  POINTER,           INTENT(IN   )   :: opts
     !!! options
     INTEGER,                              INTENT(  OUT)   :: info
@@ -154,8 +153,11 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK)                                   :: min_D
     LOGICAL                                    :: need_derivatives
     LOGICAL                                    :: D_needs_grad
-    REAL(MK),    DIMENSION(ppm_dim)            :: dummy_grad
-    INTEGER                                    :: topo_id
+    REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
+    INTEGER                                    :: topo_id,eta_id
+    REAL(MK),     DIMENSION(ppm_dim)           :: coeffs
+    INTEGER,      DIMENSION(ppm_dim)           :: order
+    INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -324,11 +326,13 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 IF (Particles%wpv_m(Particles%adapt_wpgradid).NE.1) THEN
                     CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
                         ppm_dim,info,with_ghosts=.FALSE.,&
-                        iopt=ppm_param_alloc_grow_preserve)
-                    info = ppm_error_fatal
-                    CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
-                        &  __LINE__,info)
-                    GOTO 9999
+                        iopt=ppm_param_alloc_grow_preserve,name='adapt_wpgrad')
+                    IF (info.NE.0) THEN
+                        info = ppm_error_fatal
+                        CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
+                            &  __LINE__,info)
+                        GOTO 9999
+                    ENDIF
                 ENDIF
             ENDIF
         ENDIF
@@ -410,13 +414,31 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ! derivatives (if one does not use the same kernels to also 
         ! compute the Laplacian 
         ! FIXME
-        CALL ppm_part_dcops(Particles,Particles%eta_id,opts%c,info,&
-            islaplacian=.TRUE.)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'ppm_part_dcops failed',info)
-            info = -1
+        coeffs=1._MK; order=2; degree = 0
+        FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
+        eta_id = 0
+        CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
+            order,ppm_dim,info,name="gradient",vector=.TRUE.)
+        IF (info.NE.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'particles_dcop_define failed',&
+                &  __LINE__,info)
             GOTO 9999
         ENDIF
+        CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
+        IF (info.NE.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'particles_dcop_compute failed',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
+        !CALL ppm_part_dcops(Particles,Particles%eta_id,opts%c,info,&
+            !islaplacian=.TRUE.)
+        !IF (info .NE. 0) THEN
+            !CALL ppm_write(ppm_rank,caller,'ppm_part_dcops failed',info)
+            !info = -1
+            !GOTO 9999
+        !ENDIF
         !rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
         !CALL sop_PSE_secondorder(Particles%xp,rcp,Particles%Npart,&
             !Particles%Mpart,Particles%nvlist,Particles%vlist, &
@@ -453,15 +475,18 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 GOTO 9999
             ENDIF
 
-            eta => Get_wpv(Particles,Particles%eta_id)
+            eta => Get_dcop(Particles,eta_id)
             IF (PRESENT(wp_fun)) THEN
                 DO ip=1,Particles%Npart
                     DO ineigh=1,Particles%nvlist(ip)
                         iq=Particles%vlist(ineigh,ip)
+                        !wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
+                            !0.5_MK*(wp_fun(xp(1:ppm_dim,ip))+            &
+                            !&       wp_fun(xp(1:ppm_dim,iq)))  *         &
+                            !(xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))*eta(ineigh,ip)
                         wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
-                            0.5_MK*(wp_fun(xp(1:ppm_dim,ip))+            &
-                            &       wp_fun(xp(1:ppm_dim,iq)))  *         &
-                            (xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))*eta(ineigh,ip)
+                            (wp_fun(xp(1:ppm_dim,iq))-wp_fun(xp(1:ppm_dim,ip)))*&
+                           eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
                     ENDDO
                 ENDDO
             ELSE 
@@ -470,9 +495,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 DO ip=1,Particles%Npart
                     DO ineigh=1,Particles%nvlist(ip)
                         iq=Particles%vlist(ineigh,ip)
-                        wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+        &
-                            0.5_MK*(wp(ip)+wp(iq))*                   &
-                            (xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))*eta(ineigh,ip)
+                        !wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+        &
+                            !0.5_MK*(wp(ip)+wp(iq))*                   &
+                            !(xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))*eta(ineigh,ip)
+                        wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
+                            (wp(iq)-wp(ip))*&
+                            eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
                     ENDDO
 
                 ENDDO
@@ -515,8 +543,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
             ENDIF
 
-            eta => Set_wpv(Particles,Particles%eta_id,read_only=.TRUE.)
-            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid,read_only=.FALSE.)
+            eta => Set_dcop(Particles,eta_id)
+            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid)
             xp => Set_xp(Particles,read_only=.TRUE.)
 
         ELSE !IF (PRESENT(wp_grad_fun)) 
@@ -525,14 +553,14 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             DO ip=1,Particles%Mpart
                 Dtilde(ip) = D_fun(wp_fun(xp(:,ip)),wp_grad_fun(xp(:,ip)),opts)
             ENDDO
-            Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.FALSE.)
+            Dtilde => Set_wps(Particles,Particles%Dtilde_id)
             xp => Set_xp(Particles,read_only=.TRUE.)
         ENDIF
 
         !Compute D on real particles
 
-        xp => Get_xp(Particles,with_ghosts=.FALSE.)
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.FALSE.)
+        xp => Get_xp(Particles)
+        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
 
         IF (PRESENT(wp_fun)) THEN
             DO ip=1,Particles%Npart
@@ -540,14 +568,16 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                     wp_grad_fun(xp(1:ppm_dim,ip)),opts)
             ENDDO
         ELSE
-            wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.FALSE.)
+            wp_grad => Get_wpv(Particles,Particles%adapt_wpgradid)
+            wp => Get_wps(Particles,Particles%adapt_wpid)
             DO ip=1,Particles%Npart
                 Dtilde(ip) = D_fun(wp(ip),wp_grad(:,ip),opts)
             ENDDO
             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid,read_only=.TRUE.)
         ENDIF
 
-        Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.FALSE.)
+        Dtilde => Set_wps(Particles,Particles%Dtilde_id)
         xp => Set_xp(Particles,read_only=.TRUE.)
 
         ! Get ghosts for D_tilde
@@ -560,7 +590,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
     ELSE ! .NOT. D_needs_grad
 
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.FALSE.)
+        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
         IF (PRESENT(wp_fun)) THEN
             xp => Get_xp(Particles,with_ghosts=.TRUE.)
             IF (opts%level_set) THEN
@@ -613,11 +643,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         CALL particles_allocate_wps(Particles,Particles%D_id,&
             info,with_ghosts=.TRUE.,name='D')
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_allocate_wps failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'particles_allocate_wps failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        D => Get_wps(Particles,Particles%D_id,with_ghosts=.FALSE.)
+        D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
         Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
         DO ip=1,Particles%Mpart
             D(ip) = Dtilde(ip)
@@ -649,8 +680,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDDO
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed',info)
-        info = -1
+        info = ppm_error_error
+        CALL ppm_error(999,caller,&
+            'particles_updated_cutoff failed',__LINE__,info)
         GOTO 9999
     ENDIF
     rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
@@ -666,7 +698,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-write(*,*) 'ok 2.6'
     !---------------------------------------------------------------------!
     ! Update neighbour lists
     !---------------------------------------------------------------------!
@@ -677,7 +708,6 @@ write(*,*) 'ok 2.6'
         GOTO 9999
     ENDIF
 
-write(*,*) 'ok 2.7'
     !---------------------------------------------------------------------!
     ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
     !---------------------------------------------------------------------!
@@ -705,7 +735,6 @@ write(*,*) 'ok 2.7'
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 #endif
 
-write(*,*) 'ok 2.8'
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)

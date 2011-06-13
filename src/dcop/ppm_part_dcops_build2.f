@@ -65,7 +65,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     REAL(MK),DIMENSION(:),POINTER         :: coeffs=>NULL()
     INTEGER,DIMENSION(3)                  :: ldc
     INTEGER                               :: degree_poly
-    LOGICAL                               :: cartesian,isinterp,adaptive
+    LOGICAL                               :: cartesian,isinterp,adaptive,vector
 
     REAL(MK), DIMENSION(:,:),  POINTER    :: xp1=>NULL()
     !!! particles (or points) where the operators are computed
@@ -264,7 +264,17 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
         GOTO 9999
     ENDIF
 
-    ldc(1) = nneighmax; ldc(2) = Particles%Npart
+    vector =  Particles%ops%desc(eta_id)%vector
+    !if true, then each term of the differential opearator is stored as one
+    !component in eta. This is used when computing e.g. the gradient opearator.
+    !if false, the same input parameters would yield an operator approximating
+    ! the divergence operator.
+    IF (vector) THEN
+        ldc(1) = nneighmax*nterms; 
+    ELSE
+        ldc(1) = nneighmax; 
+    ENDIF
+    ldc(2) = Particles%Npart
     CALL ppm_alloc(Particles%ops%ker(eta_id)%vec,ldc,ppm_param_alloc_grow,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -315,7 +325,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     ENDIF
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-        nn_sq => Get_wps(Particles_cross,Particles_cross%nn_sq_id)
+        nn_sq => Get_wps(Particles_cross,Particles_cross%nn_sq_id,&
+            with_ghosts=.TRUE.)
         !!! nearest-neighbour distances within Particles_cross 
         !!! (they must have been already computed)
     ENDIF
@@ -418,6 +429,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
             byh0powerbeta(i) = byh**(sum_degree(i))
         ENDDO
 
+
         !------------------------------------------------------------------!
         ! Compute the operators
         !------------------------------------------------------------------!
@@ -426,24 +438,44 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
             DO ineigh = 1,nvlist(ip) 
                 expo = exp(-c_value**2*d2_one2all(ineigh))
                 DO j=1,ncoeff
-
-                    eta(ineigh,ip) = eta(ineigh,ip) + &
-                        SUM(b(j,1:nterms)*coeffs*byh0powerbeta)* &
-                        dx(1,ineigh)**gamma(1,j)* &
+                    IF (vector) THEN
+                        eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) = &
+                            eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) + &
+                            b(j,1:nterms)*coeffs*byh0powerbeta* &
+                            dx(1,ineigh)**gamma(1,j)* &
 #if __DIM == 3
-                        dx(3,ineigh)**gamma(3,j)* &
+                            dx(3,ineigh)**gamma(3,j)* &
 #endif
-                        dx(2,ineigh)**gamma(2,j)* expo
+                            dx(2,ineigh)**gamma(2,j)* expo
+                    ELSE
+                        eta(ineigh,ip) = eta(ineigh,ip) + &
+                            SUM(b(j,1:nterms)*coeffs*byh0powerbeta)* &
+                            dx(1,ineigh)**gamma(1,j)* &
+#if __DIM == 3
+                            dx(3,ineigh)**gamma(3,j)* &
+#endif
+                            dx(2,ineigh)**gamma(2,j)* expo
 
-                        !note: do not factorise out expo, like for eta. 
-                        ! eta_interp already contains some data (the primitive &
-                        ! function) that should not be multiplied by expo.
+                            !note: do not factorise out expo, like for eta. 
+                            ! eta_interp already contains some data (the primitive &
+                            ! function) that should not be multiplied by expo.
+                    ENDIF
                 ENDDO
             ENDDO
         ELSE
             DO ineigh = 1,nvlist(ip) 
                 expo = exp(-c_value**2*d2_one2all(ineigh))
                 DO j=1,ncoeff
+                    IF (vector) THEN
+                        eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) = &
+                            eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) + &
+                            b(j,1:nterms)*coeffs*byh0powerbeta* &
+                        dx(1,ineigh)**gamma(1,j)* &
+#if __DIM == 3
+                        dx(3,ineigh)**gamma(3,j)* &
+#endif
+                        dx(2,ineigh)**gamma(2,j)
+                    ELSE
 
                     eta(ineigh,ip) = eta(ineigh,ip) +&
                         SUM(b(j,1:nterms)*coeffs*byh0powerbeta)* &
@@ -452,8 +484,14 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
                         dx(3,ineigh)**gamma(3,j)* &
 #endif
                         dx(2,ineigh)**gamma(2,j)
+                    ENDIF
                 ENDDO
-                eta(ineigh,ip) = eta(ineigh,ip) * expo
+                IF (vector) THEN
+                    eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) = &
+                        eta(1+(ineigh-1)*nterms:ineigh*nterms,ip) * expo
+                ELSE
+                    eta(ineigh,ip) = eta(ineigh,ip) * expo
+                ENDIF
             ENDDO
         ENDIF
 

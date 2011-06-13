@@ -123,7 +123,9 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_alloc_1d',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substart('ppm_alloc_1d',t0,info)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -283,7 +285,10 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_alloc_1d',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substop('ppm_alloc_1d',t0,info)
+      ENDIF
+
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_1d_s

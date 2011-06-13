@@ -107,10 +107,19 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
 
     IF (opts%level_set) THEN
         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            CALL ppm_write(ppm_rank,caller,'incompatible optional arguments',info)
-            info = -1
-            GOTO 9999
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,&
+                    'incompatible optional arguments',__LINE__,info)
+                GOTO 9999
+            ENDIF
         ENDIF
+    ENDIF
+    IF (.NOT. Particles%neighlists) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,&
+            'Need neighbour lists: please compute them first',__LINE__,info)
+        GOTO 9999
     ENDIF
 
     threshold = opts%fuse_radius

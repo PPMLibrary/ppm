@@ -16,20 +16,20 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 10000
+integer                         :: np_global = 3000 !10000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
-integer                         :: i,j,k,isum1,isum2,ip,wp_id
+integer                         :: i,j,k,isum1,isum2,ip,wp_id,wp1_id
 real(mk)                        :: rsum1,rsum2
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
 integer,dimension(3)            :: ldc
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
+real(mk),dimension(:  ),pointer :: cost=>NULL()
 character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
@@ -40,6 +40,7 @@ integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
+
 
     init
 
@@ -120,9 +121,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
-        xp => get_xp(Particles)
-        FORALL(ip=1:Particles%Npart) xp(1:ndim,ip) = xp(1:ndim,ip) + 0.0001_mk*disp(1:ndim,ip)
-        xp => set_xp(Particles)
+        disp = 0.0001_mk * disp
+        call particles_move(Particles,disp,info)
+        Assert_Equal(info,0)
         call particles_apply_bc(Particles,topoid,info)
         Assert_Equal(info,0)
         call particles_mapping_partial(Particles,topoid,info)
@@ -130,11 +131,19 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.,name='rcp')
         Assert_Equal(info,0)
+        wp1_id=0
+        call particles_allocate_wps(Particles,wp1_id,info,with_ghosts=.true.,name='wp_test1')
+        Assert_Equal(info,0)
         rcp => get_wps(Particles,Particles%rcp_id)
+        wp => get_wps(Particles,wp1_id)
+        xp => get_xp(Particles)
         FORALL(ip=1:Particles%Npart) 
             rcp(ip) = 1.9_mk*Particles%h_avg
+            wp(ip) = f0_fun(xp(1:ndim,ip)) 
         END FORALL
         rcp => set_wps(Particles,Particles%rcp_id)
+        wp => set_wps(Particles,wp1_id)
+        xp => set_xp(Particles,read_only=.true.)
 
         call particles_updated_cutoff(Particles,info)
         Assert_Equal(info,0)
@@ -151,27 +160,26 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
 
         opts%scale_D = 0.05_mk
-        opts%minimum_D = 0.005_mk
+        !opts%minimum_D = 0.018_mk
+        opts%minimum_D = 0.03_mk
         opts%maximum_D = 0.05_mk
         opts%adaptivity_criterion = 6._mk
         opts%fuse_radius = 0.2_mk
         opts%attractive_radius0 = 0.4_mk
         opts%rcp_over_D = 2.4_mk
-        !call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-        !    D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
-        !Assert_Equal(info,0)
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
+            D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+        Assert_Equal(info,0)
 
         call particles_io_xyz(Particles,1,dirname,info)
         Assert_Equal(info,0)
 
-        call particles_allocate_wps(Particles,Particles%adapt_wpid,info,name='wp')
+        call particles_allocate_wps(Particles,Particles%adapt_wpid,info,name='wp_test')
         wp_id = Particles%adapt_wpid
         Assert_Equal(info,0)
         xp => get_xp(Particles)
         wp => get_wps(Particles,wp_id)
-        FORALL(ip=1:Particles%Npart) 
-            wp(ip) = f0_fun(xp(1:ndim,ip)) 
-        END FORALL
+        FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip)) 
         xp => set_xp(Particles,read_only=.true.)
         wp => set_wps(Particles,wp_id)
 
@@ -182,6 +190,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,D_needs_gradients=.true.)
         Assert_Equal(info,0)
         call particles_io_xyz(Particles,2,dirname,info)
+        Assert_Equal(info,0)
 
     end test
 

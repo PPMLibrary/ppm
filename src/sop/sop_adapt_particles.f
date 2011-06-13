@@ -63,7 +63,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !!! topology
     TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
     !!! particles
-    !REAL(MK),  DIMENSION(:,:),ALLOCATABLE,INTENT(  OUT)   :: eta
     TYPE(sop_t_opts),  POINTER,           INTENT(INOUT)   :: opts
     !!! options
     INTEGER,                              INTENT(  OUT)   :: info
@@ -207,7 +206,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
 
     REAL(MK),     DIMENSION(:),   POINTER      :: nn2 => NULL()
-    INTEGER                                    :: nn2_id
     INTEGER,      DIMENSION(:),   POINTER      :: nvlist_cross => NULL()
     INTEGER,      DIMENSION(:,:), POINTER      :: vlist_cross => NULL()
     REAL(MK),     DIMENSION(:,:), ALLOCATABLE  :: eta_interp
@@ -433,7 +431,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 IF (Particles%wpv_m(Particles%adapt_wpgradid).NE.1) THEN
                     CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
                         ppm_dim,info,with_ghosts=.FALSE.,&
-                        iopt=ppm_param_alloc_grow_preserve)
+                        iopt=ppm_param_alloc_grow_preserve,name='adapt_wpgrad')
                     info = ppm_error_error
                     CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
                         &  __LINE__,info)
@@ -509,8 +507,9 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !need the ghosts for D_old to be correct
     CALL particles_mapping_ghosts(Particles,topo_id,info)
     IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
-        info = -1
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_dealloc,caller,   &
+            &    'particles_mapping_ghosts failed',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -520,8 +519,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !! interpolation. Not needed if the functions are known analytically)
     !!-------------------------------------------------------------------------!
     IF (.NOT.PRESENT(wp_fun)) THEN
-        nn2_id = 0
-        CALL particles_allocate_wps(Particles,nn2_id,info,name='nn2')
+        CALL particles_allocate_wps(Particles,Particles%nn_sq_id,info,name='nn2')
         IF (info.NE.0) THEN
             info = ppm_error_error
             CALL ppm_error(999,caller,'particles_allocate_wps failed',&
@@ -529,7 +527,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
 
-        nn2=> Get_wps(Particles,nn2_id)
+        nn2=> Get_wps(Particles,Particles%nn_sq_id)
         xp => Get_xp(Particles,with_ghosts=.TRUE.)
         DO ip=1,Particles%Npart
             nn2(ip) = HUGE(1._MK)
@@ -540,37 +538,41 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             ENDDO
         ENDDO
         xp => Set_xp(Particles,read_only=.TRUE.)
-        nn2=> Set_wps(Particles,nn2_id)
+        nn2=> Set_wps(Particles,Particles%nn_sq_id)
 
         !!---------------------------------------------------------------------!
         !! Get ghosts of nn2
-        !! TODO: do that more cleanly
         !!---------------------------------------------------------------------!
-        CALL ppm_map_part_push(Particles%wps(nn2_id)%vec,Particles%Npart,info)
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (push) failed.',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,caller,   &
+                &    'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (send) failed.',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-        CALL ppm_map_part_pop(Particles%wps(nn2_id)%vec,&
-            Particles%Npart,Particles%Mpart,info)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (pop) failed.',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-        Particles%wps_g(nn2_id) = 1
     ENDIF
 
     !-------------------------------------------------------------------------!
     ! Copy particle positions, field values and D
     !-------------------------------------------------------------------------!
+    !destroy DC operators
+    IF (ASSOCIATED(Particles%ops)) THEN
+        CALL particles_dcop_deallocate(Particles,info)
+        !DO i=1,Particles%ops%max_opsid
+            !IF (ASSOCIATED(Particles%ops%desc(i)%degree)) THEN
+                !CALL particles_dcop_free(Particles,i,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_dealloc,caller,   &
+                        &    'freeing Particles%ops(i)',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            !ENDIF
+        !ENDDO
+        !Particles%ops%max_opsid = 0
+        !Particles%ops%nb_ops = 0
+        !NULLIFY(Particles%ops)
+    ENDIF
 
     Particles_old => Particles
     Particles => NULL()
@@ -579,8 +581,9 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     CALL ppm_alloc_particles(Particles,Particles_old%Mpart,&
         ppm_param_alloc_fit,info)
     IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,'ppm_alloc_particles failed',info)
-        info = -1
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &    'ppm_alloc_particles failed',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -612,11 +615,14 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles_old%vlist => NULL()
     Particles_old%neighlists = .FALSE.
 
+    !link the old particles to the new ones in the data structure:
+    Particles%Particles_cross => Particles_old
+
     CALL particles_allocate_wps(Particles,Particles%D_id,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
     IF (info.NE.0) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,'particles_allocate_wps failed',&
+        CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -625,7 +631,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
     IF (info.NE.0) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,'particles_allocate_wps failed',&
+        CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -660,7 +666,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             info,zero=.TRUE.,iopt=ppm_param_alloc_fit)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_allocate_wps failed',&
+            CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
@@ -671,7 +677,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             ppm_dim,info,zero=.TRUE.,iopt=ppm_param_alloc_fit)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_allocate_wpv failed',&
+            CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
@@ -701,10 +707,10 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     IF (.NOT.PRESENT(wp_fun)) THEN
         CALL particles_allocate_wps(Particles,Particles%adapt_wpid,&
-            info,iopt=ppm_param_alloc_fit)
+            info,iopt=ppm_param_alloc_fit,name="adapt_wp")
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_allocate_wps failed',&
+            CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
                 &  __LINE__,info)
             GOTO 9999
         ENDIF
@@ -796,7 +802,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         !!---------------------------------------------------------------------!
         !! Otherwise, use particle-to-particle interpolation
         !!---------------------------------------------------------------------!
-        CALL sop_interpolate(Particles_old,Particles,opts,nn2_id,info)
+        CALL sop_interpolate(Particles_old,Particles,opts,info)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,'sop_interpolate failed.',info)
             info = -1
@@ -839,6 +845,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         !info = -1
         !GOTO 9999
     !ENDIF
+
+    Particles%Particles_cross => NULL()
 
     CALL ppm_alloc_particles(Particles_old,Particles%Npart,&
         ppm_param_dealloc,info)
