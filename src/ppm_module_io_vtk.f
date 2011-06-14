@@ -260,7 +260,7 @@
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
-                 wp => set_wps(Particles,wps_l(i),read_only=.TRUE.)
+                 wp => set_wps(Particles,wps_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wpv
                  xp => get_wpv(Particles,wpv_l(k),with_ghosts=ghosts)

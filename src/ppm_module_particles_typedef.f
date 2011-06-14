@@ -55,7 +55,7 @@ END TYPE pnt_array_desc
 TYPE ppm_t_operator
     TYPE(pnt_array_2d), DIMENSION(:),        POINTER :: ker => NULL()
     !!! array of pointers to where the operators are stored
-    TYPE(pnt_array_desc), DIMENSION(:),       POINTER :: desc => NULL()
+    TYPE(pnt_array_desc), DIMENSION(:),      POINTER :: desc => NULL()
     !!! array of pointers to small matrices that describe what 
     !!! each operator does
     INTEGER                                          :: nb_ops
@@ -66,6 +66,8 @@ END TYPE ppm_t_operator
 
 TYPE ppm_t_particles
 
+    CHARACTER(LEN=ppm_char)                         :: name
+    !!! name for these particles
     REAL(prec), DIMENSION(:,:), POINTER             :: xp => NULL()
     !!! positions of the particles
     INTEGER                                         :: xp_g 

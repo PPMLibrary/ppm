@@ -128,6 +128,7 @@
       IF (ppm_debug.GE.3) THEN
           CALL substart('ppm_alloc_3dl',t0,info)
       ENDIF
+      info = 0
 
       !-------------------------------------------------------------------------
       !  Point to proper work array
