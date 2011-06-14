@@ -46,6 +46,7 @@
            WRITE(iUnit, '(A)', advance='no') "'"
 #endif
            WRITE(iUnit,'(A)') ">"
+#ifndef VTK_PARALLEL
            WRITE(iUnit,'(A)', advance='no')     "    <Piece"
 #ifdef VTK_EXTENT
            WRITE(iUnit, '(A)', advance='no') " Extent='"
@@ -91,6 +92,7 @@
 #endif
 #endif
            WRITE(iUnit, '(A)') ">"
+#endif
 #undef VTK_VERSION
 #undef VTK_WHOLE_EXTENT
 #undef VTK_ORIGIN

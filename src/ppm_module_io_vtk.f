@@ -30,6 +30,7 @@
          USE ppm_module_typedef,   ONLY: ppm_char, ppm_error_fatal, &
                                          ppm_kind_single, ppm_kind_double
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
+         USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm
          USE ppm_module_typedef,   ONLY: ppm_error_error
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
@@ -122,17 +123,7 @@
            !  Code
            !--------------------------------------------------------------------
            CALL substart(caller,t0,info)
-           ! open output file
-           OPEN(iUnit, FILE=filename(1:LEN_TRIM(filename)), &
-                IOSTAT=info, ACTION='WRITE')
-           IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              WRITE(errtxt,'(2A)') 'Failed to open file: ', &
-                    filename(1:LEN_TRIM(filename))
-              CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
-              GOTO 9999
-           END IF
-           
+
            ! print ghosts?
            IF (PRESENT(with_ghosts)) THEN
               ghosts = with_ghosts
@@ -216,6 +207,66 @@
               ENDDO
            ENDIF
 
+#ifdef __MPI
+           ! write parallel file
+           IF (ppm_rank .EQ. 0) THEN
+              WRITE(scratch,'(A,A)') filename(1:LEN_TRIM(filename)), '.pvtp'
+              OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
+                   IOSTAT=info, ACTION='WRITE')
+              IF (info .NE. 0) THEN
+                 info = ppm_error_fatal
+                 WRITE(errtxt,'(2A)') 'Failed to open file: ', &
+                      scratch(1:LEN_TRIM(scratch))
+                 CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
+                 GOTO 9999
+              END IF
+#define VTK_FILE_TYPE "PPolyData"
+#define VTK_PARALLEL
+#include "vtk/print_header.f"
+              WRITE(iUnit,'(A)') "    <PPointData>"
+              DO i=1,nb_wps
+              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                   Particles%wps(wps_l(i))%name &
+                   (1:LEN_TRIM(Particles%wps(wps_l(i))%name)), &
+                   "' type='Float64' />"
+              END DO
+              DO i=1,nb_wpv
+              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                   Particles%wpv(wpv_l(i))%name &
+                   (1:LEN_TRIM(Particles%wpv(wpv_l(i))%name)), &
+                   "' type='Float64' />"
+              END DO
+              WRITE(iUnit,'(A)') "    </PPointData>"              
+              WRITE(iUnit,'(A)') "    <PPoints>"
+              WRITE(iUnit,'(A)') "      <PDataArray NumberOfComponents='3' type='Float64' />"
+              WRITE(iUnit,'(A)') "    </PPoints>"
+              DO i=0,ppm_nproc-1
+                 WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='", &
+                      filename(1:LEN_TRIM(filename)), ".", i, ".vtp' />"
+              END DO
+              ! close
+#include "vtk/print_end_header.f"
+              CLOSE(iUnit)
+           END IF
+           ! append rank to name
+           WRITE(scratch,'(A,A,I0,A)') filename(1:LEN_TRIM(filename)), &
+                                       '.', ppm_rank, '.vtp'
+#else
+           WRITE(scratch,'(A,A)') filename(1:LEN_TRIM(filename)), '.vtp'
+#endif
+
+           ! open output file
+           OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
+                IOSTAT=info, ACTION='WRITE')
+           IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              WRITE(errtxt,'(2A)') 'Failed to open file: ', &
+                    scratch(1:LEN_TRIM(scratch))
+              CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
+              GOTO 9999
+           END IF
+
+           ! write data
            IF (ghosts) THEN
               N = Particles%Mpart
            ELSE
