@@ -379,13 +379,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
             DEALLOCATE(Particles,stat=info)
-            NULLIFY(Particles)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_dealloc,caller,   &
                     &          'Deallocating Particles',__LINE__,info)
                 GOTO 9999
             ENDIF
+            NULLIFY(Particles)
         ENDIF
     ENDIF
 
@@ -1204,7 +1204,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         DO prop_id = 1,Particles%max_wpsid
-            IF(Particles%wps_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                     Particles%Npart,info)
                 IF (info .NE. 0) THEN
@@ -1217,7 +1217,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDDO
 
         DO prop_id = 1,Particles%max_wpvid
-            IF(Particles%wpv_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wpv_m(prop_id) .GE. 0) THEN
                 CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,info)
                 IF (info .NE. 0) THEN
@@ -1237,7 +1237,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         DO prop_id = Particles%max_wpvid,1,-1
-            IF(Particles%wpv_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wpv_m(prop_id) .GE. 0) THEN
                 CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
                     Particles%wpv_s(prop_id), Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
@@ -1249,7 +1249,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
         ENDDO
         DO prop_id = Particles%max_wpsid,1,-1
-            IF(Particles%wps_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
                     Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
@@ -1391,7 +1391,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         DO prop_id = 1,Particles%max_wpsid
-            IF(Particles%wps_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
                     write(*,*) 'pushing-1 ',prop_id
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
@@ -1406,7 +1406,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDDO
 
         DO prop_id = 1,Particles%max_wpvid
-            IF(Particles%wpv_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wpv_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
                     write(*,*) 'pushing-2 ',prop_id
                 CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
@@ -1429,7 +1429,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         DO prop_id = Particles%max_wpvid,1,-1
-            IF(Particles%wpv_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wpv_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
                     write(*,*) 'popping-2 ',prop_id
                 CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
@@ -1443,7 +1443,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
         ENDDO
         DO prop_id = Particles%max_wpsid,1,-1
-            IF(Particles%wps_m(prop_id) .EQ. 0) THEN
+            IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
                     write(*,*) 'popping-1 ',prop_id
                 CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
@@ -2572,19 +2572,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_updated_nb_part
 
-SUBROUTINE particles_updated_cutoff(Particles,info,cutoff)
-    !-----------------------------------------------------------------
-    !  routine to call when cutoffs have changed
-    !-----------------------------------------------------------------
-    !  Effects:
-    ! * update cutoff to maxval(rcp) or to cutoff (if present)
-    ! * discard neighbour lists
-    !  Assumptions:
-    ! * Particles positions need to have been mapped onto the topology
-    ! * cutoff radii are up-to-date
-    !
-    ! Note:
-    ! * Does an MPI_Allreduce for to get the maximum cutoff
+SUBROUTINE particles_update_cutoff(Particles,cutoff,info)
+
+    !!!  Sets the cutoff radii of all particles to a given constant value
+    !!!     * discard neighbour lists
+
     USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -2598,11 +2590,98 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,  INTENT(INOUT)         :: Particles
+    TYPE(ppm_t_particles), POINTER,  INTENT(INOUT)     :: Particles
+    !!! Data structure containing the particles
+    REAL(MK)                     ,   INTENT(IN   )     :: cutoff
+    INTEGER,                         INTENT(  OUT)     :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    !!!
+    CHARACTER(LEN = ppm_char)             :: caller = 'particles_update_cutoff'
+    REAL(KIND(1.D0))                      :: t0
+    INTEGER                               :: prop_id
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            &  'Particles structure had not been defined. Call allocate first',&
+            &  __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+
+    !-----------------------------------------------------------------------
+    ! Update cutoffs of adaptive particles
+    !-----------------------------------------------------------------------
+    IF (Particles%adaptive) THEN
+        Particles%wps(Particles%rcp_id)%vec = cutoff
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Update Particles%cutoff (which stores the largest cutoff for adaptive
+    ! particles and the actuall cutoff for uniform ones)
+    ! (uniform particles will thus have their cutoffs updated in that routine)
+    !-----------------------------------------------------------------------
+    CALL particles_updated_cutoff(Particles,info,max_cutoff_new=cutoff)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            &  'particles_updated_cutoff failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Finalize
+    !-----------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE particles_update_cutoff
+
+SUBROUTINE particles_updated_cutoff(Particles,info,max_cutoff_new)
+
+    !!!  routine to call when cutoffs have changed externally
+    !!!  Effects:
+    !!! * For adaptive particles, compute the new largest cutoff radius 
+    !!! and store it in Particles%cutoff (used to check whether ghost layers
+    !!! are still valid). Instead of being computed here, this largest cutoff
+    !!! can be passed as input through _max_cutoff_new_
+    !!! * discard neighbour lists
+    !!! * cutoff radii are up-to-date
+    !!! Note:
+    !!! * Does an MPI_Allreduce for to get the maximum cutoff
+
+    USE ppm_module_data, ONLY: ppm_comm,ppm_mpi_kind,ppm_rank
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+#if   __KIND == __SINGLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)      :: Particles
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
-    REAL(MK),OPTIONAL                                      :: cutoff
+    !-------------------------------------------------------------------------
+    !  Optional arguments
+    !-------------------------------------------------------------------------
+    REAL(MK),OPTIONAL               ,   INTENT(IN   )      :: max_cutoff_new
+    !!! New value for the largest cutoff radius
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -2626,14 +2705,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         GOTO 9999
     ENDIF
 
-    IF (PRESENT(cutoff)) THEN
-        cutoff_new = cutoff
-        IF (Particles%adaptive) THEN
-            Particles%wps(Particles%rcp_id)%vec = cutoff
-        ENDIF
+    IF (PRESENT(max_cutoff_new)) THEN
+        cutoff_new = max_cutoff_new
     ELSE
         IF (Particles%adaptive) THEN
-
             cutoff_new = MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
 
 #ifdef __MPI
@@ -2646,17 +2721,16 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
 #endif
         ELSE
-            info = ppm_error_error
-            CALL ppm_error(999,caller,'need to provide new cutoff value',&
-                &  __LINE__,info)
-            GOTO 9999
+            CALL ppm_write(ppm_rank,caller,'NOTICE: call particles_update_cutoff() &
+            &   instead to avoid rebuilding ghost layers' ,info)
+            cutoff_new = Particles%cutoff
         ENDIF
     ENDIF
 
     ! Update states
     ! If cutoff has increased, then ghosts may no longer be 
     ! up to date
-    IF (Particles%cutoff .LT. cutoff_new) THEN
+    IF (Particles%cutoff .LE. cutoff_new) THEN
         Particles%xp_g = 0
         !   ghosts values for some scalar arrays have been computed
         DO prop_id = 1,Particles%max_wpsid
@@ -2667,10 +2741,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             IF (Particles%wpv_g(prop_id) .EQ. 1) Particles%wpv_g(prop_id) = 0
         ENDDO
     ENDIF
+
     ! neighbour lists have to be thrown away
     Particles%neighlists=.FALSE.
     !store new cutoff value
     Particles%cutoff = cutoff_new
+
 
     !-----------------------------------------------------------------------
     ! Finalize
@@ -3612,7 +3688,8 @@ SUBROUTINE particles_dcop_free(Particles,eta_id,info)
 
 END SUBROUTINE particles_dcop_free
 
-SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
+SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
+        info,input_is_vector)
     !!!------------------------------------------------------------------------!
     !!! NEW version
     !!! Apply DC kernel stored in eta_id to the scalar property stored
@@ -3644,6 +3721,11 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
     INTEGER,                            INTENT(  OUT)   :: info
     !!! Return status, on success 0.
     !-------------------------------------------------------------------------
+    ! Optional arguments
+    !-------------------------------------------------------------------------
+    LOGICAL,  OPTIONAL,                 INTENT(IN   )   :: input_is_vector
+    !!! true if the data from_id is a vector
+    !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
     CHARACTER(LEN = ppm_char)                  :: cbuf,filename
@@ -3658,7 +3740,8 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
     INTEGER, DIMENSION(:),  POINTER            :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER            :: vlist => NULL()
     REAL(MK)                                   :: sig
-    LOGICAL                                    :: vector
+    LOGICAL                                    :: vector_output
+    LOGICAL                                    :: vector_input
 
     !-------------------------------------------------------------------------
     ! Initialize
@@ -3680,15 +3763,20 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
             __LINE__,info)
         GOTO 9999
     ENDIF
-    vector =  Particles%ops%desc(eta_id)%vector
+    vector_output =  Particles%ops%desc(eta_id)%vector
+    IF (PRESENT(input_is_vector)) THEN
+        vector_input = input_is_vector
+    ELSE
+        vector_input = .FALSE.
+    ENDIF
     IF (to_id.EQ.0) THEN
-        IF (vector) THEN
+        IF (vector_output) THEN
             CALL particles_allocate_wpv(Particles,to_id,&
                 Particles%ops%desc(eta_id)%nterms,info,name="dflt_dcop_apply")
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',__LINE__,info)
+                    'particles_allocate_wpv failed',3691,info)
                 GOTO 9999
             ENDIF
         ELSE
@@ -3697,14 +3785,14 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',__LINE__,info)
+                    'particles_allocate_wps failed',3700,info)
                 GOTO 9999
             ENDIF
         ENDIF
     ENDIF
 
 
-    IF (vector) THEN
+    IF (vector_output) THEN
         dwpv => Get_wpv(Particles,to_id)
         lda = Particles%ops%desc(eta_id)%nterms
         DO ip = 1,Particles%Npart 
@@ -3737,16 +3825,28 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
         ENDIF
         nvlist => Particles%nvlist_cross
         vlist => Particles%vlist_cross
-        IF (vector) THEN
-            wpv2 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
-            DO ip = 1,Particles%Npart
-                DO ineigh = 1,nvlist(ip)
-                    iq = vlist(ineigh,ip)
-                    dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                        wpv2(1:lda,iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+        IF (vector_output) THEN
+            IF(vector_input) THEN
+                wpv2 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,Particles%Npart
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            wpv2(1:lda,iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
                 ENDDO
-            ENDDO
-            wpv2 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
+                wpv2 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
+            ELSE
+                wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,Particles%Npart
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            wps2(iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                wps2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
+            EnDIF
         ELSE
             wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart
@@ -3761,17 +3861,30 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
         nvlist => Particles%nvlist
         vlist => Particles%vlist
         sig = -1._mk !TODO FIXME
-        IF (vector) THEN
-            wpv1 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
-            DO ip = 1,Particles%Npart
-                DO ineigh = 1,nvlist(ip)
-                    iq = vlist(ineigh,ip)
-                    dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                        (wpv1(1:lda,iq) + sig*(wpv1(1:lda,ip)))* &
-                        eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+        IF (vector_output) THEN
+            IF(vector_input) THEN
+                wpv1 => Get_wpv(Particles,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,Particles%Npart
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            (wpv1(1:lda,iq) + sig*(wpv1(1:lda,ip)))* &
+                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
                 ENDDO
-            ENDDO
-            wpv1 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
+                wpv1 => Set_wpv(Particles,from_id,read_only=.TRUE.)
+            ELSE
+                wps1 => Get_wps(Particles,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,Particles%Npart
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            (wps1(iq) + sig*(wps1(ip)))* &
+                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                wps1 => Set_wps(Particles,from_id,read_only=.TRUE.)
+            ENDIF
         ELSE
             wps1 => Get_wps(Particles,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart
@@ -3785,7 +3898,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,info)
     ENDIF
 
     eta => Set_dcop(Particles,eta_id)
-    IF (vector) THEN
+    IF (vector_output) THEN
         dwpv => Set_wpv(Particles,to_id)
     ELSE
         dwps => Set_wps(Particles,to_id)
