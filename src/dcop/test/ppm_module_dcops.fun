@@ -1,6 +1,7 @@
 test_suite ppm_module_dcops
 use ppm_module_particles
 use ppm_module_particles_typedef
+use ppm_module_io_vtk
 #include "../../ppm_define.h"
 
 #ifdef __MPI
@@ -21,20 +22,22 @@ integer                         :: np_global = 1000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
-real(mk),dimension(:  ),pointer :: min_phys,max_phys
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: rcp,wp,dwp
-integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh
-integer                         :: wp_id,dwp_id,eta_id,eta2_id
+real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
+real(mk),dimension(:  ),pointer :: len_phys=>NULL()
+real(mk),dimension(:  ),pointer :: rcp=>NULL(),wp=>NULL(),dwp=>NULL()
+real(mk),dimension(:,:),pointer :: grad_wp=>NULL()
+integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh,vect_wp_id
+integer                         :: wp_id,dwp_id,grad_wp_id,eta_id,eta2_id
 real(mk)                        :: coeff,err,exact,linf
+real(mk),dimension(:),allocatable:: exact_vec,err_vec
 integer                         :: nterms
-real(mk),dimension(:),pointer   :: delta
+real(mk),dimension(:),pointer   :: delta=>NULL()
 integer,dimension(3)            :: ldc
 integer,dimension(ndim)         :: dg
 integer,dimension(:),allocatable:: degree,degree2,order,order2
 real(mk),dimension(:),allocatable:: coeffs,coeffs2
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
+real(mk),dimension(:  ),pointer :: cost=>NULL()
 character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
@@ -213,6 +216,11 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         dwp_id=0
         call particles_allocate_wps(Particles,dwp_id,info,name='dwp')
 
+        call ppm_vtk_particle_cloud('testvtk1',Particles,info)
+        Assert_Equal(info,0)
+
+
+
 !check d2dx2
         nterms=1
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
@@ -253,6 +261,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
@@ -297,6 +306,7 @@ write(*,*) 'error is ', err/linf
         dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
@@ -343,52 +353,58 @@ write(*,*) 'error is ', err/linf
         dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
 
-!check vector-valued operators (like the gradient)
+!check vector-valued operators (gradient)
         nterms= ndim
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
         if (ndim .eq. 2) then
-               degree =  (/1,1,   4,1/)
+               degree =  (/1,0,   0,1/)
         else 
-               degree =  (/2,0,0, 1,2,0, 0,1,2/)
+               degree =  (/1,0,0, 0,1,0, 0,0,1/)
         endif
         coeffs = 1.0_mk
-        coeffs(2) = 4.0_mk
         order =  2
 
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="test")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
+                info,name="gradient",vector=.true.)
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
 
-        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+        grad_wp_id=0
+        call particles_allocate_wpv(Particles,grad_wp_id,ppm_dim,info,name="grad_wp")
+        Assert_Equal(info,0)
+        call particles_dcop_apply(Particles,wp_id,grad_wp_id,eta_id,info)
         Assert_Equal(info,0)
 
         wp => Get_wps(Particles,wp_id)
-        dwp => Get_wps(Particles,dwp_id)
+        grad_wp => Get_wpv(Particles,grad_wp_id)
         xp => Get_xp(Particles)
         err = 0._mk
         linf = 0._mk
+        allocate(exact_vec(nterms),err_vec(nterms))
         DO ip=1,Particles%Npart
-            exact = 0._mk
             DO i=1,nterms
                 coeff = Particles%ops%desc(eta_id)%coeffs(i)
                 dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
-                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+                exact_vec(i) = coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
             ENDDO
-            write(103,'(5(E20.10,2X))') xp(1:ndim,ip),wp(ip),exact,dwp(ip)
-            err = MAX(err,abs(dwp(ip) - exact))
-            linf = MAX(linf,abs(exact))
+            DO i=1,nterms 
+                err_vec(i) = MAX(err_vec(i),abs(grad_wp(i,ip) - exact_vec(i)))
+            ENDDO
+            linf = MAX(linf,MAXVAL(abs(exact_vec)))
         ENDDO
         wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
-        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        grad_wp => Set_wpv(Particles,grad_wp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
-write(*,*) 'error is ', err/linf
-        deallocate(degree,coeffs,order)
+write(*,*) 'error is ', MAXVAL(err_vec)/linf
+        Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
+        deallocate(degree,coeffs,order,exact_vec,err_vec)
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
 
@@ -457,7 +473,8 @@ write(*,*) 'error is ', err/linf
         order =  2
 
         eta_id = 0
-        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="interpolation",interp=.true.)
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,&
+                info,name="interpolation",interp=.true.)
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles2,eta_id,info)
         Assert_Equal(info,0)
@@ -484,6 +501,7 @@ write(*,*) 'error is ', err/linf
         dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles2,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles2,eta_id,info)
         Assert_Equal(info,0)
@@ -532,6 +550,7 @@ write(*,*) 'error is ', err/linf
         dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles2,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles2,eta_id,info)
         Assert_Equal(info,0)
@@ -574,6 +593,58 @@ write(*,*) 'error is ', err/linf
         dwp => Set_wps(Particles2,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles2,read_only=.TRUE.)
 write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+!check data interpolation with vector-valued operators
+        nterms=4
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/1,0, 2,0, 1,2, 0,4/)
+        else 
+               degree =  (/1,0,0, 2,0,0, 2,0,2, 1,1,2/)
+        endif
+        coeffs = (/-3._mk, 1.3_mk, 2.1_mk, 0.1_mk/)
+        order =  (/1, 3, 1, 2/)
+        eta_id = 0
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,&
+                nterms,info,name="vectvalued",interp=.true.,vector=.true.)
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles2,eta_id,info)
+        Assert_Equal(info,0)
+
+        vect_wp_id = 0 !let dcop_apply allocate the array for the result
+        call particles_dcop_apply(Particles2,wp_id,vect_wp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+
+        call ppm_vtk_particle_cloud('testvtk',Particles,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        grad_wp => Get_wpv(Particles2,vect_wp_id)
+        xp => Get_xp(Particles2)
+        err = 0._mk
+        linf = 0._mk
+        allocate(exact_vec(nterms),err_vec(nterms))
+        DO ip=1,Particles2%Npart
+            DO i=1,nterms
+                coeff = Particles2%ops%desc(eta_id)%coeffs(i)
+                dg = Particles2%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact_vec(i) = coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            DO i=1,nterms 
+                err_vec(i) = MAX(err_vec(i),abs(grad_wp(i,ip) - exact_vec(i)))
+            ENDDO
+            linf = MAX(linf,MAXVAL(abs(exact_vec)))
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        grad_wp => Set_wpv(Particles2,vect_wp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles2,read_only=.TRUE.)
+write(*,*) 'error is ', MAXVAL(err_vec)/linf
+        Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles2,eta_id,info)
         Assert_Equal(info,0)

@@ -128,7 +128,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
         Assert_Equal(info,0)
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid,cutoff=cutoff)
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,&
+            topoid,cutoff=cutoff)
         Assert_Equal(info,0)
         Assert_Equal(Particles%cutoff,cutoff)
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
@@ -174,6 +175,34 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
     end test
 
     test global2
+        ! test global mapping of particles with cartesian particles plus displacement
+
+        use ppm_module_typedef
+        use ppm_module_topo_check
+
+        ok=.false.
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        Assert_Equal(info,0)
+        allocate(disp(ndim,Particles%Npart),stat=info)
+        Assert_Equal(info,0)
+        call random_number(disp)
+        Assert_True(Particles%cutoff>0._MK)
+        
+        xp => get_xp(Particles)
+        Assert_True(associated(xp))
+        FORALL(ip=1:Particles%Npart) &
+            xp(1:ndim,ip) = xp(1:ndim,ip) + (disp(1:ndim,ip)-0.5_mk)*Particles%cutoff
+        xp => set_xp(Particles)
+        call particles_apply_bc(Particles,topoid,info)
+        call particles_mapping_global(Particles,topoid,info)
+        Assert_Equal(info,0)
+        Assert_Equal(Particles%active_topoid,topoid)
+        call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
+        Assert_True(ok)
+
+    end test
+
+    test global3
         ! test global mapping of particles with random particles
 
         use ppm_module_typedef
@@ -305,7 +334,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
         Assert_Equal(Particles%nneighmin,nneigh_theo)
 
-        call particles_updated_cutoff(Particles,info,cutoff=1.5_mk*Particles%h_avg)
+        call particles_update_cutoff(Particles,1.5_mk*Particles%h_avg,info)
         Assert_Equal(info,0)
         call particles_neighlists(Particles,topoid,info)
         Assert_Equal(info,0)
@@ -316,7 +345,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
         Assert_Equal(Particles%nneighmin,nneigh_theo)
 
-        call particles_updated_cutoff(Particles,info,cutoff=1.1_mk*Particles%h_avg)
+        call particles_update_cutoff(Particles,1.1_mk*Particles%h_avg,info)
         Assert_Equal(info,0)
         call particles_neighlists(Particles,topoid,info)
         Assert_Equal(info,0)
