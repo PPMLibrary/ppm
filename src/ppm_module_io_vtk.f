@@ -116,7 +116,7 @@
            REAL(ppm_kind_double)                :: t0
            INTEGER                              :: i, j, k, l, nd, N
            INTEGER                              :: nb_wps, nb_wpv, nb_wpv_field
-           INTEGER, DIMENSION(:),   ALLOCATABLE :: wps_l, wpv_l, wpv_l_field
+           INTEGER, DIMENSION(:),   ALLOCATABLE :: wps_l, wpv_l, wpv_field_l
            LOGICAL                              :: ghosts
            REAL(8), DIMENSION(:,:), POINTER     :: xp  => NULL()
            REAL(8), DIMENSION(:),   POINTER     :: wp  => NULL()
@@ -263,9 +263,17 @@
                    "' type='Float64' />"
               END DO
               DO i=1,nb_wpv
+                 nd = Particles%wpv_s(i)
+                 DO l=1,nd
+                    WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(i))%name), '_', l
+                    WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                        scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
+                 END DO
+              END DO
+              DO i=1,nb_wpv_field
               WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                   Particles%wpv(wpv_l(i))%name &
-                   (1:LEN_TRIM(Particles%wpv(wpv_l(i))%name)), &
+                   Particles%wpv(wpv_field_l(i))%name &
+                   (1:LEN_TRIM(Particles%wpv(wpv_field_l(i))%name)), &
                    "' type='Float64' />"
               END DO
               WRITE(iUnit,'(A)') "    </PPointData>"              
@@ -357,7 +365,7 @@
                  xp => get_wpv(Particles,wpv_l(k),with_ghosts=ghosts)
                  nd = SIZE(xp,1)
                  DO l=1,nd
-                    WRITE(scratch,'(A,A,I0)') Particles%wpv(wpv_l(k))%name, '_', l
+                    WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(k))%name), '_', l
                     wp => xp(l,:)
 #define VTK_NAME scratch
 #define VTK_TYPE "Float64"
