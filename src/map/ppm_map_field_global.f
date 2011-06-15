@@ -27,6 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+
       SUBROUTINE ppm_map_field_global(topoid,target_topoid,            &
      &                                meshid,target_meshid,info)
       !!! This routine maps field data between two topologies (which
@@ -128,7 +129,7 @@
       topo => ppm_topo(topoid)%t
       target_topo => ppm_topo(target_topoid)%t
       mesh => topo%mesh(meshid)
-      target_mesh => target_topo%mesh(meshid)
+      target_mesh => target_topo%mesh(target_meshid)
 
 
       IF (ppm_buffer_set .GT. 0) THEN
@@ -147,11 +148,12 @@
       !  same number of grid points in the whole comput. domain)
       !-------------------------------------------------------------------------
       DO i=1,pdim
-          IF (mesh%Nm(i) .NE. target_mesh%Nm(i)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_bad_mesh,'ppm_map_field_global',  &
-     &            'source and destination meshes are incompatible',__LINE__,info)
-              GOTO 9999
+          IF (ppm_debug .GT. 0) THEN
+              IF (mesh%Nm(i) .NE. target_mesh%Nm(i)) THEN
+                  info = ppm_error_error
+                  CALL ppm_write(ppm_rank,'ppm_map_field_global',   &
+     &            'Source and destination meshes are of different size',info)
+              ENDIF
           ENDIF
       ENDDO
 
@@ -256,7 +258,7 @@
       !-------------------------------------------------------------------------
       nrecvlist = 0
       ! loop over fromtopo first and THEN over totopo in order to get the
-      ! same ordering of mesh blocks as in the sendlist. This is crutial
+      ! same ordering of mesh blocks as in the sendlist. This is crucial
       ! for the push and the pop to work properly
       DO j=1,topo%nsubs
           DO i=1,target_topo%nsublist

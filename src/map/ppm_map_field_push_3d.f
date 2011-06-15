@@ -215,14 +215,13 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  If there is nothing to be sent we are done
+      !  If there is nothing to be sent we give a warning
       !-------------------------------------------------------------------------
       IF (Ndata .EQ. 0) THEN
           IF (ppm_debug .GT. 0) THEN
               CALL ppm_write(ppm_rank,'ppm_map_field_push_3d',   &
      &            'There is no data to be sent',info)
           ENDIF
-          GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
