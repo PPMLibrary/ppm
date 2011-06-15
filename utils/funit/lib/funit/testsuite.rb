@@ -90,6 +90,7 @@ module #{@suite_name}_fun
 
       while (line = funit_contents.shift) && line !~ /^\s*#.*/i
       end
+      funit_contents.unshift line
 
       while (line = funit_contents.shift) && line !~ KEYWORDS
         puts line
