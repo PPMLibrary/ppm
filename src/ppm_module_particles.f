@@ -88,6 +88,77 @@ FUNCTION set_xp(Particles,read_only,ghosts_ok)
 
 END FUNCTION set_xp
 
+FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
+    TYPE(ppm_t_particles)            :: Particles
+    INTEGER                          :: wpi_id
+    LOGICAL,OPTIONAL                 :: with_ghosts
+    INTEGER,DIMENSION(:),POINTER     :: get_wpi
+
+    IF (wpi_id .LE. 0) THEN
+        write(*,*) 'ERROR: failed to get wpi for property &
+            & wpi_id = ',wpi_id
+        get_wpi => NULL()
+        RETURN
+    ENDIF
+
+    IF (wpi_id .LE. Particles%max_wpiid) THEN
+        IF (Particles%wpi_m(wpi_id).EQ.1) THEN
+            IF (PRESENT(with_ghosts)) THEN
+                IF (with_ghosts) THEN
+                    IF (Particles%wpi_g(wpi_id).EQ.1) THEN
+                        get_wpi => Particles%wpi(wpi_id)%vec(1:Particles%Mpart)
+                    ELSE
+                        write(*,*) 'ERROR: tried to get wpi with ghosts &
+                            & when ghosts are not up-to-date. Returning NULL pointer'
+                        write(*,*) 'Run with traceback option to debug'
+                        get_wpi => NULL()
+                    ENDIF
+                    RETURN
+                ENDIF
+            ENDIF
+            get_wpi => Particles%wpi(wpi_id)%vec(1:Particles%Npart)
+            RETURN
+        ENDIF
+    ENDIF
+    write(*,*) 'ERROR: tried to get wpi when mapping&
+        & is not up-to-date. Returning NULL pointer'
+    write(*,*) 'Run with traceback option to debug'
+    get_wpi => NULL()
+
+END FUNCTION get_wpi
+
+FUNCTION set_wpi(Particles,wpi_id,read_only,ghosts_ok)
+    TYPE(ppm_t_particles)            :: Particles
+    INTEGER                          :: wpi_id
+    LOGICAL,OPTIONAL                 :: read_only
+    LOGICAL,OPTIONAL                 :: ghosts_ok
+    INTEGER,DIMENSION(:),POINTER     :: set_wpi
+
+    !If read_only was not explicitely set to true, then assume
+    !that ghosts are no longer up to date, unless ghosts_ok was
+    ! explicitely set to true
+    IF (PRESENT(ghosts_ok)) THEN
+        IF (ghosts_ok) THEN
+            set_wpi => NULL()
+            RETURN
+        ENDIF
+    ENDIF
+
+    IF (PRESENT(read_only)) THEN
+        IF (read_only) THEN
+            set_wpi => NULL()
+            RETURN
+        ENDIF
+    ENDIF
+
+    !Assume that the ghost values are now incorrect
+    IF (Particles%wpi_g(wpi_id).EQ.1) THEN
+        Particles%wpi_g(wpi_id) = 0
+    ENDIF
+    set_wpi => NULL()
+
+END FUNCTION set_wpi
+
 FUNCTION get_wps(Particles,wps_id,with_ghosts)
     TYPE(ppm_t_particles)            :: Particles
     INTEGER                          :: wps_id
@@ -347,12 +418,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             IF (ASSOCIATED(Particles%xp)) DEALLOCATE(Particles%xp,STAT=info)
             IF (ASSOCIATED(Particles%vlist)) DEALLOCATE(Particles%vlist,STAT=info)
             IF (ASSOCIATED(Particles%nvlist)) DEALLOCATE(Particles%nvlist,STAT=info)
+            IF (ASSOCIATED(Particles%wpi_g)) DEALLOCATE(Particles%wpi_g,STAT=info)
+            IF (ASSOCIATED(Particles%wpi_m)) DEALLOCATE(Particles%wpi_m,STAT=info)
             IF (ASSOCIATED(Particles%wps_g)) DEALLOCATE(Particles%wps_g,STAT=info)
             IF (ASSOCIATED(Particles%wps_m)) DEALLOCATE(Particles%wps_m,STAT=info)
             IF (ASSOCIATED(Particles%wpv_g)) DEALLOCATE(Particles%wpv_g,STAT=info)
             IF (ASSOCIATED(Particles%wpv_m)) DEALLOCATE(Particles%wpv_m,STAT=info)
             IF (ASSOCIATED(Particles%wpv_s)) DEALLOCATE(Particles%wpv_s,STAT=info)
 
+            IF (ASSOCIATED(Particles%wpi)) THEN
+                DO i=1,Particles%max_wpiid
+                    IF (ASSOCIATED(Particles%wpi(i)%vec)) &
+                        DEALLOCATE(Particles%wpi(i)%vec,STAT=info)
+                    NULLIFY(Particles%wpi(i)%vec)
+                ENDDO
+                DEALLOCATE(Particles%wpi,STAT=info)
+            ENDIF
             IF (ASSOCIATED(Particles%wps)) THEN
                 DO i=1,Particles%max_wpsid
                     IF (ASSOCIATED(Particles%wps(i)%vec)) &
@@ -404,6 +485,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         NULLIFY(Particles%xp)
         NULLIFY(Particles%nvlist)
         NULLIFY(Particles%vlist)
+        NULLIFY(Particles%wpi)
+        NULLIFY(Particles%wpi_g)
+        NULLIFY(Particles%wpi_m)
         NULLIFY(Particles%wps)
         NULLIFY(Particles%wps_g)
         NULLIFY(Particles%wps_m)
@@ -435,8 +519,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             Particles%name = particles_dflt_partname()
         ENDIF
         ! No properties defined yet
+        Particles%nwpi = 0
         Particles%nwps = 0
         Particles%nwpv = 0
+        Particles%max_wpiid = 0
         Particles%max_wpsid = 0
         Particles%max_wpvid = 0
         ! No active topology yet
@@ -459,6 +545,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%adaptive = .FALSE.
         Particles%adapt_wpid = 0
         Particles%adapt_wpgradid = 0
+        Particles%gi_id = 0
         Particles%rcp_id = 0
         Particles%eta_id = 0
         Particles%D_id = 0
@@ -478,6 +565,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%h_avg = -1._MK
         Particles%h_min = -1._MK
         Particles%areinside = .FALSE.
+
+        Particles%time = 0._MK
+        Particles%itime = 0
 
 
         IF (verbose) &
@@ -619,6 +709,263 @@ FUNCTION particles_dflt_opname(i)
     RETURN
 END FUNCTION
 
+
+SUBROUTINE particles_allocate_wpi(Particles,wp_id,info,with_ghosts,&
+        zero,iopt,name)
+
+    !!! Allocate an integer property in this Particles data structure
+    !!! If _wp_id_ is zero, a new id is generated
+    !!! otherwise, the property wp_id is overwritten
+    !!! The array can be of size Npart or Mpart (if _with_ghosts_ is
+    !!! true) and initialized to zero (if _zero_ is true) or not.
+
+#if   __KIND == __SINGLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)      :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(INOUT)      :: wp_id
+    !!! id of this property
+    INTEGER,                            INTENT(  OUT)      :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional arguments
+    !-------------------------------------------------------------------------
+    INTEGER , OPTIONAL                                     :: iopt
+    !!! Allocation mode. One of:
+    !!!
+    !!! * ppm_param_alloc_fit (default)
+    !!! * ppm_param_alloc_grow
+    !!! * ppm_param_alloc_grow_preserve
+    !!! * ppm_param_dealloc
+    LOGICAL , OPTIONAL                                     :: with_ghosts
+    !!! if true, then allocate with Mpart instead of the default size of Npart
+    LOGICAL , OPTIONAL                                     :: zero
+    !!! if true, then initialise the array to zero
+    CHARACTER(LEN=*) , OPTIONAL                            :: name
+    !!! give a name to this integer-valued property
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    LOGICAL                   :: lalloc,ldealloc,incr_nb_wp
+    INTEGER                   :: iopt_l
+    CHARACTER(LEN = ppm_char) :: caller = 'particles_allocate_wpi'
+    REAL(KIND(1.D0))          :: t0
+    INTEGER                   :: i
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+    info = 0
+    !-----------------------------------------------------------------
+    !  Some checks
+    !-----------------------------------------------------------------
+    IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &  'Particles structure had not been defined. Call allocate first',&
+            &  __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF(.NOT.ASSOCIATED(Particles%wpi)) THEN
+        !allocate memory
+        ALLOCATE(Particles%wpi(20),STAT=info)
+        DO i=1,20
+            Particles%wpi(i)%name = particles_dflt_pptname(i,1)
+        ENDDO
+        ALLOCATE(Particles%wpi_g(20),STAT=info)
+        ALLOCATE(Particles%wpi_m(20),STAT=info)
+        !set defaults
+        Particles%wpi_g = -1
+        Particles%wpi_m = -1
+    ENDIF
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'allocation failed for wpi',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    !-------------------------------------------------------------------------
+    !  Check the allocation type
+    !-------------------------------------------------------------------------
+    IF (PRESENT(iopt)) THEN
+        iopt_l = iopt
+    ELSE
+        iopt_l = ppm_param_alloc_fit
+    ENDIF
+    lalloc   = .FALSE.
+    ldealloc = .FALSE.
+
+    IF (iopt_l.EQ.ppm_param_alloc_fit) THEN
+        !----------------------------------------------------------------------
+        !  fit memory but skip the present contents
+        !----------------------------------------------------------------------
+        IF (wp_id.NE.0) THEN
+            IF (ASSOCIATED(Particles%wpi(wp_id)%vec)) ldealloc = .TRUE.
+        ENDIF
+        lalloc   = .TRUE.
+    ELSEIF (iopt_l.EQ.ppm_param_alloc_grow_preserve) THEN
+        lalloc = .TRUE.
+    ELSEIF (iopt_l.EQ.ppm_param_alloc_grow) THEN
+        lalloc = .TRUE.
+    ELSEIF (iopt_l.EQ.ppm_param_dealloc) THEN
+        ldealloc = .TRUE.
+    ELSE
+        !----------------------------------------------------------------------
+        !  Unknown iopt
+        !----------------------------------------------------------------------
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,                 &
+            &                  'unknown iopt',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (ldealloc) THEN
+        ldc = 0
+        CALL ppm_alloc(Particles%wpi(wp_id)%vec,ldc,ppm_param_dealloc,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,caller,&
+                'ppm_alloc (deallocate) failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+
+        !----------------------------------------------------------------------
+        ! Update state
+        !----------------------------------------------------------------------
+        Particles%wpi_m(wp_id) = -1
+        Particles%wpi_g(wp_id) = -1
+        Particles%wpi(wp_id)%vec => NULL()
+        !reset the label of this property to its default value
+        !Commented out for now - not sure whether we want this or no
+        !Particles%wpi(wp_id)%name = particles_dflt_pptname(wp_id,1)
+        !Decrement number of properties
+        Particles%nwpi = Particles%nwpi-1
+        IF (wp_id .GE. Particles%max_wpiid) THEN
+            Particles%max_wpiid = Particles%max_wpiid - 1
+            DO WHILE (.NOT.ASSOCIATED(Particles%wpi(Particles%max_wpiid)%vec) )
+                Particles%max_wpiid = Particles%max_wpiid - 1
+                IF (Particles%max_wpiid.LE.0) EXIT
+            ENDDO
+        ENDIF
+
+        IF (verbose) &
+            write(*,*) 'De-allocated wpi with id=', wp_id
+        IF (.NOT. lalloc) THEN
+            wp_id = 0
+        ENDIF
+    ENDIF
+
+    IF (lalloc) THEN
+        !-----------------------------------------------------------------
+        !  If not provided by the user, generate new id for the property
+        !-----------------------------------------------------------------
+        IF (wp_id.EQ.0) THEN
+            !create a new property id (first free index)
+            wp_id = 1
+            DO WHILE (ASSOCIATED(Particles%wpi(wp_id)%vec))
+                wp_id = wp_id + 1
+                IF (wp_id.GT.SIZE(Particles%wpi,1)) THEN
+                    write(*,*) 'need to increase the size of the property array'
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'allocation failed for wpi',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDDO
+            incr_nb_wp = .TRUE.
+        ELSE
+            IF (ldealloc) THEN
+                !number of properties has decreased in dealloc and
+                ! needs to be incremented back again
+                incr_nb_wp = .TRUE.
+            ELSE
+                !number of properties will not change
+                incr_nb_wp = .FALSE.
+            ENDIF
+        ENDIF
+
+        !-----------------------------------------------------------------
+        !  Allocate memory for the properties
+        !-----------------------------------------------------------------
+        ldc(1) = Particles%Npart
+        IF (PRESENT(with_ghosts)) THEN
+            IF (with_ghosts) ldc(1) = Particles%Mpart
+        ENDIF
+        CALL ppm_alloc(Particles%wpi(wp_id)%vec,ldc(1:1),iopt_l,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &            'Could not allocate wpi elements',__LINE__,info)
+            GOTO 9999
+        ENDIF
+
+        IF (PRESENT(zero)) THEN
+            IF (zero) THEN
+                DO i=1,ldc(1)
+                    Particles%wpi(wp_id)%vec(i)=0
+                ENDDO
+            ENDIF
+        ENDIF
+
+        !-----------------------------------------------------------------
+        ! Update state
+        !-----------------------------------------------------------------
+        !Set the name of the property
+        IF (PRESENT(name)) Particles%wpi(wp_id)%name = TRIM(name)
+        !Set its state to "mapped" (every index corresponds to exactly one
+        !real particle)
+        Particles%wpi_m(wp_id) = 1
+
+        !if Mpart was up-to-date, then set the for this property ghosts to "updated"
+        ! (because to every index between Npart+1 and Mpart corresponds exactly
+        ! one ghost value)
+        Particles%wpi_g(wp_id) = 0
+        IF (PRESENT(with_ghosts)) THEN
+            IF (with_ghosts .AND. Particles%xp_g .EQ. 1) THEN
+                Particles%wpi_g(wp_id) = 1
+            ENDIF
+        ENDIF
+
+        IF (incr_nb_wp) THEN
+            !Increment number of properties
+            Particles%nwpi = Particles%nwpi+1
+        ENDIF
+
+        IF (wp_id .GT. Particles%max_wpiid) THEN
+            Particles%max_wpiid = wp_id
+        ENDIF
+        IF (Particles%max_wpiid .GT. SIZE(Particles%wpi)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'Pointer array wpi is growing and should be reallocated',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+
+        !We assume that if the user allocates an array for the cutoff radius,
+        ! then it means the particles are meant to be adaptive.
+        IF (Particles%rcp_id.NE.0) Particles%adaptive=.TRUE.
+
+        IF (verbose) &
+            write(*,*) 'Allocated wpi with size=',ldc(1),&
+            ' id=',wp_id, 'name = ', TRIM(ADJUSTL(Particles%wpi(wp_id)%name))
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Finalize
+    !-----------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE
+
+END SUBROUTINE particles_allocate_wpi
 
 SUBROUTINE particles_allocate_wps(Particles,wp_id,info,with_ghosts,&
         zero,iopt,name)
@@ -1203,6 +1550,19 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             GOTO 9999
         ENDIF
 
+        DO prop_id = 1,Particles%max_wpiid
+            IF(Particles%wpi_m(prop_id) .GE. 0) THEN
+                CALL ppm_map_part_push(Particles%wpi(prop_id)%vec,&
+                    Particles%Npart,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_map_part_push failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDDO
+
         DO prop_id = 1,Particles%max_wpsid
             IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
@@ -1260,6 +1620,18 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ENDDO
+        DO prop_id = Particles%max_wpiid,1,-1
+            IF(Particles%wpi_m(prop_id) .GE. 0) THEN
+                CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
+                    Particles%Npart,Npart_new,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_map_part_pop failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDDO
 
         CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
             Npart_new,info)
@@ -1277,6 +1649,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%active_topoid = topoid
         ! Particles are now mapped on the active topology
         Particles%ontopology = .TRUE.
+        !   values for some integer arrays have been mapped and ghosts
+        !   are no longer up-to-date
+        DO prop_id = 1,Particles%max_wpiid
+            IF (Particles%wpi_m(prop_id) .EQ. 0) Particles%wpi_m(prop_id) = 1
+            IF (Particles%wpi_g(prop_id) .EQ. 1) Particles%wpi_g(prop_id) = 0
+        ENDDO
         !   values for some scalar arrays have been mapped and ghosts
         !   are no longer up-to-date
         DO prop_id = 1,Particles%max_wpsid
@@ -1390,6 +1768,20 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             GOTO 9999
         ENDIF
 
+        DO prop_id = 1,Particles%max_wpiid
+            IF(Particles%wpi_m(prop_id) .GE. 0) THEN
+                IF(dbg) &
+                    write(*,*) 'pushing-1 ',prop_id
+                CALL ppm_map_part_push(Particles%wpi(prop_id)%vec,&
+                    Particles%Npart,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_map_part_push failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDDO
         DO prop_id = 1,Particles%max_wpsid
             IF(Particles%wps_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
@@ -1404,7 +1796,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ENDDO
-
         DO prop_id = 1,Particles%max_wpvid
             IF(Particles%wpv_m(prop_id) .GE. 0) THEN
                 IF(dbg) &
@@ -1456,6 +1847,20 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ENDDO
+        DO prop_id = Particles%max_wpiid,1,-1
+            IF(Particles%wpi_m(prop_id) .GE. 0) THEN
+                IF(dbg) &
+                    write(*,*) 'popping-1 ',prop_id
+                CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
+                    Particles%Npart,Npart_new,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_map_part_pop failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDDO
 
         CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
             Npart_new,info)
@@ -1473,6 +1878,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%active_topoid = topoid
         ! Particles are now mapped on the active topology
         Particles%ontopology = .TRUE.
+        !   values for some integer arrays have been mapped and ghosts
+        !   are no longer up-to-date
+        DO prop_id = 1,Particles%max_wpiid
+            IF (Particles%wpi_m(prop_id) .EQ. 0) Particles%wpi_m(prop_id) = 1
+            IF (Particles%wpi_g(prop_id) .EQ. 1) Particles%wpi_g(prop_id) = 0
+        ENDDO
         !   values for some scalar arrays have been mapped and ghosts
         !   are no longer up-to-date
         DO prop_id = 1,Particles%max_wpsid
@@ -1635,6 +2046,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! 1) they have been mapped to this topology,
         ! 2) the ghosts have not yet been updated, and
         ! 3) the user wants them to be updated
+        DO prop_id = 1,Particles%max_wpiid
+            IF(Particles%wpi_m(prop_id) .EQ. 1) THEN
+                IF(Particles%wpi_g(prop_id) .EQ. 0) THEN
+                    IF(dbg) &
+                        write(*,*) 'pushing-i ',prop_id
+                    CALL ppm_map_part_push(Particles%wpi(prop_id)%vec,&
+                        Particles%Npart,info)
+                    IF (info .NE. 0) THEN
+                        info = ppm_error_error
+                        CALL ppm_error(999,caller,&
+                            'ppm_map_part_push failed',__LINE__,info)
+                        GOTO 9999
+                    ENDIF
+                ENDIF
+            ENDIF
+        ENDDO
         DO prop_id = 1,Particles%max_wpsid
             IF(Particles%wps_m(prop_id) .EQ. 1) THEN
                 IF(Particles%wps_g(prop_id) .EQ. 0) THEN
@@ -1709,6 +2136,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ENDDO
+        DO prop_id = Particles%max_wpiid,1,-1
+            IF(Particles%wpi_m(prop_id) .EQ. 1) THEN
+                IF(Particles%wpi_g(prop_id) .EQ. 0) THEN
+                    IF(dbg) &
+                        write(*,*) 'popping-i ',prop_id
+                    CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
+                        Particles%Npart,Particles%Mpart,info)
+                    IF (info .NE. 0) THEN
+                        info = ppm_error_error
+                        CALL ppm_error(999,caller,&
+                            'ppm_map_part_pop failed',__LINE__,info)
+                        GOTO 9999
+                    ENDIF
+                ENDIF
+            ENDIF
+        ENDDO
 
         IF (.NOT.skip_ghost_get) THEN
             CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
@@ -1726,6 +2169,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ! Update states
     !   ghosts have been computed
     Particles%xp_g = 1
+    !   ghosts values for some integer arrays have been computed
+    DO prop_id = 1,Particles%max_wpiid
+        IF (Particles%wpi_m(prop_id) .EQ. 1) THEN
+            IF (Particles%wpi_g(prop_id) .EQ. 0) Particles%wpi_g(prop_id) = 1
+        ENDIF
+    ENDDO
     !   ghosts values for some scalar arrays have been computed
     DO prop_id = 1,Particles%max_wpsid
         IF (Particles%wps_m(prop_id) .EQ. 1) THEN

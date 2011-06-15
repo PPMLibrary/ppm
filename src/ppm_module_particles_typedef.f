@@ -24,6 +24,13 @@ TYPE pnt_array_1d
     !!! name of the scalar-valued property
 END TYPE pnt_array_1d
 
+TYPE pnt_array_1d_i
+    INTEGER, DIMENSION(:), POINTER               :: vec => NULL()
+    !!! array where the integer-valued property is stored
+    CHARACTER(len=ppm_char)                      :: name
+    !!! name of the integer-valued property
+END TYPE pnt_array_1d_i
+
 TYPE pnt_array_2d
     REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: vec =>NULL()
     !!! array where the vector-value property is stored
@@ -83,6 +90,25 @@ TYPE ppm_t_particles
 
 
     ! Particles properties
+    !   integer
+    TYPE(pnt_array_1d_i),    DIMENSION(:), POINTER  :: wpi  => NULL()
+    !!! array of integer properties
+    INTEGER              , DIMENSION(:  ), POINTER  :: wpi_g=> NULL()
+    !!! array of pseudo-booleans for the integer properties
+    !!! takes values 1 if the ghost values have been computed
+    !!! 0 if they have not, and -1 if they do not need to be updated
+    INTEGER              , DIMENSION(:  ), POINTER  :: wpi_m=> NULL()
+    !!! array of pseudo-booleans for the integer properties
+    !!! takes values 1 if the values are used on the active topology
+    !!! 0 if they are not, and -1 if they do not need to be updated
+    !!! Note that the value of 0 indicates that the array is allocated 
+    !!! to the correct whereas a value of -1 does not.
+    INTEGER                                         :: nwpi
+    !!! number of integer properties
+    INTEGER                                         :: max_wpiid
+    !!! maximum index for integer properties
+
+
     !   scalar
     TYPE(pnt_array_1d),    DIMENSION(:),   POINTER  :: wps  => NULL()
     !!! array of scalar properties
@@ -178,6 +204,10 @@ TYPE ppm_t_particles
     TYPE(ppm_t_operator),  POINTER                  :: ops => NULL()
     !!! structure that contains the discrete operators
 
+    !Global indexing
+    INTEGER                                         :: gi_id
+    !!! index of the wpi array where the global indices are stored (if needed)
+
     ! Adaptive particles
     LOGICAL                                         :: adaptive
     !!! true if the particles have their own cutoff radii
@@ -225,6 +255,9 @@ TYPE ppm_t_particles
     !!! (global) average distance between particles
     REAL(prec)                                      :: h_min
     !!! (global) minimum distance between particles
+
+    REAL(prec)                                      :: time
+    INTEGER                                         :: itime
 
 END TYPE ppm_t_particles
 
