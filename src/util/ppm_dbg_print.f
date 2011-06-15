@@ -53,7 +53,6 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
