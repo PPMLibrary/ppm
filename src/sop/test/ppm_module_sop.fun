@@ -1,6 +1,7 @@
 test_suite ppm_module_sop
 use ppm_module_particles
 use ppm_module_sop_typedef
+use ppm_module_io_vtk
 #include "../../ppm_define.h"
 
 #ifdef __MPI
@@ -115,10 +116,11 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_typedef
         use ppm_module_topo_check
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+!start with slightly perturbed cartesian particles
+        call particles_initialize(Particles,np_global,info,&
+                ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
         Assert_Equal(info,0)
-
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
         disp = 0.0001_mk * disp
@@ -129,6 +131,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_partial(Particles,topoid,info)
         Assert_Equal(info,0)
 
+!initialise cutoff radii and one property (not used, it will just be carried around)
         call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.,name='rcp')
         Assert_Equal(info,0)
         wp1_id=0
@@ -139,7 +142,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         xp => get_xp(Particles)
         FORALL(ip=1:Particles%Npart) 
             rcp(ip) = 1.9_mk*Particles%h_avg
-            wp(ip) = f0_fun(xp(1:ndim,ip)) 
+            wp(ip) = 7._mk * f0_fun(xp(1:ndim,ip)) 
         END FORALL
         rcp => set_wps(Particles,Particles%rcp_id)
         wp => set_wps(Particles,wp1_id)
@@ -156,24 +159,32 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_io_xyz(Particles,0,dirname,info)
         Assert_Equal(info,0)
 
+!setup options for sop
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
-
         opts%scale_D = 0.05_mk
-        !opts%minimum_D = 0.018_mk
-        opts%minimum_D = 0.03_mk
+        opts%minimum_D = 0.018_mk
+        !opts%minimum_D = 0.03_mk
         opts%maximum_D = 0.05_mk
         opts%adaptivity_criterion = 6._mk
         opts%fuse_radius = 0.2_mk
         opts%attractive_radius0 = 0.4_mk
         opts%rcp_over_D = 2.4_mk
+
+        Particles%itime = 1
+
+!adapt particles using an analytical function
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
 
+!printout
         call particles_io_xyz(Particles,1,dirname,info)
+        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
         Assert_Equal(info,0)
+write(*,*) 'ok now'
 
+!define a property, which will be used for adaptation
         call particles_allocate_wps(Particles,Particles%adapt_wpid,info,name='wp_test')
         wp_id = Particles%adapt_wpid
         Assert_Equal(info,0)
@@ -182,14 +193,19 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip)) 
         xp => set_xp(Particles,read_only=.true.)
         wp => set_wps(Particles,wp_id)
-
-        call particles_updated_cutoff(Particles,info,cutoff=4.5_mk*Particles%h_avg)
+        call particles_update_cutoff(Particles,4.5_mk*Particles%h_avg,info)
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_neighlists(Particles,topoid,info)
 
+        Particles%itime = 2
+
+!adapt particles without using analytical expressions
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,D_needs_gradients=.true.)
         Assert_Equal(info,0)
+
+!printout
         call particles_io_xyz(Particles,2,dirname,info)
+        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
         Assert_Equal(info,0)
 
     end test

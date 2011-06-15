@@ -2,6 +2,7 @@ test_suite ppm_module_dcops
 use ppm_module_particles
 use ppm_module_particles_typedef
 use ppm_module_io_vtk
+use ppm_module_data, ONLY: ppm_mpi_kind
 #include "../../ppm_define.h"
 
 #ifdef __MPI
@@ -18,7 +19,7 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 1000
+integer                         :: np_global = 4000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -28,6 +29,8 @@ real(mk),dimension(:  ),pointer :: rcp=>NULL(),wp=>NULL(),dwp=>NULL()
 real(mk),dimension(:,:),pointer :: grad_wp=>NULL()
 integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh,vect_wp_id
 integer                         :: wp_id,dwp_id,grad_wp_id,eta_id,eta2_id
+integer                         :: err_x_id,err_y_id,err_z_id
+real(mk),dimension(:  ),pointer :: err_x=>NULL(),err_y=>NULL(),err_z=>NULL()
 real(mk)                        :: coeff,err,exact,linf
 real(mk),dimension(:),allocatable:: exact_vec,err_vec
 integer                         :: nterms
@@ -216,10 +219,6 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         dwp_id=0
         call particles_allocate_wps(Particles,dwp_id,info,name='dwp')
 
-        call ppm_vtk_particle_cloud('testvtk1',Particles,info)
-        Assert_Equal(info,0)
-
-
 
 !check d2dx2
         nterms=1
@@ -385,9 +384,19 @@ write(*,*) 'error is ', err/linf
         wp => Get_wps(Particles,wp_id)
         grad_wp => Get_wpv(Particles,grad_wp_id)
         xp => Get_xp(Particles)
-        err = 0._mk
         linf = 0._mk
         allocate(exact_vec(nterms),err_vec(nterms))
+        err_vec = 0._mk
+
+err_x_id=0
+call particles_allocate_wps(Particles,err_x_id,info,name="error_grad_x")
+err_y_id=0
+call particles_allocate_wps(Particles,err_y_id,info,name="error_grad_y")
+!err_z_id=0
+!call particles_allocate_wps(Particles,err_z_id,info,name="error_grad_z")
+err_x => Get_wps(Particles,err_x_id)
+err_y => Get_wps(Particles,err_y_id)
+!err_z => Get_wps(Particles,err_z_id)
         DO ip=1,Particles%Npart
             DO i=1,nterms
                 coeff = Particles%ops%desc(eta_id)%coeffs(i)
@@ -397,11 +406,24 @@ write(*,*) 'error is ', err/linf
             DO i=1,nterms 
                 err_vec(i) = MAX(err_vec(i),abs(grad_wp(i,ip) - exact_vec(i)))
             ENDDO
+
+            err_x(ip) = err_vec(1)
+            err_y(ip) = err_vec(2)
+            !err_z(ip) = err_vec(3)
             linf = MAX(linf,MAXVAL(abs(exact_vec)))
         ENDDO
+err_x => Set_wps(Particles,err_x_id)
+err_y => Set_wps(Particles,err_y_id)
+!err_z => Set_wps(Particles,err_z_id)
+#ifdef __MPI
+        call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,comm,info)
+#endif
         wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
         grad_wp => Set_wpv(Particles,grad_wp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
+call ppm_vtk_particle_cloud('grad',Particles,info)
+
+Assert_Equal(info,0)
 write(*,*) 'error is ', MAXVAL(err_vec)/linf
         Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
         deallocate(degree,coeffs,order,exact_vec,err_vec)
@@ -619,16 +641,15 @@ write(*,*) 'error is ', err/linf
         call particles_dcop_apply(Particles2,wp_id,vect_wp_id,eta_id,info)
         Assert_Equal(info,0)
 
-
-        call ppm_vtk_particle_cloud('testvtk',Particles,info)
+        call ppm_vtk_particle_cloud('vect_interp',Particles2,info)
         Assert_Equal(info,0)
 
         wp => Get_wps(Particles,wp_id)
         grad_wp => Get_wpv(Particles2,vect_wp_id)
         xp => Get_xp(Particles2)
-        err = 0._mk
         linf = 0._mk
         allocate(exact_vec(nterms),err_vec(nterms))
+        err_vec = 0._mk
         DO ip=1,Particles2%Npart
             DO i=1,nterms
                 coeff = Particles2%ops%desc(eta_id)%coeffs(i)
@@ -643,7 +664,7 @@ write(*,*) 'error is ', err/linf
         wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
         grad_wp => Set_wpv(Particles2,vect_wp_id,read_only=.TRUE.)
         xp => Set_xp(Particles2,read_only=.TRUE.)
-write(*,*) 'error is ', MAXVAL(err_vec)/linf
+write(*,*) 'error is ', MAXVAL(err_vec)/linf, linf
         Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles2,eta_id,info)

@@ -1,5 +1,5 @@
 test_suite ppm_module_particles
-
+use ppm_module_data, ONLY: ppm_mpi_kind
 
 #include "../../ppm_define.h"
 
@@ -23,8 +23,10 @@ real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
+integer,dimension(:),pointer    :: wpi=>NULL()
 integer                         :: i,j,k,isum1,isum2,ip,wp_id
-real(mk)                        :: rsum1,rsum2
+integer                         :: wpi_id,wps_id,wpv_id
+real(mk)                        :: rsum1,rsum2,rsum3,rsum4
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
 integer,dimension(3)            :: ldc
@@ -209,7 +211,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
         Assert_False(Particles%ontopology)
         call particles_mapping_global(Particles,topoid,info)
@@ -217,6 +219,72 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(Particles%active_topoid,topoid)
         call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
         Assert_True(ok)
+
+    end test
+
+    test global4
+        ! test global mapping of particles with properties
+
+        use ppm_module_typedef
+        use ppm_module_topo_check
+
+        ok = .false.
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        Assert_Equal(info,0)
+!allocate/initialise properties of different types and check that their sums are conserved
+!after the mapping
+        wpi_id=0
+        call particles_allocate_wpi(Particles,wpi_id,info)
+        Assert_Equal(info,0)
+        wps_id=0
+        call particles_allocate_wps(Particles,wps_id,info)
+        Assert_Equal(info,0)
+        wpv_id=0
+        call particles_allocate_wpv(Particles,wpv_id,7,info)
+        Assert_Equal(info,0)
+
+        wpi => get_wpi(Particles,wpi_id)
+        wp => get_wps(Particles,wpi_id)
+        disp => get_wpv(Particles,wpi_id)
+        FORALL(i=1:Particles%Npart) wpi(i)=i*rank
+        FORALL(i=1:Particles%Npart) wp(i)=sin(1._mk*i*rank)
+        FORALL(i=1:7,j=1:Particles%Npart) disp(i,j)=cos(1._mk*i*rank+3._mk*j)
+#ifdef __MPI
+        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum1,1,MPI_INTEGER,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum1,1,ppm_mpi_kind,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum2,1,ppm_mpi_kind,MPI_SUM,comm,info)
+#else
+        isum1 = SUM(wpi(1:Particles%Npart))
+        rsum1 = SUM(wp(1:Particles%Npart))
+        rsum2 = SUM(disp(1:7,1:Particles%Npart))
+#endif
+        wpi => set_wpi(Particles,wpi_id)
+        wp => set_wps(Particles,wps_id)
+        disp => set_wpv(Particles,wpv_id)
+
+        call particles_mapping_global(Particles,topoid,info)
+        Assert_Equal(info,0)
+        Assert_Equal(Particles%active_topoid,topoid)
+        call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
+        Assert_True(ok)
+        wpi => get_wpi(Particles,wpi_id)
+        wp => get_wps(Particles,wpi_id)
+        disp => get_wpv(Particles,wpi_id)
+#ifdef __MPI
+        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum2,1,MPI_INTEGER,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum3,1,ppm_mpi_kind,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum4,1,ppm_mpi_kind,MPI_SUM,comm,info)
+#else
+        isum2 = SUM(wpi(1:Particles%Npart))
+        rsum3 = SUM(wp(1:Particles%Npart))
+        rsum4 = SUM(disp(1:7,1:Particles%Npart))
+#endif
+        wpi => set_wpi(Particles,wpi_id)
+        wp => set_wps(Particles,wps_id)
+        disp => set_wpv(Particles,wpv_id)
+        Assert_Equal(isum1,isum2)
+        Assert_Equal_Within(rsum1,rsum3,1e-5)
+        Assert_Equal_Within(rsum2,rsum4,1e-5)
 
     end test
 
