@@ -37,6 +37,10 @@
       !!! The routine takes care of periodic boundary conditions (using
       !!! `ppm_impose_part_bc`). So no need for the user to do this manually.
       !!!
+      !!! All particles must be assigned after calling the partial map unless
+      !!! the optional 'ignore' flag has been set true. In this case unassigned
+      !!! particles are discarded.
+      !!!
       !!! [NOTE]
       !!! The first part of the buffer contains the on processor data.
 
