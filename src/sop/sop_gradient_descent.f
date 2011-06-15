@@ -319,104 +319,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !!-----------------------------------------------------------------!
             !! Get D directly from a given function
             !!-----------------------------------------------------------------!
-            CALL particles_allocate_wps(Particles,Particles%Dtilde_id,&
-                info,with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
+            CALL sop_compute_D(Particles,D_fun,opts,info,     &
+                wp_fun=wp_fun,wp_grad_fun=wp_grad_fun)
             IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
-
-            !---------------------------------------------------------------------!
-            ! Compute D_tilde
-            !---------------------------------------------------------------------!
-
-            xp => Get_xp(Particles)
-            Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-            IF (PRESENT(wp_grad_fun)) THEN
-                DO ip=1,Particles%Npart
-                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),&
-                        wp_grad_fun(xp(1:ppm_dim,ip)),opts)
-                    Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
-                ENDDO
-            ELSE
-                DO ip=1,Particles%Npart
-                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
-                    Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
-                ENDDO
-            ENDIF
-            Dtilde => Set_wps(Particles,Particles%Dtilde_id)
-            xp => Set_xp(Particles,read_only=.TRUE.)
-
-            !---------------------------------------------------------------------!
-            ! Increase the desired resolution where it is needed
-            ! D^(n+1) = Min(D^(n),D_tilde^(n+1))
-            !---------------------------------------------------------------------!
-            D => Get_wps(Particles,Particles%D_id)
-            Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-            DO ip=1,Particles%Npart
-                D(ip) = MIN(D(ip),Dtilde(ip))
-            ENDDO
-            D => Set_wps(Particles,Particles%D_id)
-            Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-
-            !---------------------------------------------------------------------!
-            ! Update cutoff radii
-            !---------------------------------------------------------------------!
-
-            D => Get_wps(Particles,Particles%D_id)
-            rcp => Get_wps(Particles,Particles%rcp_id)
-            DO ip=1,Particles%Npart
-                rcp(ip) = opts%rcp_over_D * D(ip)
-            ENDDO
-            D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-            rcp => Set_wps(Particles,Particles%rcp_id)
-
-
-            !---------------------------------------------------------------------!
-            ! Update ghost layers sizes
-            !---------------------------------------------------------------------!
-            CALL particles_updated_cutoff(Particles,info)
-            IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed',info)
+                CALL ppm_write(ppm_rank,caller,'sop_compute_D failed',info)
                 info = -1
                 GOTO 9999
             ENDIF
-
-            !have to reconstruct ghosts
-            CALL particles_mapping_ghosts(Particles,topo_id,info)
-            IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
-                info = -1
-                GOTO 9999
-            ENDIF
-
-            !---------------------------------------------------------------------!
-            ! Update neighbour lists
-            !---------------------------------------------------------------------!
-            CALL particles_neighlists(Particles,topo_id,info)
-            IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
-                info = -1
-                GOTO 9999
-            ENDIF
-
-            !---------------------------------------------------------------------!
-            ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
-            !---------------------------------------------------------------------!
-            D => Get_wps(Particles,Particles%D_id)
-            Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
-            DO ip=1,Particles%Npart
-                D(ip)=Dtilde(ip)
-                DO ineigh=1,Particles%nvlist(ip)
-                    iq=Particles%vlist(ineigh,ip)
-                    IF (Dtilde(iq).LT.D(ip)) D(ip)=Dtilde(iq)
-                ENDDO
-            ENDDO
-            D => Set_wps(Particles,Particles%D_id)
-            Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-
         ELSE
             ! do not update D
 
@@ -488,8 +397,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
-
-
         !---------------------------------------------------------------------!
         ! Update neighbour lists
         !---------------------------------------------------------------------!
@@ -499,7 +406,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
-
 
 #if debug_verbosity > 1
         CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,&
@@ -571,7 +477,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             xp => Set_xp(Particles,ghosts_ok=.TRUE.)
             step_previous = step
 
-            write(*,*) 'DBG: ',MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Mpart)))
+            !write(*,*) 'DBG: ',MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Mpart)))
 
             D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
             CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
@@ -712,7 +618,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         info = -1
         GOTO 9999
     ENDIF
-
     CALL particles_mapping_partial(Particles,topo_id,info)
     IF (info .NE. 0) THEN
         CALL ppm_write(ppm_rank,caller,&
@@ -1145,7 +1050,6 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         ENDIF
 
 
-
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
             !!-----------------------------------------------------------------!
@@ -1153,8 +1057,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             !!-----------------------------------------------------------------!
             CALL sop_compute_D(Particles,D_fun,opts,info,     &
                 wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
-                level_grad_fun=level_grad_fun,D_needs_gradients=need_derivatives,&
-                nb_fun=nb_fun)
+                level_grad_fun=level_grad_fun,nb_fun=nb_fun)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,'sop_compute_D failed',info)
                 info = -1
@@ -1162,7 +1065,6 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             ENDIF
         ELSE
             ! do not update D
-
         ENDIF Compute_D
 
         !interpolate some quantities on new particles

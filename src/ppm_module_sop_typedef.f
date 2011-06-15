@@ -74,6 +74,8 @@
          LOGICAL           :: write_xyz    ! writeout xyz files
 
 
+         LOGICAL                               :: D_needs_gradients
+         !!! The monitor function depends on the fields gradient
          REAL(prec)                            :: scale_D        ! resolution scale
          ! maximum scaling distance allowed
          REAL(prec)                            :: maximum_D      

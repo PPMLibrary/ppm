@@ -24,6 +24,7 @@ SUBROUTINE sop_init_opts(opts,info)
     ENDIF
 
     opts%level_set = .FALSE.
+    opts%D_needs_gradients = .TRUE.
     opts%scale_D = 1._MK
     opts%rcp_over_D = 2._MK
     opts%nb_width = 1._MK
