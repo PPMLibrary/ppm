@@ -21,7 +21,7 @@ src/ppm_define.h
 src/interpolate/test/ppm_test_interp_m2p
 src/interpolate/test/ppm_test_interp_p2m
 
-# /libppm/src/neighlist/test/
+# src/neighlist/test/
 src/neighlist/test/ppm_test_inl2d
 src/neighlist/test/ppm_test_inl2d_2
 src/neighlist/test/ppm_test_inl3d
