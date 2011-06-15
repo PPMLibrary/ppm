@@ -16,11 +16,13 @@
 #-------------------------------------------------------------------------
 
 # These variables are set when configure is ran
+srcdir = @srcdir@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
 includedir = @includedir@
 builddir = @builddir@
+CPPFLAGS = @CPPFLAGS@
 LIBS = @LIBS@
 LDFLAGS = @LDFLAGS@
 CFLAGS = @CFLAGS@
@@ -41,9 +43,9 @@ CPP := cpp
 FUNIT = ./utils/funit/bin/funit
 
 # These are important build directories
-SRC_DIR := $(builddir)/src
+SRC_DIR := $(srcdir)
 OBJ_DIR := $(builddir)/objects
-MODULES_DIR := $(builddir)/include
+MODULES_DIR := $(builddir)/include/ppm
 
 # These are paths that get included during pre-processing
 CPPVPATH := $(SRC_DIR):
@@ -65,7 +67,7 @@ DEPENDENCIES := $(SOURCES:%.f=$(OBJ_DIR)/%.d)
 # This creates the install directories if they don't exist
 $(warning Checking for directories...)
 $(shell test -d $(OBJ_DIR) || mkdir $(OBJ_DIR))
-$(shell test -d $(MODULES_DIR) || mkdir $(MODULES_DIR))
+$(shell test -d $(MODULES_DIR) || mkdir -p $(MODULES_DIR))
 $(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
 $(shell test -d $(libdir) || mkdir $(libdir))
 $(warning done.)
@@ -85,11 +87,11 @@ $(TARGET): $(OBJECTS)
 # 2) we add the dependency file as a target
 # 3) find INCLUDE and USE statements that are not inside a comment
 $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
-	@$(CPP) $(CPPINCLS) -M $< | \
+	@$(CPP) $(CPPFLAGS) $(CPPINCLS) -M $< | \
         sed -e 's#$*.o#$(OBJ_DIR)/$*.o $@#' \
             -e 's#$$#\\#' \
             -e 's#\\\\#\\#' > $@
-	@$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	@$(CPP) -traditional-cpp $(CPPFLAGS) -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	@grep "INCLUDE " $(OBJ_DIR)/__$*.f | \
         sed -e 's#^[ \t]*##' \
             -e '/^!/d' \
@@ -110,7 +112,7 @@ $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
 
 # This handles the pre-processing and does the actual compiling
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.f
-	$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	$(CPP) $(CPPFLAGS) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	$(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $(OBJ_DIR)/__$*.f
 	@mv $(builddir)/*.mod $(MODULES_DIR)
 	@rm $(OBJ_DIR)/__$*.f
@@ -136,14 +138,14 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
-	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS)
+	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
 
 test: all
-	make --directory=src/map/test FC=$(FC) CPP="$(CPP)" \
+	make --directory=$(SRC_DIR)/map/test FC=$(FC) CPP="$(CPP)" \
 		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
-	make --directory=src/interpolate/test FC=$(FC) CPP="$(CPP)" \
+	make --directory=$(SRC_DIR)interpolate/test FC=$(FC) CPP="$(CPP)" \
 		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
-	make --directory=src/neighlist/test FC=$(FC) CPP="$(CPP)" \
+	make --directory=$(SRC_DIR)/neighlist/test FC=$(FC) CPP="$(CPP)" \
 		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
 
 # This ensures all dependency files are up-to-date
