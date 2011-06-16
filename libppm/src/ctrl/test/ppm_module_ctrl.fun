@@ -131,14 +131,12 @@ test_suite ppm_module_ctrl
          ctrl_name = 'bool_array',     &
          default   = (/.true.,.false.,.true./), &
          help      = "Test if bool array printing works.")
-    write (log,*) 'args added...'
     ! supply flag
 !    CALL add_cmd('-h')
 !    CALL add_cmd('--help')
 !    CALL add_cmd('--print-ctrl')
     ! parse args
     CALL parse_args(info)
-    write (log,*) 'args parsed...'
     Assert_Equal(info, 0)
   end test
 
@@ -572,34 +570,58 @@ test_suite ppm_module_ctrl
 
   test default_funcs
     ! procedure declarations
-    procedure(integer_func)       int_def
-    procedure(single_func)        flt_def
-    procedure(string_func)        chr_def
-    procedure(logical_func)       log_def
-    procedure(integer_array_func) inta_def
-    procedure(single_array_func)  flta_def
-    procedure(string_array_func)  chra_def
-    procedure(logical_array_func) loga_def
+    procedure(integer_func)        int_def
+    procedure(longint_func)        lng_def
+    procedure(single_func)         flt_def
+    procedure(double_func)         dbl_def
+    procedure(string_func)         chr_def
+    procedure(logical_func)        log_def
+    procedure(complex_func)        cpx_def
+    procedure(dcomplex_func)       dcp_def
+    procedure(integer_array_func)  inta_def
+    procedure(longint_array_func)  lnga_def
+    procedure(single_array_func)   flta_def
+    procedure(double_array_func)   dbla_def
+    procedure(string_array_func)   chra_def
+    procedure(logical_array_func)  loga_def
+    procedure(complex_array_func)  cpxa_def
+    procedure(dcomplex_array_func) dcpa_def
     ! define
     CALL arg(idefault, 'idefault', default_func = int_def)
+    CALL arg(gdefault, 'gdefault', default_func = lng_def)
     CALL arg(rdefault, 'rdefault', default_func = flt_def)
+    CALL arg(ddefault, 'ddefault', default_func = dbl_def)
     CALL arg(cdefault, 'cdefault', default_func = chr_def)
     CALL arg(ldefault, 'ldefault', default_func = log_def)
+    CALL arg(pdefault, 'pdefault', default_func = cpx_def)
+    CALL arg(xdefault, 'xdefault', default_func = dcp_def)
     CALL arg(iarray,   'iarray',   default_func = inta_def)
+    CALL arg(garray,   'garray',   default_func = lnga_def)
     CALL arg(rarray,   'rarray',   default_func = flta_def)
+    CALL arg(darray,   'darray',   default_func = dbla_def)
     CALL arg(carray,   'carray',   default_func = chra_def)
     CALL arg(larray,   'larray',   default_func = loga_def)
+    CALL arg(parray,   'parray',   default_func = cpxa_def)
+    CALL arg(xarray,   'xarray',   default_func = dcpa_def)
     ! parse
     CALL parse_args(info)
     ! test
     Assert_Equal(idefault, 42       )
+    Assert_Equal(gdefault, 42       )
     Assert_Equal(rdefault, 0.1337   )
+    Assert_Equal(ddefault, 0.1337_8 )
     Assert_Equal(cdefault, "hrkljus")
     Assert_True(ldefault)
+    Assert_Equal(pdefault, (0,1)    )
+    Assert_Equal(xdefault, (0_8,1_8))
     Assert_Array_Equal( iarray, (/1, 2, 3/))
+    Assert_Array_Equal( garray, (/1, 2, 3/))
     Assert_Array_Equal( rarray, (/1.1, 2.2, 3.3/))
+    Assert_Array_Equal( darray, (/1.1_8, 2.2_8, 3.3_8/))
     Assert_Array_Equal( carray, (/'foo', 'bar', 'baz'/))
     Assert_LArray_Equal(larray, (/.true., .false., .true./))
+    Assert_Array_Equal( parray, (/(1,0),(0,1),(-1,0)/))
+    Assert_Array_Equal( xarray, (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
   end test
 
 end test_suite
@@ -610,11 +632,23 @@ logical function int_def(var)
   int_def = .true.
 end function int_def
 
+logical function lng_def(var)
+  integer(8), pointer, intent(in) :: var
+  var = 42
+  lng_def = .true.
+end function lng_def
+
 logical function flt_def(var)
   real, pointer, intent(in) :: var
   var = 0.1337
   flt_def = .true.
 end function flt_def
+
+logical function dbl_def(var)
+  real(8), pointer, intent(in) :: var
+  var = 0.1337_8
+  dbl_def = .true.
+end function dbl_def
 
 logical function chr_def(var)
   character(len=*), pointer, intent(in) :: var
@@ -628,17 +662,41 @@ logical function log_def(var)
   log_def = .true.
 end function log_def
 
+logical function cpx_def(var)
+  complex, pointer, intent(in) :: var
+  var = (0,1)
+  cpx_def = .true.
+end function cpx_def
+
+logical function dcp_def(var)
+  complex(8), pointer, intent(in) :: var
+  var = (0_8,1_8)
+  dcp_def = .true.
+end function dcp_def
+
 logical function inta_def(var)
   integer, dimension(:), pointer, intent(in) :: var
   var = (/1,2,3/)
   inta_def = .true.
 end function inta_def
 
+logical function lnga_def(var)
+  integer(8), dimension(:), pointer, intent(in) :: var
+  var = (/1,2,3/)
+  lnga_def = .true.
+end function lnga_def
+
 logical function flta_def(var)
   real, dimension(:), pointer, intent(in) :: var
   var = (/1.1,2.2,3.3/)
   flta_def = .true.
 end function flta_def
+
+logical function dbla_def(var)
+  real(8), dimension(:), pointer, intent(in) :: var
+  var = (/1.1_8,2.2_8,3.3_8/)
+  dbla_def = .true.
+end function dbla_def
 
 logical function chra_def(var)
   character(len=*), dimension(:), pointer, intent(in) :: var
@@ -651,3 +709,15 @@ logical function loga_def(var)
   var = (/.true.,.false.,.true./)
   loga_def = .true.
 end function loga_def
+
+logical function cpxa_def(var)
+  complex, dimension(:), pointer, intent(in) :: var
+  var = (/(1,0),(0,1),(-1,0)/)
+  cpxa_def = .true.
+end function cpxa_def
+
+logical function dcpa_def(var)
+  complex(8), dimension(:), pointer, intent(in) :: var
+  var = (/(1,0),(0,1),(-1,0)/)
+  dcpa_def = .true.
+end function dcpa_def
