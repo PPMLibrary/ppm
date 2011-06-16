@@ -188,6 +188,7 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
  &            'Could not allocate ppm_topo elements',__LINE__,info)
+          GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
