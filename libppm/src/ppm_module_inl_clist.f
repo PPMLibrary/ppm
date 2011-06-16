@@ -52,42 +52,46 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER, DIMENSION(:,:), POINTER :: borders  => NULL()
-        !!! contains the boundaries in the particle rank array separating the
-        !!! particles belonging to different cells.
-        !!!
-        !!! in 2D this is a 6xn_cells array
-        !!! The column indeces of borders(:,k) contain indeces to the rank array 
-        !!! specifying which particles belong in which subcell of cell k
-        !!! -----------
-        !!! |2:3 |4:5 |
-        !!! |----|----|
-        !!! |1:2 |3:4 |
-        !!! -----------
-        !!! e.g.
-        !!! index 1 (+1) to index 2 are all particles belonging to lower left subcell
-        !!!   --> rank(borders(1,k)+1:borders(2,k))
-        !!!
-        !!! index 6 is 1 if the cell contains particles in deeper levels,
-        !!! otherwise it is -1
-        INTEGER, DIMENSION(:),   POINTER :: rank       => NULL()
-        ! rank of particles
-        INTEGER, DIMENSION(:),   POINTER :: rankByPos  => NULL()
-        ! rank of particles
-        INTEGER, DIMENSION(:),   POINTER :: rc_borders => NULL()
+        TYPE ppm_clist
 
-        !-------------------------------------------------------------------------
-        !  Declaration of variables
-        !-------------------------------------------------------------------------
-        INTEGER :: borders_pos
-        INTEGER :: borders_pos_max
-        INTEGER :: max_depth
-        INTEGER :: ncell
-        INTEGER :: n_real_p
-        INTEGER :: n_all_p
-        INTEGER :: insuf_hash_table
+            INTEGER, DIMENSION(:,:), POINTER :: borders  => NULL()
+            !!! contains the boundaries in the particle rank array separating the
+            !!! particles belonging to different cells.
+            !!!
+            !!! in 2D this is a 6xn_cells array
+            !!! The column indeces of borders(:,k) contain indeces to the rank array 
+            !!! specifying which particles belong in which subcell of cell k
+            !!! -----------
+            !!! |2:3 |4:5 |
+            !!! |----|----|
+            !!! |1:2 |3:4 |
+            !!! -----------
+            !!! e.g.
+            !!! index 1 (+1) to index 2 are all particles belonging to lower left subcell
+            !!!   --> rank(borders(1,k)+1:borders(2,k))
+            !!!
+            !!! index 6 is 1 if the cell contains particles in deeper levels,
+            !!! otherwise it is -1
+            INTEGER, DIMENSION(:),   POINTER :: rank       => NULL()
+            ! rank of particles
+            INTEGER, DIMENSION(:),   POINTER :: rankByPos  => NULL()
+            ! rank of particles
+            INTEGER, DIMENSION(:),   POINTER :: rc_borders => NULL()
+    
+            !-------------------------------------------------------------------------
+            !  Declaration of variables
+            !-------------------------------------------------------------------------
+            INTEGER :: borders_pos      = 0
+            INTEGER :: borders_pos_max  = 0
+            INTEGER :: max_depth        = 0
+            INTEGER :: ncell            = 0
+            INTEGER :: n_real_p         = 0
+            INTEGER :: n_all_p          = 0
+            LOGICAL :: grow_htable      = .TRUE.
+    
+            TYPE(ppm_htable) :: lookup
 
-        TYPE(ppm_htable) :: lookup
+        END TYPE
 
         INTERFACE ppm_create_inl_clist
             MODULE PROCEDURE create_inl_clist_s
