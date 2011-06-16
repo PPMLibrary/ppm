@@ -593,6 +593,7 @@ ac_includes_default="\
 ac_subst_vars='LTLIBOBJS
 LIBOBJS
 DEBUG
+FUNIT_FLAGS
 ax_cv_f90_modflag
 EGREP
 GREP
@@ -5716,6 +5717,10 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 fi
 
+if test "x${use_mpi}" == xyes; then
+    FUNIT_FLAGS="--with-mpi"
+
+fi
 
 # Checks for libraries and set preprocessing flags
 
