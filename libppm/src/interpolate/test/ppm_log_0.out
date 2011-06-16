@@ -1,0 +1,959 @@
+[0] (ppm_init) : 2010-07-19 19:12:00 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:12:00 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 19:12:00 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:12:00 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:12:00 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:12:00 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_mesh_on_subs) : 2010-07-19 19:12:00 --- 0703 <ERROR> Subs and mesh incompatible: in dimension 1: sub_length=    1.000000 mesh_spacing=   -1.000000
+[0] (ppm_topo_mkfield) : 2010-07-19 19:12:00 --- 0602 <ERROR> Subroutine call failed: Defining meshes failed
+[0] (ppm_init) : 2010-07-19 19:20:08 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:20:08 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 19:20:08 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:20:08 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:20:08 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:20:08 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:20:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:20:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 19:20:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:20:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:20:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:20:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:21:00 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:21:00 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 19:21:00 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:21:00 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:21:00 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:21:00 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:22:50 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:22:50 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 19:22:50 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:22:50 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:22:50 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:22:50 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:24:12 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:24:12 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:24:12 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:24:12 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:24:12 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:24:12 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_topo_alloc) : 2010-07-19 19:24:12 --- 0503 <ERROR> at line 00437. Invalid argument: total number of subs is smaller than local
+[0] (ppm_topo_store) : 2010-07-19 19:24:12 --- 0101 <FATAL> at line 00130. Memory allocation failed: Could not allocate memory for Topology
+[0] (ppm_init) : 2010-07-19 19:29:18 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:29:18 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:29:18 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:29:18 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:29:18 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:29:18 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_topo_alloc) : 2010-07-19 19:29:18 --- 0503 <ERROR> at line 00437. Invalid argument: total number of subs is smaller than local
+[0] (ppm_topo_store) : 2010-07-19 19:29:18 --- 0101 <FATAL> at line 00131. Memory allocation failed: Could not allocate memory for Topology
+[0] (ppm_init) : 2010-07-19 19:31:38 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:31:38 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:31:38 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:31:38 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:31:38 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:31:38 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_topo_alloc) : 2010-07-19 19:31:38 --- 0503 <ERROR> at line 00443. Invalid argument: maxneigh must be >0
+[0] (ppm_topo_store) : 2010-07-19 19:31:38 --- 0101 <FATAL> at line 00130. Memory allocation failed: Could not allocate memory for Topology
+[0] (ppm_init) : 2010-07-19 19:34:13 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:34:13 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:34:13 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:34:13 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:34:13 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:34:13 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_topo_alloc) : 2010-07-19 19:34:13 --- 0503 <ERROR> at line 00443. Invalid argument: maxneigh must be >0
+[0] (ppm_topo_store) : 2010-07-19 19:34:13 --- 0101 <FATAL> at line 00130. Memory allocation failed: Could not allocate memory for Topology
+[0] (ppm_init) : 2010-07-19 19:34:38 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:34:38 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:34:38 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:34:38 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:34:38 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:34:38 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:42:41 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:42:41 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:42:41 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:42:41 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:42:41 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:42:41 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 19:48:07 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 19:48:07 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 19:48:07 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 19:48:07 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 19:48:07 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 19:48:07 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:02:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:02:56 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:02:56 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:02:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:02:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:02:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:27:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:27:56 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:27:56 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:27:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:27:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:27:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:32:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:32:09 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:32:09 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:32:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:32:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:32:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:41:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:41:09 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:41:09 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:41:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:41:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:41:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:49:30 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:49:30 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:49:30 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:49:30 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:49:30 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:49:30 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:49:39 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:49:39 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:49:39 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:49:39 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:49:39 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:49:39 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-19 20:58:58 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 20:58:58 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-19 20:58:58 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 20:58:58 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 20:58:58 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 20:58:58 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-19 20:58:59 --- 0503 <ERROR> at line 03254. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-07-19 21:04:50 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-19 21:04:51 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-19 21:04:51 --- __METIS defined
+[0] (ppm_init) : 2010-07-19 21:04:51 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-19 21:04:51 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-19 21:04:51 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-19 21:04:51 --- 0501 <ERROR> Invalid dimension: leading dimension LDA is in error
+[0] (ppm_init) : 2010-07-27 17:13:49 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-27 17:13:49 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-27 17:13:49 --- __METIS defined
+[0] (ppm_init) : 2010-07-27 17:13:49 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-27 17:13:49 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-27 17:13:49 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-27 17:17:06 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-27 17:17:06 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-27 17:17:06 --- __METIS defined
+[0] (ppm_init) : 2010-07-27 17:17:06 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-27 17:17:06 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-27 17:17:06 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 16:26:32 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 16:26:32 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 16:26:32 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 16:26:32 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 16:26:32 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 16:26:32 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 16:33:06 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 16:33:06 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-28 16:33:06 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 16:33:06 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 16:33:06 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 16:33:06 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 17:41:06 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 17:41:06 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 17:41:06 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 17:41:06 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 17:41:06 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 17:41:06 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 17:49:28 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 17:49:28 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 17:49:28 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 17:49:28 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 17:49:28 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 17:49:28 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 17:52:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 17:52:37 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 17:52:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 17:52:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 17:52:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 17:52:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:00:42 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:00:42 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:00:42 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:00:42 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:00:42 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:00:42 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:09:19 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:09:19 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:09:19 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:09:19 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:09:19 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:09:19 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:13:54 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:13:54 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:13:54 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:13:54 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:13:54 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:13:54 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:16:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:16:09 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:16:09 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:16:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:16:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:16:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:18:14 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:18:14 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:18:14 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:18:14 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:18:14 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:18:14 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:22:10 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:22:10 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:22:10 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:22:10 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:22:10 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:22:10 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-28 18:26:43 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-28 18:26:43 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-28 18:26:43 --- __METIS defined
+[0] (ppm_init) : 2010-07-28 18:26:43 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-28 18:26:43 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-28 18:26:43 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 14:57:01 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 14:57:01 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 14:57:01 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 14:57:01 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 14:57:01 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 14:57:01 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 15:04:46 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:04:46 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:04:46 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:04:46 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:04:46 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:04:46 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 15:13:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:13:05 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:13:05 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:13:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:13:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:13:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 15:20:41 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:20:41 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:20:41 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:20:41 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:20:41 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:20:41 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 15:27:49 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:27:49 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:27:49 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:27:49 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:27:49 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:27:49 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 15:49:16 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:49:16 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:49:16 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:49:16 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:49:16 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:49:16 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-29 15:49:18 --- 0503 <NOTICE> at line 03264. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-07-29 15:59:00 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 15:59:00 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 15:59:00 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 15:59:00 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 15:59:00 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 15:59:00 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-29 15:59:00 --- 0503 <NOTICE> at line 03264. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-07-29 16:16:14 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 16:16:14 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 16:16:14 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 16:16:14 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 16:16:14 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 16:16:14 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-29 16:16:14 --- 0503 <NOTICE> at line 03264. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-07-29 17:11:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 17:11:37 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-07-29 17:11:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 17:11:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 17:11:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 17:11:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-07-29 17:11:37 --- 0503 <NOTICE> at line 03264. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-07-29 17:12:31 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 17:12:31 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 17:12:31 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 17:12:31 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 17:12:31 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 17:12:31 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 18:04:49 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 18:04:49 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 18:04:49 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 18:04:49 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 18:04:49 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 18:04:49 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 18:05:13 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 18:05:13 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 18:05:13 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 18:05:13 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 18:05:13 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 18:05:13 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 18:14:14 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 18:14:14 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 18:14:14 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 18:14:14 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 18:14:14 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 18:14:14 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 18:16:52 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 18:16:52 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 18:16:52 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 18:16:52 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 18:16:52 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 18:16:52 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-29 20:01:33 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-29 20:01:33 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-29 20:01:33 --- __METIS defined
+[0] (ppm_init) : 2010-07-29 20:01:33 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-29 20:01:33 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-29 20:01:33 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 12:20:43 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 12:20:43 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 12:20:43 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 12:20:43 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 12:20:43 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 12:20:43 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 12:27:47 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 12:27:47 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 12:27:47 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 12:27:47 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 12:27:47 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 12:27:47 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 14:57:22 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 14:57:22 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 14:57:22 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 14:57:22 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 14:57:22 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 14:57:22 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 14:57:57 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 14:57:57 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 14:57:57 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 14:57:57 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 14:57:57 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 14:57:57 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 14:59:02 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 14:59:02 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 14:59:02 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 14:59:02 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 14:59:02 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 14:59:02 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:00:23 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:00:24 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:00:24 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:00:24 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:00:24 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:00:24 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:04:32 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:04:32 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:04:32 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:04:32 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:04:32 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:04:32 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:07:15 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:07:15 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:07:15 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:07:15 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:07:15 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:07:15 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:11:31 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:11:31 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:11:31 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:11:31 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:11:31 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:11:31 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:11:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:11:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:11:56 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:11:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:11:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:11:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:12:52 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:12:52 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:12:52 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:12:52 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:12:52 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:12:52 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:20:16 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:20:16 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:20:16 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:20:16 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:20:16 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:20:16 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:22:38 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:22:38 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:22:38 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:22:38 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:22:38 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:22:38 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:23:45 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:23:45 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:23:45 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:23:45 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:23:45 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:23:45 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:24 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:24 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:24 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:24 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:24 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:24 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:25 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:26 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:26 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:26 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:26 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:26 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:26 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:27 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:27 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:27 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:27 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:27 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:27 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:35 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:35 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:35 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:35 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:35 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:35 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:36 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:36 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:36 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:36 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:36 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:38 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:38 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:38 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:38 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:38 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:39 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:39 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:24:39 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:24:39 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:24:39 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:25:07 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:25:07 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:25:07 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:25:07 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:25:07 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:25:07 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:25:22 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:25:22 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:25:22 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:25:22 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:25:22 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:25:22 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 15:55:44 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 15:55:44 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 15:55:44 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 15:55:44 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 15:55:44 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 15:55:44 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 16:50:34 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 16:50:34 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 16:50:34 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 16:50:34 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 16:50:34 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 16:50:34 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 16:54:27 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 16:54:27 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 16:54:27 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 16:54:27 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 16:54:27 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 16:54:27 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 16:58:01 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 16:58:01 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 16:58:01 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 16:58:01 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 16:58:01 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 16:58:01 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:00:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:00:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:00:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:00:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:00:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:00:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:15:45 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:15:45 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:15:45 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:15:45 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:15:45 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:15:45 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:17:01 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:17:01 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:17:01 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:17:01 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:17:01 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:17:01 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:19:42 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:19:42 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:19:42 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:19:42 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:19:42 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:19:42 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:25:15 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:25:15 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:25:15 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:25:15 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:25:15 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:25:15 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:27:17 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:27:17 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:27:17 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:27:17 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:27:17 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:27:17 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:28:07 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:28:07 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:28:07 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:28:07 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:28:07 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:28:07 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:30:35 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:30:35 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:30:35 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:30:35 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:30:35 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:30:35 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:31:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:31:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:31:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:31:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:31:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:31:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 17:57:19 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 17:57:19 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 17:57:19 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 17:57:19 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 17:57:19 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 17:57:19 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:02:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:02:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:02:25 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:02:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:02:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:02:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:02:45 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:02:45 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:02:45 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:02:45 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:02:45 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:02:45 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:04:17 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:04:17 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:04:17 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:04:17 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:04:17 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:04:17 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:14:59 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:14:59 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:14:59 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:14:59 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:14:59 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:14:59 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:23:45 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:23:45 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:23:45 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:23:45 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:23:45 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:23:45 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:32:59 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:32:59 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:32:59 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:32:59 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:32:59 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:32:59 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:33:30 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:33:30 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:33:30 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:33:30 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:33:30 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:33:30 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:33:32 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:33:32 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:33:32 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:33:32 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:33:32 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:33:32 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:33:53 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:33:53 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:33:53 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:33:53 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:33:53 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:33:53 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:33:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:33:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:33:56 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:33:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:33:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:33:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:34:18 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:34:18 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:34:18 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:34:18 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:34:18 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:34:18 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:34:49 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:34:49 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:34:49 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:34:49 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:34:49 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:34:49 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:36:26 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:36:26 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:36:26 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:36:26 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:36:26 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:36:26 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-07-30 18:36:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-07-30 18:36:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-07-30 18:36:37 --- __METIS defined
+[0] (ppm_init) : 2010-07-30 18:36:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-07-30 18:36:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-07-30 18:36:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 14:13:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 14:13:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 14:13:56 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 14:13:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 14:13:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 14:13:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 14:14:32 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 14:14:32 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-08-03 14:14:32 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 14:14:32 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 14:14:32 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 14:14:32 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 14:23:42 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 14:23:42 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-08-03 14:23:42 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 14:23:42 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 14:23:42 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 14:23:42 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_map_field_pop_2d) : 2010-08-03 14:23:42 --- 0503 <NOTICE> at line 03264. Invalid argument: buffer is empty. Cannot pop.
+[0] (ppm_init) : 2010-08-03 16:33:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:33:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:33:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:33:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:33:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:33:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:36:12 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:36:12 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:36:12 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:36:12 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:36:12 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:36:12 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:38:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:38:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:38:25 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:38:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:38:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:38:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:45:44 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:45:44 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:45:44 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:45:44 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:45:44 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:45:44 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:47:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:47:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:47:25 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:47:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:47:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:47:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:49:27 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:49:27 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:49:27 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:49:27 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:49:27 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:49:27 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 16:53:40 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 16:53:40 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 16:53:40 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 16:53:40 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 16:53:40 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 16:53:40 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:16:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:16:09 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:16:09 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:16:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:16:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:16:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:18:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:18:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:18:56 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:18:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:18:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:18:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:19:26 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:19:26 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:19:26 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:19:26 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:19:26 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:19:26 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:22:57 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:22:57 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:22:57 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:22:57 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:22:57 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:22:57 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:30:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:30:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:30:56 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:30:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:30:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:30:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:38:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:38:09 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:38:09 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:38:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:38:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:38:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:45:02 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:45:02 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:45:02 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:45:02 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:45:02 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:45:02 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 17:50:27 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 17:50:27 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 17:50:27 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 17:50:27 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 17:50:27 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 17:50:27 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 18:05:44 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 18:05:44 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 18:05:44 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 18:05:44 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 18:05:44 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 18:05:44 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 18:12:54 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 18:12:54 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 18:12:54 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 18:12:54 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 18:12:54 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 18:12:54 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 18:28:58 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 18:28:58 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 18:28:58 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 18:28:58 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 18:28:58 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 18:28:58 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 18:33:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 18:33:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 18:33:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 18:33:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 18:33:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 18:33:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-03 18:38:22 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-03 18:38:22 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-03 18:38:22 --- __METIS defined
+[0] (ppm_init) : 2010-08-03 18:38:22 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-03 18:38:22 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-03 18:38:22 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:35:56 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:35:56 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:35:56 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:35:56 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:35:56 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:35:56 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:40:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:40:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:40:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:40:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:40:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:40:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:41:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:41:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:41:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:41:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:41:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:41:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:44:33 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:44:33 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:44:33 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:44:33 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:44:33 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:44:33 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:49:45 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:49:45 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:49:45 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:49:45 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:49:45 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:49:45 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:50:44 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:50:44 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:50:44 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:50:44 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:50:44 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:50:44 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:51:41 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:51:41 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:51:41 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:51:41 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:51:41 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:51:41 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 16:56:30 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 16:56:30 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 16:56:30 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 16:56:30 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 16:56:30 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 16:56:30 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:03:47 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:03:47 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:03:47 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:03:47 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:03:47 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:03:47 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:06:14 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:06:14 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:06:14 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:06:14 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:06:14 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:06:14 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:08:08 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:08:08 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:08:08 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:08:08 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:08:08 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:08:08 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:12:11 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:12:11 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:12:11 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:12:11 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:12:11 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:12:11 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:14:35 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:14:35 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:14:35 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:14:35 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:14:35 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:14:35 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:29:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:29:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:29:25 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:29:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:29:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:29:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:30:09 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:30:09 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:30:09 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:30:09 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:30:09 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:30:09 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-04 17:30:59 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-04 17:30:59 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-04 17:30:59 --- __METIS defined
+[0] (ppm_init) : 2010-08-04 17:30:59 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-04 17:30:59 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-04 17:30:59 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:06:37 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:06:37 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:06:37 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:06:37 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:06:37 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:06:37 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:08:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:08:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:08:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:08:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:08:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:08:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:17:48 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:17:48 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:17:48 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:17:48 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:17:48 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:17:48 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:19:25 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:19:25 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:19:25 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:19:25 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:19:25 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:19:25 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:20:39 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:20:40 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:20:40 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:20:40 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:20:40 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:20:40 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:21:05 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:21:05 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:21:05 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:21:05 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:21:05 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:21:05 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 15:30:53 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 15:30:53 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 15:30:53 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 15:30:53 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 15:30:53 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 15:30:53 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 18:32:21 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 18:32:21 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 18:32:21 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 18:32:21 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 18:32:21 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 18:32:21 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 18:33:16 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 18:33:16 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-05 18:33:16 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 18:33:16 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 18:33:16 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 18:33:16 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 18:34:52 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 18:34:52 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-08-05 18:34:52 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 18:34:52 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 18:34:52 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 18:34:52 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-05 18:41:57 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-05 18:41:57 --- Debug level set to  2
+[0] (ppm_print_defines) : 2010-08-05 18:41:57 --- __METIS defined
+[0] (ppm_init) : 2010-08-05 18:41:57 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-05 18:41:57 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-05 18:41:57 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-09 19:23:44 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-09 19:23:44 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-09 19:23:44 --- __METIS defined
+[0] (ppm_init) : 2010-08-09 19:23:44 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-09 19:23:44 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-09 19:23:44 --- Floating point tolerance set to .1000000000E-14
+[0] (ppm_init) : 2010-08-09 19:23:49 --- *** This is the PPM library in single-processor mode
+[0] (ppm_init) : 2010-08-09 19:23:49 --- Debug level set to  0
+[0] (ppm_print_defines) : 2010-08-09 19:23:49 --- __METIS defined
+[0] (ppm_init) : 2010-08-09 19:23:49 --- Space dimension set to  2
+[0] (ppm_init) : 2010-08-09 19:23:49 --- Precision set to DOUBLE
+[0] (ppm_init) : 2010-08-09 19:23:49 --- Floating point tolerance set to .1000000000E-14
