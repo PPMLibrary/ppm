@@ -1,7 +1,6 @@
 test_suite ppm_module_neighlist
 use ppm_module_particles
 use ppm_module_particles_typedef
-#include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"

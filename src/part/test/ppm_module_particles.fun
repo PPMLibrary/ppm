@@ -1,8 +1,6 @@
 test_suite ppm_module_particles
 use ppm_module_data, ONLY: ppm_mpi_kind
 
-#include "../../ppm_define.h"
-
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif

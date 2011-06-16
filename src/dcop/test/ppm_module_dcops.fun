@@ -3,7 +3,6 @@ use ppm_module_particles
 use ppm_module_particles_typedef
 use ppm_module_io_vtk
 use ppm_module_data, ONLY: ppm_mpi_kind
-#include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"

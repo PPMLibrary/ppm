@@ -2,7 +2,6 @@ test_suite ppm_module_sop
 use ppm_module_particles
 use ppm_module_sop_typedef
 use ppm_module_io_vtk
-#include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"
