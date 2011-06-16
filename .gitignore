@@ -23,3 +23,11 @@
 /libppm/src/neighlist/test/ppm_test_inl2d_2
 /libppm/src/neighlist/test/ppm_test_inl3d
 /libppm/src/neighlist/test/ppm_test_inl3d_2
+
+*.swp
+Makefile
+config.*
+include/
+lib/
+objects/
+ppm_define.h
