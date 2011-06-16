@@ -5725,8 +5725,8 @@ $as_echo "$ax_cv_f90_modflag" >&6; }
 
 
 # Check for Fortran2003 support
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking if Fortran 2003 is properly supported" >&5
-$as_echo_n "checking if Fortran 2003 is properly supported... " >&6; }
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether your compiler properly supports Fortran 2003" >&5
+$as_echo_n "checking whether your compiler properly supports Fortran 2003... " >&6; }
 ac_ext=${ac_fc_srcext-f}
 ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
@@ -5747,10 +5747,6 @@ else
            procedure(func), pointer, nopass :: f
         end type container
 
-        interface add
-           procedure sample
-        end interface
-
         abstract interface
            logical function func(var)
              integer, pointer :: var
@@ -5766,12 +5762,12 @@ else
         stop 1
 
       contains
-        subroutine sample(var, f)
+        subroutine add(var,f)
           integer,         target    :: var
           procedure(func), optional  :: f
           c%var => var
           c%f   => f
-        end subroutine sample
+        end subroutine add
       end program procedure_test
 
       logical function test(var)
