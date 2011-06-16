@@ -317,8 +317,7 @@
       !!!
       !!! [NOTE]
       !!! This routine needs to be very fast, therefor we skip the usual
-      !!! chit-chat and get right to it. (-> no substart,substop unless
-      !!! compiled with __DEBUG flag)
+      !!! chit-chat and get right to it. (-> no substart,substop)
       IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
@@ -335,14 +334,6 @@
       !---------------------------------------------------------------------
       INTEGER                               :: jump
       INTEGER                               :: spot
-
-#ifdef __DEBUG
-      INTEGER                               :: t0
-      INTEGER                               :: info
-      ! the info and t0 are here only needed in debug mode an
-      ! will not be propagated
-      CALL substart('hash_search',t0,info)
-#endif
 
       value = htable_null
       jump = 0
@@ -365,9 +356,5 @@
           ! key.
           spot = h_key(table, key, jump)
       END DO
-
-#ifdef __DEBUG
-      CALL substop('hash_search',t0,info)
-#endif
 
       END FUNCTION hash_search
