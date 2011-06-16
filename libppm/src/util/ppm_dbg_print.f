@@ -126,7 +126,7 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       call ppm_topo_get(topoid,topo,info)
       open(iunit,file=sfname)
    
-      write(iunit,'(I)') ppm_dim
+      write(iunit,'(I1)') ppm_dim
       write(iunit,'(F12.8)') ghostlayer
       do i=1,topo%nsubs
           write(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i),&
