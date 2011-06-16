@@ -85,7 +85,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 
       !-------------------------------------------------------------------------
       !  Modules
@@ -197,13 +196,12 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
-      ! skip if buffer empty
+      ! warn if buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
         IF (ppm_debug .GT. 1) THEN
             CALL ppm_write(ppm_rank,'ppm_map_field_pop_3d',  &
-     &          'Buffer is empty: skipping pop!',info)
+     &          'Buffer is empty.',info)
         ENDIF
-        GOTO 9999
       ENDIF
 
 
@@ -3372,9 +3370,9 @@
       SUBROUTINE check
           CALL ppm_check_meshid(target_topoid,target_meshid,ldo,info)
           IF (ppm_buffer_set .LT. 1) THEN
-              info = ppm_error_notice
-              CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop_3d',  &
-     &            'Cannot pop.',__LINE__,info)
+              CALL ppm_write(ppm_rank,'ppm_map_field_pop_3d',   &
+     &            'No field data to pop',info)
+              info = 0
               GOTO 8888
           ENDIF
           IF (.NOT. ldo) THEN

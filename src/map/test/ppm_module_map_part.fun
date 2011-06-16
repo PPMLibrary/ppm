@@ -1,7 +1,6 @@
 test_suite ppm_module_map_part
 
 
-#include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"

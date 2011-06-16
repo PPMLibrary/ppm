@@ -77,7 +77,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 
       !-------------------------------------------------------------------------
       !  Modules 
@@ -1335,12 +1334,6 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (ppm_buffer_set .LT. 1) THEN
-              info = ppm_error_notice
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
-     &            'buffer is empty. Cannot pop.',__LINE__,info)
-              GOTO 8888
-          ENDIF
           IF (Npart .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &

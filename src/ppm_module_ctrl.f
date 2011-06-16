@@ -104,7 +104,6 @@ MODULE ppm_module_ctrl
   USE ppm_module_error
   IMPLICIT NONE
 
-#include "ppm_define.h"
 
   !------------------------------------------------------------------------
   !  Interface
