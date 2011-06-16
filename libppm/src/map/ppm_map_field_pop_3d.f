@@ -30,42 +30,42 @@
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_field_pop_3d_sca_s(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_field_pop_3d_sca_d(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_3d_sca_sc(target_topoid,target_meshid,fdata,&
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_3d_sca_dc(target_topoid,target_meshid,fdata,&
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __INTEGER
       SUBROUTINE ppm_map_field_pop_3d_sca_i(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_field_pop_3d_sca_l(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #endif
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_field_pop_3d_vec_s(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_field_pop_3d_vec_d(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_3d_vec_sc(target_topoid,target_meshid,fdata,&
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_3d_vec_dc(target_topoid,target_meshid,fdata,&
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __INTEGER
       SUBROUTINE ppm_map_field_pop_3d_vec_i(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_field_pop_3d_vec_l(target_topoid,target_meshid,fdata, &
-     &                  lda,ghostsize,info,mask)
+     &                  lda,ghostsize,info,mask,poptype)
 #endif
 #endif
       !!! This routine pops the list buffer for 3D mesh data
@@ -147,6 +147,7 @@
       !!!
       !!! 1st-3nd index: mesh (i,j,k)                                            +
       !!! 4rd: isub.
+      INTEGER                        , OPTIONAL      :: poptype
 #if   __DIM == __VFIELD
       INTEGER                        , INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
@@ -226,10 +227,16 @@
         CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_3d',  &
      &       'ghost_init must not be called directly by the user',__LINE__,info)
         GOTO 9999
-      ELSEIF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
-        rtype = ppm_param_pop_add
       ELSE
-        rtype = ppm_param_pop_replace
+          IF (PRESENT(poptype)) THEN
+              rtype = poptype
+          ELSE
+              IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
+                rtype = ppm_param_pop_add
+              ELSE
+                rtype = ppm_param_pop_replace
+              ENDIF
+          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -3366,8 +3373,8 @@
           CALL ppm_check_meshid(target_topoid,target_meshid,ldo,info)
           IF (ppm_buffer_set .LT. 1) THEN
               info = ppm_error_notice
-              CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_3d',  &
-     &            'buffer is empty. Cannot pop.',__LINE__,info)
+              CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop_3d',  &
+     &            'Cannot pop.',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (.NOT. ldo) THEN
@@ -3404,12 +3411,14 @@
      &            'ghostsize must be >=0 in all dimensions',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF ((rtype .NE. ppm_param_pop_replace) .AND.     &
-     &        (rtype .NE. ppm_param_pop_add)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_3d',  &
-     &            'Unknown receive type specified',__LINE__,info)
-              GOTO 8888
+          IF (PRESENT(poptype)) THEN
+              IF ((poptype .NE. ppm_param_pop_replace) .AND.     &
+     &            (poptype .NE. ppm_param_pop_add)) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_3d',  &
+     &                'Unknown pop type specified',__LINE__,info)
+                  GOTO 8888
+              ENDIF
           ENDIF
  8888     CONTINUE
       END SUBROUTINE check
