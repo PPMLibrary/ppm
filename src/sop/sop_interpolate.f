@@ -167,9 +167,9 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !! Interpolate fields onto new positions
     !! (reallocate arrays if number of particles has changed)
     !!---------------------------------------------------------------------!
-    ! Loop through all properties i for which wps_m(i) = 1
+    ! Loop through all properties i that are mapped
     DO i=1,Particles_old%max_wpsid
-        IF (Particles_old%wps_m(i).EQ.1) THEN
+        IF (Particles_old%wps(i)%is_mapped) THEN
             !skip the properties that do not need to be interpolated
             IF (i.EQ.Particles_old%nn_sq_id) CYCLE
             IF (i.EQ.Particles_old%level_id) CYCLE

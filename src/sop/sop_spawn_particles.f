@@ -107,8 +107,9 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 
     IF (opts%level_set) THEN
         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            CALL ppm_write(ppm_rank,caller,'incompatible optional arguments',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+                &    'incompatible optional arguments',__LINE__,info)
             GOTO 9999
         ENDIF
     ENDIF
@@ -182,23 +183,26 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         lda = (/ppm_dim,Npart+add_part/)
         CALL ppm_alloc(Particles%xp,lda,ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of xp failed',__LINE__,info)
             GOTO 9999
         ENDIF
         lda1 = Npart+add_part
         CALL ppm_alloc(Particles%wps(Particles%D_id)%vec,lda1,&
             ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of D failed',__LINE__,info)
             GOTO 9999
         ENDIF
         CALL ppm_alloc(Particles%wps(Particles%rcp_id)%vec,lda1,&
             ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of rcp failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -211,8 +215,9 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
             DEALLOCATE(randnb)
             ALLOCATE(randnb(nb_new_part*ppm_dim*(Npart+add_part)),STAT=info)
             IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'allocation failed.',info)
-                info = -1
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,   &
+                    &    'allocation of randnb failed',__LINE__,info)
                 GOTO 9999
             ENDIF
             DO i=1,seedsize
@@ -232,9 +237,10 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     !!-------------------------------------------------------------------------!
     add_part = 0
 
-    xp => Get_xp(Particles)
-    D => Get_wps(Particles,Particles%D_id)
-    rcp => Get_wps(Particles,Particles%rcp_id)
+    xp => Particles%xp !Cannot use get_xp, because we need access to elements
+    ! of the array xp that are beyond Particles%Npart
+    D => Particles%wps(Particles%D_id)%vec      !same reason
+    rcp => Particles%wps(Particles%rcp_id)%vec  !same reason
     nvlist => Particles%nvlist
     IF (opts%level_set) THEN
         IF (.NOT. PRESENT(level_fun)) THEN
@@ -359,8 +365,9 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         preserve_wps=(/Particles%D_id,Particles%rcp_id/),&
         preserve_wpv=(/ INTEGER :: /))
     IF (info .NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'particles_updated_nb_part failed',info)
-        info = -1
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,   &
+            &    'particles_updated_nb_part failed',__LINE__,info)
         GOTO 9999
     ENDIF
 

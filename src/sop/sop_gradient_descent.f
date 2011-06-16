@@ -155,7 +155,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         GOTO 9999
     ENDIF
 
-    IF (Particles%xp_g .NE. 1) THEN
+    IF (.NOT.Particles%has_ghosts) THEN
         info = ppm_error_fatal
         CALL ppm_error(ppm_err_alloc,caller,   &
             &  'Need ghosts particles to be updated on entry',&
@@ -896,7 +896,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         GOTO 9999
     ENDIF
 
-    IF (Particles%xp_g .NE. 1) THEN
+    IF (.NOT.Particles%has_ghosts) THEN
         info = ppm_error_fatal
         CALL ppm_error(ppm_err_alloc,caller,   &
             &  'Need ghosts particles to be updated on entry',&

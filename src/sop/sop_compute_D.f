@@ -311,7 +311,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                     GOTO 9999
                 ENDIF
             ELSE
-                IF (Particles%wpv_m(Particles%adapt_wpgradid).NE.1) THEN
+                IF (.NOT.Particles%wpv(Particles%adapt_wpgradid)%is_mapped) THEN
                     CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
                         ppm_dim,info,with_ghosts=.FALSE.,&
                         iopt=ppm_param_alloc_grow,name='adapt_wpgrad')
