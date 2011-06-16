@@ -55,6 +55,7 @@
       USE ppm_module_typedef
       USE ppm_module_write
       USE ppm_module_util_commopt
+      USE ppm_module_impose_part_bc
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -64,7 +65,7 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The number of particles (on the local processor)
@@ -109,6 +110,19 @@
       topo => ppm_topo(topoid)%t
       bcdef => topo%bcdef
 
+      !-------------------------------------------------------------------------
+      !  Impose the boundary conditions.
+      !  This is now taken care of transparently. Unless the user needs to
+      !  impose the boundary conditions at a very specific stage of his
+      !  simulation there is no need to bother the user with this.
+      !-------------------------------------------------------------------------
+      CALL ppm_impose_part_bc(topoid,xp,Npart,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_error
+          CALL ppm_error(ppm_err_sub_failed,'ppm_map_part_partial',     &
+     &        'imposing particle BCs failed.',__LINE__,info)
+          GOTO 9999
+      ENDIF
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
