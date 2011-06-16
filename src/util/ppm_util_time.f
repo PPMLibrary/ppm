@@ -48,7 +48,6 @@
       !  Includes
       !-------------------------------------------------------------------------
       IMPLICIT NONE
-#include "ppm_define.h"
       INCLUDE 'ppm_param.h'
 #ifdef __MPI
       INCLUDE 'mpif.h'
