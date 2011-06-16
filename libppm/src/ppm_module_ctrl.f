@@ -119,6 +119,8 @@ MODULE ppm_module_ctrl
 
   PRIVATE
 
+#include "ppm_define.h"
+
 #ifdef __MPI
   INCLUDE 'mpif.h'
 #endif
@@ -380,6 +382,7 @@ CONTAINS
     LOGICAL                                 :: ok
     INTEGER                                 :: info2
     INTEGER                                 :: i
+    INTEGER                                 :: rank = 0
     !----------------------------------------------------------------------
     !  Externals
     !----------------------------------------------------------------------
@@ -392,7 +395,10 @@ CONTAINS
     !----------------------------------------------------------------------
     !  Do everything on rank 0 and bcast at the end
     !----------------------------------------------------------------------
-    IF (ppm_rank .EQ. 0) THEN
+#ifdef __MPI
+    CALL MPI_Comm_Rank(MPI_COMM_WORLD, rank, info)
+#endif
+    IF (rank .EQ. 0) THEN
        !-------------------------------------------------------------------
        !  Copy default values into variables
        !-------------------------------------------------------------------
@@ -498,22 +504,72 @@ CONTAINS
     !----------------------------------------------------------------------
 100 CONTINUE
 #ifdef __MPI
-!    CALL MPI_BCast(what, length, MPI_TYPE, 0, comm, info)
-!     CALL MPI_BCast(info, 1, MPI_INTEGER, 0, ppm_comm, info2)
-!     IF (info .NE. 0) GOTO 9999
-!     DO i=1,INTEGER_args_i
-!        CALL MPI_BCast(INTEGER_args(i)%variable, 1, MPI_INTEGER, 0, ppm_comm, info)
-!     END DO
-!     DO i=1,REAL_args_i
-!        CALL MPI_BCast(REAL_args(i)%variable, 1, MPI_REAL, 0, ppm_comm, info)
-!     END DO
-!     DO i=1,CHAR_args_i
-!        CALL MPI_BCast(CHAR_args(i)%variable, &
-!             LEN_TRIM(CHAR_args(i)%variable), MPI_CHARACTER, 0, ppm_comm, info)
-!     END DO
-!     DO i=1,LOGICAL_args_i
-!        CALL MPI_BCast(LOGICAL_args(i)%variable, 1, MPI_LOGICAL, 0, ppm_comm, info)
-!     END DO
+!   CALL MPI_BCast(what, length, MPI_TYPE, 0, comm, info)
+    CALL MPI_BCast(info, 1, MPI_INTEGER, 0, ppm_comm, info2)
+    IF (info .NE. 0) GOTO 9999
+
+    ! scalar
+
+    DO i=1,INTEGER_args_i
+       CALL MPI_BCast(INTEGER_args(i)%variable, 1, MPI_INTEGER4, 0, ppm_comm, info)
+    END DO
+    DO i=1,LONGINT_args_i
+       CALL MPI_BCast(LONGINT_args(i)%variable, 1, MPI_INTEGER8, 0, ppm_comm, info)
+    END DO
+    DO i=1,SINGLE_args_i
+       CALL MPI_BCast(SINGLE_args(i)%variable, 1, MPI_REAL4, 0, ppm_comm, info)
+    END DO
+    DO i=1,DOUBLE_args_i
+       CALL MPI_BCast(DOUBLE_args(i)%variable, 1, MPI_REAL8, 0, ppm_comm, info)
+    END DO
+    DO i=1,STRING_args_i
+       CALL MPI_BCast(STRING_args(i)%variable, ppm_char, MPI_CHARACTER, 0, ppm_comm, info)
+    END DO
+    DO i=1,LOGICAL_args_i
+       CALL MPI_BCast(LOGICAL_args(i)%variable, 1, MPI_LOGICAL, 0, ppm_comm, info)
+    END DO
+    DO i=1,COMPLEX_args_i
+       CALL MPI_BCast(COMPLEX_args(i)%variable, 1, MPI_COMPLEX, 0, ppm_comm, info)
+    END DO
+    DO i=1,DCOMPLEX_args_i
+       CALL MPI_BCast(DCOMPLEX_args(i)%variable, 1, MPI_COMPLEX16, 0, ppm_comm, info)
+    END DO
+
+    ! array
+
+    DO i=1,INTEGER_array_args_i
+       CALL MPI_BCast(INTEGER_array_args(i)%variable, &
+                 SIZE(INTEGER_array_args(i)%variable), MPI_INTEGER4, 0, ppm_comm, info)
+    END DO
+    DO i=1,LONGINT_array_args_i
+       CALL MPI_BCast(LONGINT_array_args(i)%variable, &
+                 SIZE(LONGINT_array_args(i)%variable), MPI_INTEGER8, 0, ppm_comm, info)
+    END DO
+    DO i=1,SINGLE_array_args_i
+       CALL MPI_BCast(SINGLE_array_args(i)%variable, &
+                 SIZE(SINGLE_array_args(i)%variable), MPI_REAL4, 0, ppm_comm, info)
+    END DO
+    DO i=1,DOUBLE_array_args_i
+       CALL MPI_BCast(DOUBLE_array_args(i)%variable, &
+                 SIZE(DOUBLE_array_args(i)%variable), MPI_REAL8, 0, ppm_comm, info)
+    END DO
+    DO i=1,STRING_array_args_i
+       CALL MPI_BCast(STRING_array_args(i)%variable, &
+                 SIZE(STRING_array_args(i)%variable) * ppm_char, MPI_CHARACTER, 0, ppm_comm, info)
+    END DO
+    DO i=1,LOGICAL_array_args_i
+       CALL MPI_BCast(LOGICAL_array_args(i)%variable, &
+                 SIZE(LOGICAL_array_args(i)%variable), MPI_LOGICAL, 0, ppm_comm, info)
+    END DO
+    DO i=1,COMPLEX_array_args_i
+       CALL MPI_BCast(COMPLEX_array_args(i)%variable, &
+                 SIZE(COMPLEX_array_args(i)%variable), MPI_COMPLEX, 0, ppm_comm, info)
+    END DO
+    DO i=1,DCOMPLEX_array_args_i
+       CALL MPI_BCast(DCOMPLEX_array_args(i)%variable, &
+                 SIZE(DCOMPLEX_array_args(i)%variable), MPI_COMPLEX16, 0, ppm_comm, info)
+    END DO
+
 #endif
     !----------------------------------------------------------------------
     !  Error handling
