@@ -524,7 +524,7 @@ test_suite ppm_module_ctrl
     CALL arg(xarray,   '  xarray', ctrl_name = 'xarray')
     ! open file for writing
     scf = 123
-    OPEN(scf, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
+    OPEN(scf, FILE='__test_ctrl__84103784983274__', IOSTAT=ios, ACTION='WRITE')
     Assert_Equal(ios, 0)
     WRITE(scf,'(A)') 'idefault = 42'
     WRITE(scf,'(A)') 'iflag    = 42'
@@ -545,7 +545,7 @@ test_suite ppm_module_ctrl
     WRITE(scf,'(A)') 'xarray   = (1,0), (0,1), (-1,0)'
     CLOSE(scf)
     ! supply arg
-    CALL add_cmd('src/ctrl/test/__test_ctrl')
+    CALL add_cmd('__test_ctrl__84103784983274__')
     CALL add_cmd('-f', '1337')
     ! parse
     CALL parse_args(info)
@@ -568,7 +568,7 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(parray, (/(1,0), (0,1), (-1,0)/))
     Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
-    CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl')
+    CALL SYSTEM('/bin/rm __test_ctrl__84103784983274__')
   end test
 
   test default_funcs
