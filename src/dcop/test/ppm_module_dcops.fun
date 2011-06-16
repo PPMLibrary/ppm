@@ -7,6 +7,7 @@ use ppm_module_data, ONLY: ppm_mpi_kind
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
+#
 
 
 integer, parameter              :: debug = 0
@@ -30,7 +31,7 @@ integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh,vect_wp_id
 integer                         :: wp_id,dwp_id,grad_wp_id,eta_id,eta2_id
 integer                         :: err_x_id,err_y_id,err_z_id
 real(mk),dimension(:  ),pointer :: err_x=>NULL(),err_y=>NULL(),err_z=>NULL()
-real(mk)                        :: coeff,err,exact,linf
+real(mk)                        :: coeff,err,exact,linf,rsum1,rsum2,rsum3
 real(mk),dimension(:),allocatable:: exact_vec,err_vec
 integer                         :: nterms
 real(mk),dimension(:),pointer   :: delta=>NULL()
@@ -92,7 +93,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         topoid = 0
 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,&
+            cutoff,cost,info)
     end init
 
 
@@ -121,7 +123,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
     test allocate_operator
         ! test data structure (mostly define and free)
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
 
         allocate(degree(3*ndim),coeffs(3),order(3),degree2(7*ndim),coeffs2(7),order2(7))
@@ -141,21 +144,29 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
 
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            3,info,name="test")
         Assert_Equal(info,0)
         Assert_False(eta_id.le.0)
-        Assert_Equal(sum(abs(Particles%ops%desc(eta_id)%degree-degree)),0)
-        Assert_Equal_Within(sum(abs(Particles%ops%desc(eta_id)%coeffs-coeffs)),0,1e-5)
+        
+        rsum1 = sum(abs(Particles%ops%desc(eta_id)%degree-degree))
+        Assert_Equal(rsum1,0)
+        rsum1 = sum(abs(Particles%ops%desc(eta_id)%coeffs-coeffs))
+        Assert_Equal_Within(rsum1,0,1e-5)
         Assert_Equal(Particles%ops%nb_ops,1)
 
         eta2_id = 0
-        call particles_dcop_define(Particles,eta2_id,coeffs2,degree2,order,7,info,name="test2")
+        call particles_dcop_define(Particles,eta2_id,coeffs2,degree2,order,&
+            7,info,name="test2")
         Assert_False(info.eq.0)
-        call particles_dcop_define(Particles,eta2_id,coeffs2,degree2,order2,7,info,name="test2")
+        call particles_dcop_define(Particles,eta2_id,coeffs2,degree2,order2,&
+            7,info,name="test2")
         Assert_Equal(info,0)
         Assert_False(eta2_id.le.0)
-        Assert_Equal(sum(abs(Particles%ops%desc(eta2_id)%degree-degree2)),0)
-        Assert_Equal_Within(sum(abs(Particles%ops%desc(eta2_id)%coeffs-coeffs2)),0,1e-5)
+        rsum1=sum(abs(Particles%ops%desc(eta2_id)%degree-degree2))
+        Assert_Equal(rsum1,0)
+        rsum1=sum(abs(Particles%ops%desc(eta2_id)%coeffs-coeffs2))
+        Assert_Equal_Within(rsum1,0,1e-5)
         Assert_Equal(Particles%ops%nb_ops,2)
 
 !free the first operator and reallocate a new one
@@ -165,11 +176,14 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(Particles%ops%max_opsid,2)
         
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test1")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            3,info,name="test1")
         Assert_Equal(info,0)
         Assert_False(eta_id.le.0)
-        Assert_Equal(sum(abs(Particles%ops%desc(eta_id)%degree-degree)),0)
-        Assert_Equal_Within(sum(abs(Particles%ops%desc(eta_id)%coeffs-coeffs)),0,1e-5)
+        rsum1=sum(abs(Particles%ops%desc(eta_id)%degree-degree))
+        Assert_Equal(rsum1,0)
+        rsum1=sum(abs(Particles%ops%desc(eta_id)%coeffs-coeffs))
+        Assert_Equal_Within(rsum1,0,1e-5)
         Assert_Equal(Particles%ops%nb_ops,2)
         Assert_Equal(Particles%ops%max_opsid,2)
 
@@ -183,11 +197,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
 !defining an operator with an id that was not used before
         eta_id = 3
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test1")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            3,info,name="test1")
         Assert_Equal(info,0)
         Assert_Equal(eta_id,3)
 !redefining an operator with an id that was already used before (overwritting)
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,3,info,name="test1")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            3,info,name="test1")
         Assert_Equal(info,0)
         Assert_Equal(eta_id,3)
 
@@ -197,7 +213,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
     test compute_operator
         ! test if we can compute the dc operators, then evaluate them on some test functions
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         allocate(disp(ndim,Particles%Npart))
         call random_number(disp)
         disp=0.15_mk*Particles%h_avg*disp
@@ -231,7 +248,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         order =  2
 
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="d2dx2")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            nterms,info,name="d2dx2")
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
@@ -276,7 +294,8 @@ write(*,*) 'error is ', err/linf
         order =  2
 
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="laplacian")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            nterms,info,name="laplacian")
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
@@ -323,7 +342,8 @@ write(*,*) 'error is ', err/linf
         order =  2
 
         eta_id = 0
-        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,info,name="test")
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            nterms,info,name="test")
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
@@ -435,8 +455,10 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
         ! test if we can compute the dc operators with interpolating properties
         ! then evaluate them on some test functions
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
-        call particles_initialize(Particles2,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles2,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         allocate(disp(ndim,Particles%Npart))
         call random_number(disp)
         disp=0.15_mk*Particles%h_avg*disp
@@ -544,7 +566,8 @@ write(*,*) 'error is ', err/linf
         coeffs = 1.0_mk
         order =  2
         eta_id = 0
-        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="interp",interp=.true.)
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,&
+            nterms,info,name="interp",interp=.true.)
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles2,eta_id,info)
         Assert_Equal(info,0)
@@ -587,7 +610,8 @@ write(*,*) 'error is ', err/linf
         coeffs = (/1._mk, -3._mk, 1.3_mk, 2.1_mk, 0.1_mk/)
         order =  (/2, 1, 3, 1, 2/)
         eta_id = 0
-        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,info,name="everything",interp=.true.)
+        call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,&
+            nterms,info,name="everything",interp=.true.)
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles2,eta_id,info)
         Assert_Equal(info,0)

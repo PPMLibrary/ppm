@@ -23,7 +23,7 @@ real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
-integer                         :: i,j,k,isum1,isum2,ip,wp_id,wp1_id
+integer                         :: i,j,k,isum1,isum2,ip,wp_id,wp1_id,wpv_id
 real(mk)                        :: rsum1,rsum2
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
@@ -83,7 +83,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         topoid = 0
 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,&
+            cutoff,cost,info)
     end init
 
 
@@ -131,10 +132,12 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
 
 !initialise cutoff radii and one property (not used, it will just be carried around)
-        call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.,name='rcp')
+        call particles_allocate_wps(Particles,Particles%rcp_id,info,&
+            with_ghosts=.true.,name='rcp')
         Assert_Equal(info,0)
         wp1_id=0
-        call particles_allocate_wps(Particles,wp1_id,info,with_ghosts=.true.,name='wp_test1')
+        call particles_allocate_wps(Particles,wp1_id,info,&
+            with_ghosts=.true.,name='wp_test1')
         Assert_Equal(info,0)
         rcp => get_wps(Particles,Particles%rcp_id)
         wp => get_wps(Particles,wp1_id)
@@ -163,7 +166,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
         opts%D_needs_gradients = .true.
         opts%scale_D = 0.05_mk
-        opts%minimum_D = 0.018_mk
+        opts%minimum_D = 0.005_mk
         !opts%minimum_D = 0.03_mk
         opts%maximum_D = 0.05_mk
         opts%adaptivity_criterion = 6._mk
@@ -171,7 +174,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         opts%attractive_radius0 = 0.4_mk
         opts%rcp_over_D = 2.4_mk
 
-        Particles%itime = 1
+        Particles%itime = 0
 
 !adapt particles using an analytical function
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
@@ -179,13 +182,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
 
 !printout
-        call particles_io_xyz(Particles,1,dirname,info)
-        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
+        call ppm_vtk_particle_cloud('after_adapt0',Particles,info)
         Assert_Equal(info,0)
 write(*,*) 'ok now'
 
 !define a property, which will be used for adaptation
-        call particles_allocate_wps(Particles,Particles%adapt_wpid,info,name='wp_test')
+        call particles_allocate_wps(Particles,Particles%adapt_wpid,&
+            info,name='wp_test')
         wp_id = Particles%adapt_wpid
         Assert_Equal(info,0)
         xp => get_xp(Particles)
@@ -197,16 +200,35 @@ write(*,*) 'ok now'
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_neighlists(Particles,topoid,info)
 
-        Particles%itime = 2
+!        Particles%itime = 1
+!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
+!            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+!wpv_id=0
+!call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
+!disp=>get_wpv(Particles,wpv_id)
+!xp=>get_xp(Particles)
+!DO ip=1,Particles%Npart
+!disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
+!ENDDO
+!
+!xp=>set_xp(Particles,read_only=.TRUE.)
+!disp=>set_wpv(Particles,wpv_id)
+!
+!        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
+!        Particles%itime = 2
+!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
+!        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
+!
+!write(*,*) 'finished our small debugging tests'
 
 !adapt particles without using analytical expressions
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
 !printout
-        call particles_io_xyz(Particles,2,dirname,info)
-        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
+        call ppm_vtk_particle_cloud('after_adapt3',Particles,info)
         Assert_Equal(info,0)
+        Particles%itime = 3
 
     end test
 
