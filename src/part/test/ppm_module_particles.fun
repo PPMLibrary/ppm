@@ -246,9 +246,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         wpi => get_wpi(Particles,wpi_id)
         wp => get_wps(Particles,wpi_id)
         disp => get_wpv(Particles,wpi_id)
-        FORALL(i=1:Particles%Npart) wpi(i)=i*rank
-        FORALL(i=1:Particles%Npart) wp(i)=sin(1._mk*i*rank)
-        FORALL(i=1:7,j=1:Particles%Npart) disp(i,j)=cos(1._mk*i*rank+3._mk*j)
+        FORALL(i=1:Particles%Npart) wpi(i)=MOD(i*(rank+2),57)
+        FORALL(i=1:Particles%Npart) wp(i)=sin(1._mk*i*(rank+2))
+        FORALL(i=1:7,j=1:Particles%Npart) disp(i,j)=cos(1._mk*i*(rank+2)+3._mk*j)
 #ifdef __MPI
         call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum1,1,MPI_INTEGER,MPI_SUM,comm,info)
         call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum1,1,ppm_mpi_kind,MPI_SUM,comm,info)
@@ -264,9 +264,14 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         call particles_mapping_global(Particles,topoid,info)
         Assert_Equal(info,0)
+        Assert_True(Particles%wpi(wpi_id)%is_mapped)
+        Assert_True(Particles%wps(wps_id)%is_mapped)
+        Assert_True(Particles%wpv(wpv_id)%is_mapped)
         Assert_Equal(Particles%active_topoid,topoid)
+
         call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
         Assert_True(ok)
+
         wpi => get_wpi(Particles,wpi_id)
         wp => get_wps(Particles,wpi_id)
         disp => get_wpv(Particles,wpi_id)

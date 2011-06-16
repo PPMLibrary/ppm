@@ -641,6 +641,7 @@ write(*,*) 'error is ', err/linf
         call particles_dcop_apply(Particles2,wp_id,vect_wp_id,eta_id,info)
         Assert_Equal(info,0)
 
+
         call ppm_vtk_particle_cloud('vect_interp',Particles2,info)
         Assert_Equal(info,0)
 

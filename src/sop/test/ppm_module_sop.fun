@@ -162,6 +162,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 !setup options for sop
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
+        opts%D_needs_gradients = .true.
         opts%scale_D = 0.05_mk
         opts%minimum_D = 0.018_mk
         !opts%minimum_D = 0.03_mk
@@ -175,7 +176,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
 !adapt particles using an analytical function
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-            D_needs_gradients=.true.,wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
 
 !printout
@@ -200,7 +201,7 @@ write(*,*) 'ok now'
         Particles%itime = 2
 
 !adapt particles without using analytical expressions
-        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,D_needs_gradients=.true.)
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
 !printout
