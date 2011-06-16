@@ -664,10 +664,10 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN),    DIMENSION(2*ppm_dim)            :: ownregion
+      REAL(MK), INTENT(IN),    DIMENSION(:)            :: ownregion
       !!! Coordinates of input region containing minimum and maximum
       !!! physical extents of it.
-      REAL(MK), INTENT(INOUT), DIMENSION(2**ppm_dim,2*ppm_dim) :: subregions
+      REAL(MK), INTENT(INOUT), DIMENSION(:,:) :: subregions
       !!! Array of subregions, which will contain minimum and maximum
       !!! physical extents of each subregion. For example, subregions(5,3)
       !!! contains the x-coordinate of maximum physical extent of 5th
@@ -730,7 +730,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: domain
+      REAL(MK), INTENT(IN), DIMENSION(:) :: domain
       !!! Physical extent of the domain
       REAL(MK)                                   :: minLength
       !!! Maximum side length
@@ -778,7 +778,7 @@
       !!! Skin parameter
       INTEGER,   INTENT(INOUT), DIMENSION(:)          :: rank_pos
       !!! ranks of particles
-      REAL(MK),  INTENT(IN),    DIMENSION(2*ppm_dim)  :: ownregion
+      REAL(MK),  INTENT(IN),    DIMENSION(:)  :: ownregion
       !!! Region that will be used to sort particles within
       INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
       !!! Index of cell to be processed
@@ -954,7 +954,7 @@
       !!! Skin parameter
       INTEGER,   INTENT(INOUT), DIMENSION(:)          :: rank
       !!! ranks of particles
-      REAL(MK),  INTENT(IN),    DIMENSION(2*ppm_dim)  :: ownregion
+      REAL(MK),  INTENT(IN),    DIMENSION(:)  :: ownregion
       !!! Region that will be used to sort particles within
       INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
       !!! Index of cell to be processed
