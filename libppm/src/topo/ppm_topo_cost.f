@@ -96,13 +96,15 @@
       !-------------------------------------------------------------------------
       REAL(MK)                          :: t0
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER   :: costsum
+      REAL(MK), DIMENSION(:), POINTER   :: costsum => NULL()
 #endif
       INTEGER, DIMENSION(ppm_dim)       :: ldu,Nc
       REAL(MK),DIMENSION(ppm_dim)       :: len_sub
       INTEGER                           :: i,ipart,j
       INTEGER                           :: iopt,nlist1,nlist2,idom
-      INTEGER, DIMENSION(:), POINTER    :: ilist1,ilist2,ilist3
+      INTEGER, DIMENSION(:), POINTER    :: ilist1 => NULL()
+      INTEGER, DIMENSION(:), POINTER    :: ilist2 => NULL()
+      INTEGER, DIMENSION(:), POINTER    :: ilist3 => NULL()
       CHARACTER(LEN=ppm_char)           :: mesg
       !-------------------------------------------------------------------------
       !  Externals 

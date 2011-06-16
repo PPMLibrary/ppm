@@ -32,9 +32,16 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:)  , POINTER :: id_send,id_temp,id_inv,csend,crecv
-         INTEGER, DIMENSION(:)  , POINTER :: sendbuffer,recvbuffer,tempbuffer
-         INTEGER, DIMENSION(:,:), POINTER :: cd_local,psend
+         INTEGER, DIMENSION(:)  , POINTER :: id_send => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: id_temp => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: id_inv  => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: csend   => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: crecv   => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: sendbuffer => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: recvbuffer => NULL()
+         INTEGER, DIMENSION(:)  , POINTER :: tempbuffer => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: cd_local   => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: psend      => NULL()
 
          PRIVATE :: id_send,id_temp,id_inv,csend,crecv
          PRIVATE :: sendbuffer,recvbuffer,tempbuffer

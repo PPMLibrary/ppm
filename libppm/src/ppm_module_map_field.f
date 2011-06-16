@@ -62,17 +62,23 @@
          !----------------------------------------------------------------------
          !  List memory
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER :: invsublist,sublist
+         INTEGER, DIMENSION(:), POINTER :: invsublist => NULL()
+         INTEGER, DIMENSION(:), POINTER :: sublist    => NULL()
 
          PRIVATE :: invsublist,sublist
          
          !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub,isendtosub
-         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart,isendblksize,ioffset
-         INTEGER, DIMENSION(:  ), POINTER :: irecvfromsub,irecvtosub
-         INTEGER, DIMENSION(:,:), POINTER :: irecvblkstart,irecvblksize
+         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: isendtosub   => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblksize => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ioffset      => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: irecvfromsub => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: irecvtosub   => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: irecvblkstart => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: irecvblksize => NULL()
 
          PRIVATE :: isendfromsub,isendtosub,isendblkstart,isendblksize
          PRIVATE :: ioffset,irecvfromsub,irecvtosub,irecvblkstart,irecvblksize
@@ -80,10 +86,16 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends,recvs
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd,recvd
-         INTEGER, DIMENSION(:), POINTER   :: nsend,nrecv,psend,precv
-         INTEGER, DIMENSION(:,:), POINTER :: pp,qq
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: pp => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: qq => NULL()
 
          PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,qq,pp
          

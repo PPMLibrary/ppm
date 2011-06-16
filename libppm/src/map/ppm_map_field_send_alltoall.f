@@ -83,12 +83,15 @@
       !  AllToAll Communication stuff
       !-----------------------------------------------------
       INTEGER               :: kbuffer
-      INTEGER, DIMENSION(:), POINTER :: irecvoff
-      INTEGER, DIMENSION(:), POINTER :: isendoffglobal, irecvoffglobal
-      INTEGER, DIMENSION(:), POINTER :: nsendglobal, nrecvglobal
-      REAL(ppm_kind_double), DIMENSION(:), POINTER :: isendd, irecvd
-      REAL(ppm_kind_single), DIMENSION(:), POINTER :: isends, irecvs
-	  
+      INTEGER, DIMENSION(:), POINTER :: irecvoff       => NULL()
+      INTEGER, DIMENSION(:), POINTER :: isendoffglobal => NULL()
+      INTEGER, DIMENSION(:), POINTER :: irecvoffglobal => NULL()
+      INTEGER, DIMENSION(:), POINTER :: nsendglobal    => NULL()
+      INTEGER, DIMENSION(:), POINTER :: nrecvglobal    => NULL()
+      REAL(ppm_kind_double), DIMENSION(:), POINTER :: isendd => NULL()
+      REAL(ppm_kind_double), DIMENSION(:), POINTER :: irecvd => NULL()
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: isends => NULL()
+      REAL(ppm_kind_single), DIMENSION(:), POINTER :: irecvs => NULL()
 	  LOGICAL               :: rflag
 	  REAL(ppm_kind_double) :: nonblock_time0, nonblock_timer, nonblock_timeout
       

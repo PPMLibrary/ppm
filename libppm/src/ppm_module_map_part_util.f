@@ -44,10 +44,16 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER :: plist_des,plist_act,plist_exc
-         INTEGER, DIMENSION(:), POINTER :: srlist1,srlist2
+         INTEGER, DIMENSION(:), POINTER :: plist_des => NULL()
+         INTEGER, DIMENSION(:), POINTER :: plist_act => NULL()
+         INTEGER, DIMENSION(:), POINTER :: plist_exc => NULL()
+         INTEGER, DIMENSION(:), POINTER :: srlist1   => NULL()
+         INTEGER, DIMENSION(:), POINTER :: srlist2   => NULL()
          INTEGER                        :: nlist1,nlist2,nlist3,nlist4
-         INTEGER ,DIMENSION(:), POINTER :: ilist1,ilist2,ilist3,ilist4
+         INTEGER ,DIMENSION(:), POINTER :: ilist1    => NULL()
+         INTEGER ,DIMENSION(:), POINTER :: ilist2    => NULL()
+         INTEGER ,DIMENSION(:), POINTER :: ilist3    => NULL()
+         INTEGER ,DIMENSION(:), POINTER :: ilist4    => NULL()
 
          PRIVATE :: plist_des,plist_act,plist_exc,srlist1,srlist2
          PRIVATE :: nlist1,nlist2,nlist3,nlist4

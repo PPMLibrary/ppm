@@ -39,9 +39,9 @@
          ! Pointer to cell list (needed to make lists of cell lists)
          TYPE ppm_type_ptr_to_clist
              ! particle index list
-             INTEGER, DIMENSION(:), POINTER    :: lpdx
+             INTEGER, DIMENSION(:), POINTER    :: lpdx => NULL()
              ! first particle in each cell
-             INTEGER, DIMENSION(:), POINTER    :: lhbx
+             INTEGER, DIMENSION(:), POINTER    :: lhbx => NULL()
          END TYPE
 
       END MODULE ppm_module_data_neighlist

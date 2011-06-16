@@ -43,10 +43,10 @@
          INTEGER :: ppm_nsendbuffer_state 
          INTEGER :: ppm_buffer_set_state 
 
-         INTEGER, DIMENSION(:), POINTER :: ppm_psendbuffer_state
-         INTEGER, DIMENSION(:), POINTER :: ppm_buffer2part_state
+         INTEGER, DIMENSION(:), POINTER :: ppm_psendbuffer_state => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ppm_buffer2part_state => NULL()
 
-         INTEGER, DIMENSION(:), POINTER :: ppm_irecvlist_state
-         INTEGER, DIMENSION(:), POINTER :: ppm_isendlist_state
+         INTEGER, DIMENSION(:), POINTER :: ppm_irecvlist_state => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ppm_isendlist_state => NULL()
 
       END MODULE ppm_module_data_state
