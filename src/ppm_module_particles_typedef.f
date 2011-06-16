@@ -8,7 +8,6 @@ MODULE ppm_module_particles_typedef
 USE ppm_module_typedef
 
 IMPLICIT NONE
-#include "ppm_define.h"
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single

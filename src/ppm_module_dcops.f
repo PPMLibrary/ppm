@@ -76,8 +76,6 @@ MODULE ppm_module_dcops
     USE ppm_module_substart
     USE ppm_module_substop
 
-#include "ppm_define.h"
-
     INTERFACE ppm_dcops_2d
         MODULE PROCEDURE ppm_dcops_adapt_2d_s
         MODULE PROCEDURE ppm_dcops_unif_2d_s

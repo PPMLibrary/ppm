@@ -15,7 +15,6 @@ USE ppm_module_write
 USE ppm_module_data, ONLY: ppm_dim
 
 IMPLICIT NONE
-#include "ppm_define.h"
 
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
