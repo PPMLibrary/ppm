@@ -59,10 +59,11 @@
          INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
-         INTEGER                          :: old_nsendlist
+         INTEGER                          :: old_nsendlist = 0
+         INTEGER                          :: old_buffer_set = 0
 
          PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
-         PRIVATE :: old_nsendlist
+         PRIVATE :: old_nsendlist,old_buffer_set
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_pop

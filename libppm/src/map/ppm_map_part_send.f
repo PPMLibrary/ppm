@@ -85,7 +85,6 @@
       !  Initialise 
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_send',t0,info)
-
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -109,51 +108,52 @@
       iopt = ppm_param_alloc_grow
       ldu(1) = MAX(ppm_nsendlist,1)
       IF ((ppm_nsendlist.NE.old_nsendlist) .OR.  &
-     &    (.NOT.ASSOCIATED(nsend))) THEN
-      old_nsendlist = ppm_nsendlist
-      CALL ppm_alloc(nsend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+     &    (ppm_buffer_set.NE.old_buffer_set)) THEN
+          old_nsendlist = ppm_nsendlist
+          old_buffer_set = ppm_buffer_set
+          CALL ppm_alloc(nsend,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
      &        'send counter NSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(nrecv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(nrecv,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
      &        'receive counter NRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(psend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(psend,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
      &        'particle send counter PSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(precv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(precv,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
      &        'particle receive counter PRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      ldu(2) = ppm_buffer_set 
-      CALL ppm_alloc(pp,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
-     &        'work buffer PP',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(qq,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
-     &        'work buffer QQ',__LINE__,info)
-          GOTO 9999
-      ENDIF
+              GOTO 9999
+          ENDIF
+          ldu(2) = ppm_buffer_set 
+          CALL ppm_alloc(pp,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+     &            'work buffer PP',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(qq,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+     &            'work buffer QQ',__LINE__,info)
+              GOTO 9999
+          ENDIF
       ENDIF
       !-------------------------------------------------------------------------
       !  Count the total size of the buffer dimensions 
