@@ -17,25 +17,51 @@ IMPLICIT NONE
 #endif
 
 
-TYPE pnt_array_1d
-    REAL(ppm_kind_double), DIMENSION(:), POINTER :: vec => NULL()
-    !!! array where the scalar-value property is stored
-    CHARACTER(len=ppm_char)                      :: name
-    !!! name of the scalar-valued property
-END TYPE pnt_array_1d
-
 TYPE pnt_array_1d_i
     INTEGER, DIMENSION(:), POINTER               :: vec => NULL()
     !!! array where the integer-valued property is stored
     CHARACTER(len=ppm_char)                      :: name
     !!! name of the integer-valued property
+    LOGICAL                                      :: has_ghosts
+    !!! true if ghost values are up-to-date
+    LOGICAL                                      :: is_mapped
+    !!! true if there is a one-to-one mapping with the particles
+    LOGICAL                                      :: map_parts
+    !!! true if partial mappings are desired for this property (default)
+    LOGICAL                                      :: map_ghosts
+    !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_1d_i
+
+TYPE pnt_array_1d
+    REAL(ppm_kind_double), DIMENSION(:), POINTER :: vec => NULL()
+    !!! array where the scalar-value property is stored
+    CHARACTER(len=ppm_char)                      :: name
+    !!! name of the scalar-valued property
+    LOGICAL                                      :: has_ghosts
+    !!! true if ghost values are up-to-date
+    LOGICAL                                      :: is_mapped
+    !!! true if there is a one-to-one mapping with the particles
+    LOGICAL                                      :: map_parts
+    !!! true if partial mappings are desired for this property (default)
+    LOGICAL                                      :: map_ghosts
+    !!! true if ghost mappings are desired for this property (default)
+END TYPE pnt_array_1d
 
 TYPE pnt_array_2d
     REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: vec =>NULL()
     !!! array where the vector-value property is stored
     CHARACTER(len=ppm_char)                        :: name
     !!! name of the vector-valued property
+    INTEGER                                        :: lda
+    !!! leading dimension of the array
+    LOGICAL                                        :: has_ghosts
+    !!! true if ghost values are up-to-date
+    LOGICAL                                        :: is_mapped
+    !!! true if there is a one-to-one mapping with the particles
+    LOGICAL                                      :: map_parts
+    !!! true if partial mappings are desired for this property (default)
+    LOGICAL                                      :: map_ghosts
+    !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_2d
 
 TYPE pnt_array_desc
@@ -77,7 +103,7 @@ TYPE ppm_t_particles
     !!! name for these particles
     REAL(prec), DIMENSION(:,:), POINTER             :: xp => NULL()
     !!! positions of the particles
-    INTEGER                                         :: xp_g 
+    LOGICAL                                         :: has_ghosts 
     !!! pseudo-boolean for the positions
     !!! takes value 1 if the ghost values have been computed
     !!! 0 if they have not, and -1 if they do not need to be updated
@@ -93,16 +119,6 @@ TYPE ppm_t_particles
     !   integer
     TYPE(pnt_array_1d_i),    DIMENSION(:), POINTER  :: wpi  => NULL()
     !!! array of integer properties
-    INTEGER              , DIMENSION(:  ), POINTER  :: wpi_g=> NULL()
-    !!! array of pseudo-booleans for the integer properties
-    !!! takes values 1 if the ghost values have been computed
-    !!! 0 if they have not, and -1 if they do not need to be updated
-    INTEGER              , DIMENSION(:  ), POINTER  :: wpi_m=> NULL()
-    !!! array of pseudo-booleans for the integer properties
-    !!! takes values 1 if the values are used on the active topology
-    !!! 0 if they are not, and -1 if they do not need to be updated
-    !!! Note that the value of 0 indicates that the array is allocated 
-    !!! to the correct whereas a value of -1 does not.
     INTEGER                                         :: nwpi
     !!! number of integer properties
     INTEGER                                         :: max_wpiid
@@ -112,16 +128,6 @@ TYPE ppm_t_particles
     !   scalar
     TYPE(pnt_array_1d),    DIMENSION(:),   POINTER  :: wps  => NULL()
     !!! array of scalar properties
-    INTEGER              , DIMENSION(:  ), POINTER  :: wps_g=> NULL()
-    !!! array of pseudo-booleans for the scalar properties
-    !!! takes values 1 if the ghost values have been computed
-    !!! 0 if they have not, and -1 if they do not need to be updated
-    INTEGER              , DIMENSION(:  ), POINTER  :: wps_m=> NULL()
-    !!! array of pseudo-booleans for the scalar properties
-    !!! takes values 1 if the values are used on the active topology
-    !!! 0 if they are not, and -1 if they do not need to be updated
-    !!! Note that the value of 0 indicates that the array is allocated 
-    !!! to the correct whereas a value of -1 does not.
     INTEGER                                         :: nwps
     !!! number of scalar properties
     INTEGER                                         :: max_wpsid
@@ -131,18 +137,6 @@ TYPE ppm_t_particles
     !   vectors
     TYPE(pnt_array_2d),    DIMENSION(:),   POINTER  :: wpv  => NULL()
     !!! array of vector properties
-    INTEGER              , DIMENSION(:  ), POINTER  :: wpv_s=> NULL()
-    !!! leading dimension of each vector property
-    INTEGER              , DIMENSION(:  ), POINTER  :: wpv_g=> NULL()
-    !!! array of pseudo-booleans for the vector properties
-    !!! takes values 1 if the ghost values have been computed
-    !!! 0 if they have not, and -1 if they do not need to be updated
-    INTEGER              , DIMENSION(:  ), POINTER  :: wpv_m=> NULL()
-    !!! array of pseudo-booleans for the vector properties
-    !!! takes values 1 if the values are used on the active topology
-    !!! 0 if they are not, and -1 if they do not need to be updated
-    !!! Note that the value of 0 indicates that the array is allocated 
-    !!! to the correct whereas a value of -1 does not.
     INTEGER                                         :: nwpv
     !!! number of vector properties
     INTEGER                                         :: max_wpvid

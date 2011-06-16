@@ -146,7 +146,7 @@
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
-                 IF (Particles%wps_m(wps_l(i)).NE.1) THEN
+                 IF (.NOT.Particles%wps(wps_l(i))%is_mapped) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,   &
                          &  'trying to printout a property that is not mapped &
@@ -156,16 +156,16 @@
                  ENDIF
               ENDDO
            ELSE
-              !printout all properties i for which wps_m(i) = 1
+              !printout all properties i that are mapped
               nb_wps = 0
               DO i=1,Particles%max_wpsid
-                 IF (Particles%wps_m(i).EQ.1) &
+                 IF (Particles%wps(i)%is_mapped) &
                       nb_wps = nb_wps + 1
               ENDDO
               ALLOCATE(wps_l(nb_wps),STAT=info)
               nb_wps = 0
               DO i=1,Particles%max_wpsid
-                 IF (Particles%wps_m(i).EQ.1) THEN
+                 IF (Particles%wps(i)%is_mapped) THEN
                     nb_wps = nb_wps + 1
                     wps_l(nb_wps) = i
                  ENDIF
@@ -185,7 +185,7 @@
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
-                 IF (Particles%wpv_m(wpv_l(i)).NE.1) THEN
+                 IF (.NOT.Particles%wpv(wpv_l(i))%is_mapped) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,   &
                          &  'trying to printout a property that is not mapped &
@@ -195,16 +195,16 @@
                  ENDIF
               ENDDO
            ELSE
-              !printout all properties i for which wpv_m(i) = 1
+              !printout all properties i that are mapped
               nb_wpv = 0
               DO i=1,Particles%max_wpvid
-                 IF (Particles%wpv_m(i).EQ.1) &
+                 IF (Particles%wpv(i)%is_mapped) &
                       nb_wpv = nb_wpv + 1
               ENDDO
               ALLOCATE(wpv_l(nb_wpv),STAT=info)
               nb_wpv = 0
               DO i=1,Particles%max_wpvid
-                 IF (Particles%wpv_m(i).EQ.1) THEN
+                 IF (Particles%wpv(i)%is_mapped) THEN
                     nb_wpv = nb_wpv + 1
                     wpv_l(nb_wpv) = i
                  ENDIF
@@ -224,7 +224,7 @@
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
-                 IF (Particles%wpv_m(wpv_field_l(i)).NE.1) THEN
+                 IF (.NOT.Particles%wpv(wpv_field_l(i))%is_mapped) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,   &
                          &  'trying to printout a property that is not mapped &
@@ -263,7 +263,7 @@
                    "' type='Float64' />"
               END DO
               DO i=1,nb_wpv
-                 nd = Particles%wpv_s(i)
+                 nd = Particles%wpv(i)%lda
                  DO l=1,nd
                     WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(i))%name), '_', l
                     WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
