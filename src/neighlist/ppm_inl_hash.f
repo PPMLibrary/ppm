@@ -253,8 +253,7 @@
       !!!
       !!! [NOTE]
       !!! This routine needs to be very fast, therefor we skip the usual
-      !!! chit-chat and get right to it. (-> no substart,substop unless
-      !!! compiled with __DEBUG flag)
+      !!! chit-chat and get right to it. (-> no substart,substop)
       IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
@@ -274,11 +273,6 @@
       !---------------------------------------------------------------------
       INTEGER                              :: jump
       INTEGER                              :: spot
-
-#ifdef __DEBUG
-      INTEGER                               :: t0
-      CALL substart('hash_insert',t0,info)
-#endif
 
       info = 0
       jump = 0
@@ -304,10 +298,6 @@
       info = -1
 
  9999 CONTINUE
-
-#ifdef __DEBUG
-      CALL substop('hash_insert',t0,info)
-#endif
 
       END SUBROUTINE hash_insert
 

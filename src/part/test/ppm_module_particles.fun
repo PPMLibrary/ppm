@@ -114,7 +114,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         use ppm_module_typedef
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         Assert_Equal(info,0)
         Assert_Equal(Particles%active_topoid,topoid)
         Assert_False(Particles%adaptive)
@@ -128,8 +129,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
         Assert_Equal(info,0)
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,&
-            topoid,cutoff=cutoff)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid,cutoff=cutoff)
         Assert_Equal(info,0)
         Assert_Equal(Particles%cutoff,cutoff)
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
@@ -142,7 +143,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         use ppm_module_typedef
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
         Assert_False(Particles%adaptive)
 #ifdef __MPI
@@ -163,7 +165,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         Assert_Equal(info,0)
         Assert_False(Particles%ontopology)
         call particles_mapping_global(Particles,topoid,info)
@@ -181,7 +184,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok=.false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         Assert_Equal(info,0)
         allocate(disp(ndim,Particles%Npart),stat=info)
         Assert_Equal(info,0)
@@ -197,7 +201,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_global(Particles,topoid,info)
         Assert_Equal(info,0)
         Assert_Equal(Particles%active_topoid,topoid)
-        call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
+        call ppm_topo_check(Particles%active_topoid,Particles%xp,&
+            Particles%Npart,ok,info)
         Assert_True(ok)
 
     end test
@@ -209,7 +214,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
         Assert_False(Particles%ontopology)
         call particles_mapping_global(Particles,topoid,info)
@@ -227,7 +233,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
 !allocate/initialise properties of different types and check that their sums are conserved
 !after the mapping
@@ -248,9 +255,12 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         FORALL(i=1:Particles%Npart) wp(i)=sin(1._mk*i*(rank+2))
         FORALL(i=1:7,j=1:Particles%Npart) disp(i,j)=cos(1._mk*i*(rank+2)+3._mk*j)
 #ifdef __MPI
-        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum1,1,MPI_INTEGER,MPI_SUM,comm,info)
-        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum1,1,ppm_mpi_kind,MPI_SUM,comm,info)
-        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum2,1,ppm_mpi_kind,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum1,1,MPI_INTEGER,&
+            MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum1,1,ppm_mpi_kind,&
+            MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum2,1,&
+            ppm_mpi_kind,MPI_SUM,comm,info)
 #else
         isum1 = SUM(wpi(1:Particles%Npart))
         rsum1 = SUM(wp(1:Particles%Npart))
@@ -274,9 +284,12 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         wp => get_wps(Particles,wpi_id)
         disp => get_wpv(Particles,wpi_id)
 #ifdef __MPI
-        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum2,1,MPI_INTEGER,MPI_SUM,comm,info)
-        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum3,1,ppm_mpi_kind,MPI_SUM,comm,info)
-        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum4,1,ppm_mpi_kind,MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wpi(1:Particles%Npart)),isum2,1,MPI_INTEGER,&
+            MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(wp(1:Particles%Npart)),rsum3,1,ppm_mpi_kind,&
+            MPI_SUM,comm,info)
+        call MPI_Allreduce(SUM(disp(1:7,1:Particles%Npart)),rsum4,1,&
+            ppm_mpi_kind,MPI_SUM,comm,info)
 #else
         isum2 = SUM(wpi(1:Particles%Npart))
         rsum3 = SUM(wp(1:Particles%Npart))
@@ -298,11 +311,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_topo_check
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_random,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_random,topoid)
         Assert_Equal(info,0)
         call particles_mapping_global(Particles,topoid,info)
         Assert_Equal(info,0)
-        call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
+        call ppm_topo_check(Particles%active_topoid,Particles%xp,&
+            Particles%Npart,ok,info)
         Assert_True(ok)
         allocate(disp(ndim,Particles%Npart),stat=info)
         Assert_Equal(info,0)
@@ -331,7 +346,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         call particles_mapping_partial(Particles,topoid,info)
         Assert_Equal(info,0)
-        call ppm_topo_check(Particles%active_topoid,Particles%xp,Particles%Npart,ok,info)
+        call ppm_topo_check(Particles%active_topoid,&
+            Particles%xp,Particles%Npart,ok,info)
         Assert_True(ok)
         call particles_mapping_ghosts(Particles,topoid,info)
         Assert_Equal(info,0)
@@ -389,7 +405,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_typedef
         use ppm_module_topo_check
 
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         Assert_Equal(info,0)
         call particles_mapping_global(Particles,topoid,info)
         Assert_Equal(info,0)
@@ -427,7 +444,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
         Assert_Equal(Particles%nneighmin,nneigh_theo)
 
-        call particles_allocate_wps(Particles,Particles%rcp_id,info,with_ghosts=.true.)
+        call particles_allocate_wps(Particles,Particles%rcp_id,info,&
+            with_ghosts=.true.)
         Assert_Equal(info,0)
         rcp => get_wps(Particles,Particles%rcp_id,with_ghosts=.true.)
         xp => get_xp(Particles,with_ghosts=.true.)
@@ -452,13 +470,6 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
             nneigh_theo = 6
         endif
 
-!        write(121+rank,*) Particles%xp(:,MINLOC(Particles%nvlist(1:Particles%Npart),1))
-!        ip = MINLOC(Particles%nvlist(1:Particles%Npart),1)
-!        write(*,*) 'ip = ',ip, 'Min = ',MINVAL(Particles%nvlist(1:Particles%Npart))
-!        do i = 1, MINVAL(Particles%nvlist(1:Particles%Npart))
-!            write(121+rank,*) Particles%xp(:,Particles%vlist(i,ip))
-!        enddo
-
         Assert_Equal(Particles%nneighmin,nneigh_theo)
         if (ndim.eq.2) then
             nneigh_theo = 28
@@ -475,7 +486,8 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_typedef
 
         ok = .false.
-        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
         write(dirname,*) './'
         call particles_io_xyz(Particles,0,dirname,info)
         Assert_Equal(info,0)
