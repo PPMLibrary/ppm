@@ -157,6 +157,7 @@
     !----------------------------------------------------------------------
     TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER            :: temp
     TYPE(WRAP(DTYPE)_arg)                                   :: def
+    INTEGER                                                 :: len
     !----------------------------------------------------------------------
     !  Body
     !----------------------------------------------------------------------
@@ -196,17 +197,22 @@
     IF (PRESENT(flag)) THEN
        def%flag                 =  flag
        def%flag_set             =  .TRUE.
-       group_has_arg(groups_i)  = .TRUE.
+       def%settable             =  .TRUE.
+       group_has_arg(groups_i)  =  .TRUE.
     END IF
     IF (PRESENT(long_flag)) THEN
        def%long_flag            =  long_flag
        def%long_flag_set        =  .TRUE.
-       group_has_arg(groups_i)  = .TRUE.
+       def%settable             =  .TRUE.
+       group_has_arg(groups_i)  =  .TRUE.
     END IF
     IF (PRESENT(ctrl_name)) THEN
        def%ctrl_name            =  ctrl_name
-       def%ctrl_name_set        = .TRUE.
-       group_has_ctrl(groups_i) = .TRUE.
+       def%ctrl_name_set        =  .TRUE.
+       def%settable             =  .TRUE.
+       group_has_ctrl(groups_i) =  .TRUE.
+       len                      =  LEN_TRIM(ctrl_name)
+       IF (len .GT. group_max_len(groups_i)) group_max_len(groups_i) = len  
     END IF
     IF (PRESENT(help)) THEN
        def%help                 =  help
