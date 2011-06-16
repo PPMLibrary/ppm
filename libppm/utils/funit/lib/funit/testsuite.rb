@@ -9,7 +9,7 @@ module Funit
 
   class TestSuite < File
 
-    KEYWORDS = Regexp.union(/^\s*(end\s+)?(setup|teardown|test)/i,
+    KEYWORDS = Regexp.union(/^\s*(end\s+)?(setup|teardown|test|init|finalize)/i,
                             Assertions::ASSERTION_PATTERN)
     COMMENT_LINE = /^\s*!/
     
@@ -23,7 +23,7 @@ module Funit
       return nil unless funit_exists?(suite_name)
       File.delete(suite_name+"_fun.f") if File.exists?(suite_name+"_fun.f")
       super(suite_name+"_fun.f","w")
-      @tests, @setup, @teardown = [], [], []
+      @init, @finalize, @tests, @setup, @teardown = [], [], [], [], []
       header
       @wrap_with_module = wrap_with_module
       module_wrapper if @wrap_with_module
@@ -90,6 +90,10 @@ module #{@suite_name}_fun
         case line
         when COMMENT_LINE
           puts line
+        when /^\s*init/i
+          add_to_init funit_contents
+        when /^\s*finalize/i
+          add_to_finalize funit_contents
         when /^\s*setup/i
           add_to_setup funit_contents
         when /^\s*teardown/i
@@ -111,6 +115,18 @@ module #{@suite_name}_fun
       $stderr.puts "done."
     end
 
+    def add_to_init funit_contents
+      while (line = funit_contents.shift) && line !~ /end\s+init/i
+        @init.push line
+      end
+    end
+    
+    def add_to_finalize funit_contents
+      while (line = funit_contents.shift) && line !~ /end\s+finalize/i
+        @finalize.push line
+      end
+    end
+    
     def add_to_setup funit_contents
       while (line = funit_contents.shift) && line !~ /end\s+setup/i
         @setup.push line
@@ -165,6 +181,10 @@ module #{@suite_name}_fun
     end
 
     def close
+      puts "\n subroutine funit_init"
+      puts @init
+      puts " end subroutine funit_init\n\n"
+      
       puts "\n subroutine funit_setup"
       puts @setup
       puts "  noAssertFailed = .true."
@@ -173,6 +193,10 @@ module #{@suite_name}_fun
       puts "\n subroutine funit_teardown"
       puts @teardown
       puts " end subroutine funit_teardown\n\n"
+      
+      puts "\n subroutine funit_finalize"
+      puts @finalize
+      puts " end subroutine funit_finalize\n\n"
 
       puts <<-NEXTONE
 
@@ -184,6 +208,9 @@ module #{@suite_name}_fun
   integer :: nFailures
 
   continue
+  
+  call funit_init
+
       NEXTONE
 
       @tests.each do |test_name|
@@ -193,6 +220,8 @@ module #{@suite_name}_fun
       end
 
       puts <<-LASTONE
+  
+  call funit_finalize
 
   nTests          = numTests
   nAsserts        = numAsserts
