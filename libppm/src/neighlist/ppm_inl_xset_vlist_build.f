@@ -136,7 +136,6 @@
           !---------------------------------------------------------------------
           CALL getParticleCoorDepth(red_refidx, domain, red_coor, red_depth, red, &
  &                                 rcred, skin)
-
           !---------------------------------------------------------------------
           !  Get index of the cell that this particle is located in.
           !---------------------------------------------------------------------
@@ -191,7 +190,6 @@
           !  Get blue particles that are in the same cell with input particle.
           !---------------------------------------------------------------------
           CALL getParticlesInCell(c_idx, blue, blue_clist, own_blue, own_nblue)
-
           !---------------------------------------------------------------------
           !  At the center cell, every particle in the same cell is compared
           !  with another once. If they are neighbors, nvlist entry of those
@@ -245,7 +243,6 @@
               ! Get particles in the neighbor cell
               CALL getParticlesInCell(n_idx, blue, blue_clist, &
  &                                    neigh_blue, neigh_nblue)
-
               ! For each particle in the reference cell
               DO m = 1, own_nred
                   ! Pick a reference particle
@@ -299,9 +296,9 @@
                   parentIdx = parent(c_idx)
 
                   ! If the parent is empty, also put the child in the empty list.
-                  IF (inEmptyList(parentIdx)) THEN
-                     CALL putInEmptyList(c_idx)
-                  ENDIF
+!                  IF (inEmptyList(parentIdx)) THEN
+!                     CALL putInEmptyList(c_idx)
+!                  ENDIF
                   ! Get cell coordinates and depth
                   CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
  &                                       blue_clist%max_depth, info)
@@ -332,10 +329,11 @@
                       
                       ! if parent of neighbor is empty,
                       ! add to emptylist and skip
-                      IF (inEmptyList(parent(n_idx))) THEN
-                          CALL putInEmptyList(n_idx)
-                          CYCLE
-                      ENDIF
+!                      IF (inEmptyList(parent(n_idx))) THEN
+!                          CALL putInEmptyList(n_idx)
+!                          print *,'338: isempty'
+!                          CYCLE
+!                      ENDIF
 
                       ! Get particles in the neighbor cell
                       !-----------------------------------------------------
@@ -347,7 +345,6 @@
                       !-----------------------------------------------------
                       CALL getParticlesInCell(n_idx, blue, blue_clist, &
  &                                            neigh_blue, neigh_nblue)
-
                       ! For each neighbor element
                       DO n = 1, neigh_nblue
                           ! Pick a candidate for neighbor particle
