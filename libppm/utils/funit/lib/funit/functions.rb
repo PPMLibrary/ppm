@@ -12,10 +12,20 @@ module Funit
       <% test_suites.each do |test_suite| -%>
       use <%= File.basename(test_suite) %>_fun
       <% end -%>
-
+      
       implicit none
 
+      <% if use_mpi -%>
+      INCLUDE 'mpif.h'
+      <% end -%>
+
       integer, dimension(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
+
+      <% if use_mpi -%>
+      integer :: mpiinfo
+
+      call mpi_init(mpiinfo)
+      <% end -%>
 
       <% test_suites.each_with_index do |test_suite,i| -%>
       write(*,*)
@@ -27,6 +37,10 @@ module Funit
    <%= i+1 %> format('Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
       <% end -%>
 
+      <% if use_mpi -%>
+      call mpi_finalize(mpiinfo)
+      <% end -%>
+      
       write(*,*)
       write(*,'(a)') "==========[ SUMMARY ]=========="
       <% max_length = test_suites.empty? ? 0 : test_suites.max.length -%>
@@ -97,7 +111,7 @@ module Funit
 
   end
 
-  def write_test_runner test_suites
+  def write_test_runner( test_suites, use_mpi )
     File.open("TestRunner.f", "w") do |file|
       file.puts TEST_RUNNER.result(binding)
     end
