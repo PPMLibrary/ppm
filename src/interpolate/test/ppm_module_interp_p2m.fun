@@ -1,7 +1,6 @@
 test_suite ppm_module_interp_p2m
 
 
-#include "../../ppm_define.h"
 
 #ifdef __MPI
     INCLUDE "mpif.h"

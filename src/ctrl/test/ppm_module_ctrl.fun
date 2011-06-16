@@ -24,7 +24,6 @@ test_suite ppm_module_ctrl
 
   integer :: info, ios, scf
 
-#include "../../ppm_define.h"
 
   setup
     CALL disable_ctrl
