@@ -151,6 +151,10 @@ program ppm_test_interp_p2m
         h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
     enddo
 
+    NULLIFY(topo)
+    CALL ppm_topo_get(topoid,topo,info)
+    print *,topoid,meshid
+
     print *, 'finished initialization'
 
     call ppm_map_part_global(topoid,xp,np,info) ! positions
@@ -177,20 +181,20 @@ program ppm_test_interp_p2m
         !----------------
         f_moments = 0.0_mk
         p_moments = 0.0_mk
-	    do j = 1-ghostsize(2), ndata(2,1)+ghostsize(2)
-	        do i = 1-ghostsize(1),ndata(1,1)+ghostsize(1)
-	            field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
-	            field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
-	            do aj = 1,nmom
-	               f_moments(aj) = f_moments(aj) + field_wp(1,i,j,1)* &
-	&                            field_x(1)**alpha(1,aj)*field_x(2)**alpha(2,aj)
-	            enddo
-	        enddo
-	    enddo
-	    do aj = 1,nmom
-	       p_moments(aj) = xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
-	    enddo
-	    do aj = 1,6
+        do j = 1-ghostsize(2), ndata(2,1)+ghostsize(2)
+            do i = 1-ghostsize(1),ndata(1,1)+ghostsize(1)
+                field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
+                field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
+                do aj = 1,nmom
+                   f_moments(aj) = f_moments(aj) + field_wp(1,i,j,1)* &
+    &                            field_x(1)**alpha(1,aj)*field_x(2)**alpha(2,aj)
+                enddo
+            enddo
+        enddo
+        do aj = 1,nmom
+           p_moments(aj) = xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
+        enddo
+        do aj = 1,6
             if (abs(f_moments(aj) - p_moments(aj)) .GT. tol) then
                 print *, 'particle pos:',     xp(:,p_i)
                 print *, 'failed at moment: ', aj
@@ -198,17 +202,17 @@ program ppm_test_interp_p2m
                 print *, 'particle moments: ',p_moments
                 stop 'ERROR: p2m interpolation: moments not conserved.'
             endif
-	    enddo
+        enddo
         do aj = 7,10
             if (abs(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
                 maxm3 = abs(f_moments(aj) - p_moments(aj))
             endif
         enddo
 
-	    wp(1,p_i) = 0.0_mk
-	enddo
+        wp(1,p_i) = 0.0_mk
+    enddo
 
-	print *, 'Maximum 3rd moment diff / h^3', maxm3/h**3
+    print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
     !----------------
     ! m --> p
     !----------------
