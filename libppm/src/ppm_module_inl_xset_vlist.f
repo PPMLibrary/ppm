@@ -95,7 +95,41 @@
             MODULE PROCEDURE get_xset_neigh_s
             MODULE PROCEDURE get_xset_neigh_d
         END INTERFACE
+        
+        INTERFACE getParticleCoorDepth
+            MODULE PROCEDURE getParticleCoorDepth_s
+            MODULE PROCEDURE getParticleCoorDepth_d
+        END INTERFACE
 
+        INTERFACE getParticlesInCell
+            MODULE PROCEDURE getParticlesInCell_s
+            MODULE PROCEDURE getParticlesInCell_d
+        END INTERFACE
+
+        INTERFACE getSubdomainParticles
+            MODULE PROCEDURE getSubdomainParticles_s
+            MODULE PROCEDURE getSubdomainParticles_d
+        END INTERFACE
+        
+        INTERFACE inDomain
+            MODULE PROCEDURE inDomain_s
+            MODULE PROCEDURE inDomain_d
+        END INTERFACE
+        
+        INTERFACE is_xset_Neighbor
+            MODULE PROCEDURE is_xset_Neighbor_s
+            MODULE PROCEDURE is_xset_Neighbor_d
+        END INTERFACE
+
+        PRIVATE :: create_inl_xset_vlist
+        PRIVATE :: get_xset_VerletLists
+        PRIVATE :: count_xset_neigh
+        PRIVATE :: get_xset_neigh
+        PRIVATE :: getSubdomainParticles
+        PRIVATE :: getParticlesInCell
+        PRIVATE :: getParticleCoorDepth
+        PRIVATE :: inDomain
+        PRIVATE :: is_xset_Neighbor
 
 
         !-------------------------------------------------------------------------
@@ -107,6 +141,7 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "neighlist/ppm_inl_xset_vlist.f"
+#include "neighlist/ppm_inl_helpers.f"
 #define __ACTION __COUNT
 #include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
@@ -116,6 +151,7 @@
 #undef  __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "neighlist/ppm_inl_xset_vlist.f"
+#include "neighlist/ppm_inl_helpers.f"
 #define __ACTION __COUNT
 #include "neighlist/ppm_inl_xset_vlist_build.f"
 #undef __ACTION
