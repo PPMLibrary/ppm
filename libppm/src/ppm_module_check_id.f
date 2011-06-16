@@ -13,6 +13,7 @@
          !  Define interface to the topoid check routine
          !----------------------------------------------------------------------
          INTERFACE ppm_check_topoid
+         !!! checks topology ID
             MODULE PROCEDURE ppm_check_topoid
          END INTERFACE
 
@@ -20,6 +21,7 @@
          !  Define interface to the meshid check routine
          !----------------------------------------------------------------------
          INTERFACE ppm_check_meshid
+         !!! checks mesh ID
             MODULE PROCEDURE ppm_check_meshid
          END INTERFACE
 
