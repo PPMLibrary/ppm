@@ -280,8 +280,6 @@
       !---------------------------------------------------------------------
           REAL(MK), DIMENSION(2*ppm_dim)             :: whole_domain
           ! Physical extent of whole domain including ghost layers.
-          TYPE(ppm_t_topo), POINTER                  :: topo => NULL()
-          ! Topology.
           INTEGER                                    :: i
           INTEGER                                    :: j
           REAL(MK)                                   :: t0
