@@ -291,10 +291,11 @@
       DO idom=1,topo%nsublist
           n1  = Nm(1,idom)
           n2  = Nm(1,idom)*Nm(2,idom)
-          nz  = Nm(3,idom)
-          IF (ppm_dim .EQ. 2) THEN
+          IF (ppm_dim.EQ.3) THEN
+              nz  = Nm(3,idom)
+          ELSE IF (ppm_dim .EQ. 2) THEN
               n2 = 0
-              nz = 2
+              nz = lb+2
           ENDIF 
           ! loop over all REAL cells (the -2 at the end does this)
           DO k=lb,nz-2
@@ -474,10 +475,11 @@
           DO idom=1,topo%nsublist
               n1  = Nm(1,idom)
               n2  = Nm(1,idom)*Nm(2,idom)
-              nz  = Nm(3,idom)
-              IF (ppm_dim .EQ. 2) THEN
+              IF (ppm_dim.EQ.3) THEN
+                  nz  = Nm(3,idom)
+              ELSE IF (ppm_dim .EQ. 2) THEN
                   n2 = 0
-                  nz = 2
+                  nz = lb+2
               ENDIF 
               ! get number of cells in this subdomain
               nbox = SIZE(clist(idom)%lhbx,1)-1
