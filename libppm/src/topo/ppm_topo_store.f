@@ -29,11 +29,11 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,&
+     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
      &                            isublist,nsublist,nneigh,ineigh,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,&
+     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
      &                            isublist,nsublist,nneigh,ineigh,info)
 #endif
       !!! This routine stores all relevant information about
@@ -91,6 +91,8 @@
       !!! List of subs handled by this processor
       INTEGER , DIMENSION(  :), INTENT(IN   ) :: bcdef
       !!! Boundary conditions on the computational box
+      REAL(MK),                 INTENT(IN   ) :: ghostsize
+      !!! Size of the ghostlayers
       INTEGER                 , INTENT(IN   ) :: nsubs
       !!! Total number of subs on all procs
       INTEGER                 , INTENT(IN   ) :: nsublist
@@ -166,6 +168,7 @@
          topo%min_physs(k) = min_phys(k)
          topo%max_physs(k) = max_phys(k)
       ENDDO
+      topo%ghostsizes = ghostsize
 #else
       !-------------------------------------------------------------------------
       !  Double precision
@@ -174,7 +177,7 @@
          topo%min_physd(k) = min_phys(k)
          topo%max_physd(k) = max_phys(k)
       ENDDO
-
+      topo%ghostsized = ghostsize
 #endif
 
 
