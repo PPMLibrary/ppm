@@ -33,7 +33,7 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 2
+#define debug_verbosity 1
 
      USE ppm_module_data
      USE ppm_module_typedef

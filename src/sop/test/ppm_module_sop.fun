@@ -16,7 +16,7 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 3000 !10000
+integer                         :: np_global = 10000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -185,6 +185,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call ppm_vtk_particle_cloud('after_adapt0',Particles,info)
         Assert_Equal(info,0)
 write(*,*) 'ok now'
+write(*,*) Particles%neighlists
+write(*,*) Particles%nneighmin
+
 
 !define a property, which will be used for adaptation
         call particles_allocate_wps(Particles,Particles%adapt_wpid,&
@@ -196,36 +199,37 @@ write(*,*) 'ok now'
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip)) 
         xp => set_xp(Particles,read_only=.true.)
         wp => set_wps(Particles,wp_id)
-        call particles_update_cutoff(Particles,4.5_mk*Particles%h_avg,info)
         call particles_mapping_ghosts(Particles,topoid,info)
-        call particles_neighlists(Particles,topoid,info)
 
-!        Particles%itime = 1
-!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-!            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
-!wpv_id=0
-!call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
-!disp=>get_wpv(Particles,wpv_id)
-!xp=>get_xp(Particles)
-!DO ip=1,Particles%Npart
-!disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
-!ENDDO
-!
-!xp=>set_xp(Particles,read_only=.TRUE.)
-!disp=>set_wpv(Particles,wpv_id)
-!
-!        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
-!        Particles%itime = 2
-!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
-!        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
-!
-!write(*,*) 'finished our small debugging tests'
+
+        Particles%itime = 1
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
+            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+wpv_id=0
+call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
+disp=>get_wpv(Particles,wpv_id)
+xp=>get_xp(Particles)
+DO ip=1,Particles%Npart
+disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
+ENDDO
+
+xp=>set_xp(Particles,read_only=.TRUE.)
+disp=>set_wpv(Particles,wpv_id)
+
+        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
+        Particles%itime = 2
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
+        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
+
+write(*,*) 'finished our small debugging tests'
+stop
 
 !adapt particles without using analytical expressions
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
 !printout
+        call particles_io_xyz(Particles,3,dirname,info)
         call ppm_vtk_particle_cloud('after_adapt3',Particles,info)
         Assert_Equal(info,0)
         Particles%itime = 3

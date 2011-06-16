@@ -379,8 +379,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     ! re-activate Dtilde_id if it had already been used
     CALL particles_allocate_wps(Particles,Particles%Dtilde_id,info,&
-        with_ghosts=.TRUE.,zero=.TRUE.,iopt=ppm_param_alloc_grow,&
-        name='D_tilde')
+        with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,&
@@ -399,7 +398,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
         ! Compute gradients using PSE kernels
-        coeffs=1._MK; order=2; degree = 0
+        coeffs=1._MK; order=4; degree = 0
         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
         eta_id = 0
         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&

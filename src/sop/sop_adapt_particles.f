@@ -449,24 +449,12 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ENDIF
 
     !removeme
-    !WRITE(filename,'(A,I0)') 'P_withwpfun_',Particles%itime
-    !CALL ppm_vtk_particle_cloud(filename,Particles,info)
-
-    !call particles_mapping_ghosts(Particles,topo_id,info)
-    !call particles_allocate_wps(Particles,Particles%adapt_wpid,info,with_ghosts=.TRUE.)
-    !xp=>get_xp(Particles,with_ghosts=.TRUE.)
-    !wp=>get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-    !DO ip=1,Particles%Mpart
-        !wp(ip) = wp_fun(xp(1:ppm_dim,ip))
-    !ENDDO
-    !xp=>set_xp(Particles,read_only=.TRUE.)
-    !wp=>set_wps(Particles,Particles%adapt_wpid,ghosts_ok=.TRUE.)
-    !CALL sop_compute_D(Particles,D_fun,opts,info)
-
-    !WRITE(filename,'(A,I0)') 'P_without_',Particles%itime
-    !CALL ppm_vtk_particle_cloud(filename,Particles,info)
-    !write(*,*) 'ok for now'
-    !stop
+    IF (Particles%itime.GT.0) THEN
+        WRITE(filename,'(A,I0)') 'P_',Particles%itime
+        CALL ppm_vtk_particle_cloud(filename,Particles,info)
+        info = -1
+        goto 9999
+    ENDIF
     !removeme
 
     !REMOVME???
@@ -712,7 +700,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             Particles_old%level_grad_id,read_only=.TRUE.)
     ENDIF
 
-    IF (.NOT.PRESENT(wp_fun)) THEN
+    IF (opts%level_set .AND. .NOT.PRESENT(wp_fun)) THEN
         CALL particles_allocate_wps(Particles,Particles%adapt_wpid,&
             info,iopt=ppm_param_alloc_fit,name="adapt_wp")
         IF (info.NE.0) THEN
