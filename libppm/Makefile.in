@@ -130,6 +130,8 @@ new: all install
 
 
 test: all
+	make --directory=src/map/test FC=$(FC) CPP="$(CPP)" \
+		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
 	make --directory=src/interpolate/test FC=$(FC) CPP="$(CPP)" \
 		OPTS="$(FCFLAGS)" LDFLAGS="$(LDFLAGS)" LIBS="$(LIBS)"
 	make --directory=src/neighlist/test FC=$(FC) CPP="$(CPP)" \
