@@ -448,15 +448,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    !removeme
-    IF (Particles%itime.GT.0) THEN
-        WRITE(filename,'(A,I0)') 'P_',Particles%itime
-        CALL ppm_vtk_particle_cloud(filename,Particles,info)
-        info = -1
-        goto 9999
-    ENDIF
-    !removeme
-
     !REMOVME???
     rcp => Get_wps(Particles,Particles%rcp_id)
     D => Get_wps(Particles,Particles%D_id)
@@ -491,6 +482,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     rcp => Set_wps(Particles,Particles%rcp_id,read_only=.FALSE.)
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 
+#if debug_verbosity > 1
+    WRITE(filename,'(A,I0)') 'P_beforegraddesc_',Particles%itime
+    CALL ppm_vtk_particle_cloud(filename,Particles,info)
+#endif
+
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -517,6 +513,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
     !REMOVME???
+
+    !removme
+    !CALL sop_compute_D(Particles,D_fun,opts,info,     &
+        !wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
+        !level_grad_fun=level_grad_fun,nb_fun=nb_fun)
+    !WRITE(filename,'(A,I0)') 'P_beforegraddescbis_',Particles%itime
+    !CALL ppm_vtk_particle_cloud(filename,Particles,info)
+    !stop
+    !removme
 
     !!-------------------------------------------------------------------------!
     !! Find the nearest neighbour for each real particle
@@ -771,6 +776,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !! Compute field values at new particle locations
     !!-------------------------------------------------------------------------!
 
+#if debug_verbosity > 1
+    WRITE(filename,'(A,I0)') 'P_aftergraddesc_',Particles%itime
+    CALL ppm_vtk_particle_cloud(filename,Particles,info)
+#endif
+
     IF (PRESENT(wp_fun)) THEN
         !!---------------------------------------------------------------------!
         !! If the field is known as a function, do nothing
@@ -788,6 +798,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         ENDIF
         
     ENDIF
+
+#if debug_verbosity > 1
+    WRITE(filename,'(A,I0)') 'P_afterinterpolate_',Particles%itime
+    CALL ppm_vtk_particle_cloud(filename,Particles,info)
+#endif
 
 #if debug_verbosity > 2
     CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1100,info)

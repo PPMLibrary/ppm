@@ -24,7 +24,7 @@ real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
 integer                         :: i,j,k,isum1,isum2,ip,wp_id,wp1_id,wpv_id
-real(mk)                        :: rsum1,rsum2
+real(mk)                        :: rsum1,rsum2,dt
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
 integer,dimension(3)            :: ldc
@@ -126,6 +126,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         disp = 0.0001_mk * disp
         call particles_move(Particles,disp,info)
         Assert_Equal(info,0)
+        deallocate(disp)
         call particles_apply_bc(Particles,topoid,info)
         Assert_Equal(info,0)
         call particles_mapping_partial(Particles,topoid,info)
@@ -158,7 +159,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_True(info.eq.0)
 
         write(dirname,*) './'
-        call particles_io_xyz(Particles,0,dirname,info)
+!        call particles_io_xyz(Particles,0,dirname,info)
         Assert_Equal(info,0)
 
 !setup options for sop
@@ -175,8 +176,6 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         opts%rcp_over_D = 2.4_mk
 
         Particles%itime = 0
-
-!adapt particles using an analytical function
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
@@ -184,10 +183,6 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 !printout
         call ppm_vtk_particle_cloud('after_adapt0',Particles,info)
         Assert_Equal(info,0)
-write(*,*) 'ok now'
-write(*,*) Particles%neighlists
-write(*,*) Particles%nneighmin
-
 
 !define a property, which will be used for adaptation
         call particles_allocate_wps(Particles,Particles%adapt_wpid,&
@@ -202,37 +197,63 @@ write(*,*) Particles%nneighmin
         call particles_mapping_ghosts(Particles,topoid,info)
 
 
-        Particles%itime = 1
-        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
-wpv_id=0
-call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
-disp=>get_wpv(Particles,wpv_id)
-xp=>get_xp(Particles)
-DO ip=1,Particles%Npart
-disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
-ENDDO
-
-xp=>set_xp(Particles,read_only=.TRUE.)
-disp=>set_wpv(Particles,wpv_id)
-
-        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
-        Particles%itime = 2
-        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
-        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
-
-write(*,*) 'finished our small debugging tests'
-stop
+!        Particles%itime = 1
+!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
+!            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
+!wpv_id=0
+!call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
+!disp=>get_wpv(Particles,wpv_id)
+!xp=>get_xp(Particles)
+!DO ip=1,Particles%Npart
+!disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
+!ENDDO
+!
+!xp=>set_xp(Particles,read_only=.TRUE.)
+!disp=>set_wpv(Particles,wpv_id)
 
 !adapt particles without using analytical expressions
+        Particles%itime = 3
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
 !printout
-        call particles_io_xyz(Particles,3,dirname,info)
+!        call particles_io_xyz(Particles,3,dirname,info)
         call ppm_vtk_particle_cloud('after_adapt3',Particles,info)
         Assert_Equal(info,0)
-        Particles%itime = 3
+
+!do nothing and adapt again
+        call particles_mapping_ghosts(Particles,topoid,info)
+        Assert_Equal(info,0)
+        Particles%itime = 4
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
+        Assert_Equal(info,0)
+
+!move particles and adapt again
+        allocate(disp(ndim,Particles%Npart),stat=info)
+        xp => get_xp(Particles)
+        dt = Particles%h_min
+        FORALL (ip=1:Particles%Npart)
+            disp(1:2,ip) = 2._mk*cos(pi*dt)*&
+                (/-sin(pi*xp(1,ip))**2*sin(pi*xp(2,ip))*cos(pi*xp(2,ip)),&
+                   sin(pi*xp(2,ip))**2*sin(pi*xp(1,ip))*cos(pi*xp(1,ip)) /)
+        END FORALL
+        xp => set_xp(Particles,read_only=.true.)
+        call particles_move(Particles,disp,info)
+        Assert_Equal(info,0)
+        deallocate(disp)
+        call particles_apply_bc(Particles,topoid,info)
+        Assert_Equal(info,0)
+        call particles_mapping_partial(Particles,topoid,info)
+        Assert_Equal(info,0)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        Assert_Equal(info,0)
+        call particles_neighlists(Particles,topoid,info)
+        Assert_Equal(info,0)
+        Particles%itime = 5
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
+        Assert_Equal(info,0)
+        call ppm_vtk_particle_cloud('after_adapt5',Particles,info)
+        Assert_Equal(info,0)
 
     end test
 

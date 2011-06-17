@@ -377,7 +377,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     !! Compute D (desired resolution)
     !!-------------------------------------------------------------------------!
-    ! re-activate Dtilde_id if it had already been used
+    ! (re)allocate Dtilde
     CALL particles_allocate_wps(Particles,Particles%Dtilde_id,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
     IF (info .NE. 0) THEN
@@ -392,9 +392,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     if_needs_derivatives: IF (need_derivatives) THEN
         IF (.NOT. Particles%neighlists) THEN
-            CALL ppm_write(ppm_rank,caller,'trying to use neighb &
-                & lists that dont exist',info)
-            info = -1
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'need neighbour lists to be uptodate', __LINE__,info)
             GOTO 9999
         ENDIF
         ! Compute gradients using PSE kernels
@@ -459,7 +459,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             xp => Set_xp(Particles,read_only=.TRUE.)
         ENDIF
 
-        !Compute D on real particles
+        !Compute Dtilde on real particles
 
         xp => Get_xp(Particles)
         Dtilde => Get_wps(Particles,Particles%Dtilde_id)
@@ -540,39 +540,42 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ! Increase the desired resolution where it is needed
     ! D^(n+1) = Min(D^(n),D_tilde^(n+1))
     !---------------------------------------------------------------------!
-    IF (Particles%D_id .EQ. 0 ) THEN
-        CALL particles_allocate_wps(Particles,Particles%D_id,&
-            info,name='D')
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                'particles_allocate_wps failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        D => Get_wps(Particles,Particles%D_id)
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-        DO ip=1,Particles%Npart
-            D(ip) = Dtilde(ip)
-        ENDDO
-    ELSE
-        D => Get_wps(Particles,Particles%D_id)
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-        DO ip=1,Particles%Npart
-            D(ip) = MIN(D(ip),Dtilde(ip))
-        ENDDO
-    ENDIF
+    !IF (Particles%D_id .EQ. 0 ) THEN
+        !CALL particles_allocate_wps(Particles,Particles%D_id,&
+            !info,name='D')
+        !IF (info .NE. 0) THEN
+            !info = ppm_error_error
+            !CALL ppm_error(ppm_err_alloc,caller,&
+                !'particles_allocate_wps failed',__LINE__,info)
+            !GOTO 9999
+        !ENDIF
+        !D => Get_wps(Particles,Particles%D_id)
+        !Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+        !DO ip=1,Particles%Npart
+            !D(ip) = Dtilde(ip)
+        !ENDDO
+    !ELSE
+        !D => Get_wps(Particles,Particles%D_id)
+        !Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+        !DO ip=1,Particles%Npart
+            !D(ip) = MIN(D(ip),Dtilde(ip))
+        !ENDDO
+    !ENDIF
 
-    D => Set_wps(Particles,Particles%D_id)
-    Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+    !D => Set_wps(Particles,Particles%D_id)
+    !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
     !---------------------------------------------------------------------!
     ! Update cutoff radii
     !---------------------------------------------------------------------!
     rcp => Get_wps(Particles,Particles%rcp_id)
-    D => Get_wps(Particles,Particles%D_id)
+    Dtilde => Get_wps(Particles,Particles%Dtilde_id)
     DO ip=1,Particles%Npart
-        rcp(ip) = opts%rcp_over_D * D(ip)
+        rcp(ip) = opts%rcp_over_D * Dtilde(ip)
     ENDDO
+    rcp => Set_wps(Particles,Particles%rcp_id)
+    Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -580,8 +583,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             'particles_updated_cutoff failed',__LINE__,info)
         GOTO 9999
     ENDIF
-    rcp => Set_wps(Particles,Particles%rcp_id)
-    D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 
     !---------------------------------------------------------------------!
     ! Update ghosts
@@ -604,6 +605,16 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
+    IF (Particles%D_id .EQ. 0 ) THEN
+        CALL particles_allocate_wps(Particles,Particles%D_id,&
+            info,name='D')
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'particles_allocate_wps failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
     !---------------------------------------------------------------------!
     ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
     !---------------------------------------------------------------------!

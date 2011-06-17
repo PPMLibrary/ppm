@@ -17,6 +17,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         wp_fun,D_fun,wp_grad_fun,threshold,need_deriv)
 
     USE ppm_module_inl_xset_vlist
+    USE ppm_module_io_vtk
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -341,7 +342,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ! Roughly, it means that a particle can have a small D only
             ! if it has neighbours from the older generation (D_old) that
             ! also have a small D.
-            D_old => Get_wps(Particles_old,Particles_old%D_id)
+            D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
             D_old = D_old * opts%rcp_over_D
             ghostlayer=Particles%cutoff
             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
@@ -349,7 +350,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 Particles_old%Npart,D_old,Particles%skin,&
                 ghostlayer,info,vlist_cross,nvlist_cross)
             D_old = D_old / opts%rcp_over_D
-            D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,&
                     'ppm_inl_xset_vlist failed.',info)
@@ -358,17 +359,18 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDIF
 
             D     => Get_wps(Particles,    Particles%D_id)
-            D_old => Get_wps(Particles_old,Particles_old%D_id)
+            D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
             DO ip=1,Particles%Npart
                 minDold=HUGE(1._MK)
                 DO ineigh=1,nvlist_cross(ip)
                     iq=vlist_cross(ineigh,ip)
                     minDold=MIN(minDold,D_old(iq))
                 ENDDO
-                D(ip) = MAX(D(ip),minDold)
+                !D(ip) = MAX(D(ip),minDold)
+                D(ip) = minDold
             ENDDO
             D     => Set_wps(Particles,    Particles%D_id)
-            D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
         ENDIF
 
         !---------------------------------------------------------------------!
@@ -381,6 +383,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDDO
         D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
         rcp => Set_wps(Particles,Particles%rcp_id)
+
+#if debug_verbosity > 1
+        WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',Particles%itime,'_',it_adapt
+        CALL ppm_vtk_particle_cloud(filename,Particles,info)
+#endif
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
