@@ -43,7 +43,7 @@ Requirements for building PPM core
   http://glaros.dtc.umn.edu/gkhome/metis/metis/download, alternatively you can
   get from the PPM website the version of METIS that has been extensively tested
   with our code.
-- an MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
+- An MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
   compliant MPI library. If you are compiling PPM on a cluster, most likely your
   sysadmin will have already an MPI installed on the system.
 
