@@ -15,7 +15,7 @@ Package contents
 The `.tar.gz` package you have downloaded should contain on the toplevel the
 following files and directories:
 
-----------------------------------
+-----------------------------------
     34K COPYING       The License
    7.5K COPYING.LESSER
    4.2K Makefile.in   The Makefile template used by configure
