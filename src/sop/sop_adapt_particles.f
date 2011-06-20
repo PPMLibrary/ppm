@@ -216,6 +216,10 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 #if debug_verbosity > 0
     CALL substart(caller,t0,info)
 #endif
+    adapt_wpgradid = 0
+    !FIXME: make it possible to pass this id as an argument (to avoid
+    ! reallocating it every time, and to enable re-using the values
+    ! outside of the routine)
 
 
     !-------------------------------------------------------------------------!
@@ -402,10 +406,10 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         IF (PRESENT(wp_grad_fun)) THEN
             !no need to allocate an array for wp_grad
         ELSE
-            IF (Particles%adapt_wpgradid.EQ.0) THEN
+            IF (adapt_wpgradid.EQ.0) THEN
                 !no array has already been specified for wp_grad
                 !need to allocate one
-                CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
+                CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
                     ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_error
@@ -414,8 +418,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                     GOTO 9999
                 ENDIF
             ELSE
-                IF (.NOT.Particles%wpv(Particles%adapt_wpgradid)%is_mapped) THEN
-                    CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
+                IF (.NOT.Particles%wpv(adapt_wpgradid)%is_mapped) THEN
+                    CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
                         ppm_dim,info,with_ghosts=.FALSE.,&
                         iopt=ppm_param_alloc_grow_preserve,name='adapt_wpgrad')
                     info = ppm_error_error

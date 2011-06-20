@@ -216,9 +216,9 @@ TYPE ppm_t_particles
     !!! which adaptation is based 
     !!! default is first 1d property that is not rcp_id (if any)
     !!! otherwise, it is rcp_id
-    INTEGER                                         :: adapt_wpgradid
-    !!! index of the wpv array where is stored the gradient of the property 
-    !!! on which adaptation is based (if needed)
+!    INTEGER                                         :: adapt_wpgradid
+!    !!! index of the wpv array where is stored the gradient of the property 
+!    !!! on which adaptation is based (if needed)
     LOGICAL                                         :: level_set
     !!! true if particles carry a level-set function
     INTEGER                                         :: level_id

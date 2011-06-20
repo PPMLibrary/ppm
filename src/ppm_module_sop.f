@@ -33,7 +33,8 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 1
+#define debug_verbosity 2
+#define __USE_RANDOMNUMBERS 1
 
      USE ppm_module_data
      USE ppm_module_typedef
@@ -83,6 +84,8 @@
      !                   potential of the particles
      REAL(prec)         :: Psi_global_old 
      REAL(prec)         :: Psi_max  
+     INTEGER            :: adapt_wpgradid
+     ! id of where the gradient of the field is stored 
      !====================================================================!
      ! random numbers
      !====================================================================!

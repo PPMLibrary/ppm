@@ -299,10 +299,10 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         IF (PRESENT(wp_grad_fun)) THEN
             !no need to allocate an array for wp_grad
         ELSE
-            IF (Particles%adapt_wpgradid.EQ.0) THEN
+            IF (adapt_wpgradid.EQ.0) THEN
                 !no array has already been specified for wp_grad
                 !need to allocate one
-                CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
+                CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
                     ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_error
@@ -311,8 +311,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                     GOTO 9999
                 ENDIF
             ELSE
-                IF (.NOT.Particles%wpv(Particles%adapt_wpgradid)%is_mapped) THEN
-                    CALL particles_allocate_wpv(Particles,Particles%adapt_wpgradid,&
+                IF (.NOT.Particles%wpv(adapt_wpgradid)%is_mapped) THEN
+                    CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
                         ppm_dim,info,with_ghosts=.FALSE.,&
                         iopt=ppm_param_alloc_grow,name='adapt_wpgrad')
                     IF (info.NE.0) THEN
@@ -398,7 +398,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
         ! Compute gradients using PSE kernels
-        coeffs=1._MK; order=4; degree = 0
+        coeffs=1._MK; order=2; degree = 0
         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
         eta_id = 0
         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
@@ -438,7 +438,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 GOTO 9999
             ENDIF
             xp=>Get_xp(Particles,with_ghosts=.TRUE.)
-            wp_grad => Get_wpv(Particles,Particles%adapt_wpgradid)
+            wp_grad => Get_wpv(Particles,adapt_wpgradid)
             eta => Get_dcop(Particles,eta_id)
             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
 
@@ -455,7 +455,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             ENDDO
             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
             eta => Set_dcop(Particles,eta_id)
-            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid)
+            wp_grad => Set_wpv(Particles,adapt_wpgradid)
             xp => Set_xp(Particles,read_only=.TRUE.)
         ENDIF
 
@@ -470,13 +470,13 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                     wp_grad_fun(xp(1:ppm_dim,ip)),opts)
             ENDDO
         ELSE
-            wp_grad => Get_wpv(Particles,Particles%adapt_wpgradid)
+            wp_grad => Get_wpv(Particles,adapt_wpgradid)
             wp => Get_wps(Particles,Particles%adapt_wpid)
             DO ip=1,Particles%Npart
                 Dtilde(ip) = D_fun(wp(ip),wp_grad(1:ppm_dim,ip),opts)
             ENDDO
             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-            wp_grad => Set_wpv(Particles,Particles%adapt_wpgradid,read_only=.TRUE.)
+            wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
         ENDIF
 
         Dtilde => Set_wps(Particles,Particles%Dtilde_id)

@@ -519,7 +519,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Particles are by default not adaptive
         Particles%adaptive = .FALSE.
         Particles%adapt_wpid = 0
-        Particles%adapt_wpgradid = 0
+!        Particles%adapt_wpgradid = 0
         Particles%gi_id = 0
         Particles%rcp_id = 0
         Particles%eta_id = 0
