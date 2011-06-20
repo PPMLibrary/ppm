@@ -196,12 +196,12 @@
       !-------------------------------------------------------------------------
       !  If variance of costs is below threshold, decomposition is OK
       !-------------------------------------------------------------------------
-      IF (varcost .LT. maxvariance) lcontinue = .FALSE.
+      !IF (varcost .LT. maxvariance) lcontinue = .FALSE.
 
       !-------------------------------------------------------------------------
       !  If all boxes are below the maxcost we are done.
       !-------------------------------------------------------------------------
-      IF (maxcost .LT. maxboxcost) lcontinue = .FALSE. 
+      !IF (maxcost .LT. maxboxcost) lcontinue = .FALSE. 
 
       !-------------------------------------------------------------------------
       !  Return 

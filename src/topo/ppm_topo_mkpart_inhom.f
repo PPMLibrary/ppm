@@ -30,12 +30,12 @@
 
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_mkpart_inhom_s(topoid,xp,Npart,decomp,assig, &
-     &               min_phys,max_phys,bcdef,ghost_req,cost,info, &
+     &               min_phys,max_phys,bcdef,ghost_req,has_one_way,cost,info, &
      &               pcost,user_minsub,user_maxsub,user_nsubs, &
      &               user_sub2proc)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_mkpart_inhom_d(topoid,xp,Npart,decomp,assig, &
-     &               min_phys,max_phys,bcdef,ghost_req,cost,info, &
+     &               min_phys,max_phys,bcdef,ghost_req,has_one_way,cost,info, &
      &               pcost,user_minsub,user_maxsub,user_nsubs, &
      &               user_sub2proc)
 #endif
@@ -163,6 +163,11 @@
       !!! There is no more ppm_param_decomp_null. If the user does not
       !!! want to define a geometric decomposition there is no need for a
       !!! topology.
+      LOGICAL,                  INTENT(IN   ) ::  has_one_way
+      !!! If this logical is set, the decomposition considers
+      !!! one way interaction, i.e. if one particle overlaps the other
+      !!! but not vice versa, now the minboxsize is also
+      !!! depending on its neighbors ghostlayers
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
       !!! Minimum of physical extend of the computational domain
       !!!
@@ -222,11 +227,11 @@
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      REAL(MK)                          :: ghostsize
 
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: ghostsize = 0.1_mk
 
       !-------------------------------------------------------------------------
       !  Initialise
@@ -301,6 +306,17 @@
          !-------------------------------------------------------------------
          !  a pruned cell index list
          !-------------------------------------------------------------------
+
+         ! Determine maximum ghostlayer and pass it to the pruned list
+         ghostsize = 0.0_MK
+         DO i=1,ppm_dim
+            DO j=1,Npart
+              IF (ghost_req(i,j).GT.ghostsize) THEN
+                  ghostsize = ghost_req(i,j)
+              ENDIF 
+            ENDDO 
+          ENDDO
+
          IF (PRESENT(pcost)) THEN
              CALL ppm_decomp_pruned_cell(xp,Npart,min_phys,max_phys, &
      &            ghostsize,min_sub,max_sub,nsubs,info,pcost)
@@ -319,12 +335,13 @@
          !  a tree data structure; use a default maxvariance of 10 pct
          !-------------------------------------------------------------------
          IF (PRESENT(pcost)) THEN
-             CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghostsize, &
-     &                        0.1_MK,min_sub,max_sub,nsubs,info,pcost)
+             CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghost_req, &
+     &                        0.1_MK,min_sub,max_sub,minboxsizes,bcdef,has_one_way,nsubs,info,pcost)
          ELSE
-             CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghostsize, &
-     &                        0.1_MK,min_sub,max_sub,nsubs,info)
+             CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghost_req, &
+     &                        0.1_MK,min_sub,max_sub,minboxsizes,bcdef,has_one_way,nsubs,info)
          ENDIF
+
          IF (info.NE.0) THEN
              info = ppm_error_error
              CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkpart',  &
@@ -353,11 +370,11 @@
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
      &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info,pcost)
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
      &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info)
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info)
          ENDIF
 
          IF (info.NE.0) THEN
@@ -397,18 +414,17 @@
          IF (decomp .EQ. ppm_param_decomp_xpencil) fixed(1) = .TRUE.
          IF (decomp .EQ. ppm_param_decomp_ypencil) fixed(2) = .TRUE.
          IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
-         gsvec(1:ppm_dim) = ghostsize
          ! no mesh
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info,pcost)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -460,18 +476,17 @@
              fixed(2) = .TRUE.
              fixed(3) = .TRUE.
          ENDIF
-         gsvec(1:ppm_dim) = ghostsize
          ! no mesh
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info,pcost)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -479,6 +494,7 @@
      &           'Slab decomposition failed',__LINE__,info)
              GOTO 9999
          ENDIF
+
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
      &       max_sub,nsubs,info)
@@ -499,18 +515,17 @@
          weights(3,1:2)   = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
-         gsvec(1:ppm_dim) = ghostsize
          ! no mesh
          Nm(1:ppm_dim)    = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info,pcost)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,   &
-     &           min_box,max_box,nbox,nchld,info)
+     &           ppm_nproc,.FALSE.,ghost_req,0.1_MK,-1.0_MK,fixed,weights,   &
+     &           min_box,max_box,minboxsizes,bcdef,has_one_way,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -547,6 +562,25 @@
      &       'Finding neighbors failed',__LINE__,info)
          GOTO 9999
       ENDIF
+
+!       ! print for all boxes their neighbors
+!       IF(ppm_rank .EQ. 0)THEN
+!          print *, 'following the neighbors'
+!       ENDIF      
+! 
+!       DO i=1,nsubs
+!          IF(ppm_rank .EQ. 0)THEN
+!             print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i)
+!          ENDIF
+!          DO j=1,nneigh(i)
+!             k = ineigh(j,i)
+!             IF(ppm_rank .EQ. 0)THEN
+!                print *, k, min_sub(1,k), min_sub(2,k), max_sub(1,k), max_sub(2,k)
+!             ENDIF
+! 
+!          ENDDO
+!          print *, ' '
+!       ENDDO
 
       !-------------------------------------------------------------------------
       !  Find the cost of each subdomain
@@ -651,9 +685,19 @@
       !-------------------------------------------------------------------------
       !  Store the current topology
       !-------------------------------------------------------------------------
-      CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
+
+      IF (decomp.EQ.ppm_param_decomp_pruned_cell) THEN
+         CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
+     &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist,    &
+     &                    nneigh,ineigh,info)
+      ELSE
+
+         CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
      &                    sub2proc,nsubs,bcdef,minboxsizes,isublist,nsublist,    &
      &                    nneigh,ineigh,info)
+
+      ENDIF
+
       IF (info.NE.0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkpart',  &
@@ -720,12 +764,16 @@
                   GOTO 8888
               ENDIF ! test pcost >= Npart
           ENDIF ! test pcost present
-          IF (ghostsize.LT.0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_mkpart',  &
-     &            'ghostsize must not be negative',__LINE__,info)
-              GOTO 8888
-          ENDIF ! test ghostsize
+          DO i=1,ppm_dim
+            DO j=1,Npart
+              IF (ghost_req(i,j).LT.0.0_MK) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_topo_mkpart',  &
+     &                'ghost_req has to be >= 0',__LINE__,info)
+                  GOTO 8888
+              ENDIF 
+            ENDDO 
+          ENDDO ! for each dimension
           DO i=1,ppm_dim
               IF (max_phys(i) .LE. min_phys(i)) THEN
                   info = ppm_error_error

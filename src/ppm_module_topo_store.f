@@ -42,8 +42,8 @@
             MODULE PROCEDURE ppm_topo_store_s
             MODULE PROCEDURE ppm_topo_store_d
             !<<<< haeckic begin >>>>!
-            MODULE PROCEDURE ppm_topo_store_s
-            MODULE PROCEDURE ppm_topo_store_d
+            MODULE PROCEDURE ppm_topo_store_inhom_s
+            MODULE PROCEDURE ppm_topo_store_inhom_d
             !<<<< haeckic end >>>>!
          END INTERFACE
 

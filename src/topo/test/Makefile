@@ -9,7 +9,7 @@ METISDIR   = ../../../../metis4
 MPIDIR     = /usr/local
 
 CPP = cpp
-FC = mpif90 --free-form
+FC = mpif90 --free-form -fbounds-check
 #----------------------------------------------------------------------
 
 TESTINC=-I$(PPMDIR)/include -I$(MPIDIR)/include -L$(PPMDIR)/lib -lppm -L$(METISDIR)/lib -lmetis

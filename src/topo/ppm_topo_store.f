@@ -173,7 +173,7 @@
       ! For all subdomains the same ghostsize
       DO k=1,nsublist
          DO i=1,ppm_dim
-            topo%ghost_reqs(i,k) = ghostsize
+            topo%minboxsizes_s(i,k) = ghostsize
          ENDDO
       ENDDO
       !<<<< haeckic end >>>>!
@@ -192,7 +192,7 @@
       ! For all subdomains the same ghostsize
       DO k=1,nsublist
          DO i=1,ppm_dim
-            topo%ghost_reqd(i,k) = ghostsize
+            topo%minboxsizes_d(i,k) = ghostsize
          ENDDO
       ENDDO
       !<<<< haeckic end >>>>!
@@ -257,6 +257,15 @@
 #endif
          ENDDO
       ENDIF 
+      !-------------------------------------------------------------------------
+      !  Store the neighbor lists for all subs
+      !-------------------------------------------------------------------------
+      DO i= 1,nsubs
+         topo%nneigh(i) = nneigh(i)
+         DO j = 1,nneigh(i)
+            topo%ineigh(j,i) = ineigh(j,i)
+         ENDDO
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Store the external boundary conditions for this topology

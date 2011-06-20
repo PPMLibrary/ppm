@@ -30,10 +30,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_inhom_s(min_box,max_box,nbox,minboxsizes,   &
-     &    fixed,boxcost,ndiv,info)
+     &    fixed,boxcost,neigh_constraints,num_constr,ndiv,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_divcheck_inhom_d(min_box,max_box,nbox,minboxsizes,   &
-     &    fixed,boxcost,ndiv,info)
+     &    fixed,boxcost,neigh_constraints,num_constr,ndiv,info)
 #endif
       !!! This routine checks how many dimensions of a box are divisible.
       !!!
@@ -46,6 +46,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
+      USE ppm_module_alloc
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -80,6 +81,10 @@
       !!! Costs associated with boxes
       LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
       !!! Flags telling which dimensions are fixed (i.e. must not be divided).
+      REAL(MK), DIMENSION(:,:,:,:), INTENT(IN   ) :: neigh_constraints
+      ! access: boxid, dimension, constraintid, 1 (from) 2 (to)
+      INTEGER, DIMENSION(:,:), INTENT(IN )      :: num_constr
+      ! number of constraints in a box and dimension
       INTEGER , DIMENSION(:  ), POINTER       :: ndiv
       !!! Number of divisible directions of each box (1..nbox).
       INTEGER                 , INTENT(  OUT) :: info
@@ -89,8 +94,18 @@
       !-------------------------------------------------------------------------
       REAL(MK)                                :: t0,lmyeps,boxlen
       REAL(MK), DIMENSION(ppm_dim)            :: ms2
-      INTEGER                                 :: iopt,i,j
+      INTEGER                                 :: iopt,i,j,k, temp_r
       INTEGER, DIMENSION(2)                   :: ldc
+      LOGICAL, DIMENSION(ppm_dim)             :: is_possible
+      REAL(MK), DIMENSION(:,:,:), POINTER       :: result_array
+      ! access: dimension, constraintid, 1 (from) 2 (to)
+
+#if   __KIND == __SINGLE_PRECISION
+      lmyeps = ppm_myepss
+#elif __KIND == __DOUBLE_PRECISION
+      lmyeps = ppm_myepsd
+#endif
+
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -99,11 +114,6 @@
       !  Initialise 
       !-------------------------------------------------------------------------
       CALL substart('ppm_tree_divcheck',t0,info)
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
 
       !-------------------------------------------------------------------------
       !  Check input arguments
@@ -128,15 +138,65 @@
 
       DO i=1,nbox
           ndiv(i) = 0
+
           DO j=1,ppm_dim
              ms2(j) = 2.0_MK*minboxsizes(j,i)
+
+            !--------------------------------------------------------------------
+            ! We need to check if path of non cutable regions is equal to box
+            !--------------------------------------------------------------------
+            is_possible(j) = .TRUE.
+            
+            ! apply scanline algorithm
+            ! if minimum is less than minbox + ghost, then start
+            IF(num_constr(i,j) .GT. 0) THEN
+               CALL get_subarray(neigh_constraints(i,:,:,:),num_constr(i,:),result_array)
+               k = 1
+               IF (result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsizes(j,i)) THEN
+                  !     until distance is >= 0
+                  IF (num_constr(i,j) .GT. 1) THEN
+                     k = k+1
+                     DO WHILE(result_array(j,k,1)+lmyeps .LT. result_array(j,k-1,2) &
+         &                      .OR. result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsizes(j,i))
+                        temp_r = k-1
+                        DO WHILE(result_array(j,k,2)+lmyeps .LT. result_array(j,temp_r,2))
+                           k = k+1
+                           IF (k .GT. num_constr(i,j)) THEN
+                              k = k-1
+                              EXIT
+                           ENDIF
+                        ENDDO
+                        IF (result_array(j,k,1)+lmyeps .GT. result_array(j,temp_r,2) .AND. &
+         &                      .NOT. (result_array(j,k,1)-lmyeps .LT. min_box(j,i)+minboxsizes(j,i))) THEN
+                           ! temp_right is the first possible
+                           k = temp_r+1
+                           EXIT
+                        ENDIF
+                        k = k+1
+                        IF (k .GT. num_constr(i,j)) THEN
+                           EXIT
+                        ENDIF
+                     ENDDO
+                     k = k-1
+                  ENDIF
+                  ! if it is inside max - ghostsize -> ok
+                  IF (result_array(j,k,2)-lmyeps .GT. max_box(j,i)-minboxsizes(j,i)) THEN
+                     is_possible(j) = .FALSE.
+!                      IF (ppm_rank .EQ. 0)THEN
+!                          print *, ' CASE IN divcheck ' , i
+!                       ENDIF
+                  ENDIF
+               ENDIF
+              
+            ENDIF
+
           ENDDO
           !print *, 'boxcost = ', boxcost(i)
           IF (boxcost(i) .GT. lmyeps) THEN
                !print *, 'inside'
               DO j=1,ppm_dim
                   boxlen = max_box(j,i)-min_box(j,i)
-                  IF (((boxlen-ms2(j)).GT.lmyeps*boxlen).AND.(.NOT.fixed(j))) THEN
+                  IF (((boxlen-ms2(j)).GT.lmyeps*boxlen).AND.(.NOT.fixed(j)) .AND. is_possible(j)) THEN
                       ndiv(i) = ndiv(i) + 1
                   ENDIF
               ENDDO
@@ -176,6 +236,75 @@
          ENDDO
  8888    CONTINUE
       END SUBROUTINE check
+
+      SUBROUTINE get_subarray(neigh_ghost,n,res)
+         ! This subroutine is used to get the sublist for the neighboring constraints
+         INTEGER                                    :: iopt, info, i, j, k
+         INTEGER , DIMENSION(3)                     :: ldc
+         INTEGER, DIMENSION(ppm_dim), INTENT(IN  )  :: n
+         REAL(MK), DIMENSION(:,:,:), INTENT(IN   )  :: neigh_ghost
+         REAL(MK), DIMENSION(:,:,:), POINTER        :: res
+         REAL(MK)                                   :: temp1, temp2
+
+         ! Res is first deallocated then allocated here
+         iopt = ppm_param_dealloc
+         ldc(1) = ppm_dim
+         ldc(2) = n(1)
+         ! take maximum of length of constraints
+         DO i = 2,ppm_dim
+            IF (ldc(2) < n(i)) THEN
+               ldc(2) = n(i)
+            ENDIF
+         ENDDO
+         ldc(3) = 2
+         CALL ppm_alloc(res,ldc,iopt,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+      &        'list of sorted neighboring constraints in get_subarray',__LINE__,info)
+         ENDIF
+         iopt = ppm_param_alloc_fit
+         CALL ppm_alloc(res,ldc,iopt,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+      &        'list of sorted neighboring constraints in get_subarray',__LINE__,info)
+         ENDIF
+
+         ! Store the sorted array in res, Insertion sort
+         ! sort in all dimensions
+         DO k = 1,ppm_dim
+
+            IF(n(k) .GT. 0) THEN
+               res(k,1,1) = neigh_ghost(k,1,1)
+               res(k,1,2) = neigh_ghost(k,1,2)
+               DO i = 2,n(k)
+                  j = i - 1
+                  temp1 = neigh_ghost(k,i,1)
+                  temp2 = neigh_ghost(k,i,2)
+
+                  DO WHILE (j .GE. 2 .AND. res(k,j,1) .GT. temp1)
+                     res(k,j+1,1) = res(k,j,1)
+                     res(k,j+1,2) = res(k,j,2)
+                     j = j - 1
+                  END DO
+                  IF (j .EQ. 1) THEN
+                     IF (res(k,j,1) .GT. temp1) THEN
+                        res(k,j+1,1) = res(k,j,1)
+                        res(k,j+1,2) = res(k,j,2)
+                        j = j - 1
+                     ENDIF
+                  ENDIF
+
+                  res(k,j+1,1) = temp1
+                  res(k,j+1,2) = temp2
+               END DO
+            ENDIF
+
+         ENDDO
+
+      END SUBROUTINE get_subarray
+
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_divcheck_inhom_s
 #elif __KIND == __DOUBLE_PRECISION

@@ -29,10 +29,10 @@
 
 #if    __KIND == __SINGLE_PRECISION
        SUBROUTINE ppm_tree_cutpos_s(xp,Npart,weights,min_box,max_box,   &
-      &    cutbox,ncut,minboxsize,icut,cpos,info,pcost)
+      &    cutbox,ncut,minboxsize,icut,neigh_constraints,num_constr,cpos,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
        SUBROUTINE ppm_tree_cutpos_d(xp,Npart,weights,min_box,max_box,   &
-      &    cutbox,ncut,minboxsize,icut,cpos,info,pcost)
+      &    cutbox,ncut,minboxsize,icut,neigh_constraints,num_constr,cpos,info,pcost)
 #endif
       !!! This routine finds the best cuting positions for the given
       !!! cut directions.
@@ -89,6 +89,10 @@
       !!! ID of box to be cut
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: icut
       !!! Cut directions
+      REAL(MK), DIMENSION(:,:,:), INTENT(IN   ) :: neigh_constraints
+      ! access: dimension, constraintid, 1 (from) 2 (to)
+      INTEGER,  DIMENSION(:),   INTENT(IN )   :: num_constr
+      ! number of constraints
       REAL(MK), DIMENSION(:  ), POINTER       :: cpos
       !!! Positions of best cuts. index: 1..ncut.
       INTEGER                 , INTENT(  OUT) :: info
@@ -99,13 +103,18 @@
       REAL(MK), DIMENSION(ppm_dim)            :: len_box
       REAL(MK), DIMENSION(ncut+1)             :: pc,pcsum
       INTEGER , DIMENSION(2)                  :: ldc
-      REAL(MK)                                :: t0,dm,meshtotal,geomtotal
+      REAL(MK)                                :: t0,dm,meshtotal,geomtotal,pl,pr
       REAL(MK)                                :: pmass,mmass,gmass,tmass
-      REAL(MK)                                :: partpos,midpos
-      INTEGER                                 :: i,j,ip,cutdir,ncp1,iopt
+      REAL(MK)                                :: partpos,midpos,lmyeps
+      INTEGER                                 :: i,j,ip,cutdir,ncp1,iopt,k,kt,temp_r,ii
 
 #ifdef __MPI
       INTEGER                                 :: MPTYPE
+#endif
+#if   __KIND == __SINGLE_PRECISION
+      lmyeps = ppm_myepss
+#elif __KIND == __DOUBLE_PRECISION
+      lmyeps = ppm_myepsd
 #endif
       !------------------------------------------------------------------------
       ! Externals
@@ -205,6 +214,10 @@
 #endif
       ENDIF !have_particles
 
+!       IF(ppm_rank .EQ. 0)THEN
+!             print *, 'hello asd'
+!          ENDIF
+
       !------------------------------------------------------------------------
       ! Total weight of mesh and geometry
       ! Convert to REAL first to avoid integer overflow.
@@ -237,7 +250,9 @@
           GOTO 9999
       ENDIF
 
-   
+!          IF(ppm_rank .EQ. 0)THEN
+!             print *, 'hello cuttyy'
+!          ENDIF
       !------------------------------------------------------------------------
       ! The optimal cut position is in the weighted center of mass
       !------------------------------------------------------------------------
@@ -261,7 +276,115 @@
           IF (max_box(cutdir,cutbox)-cpos(i) .LT. minboxsize(cutdir)) THEN
               cpos(i) = max_box(cutdir,cutbox)-minboxsize(cutdir)
           ENDIF
+!<<<< haeckic begin >>>>!
+          !--------------------------------------------------------------------
+          !Enforce that neighboring ghostlayers are respected
+          !--------------------------------------------------------------------
+          ! 2. if we are in a uncutable, take the closest
+          ! try to find a non cutable region
+          ! if not found -> ok
+          ! else travel to the left and right and take smaller
+
+          ! Find a range we are in
+          IF (num_constr(cutdir) .GT. 0) THEN
+            k = 1
+            DO WHILE (.NOT.((cpos(i)-lmyeps).GT.neigh_constraints(cutdir,k,1) &
+      &                         .AND. (cpos(i)+lmyeps).LT.neigh_constraints(cutdir,k,2)))
+               k = k+1
+               IF (k .GT. num_constr(cutdir)) THEN
+                  EXIT
+               ENDIF
+            ENDDO
+
+            ! If not found ->ok
+            IF (k .LE. num_constr(cutdir)) THEN
+               ! If found, search for two nearest possible, outside -> -1.0
+
+               ! LEFT
+               kt = k
+               IF (kt .GT. 1) THEN
+  912             CONTINUE
+                  DO WHILE(neigh_constraints(cutdir,kt,1)+lmyeps .LT. neigh_constraints(cutdir,kt-1,2))
+                     kt = kt-1
+                     IF (kt .EQ. 1) THEN
+                        EXIT
+                     ENDIF
+                  ENDDO
+                  ! We need to check if it is violated by following constraints
+                  ! If yes we continue scanline
+                  IF (kt .GT. 1) THEN
+                     DO ii = kt-1,1
+                        IF (neigh_constraints(cutdir,ii,2)-lmyeps .GT. neigh_constraints(cutdir,kt,1)) THEN
+                           kt = ii
+                           IF (kt .EQ. 1) THEN
+                              EXIT
+                           ENDIF
+                           GOTO 912
+                        ENDIF
+                     ENDDO
+                  ENDIF
+
+               ENDIF
+               pl = neigh_constraints(cutdir,kt,1)
+               
+               ! RIGHT
+               kt = k+1
+               IF (kt .LE. num_constr(cutdir)) THEN
+                  DO WHILE(neigh_constraints(cutdir,kt-1,2)-lmyeps .GT. neigh_constraints(cutdir,kt,1))
+                     temp_r = kt-1
+                     DO WHILE(neigh_constraints(cutdir,kt,2)+lmyeps .LT. neigh_constraints(cutdir,temp_r,2))
+                        kt = kt+1
+                        IF (kt .GT. num_constr(cutdir)) THEN
+                           kt = kt-1
+                           EXIT
+                        ENDIF
+                     ENDDO
+                     IF (neigh_constraints(cutdir,kt,1)+lmyeps .GT. neigh_constraints(cutdir,temp_r,2)) THEN
+                        ! temp_right is the first possible
+                        kt = temp_r+1
+                        EXIT
+                     ENDIF
+                     kt = kt+1
+                     IF (kt .GT. num_constr(cutdir)) THEN
+                        EXIT
+                     ENDIF
+                  ENDDO
+               ENDIF
+               kt = kt-1
+               pr = neigh_constraints(cutdir,kt,2)
+
+               ! take smaller
+               IF (pl+lmyeps .LT. min_box(cutdir,cutbox)+minboxsize(cutdir)) THEN
+                  IF (pr-lmyeps .GT. max_box(cutdir,cutbox)-minboxsize(cutdir)) THEN
+                     print *, 'ERRRRR pr', cutbox, cutdir, pl, pr, cpos(i), minboxsize(cutdir), &
+      &                         min_box(cutdir,cutbox)+minboxsize(cutdir), max_box(cutdir,cutbox)-minboxsize(cutdir)
+                  ENDIF
+                  cpos(i) = pr
+               ELSEIF (pr-lmyeps .GT. max_box(cutdir,cutbox)-minboxsize(cutdir)) THEN
+                  IF (pl+lmyeps .LT. min_box(cutdir,cutbox)+minboxsize(cutdir)) THEN
+                     print *, 'ERRRRRO pl', cutbox, cutdir, pl, pr, cpos(i), minboxsize(cutdir), &
+      &                         min_box(cutdir,cutbox)+minboxsize(cutdir), max_box(cutdir,cutbox)-minboxsize(cutdir)
+                  ENDIF
+                  cpos(i) = pl
+               ELSE
+                  ! take closer
+                  IF(cpos(i)-pl .GT. pr-cpos(i)) THEN
+                     cpos(i) = pr
+                  ELSE
+                     cpos(i) = pl
+                  ENDIF
+               ENDIF
+
+            ENDIF
+
+          ENDIF
+
+!<<<< haeckic end >>>>!
       ENDDO
+
+!       IF(ppm_rank .EQ. 0)THEN
+!             print *, 'hello end'
+!          ENDIF
 
       !------------------------------------------------------------------------
       ! Return

@@ -210,7 +210,15 @@
             !!!
             !!! - value: 0 the face is internal
             !!! - value: 1 otherwise
+            INTEGER            , DIMENSION(:,:), POINTER :: ineigh => NULL()
+            !!! list of neighboring subs of all subs (all procs).
+            !!! - index 1: neighbor index
+            !!! - index 2: sub id (global ID!)
 
+            INTEGER            , DIMENSION(:  ), POINTER :: nneigh => NULL()
+            !!! number of neighboring subs of all subs (all procs).
+            !!!
+            !!! index 1: sub id (global ID!)
             INTEGER            , DIMENSION(:,:), POINTER :: ineighsubs => NULL()
             !!! list of neighboring subs of all local subs.
             !!! - index 1: neighbor index
@@ -246,12 +254,13 @@
             !!! should ideally raise a warning
 
             !<<<< haeckic begin >>>>!
-            REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: ghost_reqs => NULL()
+            REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: minboxsizes_s => NULL()
             !!! Required ghostsizes of subs (single) in each dimension
             !!! Note: 1st index: x,y,(z), 2nd: subID
-            REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: ghost_reqd => NULL()
+            REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: minboxsizes_d => NULL()
             !!! Required ghostsizes of subs (double) in each dimension
             !!! Note: 1st index: x,y,(z), 2nd: subID
+
             !<<<< haeckic end >>>>!
 
 

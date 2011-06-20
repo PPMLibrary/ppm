@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_cutdir_s(xp,Npart,weights,min_box,max_box,   &
-     &    cutbox,ncut,fixed,minboxsize,icut,info,pcost)
+     &    cutbox,ncut,fixed,minboxsize,icut,neigh_constraints,num_constr,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_cutdir_d(xp,Npart,weights,min_box,max_box,   &
-     &    cutbox,ncut,fixed,minboxsize,icut,info,pcost)
+     &    cutbox,ncut,fixed,minboxsize,icut,neigh_constraints,num_constr,info,pcost)
 #endif
       !!! This routine finds the best cutting directions and
       !!! positions for the given cut directions.
@@ -95,6 +95,10 @@
       !!! ID of box to be cut
       LOGICAL , DIMENSION(:  ), INTENT(IN   ) :: fixed
       !!! Set to `TRUE` for dimensions which must not be cut
+      REAL(MK), DIMENSION(:,:,:), INTENT(IN   ) :: neigh_constraints
+      ! access: dimension, constraintid, 1 (from) 2 (to)
+      INTEGER, DIMENSION(:),    INTENT(IN )   :: num_constr
+      ! number of constraints
       INTEGER , DIMENSION(:  ), POINTER       :: icut
       !!! Directions of best cut. icut=i means: cutting plane is orthogonal
       !!! to i-th coordinate axis. index: 1..ncut. The directions are sorted
@@ -113,7 +117,8 @@
       REAL(MK)                                :: t0,dm
       REAL(MK)                                :: csum,csuminv,lmyeps
       REAL(MK)                                :: x,y,z,x2,y2,z2
-      INTEGER                                 :: i,j,k,ip,cutdir,ncp1
+      INTEGER                                 :: i,j,k,ip,cutdir,ncp1,temp_r
+      LOGICAL, DIMENSION(ppm_dim)             :: is_possible
 #ifdef __MPI
       INTEGER                                 :: MPTYPE
 #endif
@@ -169,10 +174,59 @@
       cutable = .FALSE.
       ip = 0
       DO i=1,ppm_dim
+
+         !--------------------------------------------------------------------
+         ! We need to check if path of non cutable regions is equal to box
+         !--------------------------------------------------------------------
+         is_possible(i) = .TRUE.
+         
+         ! apply scanline algorithm
+         ! if minimum is less than minbox + ghost, then start
+         IF(num_constr(i) .GT. 0) THEN
+               k = 1
+               IF (neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i)) THEN
+                  !     until distance is >= 0
+                  IF (num_constr(i) .GT. 1) THEN
+                     k = k+1
+                     DO WHILE(neigh_constraints(i,k,1)+lmyeps .LT. neigh_constraints(i,k-1,2) &
+         &                      .OR. neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i))
+                        temp_r = k-1
+                        DO WHILE(neigh_constraints(i,k,2)+lmyeps .LT. neigh_constraints(i,temp_r,2))
+                           k = k+1
+                           IF (k .GT. num_constr(i)) THEN
+                               k = k-1
+                              EXIT
+                           ENDIF
+                        ENDDO
+                        IF (neigh_constraints(i,k,1)+lmyeps .GT. neigh_constraints(i,temp_r,2) .AND. &
+         &                      .NOT. (neigh_constraints(i,k,1)-lmyeps .LT. min_box(i,cutbox)+minboxsize(i))) THEN
+                           ! temp_right is the first possible
+                           k = temp_r+1
+                           EXIT
+                        ENDIF
+                        k = k+1
+                        IF (k .GT. num_constr(i)) THEN
+                           EXIT
+                        ENDIF
+                     ENDDO
+                     k = k-1
+                  ENDIF
+                  ! if it is inside max - ghostsize -> ok
+                  IF (neigh_constraints(i,k,2)-lmyeps .GT. max_box(i,cutbox)-minboxsize(i)) THEN
+                     is_possible(i) = .FALSE.
+!                       IF (ppm_rank .EQ. 0)THEN
+!                           print *, ' CASE IN cutdir ' , cutbox
+!                        ENDIF
+                  ENDIF
+               ENDIF
+              
+           ENDIF
+
           IF ((.NOT.fixed(i)) .AND. (len_box(i)-(2.0_MK*minboxsize(i))   &
-     &        .GT.lmyeps*len_box(i))) THEN
+     &        .GT.lmyeps*len_box(i)) .AND. is_possible(i)) THEN
               ip = ip + 1
-              cutable(i) = .TRUE.      
+              cutable(i) = .TRUE.
+  
           ENDIF
       ENDDO
 

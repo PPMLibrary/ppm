@@ -30,22 +30,22 @@
 #if   __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_ds(xp,Np,Nm,min_dom,max_dom,treetype,     &
-     &   minboxes,pruneboxes,minboxsize,maxvariance,maxboxcost,     &
+     &   minboxes,pruneboxes,minboxsize,bcdef,maxvariance,maxboxcost,     &
      &   fixed,weights,min_box,max_box,nbox,nchld,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_dd(xp,Np,Nm,min_dom,max_dom,treetype,     &
-     &   minboxes,pruneboxes,minboxsize,maxvariance,maxboxcost,     &
+     &   minboxes,pruneboxes,minboxsize,bcdef,maxvariance,maxboxcost,     &
      &   fixed,weights,min_box,max_box,nbox,nchld,info,pcost)
 #endif
 #elif __TYPE == __TREE
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_ts(xp,Np,Nm,min_dom,max_dom,treetype,            &
-     &   minboxes,pruneboxes,minboxsize,maxvariance,maxboxcost,maxlevels,  &
+     &   minboxes,pruneboxes,minboxsize,bcdef,maxvariance,maxboxcost,maxlevels,  &
      &   fixed,weights,min_box,max_box,lhbx,lpdx,boxcost,        &
      &   parent,nchld,child,blevel,nbox,nbpl,nlevel,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_td(xp,Np,Nm,min_dom,max_dom,treetype,            &
-     &   minboxes,pruneboxes,minboxsize,maxvariance,maxboxcost,maxlevels,  &
+     &   minboxes,pruneboxes,minboxsize,bcdef,maxvariance,maxboxcost,maxlevels,  &
      &   fixed,weights,min_box,max_box,lhbx,lpdx,boxcost,        &
      &   parent,nchld,child,blevel,nbox,nbpl,nlevel,info,pcost)
 #endif
@@ -109,6 +109,7 @@
       USE ppm_module_tree_done
       USE ppm_module_util_rank
       USE ppm_module_decomp
+      USE ppm_module_find_neigh
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -133,6 +134,10 @@
       !!! Maximum coordinate of the domain
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
       !!! Miminum box size in all directions
+      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
+      !!! Boundary conditions for the topology
+      !!!
+      !!! NOTE: first index is 1-6 (each of the faces)
       REAL(MK), DIMENSION(3,2), INTENT(IN   ) :: weights
       !!! Weights for the three cost contributions (particles, mesh
       !!! points, volume) (1st index) for box cost (weights(:,1)) and the
@@ -223,10 +228,12 @@
       REAL(MK), DIMENSION(ppm_dim)            :: mins,maxs,meshdx,meshdxinv
       INTEGER , DIMENSION(ppm_dim)            :: thisNm
       INTEGER , DIMENSION(2*ppm_dim)          :: ghostNm
-      INTEGER , DIMENSION(2)                  :: ldc
+      INTEGER , DIMENSION(4)                  :: ldc
       REAL(MK), DIMENSION(:  ), POINTER       :: cpos  => NULL()
       REAL(MK), DIMENSION(:  ), POINTER       :: costc => NULL()
       INTEGER , DIMENSION(:  ), POINTER       :: icut  => NULL()
+      INTEGER , DIMENSION(:  ), POINTER       :: nneigh  => NULL()
+      INTEGER , DIMENSION(:,:), POINTER       :: ineigh  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER       :: minc  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER       :: maxc  => NULL()
 #if   __TYPE == __DECOMP
@@ -238,13 +245,21 @@
       INTEGER                                 :: nboxalloc,nlevelalloc
       REAL(MK)                                :: t0,lmyeps,r0,r1,maxcost
       LOGICAL                                 :: up,nofixed,simpleweights
-      LOGICAL                                 :: lcontinue
-      INTEGER                                 :: i,j,k,l,iopt,inext,ncut,nbpd
+      LOGICAL                                 :: lcontinue, has_it
+      INTEGER                                 :: i,j,k,l,iopt,inext,ncut,nbpd,isub,jsub
       INTEGER                                 :: ibox,nsubs
       INTEGER                                 :: inextboxlist,lctr
       INTEGER                                 :: nboxlistalloc
       INTEGER                                 :: info2,mxlev,bpc,istart,iend
       CHARACTER(LEN=ppm_char)                 :: mesg
+      ! New datastructure to prevent wrong cutting
+      INTEGER , DIMENSION(:,:  ), POINTER     :: numb_neigh_const  => NULL()
+      ! access: boxid, dimension 
+      REAL(MK), DIMENSION(:,:,:,:), POINTER   :: neigh_ghost_ranges  => NULL()
+      ! access: boxid, dimension, subboxid, 1(from) 2(to)
+      REAL(MK), DIMENSION(:,:,:), POINTER       :: result_array
+      ! access: dimension, constraintid, 1 (from) 2 (to)
+
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -458,6 +473,28 @@
       ENDIF 
 
       !-------------------------------------------------------------------------
+      !  Allocate new data structures for neighboring constraints
+      !-------------------------------------------------------------------------
+      ldc(1) = nboxalloc
+      ldc(2) = ppm_dim
+      CALL ppm_alloc(numb_neigh_const,ldc,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
+     &        'list of number of neighboring constraints',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      ldc(3) = 1000 !THIS IS A GUESS, NOT MORE THAN 1000 neighbors!!!!
+      ldc(4) = 2
+      CALL ppm_alloc(neigh_ghost_ranges,ldc,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
+     &        'list of ranges for neighbor constraints',__LINE__,info)
+          GOTO 9999
+      ENDIF
+
+      !-------------------------------------------------------------------------
       !  Allocate local data structures
       !-------------------------------------------------------------------------
       nboxlist = 1
@@ -516,6 +553,12 @@
               Nm_box(2,1) = Nm(2)
               Nm_box(3,1) = Nm(3)
           ENDIF
+      
+         ! init the new data structure
+         numb_neigh_const(1,1) = 0
+         numb_neigh_const(1,2) = 0
+         numb_neigh_const(1,3) = 0
+
       ELSE
           min_box(1,1) = min_dom(1)
           min_box(2,1) = min_dom(2)
@@ -525,6 +568,10 @@
               Nm_box(1,1) = Nm(1)
               Nm_box(2,1) = Nm(2)
           ENDIF
+
+         numb_neigh_const(1,1) = 0
+         numb_neigh_const(1,2) = 0
+
       ENDIF
       nsubs     = 1
       nchld     = 0
@@ -640,7 +687,7 @@
       !  Check that root box is divisible
       !-------------------------------------------------------------------------
       CALL ppm_tree_divcheck(min_box,max_box,1,minboxsize,fixed,     &
-     &    boxcost,ndiv,info)
+     &    boxcost,neigh_ghost_ranges,numb_neigh_const,ndiv,info)
       IF (info .NE. 0) GOTO 9999
       IF (ndiv(1) .LT. ncut) THEN
           lcontinue = .FALSE.
@@ -734,29 +781,31 @@
           ENDIF
 
 
-          print *, lctr, inext, ppm_rank, tree_lhbx(2,inext)-tree_lhbx(1,inext) + 1, boxcost(inext), nboxlist
+         CALL get_subarray(neigh_ghost_ranges(inext,:,:,:),numb_neigh_const(inext,:),result_array)
+
 
           !---------------------------------------------------------------------
           !  Determine best cut direction(s)
           !---------------------------------------------------------------------
           IF (PRESENT(pcost)) THEN 
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-     &                             inext,ncut,fixed,minboxsize,icut,info,pcost)
+     &                             inext,ncut,fixed,minboxsize,icut,result_array,numb_neigh_const(inext,:),info,pcost)
           ELSE 
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-     &                             inext,ncut,fixed,minboxsize,icut,info)
+     &                             inext,ncut,fixed,minboxsize,icut,result_array,numb_neigh_const(inext,:),info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
 
           !---------------------------------------------------------------------
           !  Determine best cut position(s)
           !---------------------------------------------------------------------
+
           IF (PRESENT(pcost)) THEN 
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-     &                             inext,ncut,minboxsize,icut,cpos,info,pcost)
+     &                             inext,ncut,minboxsize,icut,result_array,numb_neigh_const(inext,:),cpos,info,pcost)
           ELSE 
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-     &                             inext,ncut,minboxsize,icut,cpos,info)
+     &                             inext,ncut,minboxsize,icut,result_array,numb_neigh_const(inext,:),cpos,info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
 
@@ -880,6 +929,31 @@
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,  &
      &                    min_box,max_box,boxcost,parent,nchld,child,&
      &                    blevel,nbpl,info)
+
+
+                          ldc(1) = nboxalloc
+                          ldc(2) = ppm_dim
+                          ! New data structure also needs to be enlarged
+                          CALL ppm_alloc(numb_neigh_const,ldc,iopt,info)
+                          IF (info.NE.0) THEN
+                              info = ppm_error_fatal
+                              CALL ppm_error(ppm_err_alloc,'ppm_tree',  &
+     &                            'list of number of neighbor constraints',    &
+     &                            __LINE__,info)
+                              GOTO 9999
+                          ENDIF 
+                          
+                          ldc(3) = 1000 ! could be checked here for little more safety
+                          ldc(4) = 2
+                          CALL ppm_alloc(neigh_ghost_ranges,ldc,iopt,info)
+                          IF (info.NE.0) THEN
+                              info = ppm_error_fatal
+                              CALL ppm_error(ppm_err_alloc,'ppm_tree',  &
+     &                            'list of neighbor constraints ranges',    &
+     &                            __LINE__,info)
+                              GOTO 9999
+                          ENDIF 
+
                   ENDIF
 #elif __TYPE == __DECOMP
                   IF (nbox .GT. nboxalloc) THEN
@@ -891,6 +965,31 @@
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box,&
      &                    boxcost,nchld,blevel,info)
+
+
+                          ldc(1) = nboxalloc
+                          ldc(2) = ppm_dim
+                          ! New data structure also needs to be enlarged
+                          CALL ppm_alloc(numb_neigh_const,ldc,iopt,info)
+                          IF (info.NE.0) THEN
+                              info = ppm_error_fatal
+                              CALL ppm_error(ppm_err_alloc,'ppm_tree',  &
+     &                            'list of number of neighbor constraints',    &
+     &                            __LINE__,info)
+                              GOTO 9999
+                          ENDIF 
+                          
+                          ldc(3) = 1000 ! could be checked here for little more safety
+                          ldc(4) = 2
+                          CALL ppm_alloc(neigh_ghost_ranges,ldc,iopt,info)
+                          IF (info.NE.0) THEN
+                              info = ppm_error_fatal
+                              CALL ppm_error(ppm_err_alloc,'ppm_tree',  &
+     &                            'list of neighbor constraints ranges',    &
+     &                            __LINE__,info)
+                              GOTO 9999
+                          ENDIF 
+
                   ENDIF
 #endif
                   IF (info .NE. ppm_param_success) GOTO 9999
@@ -905,6 +1004,11 @@
                       max_box(1,nbox)   = maxc(1,i)
                       max_box(2,nbox)   = maxc(2,i)
                       max_box(3,nbox)   = maxc(3,i)
+
+                      numb_neigh_const(nbox,1) = 0
+                      numb_neigh_const(nbox,2) = 0
+                      numb_neigh_const(nbox,3) = 0
+                           
                       IF (have_mesh) THEN
                           Nm_box(1,nbox)= Nmc(1,i)
                           Nm_box(2,nbox)= Nmc(2,i)
@@ -915,6 +1019,10 @@
                       min_box(2,nbox)   = minc(2,i)
                       max_box(1,nbox)   = maxc(1,i)
                       max_box(2,nbox)   = maxc(2,i)
+
+                      numb_neigh_const(nbox,1) = 0
+                      numb_neigh_const(nbox,2) = 0
+
                       IF (have_mesh) THEN
                           Nm_box(1,nbox)= Nmc(1,i)
                           Nm_box(2,nbox)= Nmc(2,i)
@@ -947,6 +1055,130 @@
               ENDIF
           ENDDO
 
+         ! 1. Update the neighbor lists, you need to do all...
+            ! TODO: Do this more efficient?
+          CALL ppm_find_neigh(min_dom,max_dom,bcdef, &
+     &               min_box,max_box,nbox,nneigh,ineigh,info)
+
+         ! CHECK THE CUTTING
+          DO i=1,nbpd
+            isub = nbox - nbpd + i
+
+            DO j=1,nneigh(isub)
+               jsub = ineigh(j,isub)
+   
+               ! Update the new one
+               IF(nchld(jsub) .EQ. 0) THEN
+
+
+                  DO k=1,ppm_dim
+                     
+                     ! 1. Calculate influence in this dimension
+                     IF((min_box(k,jsub) - min_box(k,isub)) .GT. minboxsize(k)/2.0_mk &
+            &            .AND. (max_box(k,isub) - min_box(k,jsub)) .GT. minboxsize(k)/2.0_mk ) THEN
+                        ! The case wen minbox is inside, 
+                        ! i.e. minbox-maxghostsize(k) bis minbox is not allowed
+
+                        ! If not yet in the ranges array of isub, then add it
+                        has_it = .FALSE.
+                        r0 = min_box(k,jsub) - minboxsize(k)
+                        r1 = min_box(k,jsub)
+                        DO l = 1,numb_neigh_const(isub,k)
+                           IF(neigh_ghost_ranges(isub,k,l,1) .EQ. r0 .AND. neigh_ghost_ranges(isub,k,l,2) .EQ. r1) THEN
+                              has_it = .TRUE.
+                           ENDIF
+                        ENDDO
+                        IF(.NOT.has_it) THEN
+                           ! Add the new constraint
+                           numb_neigh_const(isub,k) = numb_neigh_const(isub,k) + 1
+                           neigh_ghost_ranges(isub,k,numb_neigh_const(isub,k),1) = r0
+                           neigh_ghost_ranges(isub,k,numb_neigh_const(isub,k),2) = r1
+                        ENDIF
+
+                     ENDIF
+   
+                     IF ((max_box(k,isub) - max_box(k,jsub)) .GT. minboxsize(k)/2.0_mk &
+            &            .AND. (max_box(k,jsub) - min_box(k,isub)).GT. minboxsize(k)/2.0_mk ) THEN
+                        ! The case wen minbox is inside, 
+                        ! i.e. maxbox bis maxbox+ghostsize(k) is not allowed
+
+                        ! If not yet in the ranges array of isub, then add it
+                        has_it = .FALSE.
+                        r0 = max_box(k,jsub)
+                        r1 = max_box(k,jsub) + minboxsize(k)
+                      
+                        
+                        DO l = 1,numb_neigh_const(isub,k)
+                           IF(neigh_ghost_ranges(isub,k,l,1) .EQ. r0 .AND. neigh_ghost_ranges(isub,k,l,2) .EQ. r1) THEN
+                              has_it = .TRUE.
+                           ENDIF
+                        ENDDO
+                        IF(.NOT.has_it) THEN
+                           ! Add the new constraint
+                           numb_neigh_const(isub,k) = numb_neigh_const(isub,k) + 1
+                           neigh_ghost_ranges(isub,k,numb_neigh_const(isub,k),1) = r0
+                           neigh_ghost_ranges(isub,k,numb_neigh_const(isub,k),2) = r1
+                        ENDIF
+
+                     ENDIF
+
+                     ! Check if neighbor has been adapted
+                     IF((min_box(k,isub) - min_box(k,jsub)) .GT. minboxsize(k)/2.0_mk &
+            &            .AND. (max_box(k,jsub) - min_box(k,isub)).GT. minboxsize(k)/2.0_mk ) THEN
+                        ! The case wen minbox is inside, 
+                        ! i.e. minbox-maxghostsize(k) bis minbox is not allowed
+
+                        ! If not yet in the ranges array of isub, then add it
+                        has_it = .FALSE.
+                        r0 = min_box(k,isub) - minboxsize(k)
+                        r1 = min_box(k,isub)
+                        DO l = 1,numb_neigh_const(jsub,k)
+                           IF(neigh_ghost_ranges(jsub,k,l,1) .EQ. r0 .AND. neigh_ghost_ranges(jsub,k,l,2) .EQ. r1) THEN
+                              has_it = .TRUE.
+                           ENDIF
+                        ENDDO
+                        IF(.NOT.has_it) THEN
+                           ! Add the new constraint
+                           numb_neigh_const(jsub,k) = numb_neigh_const(jsub,k) + 1
+                           neigh_ghost_ranges(jsub,k,numb_neigh_const(jsub,k),1) = r0
+                           neigh_ghost_ranges(jsub,k,numb_neigh_const(jsub,k),2) = r1
+                        ENDIF
+
+                     ENDIF
+   
+                     IF ((max_box(k,jsub) - max_box(k,isub)) .GT. minboxsize(k)/2.0_mk &
+            &            .AND. (max_box(k,isub) - min_box(k,jsub)).GT. minboxsize(k)/2.0_mk ) THEN
+                        ! The case wen minbox is inside, 
+                        ! i.e. maxbox bis maxbox+ghostsize(k) is not allowed
+
+                        ! If not yet in the ranges array of isub, then add it
+                        has_it = .FALSE.
+                        r0 = max_box(k,isub)
+                        r1 = max_box(k,isub) + minboxsize(k)
+
+                        DO l = 1,numb_neigh_const(jsub,k)
+                           IF(neigh_ghost_ranges(jsub,k,l,1) .EQ. r0 .AND. neigh_ghost_ranges(jsub,k,l,2) .EQ. r1) THEN
+                              has_it = .TRUE.
+                           ENDIF
+                        ENDDO
+                        IF(.NOT.has_it) THEN
+                           ! Add the new constraint
+                           numb_neigh_const(jsub,k) = numb_neigh_const(jsub,k) + 1
+                           neigh_ghost_ranges(jsub,k,numb_neigh_const(jsub,k),1) = r0
+                           neigh_ghost_ranges(jsub,k,numb_neigh_const(jsub,k),2) = r1
+                        ENDIF
+
+                     ENDIF
+
+                  ENDDO
+
+               ENDIF
+   
+            ENDDO
+
+          ENDDO
+
+
           !---------------------------------------------------------------------
           !  Update the list of divisible boxes
           !---------------------------------------------------------------------
@@ -957,7 +1189,7 @@
               ibox = nbox - nadd + 1
               CALL ppm_tree_divcheck(min_box(1:ppm_dim,ibox:nbox),    &
      &            max_box(1:ppm_dim,ibox:nbox),nbpd,minboxsize,fixed, &
-     &            boxcost(ibox:nbox),ndiv,info)
+     &            boxcost(ibox:nbox),neigh_ghost_ranges(ibox:nbox,1:ppm_dim,:,:),numb_neigh_const(ibox:nbox,1:ppm_dim),ndiv,info)
               IF (info .NE. 0) GOTO 9999
               k  = 0    ! number of added boxes
               k2 = 0    ! number of boxes of non-zero cost
@@ -1014,6 +1246,31 @@
           ENDIF           ! nadd.GT.0
 
           !---------------------------------------------------------------------
+          !  We have to check if other boxes are not divisible any more
+          !---------------------------------------------------------------------
+          !Iterate through boxes and drop not divisible boxes
+          DO i=1,nboxlist
+
+          ! MAKE A SPECIAL TEST TO ADAPT THE TREE
+
+            ! check the boxlist(i) box and drop if we have to
+            j = boxlist(i)
+            CALL ppm_tree_divcheck(min_box(1:ppm_dim,j:j),    &
+     &             max_box(1:ppm_dim,j:j),1,minboxsize,fixed, &
+     &             boxcost(j:j),neigh_ghost_ranges(j:j,1:ppm_dim,:,:),numb_neigh_const(j:j,1:ppm_dim),ndiv,info)
+                  
+
+            IF (ndiv(1) .LT. ncut) THEN
+               ! Not divisible any more
+               DO k=i,nboxlist-1
+                  boxlist(k) = boxlist(k+1)
+               ENDDO
+               nboxlist = nboxlist-1
+            ENDIF
+
+          ENDDO
+
+          !---------------------------------------------------------------------
           !  Determine if tree is finished
           !---------------------------------------------------------------------
  100      CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
@@ -1033,6 +1290,37 @@
               CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
           ENDIF
       ENDDO             ! while lcontinue
+
+
+  
+!       DO i=1,nbox
+!             !IF(nchld(i) .GT. 0) THEN
+!                
+!                IF(ppm_rank .EQ. 0) THEN
+!                    print *, ' '
+!                   print *, 'box ', i, min_box(1,i), min_box(2,i),max_box(1,i), max_box(2,i)
+!                ENDIF
+!                
+!                CALL get_subarray(neigh_ghost_ranges(i,:,:,:),numb_neigh_const(i,:),result_array)
+!                IF(ppm_rank .EQ. 0) THEN
+!                      print *, 'x',minboxsize(1)
+!                   ENDIF
+!                DO j=1,numb_neigh_const(i,1)
+!                   IF(ppm_rank .EQ. 0) THEN
+!                      print *, result_array(1,j,1), result_array(1,j,2), result_array(1,j,2) - result_array(1,j,1)
+!                   ENDIF
+!                ENDDO
+!                IF(ppm_rank .EQ. 0) THEN
+!                      print *, 'y',minboxsize(2)
+!                   ENDIF
+!                DO j=1,numb_neigh_const(i,2)
+!                   IF(ppm_rank .EQ. 0) THEN
+!                      print *, result_array(2,j,1), result_array(2,j,2), result_array(2,j,2) - result_array(2,j,1)
+!                   ENDIF
+!                ENDDO
+! 
+!             !ENDIF
+!       ENDDO
 
 #if   __TYPE == __TREE
       !-------------------------------------------------------------------------
@@ -1056,6 +1344,18 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
      &        'list of divisible boxes BOXLIST',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(numb_neigh_const,ldc,iopt,info2)
+      IF (info2 .NE. 0) THEN
+          info = ppm_error_error
+          CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+     &        'list of number of neighboring constraints',__LINE__,info)
+      ENDIF
+      CALL ppm_alloc(neigh_ghost_ranges,ldc,iopt,info2)
+      IF (info2 .NE. 0) THEN
+          info = ppm_error_error
+          CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+     &        'list of neighbor constraint ranges',__LINE__,info)
       ENDIF
       CALL ppm_alloc(ndiv,ldc,iopt,info2)
       IF (info2 .NE. 0) THEN
@@ -1228,6 +1528,75 @@
          ENDDO
  8888    CONTINUE
       END SUBROUTINE check
+
+      SUBROUTINE get_subarray(neigh_ghost,n,res)
+         ! This subroutine is used to get the sublist for the neighboring constraints
+         INTEGER                                    :: iopt, info, i, j, k
+         INTEGER , DIMENSION(3)                     :: ldc
+         INTEGER, DIMENSION(ppm_dim), INTENT(IN  )  :: n
+         REAL(MK), DIMENSION(:,:,:), INTENT(IN   )  :: neigh_ghost
+         REAL(MK), DIMENSION(:,:,:), POINTER        :: res
+         REAL(MK)                                   :: temp1, temp2
+
+         ! Res is first deallocated then allocated here
+         iopt = ppm_param_dealloc
+         ldc(1) = ppm_dim
+         ldc(2) = n(1)
+         ! take maximum of length of constraints
+         DO i = 2,ppm_dim
+            IF (ldc(2) < n(i)) THEN
+               ldc(2) = n(i)
+            ENDIF
+         ENDDO
+         ldc(3) = 2
+         CALL ppm_alloc(res,ldc,iopt,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+      &        'list of sorted neighboring constraints in get_subarray',__LINE__,info)
+         ENDIF
+         iopt = ppm_param_alloc_fit
+         CALL ppm_alloc(res,ldc,iopt,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
+      &        'list of sorted neighboring constraints in get_subarray',__LINE__,info)
+         ENDIF
+
+         ! Store the sorted array in res, Insertion sort
+         ! sort in all dimensions
+         DO k = 1,ppm_dim
+
+            IF(n(k) .GT. 0) THEN
+               res(k,1,1) = neigh_ghost(k,1,1)
+               res(k,1,2) = neigh_ghost(k,1,2)
+               DO i = 2,n(k)
+                  j = i - 1
+                  temp1 = neigh_ghost(k,i,1)
+                  temp2 = neigh_ghost(k,i,2)
+
+                  DO WHILE (j .GE. 2 .AND. res(k,j,1) .GT. temp1)
+                     res(k,j+1,1) = res(k,j,1)
+                     res(k,j+1,2) = res(k,j,2)
+                     j = j - 1
+                  END DO
+                  IF (j .EQ. 1) THEN
+                     IF (res(k,j,1) .GT. temp1) THEN
+                        res(k,j+1,1) = res(k,j,1)
+                        res(k,j+1,2) = res(k,j,2)
+                        j = j - 1
+                     ENDIF
+                  ENDIF
+
+                  res(k,j+1,1) = temp1
+                  res(k,j+1,2) = temp2
+               END DO
+            ENDIF
+
+         ENDDO
+
+      END SUBROUTINE get_subarray
+
 #if   __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_tree_ds

@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :                ppm_module_topo
+      !  Module       :               ppm_module_topo_check
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -26,19 +26,35 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
+     
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
 
-      MODULE ppm_module_topo
-      !!! This module contains all user-callable routines
-      !!! needed to create and manage PPM topologies.
+      MODULE ppm_module_topo_check_minbox
+      !!! This module provides the routines to check topologies -
+      !!! callable from outside.
          !----------------------------------------------------------------------
-         !  PPM modules
+         !  Define interfaces to topology checking routine
          !----------------------------------------------------------------------
-         USE ppm_module_mktopo
-         USE ppm_module_topo_check
-         USE ppm_module_topo_check_minbox
-         USE ppm_module_topo_check_neigh
-         USE ppm_module_mesh_define
-         USE ppm_module_scale_domain
-         USE ppm_module_topo_get
+         INTERFACE ppm_topo_check_minbox
+            MODULE PROCEDURE ppm_topo_check_minbox_s
+            MODULE PROCEDURE ppm_topo_check_minbox_d
+         END INTERFACE
 
-      END MODULE ppm_module_topo
+         !----------------------------------------------------------------------
+         !  include the source 
+         !----------------------------------------------------------------------
+         CONTAINS
+
+#define __KIND __SINGLE_PRECISION
+#include "topo/ppm_topo_check_minbox.f"
+#undef __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "topo/ppm_topo_check_minbox.f"
+#undef __KIND
+
+      END MODULE ppm_module_topo_check_minbox

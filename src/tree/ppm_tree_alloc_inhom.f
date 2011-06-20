@@ -1,3 +1,4 @@
+      !<<<< haeckic begin >>>>!
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_tree_alloc
       !-------------------------------------------------------------------------
@@ -30,18 +31,18 @@
 #if   __TYPE == __TREE
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_alloc_inhom_ts(iopt,nbox,nbpd,nlevel,min_box,     &
-     &    max_box,minboxsizes,boxcost,parent,nchld,child,blevel,nbpl,info)
+     &    max_box,minboxsizes,max_ghost_in_box,boxcost,parent,nchld,child,blevel,nbpl,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_alloc_inhom_td(iopt,nbox,nbpd,nlevel,min_box,     &
-     &    max_box,minboxsizes,boxcost,parent,nchld,child,blevel,nbpl,info)
+     &    max_box,minboxsizes,max_ghost_in_box,boxcost,parent,nchld,child,blevel,nbpl,info)
 #endif
 #elif __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_alloc_inhom_ds(iopt,nbox,nbpd,min_box,max_box,    &
-     &    minboxsizes,boxcost,nchld,blevel,info)
+     &    minboxsizes,max_ghost_in_box,boxcost,nchld,blevel,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_alloc_inhom_dd(iopt,nbox,nbpd,min_box,max_box,    &
-     &    minboxsizes,boxcost,nchld,blevel,info)
+     &    minboxsizes,max_ghost_in_box,boxcost,nchld,blevel,info)
 #endif
 #endif
       !!! This routine (re)allocates the tree data structures.
@@ -79,6 +80,11 @@
       !!! 2nd: box ID
       REAL(MK), DIMENSION(:,:), POINTER       :: minboxsizes
       !!! Minimum size required for the boxes due to ghostlayers
+      !!!
+      !!! 1st index: x,y[,z]                                                   +
+      !!! 2nd: box ID
+      REAL(MK), DIMENSION(:,:), POINTER       :: max_ghost_in_box
+      !!! Maximum ghostsize in this box in each dimension
       !!!
       !!! 1st index: x,y[,z]                                                   +
       !!! 2nd: box ID
@@ -165,6 +171,13 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
      &        'minimum box size required MINBOXSIZES',__LINE__,info)
           GOTO 9999
+      ENDIF
+      CALL ppm_alloc(max_ghost_in_box,ldc,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
+     &        'max_ghost_in_box required MAX_GHOST_IN_BOX',__LINE__,info)
+          GOTO 9999
       ENDIF 
       IF (have_mesh) THEN
           CALL ppm_alloc(Nm_box,ldc,iopt,info)
@@ -190,6 +203,7 @@
      &        'tree levels of boxes BLEVEL',__LINE__,info)
           GOTO 9999
       ENDIF 
+
       CALL ppm_alloc(boxcost,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
@@ -275,3 +289,4 @@
       END SUBROUTINE ppm_tree_alloc_inhom_dd
 #endif
 #endif
+!<<<< haeckic end >>>>!

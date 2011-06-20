@@ -26,14 +26,13 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
+      !<<<< haeckic begin >>>>!
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,   &
-     &                                    ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,   &
-     &                                    ghostsize,info)
-#endif 
+      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,info)
+#endif
+      !<<<< haeckic end >>>>!
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine 
       !!! (`ppm_map_part_partial`) in the sense that the ghost particles are
@@ -122,8 +121,6 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The position of the particles
-      REAL(MK)                , INTENT(IN   ) :: ghostsize
-      !!! The size of the ghost layer
       INTEGER                 , INTENT(IN   ) :: lda
       !!! Leading dimension of xp
       INTEGER                 , INTENT(IN   ) :: Npart
@@ -161,7 +158,10 @@
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      
+      REAL(MK)                      :: ghostsize = 1.0_MK
+
+      ! HERE WE HAVE A PROBLEM: we need to find potential ghosts, consider boundary
+
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------

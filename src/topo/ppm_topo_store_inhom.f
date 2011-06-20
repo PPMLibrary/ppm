@@ -1,3 +1,4 @@
+      !<<<< haeckic begin >>>>!
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_store
       !-------------------------------------------------------------------------
@@ -28,12 +29,12 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
+      SUBROUTINE ppm_topo_store_inhom_s(topoid,min_phys,max_phys,min_sub,max_sub, &
+     &                            subs_bc,sub2proc,nsubs,bcdef,minboxsizes,&
      &                            isublist,nsublist,nneigh,ineigh,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
+      SUBROUTINE ppm_topo_store_inhom_d(topoid,min_phys,max_phys,min_sub,max_sub, &
+     &                            subs_bc,sub2proc,nsubs,bcdef,minboxsizes,&
      &                            isublist,nsublist,nneigh,ineigh,info)
 #endif
       !!! This routine stores all relevant information about
@@ -83,6 +84,8 @@
       !!! Min. extent of the subdomains
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
       !!! Max. extent of the subdomains
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: minboxsizes
+      !!! Ghostsizes for each box
       INTEGER , DIMENSION(:,:), POINTER       :: subs_bc
       !!! Boundary conditions for subs on ALL processors
       INTEGER , DIMENSION(  :), INTENT(IN   ) :: sub2proc
@@ -91,8 +94,6 @@
       !!! List of subs handled by this processor
       INTEGER , DIMENSION(  :), INTENT(IN   ) :: bcdef
       !!! Boundary conditions on the computational box
-      REAL(MK),                 INTENT(IN   ) :: ghostsize
-      !!! Size of the ghostlayers
       INTEGER                 , INTENT(IN   ) :: nsubs
       !!! Total number of subs on all procs
       INTEGER                 , INTENT(IN   ) :: nsublist
@@ -117,11 +118,14 @@
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
-      REAL(MK)                  :: t0
+      REAL(MK)                  :: t0, max_ghost
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      
+      ! TO BE REMOVED
+      REAL(MK)                 :: ghostsize
+      ghostsize = 1.0_mk
+
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
@@ -169,14 +173,12 @@
          topo%max_physs(k) = max_phys(k)
       ENDDO
 
-      !<<<< haeckic begin >>>>!
       ! For all subdomains the same ghostsize
       DO k=1,nsublist
          DO i=1,ppm_dim
-            topo%ghost_reqs(i,k) = ghostsize
+            topo%minboxsizes_s(i,k) = minboxsizes(i,k)
          ENDDO
       ENDDO
-      !<<<< haeckic end >>>>!
 
       topo%ghostsizes = ghostsize
 #else
@@ -187,15 +189,14 @@
          topo%min_physd(k) = min_phys(k)
          topo%max_physd(k) = max_phys(k)
       ENDDO
-
-      !<<<< haeckic begin >>>>!
+      
       ! For all subdomains the same ghostsize
       DO k=1,nsublist
          DO i=1,ppm_dim
-            topo%ghost_reqd(i,k) = ghostsize
+            topo%minboxsizes_d(i,k) = minboxsizes(i,k)
          ENDDO
       ENDDO
-      !<<<< haeckic end >>>>!
+      
 
       topo%ghostsized = ghostsize
 #endif
@@ -257,6 +258,16 @@
 #endif
          ENDDO
       ENDIF 
+
+      !-------------------------------------------------------------------------
+      !  Store the neighbor lists for all subs
+      !-------------------------------------------------------------------------
+      DO i= 1,nsubs
+         topo%nneigh(i) = nneigh(i)
+         DO j = 1,nneigh(i)
+            topo%ineigh(j,i) = ineigh(j,i)
+         ENDDO
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Store the external boundary conditions for this topology
@@ -451,7 +462,8 @@
  8888     CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_topo_store_s
+      END SUBROUTINE ppm_topo_store_inhom_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_topo_store_d
+      END SUBROUTINE ppm_topo_store_inhom_d
 #endif
+!<<<< haeckic end >>>>!

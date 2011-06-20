@@ -34,11 +34,13 @@
       !-------------------------------------------------------------------------
 
       use ppm_module_typedef
+      USE ppm_module_data
       use ppm_module_mktopo
       use ppm_module_topo_get
       use ppm_module_init
       use ppm_module_finalize
       use ppm_module_user
+      USE ppm_module_check_id
 
       implicit none
       #include "../../ppm_define.h"
@@ -68,16 +70,16 @@
       integer, dimension(6)           :: bcdef
       real(mk),dimension(:  ),pointer :: cost
       integer, dimension(:  ),pointer :: nm
-      type(ppm_t_topo), pointer       :: topo
+      type(ppm_t_topo), pointer       :: topo => NULL()
       integer                         :: seedsize
       integer,  dimension(:),allocatable :: seed
       real(mk), dimension(:),allocatable :: randnb
       integer                          :: isymm = 0
-      logical                          :: lsymm = .false.,ok
+      logical                          :: lsymm = .false.,ok, has_one_way
       real(mk)                         :: t0,t1,t2,t3
 
       integer                          :: np_sqrt = 16
-      integer                          :: np_tot
+      integer                          :: np_tot, ipart, idom
       integer                          :: tot_sum
       integer, dimension(:),pointer    :: so_sum
 
@@ -86,8 +88,8 @@
       !----------------
       tol = 10.0_mk*epsilon(1.0_mk)
       tolexp = int(log10(epsilon(1.0_mk)))
-      min_ghost_req = 0.10_mk
-      max_ghost_req = 3.00_mk
+      min_ghost_req = 0.25_mk
+      max_ghost_req = 1.25_mk
       np = np_sqrt*np_sqrt
       np_tot = 4*np
 
@@ -208,7 +210,6 @@
       !----------------
 
       ! Test all decompositions
-
 !       decomp = ppm_param_decomp_tree
 !       decomp = ppm_param_decomp_pruned_cell
        decomp = ppm_param_decomp_bisection
@@ -226,12 +227,49 @@
 
       topoid = 0
 
+
+
       min_phys(1:ndim) = -8.0_mk
       max_phys(1:ndim) = 8.0_mk 
-      call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
-     &               ghost_req,cost,info)
+!       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
+!       &               max_ghost_req,cost,info)
+
+      has_one_way = .TRUE.
+
+       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
+     &               ghost_req,has_one_way,cost,info)
 
       call ppm_dbg_print(topoid,max_ghost_req,1,1,info,xp,np_tot)
+
+      call ppm_map_part_global(topoid,xp,np,info)
+      call ppm_map_part_push(ghost_req,ndim,np,info)
+      call ppm_map_part_send(np,newnp,info)
+      call ppm_map_part_pop(ghost_req,ndim,np,newnp,info)
+      call ppm_map_part_pop(xp,ndim,np,newnp,info)
+      np=newnp
+      print *,rank,'global map done'
+
+
+      ! MAKE TESTS:
+
+      ! 1. Are all particle this proc have in its subs
+      call ppm_topo_check(topoid,xp,np,ok,info)
+      if (.not. ok) write(*,*) '[',rank,'] topo_check failed'
+
+      ! 2. check if all particles to interact with are in neighboring box
+      !         for each particle determine interacting particles and
+      !         check if they are in own box or neighbors
+      call ppm_topo_check_neigh(topoid,xp,ghost_req,np,has_one_way,ok,info)
+      if (.not. ok) write(*,*) '[',rank,'] topo_check_neigh failed'
+
+      ! 3. minboxsizes inside, requires all neighbors correct
+      !         check for each box if it fulfills ghost req of each particle inside
+      !         this function also checks for has_one way case
+       call ppm_topo_check_minbox(topoid,xp,ghost_req,np,has_one_way,ok,info)
+       if (.not. ok) write(*,*) '[',rank,'] topo_check_minbox failed'
+
+
+
 
       !----------------
       ! teardown...

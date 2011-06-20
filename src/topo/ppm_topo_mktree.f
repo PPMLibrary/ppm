@@ -275,11 +275,11 @@
       ! build tree
       IF (PRESENT(pcost)) THEN
           CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,  &
-     &        ppm_nproc,pruneboxes,gsvec,maxvariance,maxboxcost,fixed,  &
+     &        ppm_nproc,pruneboxes,gsvec,bcdef,maxvariance,maxboxcost,fixed,  &
      &        weights,min_box,max_box,nbox,nchld,info,pcost)
       ELSE
           CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,  &
-     &        ppm_nproc,pruneboxes,gsvec,maxvariance,maxboxcost,fixed,  &
+     &        ppm_nproc,pruneboxes,gsvec,bcdef,maxvariance,maxboxcost,fixed,  &
      &        weights,min_box,max_box,nbox,nchld,info)
       ENDIF
       IF (info.NE.0) THEN

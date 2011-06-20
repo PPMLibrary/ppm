@@ -241,7 +241,7 @@
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-     &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
+     &       ppm_nproc,.FALSE.,gsvec,bcdef,0.1_MK,-1.0_MK,fixed,weights,min_box, &
      &       max_box,nbox,nchld,info)
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -285,7 +285,7 @@
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-     &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
+     &       ppm_nproc,.FALSE.,gsvec,bcdef,0.1_MK,-1.0_MK,fixed,weights,min_box, &
      &       max_box,nbox,nchld,info)
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -343,7 +343,7 @@
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-     &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
+     &       ppm_nproc,.FALSE.,gsvec,bcdef,0.1_MK,-1.0_MK,fixed,weights,min_box, &
      &       max_box,nbox,nchld,info)
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -377,7 +377,7 @@
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-     &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
+     &       ppm_nproc,.FALSE.,gsvec,bcdef,0.1_MK,-1.0_MK,fixed,weights,min_box, &
      &       max_box,nbox,nchld,info)
          IF (info.NE.0) THEN
              info = ppm_error_error

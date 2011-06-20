@@ -84,7 +84,7 @@
       tol = 10.0_mk*epsilon(1.0_mk)
       tolexp = int(log10(epsilon(1.0_mk)))
       min_rcp = 0.01_mk
-      max_rcp = 0.1_mk
+      max_rcp = 1.00_mk
 
       allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),ghostsize(nd&
      &im),ghostlayer(2*ndim),nm(ndim),h(ndim),p_h(ndim),stat=info)
@@ -174,7 +174,7 @@
       call ppm_topo_check(topoid,xp,np,ok,info)
       if (.not. ok) write(*,*) '[',rank,'] topo_check failed'
 
-      call ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,max_rcp,info)
+      call ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,info)
       call ppm_map_part_push(rcp,np,info)
       call ppm_map_part_push(wp,pdim,np,info)
       call ppm_map_part_send(np,mp,info)

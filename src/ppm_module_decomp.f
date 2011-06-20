@@ -75,6 +75,10 @@
          INTERFACE ppm_decomp_tree
             MODULE PROCEDURE decomp_tree_s
             MODULE PROCEDURE decomp_tree_d
+      !<<<< haeckic begin >>>>!
+            MODULE PROCEDURE decomp_tree_inhom_s
+            MODULE PROCEDURE decomp_tree_inhom_d
+      !<<<< haeckic end >>>>!
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -108,10 +112,16 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "decomp/ppm_decomp_tree.f"
+      !<<<< haeckic begin >>>>!
+#include "decomp/ppm_decomp_tree_inhom.f"
+      !<<<< haeckic end >>>>!
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
 #include "decomp/ppm_decomp_tree.f"
+      !<<<< haeckic begin >>>>!
+#include "decomp/ppm_decomp_tree_inhom.f"
+      !<<<< haeckic end >>>>!
 #undef __KIND
 
 END MODULE ppm_module_decomp

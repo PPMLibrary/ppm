@@ -326,11 +326,11 @@
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN
@@ -404,11 +404,11 @@
              ! build tree
              IF (PRESENT(pcost)) THEN
                  CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
-     &               minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,  &
+     &               minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,  &
      &               min_box,max_box,nbox,nchld,info,pcost)
              ELSE
                  CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,   &
-     &               minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,  &
+     &               minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,  &
      &               min_box,max_box,nbox,nchld,info)
              ENDIF
              IF (info.NE.0) THEN
@@ -479,11 +479,11 @@
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN
@@ -528,11 +528,11 @@
          ! build tree
          IF (PRESENT(pcost)) THEN
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info,pcost)
          ELSE
              CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,    &
-     &           minbox,.FALSE.,gsvec,maxvar,-1.0_MK,fixed,weights,   &
+     &           minbox,.FALSE.,gsvec,bcdef,maxvar,-1.0_MK,fixed,weights,   &
      &           min_box,max_box,nbox,nchld,info)
          ENDIF
          IF (info.NE.0) THEN

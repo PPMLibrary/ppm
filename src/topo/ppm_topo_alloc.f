@@ -268,11 +268,11 @@
               GOTO 9999
           ENDIF
           !<<<< haeckic begin >>>>!
-          CALL ppm_alloc(topo%ghost_reqs,ldc,iopt,info)
+          CALL ppm_alloc(topo%minboxsizes_s,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'max extent of subs TOPO%GHOST_REQS',__LINE__,info)
+     &            'max extent of subs TOPO%MINBOXSIZES',__LINE__,info)
               GOTO 9999
           ENDIF
           !<<<< haeckic end >>>>!
@@ -281,8 +281,8 @@
           IF (ASSOCIATED(topo%max_subd)) DEALLOCATE(topo%max_subd,STAT=info)
           NULLIFY(topo%max_subd)
           !<<<< haeckic begin >>>>!
-          IF (ASSOCIATED(topo%ghost_reqd)) DEALLOCATE(topo%ghost_reqd,STAT=info)
-          NULLIFY(topo%ghost_reqd)
+          IF (ASSOCIATED(topo%minboxsizes_d)) DEALLOCATE(topo%minboxsizes_d,STAT=info)
+          NULLIFY(topo%minboxsizes_d)
           !<<<< haeckic end >>>>!
       ELSE
           CALL ppm_alloc(topo%min_subd,ldc,iopt,info)
@@ -300,7 +300,7 @@
               GOTO 9999
           ENDIF
           !<<<< haeckic begin >>>>!
-          CALL ppm_alloc(topo%ghost_reqd,ldc,iopt,info)
+          CALL ppm_alloc(topo%minboxsizes_d,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
@@ -313,8 +313,8 @@
           IF (ASSOCIATED(topo%max_subs)) DEALLOCATE(topo%max_subs,STAT=info)
           NULLIFY(topo%max_subs)
           !<<<< haeckic begin >>>>!
-          IF (ASSOCIATED(topo%ghost_reqs)) DEALLOCATE(topo%ghost_reqs,STAT=info)
-          NULLIFY(topo%ghost_reqs)
+          IF (ASSOCIATED(topo%minboxsizes_s)) DEALLOCATE(topo%minboxsizes_s,STAT=info)
+          NULLIFY(topo%minboxsizes_s)
           !<<<< haeckic end >>>>!
       ENDIF
 
@@ -373,6 +373,30 @@
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
      &        'subdomain costs TOPO%SUB_COST',__LINE__,info)
+          GOTO 9999
+      ENDIF
+
+      !-------------------------------------------------------------------------
+      !  Allocate memory for the numbers of neighbors and index list of neighbors
+      !  This is a copy of nneigh and ineigh
+      !-------------------------------------------------------------------------
+      iopt   = ppm_param_alloc_fit
+      ldc(1) = nsubs
+      CALL ppm_alloc(topo%nneigh,ldc,iopt,info)
+      IF (info .NE. ppm_param_success) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+     &        'number of neighbors of global subs TOPO%NNEIGH',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      iopt   = ppm_param_alloc_fit
+      ldc(1) = maxneigh
+      ldc(2) = nsubs
+      CALL ppm_alloc(topo%ineigh,ldc,iopt,info)
+      IF (info .NE. ppm_param_success) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+     &        'list of index of global subs TOPO%NNEIGH',__LINE__,info)
           GOTO 9999
       ENDIF
 
