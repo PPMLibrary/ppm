@@ -95,6 +95,9 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     INTEGER,        DIMENSION(2)           :: lda
     INTEGER,        DIMENSION(1)           :: lda1
     INTEGER, PARAMETER                     :: nb_new_part = 3
+#ifdef __USE_RANDOMNUMBERS
+    LOGICAL                                :: alloc_rand
+#endif
     !!! number of new particles that are generated locally
 
     !!-------------------------------------------------------------------------!
@@ -211,8 +214,14 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     !! Draw random numbers to add noise on positions of new particles
     !!-------------------------------------------------------------------------!
         !generate new random numbers if we are running out of them
-        IF((ppm_dim-1)*randnb_i+nb_new_part*ppm_dim*(add_part+1) .GE. SIZE(randnb)) THEN
+        alloc_rand = .FALSE.
+        IF (.NOT. ALLOCATED(randnb)) THEN
+            alloc_rand = .TRUE.
+        ELSE IF((ppm_dim-1)*randnb_i+nb_new_part*ppm_dim*(add_part+1) .GE. SIZE(randnb)) THEN
+            alloc_rand = .TRUE.
             DEALLOCATE(randnb)
+        ENDIF
+        IF(alloc_rand) THEN
             ALLOCATE(randnb(nb_new_part*ppm_dim*(Npart+add_part)),STAT=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
