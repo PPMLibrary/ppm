@@ -12,7 +12,7 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
@@ -160,20 +160,31 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         write(dirname,*) './'
 !        call particles_io_xyz(Particles,0,dirname,info)
+        call ppm_vtk_particle_cloud('before_adapt0',Particles,info)
         Assert_Equal(info,0)
 
 !setup options for sop
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
         opts%D_needs_gradients = .true.
-        opts%scale_D = 0.05_mk
-        opts%minimum_D = 0.005_mk
-        !opts%minimum_D = 0.03_mk
-        opts%maximum_D = 0.05_mk
-        opts%adaptivity_criterion = 6._mk
-        opts%fuse_radius = 0.2_mk
-        opts%attractive_radius0 = 0.4_mk
-        opts%rcp_over_D = 2.4_mk
+        if (ndim .eq. 2) then
+            opts%scale_D = 0.05_mk
+            !opts%minimum_D = 0.001_mk ! -> 60k particles
+            opts%minimum_D = 0.01_mk
+            opts%maximum_D = 0.07_mk
+            opts%adaptivity_criterion = 6._mk
+            opts%fuse_radius = 0.2_mk
+            opts%attractive_radius0 = 0.3_mk !0.4_mk
+            opts%rcp_over_D = 2.4_mk
+        else
+            opts%scale_D = 0.05_mk
+            opts%minimum_D = 0.01_mk
+            opts%maximum_D = 0.07_mk
+            opts%adaptivity_criterion = 6._mk
+            opts%fuse_radius = 0.2_mk
+            opts%attractive_radius0 = 0.3_mk !0.4_mk
+            opts%rcp_over_D = 2.4_mk
+        endif
 
         Particles%itime = 0
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
@@ -233,10 +244,20 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         xp => get_xp(Particles)
         dt = Particles%h_min
         FORALL (ip=1:Particles%Npart)
-            disp(1:2,ip) = 2._mk*cos(pi*dt)*&
+            disp(1:2,ip) = dt*2._mk*&
                 (/-sin(pi*xp(1,ip))**2*sin(pi*xp(2,ip))*cos(pi*xp(2,ip)),&
                    sin(pi*xp(2,ip))**2*sin(pi*xp(1,ip))*cos(pi*xp(1,ip)) /)
         END FORALL
+        if (ndim .eq. 3) then
+            FORALL (ip=1:Particles%Npart)
+                disp(3,ip) = dt*2._mk*&
+                    sin(pi*xp(2,ip))**2*sin(pi*xp(1,ip))*cos(pi*xp(1,ip))
+            END FORALL
+        endif
+!write(*,*) 'dt = ',dt
+!write(*,*) 'max_disp = ',MAXVAL(abs(disp(:,1:Particles%Npart)))
+!write(*,*) 'min_xp = ',MINVAL(xp(:,1:Particles%Npart))
+!write(*,*) 'max_xp = ',MAXVAL(xp(:,1:Particles%Npart))
         xp => set_xp(Particles,read_only=.true.)
         call particles_move(Particles,disp,info)
         Assert_Equal(info,0)

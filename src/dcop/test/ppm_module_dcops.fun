@@ -15,11 +15,11 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 4000
+integer                         :: np_global = 11000   ! 11000 (for 3d), 4000 (for 2d)
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
