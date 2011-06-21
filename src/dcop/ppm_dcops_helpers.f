@@ -51,7 +51,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -128,7 +128,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -223,7 +223,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -247,7 +247,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
             GOTO 9999
         ENDIF
 
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
@@ -284,7 +284,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
         !====================================================================!
         ! solve originial LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
@@ -301,7 +301,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     ! check if equations were solved right (if you trust in LAPACK and this 
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -359,7 +359,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -442,7 +442,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -544,7 +544,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -567,7 +567,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             GOTO 9999
         ENDIF
 
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
@@ -578,7 +578,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew_2,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_2,nnew,info)
@@ -618,7 +618,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
         !====================================================================!
         ! solve originial LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
@@ -628,7 +628,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b_2,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b_2,n,info)
@@ -645,7 +645,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     ! check if equations were solved right (if you trust in LAPACK and this 
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -668,7 +668,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b_2,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -720,7 +720,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -797,7 +797,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -892,7 +892,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -916,7 +916,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
         ENDIF
 
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL getrs(Anew,indxnew,bnew_n(:,k),'N',info)
 #else
             CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
@@ -957,7 +957,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
         !====================================================================!
         ! solve originial LSE
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL getrs(Acopy,indx,x_or_b(:,k),'N',info)
 #else
             CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
@@ -977,7 +977,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL gemv(A,x_or_b(:,k),real_b,1._MK,0._MK)
 #else
             CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
