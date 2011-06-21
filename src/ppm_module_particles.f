@@ -3555,7 +3555,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: propp_iproc
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: xp_iproc
     INTEGER                                    :: count,iproc,i,j,ip,di
+#ifdef __MPI
     INTEGER,DIMENSION(MPI_STATUS_SIZE)         :: status
+#endif
     REAL(KIND(1.D0))                           :: t0
     INTEGER                                    :: ndim2,lda,Npart_local
     LOGICAL                                    :: ghosts
