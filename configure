@@ -1308,9 +1308,9 @@ Optional Features:
                           wrappers (safest)
   --enable-dcops          compile with DC operator API (default is no). Please
                           provide using the LDFLAGS and LIBS variables path
-                          and name to your BLAS (e.g. -lblas) or MKL library.
-                          For MKL the correct LDFLAGS and LIBS arguments can
-                          be determined using the Intel MKL link advisor:
+                          and name to your BLAS and Lapack or MKL library. For
+                          MKL the correct LDFLAGS and LIBS arguments can be
+                          determined using the Intel MKL link advisor:
                           http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
   --enable-linux          compile for linux (default is no)
   --enable-etime          use etime (default is no)
@@ -6013,7 +6013,55 @@ $as_echo "$ac_cv_search_sgemv" >&6; }
 ac_res=$ac_cv_search_sgemv
 if test "$ac_res" != no; then :
   test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+            { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing sgetrf" >&5
+$as_echo_n "checking for library containing sgetrf... " >&6; }
+if test "${ac_cv_search_sgetrf+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat > conftest.$ac_ext <<_ACEOF
+      program main
+      call sgetrf
+      end
+_ACEOF
+for ac_lib in '' lapack; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_fc_try_link "$LINENO"; then :
+  ac_cv_search_sgetrf=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_sgetrf+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_sgetrf+set}" = set; then :
+
+else
+  ac_cv_search_sgetrf=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_sgetrf" >&5
+$as_echo "$ac_cv_search_sgetrf" >&6; }
+ac_res=$ac_cv_search_sgetrf
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
   CPPFLAGS="$CPPFLAGS -D__BLAS"
+
+else
+  as_fn_error $? "You are compiling PPM with DC operator support but did
+                  not provide a functioning Lapack library. Please adjust
+                  your LDFLAGS and LIBS arguments" "$LINENO" 5
+
+fi
 
 else
   as_fn_error $? "You are compiling PPM with DC operator support but did
@@ -6021,7 +6069,6 @@ else
                   your LDFLAGS and LIBS arguments" "$LINENO" 5
 
 fi
-
 
     fi
 fi

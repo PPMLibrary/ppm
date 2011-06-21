@@ -177,7 +177,7 @@ fi
 dcops=no
 AC_ARG_ENABLE([dcops],[AS_HELP_STRING([--enable-dcops],
   [compile with DC operator API (default is no). Please provide using the LDFLAGS
-   and LIBS variables path and name to your BLAS (e.g. -lblas) or MKL library.
+   and LIBS variables path and name to your BLAS and Lapack or MKL library.
    For MKL the correct LDFLAGS and LIBS arguments can be determined using the Intel MKL link advisor: 
    http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/])],
     [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DCOPS"])
@@ -203,12 +203,16 @@ AC_ARG_ENABLE([dcops],[AS_HELP_STRING([--enable-dcops],
     
 
     else
-        AC_SEARCH_LIBS([sgemv],[blas],[AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__BLAS"])],
+        AC_SEARCH_LIBS([sgemv],[blas],[
+            AC_SEARCH_LIBS([sgetrf],[lapack],[AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__BLAS"])],
+                            [AC_MSG_ERROR([You are compiling PPM with DC operator support but did
+                  not provide a functioning Lapack library. Please adjust
+                  your LDFLAGS and LIBS arguments])
+                            ])],
                         [AC_MSG_ERROR([You are compiling PPM with DC operator support but did
                   not provide a functioning BLAS library. Please adjust
                   your LDFLAGS and LIBS arguments])
                         ])
-
     fi])
 
 # Check to see if linux was enabled with -enable-linux
