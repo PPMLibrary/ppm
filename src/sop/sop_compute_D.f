@@ -633,8 +633,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
 #if debug_verbosity > 0
     D => Get_wps(Particles,Particles%D_id)
+#ifdef __MPI
     CALL MPI_Allreduce(MINVAL(D(1:Particles%Npart)),min_D,1,&
         ppm_mpi_kind,MPI_MIN,ppm_comm,info)
+#else
+    min_D =MINVAL(D(1:Particles%Npart))
+#endif
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,E12.4)') 'Min D = ',min_D
         CALL ppm_write(ppm_rank,caller,cbuf,info)
