@@ -3718,6 +3718,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         Npart_local = Particles%Npart
     ENDIF
 
+#ifdef __MPI
     CALL MPI_Gather(Npart_local,1,MPI_INTEGER,Npart_vec,1,&
         MPI_INTEGER,0,ppm_comm,info)
     IF (info .NE. 0) THEN
@@ -3725,6 +3726,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         CALL ppm_error(ppm_err_alloc,caller,'MPI_Gather failed',__LINE__,info)
         GOTO 9999
     ENDIF
+#else
+    Npart_vec = Npart_local
+#endif
 
     IF (ppm_rank .EQ. 0) THEN
 
@@ -3732,7 +3736,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         DO iproc = 1,ppm_nproc
 
             IF (iproc .GT. 1) THEN
-
+#ifdef __MPI
                 ALLOCATE(xp_iproc(ppm_dim,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
@@ -3768,7 +3772,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 DEALLOCATE(propp_iproc)
                 DEALLOCATE(xp_iproc)
-
+#endif
             ELSE
 
                 ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
@@ -3854,7 +3858,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ENDIF
 
     ELSE
-
+#ifdef __MPI
         count = ppm_dim*Npart_local
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(Particles%xp,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
@@ -3922,6 +3926,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ENDIF
 
         DEALLOCATE(propp_iproc)
+#endif
     ENDIF
 
     DEALLOCATE(Npart_vec)
