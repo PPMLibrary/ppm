@@ -26,9 +26,15 @@
      ! ETH Zurich
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
+
      MODULE ppm_module_sop
      !!! This module contains routines and functions used for Self-Organizing
      !!! Particles
+
+!this module is compiled only if either the BLAS libraries or the MKL libraries
+!can be found. It is left empty otherwise
+#if defined(__MKL) || defined(__BLAS)
+
 
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
@@ -209,4 +215,5 @@
 #undef __KIND
 #undef __DIM
 
+#endif
      END MODULE ppm_module_sop

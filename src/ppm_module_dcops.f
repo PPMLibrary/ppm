@@ -66,6 +66,10 @@ MODULE ppm_module_dcops
 !!! other. (NOT available without ppm_t_particles, for now).
 !!! Some usage examples can be found in the test client
 
+!this module is compiled only if either the BLAS libraries or the MKL libraries
+!can be found. It is left empty otherwise
+#if defined(__MKL) || defined(__BLAS)
+
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
@@ -334,4 +338,7 @@ FUNCTION binomial(n,k)
     INTEGER    :: binomial
     binomial = factorial(n)/(factorial(k)*factorial(n-k))
 END FUNCTION binomial
+
+#endif
+
 END MODULE ppm_module_dcops
