@@ -659,6 +659,7 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_mpi
+enable_dcops
 enable_linux
 enable_etime
 enable_vector
@@ -1305,6 +1306,12 @@ Optional Features:
                           ibm (IBM AIX POE). Else, set this flag with no value
                           and set CC, CXX and FC to the appropriate compiler
                           wrappers (safest)
+  --enable-dcops          compile with DC operator API (default is no). Please
+                          provide using the LDFLAGS and LIBS variables path
+                          and name to your BLAS (e.g. -lblas) or MKL library.
+                          For MKL the correct LDFLAGS and LIBS arguments can
+                          be determined using the Intel MKL link advisor:
+                          http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/
   --enable-linux          compile for linux (default is no)
   --enable-etime          use etime (default is no)
   --enable-vector         enable __VECTOR (default is no)
@@ -5927,6 +5934,99 @@ else
 #  echo "#define __METIS" >> ./src/ppm_define.h
 fi
 
+# BLAS or MKL
+dcops=no
+# Check whether --enable-dcops was given.
+if test "${enable_dcops+set}" = set; then :
+  enableval=$enable_dcops; CPPFLAGS="$CPPFLAGS -D__DCOPS"
+
+    if test "x${vendor}" = xintel; then
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for MKL" >&5
+$as_echo_n "checking for MKL... " >&6; }
+        cat > conftest.$ac_ext <<_ACEOF
+
+                     program conftest_prog
+                     USE mkl95_lapack
+                     USE mkl95_blas
+                     REAL, DIMENSION (:,:), POINTER :: A
+                     INTEGER, DIMENSION (:), POINTER :: idx
+                     INTEGER :: info
+                     CALL getrf(A,idx,info)
+                     end program conftest_prog
+_ACEOF
+if ac_fn_fc_try_link "$LINENO"; then :
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
+$as_echo "yes" >&6; }
+                      CPPFLAGS="$CPPFLAGS -D__MKL"
+
+else
+  { $as_echo "$as_me:${as_lineno-$LINENO}: result: no" >&5
+$as_echo "no" >&6; }
+                      as_fn_error $? "You are compiling PPM with DC operator support using the Intel compiler but no
+                  functioning MKL library could be found.  Please determine the correct LDFLAGS and
+                  LIBS arguments using the Intel MKL link advisor:
+                  http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/" "$LINENO" 5
+
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+
+
+    else
+        { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing sgemv" >&5
+$as_echo_n "checking for library containing sgemv... " >&6; }
+if test "${ac_cv_search_sgemv+set}" = set; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat > conftest.$ac_ext <<_ACEOF
+      program main
+      call sgemv
+      end
+_ACEOF
+for ac_lib in '' blas; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_fc_try_link "$LINENO"; then :
+  ac_cv_search_sgemv=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if test "${ac_cv_search_sgemv+set}" = set; then :
+  break
+fi
+done
+if test "${ac_cv_search_sgemv+set}" = set; then :
+
+else
+  ac_cv_search_sgemv=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_sgemv" >&5
+$as_echo "$ac_cv_search_sgemv" >&6; }
+ac_res=$ac_cv_search_sgemv
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+  CPPFLAGS="$CPPFLAGS -D__BLAS"
+
+else
+  as_fn_error $? "You are compiling PPM with DC operator support but did
+                  not provide a functioning BLAS library. Please adjust
+                  your LDFLAGS and LIBS arguments" "$LINENO" 5
+
+fi
+
+
+    fi
+fi
+
+
 # Check to see if linux was enabled with -enable-linux
 # Check whether --enable-linux was given.
 if test "${enable_linux+set}" = set; then :
@@ -6047,7 +6147,6 @@ fi
 if test "$srcdir" = "."; then
     srcdir=src
 fi
-
 
 # Generate Makefiles
 ac_config_files="$ac_config_files Makefile"
