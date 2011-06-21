@@ -68,7 +68,7 @@ MODULE ppm_module_dcops
 
 !this module is compiled only if either the BLAS libraries or the MKL libraries
 !can be found. It is left empty otherwise
-#if defined(__MKL) || defined(__BLAS)
+#ifdef __DCOPS
 
     !-------------------------------------------------------------------------
     !  Modules
