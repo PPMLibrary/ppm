@@ -142,14 +142,15 @@
       !  Check if origin and target meshes are compatible (i.e. have the
       !  same number of grid points in the whole comput. domain)
       !-------------------------------------------------------------------------
-      DO i=1,pdim
+      IF (ppm_debug .GT. 0) THEN
+        DO i=1,pdim
           IF (mesh%Nm(i) .NE. target_mesh%Nm(i)) THEN
-              info = ppm_error_error
+              info = ppm_error_notice
               CALL ppm_error(ppm_err_bad_mesh,'ppm_map_field_globalstored',  &
      &            'source and destination meshes are incompatible',__LINE__,info)
-              GOTO 9999
           ENDIF
-      ENDDO
+        ENDDO
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Point the global mesh sendlists to the precomputed ones
