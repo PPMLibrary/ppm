@@ -198,10 +198,12 @@
 
       ! warn if buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
+        info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
-            CALL ppm_write(ppm_rank,'ppm_map_field_pop_3d',  &
-     &          'Buffer is empty.',info)
+            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop',    &
+     &          'Buffer is empty: skipping pop!',__LINE__,info)
         ENDIF
+        GOTO 9999
       ENDIF
 
 
