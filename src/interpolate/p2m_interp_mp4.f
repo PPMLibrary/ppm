@@ -64,7 +64,7 @@
      !!! 
      !!! [NOTE]
      !!! This routine only performs the actual interpolation. It should not be
-     !!! called directly from routines but instead the `ppm_interp_m2p`
+     !!! called directly by the user but instead the `ppm_interp_m2p`
      !!! routine should be used with the kernel argument set to 
      !!! `ppm_param_rmsh_kernel_mp4`.
 
