@@ -134,10 +134,9 @@ test_suite ppm_module_interp_p2m
         use ppm_module_map
 
         implicit none
-        type(ppm_t_topo), pointer       :: topo
         integer, dimension(2)           :: maxndata
-        
-        nullify(topo)
+        INTEGER, DIMENSION(:  ), POINTER:: isublist 
+        integer                         :: nsublist
         ndim = 2
         nspec = 1
         kernel = ppm_param_rmsh_kernel_mp4
@@ -171,20 +170,14 @@ test_suite ppm_module_interp_p2m
         enddo
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
-        &               bcdef,ghostsize,cost,istart,ndata,nm,info)
+        &               bcdef,ghostsize,cost,nm,info)
         
-        call ppm_topo_get(topoid,topo,info)
-
-        maxndata = 0
-        DO it=1,topo%nsublist
-            isub = topo%isublist(it)
-            IF (ndata(1,isub).GT.maxndata(1)) maxndata(1) = ndata(1,isub)
-            IF (ndata(2,isub).GT.maxndata(2)) maxndata(2) = ndata(2,isub)
-        ENDDO
+        call ppm_topo_get_meshinfo(topoid,meshid,istart,ndata,maxndata,&
+                        isublist,nsublist,info)
 
 
         allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),topo%nsublist),&
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
         &        stat=info) ! 2d
 
         do i=1,ndim
@@ -212,8 +205,8 @@ test_suite ppm_module_interp_p2m
             !----------------
             f_moments2 = 0.0_mk
             p_moments2 = 0.0_mk
-            do it=1,topo%nsublist
-            isub = topo%isublist(it)
+            do it=1,nsublist
+            isub = isublist(it)
             do j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
                 do i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
                     field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
@@ -269,10 +262,10 @@ test_suite ppm_module_interp_p2m
         use ppm_module_map
 
         implicit none
-        type(ppm_t_topo), pointer       :: topo
         integer, dimension(3)           :: maxndata
+        INTEGER, DIMENSION(:  ), POINTER:: isublist 
+        integer                         :: nsublist
         
-        nullify(topo)
         ndim = 3
         nspec = 1
         kernel = ppm_param_rmsh_kernel_mp4
@@ -306,21 +299,15 @@ test_suite ppm_module_interp_p2m
         enddo
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
-        &               bcdef,ghostsize,cost,istart,ndata,nm,info)
+        &               bcdef,ghostsize,cost,nm,info)
         
-        call ppm_topo_get(topoid,topo,info)
+        call ppm_topo_get_meshinfo(topoid,meshid,istart,ndata,maxndata,&
+                        isublist,nsublist,info)
         
-        maxndata = 0
-        DO it=1,topo%nsublist
-            isub = topo%isublist(it)
-            IF (ndata(1,isub).GT.maxndata(1)) maxndata(1) = ndata(1,isub)
-            IF (ndata(2,isub).GT.maxndata(2)) maxndata(2) = ndata(2,isub)
-            IF (ndata(3,isub).GT.maxndata(3)) maxndata(3) = ndata(3,isub)
-        ENDDO
 
         allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
         &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
-        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),topo%nsublist),&
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
         &       stat=info) ! 3d
 
         do i=1,ndim
@@ -348,8 +335,8 @@ test_suite ppm_module_interp_p2m
             !----------------
             f_moments3 = 0.0_mk
             p_moments3 = 0.0_mk
-            do it=1,topo%nsublist
-            isub = topo%isublist(it)
+            do it=1,nsublist
+            isub = isublist(it)
             do k = 1-ghostsize(3), ndata(3,isub)+ghostsize(3)
                 do j = 1-ghostsize(2), ndata(2,isub)+ghostsize(2)
                     do i = 1-ghostsize(1),ndata(1,isub)+ghostsize(1)
