@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_topo_alloc(topoid,nsubs,nsublist,maxneigh,prec,info)
+      SUBROUTINE ppm_topo_alloc(topoid,nsubs,nsublist,maxneigh,maxneightot,prec,info)
       !!! This routine (re-)allocates a topology object and all its members
 
       !-------------------------------------------------------------------------
@@ -53,6 +53,8 @@
       INTEGER                 , INTENT(IN   ) :: nsublist
       !!! Local number of subs on this proc
       INTEGER                 , INTENT(IN   ) :: maxneigh
+      !!! Maximum number of neighbours of any sub on this processor
+      INTEGER                 , INTENT(IN   ) :: maxneightot
       !!! Maximum number of neighbours of any sub on this processor
       INTEGER                 , INTENT(IN   ) :: prec
       !!! Precision for storage. One of:
@@ -284,6 +286,18 @@
           IF (ASSOCIATED(topo%minboxsizes_d)) DEALLOCATE(topo%minboxsizes_d,STAT=info)
           NULLIFY(topo%minboxsizes_d)
           !<<<< haeckic end >>>>!
+
+         !-------------------------------------------------------------------------
+         !  Allocate memory for maximum ghostsizes
+         !-------------------------------------------------------------------------
+         CALL ppm_alloc(topo%ghostsizes,ldc,iopt,info)
+         IF (info .NE. ppm_param_success) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+      &        'max ghostsizes TOPO%ghostsizes',__LINE__,info)
+            GOTO 9999
+         ENDIF
+
       ELSE
           CALL ppm_alloc(topo%min_subd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
@@ -316,6 +330,18 @@
           IF (ASSOCIATED(topo%minboxsizes_s)) DEALLOCATE(topo%minboxsizes_s,STAT=info)
           NULLIFY(topo%minboxsizes_s)
           !<<<< haeckic end >>>>!
+
+         !-------------------------------------------------------------------------
+         !  Allocate memory for maximum ghostsizes
+         !-------------------------------------------------------------------------
+         CALL ppm_alloc(topo%ghostsized,ldc,iopt,info)
+         IF (info .NE. ppm_param_success) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
+      &        'max ghostsized TOPO%ghostsized',__LINE__,info)
+            GOTO 9999
+         ENDIF
+
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -390,7 +416,7 @@
           GOTO 9999
       ENDIF
       iopt   = ppm_param_alloc_fit
-      ldc(1) = maxneigh
+      ldc(1) = maxneightot
       ldc(2) = nsubs
       CALL ppm_alloc(topo%ineigh,ldc,iopt,info)
       IF (info .NE. ppm_param_success) THEN

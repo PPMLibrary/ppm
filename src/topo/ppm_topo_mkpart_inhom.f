@@ -226,6 +226,7 @@
       INTEGER                           :: nsubs
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: minboxsizes_out => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
       REAL(MK)                          :: ghostsize
 
@@ -385,8 +386,8 @@
          ENDIF
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-     &       max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,minboxsizes,nchld,nbox,min_sub,   &
+     &       max_sub,minboxsizes_out,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       ELSEIF ((decomp .EQ. ppm_param_decomp_xpencil) .OR.   &
@@ -433,8 +434,8 @@
              GOTO 9999
          ENDIF
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-     &       max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,minboxsizes,nchld,nbox,min_sub,   &
+     &       max_sub,minboxsizes_out,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       ELSEIF ((decomp .EQ. ppm_param_decomp_xy_slab) .OR.   &
@@ -496,8 +497,8 @@
          ENDIF
 
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-     &       max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,minboxsizes,nchld,nbox,min_sub,   &
+     &       max_sub,minboxsizes_out,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       ELSEIF (decomp .EQ. ppm_param_decomp_cuboid) THEN
@@ -534,8 +535,8 @@
              GOTO 9999
          ENDIF
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-     &       max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,minboxsizes,nchld,nbox,min_sub,   &
+     &       max_sub,minboxsizes_out,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       ELSEIF (decomp .EQ. ppm_param_decomp_user_defined) THEN
@@ -569,17 +570,11 @@
 !       ENDIF      
 ! 
 !       DO i=1,nsubs
-!          IF(ppm_rank .EQ. 0)THEN
-!             print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i)
-!          ENDIF
-!          DO j=1,nneigh(i)
-!             k = ineigh(j,i)
+! 
 !             IF(ppm_rank .EQ. 0)THEN
-!                print *, k, min_sub(1,k), min_sub(2,k), max_sub(1,k), max_sub(2,k)
+!                print *, i, min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i), minboxsizes(1,i), minboxsizes(2,i)
 !             ENDIF
 ! 
-!          ENDDO
-!          print *, ' '
 !       ENDDO
 
       !-------------------------------------------------------------------------
@@ -693,7 +688,7 @@
       ELSE
 
          CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,minboxsizes,isublist,nsublist,    &
+     &                    sub2proc,nsubs,bcdef,minboxsizes_out,isublist,nsublist,    &
      &                    nneigh,ineigh,info)
 
       ENDIF

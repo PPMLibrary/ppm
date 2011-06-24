@@ -144,48 +144,90 @@
             !--------------------------------------------------------------------
             is_possible(j) = .TRUE.
             
-            ! apply scanline algorithm
-            ! if minimum is less than minbox + ghost, then start
-            IF(num_constr(i,j) .GT. 0) THEN
+             IF(num_constr(i,j) .GT. 0) THEN
                CALL get_subarray(neigh_constraints(i,:,:,:),num_constr(i,:),result_array)
                k = 1
                IF (result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsize(j)) THEN
-                  !     until distance is >= 0
-                  IF (num_constr(i,j) .GT. 1) THEN
+               
+                  ! Find the first constraint in the minboxsize position
+                  temp_r = k
+                  DO WHILE (.NOT.((min_box(j,i)+minboxsize(j)-lmyeps).GT.result_array(j,k,1) &
+            &                         .AND. (min_box(j,i)+minboxsize(j)+lmyeps).LT.result_array(j,k,2)))
+                     IF (result_array(j,k,2) .GT. result_array(j,temp_r,2)) THEN
+                        temp_r = k
+                     ENDIF  
+                     IF (k .EQ. num_constr(i,j)) THEN
+                        EXIT
+                     ENDIF
                      k = k+1
-                     DO WHILE(result_array(j,k,1)+lmyeps .LT. result_array(j,k-1,2) &
-         &                      .OR. result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsize(j))
-                        temp_r = k-1
-                        DO WHILE(result_array(j,k,2)+lmyeps .LT. result_array(j,temp_r,2))
-                           k = k+1
-                           IF (k .GT. num_constr(i,j)) THEN
-                              k = k-1
-                              EXIT
-                           ENDIF
-                        ENDDO
-                        IF (result_array(j,k,1)+lmyeps .GT. result_array(j,temp_r,2) .AND. &
-         &                      .NOT. (result_array(j,k,1)-lmyeps .LT. min_box(j,i)+minboxsize(j))) THEN
-                           ! temp_right is the first possible
-                           k = temp_r+1
+                  ENDDO
+               
+
+
+               ! check if we have found one
+               IF (k .LE. num_constr(i,j)) THEN
+                  ! we have found one
+                   IF (result_array(j,k,2) .GT. result_array(j,temp_r,2)) THEN
+                        temp_r = k
+                     ENDIF  
+                  ! start to travel until rightest position
+                  k = k+1
+                  IF (k .LE. num_constr(i,j)) THEN
+                     DO WHILE(result_array(j,k,1)+lmyeps .LT. result_array(j,temp_r,2) &
+         &                      .OR. result_array(j,k,2)+lmyeps .LT. min_box(j,i)+minboxsize(j))
+                        IF (result_array(j,k,2) .GT. result_array(j,temp_r,2)) THEN
+                           temp_r = k
+                        ENDIF
+                        IF (k .EQ. num_constr(i,j)) THEN
                            EXIT
                         ENDIF
                         k = k+1
-                        IF (k .GT. num_constr(i,j)) THEN
-                           EXIT
-                        ENDIF
                      ENDDO
+                  ELSE
                      k = k-1
-                  ENDIF
+                  ENDIF 
+                  
+!                IF (result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsizes(j,i)) THEN
+!                   !     until distance is >= 0
+!                   IF (num_constr(i,j) .GT. 1) THEN
+!                      k = k+1
+!                      DO WHILE(result_array(j,k,1)+lmyeps .LT. result_array(j,k-1,2) &
+!          &                      .OR. result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsizes(j,i))
+!                         temp_r = k-1
+!                         DO WHILE(result_array(j,k,2)+lmyeps .LT. result_array(j,temp_r,2))
+!                            k = k+1
+!                            IF (k .GT. num_constr(i,j)) THEN
+!                               k = k-1
+!                               EXIT
+!                            ENDIF
+!                         ENDDO
+!                         IF (result_array(j,k,1)+lmyeps .GT. result_array(j,temp_r,2) .AND. &
+!          &                      .NOT. (result_array(j,k,1)-lmyeps .LT. min_box(j,i)+minboxsizes(j,i))) THEN
+!                            ! temp_right is the first possible
+!                            k = temp_r+1
+!                            EXIT
+!                         ENDIF
+!                         k = k+1
+!                         IF (k .GT. num_constr(i,j)) THEN
+!                            IF (result_array(j,k-1,2) .LT. result_array(j,temp_r,2) .AND. &
+!             &                      .NOT. (result_array(j,k,1)-lmyeps .LT. min_box(j,i)+minboxsizes(j,i))) THEN
+!                               ! temp_right is the first possible
+!                               k = temp_r+1
+!                            ENDIF
+!                            EXIT
+!                         ENDIF
+!                      ENDDO
+!                      k = k-1
+!                   ENDIF
                   ! if it is inside max - ghostsize -> ok
-                  IF (result_array(j,k,2)-lmyeps .GT. max_box(j,i)-minboxsize(j)) THEN
+                  IF (result_array(j,temp_r,2)-lmyeps .GT. max_box(j,i)-minboxsize(j)) THEN
                      is_possible(j) = .FALSE.
-!                         IF (ppm_rank .EQ. 0)THEN
-!                             print *, ' CASE IN divcheck ' , i, k, result_array(j,1,1), result_array(j,1,2),&
-!          &                              result_array(j,2,1)+lmyeps
-!                          ENDIF
+!                      IF (ppm_rank .EQ. 0)THEN
+!                          print *, ' CASE IN divcheck ' , i
+!                       ENDIF
                   ENDIF
-               ENDIF
-               
+                ENDIF
+              ENDIF
             ENDIF
 
 

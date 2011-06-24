@@ -47,7 +47,6 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_check_id
-      USE ppm_module_find_neigh
       use ppm_module_alloc
 
       IMPLICIT NONE
@@ -87,10 +86,6 @@
       INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
       TYPE(ppm_t_topo)     , POINTER :: topo  => NULL()
 
-      ! Needed for has_one_way neighbor checking
-      INTEGER , DIMENSION(  :), POINTER :: nneigh  => NULL()
-      INTEGER , DIMENSION(:,:), POINTER :: ineigh  => NULL()
-
       ! Needed the collect data
       INTEGER, DIMENSION(3)             :: lda
       INTEGER, DIMENSION(:),    POINTER :: allnp => NULL()
@@ -99,6 +94,7 @@
       INTEGER, DIMENSION(:,:),  POINTER :: buf   => NULL()
       INTEGER, DIMENSION(:),  POINTER   :: req => NULL()
       INTEGER                           :: maxnp
+      REAL(MK), DIMENSION(ppm_dim)      :: len_phys
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -196,14 +192,19 @@
       ! We have all particles now in allxp with maxindex allnp (dim,index,proc)
       topo_ok = .TRUE.
 
+      ! include periodicity!!!!!!!!!!!!
+   
       IF (ppm_rank.eq.0) THEN
 
-         ! Get neighbors
-         ! take this information from topo
-         nneigh = topo%nneigh
-         ineigh = topo%ineigh
-
          IF (ppm_dim .EQ. 2) THEN
+
+#if    __KIND == __SINGLE_PRECISION
+            len_phys(1) = topo%max_physs(1) - topo%min_physs(1)
+            len_phys(2) = topo%max_physs(2) - topo%min_physs(2)
+#elif  __KIND == __DOUBLE_PRECISION
+            len_phys(1) = topo%max_physd(1) - topo%min_physd(1)
+            len_phys(2) = topo%max_physd(2) - topo%min_physd(2)
+#endif
 
             ! For all particles ip
             DO iproc = 1, ppm_nproc
@@ -329,15 +330,234 @@
 
                               IF (.NOT. (box1 .EQ. box2)) THEN
                
-                                 DO in = 1, nneigh(box1)
-                                    iid = ineigh(in,box1)
+                                 DO in = 1, topo%nneigh(box1)
+                                    iid = topo%ineigh(in,box1)
                
                                     IF(box2 .EQ. iid) THEN
                                        ! we have the right neighbor
                                        EXIT
-                                    ELSEIF (in .EQ. nneigh(box1)) THEN
+                                    ELSEIF (in .EQ. topo%nneigh(box1)) THEN
                                        ! no neighbor found until end of list
                                        ! found a particle that violates the topology
+               print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
+
+               print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
+               print *,' ', box2, topo%min_subd(1,box2),topo%min_subd(2,box2),topo%max_subd(1,box2),topo%max_subd(2,box2)
+
+                                       topo_ok = .FALSE.
+                                       ! no need to search any further
+
+                                      
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           ENDIF
+                           
+                           ! Check if they enclose each other x dim
+                           IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
+
+                               IF (( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip,iproc)))) ) .OR. &
+              &                 ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+              &                         allghost_req(2,ip,iproc))))))THEN
+
+                              
+            
+                              ! Find box of ip2
+                              DO j=1,topo%nsubs
+                                 idom = j
+#if    __KIND == __SINGLE_PRECISION
+                                 IF (allxp(1,ip2,iproc2).GE.topo%min_subs(1,idom).AND.  &
+                  &                 allxp(1,ip2,iproc2).LE.topo%max_subs(1,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).GE.topo%min_subs(2,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).LE.topo%max_subs(2,idom)) THEN
+                                    !------------------------------------------------------------
+                                    !  In the non-periodic case, allow particles that are
+                                    !  exactly ON an upper EXTERNAL boundary.
+                                    !------------------------------------------------------------
+                                    IF((allxp(1,ip2,iproc2).LT.topo%max_subs(1,idom) .OR.  &
+                     &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                     &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                     &                (allxp(2,ip2,iproc2).LT.topo%max_subs(2,idom) .OR.  &
+                     &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                     &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#elif  __KIND == __DOUBLE_PRECISION
+                              IF (allxp(1,ip2,iproc2).GE.topo%min_subd(1,idom).AND.  &
+               &                 allxp(1,ip2,iproc2).LE.topo%max_subd(1,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).GE.topo%min_subd(2,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).LE.topo%max_subd(2,idom)) THEN
+                                 !------------------------------------------------------------
+                                 !  In the non-periodic case, allow particles that are
+                                 !  exactly ON an upper EXTERNAL boundary.
+                                 !------------------------------------------------------------
+                                 IF((allxp(1,ip2,iproc2).LT.topo%max_subd(1,idom) .OR.  &
+                  &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                  &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                  &                (allxp(2,ip2,iproc2).LT.topo%max_subd(2,idom) .OR.  &
+                  &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                  &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#endif
+                              ENDDO
+                              ! Check if subid of box of jp is in array of boxes of ip
+
+                              IF (.NOT. (box1 .EQ. box2)) THEN
+               
+                                 DO in = 1, topo%nneigh(box1)
+                                    iid = topo%ineigh(in,box1)
+               
+                                    IF(box2 .EQ. iid) THEN
+                                       ! we have the right neighbor
+                                       EXIT
+                                    ELSEIF (in .EQ. topo%nneigh(box1)) THEN
+                                       ! no neighbor found until end of list
+                                       ! found a particle that violates the topology
+               print *, 'x periodic'
+               print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
+
+               print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
+               print *,' ', box2, topo%min_subd(1,box2),topo%min_subd(2,box2),topo%max_subd(1,box2),topo%max_subd(2,box2)
+
+
+                                       topo_ok = .FALSE.
+                                       ! no need to search any further
+
+                                      
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           ENDIF
+
+
+                           ENDIF
+
+                           IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
+
+                              IF (( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)))) ) .OR. &
+              &                 ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc))))))THEN
+
+                              
+            
+                              ! Find box of ip2
+                              DO j=1,topo%nsubs
+                                 idom = j
+#if    __KIND == __SINGLE_PRECISION
+                                 IF (allxp(1,ip2,iproc2).GE.topo%min_subs(1,idom).AND.  &
+                  &                 allxp(1,ip2,iproc2).LE.topo%max_subs(1,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).GE.topo%min_subs(2,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).LE.topo%max_subs(2,idom)) THEN
+                                    !------------------------------------------------------------
+                                    !  In the non-periodic case, allow particles that are
+                                    !  exactly ON an upper EXTERNAL boundary.
+                                    !------------------------------------------------------------
+                                    IF((allxp(1,ip2,iproc2).LT.topo%max_subs(1,idom) .OR.  &
+                     &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                     &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                     &                (allxp(2,ip2,iproc2).LT.topo%max_subs(2,idom) .OR.  &
+                     &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                     &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#elif  __KIND == __DOUBLE_PRECISION
+                              IF (allxp(1,ip2,iproc2).GE.topo%min_subd(1,idom).AND.  &
+               &                 allxp(1,ip2,iproc2).LE.topo%max_subd(1,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).GE.topo%min_subd(2,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).LE.topo%max_subd(2,idom)) THEN
+                                 !------------------------------------------------------------
+                                 !  In the non-periodic case, allow particles that are
+                                 !  exactly ON an upper EXTERNAL boundary.
+                                 !------------------------------------------------------------
+                                 IF((allxp(1,ip2,iproc2).LT.topo%max_subd(1,idom) .OR.  &
+                  &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                  &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                  &                (allxp(2,ip2,iproc2).LT.topo%max_subd(2,idom) .OR.  &
+                  &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                  &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#endif
+                              ENDDO
+                              ! Check if subid of box of jp is in array of boxes of ip
+
+                              IF (.NOT. (box1 .EQ. box2)) THEN
+               
+                                 DO in = 1, topo%nneigh(box1)
+                                    iid = topo%ineigh(in,box1)
+               
+                                    IF(box2 .EQ. iid) THEN
+                                       ! we have the right neighbor
+                                       EXIT
+                                    ELSEIF (in .EQ. topo%nneigh(box1)) THEN
+                                       ! no neighbor found until end of list
+                                       ! found a particle that violates the topology
+               print *, 'y periodic'
                print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
 
                print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
@@ -355,7 +575,120 @@
                               ENDIF
 
                            ENDIF
-                           
+
+                           ENDIF
+
+                           IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic .AND. topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
+
+                              
+
+                              IF (( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)))) ) .OR. &
+              &                 ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc)) ) .AND. &
+              &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip2,iproc2)) .AND. &
+              &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip2,iproc2)) )) &
+              &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+              &                         allghost_req(1,ip,iproc)) .AND. & 
+              &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+              &                         allghost_req(2,ip,iproc))))))THEN
+
+                              ! Find box of ip2
+                              DO j=1,topo%nsubs
+                                 idom = j
+#if    __KIND == __SINGLE_PRECISION
+                                 IF (allxp(1,ip2,iproc2).GE.topo%min_subs(1,idom).AND.  &
+                  &                 allxp(1,ip2,iproc2).LE.topo%max_subs(1,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).GE.topo%min_subs(2,idom).AND.  &
+                  &                 allxp(2,ip2,iproc2).LE.topo%max_subs(2,idom)) THEN
+                                    !------------------------------------------------------------
+                                    !  In the non-periodic case, allow particles that are
+                                    !  exactly ON an upper EXTERNAL boundary.
+                                    !------------------------------------------------------------
+                                    IF((allxp(1,ip2,iproc2).LT.topo%max_subs(1,idom) .OR.  &
+                     &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                     &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                     &                (allxp(2,ip2,iproc2).LT.topo%max_subs(2,idom) .OR.  &
+                     &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                     &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#elif  __KIND == __DOUBLE_PRECISION
+                              IF (allxp(1,ip2,iproc2).GE.topo%min_subd(1,idom).AND.  &
+               &                 allxp(1,ip2,iproc2).LE.topo%max_subd(1,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).GE.topo%min_subd(2,idom).AND.  &
+               &                 allxp(2,ip2,iproc2).LE.topo%max_subd(2,idom)) THEN
+                                 !------------------------------------------------------------
+                                 !  In the non-periodic case, allow particles that are
+                                 !  exactly ON an upper EXTERNAL boundary.
+                                 !------------------------------------------------------------
+                                 IF((allxp(1,ip2,iproc2).LT.topo%max_subd(1,idom) .OR.  &
+                  &                (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                  &                bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
+                  &                (allxp(2,ip2,iproc2).LT.topo%max_subd(2,idom) .OR.  &
+                  &                (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                  &                bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+
+                                    !box found
+                                    box2 = idom
+                                    EXIT
+                                 ENDIF
+                              ENDIF
+#endif
+                              ENDDO
+                              ! Check if subid of box of jp is in array of boxes of ip
+
+                              IF (.NOT. (box1 .EQ. box2)) THEN
+               
+                                 DO in = 1, topo%nneigh(box1)
+                                    iid = topo%ineigh(in,box1)
+               
+                                    IF(box2 .EQ. iid) THEN
+                                       ! we have the right neighbor
+                                       EXIT
+                                    ELSEIF (in .EQ. topo%nneigh(box1)) THEN
+                                       ! no neighbor found until end of list
+                                       ! found a particle that violates the topology
+               print *, 'xy periodic'
+               print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
+
+               print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
+               print *,' ', box2, topo%min_subd(1,box2),topo%min_subd(2,box2),topo%max_subd(1,box2),topo%max_subd(2,box2)
+     
+
+                                       topo_ok = .FALSE.
+                                       ! no need to search any further
+
+                                      
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           ENDIF
+
+                           ENDIF
+
+                          
                      ENDDO
                   ENDDO
 

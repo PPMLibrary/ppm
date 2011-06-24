@@ -41,6 +41,8 @@
          INTERFACE ppm_topo_box2subs
             MODULE PROCEDURE ppm_topo_box2subs_s
             MODULE PROCEDURE ppm_topo_box2subs_d
+            MODULE PROCEDURE ppm_topo_box2subs_inhom_s
+            MODULE PROCEDURE ppm_topo_box2subs_inhom_d
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -50,10 +52,12 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "topo/ppm_topo_box2subs.f"
+#include "topo/ppm_topo_box2subs_inhom.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
 #include "topo/ppm_topo_box2subs.f"
+#include "topo/ppm_topo_box2subs_inhom.f"
 #undef __KIND
 
       END MODULE ppm_module_topo_box2subs

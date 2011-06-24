@@ -116,15 +116,12 @@
       !-------------------------------------------------------------------------
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
-      INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
+      INTEGER                   :: maxneigh,maxneightot,minbound,nsubmax,nsublistmax
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
       REAL(MK)                  :: t0, max_ghost
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      ! TO BE REMOVED
-      REAL(MK)                 :: ghostsize
-      ghostsize = 1.0_mk
 
       !-------------------------------------------------------------------------
       !  Initialise 
@@ -147,11 +144,15 @@
          j = nneigh(isublist(i))
          IF (j.GT.maxneigh) maxneigh = j
       ENDDO
-
+      maxneightot = 0
+      DO i=1,nsubs
+         j = nneigh(i)
+         IF (j.GT.maxneightot) maxneightot = j
+      ENDDO
       !-------------------------------------------------------------------------
       !  (Re)allocate memory for the topology structure
       !-------------------------------------------------------------------------
-      CALL ppm_topo_alloc(topoid,nsubs,nsublist,maxneigh,MK,info)
+      CALL ppm_topo_alloc(topoid,nsubs,nsublist,maxneigh,maxneightot,MK,info)
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_store', &
@@ -171,16 +172,20 @@
       DO k=1,ppm_dim
          topo%min_physs(k) = min_phys(k)
          topo%max_physs(k) = max_phys(k)
+
+         topo%ghostsizes(k) = 0.0_mk
       ENDDO
 
-      ! For all subdomains the same ghostsize
-      DO k=1,nsublist
+      DO k=1,nsubs
          DO i=1,ppm_dim
             topo%minboxsizes_s(i,k) = minboxsizes(i,k)
+            IF (topo%ghostsizes(i) .LT. minboxsizes(i,k)) THEN
+               topo%ghostsizes(i) = minboxsizes(i,k)
+            ENDIF
          ENDDO
       ENDDO
 
-      topo%ghostsizes = ghostsize
+      
 #else
       !-------------------------------------------------------------------------
       !  Double precision
@@ -188,17 +193,20 @@
       DO k=1,ppm_dim
          topo%min_physd(k) = min_phys(k)
          topo%max_physd(k) = max_phys(k)
+
+         topo%ghostsized(k) = 0.0_mk
       ENDDO
       
-      ! For all subdomains the same ghostsize
-      DO k=1,nsublist
+      DO k=1,nsubs
          DO i=1,ppm_dim
             topo%minboxsizes_d(i,k) = minboxsizes(i,k)
+            IF (topo%ghostsized(i) .LT. minboxsizes(i,k)) THEN
+               topo%ghostsized(i) = minboxsizes(i,k)
+            ENDIF
          ENDDO
       ENDDO
-      
 
-      topo%ghostsized = ghostsize
+
 #endif
 
 

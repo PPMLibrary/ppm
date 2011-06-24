@@ -877,8 +877,8 @@
      &                             inext,ncut,minboxsizes(:,inext),icut,result_array,numb_neigh_const(inext,:),cpos,info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
-!       IF(ppm_rank .EQ. 0)THEN
-!             print *, 'hello after'
+!          IF(ppm_rank .EQ. 0)THEN
+!             print *, 'now cutting', inext, cpos(1)
 !          ENDIF
           !---------------------------------------------------------------------
           !  Align positions with mesh planes if needed
@@ -1434,10 +1434,15 @@
               !  Only do this if we added new boxes to the tree
               !-----------------------------------------------------------------
               ibox = nbox - nadd + 1
-            
+!             IF (ppm_rank .EQ. 0)THEN
+!                      print *, 'now comes ', ibox, ibox+1, nadd
+!                   ENDIF
               CALL ppm_tree_divcheck(min_box(1:ppm_dim,ibox:nbox),    &
      &            max_box(1:ppm_dim,ibox:nbox),nbpd,minboxsizes(1:ppm_dim,ibox:nbox),fixed, &
      &            boxcost(ibox:nbox),neigh_ghost_ranges(ibox:nbox,1:ppm_dim,:,:),numb_neigh_const(ibox:nbox,1:ppm_dim),ndiv,info)
+!               IF (ppm_rank .EQ. 0)THEN
+!                      print *, 'finished coming', ibox, ibox+1, nadd
+!                   ENDIF
               IF (info .NE. 0) GOTO 9999
               k  = 0    ! number of added boxes
               k2 = 0    ! number of boxes of non-zero cost
@@ -1500,26 +1505,53 @@
           !  We have to check if other boxes are not divisible any more
           !---------------------------------------------------------------------
           !Iterate through boxes and drop not divisible boxes
-          DO i=1,nboxlist
+
+!             IF(ppm_rank .EQ. 0)THEN
+!                print *, 'START CHECKING ', nboxlist
+!             ENDIF
+
+          i = 1
+          DO l=1,nboxlist
 
           ! MAKE A SPECIAL TEST TO ADAPT THE TREE
+         
+            IF(i .GT. nboxlist) EXIT
 
             ! check the boxlist(i) box and drop if we have to
             j = boxlist(i)
+      
+!             IF((ppm_rank .EQ. 0) .AND. (j .eq. 137))THEN
+!                print *, 'now checking ', j
+!             ENDIF
+
             CALL ppm_tree_divcheck(min_box(1:ppm_dim,j:j),    &
      &             max_box(1:ppm_dim,j:j),1,minboxsizes(1:ppm_dim,j:j),fixed, &
      &             boxcost(j:j),neigh_ghost_ranges(j:j,1:ppm_dim,:,:),numb_neigh_const(j:j,1:ppm_dim),ndiv,info)
                   
 
+!             IF((ppm_rank .EQ. 0) .and. (j .eq. 137))THEN
+!                print *, 'finished checking ', j
+!             ENDIF
+
             IF (ndiv(1) .LT. ncut) THEN
                ! Not divisible any more
+!             IF(ppm_rank .EQ. 0)THEN
+!                print *, 'WE are droping ', j
+!             ENDIF
                DO k=i,nboxlist-1
                   boxlist(k) = boxlist(k+1)
                ENDDO
                nboxlist = nboxlist-1
+               i = i-1
             ENDIF
 
+      
+            i = i+1
           ENDDO
+
+!          IF(ppm_rank .EQ. 0)THEN
+!                print *, 'STOP CHECKING', nboxlist
+!             ENDIF
 
           !---------------------------------------------------------------------
           !  Determine if tree is finished
@@ -1527,7 +1559,7 @@
 
           ! If has one way it can happen that we still have divisible boxes
           IF(has_one_way .AND. nboxlist .LT. 1) THEN
-                                 !print *, 'case', nbox
+            !print *, 'case', nbox
             ! Go through all childless boxes and check them
             DO i=1,nbox
 
@@ -1541,7 +1573,7 @@
      &                  boxcost(i:i),neigh_ghost_ranges(i:i,1:ppm_dim,:,:),numb_neigh_const(i:i,1:ppm_dim),ndiv,info)
                   
                   IF (ndiv(1) .GE. ncut) THEN
-                     !print *, 'added'
+!                      print *, 'added', i
 
                      nboxlist = nboxlist + 1
 

@@ -182,43 +182,107 @@
          
          ! apply scanline algorithm
          ! if minimum is less than minbox + ghost, then start
+
          IF(num_constr(i) .GT. 0) THEN
                k = 1
                IF (neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i)) THEN
-                  !     until distance is >= 0
-                  IF (num_constr(i) .GT. 1) THEN
+               
+                  ! Find the first constraint at the minboxsize position
+                  temp_r = k
+                  DO WHILE (.NOT.((min_box(i,cutbox)+minboxsize(i)-lmyeps).GT.neigh_constraints(i,k,1) &
+            &                         .AND. (min_box(i,cutbox)+minboxsize(i)+lmyeps).LT.neigh_constraints(i,k,2)))
+                     IF (neigh_constraints(i,k,2) .GT. neigh_constraints(i,temp_r,2)) THEN
+                        temp_r = k
+                     ENDIF
                      k = k+1
-                     DO WHILE(neigh_constraints(i,k,1)+lmyeps .LT. neigh_constraints(i,k-1,2) &
-         &                      .OR. neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i))
-                        temp_r = k-1
-                        DO WHILE(neigh_constraints(i,k,2)+lmyeps .LT. neigh_constraints(i,temp_r,2))
-                           k = k+1
-                           IF (k .GT. num_constr(i)) THEN
-                               k = k-1
+                     IF (k .GT. num_constr(i)) THEN
+                        EXIT
+                     ENDIF
+                  ENDDO
+               
+!                   IF (ppm_rank .EQ. 0 .AND. cutbox .eq. 231 )THEN
+!                      print *, 'first ', k, temp_r
+!                   ENDIF
+
+                  ! check if we have found one
+                  IF (k .LE. num_constr(i)) THEN
+                     ! we have found one
+                     IF (neigh_constraints(i,k,2) .GT. neigh_constraints(i,temp_r,2)) THEN
+                        temp_r = k
+                     ENDIF  
+                     ! start to travel until rightest position
+                     k = k+1
+! IF (ppm_rank .EQ. 0 .AND. cutbox .eq. 231 )THEN
+!                      print *, 'second ', k, temp_r
+!                   ENDIF
+                     IF (k .LE. num_constr(i)) THEN
+                        DO WHILE(neigh_constraints(i,k,1)+lmyeps .LT. neigh_constraints(i,temp_r,2) &
+            &                      .OR. neigh_constraints(i,k,2)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i))
+                           IF (neigh_constraints(i,k,2) .GT. neigh_constraints(i,temp_r,2)) THEN
+                              temp_r = k
+                           ENDIF
+                           IF (k .EQ. num_constr(i)) THEN
                               EXIT
                            ENDIF
+                           k = k+1
                         ENDDO
-                        IF (neigh_constraints(i,k,1)+lmyeps .GT. neigh_constraints(i,temp_r,2) .AND. &
-         &                      .NOT. (neigh_constraints(i,k,1)-lmyeps .LT. min_box(i,cutbox)+minboxsize(i))) THEN
-                           ! temp_right is the first possible
-                           k = temp_r+1
-                           EXIT
-                        ENDIF
-                        k = k+1
-                        IF (k .GT. num_constr(i)) THEN
-                           EXIT
-                        ENDIF
-                     ENDDO
-                     k = k-1
-                  ENDIF
-                  ! if it is inside max - ghostsize -> ok
-                  IF (neigh_constraints(i,k,2)-lmyeps .GT. max_box(i,cutbox)-minboxsize(i)) THEN
-                     is_possible(i) = .FALSE.
-!                       IF (ppm_rank .EQ. 0)THEN
-!                           print *, ' CASE IN cutdir ' , cutbox
-!                        ENDIF
+                     ELSE
+                        k = k-1
+                     ENDIF
+!                   IF (ppm_rank .EQ. 0 .AND. cutbox .eq. 231 )THEN
+!                      print *, 'last ', temp_r
+!                   ENDIF
+                     IF (neigh_constraints(i,temp_r,2)-lmyeps .GT. max_box(i,cutbox)-minboxsize(i)) THEN
+                           is_possible(i) = .FALSE.
+      !                      IF (ppm_rank .EQ. 0)THEN
+      !                          print *, ' CASE IN divcheck ' , i
+      !                       ENDIF
+                     ENDIF
                   ENDIF
                ENDIF
+
+!          IF(num_constr(i) .GT. 0) THEN
+!                k = 1
+!                IF (neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i)) THEN
+!                   !     until distance is >= 0
+!                   IF (num_constr(i) .GT. 1) THEN
+!                      k = k+1
+!                      DO WHILE(neigh_constraints(i,k,1)+lmyeps .LT. neigh_constraints(i,k-1,2) &
+!          &                      .OR. neigh_constraints(i,k,1)+lmyeps .LT. min_box(i,cutbox)+minboxsize(i))
+!                         temp_r = k-1
+!                         DO WHILE(neigh_constraints(i,k,2)+lmyeps .LT. neigh_constraints(i,temp_r,2))
+!                            k = k+1
+!                            IF (k .GT. num_constr(i)) THEN
+!                                k = k-1
+!                               EXIT
+!                            ENDIF
+!                         ENDDO
+!                         IF (neigh_constraints(i,k,1)+lmyeps .GT. neigh_constraints(i,temp_r,2) .AND. &
+!          &                      .NOT. (neigh_constraints(i,k,1)-lmyeps .LT. min_box(i,cutbox)+minboxsize(i))) THEN
+!                            ! temp_right is the first possible
+!                            k = temp_r+1
+!                            EXIT
+!                         ENDIF
+!                         k = k+1
+!                         IF (k .GT. num_constr(i)) THEN
+!                            IF (neigh_constraints(i,k-1,2) .LT. neigh_constraints(i,temp_r,2) .AND. &
+!             &                      .NOT. (neigh_constraints(i,k,1)-lmyeps .LT. min_box(i,cutbox)+minboxsize(i))) THEN
+!                               ! temp_right is the first possible
+!                               k = temp_r+1
+!                            ENDIF
+!                            EXIT
+!                         ENDIF
+!                      ENDDO
+!                      k = k-1
+!                   ENDIF
+!                   ! if it is inside max - ghostsize -> ok
+!                   IF (neigh_constraints(i,k,2)-lmyeps .GT. max_box(i,cutbox)-minboxsize(i)) THEN
+!                      is_possible(i) = .FALSE.
+! !                       IF (ppm_rank .EQ. 0)THEN
+! !                           print *, ' CASE IN cutdir ' , cutbox
+! !                        ENDIF
+!                   ENDIF
+!                ENDIF
               
            ENDIF
 

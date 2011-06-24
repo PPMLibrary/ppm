@@ -285,20 +285,34 @@
           ! if not found -> ok
           ! else travel to the left and right and take smaller
 
+!           IF (ppm_rank .eq. 0) THEN
+!             print *, 'hello1'
+!           ENDIF
+
           ! Find a range we are in
           IF (num_constr(cutdir) .GT. 0) THEN
             k = 1
+            temp_r = k
             DO WHILE (.NOT.((cpos(i)-lmyeps).GT.neigh_constraints(cutdir,k,1) &
       &                         .AND. (cpos(i)+lmyeps).LT.neigh_constraints(cutdir,k,2)))
+               IF (neigh_constraints(cutdir,k,2) .GT. neigh_constraints(cutdir,temp_r,2)) THEN
+                  temp_r = k
+               ENDIF
                k = k+1
                IF (k .GT. num_constr(cutdir)) THEN
                   EXIT
                ENDIF
             ENDDO
-
+!          IF (ppm_rank .eq. 0 .and. cutbox .eq. 137) THEN
+!             print *, 'hello2', k, temp_r
+!           ENDIF
             ! If not found ->ok
             IF (k .LE. num_constr(cutdir)) THEN
                ! If found, search for two nearest possible, outside -> -1.0
+
+               IF (neigh_constraints(cutdir,k,2) .GT. neigh_constraints(cutdir,temp_r,2)) THEN
+                  temp_r = k
+               ENDIF
 
                ! LEFT
                kt = k
@@ -313,9 +327,9 @@
                   ! We need to check if it is violated by following constraints
                   ! If yes we continue scanline
                   IF (kt .GT. 1) THEN
-                     DO ii = kt-1,1
-                        IF (neigh_constraints(cutdir,ii,2)-lmyeps .GT. neigh_constraints(cutdir,kt,1)) THEN
-                           kt = ii
+                     DO ii = 1,kt-1
+                        IF (neigh_constraints(cutdir,kt-ii,2)-lmyeps .GT. neigh_constraints(cutdir,kt,1)) THEN
+                           kt = kt-ii
                            IF (kt .EQ. 1) THEN
                               EXIT
                            ENDIF
@@ -326,33 +340,28 @@
 
                ENDIF
                pl = neigh_constraints(cutdir,kt,1)
-               
+! IF (ppm_rank .eq. 0 .and. cutbox .eq. 137) THEN
+!             print *, 'hello3', kt, pl
+!           ENDIF
                ! RIGHT
                kt = k+1
                IF (kt .LE. num_constr(cutdir)) THEN
-                  DO WHILE(neigh_constraints(cutdir,kt-1,2)-lmyeps .GT. neigh_constraints(cutdir,kt,1))
-                     temp_r = kt-1
-                     DO WHILE(neigh_constraints(cutdir,kt,2)+lmyeps .LT. neigh_constraints(cutdir,temp_r,2))
-                        kt = kt+1
-                        IF (kt .GT. num_constr(cutdir)) THEN
-                           kt = kt-1
-                           EXIT
-                        ENDIF
-                     ENDDO
-                     IF (neigh_constraints(cutdir,kt,1)+lmyeps .GT. neigh_constraints(cutdir,temp_r,2)) THEN
-                        ! temp_right is the first possible
-                        kt = temp_r+1
+                  DO WHILE(neigh_constraints(cutdir,kt,1)+lmyeps .LT. neigh_constraints(cutdir,temp_r,2) &
+      &                      .OR. neigh_constraints(cutdir,kt,2)+lmyeps .LT. min_box(cutdir,cutbox)+minboxsize(cutdir))
+                     IF (neigh_constraints(cutdir,kt,2) .GT. neigh_constraints(cutdir,temp_r,2)) THEN
+                        temp_r = kt
+                     ENDIF
+                     IF (kt .EQ. num_constr(cutdir)) THEN
                         EXIT
                      ENDIF
                      kt = kt+1
-                     IF (kt .GT. num_constr(cutdir)) THEN
-                        EXIT
-                     ENDIF
                   ENDDO
                ENDIF
-               kt = kt-1
-               pr = neigh_constraints(cutdir,kt,2)
+               pr = neigh_constraints(cutdir,temp_r,2)
 
+! IF (ppm_rank .eq. 0 .and. cutbox .eq. 137) THEN
+!             print *, 'hello4', kt, temp_r, pr
+!           ENDIF
                ! take smaller
                IF (pl+lmyeps .LT. min_box(cutdir,cutbox)+minboxsize(cutdir)) THEN
                   IF (pr-lmyeps .GT. max_box(cutdir,cutbox)-minboxsize(cutdir)) THEN

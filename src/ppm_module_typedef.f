@@ -246,12 +246,10 @@
             TYPE(ppm_t_equi_mesh), DIMENSION(:  ), POINTER :: mesh => NULL()
             !!! List of meshes defined on this topology. Index: meshid
 
-            REAL(ppm_kind_single)                          :: ghostsizes
+            REAL(ppm_kind_single),DIMENSION(:  ), POINTER  :: ghostsizes => NULL()
             !!! max ghostsize width used when creating this topology (single)
-            REAL(ppm_kind_double)                          :: ghostsized
+            REAL(ppm_kind_double),DIMENSION(:  ), POINTER  :: ghostsized => NULL()
             !!! max ghostsize width used when creating this topology (double)
-            !!! using a larger cutoff when calling routines such as ghost_get
-            !!! should ideally raise a warning
 
             !<<<< haeckic begin >>>>!
             REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: minboxsizes_s => NULL()

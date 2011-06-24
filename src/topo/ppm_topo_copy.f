@@ -63,7 +63,7 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)  :: t0
-      INTEGER                :: nsubs,nsublist,maxneigh,prec,i,j,iopt
+      INTEGER                :: nsubs,nsublist,maxneigh,maxneightot,prec,i,j,iopt
       LOGICAL                :: valid
       INTEGER, DIMENSION(1)  :: ldc
       !-------------------------------------------------------------------------
@@ -89,12 +89,13 @@
       nsubs    = intopo%nsubs
       nsublist = intopo%nsublist
       maxneigh = SIZE(intopo%ineighsubs,1)
+      maxneightot = SIZE(intopo%ineigh,1)
       prec     = intopo%prec 
 
       !-------------------------------------------------------------------------
       !  Allocate result topology
       !-------------------------------------------------------------------------
-      CALL ppm_topo_alloc(outtopo%ID,nsubs,nsublist,maxneigh,prec,info)
+      CALL ppm_topo_alloc(outtopo%ID,nsubs,nsublist,maxneigh,maxneightot, prec,info)
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &

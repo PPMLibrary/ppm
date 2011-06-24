@@ -349,8 +349,9 @@
                ENDIF
             ENDIF
          ENDDO
+         CALL MPI_Allreduce(minboxsizes_temp(k,1),max_ghost_temp(k,1),1,MPTYPE,MPI_MAX,ppm_comm,info)
+      
       ENDDO
-      CALL MPI_Allreduce(minboxsizes_temp(1,1),max_ghost_temp(1,1),ppm_dim,MPTYPE,MPI_MAX,ppm_comm,info)
       DO k=1,ppm_dim
          minboxsizes_temp(k,1) = max_ghost_temp(k,1)
       ENDDO
@@ -410,10 +411,10 @@
                         ENDIF
                      ENDIF
                   ENDDO
-                  
+                  CALL MPI_Allreduce(minboxsizes_temp(k,i),max_ghost_temp(k,i),1,MPTYPE,MPI_MAX,ppm_comm,info)
+                
                ENDDO
                ! Needs to collect max from all processors
-               CALL MPI_Allreduce(minboxsizes_temp(1,i),max_ghost_temp(1,i),ppm_dim,MPTYPE,MPI_MAX,ppm_comm,info)
                DO k=1,ppm_dim
                   minboxsizes_temp(k,i) = max_ghost_temp(k,i)
                ENDDO
@@ -528,7 +529,7 @@
                DO k=1,ppm_dim
                   min_sub(k,nsubs) = min_box(k,kbox)
                   max_sub(k,nsubs) = max_box(k,kbox)
-                  minboxsizes(k,nsubs) = minboxsizes_temp(k,nsubs+(kbox-fbox+1))
+                  minboxsizes(k,nsubs) = minboxsizes_temp(k,nsubs_temp+(kbox-fbox+1))
                   numb_part(nsubs) = npbxg(kbox)
                ENDDO
 
@@ -785,7 +786,8 @@
                ENDDO
             ENDDO
             ! Needs to collect max from all processors
-            CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),ppm_dim,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(2),minboxsizes(2,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
 
          ENDDO
       ELSEIF (ppm_dim.EQ.3) THEN
@@ -818,7 +820,9 @@
                ENDDO
             ENDDO
             ! Needs to collect max from all processors
-            CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),ppm_dim,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(2),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(3),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
 
          ENDDO
       ENDIF

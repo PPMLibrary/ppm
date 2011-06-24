@@ -65,6 +65,7 @@
       real(mk),dimension(:,:),pointer :: ghost_req
       real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
       real(mk),dimension(:  ),pointer :: len_phys
+      real(mk), dimension(3)          :: offset
       integer                         :: i,j,k,sum1,sum2, ix,iy
       integer                         :: p_i
       integer, dimension(6)           :: bcdef
@@ -88,8 +89,8 @@
       !----------------
       tol = 10.0_mk*epsilon(1.0_mk)
       tolexp = int(log10(epsilon(1.0_mk)))
-      min_ghost_req = 0.25_mk
-      max_ghost_req = 1.25_mk
+      min_ghost_req = 0.01_mk
+      max_ghost_req = 1.50_mk
       np = np_sqrt*np_sqrt
       np_tot = 4*np
 
@@ -130,6 +131,10 @@
 
       allocate(so_sum(ndim),stat=info)
       tot_sum = np_sqrt*(np_sqrt+1)/2 + 1
+ 
+      
+      offset(1) = 5.72342_mk
+      offset(2) = -7.63234_mk
 
       so_sum(1) = 0.0_mk
       do ix=1,np_sqrt
@@ -141,10 +146,11 @@
 
             ! set positions of particles, s.t. lower ix,iy are closer together
             ! including a random distortion            
-            xp(1,(ix-1)*np_sqrt + iy) = min_phys(1)+REAL(so_sum(1),MK)* &
+            xp(1,(ix-1)*np_sqrt + iy) = (min_phys(1)+REAL(so_sum(1),MK)* &
      &                                  len_phys(1)/REAL(tot_sum,MK) +  &
      &                                  (ix*len_phys(1)/(tot_sum)) * randnb((ix-1)*np_sqrt + iy) & 
-     &                                  - (ix*len_phys(1)/(tot_sum))/2
+     &                                  - (ix*len_phys(1)/(tot_sum))/2)
+
 
 
             do while (xp(1,(ix-1)*np_sqrt + iy) > max_phys(1))
@@ -154,10 +160,11 @@
                xp(1,(ix-1)*np_sqrt + iy) = xp(1,(ix-1)*np_sqrt + iy) + (len_phys(1)/(tot_sum))
             enddo
 
-            xp(2,(ix-1)*np_sqrt + iy) = min_phys(2)+REAL(so_sum(2),MK)* &
+            xp(2,(ix-1)*np_sqrt + iy) = (min_phys(2)+REAL(so_sum(2),MK)* &
      &                                  len_phys(2)/REAL(tot_sum,MK) +  &
      &                                  (iy*len_phys(2)/(tot_sum)) * randnb((ix-1)*np_sqrt + iy + np) & 
-     &                                  - (iy*len_phys(2)/(tot_sum))/2
+     &                                  - (iy*len_phys(2)/(tot_sum))/2)
+
 
             do while (xp(2,(ix-1)*np_sqrt + iy) > max_phys(2))
                xp(2,(ix-1)*np_sqrt + iy) = xp(2,(ix-1)*np_sqrt + iy) - (len_phys(1)/(tot_sum))
@@ -205,6 +212,16 @@
          enddo
       enddo
 
+      do i=1,np_tot
+            
+            xp(1,i) = xp(1,i) + offset(1)
+            xp(1,i) = xp(1,i) - 2*len_phys(1)*int(xp(1,i)/len_phys(1))
+            
+            xp(2,i) = xp(2,i) + offset(2)
+            xp(2,i) = xp(2,i) - 2*len_phys(2)*int(xp(2,i)/len_phys(2))
+   
+      enddo
+
       !----------------
       ! make topology
       !----------------
@@ -212,11 +229,11 @@
       ! Test all decompositions
 !       decomp = ppm_param_decomp_tree
 !       decomp = ppm_param_decomp_pruned_cell
-       decomp = ppm_param_decomp_bisection
+!       decomp = ppm_param_decomp_bisection
 !       decomp = ppm_param_decomp_xpencil
 !       decomp = ppm_param_decomp_ypencil
 !       decomp = ppm_param_decomp_zpencil
-!       decomp = ppm_param_decomp_cuboid
+       decomp = ppm_param_decomp_cuboid
 !       decomp = ppm_param_decomp_user_defined
 !       decomp = ppm_param_decomp_xy_slab
 !       decomp = ppm_param_decomp_xz_slab
@@ -227,48 +244,61 @@
 
       topoid = 0
 
-
-
       min_phys(1:ndim) = -8.0_mk
       max_phys(1:ndim) = 8.0_mk 
 !       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
 !       &               max_ghost_req,cost,info)
 
-      has_one_way = .TRUE.
+      has_one_way = .FALSE.
 
        call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
      &               ghost_req,has_one_way,cost,info)
 
       call ppm_dbg_print(topoid,max_ghost_req,1,1,info,xp,np_tot)
 
-      call ppm_map_part_global(topoid,xp,np,info)
-      call ppm_map_part_push(ghost_req,ndim,np,info)
-      call ppm_map_part_send(np,newnp,info)
-      call ppm_map_part_pop(ghost_req,ndim,np,newnp,info)
-      call ppm_map_part_pop(xp,ndim,np,newnp,info)
+      call ppm_map_part_global(topoid,xp,np_tot,info)
+      call ppm_map_part_push(ghost_req,ndim,np_tot,info)
+      call ppm_map_part_send(np_tot,newnp,info)
+      call ppm_map_part_pop(ghost_req,ndim,np_tot,newnp,info)
+      call ppm_map_part_pop(xp,ndim,np_tot,newnp,info)
       np=newnp
       print *,rank,'global map done'
 
+      call ppm_map_part_ghost_get(topoid,xp,ndim,newnp,isymm,info)
+      call ppm_map_part_push(ghost_req,ndim,newnp,info)
+      call ppm_map_part_send(newnp,mp,info)
+      call ppm_map_part_pop(ghost_req,ndim,newnp,mp,info)
+      call ppm_map_part_pop(xp,ndim,newnp,mp,info)
+
+
+       print *, 'proc: ', ppm_rank, 'local particles: ', np_tot, newnp, 'ghost particles: ', mp-np
+!       DO i = newnp+1,mp
+!          print *, ppm_rank, xp(1,i), xp(2,i)
+!       ENDDO
 
       ! MAKE TESTS:
 
       ! 1. Are all particle this proc have in its subs
-      call ppm_topo_check(topoid,xp,np,ok,info)
+      call ppm_topo_check(topoid,xp,newnp,ok,info)
       if (.not. ok) write(*,*) '[',rank,'] topo_check failed'
 
       ! 2. check if all particles to interact with are in neighboring box
       !         for each particle determine interacting particles and
       !         check if they are in own box or neighbors
-      call ppm_topo_check_neigh(topoid,xp,ghost_req,np,has_one_way,ok,info)
+      call ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
       if (.not. ok) write(*,*) '[',rank,'] topo_check_neigh failed'
 
       ! 3. minboxsizes inside, requires all neighbors correct
       !         check for each box if it fulfills ghost req of each particle inside
       !         this function also checks for has_one way case
-       call ppm_topo_check_minbox(topoid,xp,ghost_req,np,has_one_way,ok,info)
+       call ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
        if (.not. ok) write(*,*) '[',rank,'] topo_check_minbox failed'
 
-
+      ! 4. check if we have all ghost particles
+      !         check for all particles on this proc if it has the ghost particles
+      !         it needs. collect all particles from other procs and check
+       call ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
+       if (.not. ok) write(*,*) '[',rank,'] map_check_ghosts failed'
 
 
       !----------------

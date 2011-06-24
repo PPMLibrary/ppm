@@ -32,6 +32,7 @@
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,info)
 #endif
+
       !<<<< haeckic end >>>>!
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine 
@@ -136,7 +137,7 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,j,k,isub
+      INTEGER               :: i,j,k,isub,jsub
       INTEGER               :: nlist1,nlist2,nghost,nghostplus
       INTEGER               :: ipart,sendrank,recvrank
       INTEGER               :: iopt,iset,ibuffer
@@ -148,7 +149,7 @@
       REAL(MK)                      :: xmaxf,ymaxf,zmaxf ! full domain
       REAL(MK)                      :: xmini,ymini,zmini ! inner domain
       REAL(MK)                      :: xmaxi,ymaxi,zmaxi ! inner domain
-      REAL(MK), DIMENSION(ppm_dim)  :: len_phys
+      REAL(MK), DIMENSION(ppm_dim)  :: len_phys,ghostsize
       REAL(MK)                      :: t0
       INTEGER                       :: iperiodic
       LOGICAL                       :: valid
@@ -158,7 +159,6 @@
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      REAL(MK)                      :: ghostsize = 1.0_MK
 
       ! HERE WE HAVE A PROBLEM: we need to find potential ghosts, consider boundary
 
@@ -204,12 +204,13 @@
      &          'Npart must be >=0',__LINE__,info)
             GOTO 9999
         ENDIF
-        IF (ghostsize .LT. 0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'ghostsize must be >=0.0',__LINE__,info)
-            GOTO 9999
-        ENDIF
+   ! haeckic: check
+!         IF (ghostsize .LT. 0.0_MK) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+!      &          'ghostsize must be >=0.0',__LINE__,info)
+!             GOTO 9999
+!         ENDIF
       ENDIF
 
       topo => ppm_topo(topoid)%t
@@ -329,9 +330,13 @@
       !  Fill the list with particles that are within the reach of the ghost
       !  regions of other subs. We do that by looping over the subs belonging
       !  to this processor and checking if the particles are well within the
-      !  sub. If this is the case, the particle will never be a ghost 
+      !  sub. If this is the case, the particle will never be a ghost
       !-------------------------------------------------------------------------
       DO k=1,topo%nsublist
+
+         ! haeckic: to get the potential ghost we need to consider the ghostlayers of neighbors
+         !          get the maximum neighbor ghostsize and use it, its only the potential ones
+
          !----------------------------------------------------------------------
          !  Initialize the second list counter to zero
          !----------------------------------------------------------------------
@@ -352,25 +357,104 @@
          yminf = topo%min_subd(2,isub)
          ymaxf = topo%max_subd(2,isub)
 
+         ghostsize(1) = 0.0_mk
+         ghostsize(2) = 0.0_mk
+
          IF (ppm_dim.EQ.3) THEN
             zminf = topo%min_subd(3,isub)
             zmaxf = topo%max_subd(3,isub)
-         ENDIF 
+            ghostsize(3) = 0.0_mk
+            
+            !Iterate through the neighbors and get the maximum ghostsize 
+            DO j=1,topo%nneigh(isub)
+               jsub = topo%ineigh(j,isub)
+               IF (topo%minboxsizes_d(1,jsub) .GT. ghostsize(1)) THEN
+                  ghostsize(1) = topo%minboxsizes_d(1,jsub)
+               ENDIF
+               IF (topo%minboxsizes_d(2,jsub) .GT. ghostsize(2)) THEN
+                  ghostsize(2) = topo%minboxsizes_d(2,jsub)
+               ENDIF
+               IF (topo%minboxsizes_d(3,jsub) .GT. ghostsize(3)) THEN
+                  ghostsize(3) = topo%minboxsizes_d(3,jsub)
+               ENDIF
+
+            ENDDO
+
+         ELSE
+            !Iterate through the neighbors and get the maximum ghostsize 
+            DO j=1,topo%nneigh(isub)
+
+               
+               jsub = topo%ineigh(j,isub)
+
+!                   print *, ppm_rank, isub, topo%minboxsizes_d(1,isub), topo%minboxsizes_d(2,isub),&
+!                   & topo%nneigh(isub), 'has', jsub, ghostsize(1),ghostsize(2)
+
+               IF (topo%minboxsizes_d(1,jsub) .GT. ghostsize(1)) THEN
+                  ghostsize(1) = topo%minboxsizes_d(1,jsub)
+               ENDIF
+               IF (topo%minboxsizes_d(2,jsub) .GT. ghostsize(2)) THEN
+                  ghostsize(2) = topo%minboxsizes_d(2,jsub)
+               ENDIF
+
+            ENDDO
+         ENDIF
+
+
+
+
+
 #else
          xminf = topo%min_subs(1,isub)
          xmaxf = topo%max_subs(1,isub)
 
          yminf = topo%min_subs(2,isub)
          ymaxf = topo%max_subs(2,isub)
+
+         ghostsize(1) = 0.0_mk
+         ghostsize(2) = 0.0_mk
+
          IF (ppm_dim.EQ.3) THEN
             zminf = topo%min_subs(3,isub)
             zmaxf = topo%max_subs(3,isub)
+            
+            ghostsize(3) = 0.0_mk
+            
+            !Iterate through the neighbors and get the maximum ghostsize 
+            DO j=1,topo%nneigh(isub)
+               jsub = topo%ineigh(j,isub)
+               IF (topo%minboxsizes_s(1,jsub) .GT. ghostsize(1)) THEN
+                  ghostsize(1) = topo%minboxsizes_s(1,jsub)
+               ENDIF
+               IF (topo%minboxsizes_s(2,jsub) .GT. ghostsize(2)) THEN
+                  ghostsize(2) = topo%minboxsizes_s(2,jsub)
+               ENDIF
+               IF (topo%minboxsizes_s(3,jsub) .GT. ghostsize(3)) THEN
+                  ghostsize(3) = topo%minboxsizes_s(3,jsub)
+               ENDIF
+
+            ENDDO
+            
+            
+         ELSE
+            !Iterate through the neighbors and get the maximum ghostsize 
+            DO j=1,topo%nneigh(isub)
+               jsub = topo%ineigh(j,isub)
+               IF (topo%minboxsizes_s(1,jsub) .GT. ghostsize(1)) THEN
+                  ghostsize(1) = topo%minboxsizes_s(1,jsub)
+               ENDIF
+               IF (topo%minboxsizes_s(2,jsub) .GT. ghostsize(2)) THEN
+                  ghostsize(2) = topo%minboxsizes_s(2,jsub)
+               ENDIF
+
+            ENDDO
          ENDIF
 #endif
 
          !----------------------------------------------------------------------
          !  Compute the size of the inner region
          !----------------------------------------------------------------------
+
          IF (isymm.GT.0) THEN
             !-------------------------------------------------------------------
             !  if we use symmetry the upper/right part of our sub will have 
@@ -378,14 +462,14 @@
             !  sub cannot be ghosts on other processors. Thus the ghosts must 
             !  be found at the lower/left of the sub
             !-------------------------------------------------------------------
-            xmini = xminf + ghostsize
+            xmini = xminf + ghostsize(1)
             xmaxi = xmaxf
 
-            ymini = yminf + ghostsize
+            ymini = yminf + ghostsize(2)
             ymaxi = ymaxf
  
             IF (ppm_dim.EQ.3) THEN
-               zmini = zminf + ghostsize
+               zmini = zminf + ghostsize(3)
                zmaxi = zmaxf
             ENDIF 
          ELSE
@@ -393,15 +477,15 @@
             !  if we do not use symmetry, the particles along the entire 
             !  boundary of the sub will be ghosts on other processors
             !-------------------------------------------------------------------
-            xmini = xminf + ghostsize
-            xmaxi = xmaxf - ghostsize
+            xmini = xminf + ghostsize(1)
+            xmaxi = xmaxf - ghostsize(1)
 
-            ymini = yminf + ghostsize
-            ymaxi = ymaxf - ghostsize
+            ymini = yminf + ghostsize(2)
+            ymaxi = ymaxf - ghostsize(2)
 
             IF (ppm_dim.EQ.3) THEN
-               zmini = zminf + ghostsize
-               zmaxi = zmaxf - ghostsize
+               zmini = zminf + ghostsize(3)
+               zmaxi = zmaxf - ghostsize(3)
             ENDIF 
          ENDIF 
 
@@ -554,15 +638,18 @@
                 GOTO 9999
             ENDIF
 
+            ! haeckic: again the potential ghost over periodic boundaries depend 
+            !          on neighboring subs, just take the entire max...
+
             !-------------------------------------------------------------------
             !  copy periodic ghosts in the x-direction
             !-------------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
             xminf = topo%min_physs(1)
-            xmini = topo%min_physs(1) + ghostsize
+            xmini = topo%min_physs(1) + topo%ghostsizes(1)
 #else
             xminf = topo%min_physd(1)
-            xmini = topo%min_physd(1) + ghostsize
+            xmini = topo%min_physd(1) + topo%ghostsized(1)
 #endif
             k     = nghostplus
             DO i=1,nghostplus
@@ -588,10 +675,10 @@
                !----------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                xmaxf = topo%max_physs(1)
-               xmaxi = topo%max_physs(1) - ghostsize
+               xmaxi = topo%max_physs(1) - topo%ghostsizes(1)
 #else
                xmaxf = topo%max_physd(1)
-               xmaxi = topo%max_physd(1) - ghostsize
+               xmaxi = topo%max_physd(1) - topo%ghostsized(1)
 #endif
                DO i=1,nghostplus
                   IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
@@ -648,10 +735,10 @@
             !-------------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
             yminf = topo%min_physs(2)
-            ymini = topo%min_physs(2) + ghostsize
+            ymini = topo%min_physs(2) + topo%ghostsizes(2)
 #else
             yminf = topo%min_physd(2)
-            ymini = topo%min_physd(2) + ghostsize
+            ymini = topo%min_physd(2) + topo%ghostsized(2)
 #endif
             k     = nghostplus
             DO i=1,nghostplus
@@ -677,10 +764,10 @@
                !----------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                ymaxf = topo%max_physs(2)
-               ymaxi = topo%max_physs(2) - ghostsize
+               ymaxi = topo%max_physs(2) - topo%ghostsizes(2)
 #else
                ymaxf = topo%max_physd(2)
-               ymaxi = topo%max_physd(2) - ghostsize
+               ymaxi = topo%max_physd(2) - topo%ghostsized(2)
 #endif
                DO i=1,nghostplus
                   IF  (xt(2,i).GT.ymaxi.AND.xt(2,i).LT.ymaxf) THEN
@@ -743,10 +830,10 @@
                !----------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                zminf = topo%min_physs(3)
-               zmini = topo%min_physs(3) + ghostsize
+               zmini = topo%min_physs(3) + topo%ghostsizes(3)
 #else
                zminf = topo%min_physd(3)
-               zmini = topo%min_physd(3) + ghostsize
+               zmini = topo%min_physd(3) + topo%ghostsized(3)
 #endif
                k     = nghostplus 
                DO i=1,nghostplus
@@ -771,10 +858,10 @@
                   !-------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                   zmaxf = topo%max_physs(3)
-                  zmaxi = topo%max_physs(3) - ghostsize
+                  zmaxi = topo%max_physs(3) - topo%ghostsizes(3)
 #else
                   zmaxf = topo%max_physd(3)
-                  zmaxi = topo%max_physd(3) - ghostsize
+                  zmaxi = topo%max_physd(3) - topo%ghostsized(3)
 #endif
                   DO i=1,nghostplus
                      IF  (xt(3,i).GT.zmaxi.AND.xt(3,i).LT.zmaxf) THEN
@@ -970,32 +1057,50 @@
             !-------------------------------------------------------------------
             !  Define the extended resize of this sub 
             !-------------------------------------------------------------------
+
+! haeckic: here it is important, define ghostsize for this sub
+
+
+
             IF (isymm.GT.0) THEN
                !----------------------------------------------------------------
                !  if we use symmetry ghosts will only be present at the
                !  upper/right part of the sub
                !----------------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
+
+               ghostsize(1) = topo%minboxsizes_s(1,isub)
+               ghostsize(2) = topo%minboxsizes_s(2,isub)
+
                xmini = topo%min_subs(1,isub)
-               xmaxi = topo%max_subs(1,isub) + ghostsize
+               xmaxi = topo%max_subs(1,isub) + ghostsize(1)
    
                ymini = topo%min_subs(2,isub)
-               ymaxi = topo%max_subs(2,isub) + ghostsize
+               ymaxi = topo%max_subs(2,isub) + ghostsize(2)
    
                IF (ppm_dim.EQ.3) THEN
+               
+                  ghostsize(3) = topo%minboxsizes_s(3,isub)
+                  
                   zmini = topo%min_subs(3,isub)
-                  zmaxi = topo%max_subs(3,isub) + ghostsize
+                  zmaxi = topo%max_subs(3,isub) + ghostsize(3)
                ENDIF 
 #else
+               ghostsize(1) = topo%minboxsizes_d(1,isub)
+               ghostsize(2) = topo%minboxsizes_d(2,isub)
+
                xmini = topo%min_subd(1,isub)
-               xmaxi = topo%max_subd(1,isub) + ghostsize
+               xmaxi = topo%max_subd(1,isub) + ghostsize(1)
    
                ymini = topo%min_subd(2,isub)
-               ymaxi = topo%max_subd(2,isub) + ghostsize
+               ymaxi = topo%max_subd(2,isub) + ghostsize(2)
    
                IF (ppm_dim.EQ.3) THEN
+
+                  ghostsize(3) = topo%minboxsizes_d(3,isub)
+
                   zmini = topo%min_subd(3,isub)
-                  zmaxi = topo%max_subd(3,isub) + ghostsize
+                  zmaxi = topo%max_subd(3,isub) + ghostsize(3)
                ENDIF 
 #endif
             ELSE
@@ -1003,26 +1108,38 @@
                !  if we do not use symmetry, we have ghost all around
                !----------------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
-               xmini = topo%min_subs(1,isub) - ghostsize
-               xmaxi = topo%max_subs(1,isub) + ghostsize
+               ghostsize(1) = topo%minboxsizes_s(1,isub)
+               ghostsize(2) = topo%minboxsizes_s(2,isub)
+
+               xmini = topo%min_subs(1,isub) - ghostsize(1)
+               xmaxi = topo%max_subs(1,isub) + ghostsize(1)
    
-               ymini = topo%min_subs(2,isub) - ghostsize
-               ymaxi = topo%max_subs(2,isub) + ghostsize
+               ymini = topo%min_subs(2,isub) - ghostsize(2)
+               ymaxi = topo%max_subs(2,isub) + ghostsize(2)
    
                IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subs(3,isub) - ghostsize
-                  zmaxi = topo%max_subs(3,isub) + ghostsize
+               
+                  ghostsize(3) = topo%minboxsizes_s(3,isub)
+
+                  zmini = topo%min_subs(3,isub) - ghostsize(3)
+                  zmaxi = topo%max_subs(3,isub) + ghostsize(3)
                ENDIF 
 #else
-               xmini = topo%min_subd(1,isub) - ghostsize
-               xmaxi = topo%max_subd(1,isub) + ghostsize
+               ghostsize(1) = topo%minboxsizes_d(1,isub)
+               ghostsize(2) = topo%minboxsizes_d(2,isub)
+
+               xmini = topo%min_subd(1,isub) - ghostsize(1)
+               xmaxi = topo%max_subd(1,isub) + ghostsize(1)
    
-               ymini = topo%min_subd(2,isub) - ghostsize
-               ymaxi = topo%max_subd(2,isub) + ghostsize
+               ymini = topo%min_subd(2,isub) - ghostsize(2)
+               ymaxi = topo%max_subd(2,isub) + ghostsize(2)
    
                IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subd(3,isub) - ghostsize
-                  zmaxi = topo%max_subd(3,isub) + ghostsize
+
+                  ghostsize(3) = topo%minboxsizes_d(3,isub)
+
+                  zmini = topo%min_subd(3,isub) - ghostsize(3)
+                  zmaxi = topo%max_subd(3,isub) + ghostsize(3)
                ENDIF 
 #endif
             ENDIF 
@@ -1310,32 +1427,47 @@
                   !-------------------------------------------------------------
                   !  Define the extended resize of this sub 
                   !-------------------------------------------------------------
+
+! haeckic: consider sub depending ghostsizes
+
                   IF (isymm.GT.0) THEN
                      !----------------------------------------------------------
                      !  if we use symmetry ghosts will only be present at the
                      !  upper/right part of the sub
                      !----------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
+                     ghostsize(1) = topo%minboxsizes_s(1,j)
+                     ghostsize(2) = topo%minboxsizes_s(2,j)
+
                      xmini = topo%min_subs(1,j)
-                     xmaxi = topo%max_subs(1,j) + ghostsize
+                     xmaxi = topo%max_subs(1,j) + ghostsize(1)
 
                      ymini = topo%min_subs(2,j)
-                     ymaxi = topo%max_subs(2,j) + ghostsize
+                     ymaxi = topo%max_subs(2,j) + ghostsize(2)
 
                      IF (ppm_dim.EQ.3) THEN
+
+                        ghostsize(3) = topo%minboxsizes_s(3,j)
+
                         zmini = topo%min_subs(3,j)
-                        zmaxi = topo%max_subs(3,j) + ghostsize
+                        zmaxi = topo%max_subs(3,j) + ghostsize(3)
                      ENDIF 
 #else
+                     ghostsize(1) = topo%minboxsizes_d(1,j)
+                     ghostsize(2) = topo%minboxsizes_d(2,j)
+
                      xmini = topo%min_subd(1,j)
-                     xmaxi = topo%max_subd(1,j) + ghostsize
+                     xmaxi = topo%max_subd(1,j) + ghostsize(1)
 
                      ymini = topo%min_subd(2,j)
-                     ymaxi = topo%max_subd(2,j) + ghostsize
+                     ymaxi = topo%max_subd(2,j) + ghostsize(2)
  
                      IF (ppm_dim.EQ.3) THEN
+                     
+                        ghostsize(3) = topo%minboxsizes_d(3,j)
+                     
                         zmini = topo%min_subd(3,j)
-                        zmaxi = topo%max_subd(3,j) + ghostsize
+                        zmaxi = topo%max_subd(3,j) + ghostsize(3)
                      ENDIF 
 #endif
                   ELSE
@@ -1343,26 +1475,38 @@
                      !  if we do not use symmetry, we have ghost all around
                      !----------------------------------------------------------
 #if __KIND == __SINGLE_PRECISION
-                     xmini = topo%min_subs(1,j) - ghostsize
-                     xmaxi = topo%max_subs(1,j) + ghostsize
+                     ghostsize(1) = topo%minboxsizes_s(1,j)
+                     ghostsize(2) = topo%minboxsizes_s(2,j)
 
-                     ymini = topo%min_subs(2,j) - ghostsize
-                     ymaxi = topo%max_subs(2,j) + ghostsize
+                     xmini = topo%min_subs(1,j) - ghostsize(1)
+                     xmaxi = topo%max_subs(1,j) + ghostsize(1)
+
+                     ymini = topo%min_subs(2,j) - ghostsize(2)
+                     ymaxi = topo%max_subs(2,j) + ghostsize(2)
 
                      IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subs(3,j) - ghostsize
-                        zmaxi = topo%max_subs(3,j) + ghostsize
+                     
+                        ghostsize(3) = topo%minboxsizes_s(3,j)
+
+                        zmini = topo%min_subs(3,j) - ghostsize(3)
+                        zmaxi = topo%max_subs(3,j) + ghostsize(3)
                      ENDIF 
 #else
-                     xmini = topo%min_subd(1,j) - ghostsize
-                     xmaxi = topo%max_subd(1,j) + ghostsize
+                     ghostsize(1) = topo%minboxsizes_d(1,j)
+                     ghostsize(2) = topo%minboxsizes_d(2,j)
+                     
+                     xmini = topo%min_subd(1,j) - ghostsize(1)
+                     xmaxi = topo%max_subd(1,j) + ghostsize(1)
 
-                     ymini = topo%min_subd(2,j) - ghostsize
-                     ymaxi = topo%max_subd(2,j) + ghostsize
+                     ymini = topo%min_subd(2,j) - ghostsize(2)
+                     ymaxi = topo%max_subd(2,j) + ghostsize(2)
 
                      IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subd(3,j) - ghostsize
-                        zmaxi = topo%max_subd(3,j) + ghostsize
+                        
+                        ghostsize(3) = topo%minboxsizes_d(3,j)
+                        
+                        zmini = topo%min_subd(3,j) - ghostsize(3)
+                        zmaxi = topo%max_subd(3,j) + ghostsize(3)
                      ENDIF 
 #endif
                   ENDIF 
