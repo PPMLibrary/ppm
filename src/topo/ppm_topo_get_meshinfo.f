@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_topo_get_meshinfo(topoid,meshid,istart,ndata,maxndata,&
+      SUBROUTINE ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
                                   isublist,nsublist,info)
       !!! This routine returns the subdomain boundaries and boundary
       !!! conditions
@@ -59,6 +59,8 @@
       !!! Topology ID
       INTEGER                         , INTENT(IN   ) :: meshid
       !!! Mesh ID
+      INTEGER, DIMENSION(:  ), POINTER, INTENT(  OUT) :: nm
+      !!! global number of mesh points in computational domain
       INTEGER, DIMENSION(:,:), POINTER, INTENT(  OUT) :: istart
       !!! Start indices (i,j[,k]) (first index) of sub mesh isub (second
       !!! index) in *global* mesh.
@@ -155,6 +157,7 @@
     
       nsublist = topo%nsublist
       FORALL (i=1:nsublist) isublist(i) = topo%isublist(i)
+      nm = mesh%Nm
       FORALL(i=1:topo%nsubs, d=1:ppm_dim) 
           ndata(d,i) = mesh%nnodes(d,i)
           istart(d,i) = mesh%istart(d,i)
