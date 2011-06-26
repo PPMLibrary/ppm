@@ -65,10 +65,10 @@
       !!! Source topology identifier
       INTEGER                 , INTENT(IN   ) :: to_topoid
       !!! Target topology identifier
-      INTEGER                 , INTENT(IN   ) :: to_meshid
-      !!! Target mesh identifier
       INTEGER                 , INTENT(IN   ) :: from_meshid
       !!! Source mesh identifier
+      INTEGER                 , INTENT(IN   ) :: to_meshid
+      !!! Target mesh identifier
       INTEGER                 , INTENT(IN   ) :: isub
       !!! Source sub (from which data will be sent) in global numbering
       INTEGER                 , INTENT(IN   ) :: jsub
