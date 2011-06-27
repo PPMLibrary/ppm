@@ -27,7 +27,7 @@ real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
 real(mk),dimension(:  ),pointer :: len_phys=>NULL()
 real(mk),dimension(:  ),pointer :: rcp=>NULL(),wp=>NULL(),dwp=>NULL()
 real(mk),dimension(:,:),pointer :: grad_wp=>NULL()
-integer                         :: i,j,k,isum1,isum2,ip,iq,ineigh,vect_wp_id
+integer                         :: i,j,k,ic,isum1,isum2,ip,iq,ineigh,vect_wp_id
 integer                         :: wp_id,dwp_id,grad_wp_id,eta_id,eta2_id
 integer                         :: err_x_id,err_y_id,err_z_id
 real(mk),dimension(:  ),pointer :: err_x=>NULL(),err_y=>NULL(),err_z=>NULL()
@@ -51,6 +51,9 @@ integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
+real(mk)                        :: min_sv
+real(mk),dimension(8)          :: c_array
+
 
     init
 
@@ -393,6 +396,155 @@ write(*,*) 'error is ', err/linf
         Assert_Equal(info,0)
         call particles_dcop_compute(Particles,eta_id,info)
         Assert_Equal(info,0)
+
+        grad_wp_id=0
+        call particles_allocate_wpv(Particles,grad_wp_id,ppm_dim,info,name="grad_wp")
+        Assert_Equal(info,0)
+        call particles_dcop_apply(Particles,wp_id,grad_wp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id)
+        grad_wp => Get_wpv(Particles,grad_wp_id)
+        xp => Get_xp(Particles)
+        linf = 0._mk
+        allocate(exact_vec(nterms),err_vec(nterms))
+        err_vec = 0._mk
+
+err_x_id=0
+call particles_allocate_wps(Particles,err_x_id,info,name="error_grad_x")
+err_y_id=0
+call particles_allocate_wps(Particles,err_y_id,info,name="error_grad_y")
+!err_z_id=0
+!call particles_allocate_wps(Particles,err_z_id,info,name="error_grad_z")
+err_x => Get_wps(Particles,err_x_id)
+err_y => Get_wps(Particles,err_y_id)
+!err_z => Get_wps(Particles,err_z_id)
+        DO ip=1,Particles%Npart
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact_vec(i) = coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            DO i=1,nterms 
+                err_vec(i) = MAX(err_vec(i),abs(grad_wp(i,ip) - exact_vec(i)))
+            ENDDO
+
+            err_x(ip) = err_vec(1)
+            err_y(ip) = err_vec(2)
+            !err_z(ip) = err_vec(3)
+            linf = MAX(linf,MAXVAL(abs(exact_vec)))
+        ENDDO
+err_x => Set_wps(Particles,err_x_id)
+err_y => Set_wps(Particles,err_y_id)
+!err_z => Set_wps(Particles,err_z_id)
+#ifdef __MPI
+        call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,comm,info)
+#endif
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        grad_wp => Set_wpv(Particles,grad_wp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+call ppm_vtk_particle_cloud('grad',Particles,info)
+
+Assert_Equal(info,0)
+write(*,*) 'error is ', MAXVAL(err_vec)/linf
+        Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
+        deallocate(degree,coeffs,order,exact_vec,err_vec)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+    end test
+
+    test compute_operator2
+        ! test how the operators behave for different parameters
+
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
+        allocate(disp(ndim,Particles%Npart))
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles,disp,info)
+        call particles_apply_bc(Particles,topoid,info)
+        Assert_Equal(info,0)
+        Particles%cutoff = Particles%h_avg * 3.3_mk
+        call particles_mapping_global(Particles,topoid,info)
+        wp_id=0
+        call particles_allocate_wps(Particles,wp_id,info,name='wp')
+        wp => Get_wps(Particles,wp_id)
+        xp => Get_xp(Particles)
+        FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
+        wp => Set_wps(Particles,wp_id)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_neighlists(Particles,topoid,info)
+        dwp_id=0
+        call particles_allocate_wps(Particles,dwp_id,info,name='dwp')
+
+
+!check Laplacian
+        nterms=ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/2,0,   0,2/)
+        else 
+               degree =  (/2,0,0, 0,2,0, 0,0,2/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            nterms,info,name="laplacian")
+
+        c_array = (/0.3_mk, 0.5_mk, 0.7_mk, 0.9_mk, 1._mk, 1.2_mk, 1.4_mk, 1.5_mk/)
+        DO ic = 1,8
+            min_sv = HUGE(1._mk)
+            call particles_dcop_compute(Particles,eta_id,info,c=c_array(ic),min_sv=min_sv)
+            Assert_Equal(info,0)
+            Assert_True(min_sv.GT.0.001_mk)
+
+            call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+            Assert_Equal(info,0)
+
+            wp => Get_wps(Particles,wp_id)
+            dwp => Get_wps(Particles,dwp_id)
+            xp => Get_xp(Particles)
+            err = 0._mk; linf = 0._mk
+            DO ip=1,Particles%Npart
+                exact = 0._mk
+                DO i=1,nterms
+                    coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                    dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                    exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+                ENDDO
+                err = MAX(err,abs(dwp(ip) - exact)); linf = MAX(linf,abs(exact))
+            ENDDO
+            wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+            dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+            xp => Set_xp(Particles,read_only=.TRUE.)
+            write(*,*) 'error is ', err/linf, ' Min sing. value = ',min_sv
+            Assert_True(err/linf.LT.0.1)
+        enddo
+        deallocate(degree,coeffs,order)
+
+        call particles_dcop_free(Particles,eta_id,info)
+
+!check vector-valued operators (gradient)
+        nterms= ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/1,0,   0,1/)
+        else 
+               degree =  (/1,0,0, 0,1,0, 0,0,1/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
+                info,name="gradient",vector=.true.)
+        Assert_Equal(info,0)
+        call particles_dcop_compute(Particles,eta_id,info,c=1.4_mk)
+        Assert_Equal(info,0)
+
 
         grad_wp_id=0
         call particles_allocate_wpv(Particles,grad_wp_id,ppm_dim,info,name="grad_wp")
