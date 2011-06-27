@@ -172,7 +172,7 @@ test_suite ppm_module_interp_p2m
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
         
-        call ppm_topo_get_meshinfo(topoid,meshid,istart,ndata,maxndata,&
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
                         isublist,nsublist,info)
 
 
