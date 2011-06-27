@@ -73,11 +73,17 @@
      !TODO: duplicate everything such that it works also
      ! for single precision
 
+    !----------------------------------------------------------------------
+    ! Private variables for the module
+    !----------------------------------------------------------------------
+
      PRIVATE
 
      INTEGER, PARAMETER :: prec = ppm_kind_double
 
-     !private:: define_sop_args
+
+     INTEGER , PRIVATE, DIMENSION(3)    :: ldc
+     !!! Number of elements in all dimensions for allocation
 
      !====================================================================!
      ! Variable describing the 'state' of the system
@@ -95,8 +101,6 @@
      !====================================================================!
      ! random numbers
      !====================================================================!
-     INTEGER                               :: seedsize
-     INTEGER,  DIMENSION(:), ALLOCATABLE   :: seed
      REAL(prec), DIMENSION(:), ALLOCATABLE :: randnb
      INTEGER                               :: randnb_i
      !====================================================================!
@@ -105,7 +109,8 @@
      REAL(prec),PARAMETER :: PI = ACOS(-1._prec)
 
 
-     PUBLIC sop_adapt_particles, sop_init_opts
+     PUBLIC sop_adapt_particles, sop_init_opts, sop_init_stats
+
 
      CONTAINS
 

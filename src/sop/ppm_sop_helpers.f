@@ -41,7 +41,38 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%nneigh_theo = 24
     opts%nneigh_critical = 20
     opts%nneigh_toobig = 2000
+    opts%check_dcops = .FALSE.
 
     9999 CONTINUE
 
 END SUBROUTINE sop_init_opts
+
+
+SUBROUTINE sop_init_stats(stats,info)
+    !!! constructor for sop statistics derived type
+    USE ppm_module_error
+
+    IMPLICIT NONE
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER  :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER  :: MK = ppm_kind_double
+#endif
+    TYPE(sop_t_stats), POINTER, INTENT(INOUT) :: stats
+    INTEGER                  , INTENT(  OUT) :: info
+
+    info = 0
+    ALLOCATE(stats,STAT=info)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,'sop_init_stats',       &
+            &                  'allocation error',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    stats%nb_grad_desc_steps = 0
+    stats%min_sv = HUGE(1._mk)
+
+    9999 CONTINUE
+
+END SUBROUTINE sop_init_stats

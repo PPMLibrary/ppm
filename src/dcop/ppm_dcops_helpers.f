@@ -1023,3 +1023,275 @@ END SUBROUTINE solveLSE_ns
 END SUBROUTINE solveLSE_nd
 #endif
 
+#if    __KIND == __SINGLE_PRECISION
+SUBROUTINE ppm_matrix_svd_s(Z,n,m,info,min_sv)
+#elif  __KIND == __DOUBLE_PRECISION
+SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
+#endif
+    USE ppm_module_write
+    USE ppm_module_data, ONLY: ppm_rank
+#ifdef __MKL
+    USE mkl95_lapack
+    USE mkl95_blas
+#endif
+
+    IMPLICIT NONE
+
+#if    __KIND == __SINGLE_PRECISION 
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif  __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+    ! arguments
+    REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
+    INTEGER,                          INTENT(IN   ) :: n
+    INTEGER,                          INTENT(IN   ) :: m
+    INTEGER,                          INTENT(  OUT) :: info
+
+    ! optional argument
+    REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
+    ! local variables
+    INTEGER                               :: j
+    CHARACTER(LEN = ppm_char)             :: cbuf
+    CHARACTER(LEN = ppm_char)             :: caller = 'ppm_matrix_svd'
+    REAL(KIND(1.D0))                      :: t0
+
+    REAL(MK), DIMENSION (:), POINTER      :: offdiag, diag
+    INTEGER                               :: lwork, mm,nnn
+    REAL(MK), DIMENSION (:), POINTER      :: work
+    REAL(MK), DIMENSION (:,:), POINTER    :: tauq,taup
+
+
+    mm = m
+    nnn = n
+    ALLOCATE(offdiag(nnn-1),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    ALLOCATE(diag(nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    
+    ALLOCATE(taup(mm,nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    ALLOCATE(tauq(mm,nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    lwork= -1
+    ALLOCATE(work(1),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !get the size for lwork
+#ifdef __MKL
+    CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    lwork= work(1)
+    DEALLOCATE(work)
+    ALLOCATE(work(lwork),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !decomposition
+#ifdef __MKL
+    CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !get singular values
+    CALL bdsqr(diag,offdiag)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    DEALLOCATE(taup)
+    DEALLOCATE(tauq)
+    DEALLOCATE(work)
+
+    !!----------------------------------------------------------------------
+    !! Raise an error if the singular value is below a threshold
+    !!----------------------------------------------------------------------
+
+    IF (MINVAL(diag) .LT. 0.001_mk) THEN
+        WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
+        CALL ppm_write(ppm_rank,caller,cbuf, info)
+        info = -1
+        GOTO 9999
+    ENDIF
+    IF (PRESENT(min_sv)) min_sv=MINVAL(diag)
+    
+    9999 CONTINUE ! jump here upon error
+
+
+#if    __KIND == __SINGLE_PRECISION
+END SUBROUTINE ppm_matrix_svd_s
+#elif  __KIND == __DOUBLE_PRECISION
+END SUBROUTINE ppm_matrix_svd_d
+#endif
+
+
+!#if    __KIND == __SINGLE_PRECISION
+!SUBROUTINE ppm_dcop_check_vandermonde_s(xp,ncoeff,npoints,info,min_sv)
+!#elif  __KIND == __DOUBLE_PRECISION
+!SUBROUTINE ppm_dcop_check_vandermonde_d(xp,ncoeff,npoints,info,min_sv)
+!#endif
+    !USE ppm_module_write
+    !USE ppm_module_data, ONLY: ppm_rank
+!#ifdef __MKL
+    !USE mkl95_lapack
+    !USE mkl95_blas
+!#endif
+
+    !IMPLICIT NONE
+
+!#if    __KIND == __SINGLE_PRECISION 
+    !INTEGER, PARAMETER :: MK = ppm_kind_single
+!#elif  __KIND == __DOUBLE_PRECISION
+    !INTEGER, PARAMETER :: MK = ppm_kind_double
+!#endif
+    !! arguments
+    !REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
+    !INTEGER,                          INTENT(IN   ) :: ncoeff
+    !INTEGER,                          INTENT(IN   ) :: npoints
+    !INTEGER,                          INTENT(  OUT) :: info
+
+    !! optional argument
+    !REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
+    !! local variables
+    !INTEGER                               :: j
+    !CHARACTER(LEN = ppm_char)             :: cbuf
+    !CHARACTER(LEN = ppm_char)             :: caller = 'ppm_dcop_check_vandermonde'
+    !REAL(KIND(1.D0))                      :: t0
+
+    !REAL(MK), DIMENSION (:), POINTER      :: offdiag, diag
+    !INTEGER                               :: lwork, mm,nnn
+    !REAL(MK), DIMENSION (:), POINTER      :: work
+    !REAL(MK), DIMENSION (:,:), POINTER    :: tauq,taup
+
+
+    !mm = npoints
+    !nnn = ncoeff
+    !ALLOCATE(offdiag(nnn-1),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !ALLOCATE(diag(nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    
+    !ALLOCATE(taup(mm,nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !ALLOCATE(tauq(mm,nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !lwork= -1
+    !ALLOCATE(work(1),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!get the size for lwork
+!#ifdef __MKL
+    !CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+!#endif
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !lwork= work(1)
+    !DEALLOCATE(work)
+    !ALLOCATE(work(lwork),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!decomposition
+!#ifdef __MKL
+    !CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+!#endif
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!get singular values
+    !CALL bdsqr(diag,offdiag)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !DEALLOCATE(taup)
+    !DEALLOCATE(tauq)
+    !DEALLOCATE(work)
+
+    !!!----------------------------------------------------------------------
+    !!! Raise an error if the singular value is below a threshold
+    !!!----------------------------------------------------------------------
+
+    !IF (MINVAL(diag) .LT. 0.001_mk) THEN
+        !WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
+        !CALL ppm_write(ppm_rank,caller,cbuf, info)
+        !info = -1
+        !GOTO 9999
+    !ENDIF
+    !IF (PRESENT(min_sv)) min_sv=MINVAL(diag)
+    
+    !9999 CONTINUE ! jump here upon error
+
+
+!#if    __KIND == __SINGLE_PRECISION
+!END SUBROUTINE ppm_dcop_check_vandermonde_s
+!#elif  __KIND == __DOUBLE_PRECISION
+!END SUBROUTINE ppm_dcop_check_vandermonde_d
+!#endif
