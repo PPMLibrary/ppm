@@ -22,8 +22,15 @@ INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
 INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
 #endif
 
+
+    !----------------------------------------------------------------------
+    ! Global variables and parameters
+    !----------------------------------------------------------------------
     INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
     INTEGER, PARAMETER :: ppm_param_part_init_random = 2
+
+    INTEGER                               :: ppm_particles_seedsize
+    INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 
     !----------------------------------------------------------------------
     ! Private variables for the module
