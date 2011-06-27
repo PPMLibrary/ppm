@@ -1127,7 +1127,9 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
     ENDIF
 
     !get singular values
+#ifdef __MKL
     CALL bdsqr(diag,offdiag)
+#endif
     IF (info.NE.0) THEN
         CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
         info=-1
