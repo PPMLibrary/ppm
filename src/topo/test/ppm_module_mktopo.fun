@@ -1,7 +1,6 @@
 test_suite ppm_module_mktopo
 
 
-
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -126,6 +125,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               cutoff,cost,info)
+        
         Assert_Equal(info,0)
 
     end test

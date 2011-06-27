@@ -42,9 +42,13 @@
             MODULE PROCEDURE ppm_topo_get
          END INTERFACE
          
-         INTERFACE ppm_get_decomp
-            MODULE PROCEDURE ppm_get_decomp_s
-            MODULE PROCEDURE ppm_get_decomp_d
+         INTERFACE ppm_topo_get_decomp
+            MODULE PROCEDURE ppm_topo_get_decomp_s
+            MODULE PROCEDURE ppm_topo_get_decomp_d
+         END INTERFACE
+         
+         INTERFACE ppm_topo_get_meshinfo
+            MODULE PROCEDURE ppm_topo_get_meshinfo
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -55,11 +59,13 @@
 #include "topo/ppm_topo_get.f"
 
 #define __KIND __SINGLE_PRECISION
-#include "topo/ppm_get_decomp.f"
+#include "topo/ppm_topo_get_decomp.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
-#include "topo/ppm_get_decomp.f"
+#include "topo/ppm_topo_get_decomp.f"
 #undef __KIND
+
+#include "topo/ppm_topo_get_meshinfo.f"
 
       END MODULE ppm_module_topo_get

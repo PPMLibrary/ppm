@@ -237,4 +237,56 @@ real(mk)                         :: t0,t1,t2,t3
         
     end test
 
+    test ghost_get
+        ! test ghost get and how it treats pbc
+        ! Ticket #32
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+        integer                         :: npart = 1
+        integer                         :: newnpart
+        integer                         :: mpart
+        real(mk),dimension(:,:),pointer :: p
+        real(mk), parameter             :: gl = 0.1_mk
+    
+        allocate(p(ndim,npart))
+        p(1,1) = 0.05_mk
+        p(2,1) = 0.05_mk
+        bcdef(1:6) = ppm_param_bcdef_periodic
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        !decomp = ppm_param_decomp_xpencil
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+        call ppm_topo_check(topoid,p,npart,ok,info)
+
+        assert_true(ok)
+        call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        print *, npart,mpart
+        assert_true(ok)
+        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+
+
+    end test
+
 end test_suite

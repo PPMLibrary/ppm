@@ -108,10 +108,10 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       ! Prepare format strings and file names for I/O
       !------------------------------------------------------------------------
       iunit = 2342
-      write(sfmt,'(A,I1,A,I1,A)') '(',ppm_dim*2,'F12.8,I4,',ppm_dim*2,'I2)'
-      write(pfmt,'(A,I1,A)') '(',ppm_dim,'E18.9,I4)'
-      write(sfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.sub'
-      write(pfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.dat'
+      WRITE(sfmt,'(A,I1,A,I1,A)') '(',ppm_dim*2,'F12.8,I4,',ppm_dim*2,'I2)'
+      WRITE(pfmt,'(A,I1,A)') '(',ppm_dim,'E18.9,I4)'
+      WRITE(sfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.sub'
+      WRITE(pfname,'(A,I5.5,A)') 'ppm_dbg_',step,'.dat'
 
 
       !------------------------------------------------------------------------
@@ -123,16 +123,16 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       IF (ppm_rank.eq.0) THEN
 #endif
       CALL ppm_topo_get(topoid,topo,info)
-      open(iunit,file=sfname)
+      OPEN(iunit,file=sfname)
    
-      write(iunit,'(I1)') ppm_dim
-      write(iunit,'(F12.8)') ghostlayer
+      WRITE(iunit,'(I1)') ppm_dim
+      WRITE(iunit,'(F12.8)') ghostlayer
       DO i=1,topo%nsubs
-          write(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i),&
+          WRITE(iunit,sfmt) topo%min_subd(:,i),topo%max_subd(:,i),&
  &                          topo%sub2proc(i),&
  &                          topo%subs_bc(:,i)
       ENDDO
-      close(iunit)
+      CLOSE(iunit)
 #ifdef __MPI
       ENDIF
 #endif
@@ -220,27 +220,27 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
               open(iunit,file=pfname,access='append')
               DO iproc=1,ppm_nproc
                   DO i=1,allnp(iproc)
-                      write(iunit,pfmt) allxp(:,i,iproc),colortag
+                      WRITE(iunit,pfmt) allxp(:,i,iproc),colortag
                   ENDDO
                   DO i=allnp(iproc)+1,allmp(iproc)
-                      write(iunit,pfmt) allxp(:,i,iproc),-1
+                      WRITE(iunit,pfmt) allxp(:,i,iproc),-1
                   ENDDO
               ENDDO
-              close(iunit)
+              CLOSE(iunit)
               CALL ppm_alloc(allxp,lda,ppm_param_dealloc,info)
               CALL ppm_alloc(buf,lda,ppm_param_dealloc,info)
           ELSE
               CALL mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
           ENDIF
 #else  
-          open(iunit,file=pfname,access='append')
+          OPEN(iunit,file=pfname,access='append')
           DO i=1,np
-              write(iunit,pfmt) xp(:,i),colortag
+              WRITE(iunit,pfmt) xp(:,i),colortag
           ENDDO
           DO i=np+1,mpart
-              write(iunit,pfmt) xp(:,i),-1
+              WRITE(iunit,pfmt) xp(:,i),-1
           ENDDO
-          close(iunit)
+          CLOSE(iunit)
 #endif
       ENDIF
       !-------------------------------------------------------------------------
