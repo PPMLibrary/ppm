@@ -4401,6 +4401,9 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
 
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
     IF (.NOT. ASSOCIATED(Particles%ops)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
@@ -4435,6 +4438,79 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     ELSE
         vector_input = .FALSE.
     ENDIF
+
+    IF (Particles%ops%desc(eta_id)%interp) THEN
+        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to specify which set of particles &
+                &   (particles_cross) should be used for interpolation',&
+                & __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT. (Particles%neighlists_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please compute xset neighbor lists first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF(vector_input) THEN
+            IF (.NOT.Particles%Particles_cross%wpv(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%Particles_cross%wpv(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            IF (.NOT.Particles%Particles_cross%wps(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%Particles_cross%wps(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+
+    ELSE
+
+        IF(vector_input) THEN
+            IF (.NOT.Particles%wpv(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%wpv(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            IF (.NOT.Particles%wps(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%wps(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDIF
+
+    !allocate output field if needed
     IF (to_id.EQ.0) THEN
         IF (vector_output) THEN
             CALL particles_allocate_wpv(Particles,to_id,&
@@ -4474,21 +4550,6 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
 
 
     IF (Particles%ops%desc(eta_id)%interp) THEN
-        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Need to specify which set of particles &
-                &   (particles_cross) should be used for interpolation',&
-                & __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (.NOT. (Particles%neighlists_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Please compute xset neighbor lists first',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
         nvlist => Particles%nvlist_cross
         vlist => Particles%vlist_cross
         IF (vector_output) THEN
@@ -4512,7 +4573,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                     ENDDO
                 ENDDO
                 wps2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
-            EnDIF
+            ENDIF
         ELSE
             wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart
