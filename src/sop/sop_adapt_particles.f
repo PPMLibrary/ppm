@@ -566,16 +566,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Copy particle positions, field values and D
     !-------------------------------------------------------------------------!
-    !destroy DC operators
-    IF (ASSOCIATED(Particles%ops)) THEN
-        CALL particles_dcop_deallocate(Particles,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,caller,   &
-                &    'particles_dcop_deallocate failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
+    !IF (ASSOCIATED(Particles%ops)) THEN
+        !CALL particles_dcop_deallocate(Particles,info)
+        !IF (info .NE. 0) THEN
+            !info = ppm_error_error
+            !CALL ppm_error(ppm_err_dealloc,caller,   &
+                !&    'particles_dcop_deallocate failed',__LINE__,info)
+            !GOTO 9999
+        !ENDIF
+    !ENDIF
 
     Particles_old => Particles
     Particles => NULL()
@@ -594,6 +593,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     xp => Particles%xp
     Particles = Particles_old
     Particles%xp => xp
+    !move DC operators from old to new particles
+    ! (only move their definitions
+    Particles%ops => Particles_old%ops
+    Particles_old%ops => NULL()
+    IF (ASSOCIATED(Particles%ops)) THEN
+        DO i=1,Particles%ops%max_opsid
+            Particles%ops%desc(i)%is_computed = .FALSE.
+        ENDDO
+    ENDIF
 
     ! Set all arrays to unmapped
     Particles%wpi => NULL()
