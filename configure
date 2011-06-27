@@ -2253,29 +2253,11 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
 # Reset existing preprocessing flags
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 #touch ./src/ppm_define.h
 #rm ./src/ppm_define.h
 #touch ./src/ppm_define.h
 CPPFLAGS=""
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-touch ./$srcdir/ppm_define.h
-rm ./$srcdir/ppm_define.h
-touch ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 
 
 # if MPI is enabled try grabbing those compiler wrappers first
@@ -5805,25 +5787,9 @@ rm -f core *.core core.conftest.* gmon.out bb.out conftest$ac_exeext \
 fi
 
 if test "x${use_f03}" = xyes; then
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
     CPPFLAGS="$CPPFLAGS -D__F2003"
 
 #    echo "#define __F2003" >> ./src/ppm_define.h
-=======
-    echo "#define __F2003" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
-    CPPFLAGS="$CPPFLAGS -D__F2003"
-
-#    echo "#define __F2003" >> ./src/ppm_define.h
->>>>>>> updated build system
-=======
-    CPPFLAGS="$CPPFLAGS -D__F2003"
-
-#    echo "#define __F2003" >> ./src/ppm_define.h
->>>>>>> trying to combine all commits(2)
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
@@ -5842,22 +5808,8 @@ $as_echo_n "checking if your MPI is usable... " >&6; }
                      end program conftest_prog
 _ACEOF
 if ac_fn_fc_try_link "$LINENO"; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   CPPFLAGS="$CPPFLAGS -D__MPI"
 
-=======
-  echo "#define __MPI" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
-  CPPFLAGS="$CPPFLAGS -D__MPI"
-
->>>>>>> updated build system
-=======
-  CPPFLAGS="$CPPFLAGS -D__MPI"
-
->>>>>>> trying to combine all commits(2)
 else
   #                     [echo "#define __MPI" >> ./src/ppm_define.h],
                      as_fn_error $? "Cannot build PPM with MPI support like this" "$LINENO" 5
@@ -5970,227 +5922,83 @@ if test "x${have_metis}" = xno; then
   echo "------------------------------------------"
   (exit 1); exit 1;
 else
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
   CPPFLAGS="$CPPFLAGS -D__METIS"
 
 #  echo "#define __METIS" >> ./src/ppm_define.h
-=======
-  echo "#define __METIS" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
-  CPPFLAGS="$CPPFLAGS -D__METIS"
-
-#  echo "#define __METIS" >> ./src/ppm_define.h
->>>>>>> updated build system
-=======
-  CPPFLAGS="$CPPFLAGS -D__METIS"
-
-#  echo "#define __METIS" >> ./src/ppm_define.h
->>>>>>> trying to combine all commits(2)
 fi
 
 # Check to see if linux was enabled with -enable-linux
 # Check whether --enable-linux was given.
 if test "${enable_linux+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_linux; CPPFLAGS="$CPPFLAGS -D__Linux"
 
 #  [echo "#define __Linux" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_linux; echo "#define __Linux" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check to see if etime was enabled with -enable-etime
 # Check whether --enable-etime was given.
 if test "${enable_etime+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_etime; CPPFLAGS="$CPPFLAGS -D__ETIME"
 
 #  [echo "#define __ETIME" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_etime; echo "#define __ETIME" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check to see if vector was enabled with -enable-vector
 # Check whether --enable-vector was given.
 if test "${enable_vector+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_vector; CPPFLAGS="$CPPFLAGS -D__VECTOR"
 
 #  [echo "#define __VECTOR" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_vector; echo "#define __VECTOR" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check whether --enable-mathkeisan was given.
 if test "${enable_mathkeisan+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_mathkeisan; CPPFLAGS="$CPPFLAGS -D__MATHKEISAN"
 
 #  [echo "#define __MATHKEISAN" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_mathkeisan; echo "#define __MATHKEISAN" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check whether --enable-sxf90 was given.
 if test "${enable_sxf90+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_sxf90; CPPFLAGS="$CPPFLAGS -D__SXF90"
 
 #  [echo "#define __SXF90" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_sxf90; echo "#define __SXF90" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check whether --enable-crayfishpack was given.
 if test "${enable_crayfishpack+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_crayfishpack; CPPFLAGS="$CPPFLAGS -D__CRAYFISHPACK"
 
 #  [echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_crayfishpack; echo "#define __CRAYFISHPACK" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check whether --enable-hypre was given.
 if test "${enable_hypre+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_hypre; CPPFLAGS="$CPPFLAGS -D__HYPRE"
 
 #  [echo "#define __HYPRE" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_hypre; echo "#define __HYPRE" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
 # Check whether --enable-no-microinstr was given.
 if test "${enable_no_microinstr+set}" = set; then :
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
   enableval=$enable_no_microinstr; CPPFLAGS="$CPPFLAGS -D__NOMICROINSTRUCTIONS"
 
 #  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h]
 
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-  enableval=$enable_no_microinstr; echo "#define __NOMICROINSTRUCTIONS" >> ./$srcdir/ppm_define.h
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
 fi
 
 
@@ -6220,27 +6028,10 @@ if test "${enable_debug+set}" = set; then :
 fi
 
 if test "x${debug_compile}" = xyes; then
-<<<<<<< HEAD
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
     CPPFLAGS="$CPPFLAGS -D__DEBUG"
 
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
-<<<<<<< HEAD
-<<<<<<< HEAD
-=======
-    echo "#define __DEBUG" >> ./$srcdir/ppm_define.h
-    if test "x${vendor}" == xintel; then
->>>>>>> minor
-=======
->>>>>>> updated build system
-=======
->>>>>>> trying to combine all commits(2)
         DEBUG="-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"
 
     elif test "x${vendor}" = xgnu; then
