@@ -1981,6 +1981,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     REAL(KIND(1.D0))                          :: t0
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
+    LOGICAL                                   :: skip_send
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -1988,12 +1989,16 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg=debug
     skip_ghost_get = .FALSE.
+    skip_send = .TRUE.
+    !we must not call ppm_map_part_send unless ppm_map_part_push (or ghost_get)
+    ! has been called (in which case, skip_send is set to FALSE)
+
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
@@ -2002,14 +2007,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF (.NOT.Particles%ontopology .OR. Particles%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Do a partial/global mapping before doing a ghost mapping',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.Particles%areinside) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
         GOTO 9999
@@ -2061,10 +2066,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
+                CALL ppm_error(ppm_err_sub_failed,caller,&
                     'ppm_map_part_ghost_get failed',__LINE__,info)
                 GOTO 9999
             ENDIF
+            skip_send = .FALSE.
         ENDIF
 
         !Update the ghost for the properties if
@@ -2082,10 +2088,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpi ',prop_id,&
                             TRIM(Particles%wpi(prop_id)%name)
@@ -2109,10 +2116,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wps ',prop_id,&
                         TRIM(Particles%wps(prop_id)%name)
@@ -2136,10 +2144,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%wpv(prop_id)%lda, Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpv ',prop_id,&
                             TRIM(Particles%wpv(prop_id)%name)
@@ -2153,92 +2162,95 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
         ENDDO
 
-        CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(999,caller,&
-                'ppm_map_part_send failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        DO prop_id = Particles%max_wpvid,1,-1
-            IF(Particles%wpv(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wpv(prop_id)%has_ghosts) THEN
-                    IF(Particles%wpv(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wpv ',prop_id,&
-                            TRIM(Particles%wpv(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
-                            Particles%wpv(prop_id)%lda,Particles%Npart, &
-                            Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wpv ',prop_id,&
-                                TRIM(Particles%wpv(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wpv(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-        DO prop_id = Particles%max_wpsid,1,-1
-            IF(Particles%wps(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wps(prop_id)%has_ghosts) THEN
-                    IF(Particles%wps(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wps ',prop_id,&
-                            TRIM(Particles%wps(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
-                            Particles%Npart,Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wps ',prop_id,&
-                                TRIM(Particles%wps(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wps(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-        DO prop_id = Particles%max_wpiid,1,-1
-            IF(Particles%wpi(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wpi(prop_id)%has_ghosts) THEN
-                    IF(Particles%wpi(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wpi ',prop_id,&
-                            TRIM(Particles%wpi(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
-                            Particles%Npart,Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wpi ',prop_id,&
-                                TRIM(Particles%wpi(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wpi(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-
-        IF (.NOT.skip_ghost_get) THEN
-            CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
-                Particles%Mpart,info)
+        IF (.NOT. skip_send) THEN
+            CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
             IF (info .NE. 0) THEN
+                write(*,*) 'ppm_map_part_send failed with info = ',info
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
-                    'ppm_map_part_pop failed',__LINE__,info)
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'ppm_map_part_send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
-        ENDIF
+
+            DO prop_id = Particles%max_wpvid,1,-1
+                IF(Particles%wpv(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wpv(prop_id)%has_ghosts) THEN
+                        IF(Particles%wpv(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wpv ',prop_id,&
+                                TRIM(Particles%wpv(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
+                                Particles%wpv(prop_id)%lda,Particles%Npart, &
+                                Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wpv ',prop_id,&
+                                    TRIM(Particles%wpv(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wpv(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+            DO prop_id = Particles%max_wpsid,1,-1
+                IF(Particles%wps(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wps(prop_id)%has_ghosts) THEN
+                        IF(Particles%wps(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wps ',prop_id,&
+                                TRIM(Particles%wps(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
+                                Particles%Npart,Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wps ',prop_id,&
+                                    TRIM(Particles%wps(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wps(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+            DO prop_id = Particles%max_wpiid,1,-1
+                IF(Particles%wpi(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wpi(prop_id)%has_ghosts) THEN
+                        IF(Particles%wpi(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wpi ',prop_id,&
+                                TRIM(Particles%wpi(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
+                                Particles%Npart,Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wpi ',prop_id,&
+                                    TRIM(Particles%wpi(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wpi(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+
+            IF (.NOT.skip_ghost_get) THEN
+                CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
+                    Particles%Mpart,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'ppm_map_part_pop failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDIF !.NOT.skip_send
     ENDIF
 
 
