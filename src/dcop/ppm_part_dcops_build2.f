@@ -58,6 +58,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     REAL(MK)                              :: nn_scaled
     REAL(MK), DIMENSION(:,:),POINTER      :: b=>NULL(),b_0=>NULL()
     REAL(MK), DIMENSION(:,:),POINTER      :: Z=>NULL()
+    REAL(MK), DIMENSION(:,:),POINTER      :: Z_copy=>NULL()
     REAL(MK),DIMENSION(:)  ,ALLOCATABLE   :: d2_one2all
     REAL(MK),DIMENSION(:,:),ALLOCATABLE   :: dx
     INTEGER, DIMENSION(:,:),ALLOCATABLE   :: alpha,gamma
@@ -266,6 +267,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
+#ifdef __MKL
+    !only used to compute the SVD, mainly for debugging.
+    IF(PRESENT(min_sv)) THEN
+        ALLOCATE(Z_copy(ncoeff,ncoeff))
+    ENDIF
+#endif
 
     vector =  Particles%ops%desc(eta_id)%vector
     !if true, then each term of the differential opearator is stored as one
@@ -400,7 +407,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
 
 #ifdef __MKL
         IF (PRESENT(min_sv)) THEN
-            CALL ppm_matrix_svd(Z,ncoeff,ncoeff,info,min_sv_p)
+            Z_copy = Z
+            CALL ppm_matrix_svd(Z_copy,ncoeff,ncoeff,info,min_sv_p)
             IF (info .NE. 0) THEN
                 IF (ppm_dim .EQ. 2 ) THEN
                     myformat = TRIM(ADJUSTL('(2(E30.22))'))
@@ -552,15 +560,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     !!---------------------------------------------------------------------!
     !! Finalize
     !!---------------------------------------------------------------------!
-    DEALLOCATE(Z,STAT=info)
-    DEALLOCATE(b,STAT=info)
-    DEALLOCATE(b_0,STAT=info)
-    DEALLOCATE(d2_one2all,STAT=info)
-    DEALLOCATE(dx,STAT=info)
-    DEALLOCATE(gamma,STAT=info)
-    DEALLOCATE(alpha,STAT=info)
-    DEALLOCATE(sum_degree,STAT=info)
-    DEALLOCATE(byh0powerbeta,STAT=info)
+    DEALLOCATE(Z,b,b_0,d2_one2all,dx,gamma,alpha,sum_degree,byh0powerbeta)
+#ifdef __MKL
+    IF(PRESENT(min_sv)) THEN
+        DEALLOCATE(Z_copy)
+    ENDIF
+#endif
 
     CALL substop(caller,t0,info)
 
