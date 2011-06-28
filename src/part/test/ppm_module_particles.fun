@@ -324,12 +324,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call random_number(disp)
         Assert_True(Particles%cutoff>0._MK)
         
-        xp => get_xp(Particles)
-        Assert_True(associated(xp))
-        FORALL(ip=1:Particles%Npart) &
-            xp(1:ndim,ip) = xp(1:ndim,ip) + (disp(1:ndim,ip)-0.5_mk)*Particles%cutoff
-        xp => set_xp(Particles,read_only=.true.)
-        Assert_False(associated(xp))
+        disp = (disp-0.5_mk)*Particles%cutoff
+        call particles_move(Particles,disp,info)
+        Assert_Equal(info,0)
         call particles_updated_positions(Particles,info)
         Assert_Equal(info,0)
 
@@ -349,6 +346,9 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call ppm_topo_check(Particles%active_topoid,&
             Particles%xp,Particles%Npart,ok,info)
         Assert_True(ok)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        Assert_Equal(info,0)
+!check that nothing wrong happens if there is nothing to do
         call particles_mapping_ghosts(Particles,topoid,info)
         Assert_Equal(info,0)
 
