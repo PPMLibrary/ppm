@@ -8,7 +8,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_particles
 
-    USE ppm_module_user
     IMPLICIT NONE
 #ifdef __MPI
     INCLUDE 'mpif.h'

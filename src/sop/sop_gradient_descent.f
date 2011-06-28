@@ -683,7 +683,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
 
 #if debug_verbosity > 0
-    WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
+    WRITE(cbuf,'(2(A,E11.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
         CALL ppm_write(ppm_rank,caller,cbuf,info)
@@ -1683,7 +1683,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
 
 #if debug_verbosity > 0
-    WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
+    WRITE(cbuf,'(2(A,E11.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
         CALL ppm_write(ppm_rank,caller,cbuf,info)

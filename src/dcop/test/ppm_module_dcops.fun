@@ -19,7 +19,7 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 4000   ! 11000 (for 3d), 4000 (for 2d)
+integer                         :: np_global = 1000   ! 11000 (for 3d), 4000 (for 2d)
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -373,11 +373,13 @@ write(*,*) 'error is ', err/linf
         wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
         dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
         xp => Set_xp(Particles,read_only=.TRUE.)
-write(*,*) 'error is ', err/linf
+        write(*,*) 'error is ', err/linf
         Assert_True(err/linf.LT.0.1)
         deallocate(degree,coeffs,order)
         call particles_dcop_free(Particles,eta_id,info)
         Assert_Equal(info,0)
+
+        write(*,*) 'now checking vector-valued operators'
 
 !check vector-valued operators (gradient)
         nterms= ndim
@@ -521,7 +523,8 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
             dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
             xp => Set_xp(Particles,read_only=.TRUE.)
             write(*,*) 'error is ', err/linf, ' Min sing. value = ',min_sv
-            Assert_True(err/linf.LT.0.1)
+            Assert_True(err/linf.LT.0.2)
+
         enddo
         deallocate(degree,coeffs,order)
 

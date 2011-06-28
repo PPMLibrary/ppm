@@ -129,7 +129,8 @@ MODULE ppm_module_dcops
 !-------------------------------------------------------------------------
 PUBLIC :: solveLSE,solveLSE_2,solveLSE_n, &
         & ppm_dcops_2d,ppm_dcops_3d,      &
-        & ppm_part_dcops_2d,ppm_part_dcops_3d
+        & ppm_part_dcops_2d,ppm_part_dcops_3d, &
+        & particles_dcop_compute
 
 CONTAINS
 

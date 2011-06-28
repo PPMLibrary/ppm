@@ -2915,7 +2915,7 @@ in a periodic box.
 
 \begin_layout Standard
 \begin_inset listings
-lstparams "breaklines=true,language=Fortran"
+lstparams "breaklines=true,language=Fortran,numbers=left"
 inline false
 status open
 
