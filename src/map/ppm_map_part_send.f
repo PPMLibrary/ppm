@@ -52,7 +52,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif 
@@ -95,9 +94,10 @@
 
       ! skip if the buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
+        info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
-            CALL ppm_write(ppm_rank,'ppm_map_part_send',  &
-     &          'Buffer is empty: skipping send!',info)
+            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_part_send',    &
+     &          'Buffer is empty: skipping send!',__LINE__,info)
         ENDIF
         GOTO 9999
       ENDIF

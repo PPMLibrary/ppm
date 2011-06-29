@@ -28,7 +28,7 @@
       !-------------------------------------------------------------------------
 program ppm_test_interp_m2p
 
-    use ppm_module_user
+    use ppm_module_core
     use ppm_module_typedef
     use ppm_module_mktopo
     use ppm_module_topo_get

@@ -32,12 +32,12 @@
       !     Test Case   :  ghost mappings, pushs, pops and multi-push/pops 
       !-------------------------------------------------------------------------
 
-      use ppm_module_typedef
-      use ppm_module_mktopo
-      use ppm_module_topo_get
-      use ppm_module_init
-      use ppm_module_finalize
-      use ppm_module_user
+use ppm_module_typedef
+use ppm_module_mktopo
+use ppm_module_topo_get
+use ppm_module_init
+use ppm_module_finalize
+use ppm_module_core
 
       implicit none
       #include "../../ppm_define.h"

@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :                ppm_module_user_util
+      !  Module       :                ppm_module_core_util
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      MODULE ppm_module_user_util
+      MODULE ppm_module_core_util
       !!! This module contains all user-callable utility routines.
          !----------------------------------------------------------------------
          !  PPM modules
@@ -39,4 +39,4 @@
          USE ppm_module_time
          USE ppm_module_util_dbg
 
-      END MODULE ppm_module_user_util
+      END MODULE ppm_module_core_util

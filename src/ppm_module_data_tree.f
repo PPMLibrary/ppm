@@ -26,7 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
       MODULE ppm_module_data_tree
       !!! This module contains all data structures and
       !!! definitions that are used in the tree routines.

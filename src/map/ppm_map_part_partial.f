@@ -28,14 +28,18 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_partial_s(topoid,xp,Npart,info)
+      SUBROUTINE ppm_map_part_partial_s(topoid,xp,Npart,info,ignore)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_partial_d(topoid,xp,Npart,info)
+      SUBROUTINE ppm_map_part_partial_d(topoid,xp,Npart,info,ignore)
       !!! This routine maps the particles onto the topology using a local map
       !!! (i.e. each processor only communicates with its neighbors).
       !!!
       !!! The routine takes care of periodic boundary conditions (using
       !!! `ppm_impose_part_bc`). So no need for the user to do this manually.
+      !!!
+      !!! All particles must be assigned after calling the partial map unless
+      !!! the optional 'ignore' flag has been set true. In this case unassigned
+      !!! particles are discarded.
       !!!
       !!! [NOTE]
       !!! The first part of the buffer contains the on processor data.
@@ -44,7 +48,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 
       !-------------------------------------------------------------------------
       !  Modules 
@@ -76,6 +79,8 @@
       !!! ID of the topology
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      LOGICAL, OPTIONAL       , INTENT(IN   ) :: ignore
+      !!! Ignore unassigned particles. Default is false
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
@@ -90,6 +95,7 @@
       CHARACTER(ppm_char)            :: mesg
       REAL(MK)                       :: t0
       LOGICAL                        :: valid
+      LOGICAL                        :: ignoreunassigned
       TYPE(ppm_t_topo)    , POINTER  :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
@@ -109,6 +115,13 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
+
+      IF (PRESENT(ignore)) THEN
+        ignoreunassigned = ignore
+      ELSE
+        ignoreunassigned = .FALSE.
+      ENDIF
+
 
       topo => ppm_topo(topoid)%t
       bcdef => topo%bcdef
@@ -342,7 +355,7 @@
                DO i=1,nlist1
                   ilist1(i) = ilist2(i)
                ENDDO
-            ENDIF 
+            ENDIF
 
             !-------------------------------------------------------------------
             !  Exit if the list is empty
@@ -440,11 +453,13 @@
       !  Check if we sold all the particles. If not some of them have move
       !  too far we return an info and the user should call the global map.
       !-------------------------------------------------------------------------
-      IF (nlist2.GT.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_part_unass,'ppm_map_part_partial', &
-     &       'Please call ppm_map_part_global',__LINE__,info)
-         GOTO 9999
+      IF (.NOT. ignoreunassigned) THEN
+         IF (nlist2.GT.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_part_unass,'ppm_map_part_partial', &
+     &          'Please call ppm_map_part_global',__LINE__,info)
+            GOTO 9999
+         ENDIF 
       ENDIF 
 
       !-------------------------------------------------------------------------
@@ -622,7 +637,7 @@
                       !  increment the buffer counter
                       !---------------------------------------------------------
                       iset = iset + 1
-     
+
                       !---------------------------------------------------------
                       !  Store the id of the particle
                       !---------------------------------------------------------
@@ -696,7 +711,7 @@
       !-------------------------------------------------------------------------
       !  All particles have to go
       !-------------------------------------------------------------------------
-      ppm_psendbuffer(topo%ncommseq+1) = npart + 1
+      ppm_psendbuffer(topo%ncommseq+1) = Npart + 1 - nlist2
 
       !-------------------------------------------------------------------------
       !  Store the current size of the buffer

@@ -1,4 +1,4 @@
-!--------------------------------------------------------------------------
+!----*- f90 -*-------------------------------------------------------------
 !  Module       :                    ppm_module_ctrl
 !--------------------------------------------------------------------------
 !
@@ -90,7 +90,7 @@ MODULE ppm_module_ctrl
 !!! +arg_group(_'name'_)+ to your +define_args+ and all calls to
 !!! +arg+ following a group definition will be put into that group.
 !!!
-!!!! If any one of the printing flags is present +parse_args+ will return
+!!! If any one of the printing flags is present +parse_args+ will return
 !!! _exit_gracefully_ which you should check for and exit gracefully.
 !!!
 
@@ -104,7 +104,6 @@ MODULE ppm_module_ctrl
   USE ppm_module_error
   IMPLICIT NONE
 
-#include "ppm_define.h"
 
   !------------------------------------------------------------------------
   !  Interface
@@ -522,16 +521,16 @@ CONTAINS
     ! scalar
 
     DO i=1,INTEGER_args_i
-       CALL MPI_BCast(INTEGER_args(i)%variable, 1, MPI_INTEGER4, 0, ppm_comm, info)
+       CALL MPI_BCast(INTEGER_args(i)%variable, 1, MPI_INTEGER, 0, ppm_comm, info)
     END DO
     DO i=1,LONGINT_args_i
        CALL MPI_BCast(LONGINT_args(i)%variable, 1, MPI_INTEGER8, 0, ppm_comm, info)
     END DO
     DO i=1,SINGLE_args_i
-       CALL MPI_BCast(SINGLE_args(i)%variable, 1, MPI_REAL4, 0, ppm_comm, info)
+       CALL MPI_BCast(SINGLE_args(i)%variable, 1, MPI_REAL, 0, ppm_comm, info)
     END DO
     DO i=1,DOUBLE_args_i
-       CALL MPI_BCast(DOUBLE_args(i)%variable, 1, MPI_REAL8, 0, ppm_comm, info)
+       CALL MPI_BCast(DOUBLE_args(i)%variable, 1, MPI_DOUBLE_PRECISION, 0, ppm_comm, info)
     END DO
     DO i=1,STRING_args_i
        CALL MPI_BCast(STRING_args(i)%variable, ppm_char, MPI_CHARACTER, 0, ppm_comm, info)
@@ -543,14 +542,14 @@ CONTAINS
        CALL MPI_BCast(COMPLEX_args(i)%variable, 1, MPI_COMPLEX, 0, ppm_comm, info)
     END DO
     DO i=1,DCOMPLEX_args_i
-       CALL MPI_BCast(DCOMPLEX_args(i)%variable, 1, MPI_COMPLEX16, 0, ppm_comm, info)
+       CALL MPI_BCast(DCOMPLEX_args(i)%variable, 1, MPI_DOUBLE_COMPLEX, 0, ppm_comm, info)
     END DO
 
     ! array
 
     DO i=1,INTEGER_array_args_i
        CALL MPI_BCast(INTEGER_array_args(i)%variable, &
-                 SIZE(INTEGER_array_args(i)%variable), MPI_INTEGER4, 0, ppm_comm, info)
+                 SIZE(INTEGER_array_args(i)%variable), MPI_INTEGER, 0, ppm_comm, info)
     END DO
     DO i=1,LONGINT_array_args_i
        CALL MPI_BCast(LONGINT_array_args(i)%variable, &
@@ -558,11 +557,11 @@ CONTAINS
     END DO
     DO i=1,SINGLE_array_args_i
        CALL MPI_BCast(SINGLE_array_args(i)%variable, &
-                 SIZE(SINGLE_array_args(i)%variable), MPI_REAL4, 0, ppm_comm, info)
+                 SIZE(SINGLE_array_args(i)%variable), MPI_REAL, 0, ppm_comm, info)
     END DO
     DO i=1,DOUBLE_array_args_i
        CALL MPI_BCast(DOUBLE_array_args(i)%variable, &
-                 SIZE(DOUBLE_array_args(i)%variable), MPI_REAL8, 0, ppm_comm, info)
+                 SIZE(DOUBLE_array_args(i)%variable), MPI_DOUBLE_PRECISION, 0, ppm_comm, info)
     END DO
     DO i=1,STRING_array_args_i
        CALL MPI_BCast(STRING_array_args(i)%variable, &
@@ -578,7 +577,7 @@ CONTAINS
     END DO
     DO i=1,DCOMPLEX_array_args_i
        CALL MPI_BCast(DCOMPLEX_array_args(i)%variable, &
-                 SIZE(DCOMPLEX_array_args(i)%variable), MPI_COMPLEX16, 0, ppm_comm, info)
+                 SIZE(DCOMPLEX_array_args(i)%variable), MPI_DOUBLE_COMPLEX, 0, ppm_comm, info)
     END DO
 
 #endif
