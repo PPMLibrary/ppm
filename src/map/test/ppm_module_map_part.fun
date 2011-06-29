@@ -17,7 +17,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 100000
+integer                         :: np = 10000
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp
@@ -129,6 +129,10 @@ real(mk)                         :: t0,t1,t2,t3
         !        enddo
         !    enddo
         !enddo
+
+         max_rcp = 0.1_mk
+         min_rcp = 0.1_mk
+
         do i=1,np
             do j=1,ndim
                 xp(j,i) = min_phys(j)+&
@@ -143,8 +147,9 @@ real(mk)                         :: t0,t1,t2,t3
         !----------------
         ! make topology
         !----------------
-        decomp = ppm_param_decomp_cuboid
+        !decomp = ppm_param_decomp_cuboid
         !decomp = ppm_param_decomp_xpencil
+        decomp = ppm_param_decomp_pruned_cell
         assig  = ppm_param_assign_internal
 
         topoid = 0
@@ -234,7 +239,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,xp,np,ok,info)
         assert_true(ok)
-        
+       
     end test
 
 end test_suite

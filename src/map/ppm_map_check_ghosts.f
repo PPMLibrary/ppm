@@ -635,15 +635,19 @@
 
             ENDDO
 
-      ! plot the number of particles we do not need, but have in the ghosts
-      j = 0
-      DO i = 1,mp-Npart
-         IF(have_xp(i) .EQV. .FALSE.) THEN
-            j = j+1
-         ENDIF
-      ENDDO
+         ! plot the number of particles we do not need, but have in the ghosts
+         j = 0
+         DO i = 1,mp-Npart
+            IF(have_xp(i) .EQV. .FALSE.) THEN
+               j = j+1
+            ENDIF
+         ENDDO
 
-      print *, ppm_rank, ' has ', j , 'too much ghost particles!'
+         IF (mp-Npart .GT. 0) THEN
+            print *, ppm_rank, int(100*float(j)/float((mp-Npart))) , '% of ghost particles not needed!'
+         ELSE
+            print *, ppm_rank, 'has no ghost particles and does not need any!'
+         ENDIF
 
       ELSEIF(ppm_dim .EQ. 3) THEN
 

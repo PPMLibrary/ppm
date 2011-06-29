@@ -156,6 +156,14 @@
       IF (maxlevels .GT. 0) THEN
           IF (nlevel .GE. maxlevels) THEN
               lcontinue = .FALSE.
+              IF (nsubs .LT. minboxes) THEN
+                  info = ppm_error_error
+
+                  CALL ppm_error(ppm_err_few_subs,'ppm_tree_done',     &
+         &            'Could not create the minimum number of non-empty boxes!', &
+         &            __LINE__,info)
+              ENDIF
+          GOTO 9999
               IF (ppm_debug .GT. 1) THEN
                   CALL ppm_write(ppm_rank,'ppm_tree_done',     &
      &                'Max number of levels reached. Done.',info)
@@ -196,13 +204,31 @@
       !-------------------------------------------------------------------------
       !  If variance of costs is below threshold, decomposition is OK
       !-------------------------------------------------------------------------
-      IF (varcost .LT. maxvariance) lcontinue = .FALSE.
+      IF (varcost .LT. maxvariance) THEN
+         lcontinue = .FALSE.
+         IF (nsubs .LT. minboxes) THEN
+              info = ppm_error_error
 
+              CALL ppm_error(ppm_err_few_subs,'ppm_tree_done',     &
+     &            'Could not create the minimum number of non-empty boxes!', &
+     &            __LINE__,info)
+          ENDIF
+          GOTO 9999
+      ENDIF
       !-------------------------------------------------------------------------
       !  If all boxes are below the maxcost we are done.
       !-------------------------------------------------------------------------
-      IF (maxcost .LT. maxboxcost) lcontinue = .FALSE. 
+      IF (maxcost .LT. maxboxcost) THEN
+         lcontinue = .FALSE.
+         IF (nsubs .LT. minboxes) THEN
+              info = ppm_error_error
 
+              CALL ppm_error(ppm_err_few_subs,'ppm_tree_done',     &
+     &            'Could not create the minimum number of non-empty boxes!', &
+     &            __LINE__,info)
+          ENDIF
+          GOTO 9999 
+      ENDIF
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------

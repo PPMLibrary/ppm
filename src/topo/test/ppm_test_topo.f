@@ -83,6 +83,7 @@
       integer                          :: np_tot, ipart, idom
       integer                          :: tot_sum
       integer, dimension(:),pointer    :: so_sum
+      integer, dimension(3)            :: now
 
       !----------------
       ! setup
@@ -90,7 +91,7 @@
       tol = 10.0_mk*epsilon(1.0_mk)
       tolexp = int(log10(epsilon(1.0_mk)))
       min_ghost_req = 0.01_mk
-      max_ghost_req = 1.50_mk
+      max_ghost_req = 1.40_mk
       np = np_sqrt*np_sqrt
       np_tot = 4*np
 
@@ -112,11 +113,12 @@
 #endif
       call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
+      call itime(now)
       call random_seed(size=seedsize)
       allocate(seed(seedsize))
       allocate(randnb(ndim*np),stat=info)
       do i=1,seedsize
-         seed(i)=10+i*i*(rank+1)
+         seed(i)=now(1)+10+i*i*(rank+1)*now(3)
       enddo
       call random_seed(put=seed)
       call random_number(randnb)
@@ -132,10 +134,18 @@
       allocate(so_sum(ndim),stat=info)
       tot_sum = np_sqrt*(np_sqrt+1)/2 + 1
  
+      IF (ppm_rank.eq. 0) THEN
+         offset(1) = ((-1)**(INT(randnb(1)*10))) * randnb(2) * 7.9999999_mk
+         offset(2) = ((-1)**(INT(randnb(3)*10))) * randnb(4) * 7.9999999_mk
+         DO i = 1,ppm_nproc-1
+            CALL mpi_send(offset(1),1,ppm_mpi_kind,i,0,ppm_comm,info)
+            CALL mpi_send(offset(2),1,ppm_mpi_kind,i,0,ppm_comm,info)
+         ENDDO
+      ELSE
+            CALL mpi_recv(offset(1),1,ppm_mpi_kind,0,0,ppm_comm,MPI_STATUS_IGNORE,info)
+            CALL mpi_recv(offset(2),1,ppm_mpi_kind,0,0,ppm_comm,MPI_STATUS_IGNORE,info)
+      ENDIF
       
-      offset(1) = 5.72342_mk
-      offset(2) = -7.63234_mk
-
       so_sum(1) = 0.0_mk
       do ix=1,np_sqrt
          so_sum(1) = so_sum(1) + ix
@@ -229,11 +239,11 @@
       ! Test all decompositions
 !       decomp = ppm_param_decomp_tree
 !       decomp = ppm_param_decomp_pruned_cell
-!       decomp = ppm_param_decomp_bisection
+      decomp = ppm_param_decomp_bisection
 !       decomp = ppm_param_decomp_xpencil
 !       decomp = ppm_param_decomp_ypencil
 !       decomp = ppm_param_decomp_zpencil
-       decomp = ppm_param_decomp_cuboid
+!       decomp = ppm_param_decomp_cuboid
 !       decomp = ppm_param_decomp_user_defined
 !       decomp = ppm_param_decomp_xy_slab
 !       decomp = ppm_param_decomp_xz_slab
@@ -246,13 +256,13 @@
 
       min_phys(1:ndim) = -8.0_mk
       max_phys(1:ndim) = 8.0_mk 
-!       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
-!       &               max_ghost_req,cost,info)
+      call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
+       &               max_ghost_req,cost,info)
 
       has_one_way = .FALSE.
 
-       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
-     &               ghost_req,has_one_way,cost,info)
+!        call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
+!      &               ghost_req,has_one_way,cost,info)
 
       call ppm_dbg_print(topoid,max_ghost_req,1,1,info,xp,np_tot)
 
@@ -261,7 +271,7 @@
       call ppm_map_part_send(np_tot,newnp,info)
       call ppm_map_part_pop(ghost_req,ndim,np_tot,newnp,info)
       call ppm_map_part_pop(xp,ndim,np_tot,newnp,info)
-      np=newnp
+
       print *,rank,'global map done'
 
       call ppm_map_part_ghost_get(topoid,xp,ndim,newnp,isymm,info)
