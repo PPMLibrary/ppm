@@ -336,7 +336,7 @@ use ppm_module_mktopo
 use ppm_module_topo_get
 use ppm_module_init
 use ppm_module_finalize
-use ppm_module_user
+use ppm_module_core
 use ppm_module_inl_vlist
 use old_inl
 

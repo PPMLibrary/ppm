@@ -21,9 +21,10 @@ AC_PREREQ(2.61)
 AC_INIT(PPM, 1.2.0)
 
 # Reset existing preprocessing flags
-touch ./src/ppm_define.h
-rm ./src/ppm_define.h
-touch ./src/ppm_define.h
+#touch ./src/ppm_define.h
+#rm ./src/ppm_define.h
+#touch ./src/ppm_define.h
+AC_SUBST(CPPFLAGS,[""])
 
 
 # if MPI is enabled try grabbing those compiler wrappers first
@@ -101,20 +102,22 @@ AC_RUN_IFELSE([
                [use_f03=yes],
                [use_f03=no])
 if test "x${use_f03}" = xyes; then
-    echo "#define __F2003" >> ./src/ppm_define.h
+    AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__F2003"])
+#    echo "#define __F2003" >> ./src/ppm_define.h
     AC_MSG_RESULT([yes])
 else
     AC_MSG_RESULT([no])
 fi
 
-if test "x${use_mpi}" == xyes; then
+if test "x${use_mpi}" = xyes; then
     AC_MSG_CHECKING([if your MPI is usable])
     AC_LINK_IFELSE([
                      program conftest_prog
                      include 'mpif.h'
                      call MPI_Init(ierr)
                      end program conftest_prog],
-                     [echo "#define __MPI" >> ./src/ppm_define.h],
+                     [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__MPI"])],
+#                     [echo "#define __MPI" >> ./src/ppm_define.h],
                      [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
     AC_MSG_RESULT([yes])
 #    AC_CHECK_LIB([],[MPI_Init],[
@@ -123,7 +126,7 @@ if test "x${use_mpi}" == xyes; then
 fi
 AC_LANG([C])
 
-if test "x${use_mpi}" == xyes; then
+if test "x${use_mpi}" = xyes; then
     AC_SUBST(FUNIT_FLAGS,["--with-mpi"])
 fi
 
@@ -166,49 +169,68 @@ if test "x${have_metis}" = xno; then
   echo "------------------------------------------"
   (exit 1); exit 1;
 else
-  echo "#define __METIS" >> ./src/ppm_define.h
+  AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__METIS"])
+#  echo "#define __METIS" >> ./src/ppm_define.h
 fi
 
 # Check to see if linux was enabled with -enable-linux
 AC_ARG_ENABLE([linux],[AS_HELP_STRING([--enable-linux],
-  [compile for linux (default is no)])],[echo "#define __Linux" >> ./src/ppm_define.h])
+  [compile for linux (default is no)])],
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__Linux"])]
+#  [echo "#define __Linux" >> ./src/ppm_define.h]
+)
 
 # Check to see if etime was enabled with -enable-etime
 AC_ARG_ENABLE([etime],[AS_HELP_STRING([--enable-etime],
-  [use etime (default is no)])],[echo "#define __ETIME" >> ./src/ppm_define.h])
+  [use etime (default is no)])],
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__ETIME"])]
+#  [echo "#define __ETIME" >> ./src/ppm_define.h]
+)
 
 # Check to see if vector was enabled with -enable-vector
 AC_ARG_ENABLE([vector],[AS_HELP_STRING([--enable-vector],
   [enable __VECTOR (default is no)])],
-  [echo "#define __VECTOR" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__VECTOR"])]
+#  [echo "#define __VECTOR" >> ./src/ppm_define.h]
+)
 
 AC_ARG_ENABLE([mathkeisan],[AS_HELP_STRING([--enable-mathkeisan],
   [enable __MATHKEISAN (default is no)])],
-  [echo "#define __MATHKEISAN" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__MATHKEISAN"])]
+#  [echo "#define __MATHKEISAN" >> ./src/ppm_define.h]
+)
 
 AC_ARG_ENABLE([sxf90],[AS_HELP_STRING([--enable-sxf90],
   [enable __SXF90 (default is no)])],
-  [echo "#define __SXF90" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__SXF90"])]
+#  [echo "#define __SXF90" >> ./src/ppm_define.h]
+)
 
 AC_ARG_ENABLE([crayfishpack],[AS_HELP_STRING([--enable-crayfishpack],
   [enable __CRAYFISHPACK (default is no)])],
-  [echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__CRAYFISHPACK"])]
+#  [echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h]
+)
 
 AC_ARG_ENABLE([hypre],[AS_HELP_STRING([--enable-hypre],
   [enable __HYPRE (default is no)])],
-  [echo "#define __HYPRE" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__HYPRE"])]
+#  [echo "#define __HYPRE" >> ./src/ppm_define.h]
+)
 
 AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
   [enable __NOMICROINSTRUCTIONS (default is no)])],
-  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h])
+  [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__NOMICROINSTRUCTIONS"])]
+#  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h]
+)
 
 dev_compile=no
 AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
   [enable development mode (default is no)])],[dev_compile=yes])
 if test "x${dev_compile}" = xyes; then
-    if test "x${vendor}" == xintel; then
+    if test "x${vendor}" = xintel; then
         AC_SUBST(DEBUG,["-g -O1 -check pointers -check bounds -traceback"])
-    elif test "x${vendor}" == xgnu; then
+    elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace"])
     else
       AC_SUBST(DEBUG,["-g"])
@@ -219,18 +241,23 @@ debug_compile=no
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],
   [enable debug mode (default is no)])],[debug_compile=yes])
 if test "x${debug_compile}" = xyes; then
-    echo "#define __DEBUG" >> ./src/ppm_define.h
-    if test "x${vendor}" == xintel; then
+    AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DEBUG"])
+#    echo "#define __DEBUG" >> ./src/ppm_define.h
+    if test "x${vendor}" = xintel; then
         AC_SUBST(DEBUG,["-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"])
-    elif test "x${vendor}" == xgnu; then
+    elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
     else
       AC_SUBST(DEBUG,["-O1 -g"])
     fi
 fi
 
+# set src as the default srcdir
+if test "$srcdir" = "."; then
+    srcdir=src
+fi
 
   
-  # Generate Makefiles
+# Generate Makefiles
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

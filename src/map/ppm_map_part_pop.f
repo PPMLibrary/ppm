@@ -77,7 +77,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 
       !-------------------------------------------------------------------------
       !  Modules 
@@ -162,9 +161,10 @@
 
       ! skip if the buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
+        info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
-            CALL ppm_write(ppm_rank,'ppm_map_part_pop',  &
-     &          'Buffer is empty: skipping pop!',info)
+            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_part_pop',    &
+     &          'Buffer is empty: skipping pop!',__LINE__,info)
         ENDIF
         GOTO 9999
       ENDIF
@@ -1335,12 +1335,6 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (ppm_buffer_set .LT. 1) THEN
-              info = ppm_error_notice
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
-     &            'buffer is empty. Cannot pop.',__LINE__,info)
-              GOTO 8888
-          ENDIF
           IF (Npart .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &

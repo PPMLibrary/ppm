@@ -45,7 +45,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif 
@@ -170,7 +169,6 @@
         ENDIF
       ENDIF
 #else
-      !SEH: Initialization of serial version
       ppm_nproc = 1
       ppm_rank  = 0
       WRITE(mesg,'(A)') '*** This is the PPM library in single-processor mode'
@@ -261,6 +259,7 @@
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Tolerance must not be smaller than machine epsilon'  &
      &           ,__LINE__,info)
+             GOTO 9999
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
@@ -277,6 +276,7 @@
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Tolerance must not be smaller than machine epsilon'  &
      &           ,__LINE__,info)
+             GOTO 9999
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)

@@ -30,12 +30,12 @@
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_mkfield_s(topoid,meshid,xp,Npart,decomp,assig,      &
      &               min_phys,max_phys,bcdef,ighostsize,cost,                  &
-     &               istart,ndata,Nm,info,ndom,pcost,user_minsub,user_maxsub, &
+     &               Nm,info,ndom,pcost,user_minsub,user_maxsub, &
      &               user_nsubs,user_sub2proc)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_mkfield_d(topoid,meshid,xp,Npart,decomp,assig,      &
      &               min_phys,max_phys,bcdef,ighostsize,cost,                  &
-     &               istart,ndata,Nm,info,ndom,pcost,user_minsub,user_maxsub, &
+     &               Nm,info,ndom,pcost,user_minsub,user_maxsub, &
      &               user_nsubs,user_sub2proc)
 #endif
       !!! This routine is the topology creation routine for meshes.
@@ -87,7 +87,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -154,24 +153,6 @@
       !!! Mesh identifier (user numbering) for default mesh (as defined by
       !!! Nm) on the topology. If <0, ppm will create a number internally
       !!! and return it here on exit.
-      INTEGER , DIMENSION(:,:), POINTER       :: istart
-      !!! Start indices (i,j[,k]) (first index) of sub mesh isub (second
-      !!! index) in *global* mesh.
-      !!!
-      !!! [CAUTION]
-      !!! This array holds the starting indeces for *all*
-      !!! subdomains in the *whole* physical domain (i.e. all processors).
-      !!! Use `topo%isublist` to find the indeces for the grids on the
-      !!! processor
-      INTEGER , DIMENSION(:,:), POINTER       :: ndata
-      !!! Returns number of grid POINTS in x,y[,z] (first index) of sub mesh
-      !!! isub (second index). Includes the points ON the sub boundaries.
-      !!!
-      !!! [CAUTION]
-      !!! This array holds the number of points for *all* subdomains in the
-      !!! *whole* physical domain (i.e. all processors).
-      !!! Use `topo%isublist` to find the indeces for the grids on the
-      !!! processor
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
       !!! Number of *mesh points* (not cells) in each direction of the global
       !!! computational domain (including points ON its boundaries)
@@ -215,6 +196,8 @@
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: istart
+      INTEGER , DIMENSION(:,:), POINTER :: ndata
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec,meshdx
       LOGICAL , DIMENSION(ppm_dim)      :: fixed

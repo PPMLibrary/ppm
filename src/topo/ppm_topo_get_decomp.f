@@ -1,5 +1,5 @@
       !-------------------------------------------------------------------------
-      !  Subroutine   :                   ppm_get_decomp
+      !  Subroutine   :                   ppm_topo_get_decomp
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_get_decomp_s(topoid,nsub,min_sub,max_sub,sub2proc,subs_bc,&
- &                                info)
+      SUBROUTINE ppm_topo_get_decomp_s(topoid,nsub,min_sub,max_sub,sub2proc,&
+                                  subs_bc,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_get_decomp_d(topoid,nsub,min_sub,max_sub,sub2proc,subs_bc,&
- &                                info)
+      SUBROUTINE ppm_topo_get_decomp_d(topoid,nsub,min_sub,max_sub,sub2proc,&
+                                  subs_bc,info)
 #endif
       !!! This routine returns the subdomain boundaries and boundary
       !!! conditions
@@ -51,7 +51,6 @@
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
-#include "ppm_define.h"
 
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -109,7 +108,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_get_decomp',t0,info)
+      CALL substart('ppm_topo_get_decomp',t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -131,7 +130,7 @@
       call ppm_alloc(max_sub,lda,ppm_param_alloc_fit,info)
       if (info .NE. 0) then
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_get_decomp',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate min_sub, max_sub',__LINE__,info)
           goto 9999
       endif
@@ -139,7 +138,7 @@
       call ppm_alloc(subs_bc,lda,ppm_param_alloc_fit,info)
       if (info .NE. 0) then
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_get_decomp',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate subs_bc',__LINE__,info)
           goto 9999
       endif
@@ -147,7 +146,7 @@
       call ppm_alloc(sub2proc,lda,ppm_param_alloc_fit,info)
       if (info .NE. 0) then
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_get_decomp',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_get_decomp',     &
      &        'failed to allocate sub2proc',__LINE__,info)
           goto 9999
       endif
@@ -168,27 +167,27 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_get_decomp',t0,info)
+      CALL substop('ppm_topo_get_decomp',t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_topo_get',  &
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_topo_get_decomp',  &
      &            'Please call ppm_init first!',__LINE__,info)
               GOTO 8888
           ENDIF
           CALL ppm_check_topoid(topoid,valid,info)
           IF (.NOT. valid) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_get',  &
+              CALL ppm_error(ppm_err_argument,'ppm_topo_get_decomp',  &
      &            'Topology ID is invalid!',__LINE__,info)
               GOTO 8888
           ENDIF
  8888     CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_get_decomp_s
+      END SUBROUTINE ppm_topo_get_decomp_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_get_decomp_d
+      END SUBROUTINE ppm_topo_get_decomp_d
 #endif
