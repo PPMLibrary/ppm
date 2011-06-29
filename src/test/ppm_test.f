@@ -36,7 +36,6 @@ program ppm_test_CASE
 
     implicit none
 
-#include "../../ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
