@@ -56,6 +56,15 @@ end module #{@suite_name}_mod
 module #{@suite_name}_fun
 
  use #{ @wrap_with_module ? @suite_name+'_mod' : @suite_name }
+      TOP
+
+      funit_contents = @suite_content.split("\n")
+      @funit_total_lines = funit_contents.length
+      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
+        puts line
+      end
+
+      puts <<-TOP
 
  implicit none
 
@@ -78,6 +87,10 @@ module #{@suite_name}_fun
       $stderr.print "expanding test suite: #{@suite_name}..."
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
+
+      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
+      end
+      funit_contents.unshift line
 
       while (line = funit_contents.shift) && line !~ KEYWORDS
         puts line

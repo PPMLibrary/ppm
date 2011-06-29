@@ -2,4 +2,7 @@
 *.blg
 *.aux
 *.bbl
+*.toc
+pics/ppm_decomp.eps
+pics/ppm_slab_decomp.eps
 

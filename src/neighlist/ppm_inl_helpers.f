@@ -115,7 +115,7 @@
           CALL ppm_alloc(xp_sub, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
+              CALL ppm_error(ppm_err_alloc,'ppm_create_subdomain_particles',     &
      &                       'own_plist',__LINE__,info)
           END IF
 
@@ -123,14 +123,14 @@
           CALL ppm_alloc(cutoff_sub, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
+              CALL ppm_error(ppm_err_alloc,'ppm_create_subdomain_particles',     &
      &                       'own_plist',__LINE__,info)
           END IF
 
           CALL ppm_alloc(p_id, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
+              CALL ppm_error(ppm_err_alloc,'ppm_create_subdomain_particles',     &
      &                       'own_plist',__LINE__,info)
           END IF
 

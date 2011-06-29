@@ -181,7 +181,7 @@
 #else
       edim = bdim
 #endif
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug .GT. 2) THEN
           WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
           CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
       ENDIF
@@ -270,7 +270,7 @@
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the receive buffer
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug .GT. 2) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
      &        'newNpart*bdim = ',newNpart*bdim
           CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
@@ -290,7 +290,7 @@
 
       ibuffer = ppm_nrecvbuffer 
 
-      IF (ppm_debug .GT. 1) THEN
+      IF (ppm_debug .GT. 2) THEN
           WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
           CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
       ENDIF
