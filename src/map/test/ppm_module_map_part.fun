@@ -292,7 +292,7 @@ if (nproc .eq. 1) then
 
         call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
 
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,info)
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         assert_equal(info,0)
         call ppm_map_part_send(npart,mpart,info)
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
