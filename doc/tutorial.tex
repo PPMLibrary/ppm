@@ -935,25 +935,62 @@ ghost layers (e.g. see figure \ref{fig:slab_domain_decomp}).
 
 In the {}``dcops'' branch of PPM, there is a derived type for particles
 (ppm\_t\_particles) and a collection of routines that perform some
-standard/basic operations on these particles. 
+standard/basic operations on these particles. The aim is to make it
+easier to write clients for the library, without having to compromise
+on flexibility nor on computational efficiency.
+
+The different fields of the data structure are presented below. Note
+that most of these fields can remain empty (nullified pointers) such
+that the memory overhead is negligible. Some of the subroutines that
+can be used with this data structure are explained briefly. The main
+idea is that they check a bunch of pre-conditions and exit with an
+error message if any of these conditions is not fulfilled. Otherwise,
+it performs a task (usually passing data pointers to one or several
+low-level PPM subroutines), updates some book keeping variables in
+the data structure (post-conditions) and exits.
 
 
 \section{Data}
 \begin{itemize}
 \item xp: array of positions
-\item wp1: array of pointers to 1D properties
-\item wp2: array of pointers to 2D properties
+\item wpi: array of pointers to integer properties
+\item wps: array of pointers to scalar properties
+\item wpv: array of pointers to vector properties
 \item ops: container for DC operators
-\item nvlist
-\item vlist
+\item nvlist: number of neighbours
+\item vlist: Verlet lists
 \end{itemize}
 
-\section{Sizes}
+\subsection{Sizes}
 \begin{itemize}
-\item Npart
-\item Mpart
-\item nwp1: number of scalar properties
-\item nwp2: number of vector properties
+\item Npart: local number of real particles
+\item Mpart: local number of real+ghosts particles
+\item nwpi: number of integer properties
+\item nwps: number of scalar properties
+\item nwpv: number of vector properties
+\end{itemize}
+
+\subsection{Properties}
+
+The pointers in wpi, wps and wpv point to derived types that hold
+one property that is being carried by the particles. These derived
+types (ideally, there should be one for each data type that PPM supports....)
+contain
+\begin{itemize}
+\item vec: array that contains the actual data (it is 1d for scalar properties
+and 2d for vector ones)
+\item name: the name of that property (optional, but useful for keeping
+track of what is what)
+\item has\_ghosts: boolean that is true only when the ghost values for this
+property are up-to-date
+\item is\_mapped: boolean that is true only when there is a one-to-one mapping
+between particles and this property
+\item map\_parts: if true (default), then the mapping between this property
+and the particles is kept over time (e.g. during a partial mapping
+or after interpolation)
+\item map\_ghosts: if true (default), then the ghost values for this property
+are kept up-to-date (whenever a ghost mapping is called). Otherwise,
+this property is not communicated.
 \end{itemize}
 
 \section{Variables and parameters}
@@ -973,7 +1010,6 @@ standard/basic operations on these particles.
 \item Dtilde\_id: index where local monitor function is stored
 \item adapt\_wpid: index where the field on which the monitor function depends
 is stored
-\item adapt\_wpgradid: index where the gradient of that field is stored
 \item G\_id: index where the anisotropy tensor is stored
 \end{itemize}
 
@@ -986,59 +1022,186 @@ is stored
 \begin{itemize}
 \item areinside: all particles are inside the computational box
 \item active\_topoid: active topology for the particles
+\item has\_ghosts: ghost particles have been fetched
 \item ontopology: all particles are on their corresponding processor (ie.
 Npart is correct)
 \item neighlists: neighbour lists are up-to-date
 \item adaptive: particles are adaptive particles
 \item anisotropic: particles are anisotropic
 \item level\_set: particles carry a level set function
-\item xp\_g: ghost particles have been fetched
-\item wp1\_m: property is active (one-to-one mapping between property and
-real particles)
-\item wp1\_g: ghost values are up-to-date for this property (assumes wp1\_m
-= 1)
-\item wp2\_m: property is active (one-to-one mapping between property and
-real particles)
-\item wp2\_g: ghost values are up-to-date for this property (assumes wp1\_m
-= 1)
 \end{itemize}
 
+\section{Routines}
+
+Here we assume that topoid refers to the id of a previously defined
+topology and 
+
+\begin{lstlisting}[language=Fortran]
+TYPE(ppm_t_particles), POINTER :: Particles
+\end{lstlisting}
+
+
+
+\subsection{apply\_bc}
+
+Apply boundary conditions (wraps particles around the domain for periodic
+boundary conditions and deletes particles on the other side of freespace
+boundary conditions. Does not include other types of BC, yet.)
+
+\begin{lstlisting}
+particles_apply_bc(Particles,topoid,info)
+\end{lstlisting}
+
+
+
 \subsection{mapping\_global}
+
+\begin{lstlisting}
+particles_mapping_global(Particles,topoid,info)
+\end{lstlisting}
+
 
 
 \subsection{mapping\_partial}
 
+\begin{lstlisting}
+particles_mapping_partial(Particles,topoid,info)
+\end{lstlisting}
+
+
 
 \subsection{mapping\_ghosts}
+
+\begin{lstlisting}
+particles_mapping_ghosts(Particles,topoid,info)
+\end{lstlisting}
+
 \begin{itemize}
 \item Needs particles to be mapped onto the topology
-\item Update ghosts for the wp1 and wp2 flagged with \_g = 0
-\item Sets those with flags \_g=1 back to \_g = 0 (these fields will not
-have the right size and should not be accessed again for ip>Npart)
+\item Update ghosts for the properties with the flag {}``map\_ghosts''
+set to true (default)
 \end{itemize}
 
-\subsection{allocate\_wp1}
+\subsection{Create a new property}
+
+For a scalar property:
+
+\begin{lstlisting}
+particles_allocate_wps(Particles,prop_id,info,name=example)
+\end{lstlisting}
 
 
-\subsection{allocate\_wp2}
+for a vector property with 7 dimensions:
+
+\begin{lstlisting}
+particles_allocate_wpv(Particles,prop_id,7,info,name=example)
+\end{lstlisting}
 
 
-\subsection{updated\_cutoff}
-\begin{itemize}
-\item If cutoff has increased, then assumes that ghosts have to be recomputed
-\end{itemize}
-
-\subsection{updated\_positions}
+If prop\_id = 0, then a new id is returned. Otherwise, the existing
+property with that id is overwritten.
 
 
-\subsection{updated\_nb\_part}
-\begin{itemize}
-\item number of particles has changed (from insertion or deletion)
-\item we need to specify which properties have been updated and/or which
-haven't. The latter should no longer be used.
-\end{itemize}
+\subsection{Compute neighbor lists}
 
-\subsection{neighlists}
+\begin{lstlisting}
+particles_neighlists(Particles,topoid,info)
+\end{lstlisting}
+
+
+Some options have not yet been implemented, e.g. symmetric interactions,
+but that will not be difficult.
+
+
+\subsection{Access to the variables}
+
+To access the arrays where the data is stored, use
+
+\begin{lstlisting}
+wp => get_wps(Particles, prop_id)
+\end{lstlisting}
+
+
+where wp is a DIMENSION(:), POINTER (for a scalar property).
+
+If this property is mapped onto the particles, this will return a
+1D array of size (1:Npart). Else, it will print out an error and return
+the NULL pointer. If the ghost values are also needed, use
+
+\begin{lstlisting}
+wp => get_wps(Particles, prop_id,with_ghosts=.TRUE.)
+\end{lstlisting}
+
+
+If the ghost values for this property are available, this will return
+a 1D array of size (1:Mpart), else it will print out an error and
+return the NULL pointer (which will probably crash the code a moment
+later)
+
+Once these arrays are no longer needed, it is strongly advised to
+use the set\_wps functions (which do a bookkeeping job).
+
+If the values have been changed:
+
+\begin{lstlisting}
+wp => set_wps(Particles, prop_id)
+\end{lstlisting}
+
+
+If the values have been changed but the ghost values have also been
+changed (to their correct values, such that no further communication
+is required), do:
+
+\begin{lstlisting}
+wp => set_wps(Particles, prop_id,ghosts_ok=.TRUE.)
+\end{lstlisting}
+
+
+If the values have been accessed but not changed, use:
+
+\begin{lstlisting}
+wp => set_wps(Particles, prop_id,read_only=.TRUE.)
+\end{lstlisting}
+
+
+There are corresponding functions for integer and vector properties
+(get\_wpi, get\_wpv, ...) as well as for particles' positions:
+
+\begin{lstlisting}
+xp => get_xp(Particles)
+\end{lstlisting}
+
+
+Note that the following call
+
+\begin{lstlisting}
+xp => set_xp(Particles)
+\end{lstlisting}
+
+
+notifies the data structure that the particles have moved and updates
+the state variables accordingly. For example, the particles are no
+longer assumed to be within the bounds of the computational domain,
+and the neighbor lists, the ghosts, the DC operators as now flagged
+as being wrong. If the array xp has only be used for reading, one
+should of course call
+
+\begin{lstlisting}
+xp => set_xp(Particles,read_only=.TRUE.)
+\end{lstlisting}
+instead.
+
+
+\subsection{Manual override}
+
+Some routines are here to do only a book keeping job. For example
+if one wants to tell the library that the particles cutoffs have changed,
+or that the particles have moved, or that their numbers have changed,
+one can call 
+
+updated\_cutoff, updated\_positions or updated\_nb\_part.
+
+The internal variables will then be updated accordingly.
 
 
 \section{Usage examples}
@@ -1050,10 +1213,11 @@ Let's solve a PDE of the form
 \]
 in a periodic box.
 
-\begin{lstlisting}[breaklines=true,language=Fortran]
+\begin{lstlisting}[breaklines=true,language=Fortran,numbers=left]
 !Load necessary modules
 USE ppm_module_particles
-USE ppm_modules_dcops
+USE ppm_module_dcops
+USE ppm_module_io_vtk
 
 !Create a topology based on geometry (ie. define a simple box)
 topoid = 0
@@ -1124,6 +1288,8 @@ DO WHILE (t < t_end)
 	call particles_mapping_ghosts(Particles,topoid,info)
 ENDDO
 
+!Printout the result in VTK format, to be read directly within e.g. Paraview
+call ppm_vtk_particle_cloud('mydatafile',Particles,info)
 
 !Free memory from this DC operator
 call particles_dcop_free(Particles,eta_id,info) 
