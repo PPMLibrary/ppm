@@ -2026,7 +2026,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     cutoff = Particles%cutoff + Particles%skin 
 
 #if   __KIND == __SINGLE_PRECISION
-    IF (cutoff .GT. MINVAL(topo%ghostsizes)) THEN
+    IF (cutoff .GT. topo%ghostsizes) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
@@ -2034,7 +2034,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         GOTO 9999
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
-    IF (cutoff .GT. MINVAL(topo%ghostsized)) THEN
+    IF (cutoff .GT. topo%ghostsized) THEN
 
         write(*,*) 'cutoff = ',cutoff
         write(*,*) 'cutoff used to create topology = ',topo%ghostsized
@@ -2063,7 +2063,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         IF (.NOT.skip_ghost_get) THEN
             CALL ppm_map_part_ghost_get(topoid,Particles%xp,ppm_dim,&
-                Particles%Npart,Particles%isymm,info)
+                Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_sub_failed,caller,&
