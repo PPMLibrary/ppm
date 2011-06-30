@@ -487,10 +487,15 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         ok = .false.
         call particles_initialize(Particles,np_global,info,&
-            ppm_param_part_init_cartesian,topoid)
+            ppm_param_part_init_cartesian,topoid,name='testP07r_r_r_AA')
         write(dirname,*) './'
-        call particles_io_xyz(Particles,0,dirname,info)
+        call particles_io_xyz(Particles,71779,dirname,info)
         Assert_Equal(info,0)
+        ! cleanup
+        if (rank.eq.0) then
+            CALL SYSTEM('/bin/rm testP07r_r_r_AA_0071779.txt')
+            CALL SYSTEM('/bin/rm testP07r_r_r_AA_0071779.xyz')
+        endif
     end test
 
 
