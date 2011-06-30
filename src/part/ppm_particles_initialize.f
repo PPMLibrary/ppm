@@ -1,9 +1,9 @@
 #if __DIM == 2
 SUBROUTINE particles_initialize2d(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
 #elif __DIM == 3
 SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
 #endif
     !-----------------------------------------------------------------------
     ! Set initial particle positions
@@ -42,6 +42,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     !!! extent of the physical domain. Only if topoid is not present.
     REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
     !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -123,7 +125,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
 
     !Deallocate Particles if already allocated
     IF (ASSOCIATED(Particles)) THEN
-        CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,info)
+        CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,&
+            info,name=name)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
@@ -132,7 +135,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
         ENDIF
     ENDIF
 
-    CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,info)
+    CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,&
+        info,name=name)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,&

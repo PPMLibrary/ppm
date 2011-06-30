@@ -498,7 +498,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         ! Give a default name to this Particle set
         IF (PRESENT(name)) THEN
-            Particles%name = name
+            Particles%name = ADJUSTL(TRIM(name))
         ELSE
             Particles%name = particles_dflt_partname()
         ENDIF
@@ -904,7 +904,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wpi(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wpi(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpi(wp_id)%is_mapped = .TRUE.
@@ -1166,7 +1166,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wps(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wps(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wps(wp_id)%is_mapped = .TRUE.
@@ -1436,7 +1436,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wpv(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wpv(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpv(wp_id)%is_mapped = .TRUE.
@@ -2026,7 +2026,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     cutoff = Particles%cutoff + Particles%skin 
 
 #if   __KIND == __SINGLE_PRECISION
-    IF (cutoff .GT. topo%ghostsizes) THEN
+    IF (cutoff .GT. MINVAL(topo%ghostsizes)) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
@@ -2034,7 +2034,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         GOTO 9999
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
-    IF (cutoff .GT. topo%ghostsized) THEN
+    IF (cutoff .GT. MINVAL(topo%ghostsized)) THEN
 
         write(*,*) 'cutoff = ',cutoff
         write(*,*) 'cutoff used to create topology = ',topo%ghostsized
@@ -2063,7 +2063,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         IF (.NOT.skip_ghost_get) THEN
             CALL ppm_map_part_ghost_get(topoid,Particles%xp,ppm_dim,&
-                Particles%Npart,Particles%isymm,cutoff,info)
+                Particles%Npart,Particles%isymm,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -3511,7 +3511,7 @@ END SUBROUTINE particles_compute_hmin
 
 !!temporary hack to deal with both 2d and 3d
 SUBROUTINE particles_initialize(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
     !-----------------------------------------------------------------------
     ! Set initial particle positions
     !-----------------------------------------------------------------------
@@ -3546,13 +3546,15 @@ SUBROUTINE particles_initialize(Particles,Npart_global,info,&
     !!! extent of the physical domain. Only if topoid is not present.
     REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
     !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
 
     IF (ppm_dim .eq. 2) THEN
         CALL  particles_initialize2d(Particles,Npart_global,info,&
-            distrib,topoid,minphys,maxphys,cutoff)
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
     ELSE
         CALL  particles_initialize3d(Particles,Npart_global,info,&
-            distrib,topoid,minphys,maxphys,cutoff)
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
     ENDIF
 END SUBROUTINE particles_initialize
 
@@ -3740,7 +3742,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !====================================================================!
     ! open file
     IF (ppm_rank .EQ. 0) THEN
-        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+        WRITE(filename,'(A,A,A,I7.7,A)') TRIM(ADJUSTL(writedir)),&
             TRIM(ADJUSTL(Particles%name)),'_',itnum,'.xyz'
         OPEN(23,FILE=TRIM(ADJUSTL(filename)),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
@@ -3748,7 +3750,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             CALL ppm_error(999,caller,'failed to open file 23',__LINE__,info)
             GOTO 9999
         ENDIF
-        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+        WRITE(filename,'(A,A,A,I7.7,A)') TRIM(ADJUSTL(writedir)),&
             TRIM(ADJUSTL(Particles%name)),'_',itnum,'.txt'
         OPEN(24,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
@@ -4530,7 +4532,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wpv failed',3691,info)
+                    'particles_allocate_wpv failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ELSE
@@ -4539,7 +4541,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',3700,info)
+                    'particles_allocate_wps failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ENDIF
