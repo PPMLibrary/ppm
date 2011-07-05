@@ -151,6 +151,8 @@
       REAL(MK)                      :: xmaxf,ymaxf,zmaxf ! full domain
       REAL(MK)                      :: xmini,ymini,zmini ! inner domain
       REAL(MK)                      :: xmaxi,ymaxi,zmaxi ! inner domain
+      REAL(MK), DIMENSION(ppm_dim)  :: min_phys
+      REAL(MK), DIMENSION(ppm_dim)  :: max_phys
       REAL(MK), DIMENSION(ppm_dim)  :: len_phys
       REAL(MK)                      :: t0
       INTEGER                       :: iperiodic
@@ -258,10 +260,13 @@
       !  Compute the size of the computational box on this topology
       !-------------------------------------------------------------------------
 #if __KIND == __DOUBLE_PRECISION
-      len_phys(:) = topo%max_physd(:) - topo%min_physd(:)
+      min_phys(:) = topo%min_physd(:)
+      max_phys(:) = topo%max_physd(:)
 #else
-      len_phys(:) = topo%max_physs(:) - topo%min_physs(:)
+      min_phys(:) = topo%min_physs(:)
+      max_phys(:) = topo%max_physs(:)
 #endif
+      len_phys(:) = max_phys(:) - min_phys(:)
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls 
@@ -515,285 +520,61 @@
       !  Ok, we now have a list of potential ghosts. From these we extract/add
       !  their periodic images (if any). So, first we check for periodicity
       !-------------------------------------------------------------------------
-      iperiodic = 0
-      DO k=1,ppm_dim
-         IF (topo%bcdef(2*k-1).EQ.ppm_param_bcdef_periodic) THEN
-            iperiodic = iperiodic + 1
-         ENDIF 
-      ENDDO
+!      iperiodic = 0
+!      DO k=1,ppm_dim
+!         IF (topo%bcdef(2*k-1).EQ.ppm_param_bcdef_periodic) THEN
+!            iperiodic = iperiodic + 1
+!         ENDIF 
+!      ENDDO
 
-      !-------------------------------------------------------------------------
-      !  If we have periodicity, create the periodic ghosts
-      !-------------------------------------------------------------------------
-      IF (iperiodic.GT.0) THEN
-         !----------------------------------------------------------------------
-         !  handle periodicity in x
-         !----------------------------------------------------------------------
-         IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
-            !-------------------------------------------------------------------
-            !  (Re)allocate memory for the periodic ghosts
-            !-------------------------------------------------------------------
-            iopt   = ppm_param_alloc_grow_preserve
-            ldu(1) = ppm_dim
-            ldu(2) = 2*nghostplus
-            CALL ppm_alloc(xt,ldu,iopt,info) 
-            CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-               info = ppm_error_fatal
-               CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &             'xt',__LINE__,info)
-               GOTO 9999
-            ENDIF
+      !----------------------------------------------------------------------
+      !  handle boundary conditions in x
+      !----------------------------------------------------------------------
+      IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_x.inc"
+      ELSEIF (topo%bcdef(1).GE.ppm_param_bcdef_symmetry.AND. &
+      &       topo%bcdef(1).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_lx.inc"
+      ENDIF  
+      
+      IF (topo%bcdef(2).GE.ppm_param_bcdef_symmetry.AND. &
+      &   topo%bcdef(2).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_ux.inc"
+      ENDIF 
+      !----------------------------------------------------------------------
+      !  handle boundary conditions in y
+      !----------------------------------------------------------------------
+      IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_y.inc"
+      ELSEIF (topo%bcdef(3).GE.ppm_param_bcdef_symmetry.AND. &
+      &       topo%bcdef(3).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_ly.inc"
+      ENDIF
+      IF (topo%bcdef(4).GE.ppm_param_bcdef_symmetry.AND. &
+      &   topo%bcdef(4).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_uy.inc"
+      ENDIF
+      !----------------------------------------------------------------------
+      !  handle periodicity in z (if 3D)
+      !----------------------------------------------------------------------
+      IF (ppm_dim.EQ.3) THEN
+         !-------------------------------------------------------------------
+         !  yes, we split the if in two, since we do not know in what order
+         !  the compiler will check and ppm_bcdef will only be allocated to
+         !  four (4) in 2D
+         !-------------------------------------------------------------------
+         IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_z.inc"
+         ELSEIF (topo%bcdef(5).GE.ppm_param_bcdef_symmetry.AND. &
+         &       topo%bcdef(5).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_lz.inc"
+         ENDIF
+         IF (topo%bcdef(6).GE.ppm_param_bcdef_symmetry.AND. &
+         &   topo%bcdef(6).LE.ppm_param_bcdef_dirichlet) THEN
+#include "ghost_map_symmetry_bc_uz.inc"
+         ENDIF
 
-            ldu(1) = ldu(2)
-            CALL ppm_alloc(ighost,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &              'ighost',__LINE__,info)
-                GOTO 9999
-            ENDIF
-
-            !-------------------------------------------------------------------
-            !  copy periodic ghosts in the x-direction
-            !-------------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-            xminf = topo%min_physs(1)
-            xmini = topo%min_physs(1) + ghostsize
-#else
-            xminf = topo%min_physd(1)
-            xmini = topo%min_physd(1) + ghostsize
-#endif
-            k     = nghostplus
-            DO i=1,nghostplus
-               !----------------------------------------------------------------
-               !  first those at the west boundary 
-               !----------------------------------------------------------------
-               IF (xt(1,i).GE.xminf.AND.xt(1,i).LT.xmini) THEN
-                  k         = k + 1
-                  ighost(k) = ighost(i)
-                  xt(1,k)   = xt(1,i) + len_phys(1)
-                  xt(2,k)   = xt(2,i)
-                  xt_offset(1,k) = len_phys(1)
-                  xt_offset(2,k) = 0.0_MK
-                  IF (ppm_dim.EQ.3) THEN
-                     xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
-                  ENDIF 
-               ENDIF
-            ENDDO
-            IF (isymm.EQ.0) THEN
-               !----------------------------------------------------------------
-               !  then the east bc, but only if we are not using symmetry
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               xmaxf = topo%max_physs(1)
-               xmaxi = topo%max_physs(1) - ghostsize
-#else
-               xmaxf = topo%max_physd(1)
-               xmaxi = topo%max_physd(1) - ghostsize
-#endif
-               DO i=1,nghostplus
-                  IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i) - len_phys(1)
-                     xt(2,k)   = xt(2,i)
-                     xt_offset(1,k) = -len_phys(1)
-                     xt_offset(2,k) = 0.0_MK
-                     IF (ppm_dim.EQ.3) THEN
-                        xt(3,k)   = xt(3,i)
-                        xt_offset(3,k) = 0.0_MK
-                     ENDIF 
-                  ENDIF
-               ENDDO
-            ENDIF 
-
-            !-------------------------------------------------------------------
-            !  update the ghost counter
-            !-------------------------------------------------------------------
-            nghostplus = k
-         ENDIF ! of periodicity in x 
-
-         !----------------------------------------------------------------------
-         !  handle periodicity in y
-         !----------------------------------------------------------------------
-         IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
-            !-------------------------------------------------------------------
-            !  (Re)allocate memory for the periodic ghosts
-            !-------------------------------------------------------------------
-            iopt   = ppm_param_alloc_grow_preserve
-            ldu(1) = ppm_dim
-            ldu(2) = 2*nghostplus
-            CALL ppm_alloc(xt,ldu,iopt,info) 
-            CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-               info = ppm_error_fatal
-               CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &             'xt',__LINE__,info)
-               GOTO 9999
-            ENDIF
-
-            ldu(1) = ldu(2)
-            CALL ppm_alloc(ighost,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &              'ighost',__LINE__,info)
-                GOTO 9999
-            ENDIF
-
-            !-------------------------------------------------------------------
-            !  copy periodic ghosts in the y-direction
-            !-------------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-            yminf = topo%min_physs(2)
-            ymini = topo%min_physs(2) + ghostsize
-#else
-            yminf = topo%min_physd(2)
-            ymini = topo%min_physd(2) + ghostsize
-#endif
-            k     = nghostplus
-            DO i=1,nghostplus
-               !----------------------------------------------------------------
-               !  first those at the south boundary 
-               !----------------------------------------------------------------
-               IF (xt(2,i).GE.yminf.AND.xt(2,i).LT.ymini) THEN
-                  k         = k + 1
-                  ighost(k) = ighost(i)
-                  xt(1,k)   = xt(1,i) 
-                  xt(2,k)   = xt(2,i) + len_phys(2)
-                  xt_offset(1,k) = 0.0_MK
-                  xt_offset(2,k) = len_phys(2)
-                  IF (ppm_dim.EQ.3) THEN
-                     xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
-                  ENDIF 
-               ENDIF
-            ENDDO
-            IF (isymm.EQ.0) THEN
-               !----------------------------------------------------------------
-               !  then the north bc, but only if we are not using symmetry
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               ymaxf = topo%max_physs(2)
-               ymaxi = topo%max_physs(2) - ghostsize
-#else
-               ymaxf = topo%max_physd(2)
-               ymaxi = topo%max_physd(2) - ghostsize
-#endif
-               DO i=1,nghostplus
-                  IF  (xt(2,i).GT.ymaxi.AND.xt(2,i).LT.ymaxf) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i)
-                     xt(2,k)   = xt(2,i) - len_phys(2)
-                     xt_offset(1,k) = 0.0_MK
-                     xt_offset(2,k) = -len_phys(2)
-                     IF (ppm_dim.EQ.3) THEN
-                        xt(3,k)   = xt(3,i)
-                        xt_offset(3,k) = 0.0_MK
-                     ENDIF 
-                  ENDIF
-               ENDDO
-            ENDIF 
-
-            !-------------------------------------------------------------------
-            !  update the ghost counter
-            !-------------------------------------------------------------------
-            nghostplus = k
-         ENDIF ! of periodicity in y 
-
-         !----------------------------------------------------------------------
-         !  handle periodicity in z (if 3D)
-         !----------------------------------------------------------------------
-         IF (ppm_dim.EQ.3) THEN
-            !-------------------------------------------------------------------
-            !  yes, we split the if in two, since we do not know in what order
-            !  the compiler will check and ppm_bcdef will only be allocated to
-            !  four (4) in 2D
-            !-------------------------------------------------------------------
-            IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
-               !----------------------------------------------------------------
-               !  (Re)allocate memory for the periodic ghosts
-               !----------------------------------------------------------------
-               iopt   = ppm_param_alloc_grow_preserve
-               ldu(1) = ppm_dim
-               ldu(2) = 2*nghostplus
-               CALL ppm_alloc(xt,ldu,iopt,info) 
-               CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-               IF (info.NE.0) THEN
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &                'xt',__LINE__,info)
-                  GOTO 9999
-               ENDIF
-
-               ldu(1) = ldu(2)
-               CALL ppm_alloc(ighost,ldu,iopt,info) 
-               IF (info.NE.0) THEN
-                   info = ppm_error_fatal
-                   CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &                 'ighost',__LINE__,info)
-                   GOTO 9999
-               ENDIF
-
-               !----------------------------------------------------------------
-               !  copy periodic ghosts in the z-direction
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               zminf = topo%min_physs(3)
-               zmini = topo%min_physs(3) + ghostsize
-#else
-               zminf = topo%min_physd(3)
-               zmini = topo%min_physd(3) + ghostsize
-#endif
-               k     = nghostplus 
-               DO i=1,nghostplus
-                  !-------------------------------------------------------------
-                  !  first those at the south boundary 
-                  !-------------------------------------------------------------
-                  IF (xt(3,i).GE.zminf.AND.xt(3,i).LT.zmini) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i) 
-                     xt(2,k)   = xt(2,i)
-                     xt(3,k)   = xt(3,i) + len_phys(3)
-
-                     xt_offset(1,k) = 0.0_MK
-                     xt_offset(2,k) = 0.0_MK
-                     xt_offset(3,k) = len_phys(3)
-                  ENDIF
-               ENDDO
-               IF (isymm.EQ.0) THEN
-                  !-------------------------------------------------------------
-                  !  then the north bc, but only if we are not using symmetry
-                  !-------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-                  zmaxf = topo%max_physs(3)
-                  zmaxi = topo%max_physs(3) - ghostsize
-#else
-                  zmaxf = topo%max_physd(3)
-                  zmaxi = topo%max_physd(3) - ghostsize
-#endif
-                  DO i=1,nghostplus
-                     IF  (xt(3,i).GT.zmaxi.AND.xt(3,i).LT.zmaxf) THEN
-                        k         = k + 1
-                        ighost(k) = ighost(i)
-                        xt(1,k)   = xt(1,i)
-                        xt(2,k)   = xt(2,i) 
-                        xt(3,k)   = xt(3,i) - len_phys(3)
-                     ENDIF
-                  ENDDO
-               ENDIF 
-
-               !----------------------------------------------------------------
-               !  update the ghost counter
-               !----------------------------------------------------------------
-               nghostplus = k
-            ENDIF ! of periodicity in z 
-         ENDIF ! of 3D
-      ENDIF ! of periodicity at all/any direction
+      ENDIF ! of 3D
 
       !-------------------------------------------------------------------------
       !  Ok, now we have a shorter list of potential ghosts to search 
