@@ -285,13 +285,13 @@
       !-------------------------------------------------------------------------
       !  Define boundary conditions
       !-------------------------------------------------------------------------
+      INTEGER, PARAMETER :: ppm_param_bcdef_freespace     = 0
       INTEGER, PARAMETER :: ppm_param_bcdef_periodic      = 1
-      INTEGER, PARAMETER :: ppm_param_bcdef_freespace     = 2
-      INTEGER, PARAMETER :: ppm_param_bcdef_symmetry      = 3
+      INTEGER, PARAMETER :: ppm_param_bcdef_symmetry      = 2
+      INTEGER, PARAMETER :: ppm_param_bcdef_antisymmetry  = 3
       INTEGER, PARAMETER :: ppm_param_bcdef_neumann       = 4
       INTEGER, PARAMETER :: ppm_param_bcdef_dirichlet     = 5
       INTEGER, PARAMETER :: ppm_param_bcdef_robin         = 6
-      INTEGER, PARAMETER :: ppm_param_bcdef_antisymmetry  = 7
 
       !-------------------------------------------------------------------------
       !  memory allocation options
