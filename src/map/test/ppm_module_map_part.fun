@@ -13,7 +13,7 @@ real(mk),parameter              :: skin = 0._mk
 integer,parameter               :: ndim=2
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+real(mk)                        :: tol,min_rcp,max_cutoff
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
 integer                         :: np = 100000
@@ -51,7 +51,8 @@ real(mk)                         :: t0,t1,t2,t3
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
-        ghostlayer(1:2*ndim) = max_rcp
+        max_cutoff = 0.02_mk
+        ghostlayer(1:2*ndim) = max_cutoff
         bcdef(1:6) = ppm_param_bcdef_periodic
         
         nullify(xp,rcp,wp)
@@ -117,24 +118,27 @@ real(mk)                         :: t0,t1,t2,t3
         xp = 0.0_mk
         rcp = 0.0_mk
 
+        ! Cartesian
         !p_h = len_phys / real(npgrid,mk)
         !do j=1,npgrid
         !    do i=1,npgrid
         !        p_i = i + (j-1)*npgrid
         !        xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
         !        xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
-        !        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
+        !        rcp(p_i) = min_rcp + (max_cutoff-min_rcp)*randnb(p_i)
         !        do k=1,pdim
         !            wp(k,i) = rcp(i)*REAL(k,MK)
         !        enddo
         !    enddo
         !enddo
+
+        ! Random
         do i=1,np
             do j=1,ndim
                 xp(j,i) = min_phys(j)+&
                 len_phys(j)*randnb((ndim+1)*i-(ndim-j))
             enddo
-            rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
+            rcp(i) = min_rcp + (max_cutoff-min_rcp)*randnb((ndim+1)*i-ndim)
             do j=1,pdim
                 wp(j,i) = rcp(i)*REAL(j,MK)
             enddo
@@ -150,19 +154,23 @@ real(mk)                         :: t0,t1,t2,t3
         topoid = 0
 
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               max_rcp,cost,info)
+        &               max_cutoff,cost,info)
+        assert_equal(info,0)
 
         call ppm_map_part_global(topoid,xp,np,info)
+        assert_equal(info,0)
         call ppm_map_part_push(rcp,np,info)
         call ppm_map_part_push(wp,pdim,np,info)
         call ppm_map_part_send(np,newnp,info)
+        assert_equal(info,0)
         call ppm_map_part_pop(wp,pdim,np,newnp,info)
         call ppm_map_part_pop(rcp,np,newnp,info)
         call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        assert_equal(info,0)
         np=newnp
 
         call ppm_topo_check(topoid,xp,np,ok,info)
-
+        assert_equal(info,0)
         assert_true(ok)
 
     end test
@@ -187,7 +195,7 @@ real(mk)                         :: t0,t1,t2,t3
                 xp(j,i) = min_phys(j)+&
                 len_phys(j)*randnb((ndim+1)*i-(ndim-j))
             enddo
-            rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
+            rcp(i) = min_rcp + (max_cutoff-min_rcp)*randnb((ndim+1)*i-ndim)
             do j=1,pdim
                 wp(j,i) = rcp(i)*REAL(j,MK)
             enddo
@@ -202,7 +210,8 @@ real(mk)                         :: t0,t1,t2,t3
         topoid = 0
 
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
-        &               max_rcp,cost,info)
+        &               max_cutoff,cost,info)
+        assert_equal(info,0)
 
         call ppm_map_part_global(topoid,xp,np,info)
         call ppm_map_part_push(rcp,np,info)
@@ -224,17 +233,78 @@ real(mk)                         :: t0,t1,t2,t3
 
         ! do local mapping
         call ppm_map_part_partial(topoid,xp,np,info)
+        assert_equal(info,0)
         call ppm_map_part_push(rcp,np,info)
         call ppm_map_part_push(wp,pdim,np,info)
         call ppm_map_part_send(np,newnp,info)
+        assert_equal(info,0)
         call ppm_map_part_pop(wp,pdim,np,newnp,info)
         call ppm_map_part_pop(rcp,np,newnp,info)
         call ppm_map_part_pop(xp,ndim,np,newnp,info)
+        assert_equal(info,0)
         np=newnp
 
         call ppm_topo_check(topoid,xp,np,ok,info)
+        assert_equal(info,0)
         assert_true(ok)
         
+    end test
+
+    test ghost_get
+        ! test ghost get and how it treats pbc
+        ! Ticket #32
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+        integer                         :: npart = 1
+        integer                         :: newnpart
+        integer                         :: mpart
+        real(mk),dimension(:,:),pointer :: p
+        real(mk), parameter             :: gl = 0.1_mk
+    
+!this test does not make sense for nproc > 1
+if (nproc .eq. 1) then
+        allocate(p(ndim,npart))
+        p(1,1) = 0.05_mk
+        p(2,1) = 0.05_mk
+        bcdef(1:6) = ppm_param_bcdef_periodic
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        !decomp = ppm_param_decomp_xpencil
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        assert_true(ok)
+
+        call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
+        assert_equal(info,0)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        assert_equal(info,0)
+        
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        print *, npart,mpart
+        assert_true(ok)
+        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+endif
+
+
     end test
 
 end test_suite

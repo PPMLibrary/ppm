@@ -3,7 +3,7 @@
 !!!----------------------------------------------------------------------------!
 
 SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
-        wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun)
+        wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun,stats)
 
     USE ppm_module_error
     USE ppm_module_dcops
@@ -37,6 +37,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!! if level gradients are known analytically
     OPTIONAL                                              :: nb_fun
     !!! if narrow-band function is known analytically
+    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    !!! statistics on output
 
     ! argument-functions need an interface
     INTERFACE
@@ -409,7 +411,14 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 'particles_dcop_define failed', __LINE__,info)
             GOTO 9999
         ENDIF
-        CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
+        IF (opts%check_dcops .AND. PRESENT(stats)) THEN
+            CALL particles_dcop_compute(Particles,eta_id,info,&
+                c=opts%c,min_sv=stats%min_sv)
+            WRITE(cbuf,*) 'Smallest singular value for gradient was ',stats%min_sv
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
+        ELSE
+            CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
+        ENDIF
         IF (info.NE.0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -633,8 +642,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
 #if debug_verbosity > 0
     D => Get_wps(Particles,Particles%D_id)
+#ifdef __MPI
     CALL MPI_Allreduce(MINVAL(D(1:Particles%Npart)),min_D,1,&
         ppm_mpi_kind,MPI_MIN,ppm_comm,info)
+#else
+    min_D =MINVAL(D(1:Particles%Npart))
+#endif
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,E12.4)') 'Min D = ',min_D
         CALL ppm_write(ppm_rank,caller,cbuf,info)

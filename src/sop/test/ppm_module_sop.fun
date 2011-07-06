@@ -16,7 +16,7 @@ integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 10000
+integer                         :: np_global = 1000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -120,12 +120,10 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_initialize(Particles,np_global,info,&
                 ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
-        Assert_Equal(info,0)
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
         disp = 0.0001_mk * disp
         call particles_move(Particles,disp,info)
-        Assert_Equal(info,0)
         deallocate(disp)
         call particles_apply_bc(Particles,topoid,info)
         Assert_Equal(info,0)
@@ -144,7 +142,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         wp => get_wps(Particles,wp1_id)
         xp => get_xp(Particles)
         FORALL(ip=1:Particles%Npart) 
-            rcp(ip) = 1.9_mk*Particles%h_avg
+            rcp(ip) = MIN(1.9_mk*Particles%h_avg,cutoff)
             wp(ip) = 7._mk * f0_fun(xp(1:ndim,ip)) 
         END FORALL
         rcp => set_wps(Particles,Particles%rcp_id)
@@ -187,9 +185,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         endif
 
         Particles%itime = 0
+        opts%scale_D = 1.00_mk
+        opts%minimum_D = 0.05_mk
+        opts%rcp_over_D = 2.0_mk
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
+            opts%minimum_D = 0.01_mk
 
 !printout
         call ppm_vtk_particle_cloud('after_adapt0',Particles,info)

@@ -66,6 +66,10 @@ MODULE ppm_module_dcops
 !!! other. (NOT available without ppm_t_particles, for now).
 !!! Some usage examples can be found in the test client
 
+!this module is compiled only if either the BLAS libraries or the MKL libraries
+!can be found. It is left empty otherwise
+#ifdef __DCOPS
+
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
@@ -110,12 +114,23 @@ MODULE ppm_module_dcops
         MODULE PROCEDURE primitive_d
     END INTERFACE
 
+    INTERFACE ppm_matrix_svd
+        MODULE PROCEDURE ppm_matrix_svd_s
+        MODULE PROCEDURE ppm_matrix_svd_d
+    END INTERFACE
+
+    !INTERFACE ppm_dcop_check_vandermonde
+        !MODULE PROCEDURE ppm_dcop_check_vandermonde_s
+        !MODULE PROCEDURE ppm_dcop_check_vandermonde_d
+    !END INTERFACE
+
 !-------------------------------------------------------------------------
 ! Public subroutine
 !-------------------------------------------------------------------------
 PUBLIC :: solveLSE,solveLSE_2,solveLSE_n, &
         & ppm_dcops_2d,ppm_dcops_3d,      &
-        & ppm_part_dcops_2d,ppm_part_dcops_3d
+        & ppm_part_dcops_2d,ppm_part_dcops_3d, &
+        & particles_dcop_compute
 
 CONTAINS
 
@@ -197,10 +212,11 @@ CONTAINS
 
 #undef __KIND
 
-SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
+SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_particles_typedef
+    USE ppm_module_write
     IMPLICIT NONE
 
     !---------------------------------------------------------
@@ -215,12 +231,15 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
     !---------------------------------------------------------
     ! Optional arguments
     !---------------------------------------------------------
-    REAL(ppm_kind_double),OPTIONAL                                    :: c
+    REAL(ppm_kind_double),OPTIONAL                       :: c
     !!! ratio h/epsilon (default is 1.0)
+    REAL(ppm_kind_double),OPTIONAL   ,  INTENT(  OUT)    :: min_sv
+    !!! smallest singular value
     !---------------------------------------------------------
     ! local variables
     !---------------------------------------------------------
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_compute'
+    CHARACTER(LEN = ppm_char)               :: cbuf
     REAL(KIND(1.D0))                        :: t0
     LOGICAL                                 :: interp
 
@@ -229,6 +248,10 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
     !-------------------------------------------------------------------------
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
+
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
     IF (.NOT. ASSOCIATED(Particles)) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
@@ -256,6 +279,13 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
             & 'Operator not found, use particles_dcop_define first',&
             __LINE__,info)
         GOTO 9999
+    ENDIF
+    IF (Particles%ops%desc(eta_id)%is_computed) THEN
+        WRITE(cbuf,*) 'WARNING: The operator with id ',eta_id,&
+            & ' and name *',TRIM(ADJUSTL(Particles%ops%desc(eta_id)%name)),&
+            &'* seems to have already been computed. Unnecessary call to',&
+            &' particles_dcop_compute()'
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 
     interp = Particles%ops%desc(eta_id)%interp
@@ -285,10 +315,13 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
         ENDIF
     ENDIF
 
+    !-------------------------------------------------------------------------
+    ! Compute the DC operator
+    !-------------------------------------------------------------------------
     IF (ppm_dim .EQ. 2) THEN
-        CALL ppm_dcop_compute2d(Particles,eta_id,info,interp,c)
+        CALL ppm_dcop_compute2d(Particles,eta_id,info,interp,c,min_sv)
     ELSE
-        CALL ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
+        CALL ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     ENDIF
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -297,6 +330,11 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c)
             __LINE__,info)
         GOTO 9999
     ENDIF
+
+    !-------------------------------------------------------------------------
+    ! Update states
+    !-------------------------------------------------------------------------
+    Particles%ops%desc(eta_id)%is_computed = .TRUE.
 
     !-------------------------------------------------------------------------
     ! Finalize
@@ -334,4 +372,7 @@ FUNCTION binomial(n,k)
     INTEGER    :: binomial
     binomial = factorial(n)/(factorial(k)*factorial(n-k))
 END FUNCTION binomial
+
+#endif
+
 END MODULE ppm_module_dcops

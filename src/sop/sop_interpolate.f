@@ -176,7 +176,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
             IF (i.EQ.Particles_old%D_id) CYCLE
             IF (i.EQ.Particles_old%rcp_id) CYCLE
             IF (i.EQ.Particles_old%Dtilde_id) CYCLE
-            prop_id = 0
+            prop_id = i
             CALL particles_allocate_wps(Particles,prop_id,info,&
                 name=Particles_old%wps(i)%name)
             IF (info .NE. 0) THEN
@@ -285,6 +285,11 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
             !GOTO 9999
         !ENDIF
     ENDIF
+
+    !-------------------------------------------------------------------------!
+    ! Free DC operator
+    !-------------------------------------------------------------------------!
+    CALL particles_dcop_free(Particles,Particles%eta_id,info)
 
     !!-------------------------------------------------------------------------!
     !! Finalize

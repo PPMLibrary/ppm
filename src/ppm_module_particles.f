@@ -22,8 +22,15 @@ INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_single
 INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
 #endif
 
+
+    !----------------------------------------------------------------------
+    ! Global variables and parameters
+    !----------------------------------------------------------------------
     INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
     INTEGER, PARAMETER :: ppm_param_part_init_random = 2
+
+    INTEGER                               :: ppm_particles_seedsize
+    INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 
     !----------------------------------------------------------------------
     ! Private variables for the module
@@ -171,8 +178,10 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
                     IF (Particles%wps(wps_id)%has_ghosts) THEN
                         get_wps => Particles%wps(wps_id)%vec(1:Particles%Mpart)
                     ELSE
-                        write(*,*) 'ERROR: tried to get wps with ghosts &
-                            & when ghosts are not up-to-date. Returning NULL pointer'
+                        write(*,*) 'ERROR: tried to get wps (name = ',&
+                            & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
+                            & ') with ghosts when ghosts are not up-to-date.&
+                            & Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wps => NULL()
                     ENDIF
@@ -489,7 +498,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         ! Give a default name to this Particle set
         IF (PRESENT(name)) THEN
-            Particles%name = name
+            Particles%name = ADJUSTL(TRIM(name))
         ELSE
             Particles%name = particles_dflt_partname()
         ENDIF
@@ -895,7 +904,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wpi(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wpi(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpi(wp_id)%is_mapped = .TRUE.
@@ -1157,7 +1166,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wps(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wps(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wps(wp_id)%is_mapped = .TRUE.
@@ -1427,7 +1436,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! Update state
         !-----------------------------------------------------------------
         !Set the name of the property
-        IF (PRESENT(name)) Particles%wpv(wp_id)%name = TRIM(name)
+        IF (PRESENT(name)) Particles%wpv(wp_id)%name = ADJUSTL(TRIM(name))
         !Set its state to "mapped" (every index corresponds to exactly one
         !real particle)
         Particles%wpv(wp_id)%is_mapped = .TRUE.
@@ -1972,6 +1981,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     REAL(KIND(1.D0))                          :: t0
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
+    LOGICAL                                   :: skip_send
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -1979,12 +1989,16 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg=debug
     skip_ghost_get = .FALSE.
+    skip_send = .TRUE.
+    !we must not call ppm_map_part_send unless ppm_map_part_push (or ghost_get)
+    ! has been called (in which case, skip_send is set to FALSE)
+
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
@@ -1993,14 +2007,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF (.NOT.Particles%ontopology .OR. Particles%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Do a partial/global mapping before doing a ghost mapping',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.Particles%areinside) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'some particles may be outside the domain. Apply BC first',&
             &  __LINE__,info)
         GOTO 9999
@@ -2052,10 +2066,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
+                CALL ppm_error(ppm_err_sub_failed,caller,&
                     'ppm_map_part_ghost_get failed',__LINE__,info)
                 GOTO 9999
             ENDIF
+            skip_send = .FALSE.
         ENDIF
 
         !Update the ghost for the properties if
@@ -2073,10 +2088,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpi ',prop_id,&
                             TRIM(Particles%wpi(prop_id)%name)
@@ -2100,10 +2116,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wps ',prop_id,&
                         TRIM(Particles%wps(prop_id)%name)
@@ -2127,10 +2144,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                             Particles%wpv(prop_id)%lda, Particles%Npart,info)
                         IF (info .NE. 0) THEN
                             info = ppm_error_error
-                            CALL ppm_error(999,caller,&
+                            CALL ppm_error(ppm_err_sub_failed,caller,&
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+                        skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpv ',prop_id,&
                             TRIM(Particles%wpv(prop_id)%name)
@@ -2144,92 +2162,95 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
         ENDDO
 
-        CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(999,caller,&
-                'ppm_map_part_send failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        DO prop_id = Particles%max_wpvid,1,-1
-            IF(Particles%wpv(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wpv(prop_id)%has_ghosts) THEN
-                    IF(Particles%wpv(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wpv ',prop_id,&
-                            TRIM(Particles%wpv(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
-                            Particles%wpv(prop_id)%lda,Particles%Npart, &
-                            Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wpv ',prop_id,&
-                                TRIM(Particles%wpv(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wpv(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-        DO prop_id = Particles%max_wpsid,1,-1
-            IF(Particles%wps(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wps(prop_id)%has_ghosts) THEN
-                    IF(Particles%wps(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wps ',prop_id,&
-                            TRIM(Particles%wps(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
-                            Particles%Npart,Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wps ',prop_id,&
-                                TRIM(Particles%wps(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wps(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-        DO prop_id = Particles%max_wpiid,1,-1
-            IF(Particles%wpi(prop_id)%map_ghosts) THEN
-                IF(.NOT.Particles%wpi(prop_id)%has_ghosts) THEN
-                    IF(Particles%wpi(prop_id)%is_mapped) THEN
-                        IF(dbg) &
-                            write(*,*) 'popping-wpi ',prop_id,&
-                            TRIM(Particles%wpi(prop_id)%name)
-                        CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
-                            Particles%Npart,Particles%Mpart,info)
-                        IF (info .NE. 0) THEN
-                            write(*,*) 'popping-wpi ',prop_id,&
-                                TRIM(Particles%wpi(prop_id)%name)
-                            info = ppm_error_error
-                            CALL ppm_error(999,caller,&
-                                'ppm_map_part_pop failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
-                        Particles%wpi(prop_id)%has_ghosts = .TRUE.
-                    ENDIF
-                ENDIF
-            ENDIF
-        ENDDO
-
-        IF (.NOT.skip_ghost_get) THEN
-            CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
-                Particles%Mpart,info)
+        IF (.NOT. skip_send) THEN
+            CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
             IF (info .NE. 0) THEN
+                write(*,*) 'ppm_map_part_send failed with info = ',info
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
-                    'ppm_map_part_pop failed',__LINE__,info)
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'ppm_map_part_send failed',__LINE__,info)
                 GOTO 9999
             ENDIF
-        ENDIF
+
+            DO prop_id = Particles%max_wpvid,1,-1
+                IF(Particles%wpv(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wpv(prop_id)%has_ghosts) THEN
+                        IF(Particles%wpv(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wpv ',prop_id,&
+                                TRIM(Particles%wpv(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
+                                Particles%wpv(prop_id)%lda,Particles%Npart, &
+                                Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wpv ',prop_id,&
+                                    TRIM(Particles%wpv(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wpv(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+            DO prop_id = Particles%max_wpsid,1,-1
+                IF(Particles%wps(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wps(prop_id)%has_ghosts) THEN
+                        IF(Particles%wps(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wps ',prop_id,&
+                                TRIM(Particles%wps(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
+                                Particles%Npart,Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wps ',prop_id,&
+                                    TRIM(Particles%wps(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wps(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+            DO prop_id = Particles%max_wpiid,1,-1
+                IF(Particles%wpi(prop_id)%map_ghosts) THEN
+                    IF(.NOT.Particles%wpi(prop_id)%has_ghosts) THEN
+                        IF(Particles%wpi(prop_id)%is_mapped) THEN
+                            IF(dbg) &
+                                write(*,*) 'popping-wpi ',prop_id,&
+                                TRIM(Particles%wpi(prop_id)%name)
+                            CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
+                                Particles%Npart,Particles%Mpart,info)
+                            IF (info .NE. 0) THEN
+                                write(*,*) 'popping-wpi ',prop_id,&
+                                    TRIM(Particles%wpi(prop_id)%name)
+                                info = ppm_error_error
+                                CALL ppm_error(ppm_err_sub_failed,caller,&
+                                    'ppm_map_part_pop failed',__LINE__,info)
+                                GOTO 9999
+                            ENDIF
+                            Particles%wpi(prop_id)%has_ghosts = .TRUE.
+                        ENDIF
+                    ENDIF
+                ENDIF
+            ENDDO
+
+            IF (.NOT.skip_ghost_get) THEN
+                CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
+                    Particles%Mpart,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'ppm_map_part_pop failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ENDIF
+        ENDIF !.NOT.skip_send
     ENDIF
 
 
@@ -2500,7 +2521,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER                                               :: di,prop_id
+    INTEGER                                               :: di,prop_id,op_id
     REAL(ppm_kind_double)                                 :: t0
     CHARACTER(LEN = ppm_char)                 :: caller ='particles_have_moved'
     !-------------------------------------------------------------------------
@@ -2512,12 +2533,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles)) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
 
+    !-----------------------------------------------------------------
+    !  Update states
+    !-----------------------------------------------------------------
     Particles%has_ghosts = .FALSE.
 
     DO prop_id = 1,Particles%max_wpiid
@@ -2529,6 +2553,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     DO prop_id = 1,Particles%max_wpvid
         Particles%wpv(prop_id)%has_ghosts = .FALSE.
     ENDDO
+    IF (ASSOCIATED(Particles%ops)) THEN
+        DO op_id=1,Particles%ops%max_opsid
+            Particles%ops%desc(op_id)%is_computed = .FALSE.
+        ENDDO
+    ENDIF
 
     Particles%ontopology = .FALSE.
     Particles%cartesian = .FALSE.
@@ -2578,7 +2607,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER                                   :: prop_id
+    INTEGER                                   :: prop_id,op_id
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
@@ -2654,10 +2683,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
     ENDIF
 
+    !-----------------------------------------------------------------------
     !Update state
+    !-----------------------------------------------------------------------
     Particles%neighlists = .TRUE.
-    !
-
     Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
     Particles%nneighmax = MAXVAL(Particles%nvlist(1:Particles%Npart))
 
@@ -2674,6 +2703,16 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         GOTO 9999
     ENDIF
 #endif
+    ! DC operators that do not use a xset neighbour list, if they exist, 
+    ! are no longer valid (they depend on the neighbour lists)
+    IF (ASSOCIATED(Particles%ops)) THEN
+        DO op_id=1,Particles%ops%max_opsid
+            IF (.NOT.Particles%ops%desc(op_id)%interp) THEN
+                Particles%ops%desc(op_id)%is_computed = .FALSE.
+            ENDIF
+        ENDDO
+    ENDIF
+
 
     IF (verbose) &
         write(*,*) 'computed neighlists'
@@ -2723,7 +2762,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     INTEGER                                   :: iopt
     !!! allocation mode, see one of ppm_alloc_* subroutines.
-    INTEGER                                   :: prop_id
+    INTEGER                                   :: prop_id,op_id
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
@@ -2816,7 +2855,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !Update state
     Particles_1%neighlists_cross = .TRUE.
     !
-
     ! TODO:
     !WARNING: does not work with several processors!
     ! would require an MPI_GATHER
@@ -2827,6 +2865,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     Particles_1%nneighmax_cross = &
         MAXVAL(Particles_1%nvlist_cross(1:Particles_1%Npart))
     Particles_1%Particles_cross => Particles_2
+    ! DC operators that use a xset neighbour list (i.e. interpolation),
+    ! if they exist, are no longer valid 
+    IF (ASSOCIATED(Particles_1%ops)) THEN
+        DO op_id=1,Particles_1%ops%max_opsid
+            IF (Particles_1%ops%desc(op_id)%interp) THEN
+                Particles_1%ops%desc(op_id)%is_computed = .FALSE.
+            ENDIF
+        ENDDO
+    ENDIF
 
     IF (verbose) &
         write(*,*) 'computed xset neighlists'
@@ -3332,6 +3379,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !store new cutoff value
     Particles%cutoff = cutoff_new
 
+    !IF (cutoff_new .GT. 1._mk) THEN
+        !WRITE(*,*) 'probably an error here'
+        !WRITE(*,*) Particles%cutoff, Particles%wps(Particles%rcp_id)%is_mapped
+        !WRITE(*,*) MAXVAL(Particles%wps(Particles%rcp_id)%vec(1:Particles%Npart))
+        !info = ppm_error_error
+        !CALL ppm_error(999,caller,'update_cutoff failed',__LINE__,info)
+        !GOTO 9999
+    !ENDIF
 
     !-----------------------------------------------------------------------
     ! Finalize
@@ -3429,8 +3484,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     CALL MPI_Allreduce(hmin2,hmin2,1,ppm_mpi_kind,MPI_MIN,ppm_comm,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            &  'MPI_Allreduce failed',&
+        CALL ppm_error(ppm_err_mpi_fail,caller,'MPI_Allreduce failed',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -3457,7 +3511,7 @@ END SUBROUTINE particles_compute_hmin
 
 !!temporary hack to deal with both 2d and 3d
 SUBROUTINE particles_initialize(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
     !-----------------------------------------------------------------------
     ! Set initial particle positions
     !-----------------------------------------------------------------------
@@ -3492,13 +3546,15 @@ SUBROUTINE particles_initialize(Particles,Npart_global,info,&
     !!! extent of the physical domain. Only if topoid is not present.
     REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
     !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
 
     IF (ppm_dim .eq. 2) THEN
         CALL  particles_initialize2d(Particles,Npart_global,info,&
-            distrib,topoid,minphys,maxphys,cutoff)
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
     ELSE
         CALL  particles_initialize3d(Particles,Npart_global,info,&
-            distrib,topoid,minphys,maxphys,cutoff)
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
     ENDIF
 END SUBROUTINE particles_initialize
 
@@ -3555,7 +3611,9 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: propp_iproc
     REAL(MK),DIMENSION(:,:),ALLOCATABLE        :: xp_iproc
     INTEGER                                    :: count,iproc,i,j,ip,di
+#ifdef __MPI
     INTEGER,DIMENSION(MPI_STATUS_SIZE)         :: status
+#endif
     REAL(KIND(1.D0))                           :: t0
     INTEGER                                    :: ndim2,lda,Npart_local
     LOGICAL                                    :: ghosts
@@ -3684,7 +3742,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !====================================================================!
     ! open file
     IF (ppm_rank .EQ. 0) THEN
-        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+        WRITE(filename,'(A,A,A,I7.7,A)') TRIM(ADJUSTL(writedir)),&
             TRIM(ADJUSTL(Particles%name)),'_',itnum,'.xyz'
         OPEN(23,FILE=TRIM(ADJUSTL(filename)),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
@@ -3692,7 +3750,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
             CALL ppm_error(999,caller,'failed to open file 23',__LINE__,info)
             GOTO 9999
         ENDIF
-        WRITE(filename,'(A,A,A,I6.6,A)') TRIM(ADJUSTL(writedir)),&
+        WRITE(filename,'(A,A,A,I7.7,A)') TRIM(ADJUSTL(writedir)),&
             TRIM(ADJUSTL(Particles%name)),'_',itnum,'.txt'
         OPEN(24,FILE=TRIM(filename),FORM='FORMATTED',STATUS='REPLACE',IOSTAT=info)
         IF (info .NE. 0) THEN
@@ -3718,13 +3776,17 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         Npart_local = Particles%Npart
     ENDIF
 
+#ifdef __MPI
     CALL MPI_Gather(Npart_local,1,MPI_INTEGER,Npart_vec,1,&
         MPI_INTEGER,0,ppm_comm,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,'MPI_Gather failed',__LINE__,info)
+        CALL ppm_error(ppm_err_mpi_fail,caller,'MPI_Gather failed',__LINE__,info)
         GOTO 9999
     ENDIF
+#else
+    Npart_vec = Npart_local
+#endif
 
     IF (ppm_rank .EQ. 0) THEN
 
@@ -3732,7 +3794,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         DO iproc = 1,ppm_nproc
 
             IF (iproc .GT. 1) THEN
-
+#ifdef __MPI
                 ALLOCATE(xp_iproc(ppm_dim,Npart_vec(iproc)),STAT=info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
@@ -3768,7 +3830,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 
                 DEALLOCATE(propp_iproc)
                 DEALLOCATE(xp_iproc)
-
+#endif
             ELSE
 
                 ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
@@ -3854,7 +3916,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ENDIF
 
     ELSE
-
+#ifdef __MPI
         count = ppm_dim*Npart_local
         IF (MK .EQ. 4) THEN
             CALL MPI_Send(Particles%xp,count,MPI_REAL,0,ppm_rank,ppm_comm,info)
@@ -3922,6 +3984,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         ENDIF
 
         DEALLOCATE(propp_iproc)
+#endif
     ENDIF
 
     DEALLOCATE(Npart_vec)
@@ -4048,6 +4111,8 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
             Particles%ops%desc(i)%interp = .FALSE.
             Particles%ops%desc(i)%nterms = 0
             Particles%ops%desc(i)%vector = .FALSE.
+            Particles%ops%desc(i)%is_computed = .FALSE.
+            Particles%ops%desc(i)%is_defined = .FALSE.
         ENDDO
     ENDIF
     IF (MINVAL(degree).LT.0) THEN
@@ -4082,12 +4147,22 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     ENDIF
 
     IF (eta_id.EQ.0) THEN
+        !find a new eta_id that is not already being used
         eta_id = 1
-        DO WHILE (ASSOCIATED(Particles%ops%desc(eta_id)%degree))
+        DO WHILE (Particles%ops%desc(eta_id)%is_defined)
             eta_id = eta_id + 1
+            IF (eta_id .GT. SIZE(Particles%ops%desc)) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,   &
+            & 'Too many ops defined. Time to implement a smarter data structure',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
         ENDDO
+
     ELSE
-        IF (ASSOCIATED(Particles%ops%desc(eta_id)%degree)) THEN
+        IF (Particles%ops%desc(eta_id)%is_defined) THEN
+            !this operator will be overwritten
             CALL particles_dcop_free(Particles,eta_id,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
@@ -4144,11 +4219,15 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     ELSE
         Particles%ops%desc(eta_id)%vector = .FALSE.
     ENDIF
+    Particles%ops%desc(eta_id)%is_computed = .FALSE.
 
+    !-------------------------------------------------------------------------
     !update states
+    !-------------------------------------------------------------------------
     Particles%ops%nb_ops = Particles%ops%nb_ops+1
     IF (eta_id .GT. Particles%ops%max_opsid) &
         Particles%ops%max_opsid = eta_id
+    Particles%ops%desc(eta_id)%is_defined = .TRUE.
 
     !-------------------------------------------------------------------------
     ! Finalize
@@ -4254,11 +4333,13 @@ SUBROUTINE particles_dcop_free(Particles,eta_id,info)
     Particles%ops%desc(eta_id)%interp = .FALSE.
     Particles%ops%desc(eta_id)%nterms = 0
     Particles%ops%desc(eta_id)%vector = .FALSE.
+    Particles%ops%desc(eta_id)%is_computed = .FALSE.
+    Particles%ops%desc(eta_id)%is_defined = .FALSE.
     Particles%ops%ker(eta_id)%vec=> NULL()
 
     !update indices
     Particles%ops%nb_ops = Particles%ops%nb_ops - 1
-    DO WHILE (.NOT.ASSOCIATED(Particles%ops%desc(Particles%ops%max_opsid)%degree))
+    DO WHILE (.NOT.Particles%ops%desc(Particles%ops%max_opsid)%is_defined)
         Particles%ops%max_opsid = Particles%ops%max_opsid - 1
         IF (Particles%ops%max_opsid .LE. 0) EXIT
     ENDDO
@@ -4334,17 +4415,34 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
 
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
     IF (.NOT. ASSOCIATED(Particles%ops)) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             & 'No operator data structure found',&
             __LINE__,info)
         GOTO 9999
     ENDIF
     IF (eta_id.LE.0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             & 'invalid value for ops id',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT.(Particles%ops%desc(eta_id)%is_defined)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Cannot apply DC operator. Call particles_dcops_define first.',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT.(Particles%ops%desc(eta_id)%is_computed)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Cannot apply DC operator. Call particles_dcops_compute first.',&
             __LINE__,info)
         GOTO 9999
     ENDIF
@@ -4354,6 +4452,79 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     ELSE
         vector_input = .FALSE.
     ENDIF
+
+    IF (Particles%ops%desc(eta_id)%interp) THEN
+        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to specify which set of particles &
+                &   (particles_cross) should be used for interpolation',&
+                & __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT. (Particles%neighlists_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please compute xset neighbor lists first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF(vector_input) THEN
+            IF (.NOT.Particles%Particles_cross%wpv(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%Particles_cross%wpv(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            IF (.NOT.Particles%Particles_cross%wps(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%Particles_cross%wps(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+
+    ELSE
+
+        IF(vector_input) THEN
+            IF (.NOT.Particles%wpv(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%wpv(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            IF (.NOT.Particles%wps(from_id)%has_ghosts) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Particles%wps(from_id)%name)),&
+                    ' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDIF
+
+    !allocate output field if needed
     IF (to_id.EQ.0) THEN
         IF (vector_output) THEN
             CALL particles_allocate_wpv(Particles,to_id,&
@@ -4361,7 +4532,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wpv failed',3691,info)
+                    'particles_allocate_wpv failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ELSE
@@ -4370,7 +4541,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',3700,info)
+                    'particles_allocate_wps failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ENDIF
@@ -4393,21 +4564,6 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
 
 
     IF (Particles%ops%desc(eta_id)%interp) THEN
-        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Need to specify which set of particles &
-                &   (particles_cross) should be used for interpolation',&
-                & __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (.NOT. (Particles%neighlists_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Please compute xset neighbor lists first',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
         nvlist => Particles%nvlist_cross
         vlist => Particles%vlist_cross
         IF (vector_output) THEN
@@ -4431,7 +4587,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                     ENDDO
                 ENDDO
                 wps2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
-            EnDIF
+            ENDIF
         ELSE
             wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
             DO ip = 1,Particles%Npart

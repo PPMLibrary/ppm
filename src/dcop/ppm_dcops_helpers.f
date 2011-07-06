@@ -51,7 +51,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -128,7 +128,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -223,7 +223,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -247,7 +247,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
             GOTO 9999
         ENDIF
 
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
@@ -284,7 +284,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
         !====================================================================!
         ! solve originial LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
@@ -301,7 +301,7 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     ! check if equations were solved right (if you trust in LAPACK and this 
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -359,7 +359,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -442,7 +442,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -544,7 +544,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -567,7 +567,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             GOTO 9999
         ENDIF
 
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
@@ -578,7 +578,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Anew,indxnew,bnew_2,'N',info)
 #else
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_2,nnew,info)
@@ -618,7 +618,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
         !====================================================================!
         ! solve originial LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
@@ -628,7 +628,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b_2,'N',info)
 #else
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b_2,n,info)
@@ -645,7 +645,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     ! check if equations were solved right (if you trust in LAPACK and this 
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -668,7 +668,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
             info = -1
             GOTO 9999
         ENDIF
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL gemv(A,x_or_b_2,real_b,1._MK,0._MK)
 #else
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -720,7 +720,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! x_or_b contains x on output
     ! A is not altered
 
-#ifdef __WITH_MKL
+#ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas
 #endif
@@ -797,7 +797,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 
     !=======================================================================!
     ! compute the LU factorization of A
-#ifdef __WITH_MKL
+#ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
     CALL dgetrf(n,n,Acopy,n,indx,info)
@@ -892,7 +892,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 
         !====================================================================!
         ! solve new LSE
-#ifdef __WITH_MKL
+#ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
@@ -916,7 +916,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
         ENDIF
 
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL getrs(Anew,indxnew,bnew_n(:,k),'N',info)
 #else
             CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
@@ -957,7 +957,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
         !====================================================================!
         ! solve originial LSE
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL getrs(Acopy,indx,x_or_b(:,k),'N',info)
 #else
             CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
@@ -977,7 +977,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! code PUT THIS IN IF BRANCH FOR THE REDUCED SYSTEM)
     IF (check) THEN
         DO k=1,n_eq
-#ifdef __WITH_MKL
+#ifdef __MKL
             CALL gemv(A,x_or_b(:,k),real_b,1._MK,0._MK)
 #else
             CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
@@ -1023,3 +1023,277 @@ END SUBROUTINE solveLSE_ns
 END SUBROUTINE solveLSE_nd
 #endif
 
+#if    __KIND == __SINGLE_PRECISION
+SUBROUTINE ppm_matrix_svd_s(Z,n,m,info,min_sv)
+#elif  __KIND == __DOUBLE_PRECISION
+SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
+#endif
+    USE ppm_module_write
+    USE ppm_module_data, ONLY: ppm_rank
+#ifdef __MKL
+    USE mkl95_lapack
+    USE mkl95_blas
+#endif
+
+    IMPLICIT NONE
+
+#if    __KIND == __SINGLE_PRECISION 
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif  __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+    ! arguments
+    REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
+    INTEGER,                          INTENT(IN   ) :: n
+    INTEGER,                          INTENT(IN   ) :: m
+    INTEGER,                          INTENT(  OUT) :: info
+
+    ! optional argument
+    REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
+    ! local variables
+    INTEGER                               :: j
+    CHARACTER(LEN = ppm_char)             :: cbuf
+    CHARACTER(LEN = ppm_char)             :: caller = 'ppm_matrix_svd'
+    REAL(KIND(1.D0))                      :: t0
+
+    REAL(MK), DIMENSION (:), POINTER      :: offdiag, diag
+    INTEGER                               :: lwork, mm,nnn
+    REAL(MK), DIMENSION (:), POINTER      :: work
+    REAL(MK), DIMENSION (:,:), POINTER    :: tauq,taup
+
+
+    mm = m
+    nnn = n
+    ALLOCATE(offdiag(nnn-1),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    ALLOCATE(diag(nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    
+    ALLOCATE(taup(mm,nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    ALLOCATE(tauq(mm,nnn),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+    lwork= -1
+    ALLOCATE(work(1),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !get the size for lwork
+#ifdef __MKL
+    CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    lwork= work(1)
+    DEALLOCATE(work)
+    ALLOCATE(work(lwork),STAT=info)
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !decomposition
+#ifdef __MKL
+    CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    !get singular values
+#ifdef __MKL
+    CALL bdsqr(diag,offdiag)
+#endif
+    IF (info.NE.0) THEN
+        CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
+        info=-1
+        GOTO 9999
+    ENDIF
+
+    DEALLOCATE(taup)
+    DEALLOCATE(tauq)
+    DEALLOCATE(work)
+
+    !!----------------------------------------------------------------------
+    !! Raise an error if the singular value is below a threshold
+    !!----------------------------------------------------------------------
+
+    IF (MINVAL(diag) .LT. 0.001_mk) THEN
+        WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
+        CALL ppm_write(ppm_rank,caller,cbuf, info)
+        info = -1
+        GOTO 9999
+    ENDIF
+    IF (PRESENT(min_sv)) min_sv=MINVAL(diag)
+    
+    9999 CONTINUE ! jump here upon error
+
+
+#if    __KIND == __SINGLE_PRECISION
+END SUBROUTINE ppm_matrix_svd_s
+#elif  __KIND == __DOUBLE_PRECISION
+END SUBROUTINE ppm_matrix_svd_d
+#endif
+
+
+!#if    __KIND == __SINGLE_PRECISION
+!SUBROUTINE ppm_dcop_check_vandermonde_s(xp,ncoeff,npoints,info,min_sv)
+!#elif  __KIND == __DOUBLE_PRECISION
+!SUBROUTINE ppm_dcop_check_vandermonde_d(xp,ncoeff,npoints,info,min_sv)
+!#endif
+    !USE ppm_module_write
+    !USE ppm_module_data, ONLY: ppm_rank
+!#ifdef __MKL
+    !USE mkl95_lapack
+    !USE mkl95_blas
+!#endif
+
+    !IMPLICIT NONE
+
+!#if    __KIND == __SINGLE_PRECISION 
+    !INTEGER, PARAMETER :: MK = ppm_kind_single
+!#elif  __KIND == __DOUBLE_PRECISION
+    !INTEGER, PARAMETER :: MK = ppm_kind_double
+!#endif
+    !! arguments
+    !REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
+    !INTEGER,                          INTENT(IN   ) :: ncoeff
+    !INTEGER,                          INTENT(IN   ) :: npoints
+    !INTEGER,                          INTENT(  OUT) :: info
+
+    !! optional argument
+    !REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
+    !! local variables
+    !INTEGER                               :: j
+    !CHARACTER(LEN = ppm_char)             :: cbuf
+    !CHARACTER(LEN = ppm_char)             :: caller = 'ppm_dcop_check_vandermonde'
+    !REAL(KIND(1.D0))                      :: t0
+
+    !REAL(MK), DIMENSION (:), POINTER      :: offdiag, diag
+    !INTEGER                               :: lwork, mm,nnn
+    !REAL(MK), DIMENSION (:), POINTER      :: work
+    !REAL(MK), DIMENSION (:,:), POINTER    :: tauq,taup
+
+
+    !mm = npoints
+    !nnn = ncoeff
+    !ALLOCATE(offdiag(nnn-1),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !ALLOCATE(diag(nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    
+    !ALLOCATE(taup(mm,nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !ALLOCATE(tauq(mm,nnn),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+    !lwork= -1
+    !ALLOCATE(work(1),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!get the size for lwork
+!#ifdef __MKL
+    !CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+!#endif
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !lwork= work(1)
+    !DEALLOCATE(work)
+    !ALLOCATE(work(lwork),STAT=info)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'allocation failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!decomposition
+!#ifdef __MKL
+    !CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+!#endif
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !!get singular values
+    !CALL bdsqr(diag,offdiag)
+    !IF (info.NE.0) THEN
+        !CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
+        !info=-1
+        !GOTO 9999
+    !ENDIF
+
+    !DEALLOCATE(taup)
+    !DEALLOCATE(tauq)
+    !DEALLOCATE(work)
+
+    !!!----------------------------------------------------------------------
+    !!! Raise an error if the singular value is below a threshold
+    !!!----------------------------------------------------------------------
+
+    !IF (MINVAL(diag) .LT. 0.001_mk) THEN
+        !WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
+        !CALL ppm_write(ppm_rank,caller,cbuf, info)
+        !info = -1
+        !GOTO 9999
+    !ENDIF
+    !IF (PRESENT(min_sv)) min_sv=MINVAL(diag)
+    
+    !9999 CONTINUE ! jump here upon error
+
+
+!#if    __KIND == __SINGLE_PRECISION
+!END SUBROUTINE ppm_dcop_check_vandermonde_s
+!#elif  __KIND == __DOUBLE_PRECISION
+!END SUBROUTINE ppm_dcop_check_vandermonde_d
+!#endif

@@ -81,7 +81,12 @@ TYPE pnt_array_desc
     !!! name of the vector-valued property
     LOGICAL                                        :: interp
     !!! True if the operator interpolates data from one set of particles
-    !!! to another.
+    LOGICAL                                        :: is_computed
+    !!! True if the operator has been computed (will be set to False when
+    !!! particles move, or e.g. after particle-particle interpolation)
+    LOGICAL                                        :: is_defined
+    !!! True if the operator has been defined (this usually means that
+    !!! the user wants to keep it, unless explicitely stated otherwise)
 END TYPE pnt_array_desc
 
 TYPE ppm_t_operator

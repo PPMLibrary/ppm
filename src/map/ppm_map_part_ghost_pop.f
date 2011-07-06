@@ -62,9 +62,8 @@
       !!! will be *added* to array passed to the routine.
       !!!
       !!! [WARNING]
-      !!! DIM is the dimension of the pdata array and not the space
+      !!! `lda` is the dimension of the pdata array and not the space
       !!! dimension ppm_dim!
-      !TODO: DIM? or lda?
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -146,11 +145,12 @@
 
       ! skip if the buffer is empty
       IF (ppm_buffer_set .LT. 1) THEN
-        IF (ppm_debug .GT. 1) THEN
-            CALL ppm_write(ppm_rank,'ppm_map_part_ghost_pop',  &
-     &          'Buffer is empty: skipping pop!',info)
-        ENDIF
-        GOTO 9999
+          info = ppm_error_notice
+          IF (ppm_debug .GT. 1) THEN
+            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_part_ghost_pop',    &
+     &          'Buffer is empty: skipping pop!',__LINE__,info)
+          ENDIF
+          GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -399,11 +399,6 @@
                   ibuffer = ibuffer + 1
                   pdata(3,ipart) = pdata(3,ipart) + ppm_recvbufferd(ibuffer)
 
-!JHW           pdata(1,ipart) = ppm_recvbufferd(ibuffer)
-!JHW           ibuffer = ibuffer + 1
-!JHW           pdata(2,ipart) = ppm_recvbufferd(ibuffer)
-!JHW           ibuffer = ibuffer + 1
-!JHW           pdata(3,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                   pdata(1,ipart) = pdata(1,ipart) + CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &                ppm_recvbufferd(ibuffer),ppm_kind_single)

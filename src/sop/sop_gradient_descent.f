@@ -14,7 +14,7 @@
 SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         nvlist_cross,vlist_cross,    &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
-        wp_fun,D_fun,wp_grad_fun,threshold,need_deriv)
+        wp_fun,D_fun,wp_grad_fun,threshold,need_deriv,stats)
 
     USE ppm_module_inl_xset_vlist
     USE ppm_module_io_vtk
@@ -49,6 +49,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     OPTIONAL                                               :: wp_fun
     !Gradient of the field function (usually known only during initialisation)
     OPTIONAL                                               :: wp_grad_fun
+    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    !!! statistics on output
     ! argument-functions need an interface
     INTERFACE
         FUNCTION D_fun(f,dfdx,opts,lap_f)
@@ -315,6 +317,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
             !!-----------------------------------------------------------------!
@@ -357,6 +360,15 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 info = -1
                 GOTO 9999
             ENDIF
+
+#if debug_verbosity > 0
+            IF (MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
+                CALL ppm_write(ppm_rank,caller,&
+                    'Insufficient number of xset neighbours to compute D',info)
+                info = -1
+                GOTO 9999
+            ENDIF
+#endif
 
             D     => Get_wps(Particles,    Particles%D_id)
             D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
@@ -671,7 +683,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
 
 #if debug_verbosity > 0
-    WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
+    WRITE(cbuf,'(2(A,E11.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
         CALL ppm_write(ppm_rank,caller,cbuf,info)
@@ -713,7 +725,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         nvlist_cross,vlist_cross,   &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,level_fun,level_grad_fun,&
-        threshold,need_deriv,nb_fun)
+        threshold,need_deriv,nb_fun,stats)
 
     USE ppm_module_inl_xset_vlist
     USE ppm_module_sop_typedef
@@ -753,6 +765,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     OPTIONAL                                               :: level_grad_fun
     !Gradient of the level function (usually known only during initialisation)
     ! argument-functions need an interface
+    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    !!! statistics on output
     INTERFACE
         FUNCTION D_fun(f1,dfdx,opts,f2)
             USE ppm_module_data, ONLY: ppm_dim
@@ -1669,7 +1683,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
 
 #if debug_verbosity > 0
-    WRITE(cbuf,'(2(A,E10.4))') 'Finished adapt loop. Psi_mean = ',&
+    WRITE(cbuf,'(2(A,E11.4))') 'Finished adapt loop. Psi_mean = ',&
         Psi_global,' Psi_max = ',Psi_max
     IF (ppm_rank.EQ.0) & 
         CALL ppm_write(ppm_rank,caller,cbuf,info)

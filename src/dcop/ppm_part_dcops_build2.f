@@ -1,7 +1,7 @@
 #if   __DIM == 2
-SUBROUTINE ppm_dcop_compute2d(Particles,eta_id,info,interp,c)
+SUBROUTINE ppm_dcop_compute2d(Particles,eta_id,info,interp,c,min_sv)
 #elif __DIM == 3
-SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
+SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
 #endif
     !!! Computes generalized DC operators
     !!! if the optional argument interp is true, the routine uses
@@ -38,8 +38,10 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     !!! true if the operator is to be computed using interpolating methods
     !!! (with data stored in another set of particles Particles%Particles_cross)
     REAL(MK),                  OPTIONAL, INTENT(IN   )   :: c
-    !!! true if the operator is to be computed using interpolating methods
-    !!! (with data stored in another set of particles Particles%Particles_cross)
+    !!! ratio h/epsilon
+    REAL(MK),                  OPTIONAL, INTENT(  OUT)   :: min_sv
+    !!! if present, compute the singular value decomposition of the 
+    !!! vandermonde matrix for each operator and return the smallest one
 
     !---------------------------------------------------------
     ! local variables
@@ -56,6 +58,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     REAL(MK)                              :: nn_scaled
     REAL(MK), DIMENSION(:,:),POINTER      :: b=>NULL(),b_0=>NULL()
     REAL(MK), DIMENSION(:,:),POINTER      :: Z=>NULL()
+    REAL(MK), DIMENSION(:,:),POINTER      :: Z_copy=>NULL()
     REAL(MK),DIMENSION(:)  ,ALLOCATABLE   :: d2_one2all
     REAL(MK),DIMENSION(:,:),ALLOCATABLE   :: dx
     INTEGER, DIMENSION(:,:),ALLOCATABLE   :: alpha,gamma
@@ -82,6 +85,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     !!! number of terms of the differential operator
     TYPE(ppm_t_particles),POINTER         :: Particles_cross=>NULL()
     REAL(MK)                              :: c_value
+    REAL(MK)                              :: min_sv_p
 
     !!---------------------------------------------------------------------!
     !! Initialize
@@ -263,6 +267,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
         CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
+#ifdef __MKL
+    !only used to compute the SVD, mainly for debugging.
+    IF(PRESENT(min_sv)) THEN
+        ALLOCATE(Z_copy(ncoeff,ncoeff))
+    ENDIF
+#endif
 
     vector =  Particles%ops%desc(eta_id)%vector
     !if true, then each term of the differential opearator is stored as one
@@ -395,6 +405,41 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
             ENDDO
         ENDIF
 
+#ifdef __MKL
+        IF (PRESENT(min_sv)) THEN
+            Z_copy = Z
+            CALL ppm_matrix_svd(Z_copy,ncoeff,ncoeff,info,min_sv_p)
+            IF (info .NE. 0) THEN
+                IF (ppm_dim .EQ. 2 ) THEN
+                    myformat = TRIM(ADJUSTL('(2(E30.22))'))
+                ELSE
+                    myformat = TRIM(ADJUSTL('(3(E30.22))'))
+                ENDIF
+                WRITE(9000,myformat) xp1(1:ppm_dim,ip)
+                DO ineigh = 1,nvlist(ip)
+                    WRITE(9000,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))
+                ENDDO
+                CALL ppm_write(ppm_rank,caller,&
+                    'stencil written in file fort.9000',info)
+                DO i=1,ncoeff
+                    WRITE(9002,*) (Z(i,j), j=1,ncoeff)
+                ENDDO
+                CALL ppm_write(ppm_rank,caller,&
+                    'Z matrix written in file fort.9002',info)
+                WRITE(9003,myformat) xp1(1:ppm_dim,ip)*byh
+                DO ineigh = 1,nvlist(ip)
+                    WRITE(9003,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))*byh
+                ENDDO
+                CALL ppm_write(ppm_rank,caller,&
+                    'h-scaled stencil written in file fort.9003',info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_test_fail,caller,&
+                    &  'ppm_matrix_svd failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+            min_sv = MIN(min_sv,min_sv_p)
+        ENDIF
+#endif
 
         CALL solveLSE_n(Z,b,nterms,info)
         ! now b contain the solutions to the LSEs A*x_i=b_i for i=1:nterms
@@ -418,10 +463,9 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
             ENDDO
             CALL ppm_write(ppm_rank,caller,&
                 'h-scaled stencil written in file fort.9003',info)
-
-
             info = ppm_error_error
-            CALL ppm_error(999,caller,'Failed to solve the LSE', __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'Failed to solve the LSE', __LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -516,15 +560,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c)
     !!---------------------------------------------------------------------!
     !! Finalize
     !!---------------------------------------------------------------------!
-    DEALLOCATE(Z,STAT=info)
-    DEALLOCATE(b,STAT=info)
-    DEALLOCATE(b_0,STAT=info)
-    DEALLOCATE(d2_one2all,STAT=info)
-    DEALLOCATE(dx,STAT=info)
-    DEALLOCATE(gamma,STAT=info)
-    DEALLOCATE(alpha,STAT=info)
-    DEALLOCATE(sum_degree,STAT=info)
-    DEALLOCATE(byh0powerbeta,STAT=info)
+    DEALLOCATE(Z,b,b_0,d2_one2all,dx,gamma,alpha,sum_degree,byh0powerbeta)
+#ifdef __MKL
+    IF(PRESENT(min_sv)) THEN
+        DEALLOCATE(Z_copy)
+    ENDIF
+#endif
 
     CALL substop(caller,t0,info)
 

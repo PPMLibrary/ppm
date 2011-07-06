@@ -173,6 +173,48 @@ else
 #  echo "#define __METIS" >> ./src/ppm_define.h
 fi
 
+# BLAS or MKL
+dcops=no
+AC_ARG_ENABLE([dcops],[AS_HELP_STRING([--enable-dcops],
+  [compile with DC operator API (default is no). Please provide using the LDFLAGS
+   and LIBS variables path and name to your BLAS and Lapack or MKL library.
+   For MKL the correct LDFLAGS and LIBS arguments can be determined using the Intel MKL link advisor: 
+   http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/])],
+    [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DCOPS"])
+    if test "x${vendor}" = xintel; then
+        AC_MSG_CHECKING([for MKL])
+        AC_LINK_IFELSE([
+                     program conftest_prog
+                     USE mkl95_lapack
+                     USE mkl95_blas
+                     REAL, DIMENSION (:,:), POINTER :: A
+                     INTEGER, DIMENSION (:), POINTER :: idx
+                     INTEGER :: info
+                     CALL getrf(A,idx,info)
+                     end program conftest_prog],
+                     [AC_MSG_RESULT([yes])
+                      AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__MKL"])],
+                     [AC_MSG_RESULT([no])
+                      AC_MSG_ERROR([You are compiling PPM with DC operator support using the Intel compiler but no
+                  functioning MKL library could be found.  Please determine the correct LDFLAGS and
+                  LIBS arguments using the Intel MKL link advisor: 
+                  http://software.intel.com/en-us/articles/intel-mkl-link-line-advisor/])
+                      ])
+    
+
+    else
+        AC_SEARCH_LIBS([sgemv],[blas],[
+            AC_SEARCH_LIBS([sgetrf],[lapack],[AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__BLAS"])],
+                            [AC_MSG_ERROR([You are compiling PPM with DC operator support but did
+                  not provide a functioning Lapack library. Please adjust
+                  your LDFLAGS and LIBS arguments])
+                            ])],
+                        [AC_MSG_ERROR([You are compiling PPM with DC operator support but did
+                  not provide a functioning BLAS library. Please adjust
+                  your LDFLAGS and LIBS arguments])
+                        ])
+    fi])
+
 # Check to see if linux was enabled with -enable-linux
 AC_ARG_ENABLE([linux],[AS_HELP_STRING([--enable-linux],
   [compile for linux (default is no)])],
@@ -229,7 +271,7 @@ AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
   [enable development mode (default is no)])],[dev_compile=yes])
 if test "x${dev_compile}" = xyes; then
     if test "x${vendor}" = xintel; then
-        AC_SUBST(DEBUG,["-g -O1 -check pointers -check bounds -traceback"])
+        AC_SUBST(DEBUG,["-g -O0 -check pointers -check bounds -traceback"])
     elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace"])
     else
@@ -244,11 +286,11 @@ if test "x${debug_compile}" = xyes; then
     AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DEBUG"])
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
-        AC_SUBST(DEBUG,["-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"])
+        AC_SUBST(DEBUG,["-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"])
     elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
     else
-      AC_SUBST(DEBUG,["-O1 -g"])
+      AC_SUBST(DEBUG,["-O0 -g"])
     fi
 fi
 
@@ -257,7 +299,6 @@ if test "$srcdir" = "."; then
     srcdir=src
 fi
 
-  
 # Generate Makefiles
 AC_CONFIG_FILES([Makefile])
 AC_OUTPUT

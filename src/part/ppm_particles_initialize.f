@@ -1,9 +1,9 @@
 #if __DIM == 2
 SUBROUTINE particles_initialize2d(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
 #elif __DIM == 3
 SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
-        distrib,topoid,minphys,maxphys,cutoff)
+        distrib,topoid,minphys,maxphys,cutoff,name)
 #endif
     !-----------------------------------------------------------------------
     ! Set initial particle positions
@@ -42,6 +42,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     !!! extent of the physical domain. Only if topoid is not present.
     REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
     !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -61,8 +63,6 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
 
     REAL(MK), DIMENSION(:,:), POINTER     :: xp
     REAL(MK), DIMENSION(:  ), POINTER     :: randnb
-    INTEGER,  DIMENSION(:  ), POINTER     :: seed
-    INTEGER                               :: seedsize
 
 
     !-------------------------------------------------------------------------
@@ -125,7 +125,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
 
     !Deallocate Particles if already allocated
     IF (ASSOCIATED(Particles)) THEN
-        CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,info)
+        CALL ppm_alloc_particles(Particles,Npart,ppm_param_dealloc,&
+            info,name=name)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
@@ -134,7 +135,8 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
         ENDIF
     ENDIF
 
-    CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,info)
+    CALL ppm_alloc_particles(Particles,Npart,ppm_param_alloc_fit,&
+        info,name=name)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,&
@@ -237,19 +239,21 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
                 &            'allocation failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        CALL RANDOM_SEED(SIZE=seedsize)
-        ldc(1) = seedsize
-        CALL ppm_alloc(seed,ldc(1:1),iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'allocation failed',__LINE__,info)
-            GOTO 9999
+        IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
+            CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
+            ldc(1) = ppm_particles_seedsize
+            CALL ppm_alloc(ppm_particles_seed,ldc(1:1),iopt,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_alloc,caller,   &
+                    &            'allocation failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+            DO i=1,ppm_particles_seedsize
+                ppm_particles_seed(i)=i*i*i*i
+            ENDDO
+            CALL RANDOM_SEED(PUT=ppm_particles_seed)
         ENDIF
-        DO i=1,seedsize
-            seed(i)=i*i*i*i
-        ENDDO
-        CALL RANDOM_SEED(PUT=seed)
         CALL RANDOM_NUMBER(randnb)
 
 #if __DIM == 3
@@ -352,7 +356,7 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
         ENDIF
         Particles%cartesian = .FALSE.
 
-        DEALLOCATE(randnb,seed)
+        DEALLOCATE(randnb)
 
     ENDIF if_cartesian
 

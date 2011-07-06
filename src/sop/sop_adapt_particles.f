@@ -50,9 +50,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     USE ppm_module_io_vtk
 
     IMPLICIT NONE
-#ifdef __MPI
-    INCLUDE 'mpif.h'
-#endif
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER  :: MK = ppm_kind_single
@@ -444,7 +441,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     CALL sop_compute_D(Particles,D_fun,opts,info,     &
         wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
-        level_grad_fun=level_grad_fun,nb_fun=nb_fun)
+        level_grad_fun=level_grad_fun,nb_fun=nb_fun,stats=stats)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,   &
@@ -569,16 +566,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Copy particle positions, field values and D
     !-------------------------------------------------------------------------!
-    !destroy DC operators
-    IF (ASSOCIATED(Particles%ops)) THEN
-        CALL particles_dcop_deallocate(Particles,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,caller,   &
-                &    'particles_dcop_deallocate failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
+    !IF (ASSOCIATED(Particles%ops)) THEN
+        !CALL particles_dcop_deallocate(Particles,info)
+        !IF (info .NE. 0) THEN
+            !info = ppm_error_error
+            !CALL ppm_error(ppm_err_dealloc,caller,   &
+                !&    'particles_dcop_deallocate failed',__LINE__,info)
+            !GOTO 9999
+        !ENDIF
+    !ENDIF
 
     Particles_old => Particles
     Particles => NULL()
@@ -597,6 +593,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     xp => Particles%xp
     Particles = Particles_old
     Particles%xp => xp
+    !move DC operators from old to new particles
+    ! (only move their definitions
+    Particles%ops => Particles_old%ops
+    Particles_old%ops => NULL()
+    IF (ASSOCIATED(Particles%ops)) THEN
+        DO i=1,Particles%ops%max_opsid
+            Particles%ops%desc(i)%is_computed = .FALSE.
+        ENDDO
+    ENDIF
 
     ! Set all arrays to unmapped
     Particles%wpi => NULL()
@@ -753,13 +758,13 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
             D_fun=D_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
             level_grad_fun=level_grad_fun,threshold=Psi_threshold,&
-            need_deriv=need_derivatives,nb_fun=nb_fun)
+            need_deriv=need_derivatives,nb_fun=nb_fun,stats=stats)
     ELSE
         CALL sop_gradient_descent(Particles_old,Particles, &
             nvlist_cross,vlist_cross,                &
             nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
             D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
-            need_deriv=need_derivatives)
+            need_deriv=need_derivatives,stats=stats)
     ENDIF
     IF (info .NE. 0) THEN
         info = ppm_error_error

@@ -65,6 +65,7 @@
          REAL(prec)        :: nb_width_kill
          INTEGER           :: order_approx
          REAL(prec)        :: c
+         LOGICAL           :: check_dcops
          !!! order of approximation for the interpolation kernels
          TYPE(sop_t_diff_eq),POINTER :: diff_eq
          !!! RHS of the differential equation that needs to be computed
@@ -121,6 +122,9 @@
 
          INTEGER                           :: nb_grad_desc_steps
          !!! number of iterations of the gradient descent algorithm
+         REAL(prec)                        :: min_sv
+         !!! smallest singular value encountered thus far in when computing
+         !!! the dc operators (checked only if opts%check_dcops is true)
      END TYPE sop_t_stats
 
      END MODULE ppm_module_sop_typedef

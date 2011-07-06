@@ -229,10 +229,21 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
                     &    'allocation of randnb failed',__LINE__,info)
                 GOTO 9999
             ENDIF
-            DO i=1,seedsize
-                seed(i)=10+i*i*i + Npart
-            ENDDO
-            CALL RANDOM_SEED(PUT=seed)
+            IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
+                CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
+                ldc(1) = ppm_particles_seedsize
+                CALL ppm_alloc(ppm_particles_seed,ldc(1:1),ppm_param_alloc_fit,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'allocation failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+                DO i=1,ppm_particles_seedsize
+                    ppm_particles_seed(i)=ppm_rank*i*i*i*i
+                ENDDO
+                CALL RANDOM_SEED(PUT=ppm_particles_seed)
+            ENDIF
             CALL RANDOM_NUMBER(randnb)
             randnb_i = 0
         ENDIF
