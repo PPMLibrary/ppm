@@ -96,13 +96,14 @@
          !----------------------------------------------------------------------
 
          SUBROUTINE ppm_vtk_particle_cloud(filename, Particles, info, &
-              with_ghosts, wps_list, wpv_list, wpv_field_list)
+              step, with_ghosts, wps_list, wpv_list, wpv_field_list)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
            CHARACTER(LEN=*),                INTENT(IN   ) :: filename
            TYPE(ppm_t_particles), POINTER,  INTENT(IN   ) :: Particles
            INTEGER,                         INTENT(  OUT) :: info
+           INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wps_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_list
@@ -112,6 +113,7 @@
            !--------------------------------------------------------------------
            CHARACTER(LEN=*), PARAMETER :: caller='ppm_vtk_particle_cloud'
            CHARACTER(LEN=ppm_char)              :: scratch
+           CHARACTER(LEN=ppm_char)              :: fname
            REAL(ppm_kind_double)                :: t0
            INTEGER                              :: i, j, k, l, nd, N
            INTEGER                              :: nb_wps, nb_wpv, nb_wpv_field
@@ -123,6 +125,13 @@
            !  Code
            !--------------------------------------------------------------------
            CALL substart(caller,t0,info)
+           
+           IF (PRESENT(step)) THEN
+              WRITE(fname,'(A,A,I0)') &
+                   filename(1:LEN_TRIM(filename)), '.', step
+           ELSE
+              fname = filename
+           END IF
 
            ! print ghosts?
            IF (PRESENT(with_ghosts)) THEN
@@ -241,7 +250,7 @@
 #ifdef __MPI
            ! write parallel file
            IF (ppm_rank .EQ. 0) THEN
-              WRITE(scratch,'(A,A)') filename(1:LEN_TRIM(filename)), '.pvtp'
+              WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.pvtp'
               OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
                    IOSTAT=info, ACTION='WRITE')
               IF (info .NE. 0) THEN
@@ -281,17 +290,17 @@
               WRITE(iUnit,'(A)') "    </PPoints>"
               DO i=0,ppm_nproc-1
                  WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='", &
-                      filename(1:LEN_TRIM(filename)), ".", i, ".vtp' />"
+                      fname(1:LEN_TRIM(fname)), ".", i, ".vtp' />"
               END DO
               ! close
 #include "vtk/print_end_header.f"
               CLOSE(iUnit)
            END IF
            ! append rank to name
-           WRITE(scratch,'(A,A,I0,A)') filename(1:LEN_TRIM(filename)), &
+           WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
                                        '.', ppm_rank, '.vtp'
 #else
-           WRITE(scratch,'(A,A)') filename(1:LEN_TRIM(filename)), '.vtp'
+           WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.vtp'
 #endif
 
            ! open output file
