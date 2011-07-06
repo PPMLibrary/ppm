@@ -27,6 +27,7 @@
 #endif
 #else
 #ifdef ARRAY
+                   WRITE (*,'(A)',advance='no') ' = '
                    DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
                         UBOUND(WRAP(DTYPE)_args(j)%default,1)
                       WRITE(scratch,*) WRAP(DTYPE)_args(j)%default(l)
