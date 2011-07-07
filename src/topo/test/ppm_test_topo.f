@@ -35,18 +35,19 @@
 
       use ppm_module_typedef
       USE ppm_module_data
-      use ppm_module_mktopo
       use ppm_module_topo_get
       use ppm_module_init
       use ppm_module_finalize
-      use ppm_module_user
       USE ppm_module_check_id
+      USE ppm_module_util_dbg
+      USE ppm_module_map
+      USE ppm_module_topo
 
       implicit none
       #include "../../ppm_define.h"
-      #ifdef __MPI
+#ifdef __MPI
       INCLUDE 'mpif.h'
-      #endif
+#endif
 
       integer, parameter              :: debug = 0
       integer, parameter              :: mk = ppm_kind_double
@@ -66,7 +67,7 @@
       real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
       real(mk),dimension(:  ),pointer :: len_phys
       real(mk), dimension(3)          :: offset
-      integer                         :: i,j,k,sum1,sum2, ix,iy
+      integer                         :: i,j,k,sum1,sum2, ix,iy,iz
       integer                         :: p_i
       integer, dimension(6)           :: bcdef
       real(mk),dimension(:  ),pointer :: cost
@@ -79,20 +80,21 @@
       logical                          :: lsymm = .false.,ok, has_one_way
       real(mk)                         :: t0,t1,t2,t3
 
-      integer                          :: np_sqrt = 16
+      integer                          :: np_sqrt = 8
       integer                          :: np_tot, ipart, idom
       integer                          :: tot_sum
       integer, dimension(:),pointer    :: so_sum
+      integer, dimension(3)            :: now
 
       !----------------
       ! setup
       !----------------
       tol = 10.0_mk*epsilon(1.0_mk)
       tolexp = int(log10(epsilon(1.0_mk)))
-      min_ghost_req = 0.01_mk
-      max_ghost_req = 1.50_mk
-      np = np_sqrt*np_sqrt
-      np_tot = 4*np
+      min_ghost_req = 1.00_mk
+      max_ghost_req = 2.50_mk
+      np = np_sqrt*np_sqrt*np_sqrt
+      np_tot = 8*np
 
       allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),nm(ndim),h(ndim),p_h(ndim),stat=info)
 
@@ -112,11 +114,12 @@
 #endif
       call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
+      call itime(now)
       call random_seed(size=seedsize)
       allocate(seed(seedsize))
       allocate(randnb(ndim*np),stat=info)
       do i=1,seedsize
-         seed(i)=10+i*i*(rank+1)
+         seed(i)=now(1)+10+i*i*(rank+1)*now(3)
       enddo
       call random_seed(put=seed)
       call random_number(randnb)
@@ -124,116 +127,206 @@
       !----------------
       ! create particles
       !----------------
-
+      np_tot = 1000
       allocate(xp(ndim,np_tot),ghost_req(ndim,np_tot),stat=info)
-      xp = 0.0_mk
-      ghost_req = 0.0_mk
+      call random_number(xp)
+      DO i = 1,np_tot
+         ghost_req(1,i) = 0.25_mk
+         ghost_req(2,i) = 0.25_mk
+         !ghost_req(3,i) = 0.25_mk
+      ENDDO
 
-      allocate(so_sum(ndim),stat=info)
-      tot_sum = np_sqrt*(np_sqrt+1)/2 + 1
- 
-      
-      offset(1) = 5.72342_mk
-      offset(2) = -7.63234_mk
-
-      so_sum(1) = 0.0_mk
-      do ix=1,np_sqrt
-         so_sum(1) = so_sum(1) + ix
-         so_sum(2) = 0.0_mk
-
-         do iy=1,np_sqrt
-            so_sum(2) = so_sum(2) + iy
-
-            ! set positions of particles, s.t. lower ix,iy are closer together
-            ! including a random distortion            
-            xp(1,(ix-1)*np_sqrt + iy) = (min_phys(1)+REAL(so_sum(1),MK)* &
-     &                                  len_phys(1)/REAL(tot_sum,MK) +  &
-     &                                  (ix*len_phys(1)/(tot_sum)) * randnb((ix-1)*np_sqrt + iy) & 
-     &                                  - (ix*len_phys(1)/(tot_sum))/2)
-
-
-
-            do while (xp(1,(ix-1)*np_sqrt + iy) > max_phys(1))
-               xp(1,(ix-1)*np_sqrt + iy) = xp(1,(ix-1)*np_sqrt + iy) - (len_phys(1)/(tot_sum))
-            enddo
-            do while (xp(1,(ix-1)*np_sqrt + iy) < min_phys(1))
-               xp(1,(ix-1)*np_sqrt + iy) = xp(1,(ix-1)*np_sqrt + iy) + (len_phys(1)/(tot_sum))
-            enddo
-
-            xp(2,(ix-1)*np_sqrt + iy) = (min_phys(2)+REAL(so_sum(2),MK)* &
-     &                                  len_phys(2)/REAL(tot_sum,MK) +  &
-     &                                  (iy*len_phys(2)/(tot_sum)) * randnb((ix-1)*np_sqrt + iy + np) & 
-     &                                  - (iy*len_phys(2)/(tot_sum))/2)
-
-
-            do while (xp(2,(ix-1)*np_sqrt + iy) > max_phys(2))
-               xp(2,(ix-1)*np_sqrt + iy) = xp(2,(ix-1)*np_sqrt + iy) - (len_phys(1)/(tot_sum))
-            enddo
-            do while (xp(2,(ix-1)*np_sqrt + iy) < min_phys(2))
-               xp(2,(ix-1)*np_sqrt + iy) = xp(2,(ix-1)*np_sqrt + iy) + (len_phys(2)/(tot_sum))
-            enddo
-            ! set ghost_req of particles for x and y dim, s.t. lower ix,iy have smaller
-            ghost_req(1,(ix-1)*np_sqrt + iy) = min_ghost_req + REAL(so_sum(1),MK)/REAL(tot_sum,MK)*(max_ghost_req-min_ghost_req)
-            ghost_req(2,(ix-1)*np_sqrt + iy) = min_ghost_req + REAL(so_sum(2),MK)/REAL(tot_sum,MK)*(max_ghost_req-min_ghost_req)
-
-!                 print *,(ix-1)*np_sqrt + iy,' ',xp(1,(ix-1)*np_sqrt + iy),' ',xp(2,(ix-1)*np_sqrt + iy), &
-!         &                  ' ', ghost_req(1,(ix-1)*np_sqrt + iy), ' ', ghost_req(2,(ix-1)*np_sqrt + iy)
-
-
-         enddo
-
-      enddo
-
-      ! take mirror
-      do ix=1,np_sqrt
-         do iy=1,np_sqrt
-            xp(1,(ix-1)*np_sqrt + iy + np) = - xp(1,(ix-1)*np_sqrt + iy)
-            xp(2,(ix-1)*np_sqrt + iy + np) = xp(2,(ix-1)*np_sqrt + iy)
-            ghost_req(1,(ix-1)*np_sqrt + iy + np) = ghost_req(1,(ix-1)*np_sqrt + iy)
-            ghost_req(2,(ix-1)*np_sqrt + iy + np) = ghost_req(2,(ix-1)*np_sqrt + iy)
-         enddo
-      enddo
-
-      do ix=1,np_sqrt
-         do iy=1,np_sqrt
-            xp(1,(ix-1)*np_sqrt + iy + np + np) = xp(1,(ix-1)*np_sqrt + iy)
-            xp(2,(ix-1)*np_sqrt + iy + np + np) = - xp(2,(ix-1)*np_sqrt + iy)
-            ghost_req(1,(ix-1)*np_sqrt + iy + np + np) = ghost_req(1,(ix-1)*np_sqrt + iy)
-            ghost_req(2,(ix-1)*np_sqrt + iy + np + np) = ghost_req(2,(ix-1)*np_sqrt + iy)
-         enddo
-      enddo
-
-      do ix=1,np_sqrt
-         do iy=1,np_sqrt
-            xp(1,(ix-1)*np_sqrt + iy + np + np + np) = - xp(1,(ix-1)*np_sqrt + iy)
-            xp(2,(ix-1)*np_sqrt + iy + np + np + np) = - xp(2,(ix-1)*np_sqrt + iy)
-            ghost_req(1,(ix-1)*np_sqrt + iy + np + np + np) = ghost_req(1,(ix-1)*np_sqrt + iy)
-            ghost_req(2,(ix-1)*np_sqrt + iy + np + np + np) = ghost_req(2,(ix-1)*np_sqrt + iy)
-         enddo
-      enddo
-
-      do i=1,np_tot
-            
-            xp(1,i) = xp(1,i) + offset(1)
-            xp(1,i) = xp(1,i) - 2*len_phys(1)*int(xp(1,i)/len_phys(1))
-            
-            xp(2,i) = xp(2,i) + offset(2)
-            xp(2,i) = xp(2,i) - 2*len_phys(2)*int(xp(2,i)/len_phys(2))
-   
-      enddo
-
+!    IF (ppm_rank.eq. 0) THEN
+!       allocate(xp(ndim,np_tot),ghost_req(ndim,np_tot),stat=info)
+!       xp = 0.0_mk
+!       ghost_req = 0.0_mk
+! 
+!       allocate(so_sum(ndim),stat=info)
+!       tot_sum = np_sqrt*(np_sqrt+1)/2 + 1
+! 
+! 
+!       offset(1) = ((-1)**(INT(randnb(1)*10))) * randnb(2) * 7.9999999_mk
+!       offset(2) = ((-1)**(INT(randnb(3)*10))) * randnb(4) * 7.9999999_mk
+!       offset(3) = ((-1)**(INT(randnb(5)*10))) * randnb(6) * 7.9999999_mk
+! 
+!    
+!    so_sum(1) = 0
+!    do ix=1,np_sqrt
+!       so_sum(1) = so_sum(1) + ix
+!       so_sum(2) = 0
+!       
+!       do iy=1,np_sqrt
+!          so_sum(2) = so_sum(2) + iy
+!          so_sum(3) = 0
+!          
+!          do iz=1,np_sqrt
+!             so_sum(3) = so_sum(3) + iz
+!          
+!             ! set positions of particles, s.t. lower ix,iy are closer together
+!             ! including a random distortion            
+!             xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = (min_phys(1)+REAL(so_sum(1),MK)* &
+!    &                                  len_phys(1)/REAL(tot_sum,MK) +  &
+!    &                                  (ix*len_phys(1)/(tot_sum)) * & 
+!    &                                   randnb((ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) & 
+!    &                                  - (ix*len_phys(1)/(tot_sum))/2)
+! 
+! 
+! 
+!             do while (xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) > max_phys(1))
+!                xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = &
+!                & xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) - (len_phys(1)/(tot_sum))
+!             enddo
+!             do while (xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) < min_phys(1))
+!                xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!                & xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) + (len_phys(1)/(tot_sum))
+!             enddo
+! 
+!             xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = (min_phys(2)+REAL(so_sum(2),MK)* &
+!    &                                  len_phys(2)/REAL(tot_sum,MK) +  &
+!    &                                  (iy*len_phys(2)/(tot_sum)) * & 
+!    &                                   randnb((ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) & 
+!    &                                  - (iy*len_phys(2)/(tot_sum))/2)
+! 
+! 
+!             do while (xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) > max_phys(2))
+!                xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!                & xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) - (len_phys(1)/(tot_sum))
+!             enddo
+!             do while (xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) < min_phys(2))
+!                xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!                & xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) + (len_phys(2)/(tot_sum))
+!             enddo
+!             
+!             
+!             xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = (min_phys(3)+REAL(so_sum(3),MK)* &
+!    &                                  len_phys(3)/REAL(tot_sum,MK) +  &
+!    &                                  (iy*len_phys(3)/(tot_sum)) * & 
+!    &                                   randnb((ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) & 
+!    &                                  - (iy*len_phys(3)/(tot_sum))/2)
+! 
+! 
+!             do while (xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) > max_phys(3))
+!                xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!                & xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) - (len_phys(3)/(tot_sum))
+!             enddo
+!             do while (xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) < min_phys(3))
+!                xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!                & xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) + (len_phys(3)/(tot_sum))
+!             enddo
+!       
+!             
+!             ! set ghost_req of particles for x and y dim, s.t. lower ix,iy have smaller
+!             ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!             & 1.0_mk !min_ghost_req + REAL(so_sum(1),MK)/REAL(tot_sum,MK)*(max_ghost_req-min_ghost_req)
+!             ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!             & min_ghost_req + REAL(so_sum(2),MK)/REAL(tot_sum,MK)*(max_ghost_req-min_ghost_req)
+!             ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) = & 
+!             & min_ghost_req + REAL(so_sum(3),MK)/REAL(tot_sum,MK)*(max_ghost_req-min_ghost_req)
+! !                    print *,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz,' ',&
+! !            &     ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz), ' ', &
+! !            &     ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz), ' ', &
+! !            &     ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz) 
+! 
+!          enddo
+!       enddo
+! 
+!    enddo
+! 
+!    ! take mirror
+!    do ix=1,np_sqrt
+!       do iy=1,np_sqrt
+!          do iz=1,np_sqrt
+!    xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = - xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!    xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!    xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!    ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!    ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!    ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np) = ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!          enddo
+!       enddo
+!    enddo
+! 
+!    do ix=1,np_sqrt
+!       do iy=1,np_sqrt
+!          do iz=1,np_sqrt
+! xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = - xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np) = ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!          enddo
+!       enddo
+!    enddo
+! 
+!    do ix=1,np_sqrt
+!       do iy=1,np_sqrt
+!          do iz=1,np_sqrt
+! xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = - xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = - xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+! ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np + np + np) = ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz)
+!          enddo
+!       enddo
+!    enddo
+! 
+!    do ix=1,np_sqrt
+!       do iy=1,np_sqrt
+!          do iz=1,np_sqrt
+!             do i = 1,4
+! xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) =  & 
+! & xp(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i-1)*np)
+! xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) = & 
+! & xp(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz+ (i-1)*np)
+! xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) = & 
+! & - xp(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz+ (i-1)*np)
+! ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) = & 
+! & ghost_req(1,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz+ (i-1)*np)
+! ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) = & 
+! & ghost_req(2,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz+ (i-1)*np)
+! ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + (i+3)*np) = & 
+! & ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz+ (i-1)*np)
+!             enddo
+!          enddo
+!       enddo
+!    enddo
+! ! 
+!    do i=1,np_tot
+!          
+!          xp(1,i) = xp(1,i) + offset(1)
+!          xp(1,i) = xp(1,i) - 2*len_phys(1)*int(xp(1,i)/len_phys(1))
+!          
+!          xp(2,i) = xp(2,i) + offset(2)
+!          xp(2,i) = xp(2,i) - 2*len_phys(2)*int(xp(2,i)/len_phys(2))
+! 
+!          xp(3,i) = xp(3,i) + offset(3)
+!          xp(3,i) = xp(3,i) - 2*len_phys(3)*int(xp(3,i)/len_phys(3))
+!    enddo
+!       ELSE
+!         np_tot = 1
+!             ALLOCATE(xp(ndim,np_tot),ghost_req(ndim,np_tot),stat=info)
+!             xp(1,1) = 0.0_mk
+!             xp(2,1) = 0.0_mk
+!             xp(3,1) = 0.0_mk
+!             ghost_req(1,1) = 0.0_mk
+!             ghost_req(2,1) = 0.0_mk
+!             ghost_req(3,1) = 0.0_mk
+!             ALLOCATE(randnb(ndim*np_tot),stat=info)   
+!       ENDIF
       !----------------
       ! make topology
       !----------------
 
       ! Test all decompositions
-!       decomp = ppm_param_decomp_tree
+       decomp = ppm_param_decomp_tree
 !       decomp = ppm_param_decomp_pruned_cell
-!       decomp = ppm_param_decomp_bisection
+!      decomp = ppm_param_decomp_bisection
 !       decomp = ppm_param_decomp_xpencil
 !       decomp = ppm_param_decomp_ypencil
 !       decomp = ppm_param_decomp_zpencil
-       decomp = ppm_param_decomp_cuboid
+!       decomp = ppm_param_decomp_cuboid
 !       decomp = ppm_param_decomp_user_defined
 !       decomp = ppm_param_decomp_xy_slab
 !       decomp = ppm_param_decomp_xz_slab
@@ -244,25 +337,24 @@
 
       topoid = 0
 
-      min_phys(1:ndim) = -8.0_mk
-      max_phys(1:ndim) = 8.0_mk 
+      min_phys(1:ndim) = 0.0_mk
+      max_phys(1:ndim) = 1.0_mk 
 !       call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
-!       &               max_ghost_req,cost,info)
+!        &               max_ghost_req,cost,info)
 
       has_one_way = .FALSE.
 
        call ppm_mktopo(topoid,xp,np_tot,decomp,assig,min_phys,max_phys,bcdef,&
      &               ghost_req,has_one_way,cost,info)
 
-      call ppm_dbg_print(topoid,max_ghost_req,1,1,info,xp,np_tot)
 
       call ppm_map_part_global(topoid,xp,np_tot,info)
       call ppm_map_part_push(ghost_req,ndim,np_tot,info)
       call ppm_map_part_send(np_tot,newnp,info)
       call ppm_map_part_pop(ghost_req,ndim,np_tot,newnp,info)
       call ppm_map_part_pop(xp,ndim,np_tot,newnp,info)
-      np=newnp
-      print *,rank,'global map done'
+
+      print *,rank,'global map done', np_tot, newnp
 
       call ppm_map_part_ghost_get(topoid,xp,ndim,newnp,isymm,info)
       call ppm_map_part_push(ghost_req,ndim,newnp,info)
@@ -270,8 +362,9 @@
       call ppm_map_part_pop(ghost_req,ndim,newnp,mp,info)
       call ppm_map_part_pop(xp,ndim,newnp,mp,info)
 
+      call ppm_dbg_print(topoid,0.25_mk,1,1,info,xp,np_tot,mp)
 
-       print *, 'proc: ', ppm_rank, 'local particles: ', np_tot, newnp, 'ghost particles: ', mp-np
+        print *, 'proc: ', ppm_rank, 'local particles: ', np_tot, newnp, 'ghost particles: ', mp-np
 !       DO i = newnp+1,mp
 !          print *, ppm_rank, xp(1,i), xp(2,i)
 !       ENDDO
@@ -307,9 +400,9 @@
  8000 continue
 
       call ppm_finalize(info)
-      #ifdef __MPI
+#ifdef __MPI
       call MPI_finalize(info)
-      #endif
+#endif
 
       deallocate(xp,ghost_req,min_phys,max_phys,len_phys,nm)
 

@@ -154,7 +154,6 @@
           lda(3) = ppm_nproc
           CALL ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
           CALL ppm_alloc(allghost_req,lda,ppm_param_alloc_fit,info)
-          CALL ppm_alloc(buf,lda,ppm_param_alloc_fit,info)
           IF (info .NE. 0) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_alloc,'ppm_check_neigh',     &
@@ -244,7 +243,7 @@
       map_ok = .TRUE.
 
       ! allocate a have already checked
-      lda(1) = mp-Npart
+      lda(1) = mp
       CALL ppm_alloc(have_xp,lda,ppm_param_alloc_fit,info)
       IF (info .NE. 0) THEN
          info = ppm_error_fatal
@@ -253,8 +252,8 @@
          GOTO 9999
       ENDIF
 
-      !init have_xp
-      DO i=1,mp-Npart
+      ! init have_xp
+      DO i=1,mp
          have_xp(i) = .FALSE.
       ENDDO
    
@@ -274,7 +273,7 @@
                
                ! For all particles on other procs check if we have it in our ghosts particles
                DO iproc2 = 1, ppm_nproc
-                     IF (.NOT. (iproc2 .EQ. iproc)) THEN
+                     !IF (.NOT. (iproc2 .EQ. iproc)) THEN
 
                         DO ip2 = 1, allnp(iproc2)
 
@@ -294,7 +293,7 @@
 
                               
                                  ! We need to find ip2 in the ghost of iproc
-                                 DO in = Npart+1, mp
+                                 DO in = 1, mp
                                     
                                     IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
                &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps)) THEN
@@ -303,13 +302,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error ', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error ', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -343,13 +342,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -382,13 +381,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -424,13 +423,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -459,13 +458,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -499,13 +498,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -535,13 +534,13 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -572,50 +571,49 @@
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
                                  ENDDO
                               ENDIF
 
-                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
                &                         allghost_req(1,ip,iproc)) .AND. &
-               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
                &                         allghost_req(2,ip,iproc)) ) .AND. &
-               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
                &                         allghost_req(1,ip2,iproc2)) .AND. &
-               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
                &                         allghost_req(2,ip2,iproc2)) )) &
-               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
                &                         allghost_req(1,ip,iproc)) .AND. & 
-               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
                &                         allghost_req(2,ip,iproc))))) THEN
 
                               
                                  ! We need to find ip2 in the ghost of iproc
                                  DO in = Npart+1, mp
                                     
-                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
-               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps)) THEN
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps)) THEN
                                        !we found it
                                        !print *, 'found'
 !                                        IF (ppm_rank .eq. 0) THEN
 !                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
 !                                        ENDIF
-                                       have_xp(in-Npart) = .TRUE.
+                                       have_xp(in) = .TRUE.
                                        EXIT
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' errmak(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -628,24 +626,1019 @@
                            
                         ENDDO
 
-                  ENDIF
+                  !ENDIF
 
                ENDDO
 
             ENDDO
 
-      ! plot the number of particles we do not need, but have in the ghosts
-      j = 0
-      DO i = 1,mp-Npart
-         IF(have_xp(i) .EQV. .FALSE.) THEN
-            j = j+1
+         ! plot the number of particles we do not need, but have in the ghosts
+         IF(ppm_debug .GT. 0) THEN
+            j = 0
+            DO i = 1,Npart
+               IF(have_xp(i) .EQV. .FALSE.) THEN
+                  j = j+1
+               ENDIF
+            ENDDO
+
+            IF (mp-Npart .GT. 0) THEN
+               print *,'[', ppm_rank,']', int(100*float(j)/float((mp-Npart))) , '% of ghost particles not needed!'
+            ELSE
+               print *,'[', ppm_rank,']', 'has no ghost particles and does not need any!'
+            ENDIF
          ENDIF
-      ENDDO
-
-      print *, ppm_rank, ' has ', j , 'too much ghost particles!'
-
+         
       ELSEIF(ppm_dim .EQ. 3) THEN
 
+#if    __KIND == __SINGLE_PRECISION
+            len_phys(1) = topo%max_physs(1) - topo%min_physs(1)
+            len_phys(2) = topo%max_physs(2) - topo%min_physs(2)
+            len_phys(3) = topo%max_physs(3) - topo%min_physs(3)
+#elif  __KIND == __DOUBLE_PRECISION
+            len_phys(1) = topo%max_physd(1) - topo%min_physd(1)
+            len_phys(2) = topo%max_physd(2) - topo%min_physd(2)
+            len_phys(3) = topo%max_physd(3) - topo%min_physd(3)
+#endif
+
+         ! For all particles ip on this proc
+         iproc = ppm_rank+1
+            DO ip = 1, allnp(iproc)
+               
+               ! For all particles on other procs check if we have it in our ghosts particles
+               DO iproc2 = 1, ppm_nproc
+                     !IF (.NOT. (iproc2 .EQ. iproc)) THEN
+
+                        DO ip2 = 1, allnp(iproc2)
+
+                           ! Check if they enclose each other
+                           IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)))) ) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = 1, mp
+                                    
+                                    IF(      (ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error ', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                           ENDIF
+
+                        !if we have periodicity, also check that
+                        IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
+
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+ 
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+
+                              ENDIF
+
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+
+
+                           ENDIF
+
+                        IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
+
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF  
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)))) ) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           ENDIF
+
+!
+                        IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
+
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF  
+                              IF ( (( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)))) ) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           ENDIF
+
+
+                        IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic .AND. topo%bcdef(3).EQ.ppm_param_bcdef_periodic &
+                        & .AND. topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
+                              
+                             IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) )  .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+
+                              IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                            IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+
+                            IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                              print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+                                       &      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                            IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                            IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)-len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)+len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)+len_phys(1)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)-len_phys(1)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+                              
+
+                              IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+!                                        print *, ' errmak(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+
+                           IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)-len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)-len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+
+                              
+                                 ! We need to find ip2 in the ghost of iproc
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)+len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)+len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+
+                              ENDIF
+                              
+                              IF  ((( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) ) .AND. &
+               &                  ( (ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip2,iproc2)) .AND. &
+               &                    (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip2,iproc2)) ) .AND. &
+               &                  ( (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc)) .AND. &
+               &                    (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip2,iproc2)) )) &
+               &                  .OR. (has_one_way .AND.((ABS(allxp(1,ip,iproc)-allxp(1,ip2,iproc2)) .LT. &
+               &                         allghost_req(1,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(2,ip,iproc)-allxp(2,ip2,iproc2)+len_phys(2)) .LT. &
+               &                         allghost_req(2,ip,iproc)) .AND. & 
+               &                       (ABS(allxp(3,ip,iproc)-allxp(3,ip2,iproc2)+len_phys(3)) .LT. &
+               &                         allghost_req(3,ip,iproc))))) THEN
+                                 ! We need to find ip2 in the ghost of iproc
+
+                                 DO in = Npart+1, mp
+                                    
+                                    IF((ABS(allxp(1,ip2,iproc2)-xp(1,in)) .LT. lmyeps &
+               &                        .AND. ABS(allxp(2,ip2,iproc2)-xp(2,in)-len_phys(2)) .LT. lmyeps&
+               &                        .AND. ABS(allxp(3,ip2,iproc2)-xp(3,in)-len_phys(3)) .LT. lmyeps)) THEN
+                                       !we found it
+                                       !print *, 'found'
+!                                        IF (ppm_rank .eq. 0) THEN
+!                                           print *, ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), xp(1,in), xp(2,in)
+!                                        ENDIF
+                                       have_xp(in) = .TRUE.
+                                       EXIT
+                                    ENDIF
+                                    IF (in .EQ. mp) THEN
+                                       !We have not found any until the last one -> error
+                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+                                        map_ok = .FALSE.
+                                       GOTO 9999
+                                    ENDIF
+                                 ENDDO
+                              ENDIF
+
+
+                           ENDIF
+                           
+                     ENDDO
+
+                  !ENDIF
+
+               ENDDO
+
+            ENDDO
+
+         ! plot the number of particles we do not need, but have in the ghosts
+         IF(ppm_debug .GT. 0) THEN
+            j = 0
+            DO i = 1,mp-Npart
+               IF(have_xp(i) .EQV. .FALSE.) THEN
+                  j = j+1
+               ENDIF
+            ENDDO
+
+            IF (mp-Npart .GT. 0) THEN
+               print *,'[', ppm_rank,']', int(100*float(j)/float((mp-Npart))) , '% of ghost particles not needed!'
+            ELSE
+               print *,'[', ppm_rank,']', 'has no ghost particles and does not need any!'
+            ENDIF
+         ENDIF
 
       ENDIF
 

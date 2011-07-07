@@ -227,8 +227,10 @@
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: minboxsizes_out => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
-      REAL(MK)                          :: ghostsize
-
+      REAL(MK)                          :: ghostsize,max_ghost
+#ifdef __MPI
+      INTEGER                           :: MPTYPE
+#endif
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -242,7 +244,16 @@
 #elif __KIND == __DOUBLE_PRECISION
       lmyeps = ppm_myepsd
 #endif
-
+#ifdef __MPI
+      !------------------------------------------------------------------------
+      ! Determine MPI data type for max ghost layer reduction
+      !------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+    MPTYPE = MPI_REAL
+#elif __KIND == __DOUBLE_PRECISION
+    MPTYPE = MPI_DOUBLE_PRECISION
+#endif
+#endif
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -311,18 +322,23 @@
          ghostsize = 0.0_MK
          DO i=1,ppm_dim
             DO j=1,Npart
-              IF (ghost_req(i,j).GT.ghostsize) THEN
+               IF (ghost_req(i,j).GT.ghostsize) THEN
                   ghostsize = ghost_req(i,j)
-              ENDIF 
+               ENDIF 
             ENDDO 
-          ENDDO
-
+         ENDDO
+#ifdef __MPI
+         ! Reduce to get the maximum of all procs
+         CALL MPI_Allreduce(ghostsize,max_ghost,1,MPTYPE,MPI_MAX,ppm_comm,info)
+#else
+         max_ghost = ghostsize
+#endif
          IF (PRESENT(pcost)) THEN
              CALL ppm_decomp_pruned_cell(xp,Npart,min_phys,max_phys, &
-     &            ghostsize,min_sub,max_sub,nsubs,info,pcost)
+     &            max_ghost,min_sub,max_sub,nsubs,info,pcost)
          ELSE
              CALL ppm_decomp_pruned_cell(xp,Npart,min_phys,max_phys, &
-     &            ghostsize,min_sub,max_sub,nsubs,info)
+     &            max_ghost,min_sub,max_sub,nsubs,info)
          ENDIF
          IF (info.NE.0) THEN
              info = ppm_error_error
@@ -336,10 +352,10 @@
          !-------------------------------------------------------------------
          IF (PRESENT(pcost)) THEN
              CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghost_req, &
-     &                        0.1_MK,min_sub,max_sub,minboxsizes,bcdef,has_one_way,nsubs,info,pcost)
+     &                        0.1_MK,min_sub,max_sub,minboxsizes_out,bcdef,has_one_way,nsubs,info,pcost)
          ELSE
              CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghost_req, &
-     &                        0.1_MK,min_sub,max_sub,minboxsizes,bcdef,has_one_way,nsubs,info)
+     &                        0.1_MK,min_sub,max_sub,minboxsizes_out,bcdef,has_one_way,nsubs,info)
          ENDIF
 
          IF (info.NE.0) THEN
@@ -595,7 +611,6 @@
           ENDIF
       ENDIF
 
-
       !----------------------------------------------------------------------
       !  Define the topology (assign the subdomains to processors)
       !----------------------------------------------------------------------
@@ -682,7 +697,7 @@
 
       IF (decomp.EQ.ppm_param_decomp_pruned_cell) THEN
          CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist,    &
+     &                    sub2proc,nsubs,bcdef,max_ghost,isublist,nsublist,    &
      &                    nneigh,ineigh,info)
       ELSE
 

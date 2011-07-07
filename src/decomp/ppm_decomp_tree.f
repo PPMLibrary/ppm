@@ -250,14 +250,12 @@
       ENDDO
       ppb(fbox)   = 1
       npbx(fbox)  = Npart
-      npbxg(fbox) = Npart
+      npbxg(fbox) = Npartg
 
       !-------------------------------------------------------------------------
       !  Compute the maximum number of levels 
       !-------------------------------------------------------------------------
-      !<<<< haeckic begin >>>>!
       nlevel = INT(LOG(MINVAL(len_phys)/minboxsize)/LOG(2.0_MK))
-      !<<<< haeckic end >>>>!
 
       !-------------------------------------------------------------------------
       !  Split the boxes, starting at level 0 (the full box)

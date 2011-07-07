@@ -26,8 +26,8 @@
       !  ETH Zentrum, Hirschengraben 84
       !  CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-      mx1 = MIN(max_sub(1,ip),max_sub(1,jp))
-      mx2 = MIN(max_sub(2,ip),max_sub(2,jp))
+      mx1 = MIN(max_sub(1,ip),max_sub(1,jp)) + lmyeps
+      mx2 = MIN(max_sub(2,ip),max_sub(2,jp)) + lmyeps
 
       mn1 = MAX(min_sub(1,ip),min_sub(1,jp))
       mn2 = MAX(min_sub(2,ip),min_sub(2,jp))
@@ -35,10 +35,10 @@
       !-------------------------------------------------------------------------
       !  Check for adjacent faces. SHARK: The funny logic is faster.
       !-------------------------------------------------------------------------
-      IF (.NOT.(mx1.LT.min_sub(1,ip).OR.mx1.GT.max_sub(1,ip)).AND.    &
-     &    .NOT.(mx1.LT.min_sub(1,jp).OR.mx1.GT.max_sub(1,jp)).AND.    &
-     &    .NOT.(mx2.LT.min_sub(2,ip).OR.mx2.GT.max_sub(2,ip)).AND.    &
-     &    .NOT.(mx2.LT.min_sub(2,jp).OR.mx2.GT.max_sub(2,jp))) THEN
+      IF (.NOT.(mx1.LT.min_sub(1,ip)).AND.    &
+     &    .NOT.(mx1.LT.min_sub(1,jp)).AND.    &
+     &    .NOT.(mx2.LT.min_sub(2,ip)).AND.    &
+     &    .NOT.(mx2.LT.min_sub(2,jp))) THEN
 
           !---------------------------------------------------------------------
           !  Check that this sub is not already in the list and exclude

@@ -118,7 +118,7 @@ MODULE ppm_module_dcops
         MODULE PROCEDURE ppm_matrix_svd_s
         MODULE PROCEDURE ppm_matrix_svd_d
     END INTERFACE
-
+    
     !INTERFACE ppm_dcop_check_vandermonde
         !MODULE PROCEDURE ppm_dcop_check_vandermonde_s
         !MODULE PROCEDURE ppm_dcop_check_vandermonde_d
@@ -132,7 +132,7 @@ PUBLIC :: solveLSE,solveLSE_2,solveLSE_n, &
         & ppm_part_dcops_2d,ppm_part_dcops_3d, &
         & particles_dcop_compute
 
-CONTAINS
+ CONTAINS
 
 #define __KIND __DOUBLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"

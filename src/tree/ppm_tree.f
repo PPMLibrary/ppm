@@ -1248,26 +1248,45 @@
           !  We have to check if other boxes are not divisible any more
           !---------------------------------------------------------------------
           !Iterate through boxes and drop not divisible boxes
-          DO i=1,nboxlist
+          i = 1
+          DO l=1,nboxlist
 
           ! MAKE A SPECIAL TEST TO ADAPT THE TREE
+         
+            IF(i .GT. nboxlist) EXIT
 
             ! check the boxlist(i) box and drop if we have to
             j = boxlist(i)
+      
+!             IF((ppm_rank .EQ. 0) .AND. (j .eq. 137))THEN
+!                print *, 'now checking ', j
+!             ENDIF
+
             CALL ppm_tree_divcheck(min_box(1:ppm_dim,j:j),    &
      &             max_box(1:ppm_dim,j:j),1,minboxsize,fixed, &
      &             boxcost(j:j),neigh_ghost_ranges(j:j,1:ppm_dim,:,:),numb_neigh_const(j:j,1:ppm_dim),ndiv,info)
                   
 
+!             IF((ppm_rank .EQ. 0) .and. (j .eq. 137))THEN
+!                print *, 'finished checking ', j
+!             ENDIF
+
             IF (ndiv(1) .LT. ncut) THEN
                ! Not divisible any more
+!             IF(ppm_rank .EQ. 0)THEN
+!                print *, 'WE are droping ', j
+!             ENDIF
                DO k=i,nboxlist-1
                   boxlist(k) = boxlist(k+1)
                ENDDO
                nboxlist = nboxlist-1
+               i = i-1
             ENDIF
 
+      
+            i = i+1
           ENDDO
+         
 
           !---------------------------------------------------------------------
           !  Determine if tree is finished

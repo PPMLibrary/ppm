@@ -233,7 +233,7 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)            :: mins,maxs,meshdx,meshdxinv
+      REAL(MK), DIMENSION(ppm_dim)            :: mins,maxs,meshdx,meshdxinv,len_phys
       INTEGER , DIMENSION(ppm_dim)            :: thisNm, touch_side
       INTEGER , DIMENSION(2*ppm_dim)          :: ghostNm
       INTEGER , DIMENSION(4)                  :: ldc
@@ -422,12 +422,6 @@
       NULLIFY(tree_lhbx)
       NULLIFY(tree_lpdx)
 
-
-      ! TODO HAECKIC:
-      ! This allocation might be not good anymore, because inhom decomposition may
-      ! cause a need of more memory
-      ! MAY BE SOLVED BY LOWER INCREASING OF LISTS IF NEEDED
-   
       !-------------------------------------------------------------------------
       !  Allocate tree data structures
       !-------------------------------------------------------------------------
@@ -571,7 +565,7 @@
               GOTO 9999
           ENDIF
       ENDIF 
-
+      
 
       !-------------------------------------------------------------------------
       !  The domain itself is the root box. Get the tree started!
@@ -588,6 +582,9 @@
               Nm_box(2,1) = Nm(2)
               Nm_box(3,1) = Nm(3)
           ENDIF
+          len_phys(1) = max_dom(1)-min_dom(1)
+          len_phys(2) = max_dom(2)-min_dom(2)
+          len_phys(3) = max_dom(3)-min_dom(3)
       ELSE
           min_box(1,1) = min_dom(1)
           min_box(2,1) = min_dom(2)
@@ -597,6 +594,8 @@
               Nm_box(1,1) = Nm(1)
               Nm_box(2,1) = Nm(2)
           ENDIF
+          len_phys(1) = max_dom(1)-min_dom(1)
+          len_phys(2) = max_dom(2)-min_dom(2)
 
       ENDIF
 
@@ -610,11 +609,14 @@
                minboxsizes(j,1) = ghost_req(j,i)
             ENDIF
          ENDDO
+#ifdef __MPI
          ! Needs to collect max from all processors
          CALL MPI_Allreduce(minboxsizes(j,1),max_ghost,1,MPTYPE,MPI_MAX,ppm_comm,info)
          minboxsizes(j,1) = max_ghost
          max_ghost_in_box(j,1) = max_ghost
-
+#else
+         max_ghost_in_box(j,1) = minboxsizes(j,1)
+#endif
          ! init the new data structure
          numb_neigh_const(1,j) = 0
 
@@ -1145,9 +1147,13 @@
                         ENDIF
                      ENDDO
                      ! Needs to collect max from all processors
+#ifdef __MPI
                      CALL MPI_Allreduce(minboxsizes(j,nbox),max_ghost,1,MPTYPE,MPI_MAX,ppm_comm,info)
                      minboxsizes(j,nbox) = max_ghost
                      max_ghost_in_box(j,nbox) = max_ghost
+#else
+                     max_ghost_in_box(j,nbox) = minboxsizes(j,nbox) 
+#endif
                      numb_neigh_const(nbox,j) = 0
                   ENDDO
 
@@ -1182,8 +1188,8 @@
 
                      DO k=1,ppm_dim
                         ! 1. Calculate influence in this dimension
-                        IF((min_box(k,jsub) - min_box(k,isub)) .GT. max_ghost_in_box(k,isub)/2.0_mk &
-      &                          .OR. (max_box(k,isub) - max_box(k,jsub)) .GT. max_ghost_in_box(k,isub)/2.0_mk) THEN
+                        IF((min_box(k,isub) - min_box(k,jsub)) .GT. max_ghost_in_box(k,isub)/2.0_mk &
+      &                          .OR. (max_box(k,jsub) - max_box(k,isub)) .GT. max_ghost_in_box(k,isub)/2.0_mk) THEN
                            ! NOT entire side of box covered -> update minboxsizes
 
                            IF (minboxsizes(k,isub) < max_ghost_in_box(k,jsub)) THEN
@@ -1200,7 +1206,20 @@
 
                            ENDIF
                         ENDIF
+                        
+                        ! periodic boundaries
+                        IF(ABS(min_box(k,jsub)+len_phys(k) - max_box(k,isub)) .LT. max_ghost_in_box(k,isub)/2.0_mk &
+      &                         .OR. ABS(min_box(k,isub)+len_phys(k) - max_box(k,jsub)) .LT. max_ghost_in_box(k,isub)/2.0_mk) THEN
+                           ! NOT entire side of box covered -> update minboxsizes
+
+                           IF (minboxsizes(k,isub) < max_ghost_in_box(k,jsub)) THEN
+                              minboxsizes(k,isub) = max_ghost_in_box(k,jsub)
+
+                           ENDIF
+                        ENDIF
+                        
                      ENDDO
+
                   ENDIF
 !                   IF (min_box(1,jsub) .GT. max_box(1,isub) .AND. min_box(2,jsub) .GT. max_box(2,isub)) THEN
 !                      print *, 'found a bad case ', min_box(1,jsub), max_box(1,isub), min_box(2,jsub), max_box(2,isub)
@@ -1221,8 +1240,8 @@
                      IF(nchld(lsub) .EQ. 0) THEN
                         DO k=1,ppm_dim
 
-                           IF((min_box(k,lsub) - min_box(k,jsub)) .GT. max_ghost_in_box(k,jsub)/2.0_mk &
-      &                          .OR. (max_box(k,jsub) - max_box(k,lsub)) .GT. max_ghost_in_box(k,jsub)/2.0_mk) THEN
+                           IF((min_box(k,jsub) - min_box(k,lsub)) .GT. max_ghost_in_box(k,jsub)/2.0_mk &
+      &                          .OR. (max_box(k,lsub) - max_box(k,jsub)) .GT. max_ghost_in_box(k,jsub)/2.0_mk) THEN
                               ! NOT entire side of box covered -> update minboxsizes
 
                               IF (minboxsizes(k,jsub) < max_ghost_in_box(k,lsub)) THEN
@@ -1231,6 +1250,14 @@
                            ENDIF
                            IF(ABS(min_box(k,lsub) - max_box(k,jsub)) .LT. max_ghost_in_box(k,jsub)/2.0_mk &
       &                          .OR. ABS(min_box(k,jsub) - max_box(k,lsub)) .LT. max_ghost_in_box(k,jsub)/2.0_mk) THEN
+                              ! NOT entire side of box covered -> update minboxsizes
+
+                              IF (minboxsizes(k,jsub) < max_ghost_in_box(k,lsub)) THEN
+                                 minboxsizes(k,jsub) = max_ghost_in_box(k,lsub)
+                              ENDIF
+                           ENDIF
+                           IF(ABS(min_box(k,lsub)+len_phys(k) - max_box(k,jsub)) .LT. max_ghost_in_box(k,jsub)/2.0_mk &
+      &                          .OR. ABS(min_box(k,jsub)+len_phys(k) - max_box(k,lsub)) .LT. max_ghost_in_box(k,jsub)/2.0_mk) THEN
                               ! NOT entire side of box covered -> update minboxsizes
 
                               IF (minboxsizes(k,jsub) < max_ghost_in_box(k,lsub)) THEN
@@ -1271,7 +1298,6 @@
    
                ! Update the new one
                IF(nchld(jsub) .EQ. 0) THEN
-
 
                   DO k=1,ppm_dim
                     

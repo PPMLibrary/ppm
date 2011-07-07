@@ -78,10 +78,11 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                       :: t0, lmyeps
-      INTEGER                        :: ipart,idom,j,ison, in, iid
+      INTEGER                        :: ipart,idom,i,j,ison, in, iid
       LOGICAL                        :: valid
       INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
       TYPE(ppm_t_topo)     , POINTER :: topo  => NULL()
+      REAL(MK), DIMENSION(ppm_dim)   :: len_phys
 
       ! Needed for has_one_way neighbor checking
       INTEGER , DIMENSION(  :), POINTER :: nneigh  => NULL()
@@ -89,11 +90,6 @@
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
 
       !-------------------------------------------------------------------------
       !  Initialise
@@ -114,6 +110,23 @@
       !-------------------------------------------------------------------------
       topo => ppm_topo(topoid)%t
       bcdef => topo%bcdef
+
+
+#if   __KIND == __SINGLE_PRECISION
+      lmyeps = ppm_myepss
+      
+      DO i = 1,ppm_dim
+         len_phys(i) = topo%max_physs(i) - topo%min_physs(i)
+      ENDDO
+      
+#elif __KIND == __DOUBLE_PRECISION
+      lmyeps = ppm_myepsd
+      
+      DO i = 1,ppm_dim
+         len_phys(i) = topo%max_physd(i) - topo%min_physd(i)
+      ENDDO
+      
+#endif
 
       !-------------------------------------------------------------------------
       !  Check all particles
@@ -166,14 +179,14 @@
                         !------------------------------------------------------------
                         IF((topo%max_subd(1,idom)-topo%min_subd(1,idom)) .LT. ghost_req(1,ipart)-lmyeps .OR. &
       &                    (topo%max_subd(2,idom)-topo%min_subd(2,idom)) .LT. ghost_req(2,ipart)-lmyeps) THEN
-                           !print *, topo%min_subd(1,idom), topo%min_subd(2,idom), topo%max_subd(1,idom), topo%max_subd(2,idom)
-                           print *, topo%min_subd(1,idom)+ghost_req(1,ipart)-topo%max_subd(1,idom), lmyeps
-                           print *, topo%min_subd(2,idom)+ghost_req(2,ipart)-topo%max_subd(2,idom)
+!                            print *, topo%min_subd(1,idom), topo%min_subd(2,idom), topo%max_subd(1,idom), topo%max_subd(2,idom)
+!                            print *, topo%min_subd(1,idom)+ghost_req(1,ipart)-topo%max_subd(1,idom), lmyeps
+!                            print *, topo%min_subd(2,idom)+ghost_req(2,ipart)-topo%max_subd(2,idom)
 #endif
-                           ! particle is in one of my subs
-                           !print *, xp(1,ipart), xp(2,ipart), ghost_req(1,ipart), ghost_req(2,ipart)
-                           !print *, xp(1,ipart)-ghost_req(1,ipart), xp(1,ipart)+ghost_req(1,ipart)
-                           !print *, xp(2,ipart)-ghost_req(2,ipart), xp(2,ipart)+ghost_req(2,ipart)
+!                            !particle is in one of my subs
+!                            print *, xp(1,ipart), xp(2,ipart), ghost_req(1,ipart), ghost_req(2,ipart)
+!                            print *, xp(1,ipart)-ghost_req(1,ipart), xp(1,ipart)+ghost_req(1,ipart)
+!                            print *, xp(2,ipart)-ghost_req(2,ipart), xp(2,ipart)+ghost_req(2,ipart)
                            ison = 1
                            EXIT
                         ENDIF
@@ -277,11 +290,11 @@
 #endif
 
          IF (ppm_dim .EQ. 2) THEN
-            
+               ison = 0
                DO j=1,topo%nsublist
                   idom = topo%isublist(j)
                   DO ipart=1,Npart
-                     ison = 0
+
 #if    __KIND == __SINGLE_PRECISION
                      IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.  &
       &                 xp(1,ipart).LE.topo%max_subs(1,idom).AND.  &
@@ -303,14 +316,27 @@
                            ! Iterate through all neighbors
                               DO in = 1, nneigh(idom)
                                  iid = ineigh(in,idom)
-                                 IF((topo%max_subs(1,iid)-topo%min_subs(1,iid)) .LT. ghost_req(1,ipart)-lmyeps .OR. &
-               &                    (topo%max_subs(2,iid)-topo%min_subs(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) THEN
+                                 IF((((topo%max_subs(1,iid)-topo%min_subs(1,iid)) .LT. ghost_req(1,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subs(1,idom)-topo%min_subs(1,iid).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subs(1,iid)-topo%max_subs(1,idom).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,iid) - topo%max_subs(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,idom) - topo%max_subs(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,iid)+len_phys(1) - topo%max_subs(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,idom)+len_phys(1) - topo%max_subs(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subs(2,iid)-topo%min_subs(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subs(2,idom)-topo%min_subs(2,iid).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subs(2,iid)-topo%max_subs(2,idom).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,iid) - topo%max_subs(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,idom) - topo%max_subs(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,iid)+len_phys(2) - topo%max_subs(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,idom)+len_phys(2) - topo%max_subs(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk))) ) THEN
                                     ison = 1
                                     EXIT
                                  ENDIF
                               ENDDO
                         ENDIF
                      ENDIF
+
 
 #elif  __KIND == __DOUBLE_PRECISION
                      IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.  &
@@ -333,10 +359,31 @@
                            ! Iterate through all neighbors
                            DO in = 1, nneigh(idom)
                               iid = ineigh(in,idom)
-                              IF((topo%max_subd(1,iid)-topo%min_subd(1,iid)) .LT. ghost_req(1,ipart)-lmyeps .OR. &
-            &                    (topo%max_subd(2,iid)-topo%min_subd(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) THEN
-                                 ison = 1
-                                 EXIT
+                              IF((((topo%max_subd(1,iid)-topo%min_subd(1,iid)) .LT. ghost_req(1,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subd(1,idom)-topo%min_subd(1,iid).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subd(1,iid)-topo%max_subd(1,idom).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,iid) - topo%max_subd(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,idom) - topo%max_subd(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,iid)+len_phys(1) - topo%max_subd(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,idom)+len_phys(1) - topo%max_subd(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subd(2,iid)-topo%min_subd(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subd(2,idom)-topo%min_subd(2,iid).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subd(2,iid)-topo%max_subd(2,idom).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,iid) - topo%max_subd(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,idom) - topo%max_subd(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,iid)+len_phys(2) - topo%max_subd(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,idom)+len_phys(2) - topo%max_subd(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk))) ) THEN
+                                   ! Test if this neighbor has to fulfill it
+                                    ison = 1
+!                                     print *, 'found the case'
+!                                     print *, topo%max_subd(1,iid)-topo%min_subd(1,iid), ghost_req(1,ipart)-lmyeps, &
+!                                     & topo%max_subd(2,iid)-topo%min_subd(2,iid), ghost_req(2,ipart)-lmyeps
+!                                     print *, topo%min_subd(1,iid),topo%max_subd(1,iid), &
+!                                     & topo%min_subd(2,iid),topo%max_subd(2,iid)
+!                                     print *, topo%min_subd(1,idom),topo%max_subd(1,idom), &
+!                                     & topo%min_subd(2,idom),topo%max_subd(2,idom)
+                                    EXIT
+                                 
                               ENDIF
                            ENDDO
                         ENDIF
@@ -345,16 +392,17 @@
                ENDDO
                IF (ison .EQ. 1) THEN
                      ! found a particle that violates the topology
+                     
                      topo_ok = .FALSE.
                      ! no need to search any further
                      GOTO 9999
                ENDIF
             ENDDO
          ELSEIF (ppm_dim .EQ. 3) THEN
+            ison = 0
             DO j=1,topo%nsublist
                   idom = topo%isublist(j)
                   DO ipart=1,Npart
-                     ison = 0
 #if    __KIND == __SINGLE_PRECISION
                      IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.  &
       &                 xp(1,ipart).LE.topo%max_subs(1,idom).AND.  &
@@ -381,9 +429,27 @@
                         ! Iterate through all neighbors
                            DO in = 1, nneigh(idom)
                               iid = ineigh(in,idom)
-                              IF((topo%max_subs(1,iid)-topo%min_subs(1,iid)) .LT. ghost_req(1,ipart)-lmyeps .OR. &
-            &                    (topo%max_subs(2,iid)-topo%min_subs(2,iid)) .LT. ghost_req(2,ipart)-lmyeps.OR. &
-            &                    (topo%max_subs(3,iid)-topo%min_subs(3,iid)) .LT. ghost_req(3,ipart)-lmyeps) THEN
+                              IF((((topo%max_subs(1,iid)-topo%min_subs(1,iid)) .LT. ghost_req(1,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subs(1,idom)-topo%min_subs(1,iid).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subs(1,iid)-topo%max_subs(1,idom).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,iid) - topo%max_subs(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,idom) - topo%max_subs(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,iid)+len_phys(1) - topo%max_subs(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(1,idom)+len_phys(1) - topo%max_subs(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subs(2,iid)-topo%min_subs(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subs(2,idom)-topo%min_subs(2,iid).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subs(2,iid)-topo%max_subs(2,idom).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,iid) - topo%max_subs(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,idom) - topo%max_subs(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,iid)+len_phys(2) - topo%max_subs(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(2,idom)+len_phys(2) - topo%max_subs(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subs(3,iid)-topo%min_subs(3,iid)) .LT. ghost_req(3,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subs(3,idom)-topo%min_subs(3,iid).GT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subs(3,iid)-topo%max_subs(3,idom).GT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(3,iid) - topo%max_subs(3,idom)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(3,idom) - topo%max_subs(3,iid)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(3,iid)+len_phys(3) - topo%max_subs(3,idom)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subs(3,idom)+len_phys(3) - topo%max_subs(3,iid)) .LT. ghost_req(3,ipart)/2.0_mk)))) THEN
                                  ison = 1
                                  EXIT
                               ENDIF
@@ -417,9 +483,27 @@
                            ! Iterate through all neighbors
                               DO in = 1, nneigh(idom)
                                  iid = ineigh(in,idom)
-                                 IF((topo%max_subd(1,iid)-topo%min_subd(1,iid)) .LT. ghost_req(1,ipart)-lmyeps .OR. &
-               &                    (topo%max_subd(2,iid)-topo%min_subd(2,iid)) .LT. ghost_req(2,ipart)-lmyeps .OR. &
-               &                    (topo%max_subd(3,iid)-topo%min_subd(3,iid)) .LT. ghost_req(3,ipart)-lmyeps) THEN
+                                 IF((((topo%max_subd(1,iid)-topo%min_subd(1,iid)) .LT. ghost_req(1,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subd(1,idom)-topo%min_subd(1,iid).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subd(1,iid)-topo%max_subd(1,idom).GT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,iid) - topo%max_subd(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,idom) - topo%max_subd(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,iid)+len_phys(1) - topo%max_subd(1,idom)) .LT. ghost_req(1,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(1,idom)+len_phys(1) - topo%max_subd(1,iid)) .LT. ghost_req(1,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subd(2,iid)-topo%min_subd(2,iid)) .LT. ghost_req(2,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subd(2,idom)-topo%min_subd(2,iid).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subd(2,iid)-topo%max_subd(2,idom).GT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,iid) - topo%max_subd(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,idom) - topo%max_subd(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,iid)+len_phys(2) - topo%max_subd(2,idom)) .LT. ghost_req(2,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(2,idom)+len_phys(2) - topo%max_subd(2,iid)) .LT. ghost_req(2,ipart)/2.0_mk))) &
+   &       .OR. (((topo%max_subd(3,iid)-topo%min_subd(3,iid)) .LT. ghost_req(3,ipart)-lmyeps) &
+   &          .AND. ((topo%min_subd(3,idom)-topo%min_subd(3,iid).GT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (topo%max_subd(3,iid)-topo%max_subd(3,idom).GT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(3,iid) - topo%max_subd(3,idom)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(3,idom) - topo%max_subd(3,iid)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(3,iid)+len_phys(3) - topo%max_subd(3,idom)) .LT. ghost_req(3,ipart)/2.0_mk) &
+   &           .OR. (ABS(topo%min_subd(3,idom)+len_phys(3) - topo%max_subd(3,iid)) .LT. ghost_req(3,ipart)/2.0_mk)))) THEN
                                     ison = 1
                                     EXIT
                                  ENDIF

@@ -332,7 +332,9 @@
          min_box(k,fbox) = min_phys(k)
          max_box(k,fbox) = max_phys(k)
          len_phys(k)     = max_phys(k) - min_phys(k)
-
+!          IF (ppm_rank .eq. 0) THEN
+!             print *, 'master', min_box(k,fbox), max_box(k,fbox)
+!          ENDIF
          IF (compare_tol > len_phys(k)/2.0_mk) THEN
             compare_tol = len_phys(k)/2.0_mk
          ENDIF
@@ -348,16 +350,17 @@
                ENDIF
             ENDIF
          ENDDO
+#ifdef __MPI
          CALL MPI_Allreduce(minboxsizes_temp(k,1),max_ghost_temp(k,1),1,MPTYPE,MPI_MAX,ppm_comm,info)
-      
-      ENDDO
-      DO k=1,ppm_dim
          minboxsizes_temp(k,1) = max_ghost_temp(k,1)
+#else
+         max_ghost_temp(k,1) = minboxsizes_temp(k,1)
+#endif
       ENDDO
-
+      
       ppb(fbox)   = 1
       npbx(fbox)  = Npart
-      npbxg(fbox) = Npart ! adapt this reduce!
+      npbxg(fbox) = Npartg ! adapt this reduce!
 
       !-------------------------------------------------------------------------
       !  Compute the maximum number of levels 
@@ -403,20 +406,38 @@
                   ENDIF
 
                   DO ii=1,Npart
-                     ! is partice inside box?
-                     IF (xp(k,ii) .GE. min_box(k,j) .AND. xp(k,ii) .LE. max_box(k,j)) THEN
-                        IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
-                           minboxsizes_temp(k,i) = ghost_req(k,ii)
+                     IF (ppm_dim .GT. 2) THEN
+                     
+                        IF ((xp(1,ii) .GE. min_box(1,j) .AND. xp(1,ii) .LE. max_box(1,j)) &
+     &                   .AND. (xp(2,ii) .GE. min_box(2,j) .AND. xp(2,ii) .LE. max_box(2,j)) &
+     &                   .AND. (xp(3,ii) .GE. min_box(3,j) .AND. xp(3,ii) .LE. max_box(3,j))) THEN
+                           IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
+                              minboxsizes_temp(k,i) = ghost_req(k,ii)
+                           ENDIF
                         ENDIF
+                     
+                     ELSE
+                        IF ((xp(1,ii) .GE. min_box(1,j) .AND. xp(1,ii) .LE. max_box(1,j)) &
+     &                   .AND. (xp(2,ii) .GE. min_box(2,j) .AND. xp(2,ii) .LE. max_box(2,j))) THEN
+                           IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
+                              minboxsizes_temp(k,i) = ghost_req(k,ii)
+                           ENDIF
+                        ENDIF
+                     
                      ENDIF
                   ENDDO
+#ifdef __MPI
                   CALL MPI_Allreduce(minboxsizes_temp(k,i),max_ghost_temp(k,i),1,MPTYPE,MPI_MAX,ppm_comm,info)
-                
-               ENDDO
-               ! Needs to collect max from all processors
-               DO k=1,ppm_dim
                   minboxsizes_temp(k,i) = max_ghost_temp(k,i)
+#else
+                  max_ghost_temp(k,i) = minboxsizes_temp(k,i)
+#endif
                ENDDO
+
+!                IF (ppm_rank .EQ. 0) THEn
+!                   print *, j, min_box(1,j), min_box(2,j),min_box(3,j),max_box(1,j),max_box(2,j),min_box(3,j), &
+!                   & minboxsizes_temp(1,i), minboxsizes_temp(2,i), minboxsizes_temp(3,i)
+!                ENDIF
 
             ENDDO
 
@@ -433,21 +454,40 @@
                   ! Needs to collect max from all processors
                   minboxsizes_temp(k,i) = 0.0_mk
                   DO ii=1,Npart
-                     ! is partice inside box?
-                     IF (xp(k,ii) .GE. min_box(k,j) .AND. xp(k,ii) .LE. max_box(k,j)) THEN
-
-                        IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
-                           minboxsizes_temp(k,i) = ghost_req(k,ii)
+                     ! is partice inside box? in all dimensions
+                     IF (ppm_dim .GT. 2) THEN
+                     
+                        IF ((xp(1,ii) .GE. min_box(1,j) .AND. xp(1,ii) .LE. max_box(1,j)) &
+     &                   .AND. (xp(2,ii) .GE. min_box(2,j) .AND. xp(2,ii) .LE. max_box(2,j)) &
+     &                   .AND. (xp(3,ii) .GE. min_box(3,j) .AND. xp(3,ii) .LE. max_box(3,j))) THEN
+                           IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
+                              minboxsizes_temp(k,i) = ghost_req(k,ii)
+                           ENDIF
                         ENDIF
+                     
+                     ELSE
+                        IF ((xp(1,ii) .GE. min_box(1,j) .AND. xp(1,ii) .LE. max_box(1,j)) &
+     &                   .AND. (xp(2,ii) .GE. min_box(2,j) .AND. xp(2,ii) .LE. max_box(2,j))) THEN
+                           IF (ghost_req(k,ii) .GT. minboxsizes_temp(k,i)) THEN
+                              minboxsizes_temp(k,i) = ghost_req(k,ii)
+                           ENDIF
+                        ENDIF
+                     
                      ENDIF
+                     
                   ENDDO
-
+#ifdef __MPI
                    ! Needs to collect max from all processors
                   CALL MPI_Allreduce(minboxsizes_temp(k,i),max_ghost_temp(k,i),1,MPTYPE,MPI_MAX,ppm_comm,info)
                   minboxsizes_temp(k,i) = max_ghost_temp(k,i)
-
+#else
+                  max_ghost_temp(k,i) = minboxsizes_temp(k,i)
+#endif
                ENDDO
-  
+!                IF (ppm_rank .EQ. 0) THEn
+!                   print *, j, min_box(1,j), min_box(2,j),min_box(3,j),max_box(1,j),max_box(2,j),max_box(3,j), &
+!                   & minboxsizes_temp(1,i), minboxsizes_temp(2,i), minboxsizes_temp(3,i)
+!                ENDIF
             ENDDO
 
          ENDIF
@@ -468,19 +508,17 @@
                   ! Update the new one
                   DO k=1,ppm_dim
                      ! 1. Calculate influence in this dimension
-                     IF ((min_box_temp(k,ii) - min_box_temp(k,jj)) .GT. compare_tol &
-   &                          .AND. ABS(min_box_temp(k,ii) - max_box_temp(k,jj)) .LT. compare_tol) THEN
-                        IF (minboxsizes_temp(k,ii) < max_ghost_temp(k,jj)) THEN
-                           minboxsizes_temp(k,ii) = max_ghost_temp(k,jj)
-                        ENDIF
-
-                     ELSEIF ((max_box_temp(k,jj) - max_box_temp(k,ii)) .GT. compare_tol &
-   &                          .AND. ABS(max_box_temp(k,ii) - min_box_temp(k,jj)) .LT. compare_tol) THEN
+                     IF ( .NOT.((min_box_temp(k,jj) - min_box_temp(k,ii)) .LT. compare_tol &
+   &                    .AND.  (max_box_temp(k,ii) - max_box_temp(k,jj)) .LT. compare_tol)) THEN
+!    &                    .OR. ABS(min_box_temp(k,ii) - max_box_temp(k,jj)) .LT. compare_tol &
+!    &                    .OR. ABS(max_box_temp(k,ii) - min_box_temp(k,jj)) .LT. compare_tol &
+!    &                    .OR. ABS(min_box_temp(k,ii)+len_phys(k) - max_box_temp(k,jj)) .LT. compare_tol &
+!    &                    .OR. ABS(max_box_temp(k,ii) - min_box_temp(k,jj)+len_phys(k)) .LT. compare_tol) THEN
+!                         
                         IF (minboxsizes_temp(k,ii) < max_ghost_temp(k,jj)) THEN
                            minboxsizes_temp(k,ii) = max_ghost_temp(k,jj)
                         ENDIF
                      ENDIF
-
                   ENDDO
 
                ENDDO
@@ -529,6 +567,7 @@
                   min_sub(k,nsubs) = min_box(k,kbox)
                   max_sub(k,nsubs) = max_box(k,kbox)
                   minboxsizes(k,nsubs) = minboxsizes_temp(k,nsubs_temp+(kbox-fbox+1))
+                  max_ghost_temp(k,nsubs) = max_ghost_temp(k,nsubs_temp+(kbox-fbox+1))
                   numb_part(nsubs) = npbxg(kbox)
                ENDDO
 
@@ -784,10 +823,14 @@
                   ENDIF
                ENDDO
             ENDDO
+#ifdef __MPI
             ! Needs to collect max from all processors
             CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
             CALL MPI_Allreduce(max_ghost(2),minboxsizes(2,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
-
+#else
+            minboxsizes(1,nsubs) = max_ghost(1)
+            minboxsizes(2,nsubs) = max_ghost(2)
+#endif
          ENDDO
       ELSEIF (ppm_dim.EQ.3) THEN
          !----------------------------------------------------------------------
@@ -818,11 +861,16 @@
                   ENDIF
                ENDDO
             ENDDO
+#ifdef __MPI
             ! Needs to collect max from all processors
             CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
             CALL MPI_Allreduce(max_ghost(2),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
             CALL MPI_Allreduce(max_ghost(3),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
-
+#else
+            minboxsizes(1,nsubs) = max_ghost(1)
+            minboxsizes(2,nsubs) = max_ghost(2)
+            minboxsizes(3,nsubs) = max_ghost(3)
+#endif
          ENDDO
       ENDIF
 
@@ -901,8 +949,8 @@
 
          ! Plot a message if we are not optimal
          IF (ghost_ok_one .AND. variance_not_ok) THEN
-            IF(ppm_rank .EQ. 0) THEN
-               print *, 'WE COULD STILL DIVIDE BOXES'
+            IF(ppm_rank .EQ. 0 .AND. ppm_debug .GT. 0) THEN
+               print *, 'WE COULD STILL DIVIDE BOXES in decomp_tree'
             ENDIF
          ENDIF
       ENDIF

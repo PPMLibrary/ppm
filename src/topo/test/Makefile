@@ -12,7 +12,7 @@ CPP = cpp
 FC = mpif90 --free-form -fbounds-check
 #----------------------------------------------------------------------
 
-TESTINC=-I$(PPMDIR)/include -I$(MPIDIR)/include -L$(PPMDIR)/lib -lppm -L$(METISDIR)/lib -lmetis
+TESTINC=-I$(PPMDIR)/include/ppm -I$(MPIDIR)/include -L$(PPMDIR)/lib -lppm -L$(METISDIR)/lib -lmetis
 sources=$(wildcard *.f)
 targets=$(patsubst %.f,%,$(sources))
 

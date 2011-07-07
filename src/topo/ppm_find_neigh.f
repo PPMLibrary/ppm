@@ -80,6 +80,7 @@
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -113,7 +114,7 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: bsize,len_sub
       REAL(MK), DIMENSION(:,:), POINTER       :: ctrs => NULL()
-      REAL(MK)                                :: mx1,mx2,mx3
+      REAL(MK)                                :: mx1,mx2,mx3,lmyeps
       REAL(MK)                                :: mn1,mn2,mn3
       INTEGER , DIMENSION(:  ), POINTER       :: subid => NULL()
       INTEGER , DIMENSION(:  ), POINTER       :: lhbx  => NULL()
@@ -133,7 +134,11 @@
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      
+#if   __KIND == __SINGLE_PRECISION
+      lmyeps = ppm_myepss
+#elif __KIND == __DOUBLE_PRECISION
+      lmyeps = ppm_myepsd
+#endif
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
