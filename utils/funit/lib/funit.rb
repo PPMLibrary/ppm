@@ -19,7 +19,7 @@ module Funit
   ##
   # run all tests
 
-  def run_tests(prog_source_dirs=['.'],use_mpi=false)
+  def run_tests(prog_source_dirs=['.'],use_mpi=false,procs=[1])
     Compiler.new# a test for compiler env set (FIXME: remove this later)
     write_test_runner( test_files = parse_command_line,use_mpi)
     test_suites = []
@@ -46,7 +46,11 @@ module Funit
       Dir.chdir original_dir
     }
     compile_tests(test_suites,prog_source_dirs)
-    exit 1 unless system "PATH=.:$PATH TestRunner"
+    procs.split(',').each{ |nproc|
+      puts "\n\n\n            STARTING TEST ON " + nproc + " PROCESOR(S)"
+      puts "=======================================================\n\n"
+      exit 1 unless system "PATH=.:$PATH mpirun -n " + nproc + " TestRunner"
+    }
     clean_genFiles
   end
 

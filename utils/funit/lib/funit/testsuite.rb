@@ -70,6 +70,9 @@ module #{@suite_name}_fun
  integer :: numAsserts        = 0
  integer :: numAssertsTested  = 0
  integer :: numFailures       = 0
+ integer :: funit_rank
+ integer :: funit_comm
+ integer :: funit_info
 
       TOP
     end
@@ -201,17 +204,21 @@ module #{@suite_name}_fun
 
       puts <<-NEXTONE
 
- subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh )
+ subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh, rank, comm )
 
   integer :: nTests
   integer :: nAsserts
   integer :: nAssertsTested
   integer :: nFailures
   integer :: lfh
+  integer :: rank
+  integer :: comm
 
   continue
 
-  log = lfh  
+  log = lfh
+  funit_rank = rank
+  funit_comm = comm
 
   call funit_init
 
