@@ -155,11 +155,14 @@
       REAL(MK), DIMENSION(ppm_dim)  :: max_phys
       REAL(MK), DIMENSION(ppm_dim)  :: len_phys
       REAL(MK)                      :: t0
-      INTEGER                       :: iperiodic
+      INTEGER                       :: nbc,npbc,nsbc
+      LOGICAL, DIMENSION(2*ppm_dim) :: lextra
+      INTEGER, DIMENSION(2*ppm_dim) :: ibc
       LOGICAL                       :: valid
       CHARACTER(ppm_char)              :: mesg
       ! number of periodic directions: between 0 and ppm_dim
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
+      REAL(MK)                      :: eps
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -173,49 +176,50 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
-     &            'This routine needs a topology defined topo',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (topoid .NE. ppm_param_topo_undefined) THEN
-            CALL ppm_check_topoid(topoid,valid,info)
-            IF (.NOT. valid) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &               'topoid out of range',__LINE__,info)
-                GOTO 9999
-            ENDIF
-        ENDIF
-        IF (lda .LT. 1) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'lda must be >0',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'Npart must be >=0',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (ghostsize .LT. 0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'ghostsize must be >=0.0',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        CALL check
+        IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
+#if __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#else
+      eps = ppm_myepss
+#endif
 
+      !-------------------------------------------------------------------------
+      !  Count Boundary conditions
+      !-------------------------------------------------------------------------
+      npbc = 0
+      nsbc = 0
+      nbc = 0
+      ibc(:) = 0
+      lextra(:) = .FALSE.
+      
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_periodic)
+              npbc = npbc + 1
+              ibc(i) = ppm_param_bcdef_periodic
+          CASE (ppm_param_bcdef_symmetry)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_antisymmetry)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_neumann)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_dirichlet)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          END SELECT
+      ENDDO
+      nbc = npbc + nsbc
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
@@ -527,31 +531,28 @@
 !         ENDIF 
 !      ENDDO
 
+      ! find out whether we have any non-freespace BCs
       !----------------------------------------------------------------------
       !  handle boundary conditions in x
       !----------------------------------------------------------------------
-      IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
+      IF (ibc(1).EQ.ppm_param_bcdef_periodic) THEN
 #include "ghost_map_periodic_bc_x.inc"
-      ELSEIF (topo%bcdef(1).GE.ppm_param_bcdef_symmetry.AND. &
-      &       topo%bcdef(1).LE.ppm_param_bcdef_dirichlet) THEN
+      ELSEIF (ibc(1).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_lx.inc"
       ENDIF  
       
-      IF (topo%bcdef(2).GE.ppm_param_bcdef_symmetry.AND. &
-      &   topo%bcdef(2).LE.ppm_param_bcdef_dirichlet) THEN
+      IF (ibc(2).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_ux.inc"
       ENDIF 
       !----------------------------------------------------------------------
       !  handle boundary conditions in y
       !----------------------------------------------------------------------
-      IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
+      IF (ibc(3).EQ.ppm_param_bcdef_periodic) THEN
 #include "ghost_map_periodic_bc_y.inc"
-      ELSEIF (topo%bcdef(3).GE.ppm_param_bcdef_symmetry.AND. &
-      &       topo%bcdef(3).LE.ppm_param_bcdef_dirichlet) THEN
+      ELSEIF (ibc(3).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_ly.inc"
       ENDIF
-      IF (topo%bcdef(4).GE.ppm_param_bcdef_symmetry.AND. &
-      &   topo%bcdef(4).LE.ppm_param_bcdef_dirichlet) THEN
+      IF (ibc(4).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_uy.inc"
       ENDIF
       !----------------------------------------------------------------------
@@ -563,14 +564,12 @@
          !  the compiler will check and ppm_bcdef will only be allocated to
          !  four (4) in 2D
          !-------------------------------------------------------------------
-         IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
+         IF (ibc(5).EQ.ppm_param_bcdef_periodic) THEN
 #include "ghost_map_periodic_bc_z.inc"
-         ELSEIF (topo%bcdef(5).GE.ppm_param_bcdef_symmetry.AND. &
-         &       topo%bcdef(5).LE.ppm_param_bcdef_dirichlet) THEN
+         ELSEIF (ibc(5).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_lz.inc"
          ENDIF
-         IF (topo%bcdef(6).GE.ppm_param_bcdef_symmetry.AND. &
-         &   topo%bcdef(6).LE.ppm_param_bcdef_dirichlet) THEN
+         IF (ibc(6).EQ.ppm_param_bcdef_symmetry) THEN
 #include "ghost_map_symmetry_bc_uz.inc"
          ENDIF
 
@@ -696,9 +695,9 @@
       !  most ppm_nsublist(topoid)*(nghostplus - nghost)*ppm_dim. The arrays
       !  are resized further below during step 2 and 3.
       !-------------------------------------------------------------------------
-      IF (iperiodic.GT.0) THEN
+      IF (nbc.GT.0) THEN
          !----------------------------------------------------------------------
-         !  Well we can grow or fit the arrays - a matter of taste 
+         !  We can grow or fit the arrays - a matter of taste 
          !----------------------------------------------------------------------
          iopt   = ppm_param_alloc_grow
          ldu(1) = ppm_dim*(nghostplus - nghost)*topo%nsublist
@@ -751,61 +750,74 @@
             !-------------------------------------------------------------------
             !  Define the extended resize of this sub 
             !-------------------------------------------------------------------
+#if __KIND == __SINGLE_PRECISION
+               xminf = topo%min_subs(1,isub)
+               xmaxf = topo%max_subs(1,isub)
+   
+               yminf = topo%min_subs(2,isub)
+               ymaxf = topo%max_subs(2,isub)
+   
+               IF (ppm_dim.EQ.3) THEN
+                  zminf = topo%min_subs(3,isub)
+                  zmaxf = topo%max_subs(3,isub)
+               ENDIF 
+#else
+               xminf = topo%min_subd(1,isub)
+               xmaxf = topo%max_subd(1,isub)
+   
+               yminf = topo%min_subd(2,isub)
+               ymaxf = topo%max_subd(2,isub)
+   
+               IF (ppm_dim.EQ.3) THEN
+                  zminf = topo%min_subd(3,isub)
+                  zmaxf = topo%max_subd(3,isub)
+               ENDIF 
+#endif
             IF (isymm.GT.0) THEN
                !----------------------------------------------------------------
                !  if we use symmetry ghosts will only be present at the
                !  upper/right part of the sub
                !----------------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-               xmini = topo%min_subs(1,isub)
-               xmaxi = topo%max_subs(1,isub) + ghostsize
+               xmini = xminf  
+               xmaxi = xmaxf + ghostsize
    
-               ymini = topo%min_subs(2,isub)
-               ymaxi = topo%max_subs(2,isub) + ghostsize
-   
-               IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subs(3,isub)
-                  zmaxi = topo%max_subs(3,isub) + ghostsize
-               ENDIF 
-#else
-               xmini = topo%min_subd(1,isub)
-               xmaxi = topo%max_subd(1,isub) + ghostsize
-   
-               ymini = topo%min_subd(2,isub)
-               ymaxi = topo%max_subd(2,isub) + ghostsize
+               ymini = yminf 
+               ymaxi = ymaxf + ghostsize
    
                IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subd(3,isub)
-                  zmaxi = topo%max_subd(3,isub) + ghostsize
+                  zmini = zminf
+                  zmaxi = zmaxf + ghostsize
+               ENDIF
+
+               !----------------------------------------------------------------
+               ! If this subdomain is at the physical boundary, then we need an
+               ! extra ghostlayer for handling the boundary conditions
+               !----------------------------------------------------------------
+               IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
+                   xmini = xmini - ghostsize
+               ENDIF
+               IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
+                   ymini = ymini - ghostsize
+               ENDIF
+               IF (ppm_dim.EQ.3) THEN
+                   IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
+                       zmini = zmini - ghostsize
+                   ENDIF
                ENDIF 
-#endif
             ELSE
                !----------------------------------------------------------------
                !  if we do not use symmetry, we have ghost all around
                !----------------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-               xmini = topo%min_subs(1,isub) - ghostsize
-               xmaxi = topo%max_subs(1,isub) + ghostsize
+               xmini = xminf - ghostsize
+               xmaxi = xmaxf + ghostsize
    
-               ymini = topo%min_subs(2,isub) - ghostsize
-               ymaxi = topo%max_subs(2,isub) + ghostsize
-   
-               IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subs(3,isub) - ghostsize
-                  zmaxi = topo%max_subs(3,isub) + ghostsize
-               ENDIF 
-#else
-               xmini = topo%min_subd(1,isub) - ghostsize
-               xmaxi = topo%max_subd(1,isub) + ghostsize
-   
-               ymini = topo%min_subd(2,isub) - ghostsize
-               ymaxi = topo%max_subd(2,isub) + ghostsize
+               ymini = yminf - ghostsize
+               ymaxi = ymaxf + ghostsize
    
                IF (ppm_dim.EQ.3) THEN
-                  zmini = topo%min_subd(3,isub) - ghostsize
-                  zmaxi = topo%max_subd(3,isub) + ghostsize
+                  zmini = zminf - ghostsize
+                  zmaxi = zmaxf + ghostsize
                ENDIF 
-#endif
             ENDIF 
 
             !-------------------------------------------------------------------
@@ -1074,7 +1086,7 @@
          ppm_irecvlist(ppm_nrecvlist) = recvrank
 
          !----------------------------------------------------------------------
-         !  only consider positive sendranks
+         !  only consider non-negative sendranks
          !----------------------------------------------------------------------
          IF (sendrank.GE.0) THEN
             !-------------------------------------------------------------------
@@ -1091,61 +1103,74 @@
                   !-------------------------------------------------------------
                   !  Define the extended resize of this sub 
                   !-------------------------------------------------------------
+#if __KIND == __SINGLE_PRECISION
+                  xminf = topo%min_subs(1,j)
+                  xmaxf = topo%max_subs(1,j)
+
+                  yminf = topo%min_subs(2,j)
+                  ymaxf = topo%max_subs(2,j)
+
+                  IF (ppm_dim.EQ.3) THEN
+                     zminf = topo%min_subs(3,j)
+                     zmaxf = topo%max_subs(3,j)
+                  ENDIF 
+#else
+                  xminf = topo%min_subd(1,j)
+                  xmaxf = topo%max_subd(1,j)
+
+                  yminf = topo%min_subd(2,j)
+                  ymaxf = topo%max_subd(2,j)
+ 
+                  IF (ppm_dim.EQ.3) THEN
+                     zminf = topo%min_subd(3,j)
+                     zmaxf = topo%max_subd(3,j)
+                  ENDIF 
+#endif
                   IF (isymm.GT.0) THEN
                      !----------------------------------------------------------
                      !  if we use symmetry ghosts will only be present at the
                      !  upper/right part of the sub
                      !----------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-                     xmini = topo%min_subs(1,j)
-                     xmaxi = topo%max_subs(1,j) + ghostsize
+                     xmini = xminf
+                     xmaxi = xminf + ghostsize
 
-                     ymini = topo%min_subs(2,j)
-                     ymaxi = topo%max_subs(2,j) + ghostsize
+                     ymini = yminf 
+                     ymaxi = yminf + ghostsize
 
                      IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subs(3,j)
-                        zmaxi = topo%max_subs(3,j) + ghostsize
+                        zmini = zminf 
+                        zmaxi = zminf + ghostsize
                      ENDIF 
-#else
-                     xmini = topo%min_subd(1,j)
-                     xmaxi = topo%max_subd(1,j) + ghostsize
-
-                     ymini = topo%min_subd(2,j)
-                     ymaxi = topo%max_subd(2,j) + ghostsize
- 
+                     !----------------------------------------------------------
+                     ! If we are at the border of the physical domain we have
+                     ! to have ghostlayers either way
+                     !----------------------------------------------------------
+                     IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
+                         xmini = xmini - ghostsize
+                     ENDIF
+                     IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
+                         ymini = ymini - ghostsize
+                     ENDIF
                      IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subd(3,j)
-                        zmaxi = topo%max_subd(3,j) + ghostsize
-                     ENDIF 
-#endif
+                       IF (ABS(zmini - min_phys(3)).LT.eps.AND.lextra(5)) THEN
+                          zmini = zmini - ghostsize
+                       ENDIF
+                     ENDIF
+
                   ELSE
                      !----------------------------------------------------------
                      !  if we do not use symmetry, we have ghost all around
                      !----------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-                     xmini = topo%min_subs(1,j) - ghostsize
-                     xmaxi = topo%max_subs(1,j) + ghostsize
+                     xmini = xminf - ghostsize
+                     xmaxi = xmaxf + ghostsize
 
-                     ymini = topo%min_subs(2,j) - ghostsize
-                     ymaxi = topo%max_subs(2,j) + ghostsize
-
-                     IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subs(3,j) - ghostsize
-                        zmaxi = topo%max_subs(3,j) + ghostsize
-                     ENDIF 
-#else
-                     xmini = topo%min_subd(1,j) - ghostsize
-                     xmaxi = topo%max_subd(1,j) + ghostsize
-
-                     ymini = topo%min_subd(2,j) - ghostsize
-                     ymaxi = topo%max_subd(2,j) + ghostsize
+                     ymini = yminf - ghostsize
+                     ymaxi = ymaxf + ghostsize
 
                      IF (ppm_dim.EQ.3) THEN
-                        zmini = topo%min_subd(3,j) - ghostsize
-                        zmaxi = topo%max_subd(3,j) + ghostsize
+                        zmini = zminf - ghostsize
+                        zmaxi = zmaxf + ghostsize
                      ENDIF 
-#endif
                   ENDIF 
 
                   !-------------------------------------------------------------
@@ -1207,7 +1232,7 @@
                            !----------------------------------------------------
                            !  found one - increment the buffer counter
                            !----------------------------------------------------
-                           iset                  = iset + 1
+                           iset = iset + 1
 
                            !----------------------------------------------------
                            !  store the ID of the particles
@@ -1428,6 +1453,49 @@
  9999 CONTINUE
       CALL substop('ppm_map_part_ghost_get',t0,info)
       RETURN
+      CONTAINS
+      SUBROUTINE check
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
+     &            'This routine needs a topology defined topo',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+            CALL ppm_check_topoid(topoid,valid,info)
+            IF (.NOT. valid) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &               'topoid out of range',__LINE__,info)
+                GOTO 8888
+            ENDIF
+        ENDIF
+        IF (lda .LT. 1) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'lda must be >0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+        IF (Npart .LT. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'Npart must be >=0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+        IF (ghostsize .LT. 0.0_MK) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'ghostsize must be >=0.0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_ghost_get_s
 #elif  __KIND == __DOUBLE_PRECISION
