@@ -117,16 +117,17 @@ module Funit
     write(log,'(A)', advance='no') "trying assert #{@line.gsub(/"/, "'")}"
     if (#@condition) then
       write(log,*) " failed!"
-      print *, " *#@type failed* in test #@test_name &
-              &[#{@suite_name}.fun:#{@line_number.to_s}]"
-      print *, "  ", #@message
-      print *, ""
+      write(*,'(A,I0,A)', advance='no') "[", funit_rank, "] "
+      write(*,'(A)', advance='no') "*#@type failed* in test #@test_name &
+                 [#{@suite_name}.fun:#{@line_number.to_s}] "
+      write(*,*) #@message
       write(log,*) " *#@type failed* in test #@test_name &
               &[#{@suite_name}.fun:#{@line_number.to_s}]"
       write(log,*) "  ", #@message
       write(log,*) ""
       noAssertFailed = .false.
       numFailures    = numFailures + 1
+      call MPI_Abort(funit_comm, funit_info)
     else
       write(log,*) " success!"
       numAssertsTested = numAssertsTested + 1
