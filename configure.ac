@@ -250,6 +250,11 @@ if test "x${debug_compile}" = xyes; then
     else
       AC_SUBST(DEBUG,["-O1 -g"])
     fi
+else
+    if test "x${vendor}" = xintel; then
+        AC_SUBST(FCFLAGS,["$FCFLAGS -diag-disable 5462"])
+    fi
+
 fi
 
 # set src as the default srcdir

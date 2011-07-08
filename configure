@@ -6041,6 +6041,12 @@ if test "x${debug_compile}" = xyes; then
       DEBUG="-O1 -g"
 
     fi
+else
+    if test "x${vendor}" = xintel; then
+        FCFLAGS="$FCFLAGS -diag-disable 5462"
+
+    fi
+
 fi
 
 # set src as the default srcdir
