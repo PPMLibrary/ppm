@@ -6010,7 +6010,7 @@ fi
 
 if test "x${dev_compile}" = xyes; then
     if test "x${vendor}" = xintel; then
-        DEBUG="-g -O1 -check pointers -check bounds -traceback"
+        DEBUG="-g -O0 -check pointers -check bounds -traceback -diag-disable 10120"
 
     elif test "x${vendor}" = xgnu; then
       DEBUG="-g -O0 -fbounds-check -fbacktrace"
@@ -6032,13 +6032,13 @@ if test "x${debug_compile}" = xyes; then
 
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
-        DEBUG="-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"
+        DEBUG="-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback -diag-disable 10120"
 
     elif test "x${vendor}" = xgnu; then
       DEBUG="-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"
 
     else
-      DEBUG="-O1 -g"
+      DEBUG="-O0 -g"
 
     fi
 else

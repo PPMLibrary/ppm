@@ -229,7 +229,7 @@ AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
   [enable development mode (default is no)])],[dev_compile=yes])
 if test "x${dev_compile}" = xyes; then
     if test "x${vendor}" = xintel; then
-        AC_SUBST(DEBUG,["-g -O1 -check pointers -check bounds -traceback"])
+        AC_SUBST(DEBUG,["-g -O0 -check pointers -check bounds -traceback -diag-disable 10120"])
     elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace"])
     else
@@ -244,11 +244,11 @@ if test "x${debug_compile}" = xyes; then
     AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DEBUG"])
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
-        AC_SUBST(DEBUG,["-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"])
+        AC_SUBST(DEBUG,["-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback -diag-disable 10120"])
     elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
     else
-      AC_SUBST(DEBUG,["-O1 -g"])
+      AC_SUBST(DEBUG,["-O0 -g"])
     fi
 else
     if test "x${vendor}" = xintel; then
