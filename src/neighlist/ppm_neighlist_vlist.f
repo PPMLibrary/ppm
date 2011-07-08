@@ -39,8 +39,8 @@
       !!! ====================================================
       !!! The list needs to be rebuilt as soon as a particle
       !!! has moved a distance larger than skin. It is the
-      !!! USERs responsibility to detect when this is the
-      !!! case and CALL this routine again.
+      !!! *users* responsibility to detect when this is the
+      !!! case and *call* this routine again.
       !!!
       !!! vlist and nvlist are allocated in this routine. The
       !!! user just needs to pass pointers.
@@ -140,7 +140,7 @@
       INTEGER, DIMENSION(2)                      :: lda
       INTEGER                                    :: iopt
       ! number of cells in all directions
-      INTEGER, DIMENSION(:,:), POINTER           :: Nm  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER           :: nm  => NULL()
       ! cell offsets for box index
       INTEGER                                    :: n1,n2,nz,lb
       CHARACTER(LEN=ppm_char)                    :: mesg
@@ -160,7 +160,8 @@
       !  Check Arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-
+        CALL check
+        IF (info .NE. 0) GOTO 9999
       ENDIF
 
 
@@ -182,50 +183,6 @@
       ELSE
           lst = .TRUE.
       ENDIF
-      !-------------------------------------------------------------------------
-      !  Check arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (cutoff .LE. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'cutoff must be >0',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (skin .LT. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'skin must be >= 0',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (Npdx .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'Np must be >0',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'Geometric topology required',__LINE__,info)
-                  GOTO 9999
-          ENDIF
-          IF (topoid .NE. ppm_param_topo_undefined) THEN
-              CALL ppm_check_topoid(topoid,valid,info)
-              IF (.NOT. valid) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &                 'topoid out of range',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
-      ENDIF
 
       topo => ppm_topo(topoid)%t
 
@@ -241,9 +198,9 @@
       !-------------------------------------------------------------------------
       IF (PRESENT(pidx)) THEN
           CALL ppm_neighlist_clist(topoid,xp(:,pidx),Npdx,bsize, &
-     &                             lsymm,clist,Nm,info)
+     &                             lsymm,clist,nm,info)
       ELSE
-          CALL ppm_neighlist_clist(topoid,xp,Npdx,bsize,lsymm,clist,Nm,info)
+          CALL ppm_neighlist_clist(topoid,xp,Npdx,bsize,lsymm,clist,nm,info)
       ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_error
@@ -288,18 +245,18 @@
       !  Determine size of Verlet lists
       !-------------------------------------------------------------------------
       DO idom=1,topo%nsublist
-          n1  = Nm(1,idom)
-          n2  = Nm(1,idom)*Nm(2,idom)
+          n1  = nm(1,idom)
+          n2  = nm(1,idom)*nm(2,idom)
           IF (ppm_dim.EQ.3) THEN
-              nz  = Nm(3,idom)
+              nz  = nm(3,idom)
           ELSE IF (ppm_dim .EQ. 2) THEN
               n2 = 0
               nz = lb+2
           ENDIF 
           ! loop over all REAL cells (the -2 at the end does this)
           DO k=lb,nz-2
-              DO j=lb,Nm(2,idom)-2
-                  DO i=lb,Nm(1,idom)-2
+              DO j=lb,nm(2,idom)-2
+                  DO i=lb,nm(1,idom)-2
                       ! index of the center box
                       cbox = i + 1 + n1*j + n2*k
                       ! loop over all box-box interactions
@@ -472,10 +429,10 @@
           !  BUILD VERLET LISTS 
           !---------------------------------------------------------------------
           DO idom=1,topo%nsublist
-              n1  = Nm(1,idom)
-              n2  = Nm(1,idom)*Nm(2,idom)
+              n1  = nm(1,idom)
+              n2  = nm(1,idom)*nm(2,idom)
               IF (ppm_dim.EQ.3) THEN
-                  nz  = Nm(3,idom)
+                  nz  = nm(3,idom)
               ELSE IF (ppm_dim .EQ. 2) THEN
                   n2 = 0
                   nz = lb+2
@@ -484,8 +441,8 @@
               nbox = SIZE(clist(idom)%lhbx,1)-1
               ! loop over all REAL cells (the -2 at the end does this)
               DO k=lb,nz-2
-                  DO j=lb,Nm(2,idom)-2
-                      DO i=lb,Nm(1,idom)-2
+                  DO j=lb,nm(2,idom)-2
+                      DO i=lb,nm(1,idom)-2
                           ! index of the center box
                           cbox = i + 1 + n1*j + n2*k
                           ! loop over all box-box interactions
@@ -652,7 +609,7 @@
           CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
      &         'Box interaction index JNP',__LINE__,info)
       ENDIF
-      CALL ppm_alloc(Nm,lda,iopt,info)
+      CALL ppm_alloc(nm,lda,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
@@ -665,6 +622,49 @@
  9999 CONTINUE
       CALL substop('ppm_neighlist_vlist',t0,info)
       RETURN
+      CONTAINS
+      SUBROUTINE check
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (cutoff .LE. 0.0_MK) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'cutoff must be >0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (skin .LT. 0.0_MK) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'skin must be >= 0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (Npdx .LE. 0) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'Np must be >0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'Geometric topology required',__LINE__,info)
+                  GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+              CALL ppm_check_topoid(topoid,valid,info)
+              IF (.NOT. valid) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &                 'topoid out of range',__LINE__,info)
+                  GOTO 8888
+              ENDIF
+          ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_neighlist_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
