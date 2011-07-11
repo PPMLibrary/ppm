@@ -662,6 +662,7 @@ CONTAINS
   SUBROUTINE apply_defaults(info)
     INTEGER, INTENT(  OUT) :: info
     INTEGER                :: i
+    info = 0
     ! scalar
 #define DTYPE INTEGER
 #include "ctrl/default.f"
