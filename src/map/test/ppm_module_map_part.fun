@@ -53,6 +53,8 @@ real(mk)                         :: t0,t1,t2,t3
         ghostsize(1:ndim) = 2
         ghostlayer(1:2*ndim) = max_rcp
         bcdef(1:6) = ppm_param_bcdef_periodic
+        tol = epsilon(1.0_mk)
+        tolexp = int(log10(epsilon(1.0_mk)))
         
         nullify(xp,rcp,wp)
 
@@ -297,6 +299,7 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: mpart
         real(mk),dimension(:,:),pointer :: p
         real(mk),dimension(:)  ,pointer :: w
+        real(mk),dimension(2)           :: check
         real(mk), parameter             :: gl = 0.1_mk
     
         allocate(p(ndim,npart),w(npart))
@@ -344,7 +347,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_push(w,npart,info)
@@ -354,7 +357,7 @@ real(mk)                         :: t0,t1,t2,t3
         
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
 
         call ppm_map_part_store(info)
 
@@ -370,12 +373,99 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
+        !call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
+
+        assert_equal(mpart-npart,4+3*4) ! check number of ghosts
+
+        ! now go through all particles and try to find their ghosts  
+
+        check(1) = 1.05_mk  ! left
+        check(2) = 0.5_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        
+        check(1) = -0.05_mk  ! right
+        check(2) =  0.5_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) = 0.5_mk   ! bottom
+        check(2) = 1.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) =  0.5_mk   ! top
+        check(2) = -0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+       
+
+        check(1) = 1.05_mk  ! left-bottom
+        check(2) = 0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) = 0.05_mk
+        check(2) = 1.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) = 1.05_mk
+        check(2) = 1.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) =  1.05_mk  ! left-top
+        check(2) =  0.95_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) =  0.05_mk
+        check(2) = -0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) =  1.05_mk
+        check(2) = -0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) = -0.05_mk  ! right-bottom
+        check(2) =  0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) =  0.95_mk
+        check(2) =  1.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) = -0.05_mk
+        check(2) =  1.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
+        check(1) = -0.05_mk  ! right-top
+        check(2) =  0.95_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) =  0.95_mk
+        check(2) = -0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+        check(1) = -0.05_mk
+        check(2) = -0.05_mk
+        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
+
 
 
         deallocate(w)
 
 
     end test
+
+    function found_ghost(ghosts,n,cp)
+    real(mk),dimension(2,n),intent(in) :: ghosts
+    integer                ,intent(in) :: n
+    real(mk),dimension(2)  ,intent(in) :: cp
+    logical                 :: found_ghost
+
+    integer                 :: i
+    integer                 :: found
+
+    found_ghost = .false.
+
+    found = 0
+    do i=1,n
+        if((abs(ghosts(1,i) - cp(1)).lt.tol).and. &
+        &  (abs(ghosts(2,i) - cp(2)).lt.tol)) then
+            found = found + 1
+        endif
+    enddo
+    if (found.eq.1) then
+        found_ghost = .true.
+    endif
+
+    end function found_ghost
+
 
 end test_suite
