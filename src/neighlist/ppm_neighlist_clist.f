@@ -128,10 +128,13 @@
       ! number of ghostlayers
       INTEGER, DIMENSION(2*ppm_dim)           :: ngl
       ! parameter for alloc
+      INTEGER                                 :: nsbc
+      LOGICAL, DIMENSION(2*ppm_dim)           :: isbc
       INTEGER                                 :: iopt
       INTEGER, DIMENSION(2)                   :: ldc
       LOGICAL                                 :: valid
       TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
+      REAL(MK)                                :: eps
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -148,6 +151,11 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
+#if   __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#elif __KIND == __SINGLE_PRECISION
+      eps = ppm_myepss
+#endif
 
       topo => ppm_topo(topoid)%t
 
@@ -201,6 +209,29 @@
       min_phys(:) = topo%min_physs
       max_phys(:) = topo%max_physs
 #endif
+
+      !-------------------------------------------------------------------------
+      ! Determine if there are any (non-)symmetric boundary conditions
+      !-------------------------------------------------------------------------
+      nsbc = 0
+      isbc(:) = .FALSE. 
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_symmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_antisymmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_neumann)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_dirichlet)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          END SELECT
+      ENDDO
+
 
       !-------------------------------------------------------------------------
       !  Loop over all subs of this processor and create cell lists for all
@@ -264,13 +295,19 @@
           !---------------------------------------------------------------------
           ngl(1:6) = 0
           IF (lsymm) THEN                ! EXPLOIT SYMMETRY => only need ghost 
-              DO i=1,ppm_dim             ! layers on one side
-                  ngl(ppm_dim + i) = 1
+              DO i=1,ppm_dim
+                  ! if we at are the phys_dom border and have (non-)symmetirc
+                  ! BCs then add a ghost layer
+                  IF (ABS(xmin(i)-min_phys(i)).LT.eps.AND.isbc(i)) THEN
+                      ngl(i) = 1
+                  ENDIF
+              ENDDO
+              DO i=ppm_dim+1,2*ppm_dim   ! layers on upper-right side
+                  ngl(i) = 1
               ENDDO
           ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers 
-              DO i=1,ppm_dim             ! all around
+              DO i=1,2*ppm_dim             ! all around
                  ngl(i) = 1
-                 ngl(ppm_dim + i) = 1
               ENDDO
           ENDIF
 
