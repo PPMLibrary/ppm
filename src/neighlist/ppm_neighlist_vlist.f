@@ -1,4 +1,3 @@
-      !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_neighlist_vlist
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -28,10 +27,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,Np,cutoff,skin,lsymm,vlist, &
+      SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,np,cutoff,skin,lsymm,vlist, &
      &               nvlist,info,pidx,lstore)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,Np,cutoff,skin,lsymm,vlist, &
+      SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,np,cutoff,skin,lsymm,vlist, &
      &               nvlist,info,pidx,lstore)
       !!! Create Verlet lists for all particles of this processor.
       !!!
@@ -80,7 +79,7 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! particle co-ordinates
-      INTEGER                 , INTENT(IN   ) :: Np
+      INTEGER                 , INTENT(IN   ) :: np
       !!! number of particles
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! ID of current topology
@@ -115,7 +114,11 @@
       ! timer
       REAL(MK)                                   :: t0
       ! effective number of particles
-      INTEGER                                    :: Npdx
+      REAL(MK), DIMENSION(ppm_dim)               :: min_phys,max_phys
+      ! domain extents
+      REAL(MK), DIMENSION(ppm_dim)            :: xmin,xmax
+      ! subdomain extents 
+      INTEGER                                    :: npdx
       ! counters
       INTEGER                                    :: i,idom,ibox,jbox,nbox
       INTEGER                                    :: ipart,jpart,ip,jp,maxvlen
@@ -142,12 +145,16 @@
       ! number of cells in all directions
       INTEGER, DIMENSION(:,:), POINTER           :: nm  => NULL()
       ! cell offsets for box index
-      INTEGER                                    :: n1,n2,nz,lb
+      INTEGER                                    :: n1,n2,nz
+      INTEGER, DIMENSION(3)                      :: lb
+      INTEGER                                    :: nsbc
+      LOGICAL, DIMENSION(2*ppm_dim)              :: isbc
       CHARACTER(LEN=ppm_char)                    :: mesg
       ! store vlist?
       LOGICAL                                    :: lst
       LOGICAL                                    :: valid
       TYPE(ppm_t_topo)       , POINTER           :: topo => NULL()
+      REAL(MK)                                   :: eps
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -168,12 +175,12 @@
       !-------------------------------------------------------------------------
       !  If the user gave an explicit list of particles to be included, use
       !  the size of this list as the effective number of particles. Use
-      !  Np otherwise.
+      !  np otherwise.
       !-------------------------------------------------------------------------
       IF (PRESENT(pidx)) THEN
-          IF (Np .GT. SIZE(pidx,1)) Npdx = SIZE(pidx,1)
+          IF (np .GT. SIZE(pidx,1)) npdx = SIZE(pidx,1)
       ELSE
-          Npdx = Np
+          npdx = np
       ENDIF
       !-------------------------------------------------------------------------
       !  Do we need to store the Verlet lists or just determine their lengths?
@@ -185,6 +192,36 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+      
+      !-------------------------------------------------------------------------
+      ! Determine if there are any (non-)symmetric boundary conditions
+      !-------------------------------------------------------------------------
+      nsbc = 0
+      isbc(:) = .FALSE. 
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_symmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_antisymmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_neumann)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_dirichlet)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          END SELECT
+      ENDDO
+
+#if   __KIND == __DOUBLE_PRECISION
+      min_phys(:) = topo%min_physd
+      max_phys(:) = topo%max_physd
+#elif __KIND == __SINGLE_PRECISION
+      min_phys(:) = topo%min_physs
+      max_phys(:) = topo%max_physs
+#endif
 
       !-------------------------------------------------------------------------
       !  Boxes need to be cutoff+skin in all directions !
@@ -197,10 +234,10 @@
       !  Generate cell lists 
       !-------------------------------------------------------------------------
       IF (PRESENT(pidx)) THEN
-          CALL ppm_neighlist_clist(topoid,xp(:,pidx),Npdx,bsize, &
+          CALL ppm_neighlist_clist(topoid,xp(:,pidx),npdx,bsize, &
      &                             lsymm,clist,nm,info)
       ELSE
-          CALL ppm_neighlist_clist(topoid,xp,Npdx,bsize,lsymm,clist,nm,info)
+          CALL ppm_neighlist_clist(topoid,xp,npdx,bsize,lsymm,clist,nm,info)
       ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_error
@@ -222,7 +259,7 @@
       !  Allocate memory for Verlet list lengths
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_grow
-      lda(1) = Npdx
+      lda(1) = npdx
       CALL ppm_alloc(nvlist,lda,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
@@ -230,33 +267,61 @@
      &         'Verlet list sizes NVLIST',__LINE__,info)
           GOTO 9999
       ENDIF
-      nvlist(1:Npdx) = 0
+      nvlist(1:npdx) = 0
 
-      !-------------------------------------------------------------------------
-      !  Lower box bound depends on symmetry use
-      !-------------------------------------------------------------------------
-      IF (lsymm) THEN 
-          lb = 0
-      ELSE
-          lb = 1
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Determine size of Verlet lists
       !-------------------------------------------------------------------------
       DO idom=1,topo%nsublist
+              !-----------------------------------------------------------------
+              !  Copy subdomain extent into precision agnostic variables 
+              !-----------------------------------------------------------------
+#if   __KIND == __DOUBLE_PRECISION
+              xmin(1) = topo%min_subd(1,idom)
+              xmax(1) = topo%max_subd(1,idom)
+              xmin(2) = topo%min_subd(2,idom)
+              xmax(2) = topo%max_subd(2,idom)
+          IF (ppm_dim .EQ. 3) THEN
+              xmin(3) = topo%min_subd(3,idom)
+              xmax(3) = topo%max_subd(3,idom)
+          ENDIF
+#elif __KIND == __SINGLE_PRECISION
+              xmin(1) = topo%min_subs(1,idom)
+              xmax(1) = topo%max_subs(1,idom)
+              xmin(2) = topo%min_subs(2,idom)
+              xmax(2) = topo%max_subs(2,idom)
+          IF (ppm_dim .EQ. 3) THEN
+              xmin(3) = topo%min_subs(3,idom)
+              xmax(3) = topo%max_subs(3,idom)
+          ENDIF
+#endif
+          !---------------------------------------------------------------------
+          !  Lower box bound depends on symmetry and boundary condition
+          !---------------------------------------------------------------------
+          IF (.NOT.lsymm) THEN
+              DO i=1,ppm_dim
+                  IF (ABS(xmin(i)-min_phys(i)).LT.eps .AND.isbc(i)) THEN 
+                      lb(i) = 0
+                  ELSE
+                      lb(i) = 1
+                  ENDIF
+              ENDDO
+          ELSE
+              lb(:) = 0
+          ENDIF
           n1  = nm(1,idom)
           n2  = nm(1,idom)*nm(2,idom)
           IF (ppm_dim.EQ.3) THEN
               nz  = nm(3,idom)
           ELSE IF (ppm_dim .EQ. 2) THEN
               n2 = 0
-              nz = lb+2
+              nz = lb(3)+2
           ENDIF 
           ! loop over all REAL cells (the -2 at the end does this)
-          DO k=lb,nz-2
-              DO j=lb,nm(2,idom)-2
-                  DO i=lb,nm(1,idom)-2
+          DO k=lb(3),nz-2
+              DO j=lb(2),nm(2,idom)-2
+                  DO i=lb(1),nm(1,idom)-2
                       ! index of the center box
                       cbox = i + 1 + n1*j + n2*k
                       ! loop over all box-box interactions
@@ -404,8 +469,8 @@
           !---------------------------------------------------------------------
           !  Highest particle index with non-zero nvlist
           !---------------------------------------------------------------------
-          ii = Npdx
-          DO ipart=Npdx,1,-1
+          ii = npdx
+          DO ipart=npdx,1,-1
               IF (nvlist(ipart) .GT. 0) THEN
                   ii = ipart
                   EXIT
@@ -424,7 +489,7 @@
          &         'Verlet list VLIST',__LINE__,info)
               GOTO 9999
           ENDIF
-          nvlist(1:Npdx) = 0
+          nvlist(1:npdx) = 0
           !---------------------------------------------------------------------
           !  BUILD VERLET LISTS 
           !---------------------------------------------------------------------
@@ -435,14 +500,14 @@
                   nz  = nm(3,idom)
               ELSE IF (ppm_dim .EQ. 2) THEN
                   n2 = 0
-                  nz = lb+2
+                  nz = lb(3)+2
               ENDIF 
               ! get number of cells in this subdomain
               nbox = SIZE(clist(idom)%lhbx,1)-1
               ! loop over all REAL cells (the -2 at the end does this)
-              DO k=lb,nz-2
-                  DO j=lb,nm(2,idom)-2
-                      DO i=lb,nm(1,idom)-2
+              DO k=lb(3),nz-2
+                  DO j=lb(2),nm(2,idom)-2
+                      DO i=lb(1),nm(1,idom)-2
                           ! index of the center box
                           cbox = i + 1 + n1*j + n2*k
                           ! loop over all box-box interactions
@@ -642,10 +707,10 @@
      &            'skin must be >= 0',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF (Npdx .LE. 0) THEN
+          IF (npdx .LE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'Np must be >0',__LINE__,info)
+     &            'np must be >0',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
