@@ -78,7 +78,6 @@ module #{@suite_name}_fun
     end
 
     def expand
-      $stderr.print "expanding test suite: #{@suite_name}..."
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
 

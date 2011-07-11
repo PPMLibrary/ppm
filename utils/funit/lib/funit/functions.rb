@@ -25,6 +25,7 @@ module Funit
       integer                                   :: comm
       integer                                   :: rank
       integer                                   :: size
+      integer                                   :: i
 
       <% if use_mpi -%>
       integer :: mpiinfo
@@ -76,18 +77,30 @@ module Funit
 
       if (rank .eq. 0) then
          write(*,*)
-         write(*,'(a)') "======================[ SUMMARY ]======================"
+         write(*,'(a/)') "==================================[ SUMMARY ]==================================="
       end if
       write(log,*)
-      write(log,'(a)') "======================[ SUMMARY ]======================"
+      write(log,'(a/)') "==================================[ SUMMARY ]==================================="
       <% max_length = test_suites.empty? ? 0 : test_suites.max.length -%>
       <% test_suites.each_with_index do |test_suite,i| -%>
 
       if (rank .eq. 0) then
-         write(*,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
+        do i=1,<%= OUTPUT_INDENT %>
+          write(*,'(A)',advance='no') " "
+        end do
+        write(*,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+        do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+          write(*,'(A)',advance='no') " "
+        end do
       end if
 
-      write(log,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
+      do i=1,<%= OUTPUT_INDENT %>
+        write(log,'(A)',advance='no') " "
+      end do
+      write(log,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+      do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+        write(log,'(A)',advance='no') " "
+      end do
 
       if ( numFailures(<%= i+1 %>) == 0 ) then
          if (rank .eq. 0) then
@@ -96,9 +109,9 @@ module Funit
          write(log,*) " passed"
       else
          if (rank .eq. 0) then
-            write(*,*) " failed   <<<<<"
+            write(*,*) " failed <<<<<<"
          end if
-         write(log,*) " failed   <<<<<"
+         write(log,*) " failed <<<<<<"
       end if
       <% end -%>
  
@@ -179,7 +192,9 @@ module Funit
   end
 
   def compile_tests(test_suites,prog_source_dirs=['.'])
-    puts "computing dependencies"
+    print_sub("compile")
+
+    print_started("computing dependencies")
 
     sourceflag = ''
     if ENV['FSFLAG'] then
@@ -187,19 +202,78 @@ module Funit
     end
     dependencies = Fortran::Dependencies.new(:search_paths=>prog_source_dirs)
 
-    puts "locating associated source files and sorting for compilation"
+    print_done
+
+    print_started("locating sources")
+
     dependencies.source_file_dependencies('TestRunner.f')
     file_dependencies = dependencies.file_dependencies
     required_objects = file_dependencies.values.flatten.uniq.map{|s|s.sub(/\.f/i,'.o')}
     required_objects << 'TestRunner.o'
 
-    File.open("makeTestRunner", "w") {|file| file.puts MAKEFILE.result(binding)}
+    print_done
 
-    print "compiling..."
+    print_started("writing makefile")
+    File.open("makeTestRunner", "w") {|file| file.puts MAKEFILE.result(binding)}
+    print_done
+
+    print_started("compiling")
     compile = "make -f makeTestRunner > test_compile.log"
     raise "Compile failed." unless system compile
     system "rm test_compile.log"
-    puts " done!"
+    print_done
+  end
+
+# pretty printing
+
+  OUTPUT_WIDTH = 80
+  OUTPUT_INDENT = 8
+
+  def print_heading(text, line)
+    left = OUTPUT_WIDTH - (text.length + 4)
+    if (left % 2 == 0) then
+      left = left / 2
+      right = left
+    else
+      left = (left - 1) / 2
+      right = left + 1
+    end
+    left.times { print line }
+    print "[ " + text + " ]"
+    right.times { print line }
+    print "\n"
+  end
+
+  def print_title(text)
+    print "\n\n"
+    print_heading(text, '=')
+    print "\n"
+  end
+
+  def print_sub(text)
+    print "\n"
+    print_heading(text, '-')
+    print "\n"
+  end
+
+  @current_position = 0
+
+  def print_started(text)
+    OUTPUT_INDENT.times { print " " }
+    print text
+    @current_position = OUTPUT_INDENT + text.length
+  end
+
+  def print_done(text="done!")
+    space = (OUTPUT_WIDTH - @current_position) - text.length - OUTPUT_INDENT
+    if (space < 1) then
+      space = 1
+    end
+    space.times { print " " }
+
+    puts text
+
+    @current_position = 0
   end
 
 end
