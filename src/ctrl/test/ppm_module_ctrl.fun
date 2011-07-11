@@ -1,5 +1,9 @@
 test_suite ppm_module_ctrl
 
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
   integer            :: idefault, iflag,  ilong_flag
   integer(8)         :: gdefault, gflag,  glong_flag
   real               :: rdefault, rflag,  rlong_flag
@@ -502,7 +506,6 @@ test_suite ppm_module_ctrl
   test ctrl_file
     INTEGER :: rank
 #ifdef __MPI
-#include "mpif.h"
     CALL MPI_Comm_Rank(MPI_COMM_WORLD, rank, info)
 #endif
     ! auto enables ctrl_file
