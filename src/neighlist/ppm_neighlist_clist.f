@@ -232,7 +232,6 @@
           END SELECT
       ENDDO
 
-
       !-------------------------------------------------------------------------
       !  Loop over all subs of this processor and create cell lists for all
       !  of them. The extent of the cell list mesh is larger than the sub
@@ -293,12 +292,12 @@
           !  Do no longer add ghost layers to the domain since this would result
           !  in errors in the ranking due to nummerical errors
           !---------------------------------------------------------------------
-          ngl(1:6) = 0
-          IF (lsymm) THEN                ! EXPLOIT SYMMETRY => only need ghost 
+          ngl(:) = 0
+          IF (lsymm) THEN                ! EXPLOIT SYMMETRY
               DO i=1,ppm_dim
-                  ! if we at are the phys_dom border and have (non-)symmetirc
+                  ! if we are at are the phys_dom border and have (non-)symmetirc
                   ! BCs then add a ghost layer
-                  IF (ABS(xmin(i)-min_phys(i)).LT.eps.AND.isbc(i)) THEN
+                  IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc(i)) THEN
                       ngl(i) = 1
                   ENDIF
               ENDDO

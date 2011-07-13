@@ -34,6 +34,10 @@
      &               nvlist,info,pidx,lstore)
       !!! Create Verlet lists for all particles of this processor.
       !!!
+      !!! TIP: Ghostparticles must be included when passing the positions 
+      !!! `xp` and the array size `np` to generate Verlet lists for real/ghost
+      !!! interactions.
+      !!!
       !!! [NOTE]
       !!! ====================================================
       !!! The list needs to be rebuilt as soon as a particle
@@ -80,7 +84,9 @@
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! particle co-ordinates
       INTEGER                 , INTENT(IN   ) :: np
-      !!! number of particles
+      !!! number of particles.
+      !!! The number of ghostparticles should be included to include
+      !!! interactions between real and ghost-particles.
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! ID of current topology
       REAL(MK)                , INTENT(IN   ) :: cutoff
