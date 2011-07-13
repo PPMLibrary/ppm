@@ -312,7 +312,7 @@
               Nm(2,idom) = Nm(2,idom) + Ngl(2) + Ngl(5)
               Nm(3,idom) = Nm(3,idom) + Ngl(3) + Ngl(6)
           ENDIF
-          IF (info .LT. 0) THEN
+          IF (info .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_sub_failed,'ppm_neighlist_clist',   &
      &                  'ranking of particles failed!',__LINE__,info)
