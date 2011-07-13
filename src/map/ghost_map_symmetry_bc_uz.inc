@@ -39,17 +39,13 @@
   
   DO i = 1, nghostplus
      
-     IF ( xt(3,i) > zmaxi .AND. &
-          xt(3,i) < zmaxf ) THEN
-        
+     IF ( xt(3,i) > zmaxi .AND. xt(3,i) < zmaxf ) THEN
         k         = k + 1
         ighost(k) = ighost(i)
         xt(1,k)   = xt(1,i)
         xt(2,k)   = xt(2,i) 
         xt(3,k)   = 2.0_MK*zmaxf - xt(3,i)
-        
      END IF
-     
   END DO
   
   !----------------------------------------------------------
