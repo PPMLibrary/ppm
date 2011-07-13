@@ -38,8 +38,7 @@
   ymaxi = max_phys(2) - ghostsize
   
   DO i = 1, nghostplus
-     IF ( xt(2,i) > ymaxi .AND. &
-          xt(2,i) < ymaxf ) THEN
+     IF ( xt(2,i) > ymaxi .AND. xt(2,i) < ymaxf ) THEN
         k         = k + 1
         ighost(k) = ighost(i)
         xt(1,k)   = xt(1,i)

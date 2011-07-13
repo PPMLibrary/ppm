@@ -37,23 +37,15 @@
   ymini = min_phys(2) + ghostsize
   
   DO i = 1, nghostplus
-     
-     IF ( xt(2,i) > yminf .AND. &
-          xt(2,i) < ymini ) THEN
-        
+     IF ( xt(2,i) > yminf .AND. xt(2,i) < ymini ) THEN
         k         = k + 1
         ighost(k) = ighost(i)
         xt(1,k)   = xt(1,i)
         xt(2,k)   = 2.0_MK*yminf - xt(2,i)
-        
         IF ( ppm_dim == 3 ) THEN
-           
            xt(3,k)   = xt(3,i)
-           
         END IF
-        
      END IF
-     
   END DO
   
   !----------------------------------------------------------
