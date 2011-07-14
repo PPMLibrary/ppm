@@ -28,10 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,Np,cutoff,lsymm,clist,Nm, &
+      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,np,cutoff,lsymm,clist,nm, &
      &                                 info,pidx)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,Np,cutoff,lsymm,clist,Nm, &
+      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,np,cutoff,lsymm,clist,nm, &
      &                                 info,pidx)
       !!! Create cell lists for all subs of this processor.
       !!!
@@ -47,7 +47,7 @@
       !!! cell 0 interacts with all cells >0
       !!! cells 2 interact with each other.
       !!!
-      !!! In 3D, the TOP LAYER (larger z) above the numbered
+      !!! In 3D, the top Layer (larger z) above the numbered
       !!! 2 x 2 block is also included. (Plus the appropriate
       !!! diagonal interactions. see MkNeighIdx).
       !!!
@@ -90,7 +90,7 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   )    :: xp
       !!! Particle co-ordinates
-      INTEGER                 , INTENT(IN   )    :: Np
+      INTEGER                 , INTENT(IN   )    :: np
       !!! Number of particles
       INTEGER                 , INTENT(IN   )    :: topoid
       !!! ID of current topology
@@ -102,7 +102,7 @@
       TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist
       !!! Number of cells in each space direction
       !!! clist(isub)%lhbx(ibox)
-      INTEGER, DIMENSION(:,:) , POINTER          :: Nm
+      INTEGER, DIMENSION(:,:) , POINTER          :: nm
       !!! Number of cells in x,y,(z) direction (including the ghosts cells)
       !!! in each subdomain. 1st index: direction. second index: subid.
       INTEGER                 , INTENT(  OUT)    :: info
@@ -118,18 +118,23 @@
       ! timer
       REAL(MK)                                :: t0
       ! counters
-      INTEGER                                 :: idom,jdom,i,Npdx
+      INTEGER                                 :: idom,jdom,i,npdx
       ! extent of cell mesh
-      REAL(MK), DIMENSION(3)                  :: xmin,xmax
+      REAL(MK), DIMENSION(ppm_dim)            :: xmin,xmax
       ! actual cell size
-      REAL(MK), DIMENSION(3)                  :: cellsize
+      REAL(MK), DIMENSION(ppm_dim)            :: min_phys,max_phys
+      ! domain extents
+      REAL(MK), DIMENSION(ppm_dim)            :: cellsize
       ! number of ghostlayers
-      INTEGER, DIMENSION(6)                   :: Ngl
+      INTEGER, DIMENSION(2*ppm_dim)           :: ngl
       ! parameter for alloc
-      INTEGER                                 :: lda,iopt
+      INTEGER                                 :: nsbc
+      LOGICAL, DIMENSION(2*ppm_dim)           :: isbc
+      INTEGER                                 :: iopt
       INTEGER, DIMENSION(2)                   :: ldc
       LOGICAL                                 :: valid
       TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
+      REAL(MK)                                :: eps
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -146,30 +151,34 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
+#if   __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#elif __KIND == __SINGLE_PRECISION
+      eps = ppm_myepss
+#endif
 
       topo => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
-      !  Allocate Nm
+      !  Allocate nm
       !-------------------------------------------------------------------------
-      lda = topo%nsublist
       iopt = ppm_param_alloc_fit
       ldc(1) = ppm_dim
-      ldc(2) = lda
-      CALL ppm_alloc(Nm,ldc,iopt,info)
+      ldc(2) = topo%nsublist
+      CALL ppm_alloc(nm,ldc,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
      &            'Numbers of cells NM',__LINE__,info)
           GOTO 9999
       ENDIF
-      Nm = 0
+      nm = 0
 
       !-------------------------------------------------------------------------
       !  Allocate clist to the number of subs this processor has
       !-------------------------------------------------------------------------
       IF (ASSOCIATED(clist)) THEN
-          IF (SIZE(clist,1) .NE. lda) THEN
+          IF (SIZE(clist,1) .NE. topo%nsublist) THEN
               CALL ppm_clist_destroy(clist,info)
               IF (info .NE. 0) THEN
                   info = ppm_error_error
@@ -180,25 +189,55 @@
           ENDIF
       ENDIF
       IF (.NOT. ASSOCIATED(clist)) THEN
-          ALLOCATE(clist(lda), STAT=info)
+          ALLOCATE(clist(topo%nsublist), STAT=info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
      &                'cell list array CLIST',__LINE__,info)
               GOTO 9999
           ENDIF
-          DO i=1,lda
+          DO i=1,topo%nsublist
               NULLIFY(clist(i)%lpdx)
               NULLIFY(clist(i)%lhbx)
           ENDDO
       ENDIF
+
+#if   __KIND == __DOUBLE_PRECISION
+      min_phys(:) = topo%min_physd
+      max_phys(:) = topo%max_physd
+#elif __KIND == __SINGLE_PRECISION
+      min_phys(:) = topo%min_physs
+      max_phys(:) = topo%max_physs
+#endif
+
+      !-------------------------------------------------------------------------
+      ! Determine if there are any (non-)symmetric boundary conditions
+      !-------------------------------------------------------------------------
+      nsbc = 0
+      isbc(:) = .FALSE. 
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_symmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_antisymmetry)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_neumann)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          CASE (ppm_param_bcdef_dirichlet)
+              nsbc = nsbc + 1
+              isbc(i) = .TRUE.
+          END SELECT
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Loop over all subs of this processor and create cell lists for all
       !  of them. The extent of the cell list mesh is larger than the sub
       !  (but not on all sides if we are using symmetry). 
       !-------------------------------------------------------------------------
-      DO idom=1,lda
+      DO idom=1,topo%nsublist
           jdom = topo%isublist(idom)
 
           !---------------------------------------------------------------------
@@ -206,7 +245,6 @@
           !  outer boundaries (to avoid real particles in ghost cells)
           !---------------------------------------------------------------------
 #if   __KIND == __DOUBLE_PRECISION
-          IF (ppm_dim .EQ. 2) THEN
               !-----------------------------------------------------------------
               !  Get sub extent -- 2D double precision
               !-----------------------------------------------------------------
@@ -214,19 +252,14 @@
               xmax(1) = topo%max_subd(1,jdom)
               xmin(2) = topo%min_subd(2,jdom)
               xmax(2) = topo%max_subd(2,jdom)
-          ELSE
+          IF (ppm_dim .EQ. 3) THEN
               !-----------------------------------------------------------------
               !  Get sub extent -- 3D double precision
               !-----------------------------------------------------------------
-              xmin(1) = topo%min_subd(1,jdom)
-              xmax(1) = topo%max_subd(1,jdom)
-              xmin(2) = topo%min_subd(2,jdom)
-              xmax(2) = topo%max_subd(2,jdom)
               xmin(3) = topo%min_subd(3,jdom)
               xmax(3) = topo%max_subd(3,jdom)
           ENDIF
 #elif __KIND == __SINGLE_PRECISION
-          IF (ppm_dim .EQ. 2) THEN
               !-----------------------------------------------------------------
               !  Get sub extent -- 2D single precision
               !-----------------------------------------------------------------
@@ -234,14 +267,10 @@
               xmax(1) = topo%max_subs(1,jdom)
               xmin(2) = topo%min_subs(2,jdom)
               xmax(2) = topo%max_subs(2,jdom)
-          ELSE
+          IF (ppm_dim .EQ. 3) THEN
               !-----------------------------------------------------------------
               !  Get sub extent -- 3D single precision
               !-----------------------------------------------------------------
-              xmin(1) = topo%min_subs(1,jdom)
-              xmax(1) = topo%max_subs(1,jdom)
-              xmin(2) = topo%min_subs(2,jdom)
-              xmax(2) = topo%max_subs(2,jdom)
               xmin(3) = topo%min_subs(3,jdom)
               xmax(3) = topo%max_subs(3,jdom)
           ENDIF
@@ -252,10 +281,10 @@
           !---------------------------------------------------------------------
           DO i=1,ppm_dim
               ! number of cells based on a cellsize = cutoff 
-              Nm(i,idom) = INT((xmax(i) - xmin(i))/cutoff(i))
+              nm(i,idom) = INT((xmax(i) - xmin(i))/cutoff(i))
               ! make at least one box
-              IF (Nm(i,idom) .LT. 1) Nm(i,idom) = 1
-              cellsize(i) = (xmax(i) - xmin(i))/REAL(Nm(i,idom),MK)
+              IF (nm(i,idom) .LT. 1) nm(i,idom) = 1
+              cellsize(i) = (xmax(i) - xmin(i))/REAL(nm(i,idom),MK)
           ENDDO
 
           !---------------------------------------------------------------------
@@ -263,15 +292,21 @@
           !  Do no longer add ghost layers to the domain since this would result
           !  in errors in the ranking due to nummerical errors
           !---------------------------------------------------------------------
-          Ngl(1:6) = 0
-          IF (lsymm) THEN                ! EXPLOIT SYMMETRY => only need ghost 
-              DO i=1,ppm_dim             ! layers on one side
-                  Ngl(ppm_dim + i) = 1
+          ngl(:) = 0
+          IF (lsymm) THEN                ! EXPLOIT SYMMETRY
+              DO i=1,ppm_dim
+                  ! if we are at are the phys_dom border and have (non-)symmetirc
+                  ! BCs then add a ghost layer
+                  IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc(i)) THEN
+                      ngl(i) = 1
+                  ENDIF
+              ENDDO
+              DO i=ppm_dim+1,2*ppm_dim   ! layers on upper-right side
+                  ngl(i) = 1
               ENDDO
           ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers 
-              DO i=1,ppm_dim             ! all around
-                 Ngl(i) = 1
-                 Ngl(ppm_dim + i) = 1
+              DO i=1,2*ppm_dim             ! all around
+                 ngl(i) = 1
               ENDDO
           ENDIF
 
@@ -280,37 +315,37 @@
           !---------------------------------------------------------------------
           IF (ppm_dim .EQ. 2) THEN
               IF (PRESENT(pidx)) THEN
-                  Npdx = SIZE(pidx,1)
-                  CALL ppm_util_rank2d(xp(1:2,pidx),Npdx,xmin(1:2),xmax(1:2),&
-     &                    Nm(1:2,idom),Ngl(1:4),clist(idom)%lpdx,&
+                  npdx = SIZE(pidx,1)
+                  CALL ppm_util_rank2d(xp(1:2,pidx),npdx,xmin(1:2),xmax(1:2),&
+     &                    nm(1:2,idom),ngl(1:4),clist(idom)%lpdx,&
      &                    clist(idom)%lhbx,info)
               ELSE
-                  CALL ppm_util_rank2d(xp,Np,xmin(1:2),xmax(1:2),Nm(1:2,idom),&
-     &                    Ngl(1:4),clist(idom)%lpdx,clist(idom)%lhbx,info)
+                  CALL ppm_util_rank2d(xp,np,xmin(1:2),xmax(1:2),nm(1:2,idom),&
+     &                    ngl(1:4),clist(idom)%lpdx,clist(idom)%lhbx,info)
               ENDIF
               !-----------------------------------------------------------------
-              !  We have to increase Nm by the ghost layers to provide the same
+              !  We have to increase nm by the ghost layers to provide the same
               !  behaviour as before the change of interface of ppm_util_rank
               !-----------------------------------------------------------------
-              Nm(1,idom) = Nm(1,idom) + Ngl(1) + Ngl(3)
-              Nm(2,idom) = Nm(2,idom) + Ngl(2) + Ngl(4)
+              nm(1,idom) = nm(1,idom) + ngl(1) + ngl(3)
+              nm(2,idom) = nm(2,idom) + ngl(2) + ngl(4)
           ELSEIF (ppm_dim .EQ. 3) THEN
               IF (PRESENT(pidx)) THEN
-                  Npdx = SIZE(pidx,1)
-                  CALL ppm_util_rank3d(xp(1:3,pidx),Npdx,xmin(1:3),xmax(1:3),&
-     &                    Nm(1:3,idom),Ngl(1:6),clist(idom)%lpdx,&
+                  npdx = SIZE(pidx,1)
+                  CALL ppm_util_rank3d(xp(1:3,pidx),npdx,xmin(1:3),xmax(1:3),&
+     &                    nm(1:3,idom),ngl(1:6),clist(idom)%lpdx,&
      &                    clist(idom)%lhbx,info)
               ELSE
-                  CALL ppm_util_rank3d(xp,Np,xmin(1:3),xmax(1:3),Nm(1:3,idom),&
-     &                    Ngl(1:6),clist(idom)%lpdx,clist(idom)%lhbx,info)
+                  CALL ppm_util_rank3d(xp,np,xmin(1:3),xmax(1:3),nm(1:3,idom),&
+     &                    ngl(1:6),clist(idom)%lpdx,clist(idom)%lhbx,info)
               ENDIF
               !-----------------------------------------------------------------
-              !  We have to increase Nm by the ghost layers to provide the same
+              !  We have to increase nm by the ghost layers to provide the same
               !  behaviour as before the change of interface of ppm_util_rank
               !-----------------------------------------------------------------
-              Nm(1,idom) = Nm(1,idom) + Ngl(1) + Ngl(4)
-              Nm(2,idom) = Nm(2,idom) + Ngl(2) + Ngl(5)
-              Nm(3,idom) = Nm(3,idom) + Ngl(3) + Ngl(6)
+              nm(1,idom) = nm(1,idom) + ngl(1) + ngl(4)
+              nm(2,idom) = nm(2,idom) + ngl(2) + ngl(5)
+              nm(3,idom) = nm(3,idom) + ngl(3) + ngl(6)
           ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_error
@@ -348,10 +383,10 @@
                   GOTO 8888
               ENDIF
           ENDDO
-          IF (Np .LE. 0) THEN
+          IF (np .LE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_neighlist_clist',  &
-     &            'Np must be >0',__LINE__,info)
+     &            'np must be >0',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
