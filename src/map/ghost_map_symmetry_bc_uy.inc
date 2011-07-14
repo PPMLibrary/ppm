@@ -6,6 +6,7 @@
   ldu(1) = ppm_dim
   ldu(2) = 2*nghostplus
   CALL ppm_alloc(xt,ldu,iopt,info) 
+  CALL ppm_alloc(xt_offset,ldu,iopt,info) 
   IF (info.NE.0) THEN
      info = ppm_error_fatal
      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get', &
@@ -21,6 +22,13 @@
           'ighost',__LINE__,info)
      GOTO 9999
   ENDIF
+  
+  !-------------------------------------------------------------------
+  !  clear out the new segment of xt_offset to be able to copy the
+  !  correct values from the previous loop through xt_offset
+  !-------------------------------------------------------------------
+  FORALL(i=1:ppm_dim,j=nghostplus+1:2*nghostplus) &
+  &      xt_offset(i,j) = 0.0_MK
   
   !----------------------------------------------------------
   ! symmetry ghosts in the y-direction.
@@ -43,8 +51,11 @@
         ighost(k) = ighost(i)
         xt(1,k)   = xt(1,i)
         xt(2,k)   = 2.0_MK*ymaxf - xt(2,i)
+        xt_offset(1,k) = xt_offset(1,i)
+        xt_offset(2,k) = 2.0_MK*(xmaxf-xt(2,i))
         IF ( ppm_dim == 3 ) THEN
            xt(3,k)   = xt(3,i)
+           xt_offset(3,k) = xt_offset(3,i)
         END IF
      END IF
   END DO
