@@ -19,18 +19,21 @@ integer                         :: topoid
 integer                         :: np = 100000
 integer                         :: mp
 integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: rcp
-real(mk),dimension(:,:),pointer :: wp
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: ghostlayer
-integer, dimension(:  ),pointer :: ghostsize
+real(mk),dimension(:,:),pointer :: xp => NULL()
+real(mk),dimension(:  ),pointer :: rcp => NULL()
+real(mk),dimension(:,:),pointer :: wp => NULL()
+real(mk),dimension(:  ),pointer :: min_phys => NULL()
+real(mk),dimension(:  ),pointer :: max_phys => NULL()
+real(mk),dimension(:  ),pointer :: h => NULL()
+real(mk),dimension(:  ),pointer :: p_h => NULL()
+real(mk),dimension(:  ),pointer :: len_phys => NULL()
+real(mk),dimension(:  ),pointer :: ghostlayer => NULL()
+integer, dimension(:  ),pointer :: ghostsize => NULL()
 integer                         :: i,j,k,sum1,sum2
 integer                         :: p_i
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
-integer, dimension(:  ),pointer :: nm
+real(mk),dimension(:  ),pointer :: cost => NULL()
+integer, dimension(:  ),pointer :: nm => NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 real(mk), dimension(:),allocatable :: randnb
@@ -118,12 +121,12 @@ real(mk)                         :: eps
         integer                         :: newnpart
         integer                         :: mpart
         integer                         :: oldip,ip = -1
-        real(mk),dimension(:,:),pointer :: p
+        real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk),dimension(ndim)        :: cp
         real(mk), parameter             :: gl = 0.1_mk
         real(mk), parameter             :: skin = 0.05_mk
-        integer, dimension(:),pointer   :: nvlist
-        integer, dimension(:,:),pointer :: vlist
+        integer, dimension(:),pointer   :: nvlist => NULL()
+        integer, dimension(:,:),pointer :: vlist => NULL()
 
         allocate(p(ndim,npart))
         p(1,1) = 0.05_mk
