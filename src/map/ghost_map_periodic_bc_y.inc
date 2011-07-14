@@ -24,6 +24,13 @@
          ENDIF
 
          !-------------------------------------------------------------------
+         !  clear out the new segment of xt_offset to be able to copy the
+         !  correct values from the previous loop through xt_offset
+         !-------------------------------------------------------------------
+         FORALL(i=1:ppm_dim,j=nghostplus+1:2*nghostplus) &
+         &      xt_offset(i,j) = 0.0_MK
+
+         !-------------------------------------------------------------------
          !  copy periodic ghosts in the y-direction
          !-------------------------------------------------------------------
          yminf = min_phys(2)
@@ -39,11 +46,11 @@
                ighost(k) = ighost(i)
                xt(1,k)   = xt(1,i) 
                xt(2,k)   = xt(2,i) + len_phys(2)
-               xt_offset(1,k) = 0.0_MK
+               xt_offset(1,k) = xt_offset(i,i)
                xt_offset(2,k) = len_phys(2)
                IF (ppm_dim.EQ.3) THEN
                   xt(3,k)   = xt(3,i)
-                  xt_offset(3,k) = 0.0_MK
+                  xt_offset(3,k) = xt_offset(3,i)
                ENDIF 
             ENDIF
          ENDDO
@@ -60,11 +67,11 @@
                   ighost(k) = ighost(i)
                   xt(1,k)   = xt(1,i)
                   xt(2,k)   = xt(2,i) - len_phys(2)
-                  xt_offset(1,k) = 0.0_MK
+                  xt_offset(1,k) = xt_offset(1,i)
                   xt_offset(2,k) = -len_phys(2)
                   IF (ppm_dim.EQ.3) THEN
                      xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
+                     xt_offset(3,k) = xt_offset(3,i)
                   ENDIF 
                ENDIF
             ENDDO

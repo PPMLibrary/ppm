@@ -40,10 +40,10 @@
                xt(1,k)   = xt(1,i) + len_phys(1)
                xt(2,k)   = xt(2,i)
                xt_offset(1,k) = len_phys(1)
-               xt_offset(2,k) = 0.0_MK
+               xt_offset(2,k) = xt_offset(2,i)
                IF (ppm_dim.EQ.3) THEN
                   xt(3,k)   = xt(3,i)
-                  xt_offset(3,k) = 0.0_MK
+                  xt_offset(3,k) = xt_offset(3,i)
                ENDIF 
             ENDIF
          ENDDO
@@ -61,10 +61,10 @@
                   xt(1,k)   = xt(1,i) - len_phys(1)
                   xt(2,k)   = xt(2,i)
                   xt_offset(1,k) = -len_phys(1)
-                  xt_offset(2,k) = 0.0_MK
+                  xt_offset(2,k) = xt_offset(2,i)
                   IF (ppm_dim.EQ.3) THEN
                      xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
+                     xt_offset(3,k) = xt_offset(3,i)
                   ENDIF 
                ENDIF
             ENDDO
