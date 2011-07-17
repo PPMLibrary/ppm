@@ -1355,17 +1355,17 @@
       
       ! This pivoting strategy broke the code in some specific cases
       !pivot = (cutoff(rank(1)) + cutoff(rank(size(rank))))/2
-      pivot = cutoff(rank(size(rank)/2)) 
+      pivot = cutoff(rank(size(rank)/2)) + skin
       i= 0
       j= size(rank) + 1
 
       DO WHILE(i .LT. j)
          j = j - 1
-         DO WHILE( cutoff(rank(j)) .LT. pivot)
+         DO WHILE((cutoff(rank(j)) + skin) .LT. pivot)
             j = j-1
          END DO
          i = i + 1
-         DO WHILE( cutoff(rank(i)) .GT. pivot)
+         DO WHILE((cutoff(rank(i)) + skin) .GT. pivot)
             i = i + 1
          END DO
          IF (i .LT. j) THEN
