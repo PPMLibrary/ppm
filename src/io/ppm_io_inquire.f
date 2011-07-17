@@ -133,13 +133,13 @@
            GOTO 8888
         ENDIF
         IF (iUnit .LE. 0) THEN
-	       info = ppm_error_error
-	       CALL ppm_error(ppm_err_argument,'ppm_io_inquire',    &
-	 &        'Unit number needs to be > 0',__LINE__,info)
-	       IF (PRESENT(isopen)) isopen = .FALSE.
-	       IF (PRESENT(pfmt)) pfmt = ppm_param_undefined
-	       IF (PRESENT(mode)) mode = ppm_param_undefined
-           GOTO 8888
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_io_inquire',    &
+            &        'Unit number needs to be > 0',__LINE__,info)
+            IF (PRESENT(isopen)) isopen = .FALSE.
+            IF (PRESENT(pfmt)) pfmt = ppm_param_undefined
+            IF (PRESENT(mode)) mode = ppm_param_undefined
+            GOTO 8888
         ENDIF
  8888   CONTINUE
       END SUBROUTINE check
