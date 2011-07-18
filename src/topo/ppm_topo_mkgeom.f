@@ -153,7 +153,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,j,treetype,nbox,isub
+      INTEGER                           :: i,treetype,nbox,isub
       INTEGER                           :: iopt
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()

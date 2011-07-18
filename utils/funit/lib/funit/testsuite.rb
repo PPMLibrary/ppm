@@ -79,12 +79,14 @@ module #{@suite_name}_fun
  integer :: numAsserts        = 0
  integer :: numAssertsTested  = 0
  integer :: numFailures       = 0
+ integer :: funit_rank
+ integer :: funit_comm
+ integer :: funit_info
 
       TOP
     end
 
     def expand
-      $stderr.print "expanding test suite: #{@suite_name}..."
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
 
@@ -214,17 +216,21 @@ module #{@suite_name}_fun
 
       puts <<-NEXTONE
 
- subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh )
+ subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh, rank, comm )
 
   integer :: nTests
   integer :: nAsserts
   integer :: nAssertsTested
   integer :: nFailures
   integer :: lfh
+  integer :: rank
+  integer :: comm
 
   continue
 
-  log = lfh  
+  log = lfh
+  funit_rank = rank
+  funit_comm = comm
 
   call funit_init
 

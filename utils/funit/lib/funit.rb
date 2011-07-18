@@ -19,9 +19,12 @@ module Funit
   ##
   # run all tests
 
-  def run_tests(prog_source_dirs=['.'],use_mpi=false)
+  def run_tests(prog_source_dirs=['.'],use_mpi=false,procs="1")
+    print_title("FUNIT STARTED")
     Compiler.new# a test for compiler env set (FIXME: remove this later)
     write_test_runner( test_files = parse_command_line,use_mpi)
+
+    print_sub("expand test suites")
     test_suites = []
     test_files.each{ |test_file|
       original_dir = Dir.pwd
@@ -34,6 +37,7 @@ module Funit
         ts_name = $1
         ts_content = $2
         ts_trailing = $3
+        print_started(ts_name)
         if((!File.exist?(ts_name+"_fun.f")) || File.mtime(ts_name+"_fun.f") < File.mtime(test_file+".fun")) then
           if ( File.read('../../'+ts_name+'.f').match(/\s*module\s+#{ts_name}/i) ) then
             TestSuite.new(ts_name, ts_content, ts_trailing, false)
@@ -41,12 +45,24 @@ module Funit
             TestSuite.new(ts_name, ts_content, ts_trailing, true)
           end
         end
+        if (funit_exists?(ts_name)) then
+          print_done("not changed")
+        else
+          print_done("regenerated!")
+        end
         test_suites.push(ts_name)
       }
       Dir.chdir original_dir
     }
     compile_tests(test_suites,prog_source_dirs)
-    exit 1 unless system "PATH=.:$PATH TestRunner"
+    if (use_mpi) then
+      procs.split(',').each{ |nproc|
+        print_title("STARTING TEST ON " + nproc + " PROCESSOR(S)")
+        exit 1 unless system "PATH=.:$PATH mpirun -n " + nproc + " TestRunner"
+      }
+    else
+      exit 1 unless system "PATH=.:$PATH TestRunner"
+    end
     clean_genFiles
   end
 
