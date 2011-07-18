@@ -28,9 +28,9 @@
      !-------------------------------------------------------------------------
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE count_neigh_s(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE count_neigh_s(p_idx, clist, domain, xp, cutoff, skin, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE count_neigh_d(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
+      SUBROUTINE count_neigh_d(p_idx, clist, domain, xp, cutoff, skin, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
@@ -63,9 +63,11 @@
           !!! Particle cutoff radii
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
+#if __ACTION == __GET
           INTEGER,  DIMENSION(:,:)             :: vlist
           !!! Verlet list, where vlist(j, i) contains the jth neighbor of
           !!! ith particle
+#endif
           INTEGER,  DIMENSION(:)               :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.
@@ -395,10 +397,10 @@
 #if  __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
           SUBROUTINE count_neigh_sym_s(p_idx, clist, domain, actual_domain,   &
-          &xp, cutoff, skin, vlist, nvlist)
+          &xp, cutoff, skin, nvlist)
 #elif   __KIND == __DOUBLE_PRECISION
           SUBROUTINE count_neigh_sym_d(p_idx, clist, domain, actual_domain,   &
-          &xp, cutoff, skin, vlist, nvlist)
+          &xp, cutoff, skin, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
@@ -432,9 +434,11 @@
           !!! Particle cutoff radii
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
+#if __ACTION == __GET
           INTEGER,  DIMENSION(:,:)             :: vlist
           !!! Verlet list, where vlist(j, i) contains the jth neighbor of
           !!! ith particle
+#endif
           INTEGER,  DIMENSION(:)               :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.

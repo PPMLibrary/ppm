@@ -189,7 +189,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,ul,iopt,j,treetype,nbox
+      INTEGER                           :: i,iopt,treetype,nbox
       INTEGER                           :: isub,minbox
       INTEGER, DIMENSION(1)             :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
@@ -211,7 +211,6 @@
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER                           :: nsubs
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
-      TYPE(ppm_t_topo)       , POINTER  :: topo     => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

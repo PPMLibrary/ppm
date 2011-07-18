@@ -90,8 +90,8 @@
       INTEGER                                    :: n_part
       TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
       LOGICAL                                    :: lst
-      INTEGER                                    :: i
       INTEGER                                    :: isub
+      INTEGER                                    :: i
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
 
@@ -521,7 +521,6 @@
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          INTEGER                               :: i
           INTEGER                               :: p_idx
 
           REAL(MK)                              :: t0
@@ -578,13 +577,13 @@
       !-------------------------------------------------------------------------
           IF(lsymm .EQV. .TRUE.)   THEN ! If lists are symmetric
               DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,       &
-                  & actual_domain, xp, cutoff, skin, vlist, nvlist)
+                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,&
+                  & actual_domain, xp, cutoff, skin, nvlist)
               END DO
           ELSE                          ! If lists are not symmetric
               DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, xp, cutoff,    &
-                  & skin, vlist, nvlist)
+                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, &
+                  & xp, cutoff, skin, nvlist)
               END DO
           END IF
 
