@@ -115,7 +115,6 @@ module #{@suite_name}_fun
           puts line
         end
       end
-      $stderr.puts "done."
     end
 
     def add_to_init funit_contents
