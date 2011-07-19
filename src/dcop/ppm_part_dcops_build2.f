@@ -47,8 +47,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     ! local variables
     !---------------------------------------------------------
     INTEGER                               :: i,j,k,ip,iq,beta(ppm_dim),ineigh
-    INTEGER                               :: ncoeff,n_odd
-    CHARACTER(LEN = 256)                  :: caller='ppm_part_dcops'
+    INTEGER                               :: ncoeff,n_odd,np_target
+    CHARACTER(LEN = 256)                  :: caller='ppm_dcop_compute'
     CHARACTER(LEN = 256)                  :: cbuf
     CHARACTER(LEN = 32)                   :: myformat
     REAL(KIND(1.D0))                      :: t0
@@ -69,6 +69,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     INTEGER,DIMENSION(3)                  :: ldc
     INTEGER                               :: degree_poly
     LOGICAL                               :: cartesian,isinterp,adaptive,vector
+    LOGICAL                               :: with_ghosts
 
     REAL(MK), DIMENSION(:,:),  POINTER    :: xp1=>NULL()
     !!! particles (or points) where the operators are computed
@@ -260,6 +261,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         GOTO 9999
     ENDIF
 
+
     ALLOCATE(d2_one2all(nneighmax),dx(ppm_dim,nneighmax),Z(ncoeff,ncoeff),&
         b(ncoeff,nterms),b_0(ncoeff,nterms),STAT=info)
     IF (info .NE. 0) THEN
@@ -279,18 +281,31 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     !component in eta. This is used when computing e.g. the gradient opearator.
     !if false, the same input parameters would yield an operator approximating
     ! the divergence operator.
+    with_ghosts =  Particles%ops%desc(eta_id)%with_ghosts
+    !if true, then the operator should be computed for ghost particles too. 
+    !Note that the resulting values will be wrong for the ghost particles
+    !that have some neighbours outside the ghost layers. Some of these particles
+    !may also not have enough neighbours for the Vandermonde matrix to be
+    !invertible. These particles will be skipped without raising a warning.
+
     IF (vector) THEN
         ldc(1) = nneighmax*nterms; 
     ELSE
         ldc(1) = nneighmax; 
     ENDIF
-    ldc(2) = Particles%Npart
+    IF (with_ghosts) THEN
+        np_target = Particles%Mpart
+    ELSE
+        np_target = Particles%Npart
+    ENDIF
+    ldc(2) = np_target
     CALL ppm_alloc(Particles%ops%ker(eta_id)%vec,ldc,ppm_param_alloc_grow,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
+
     !----------------------------------------------------------------------!
     ! Compute diff op weights
     !----------------------------------------------------------------------!
@@ -316,7 +331,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     ENDIF
 
     IF (isinterp) THEN
-        xp1 => Get_xp(Particles)
+        xp1 => Get_xp(Particles,with_ghosts=with_ghosts)
         xp2 => Get_xp(Particles_cross,with_ghosts=.TRUE.)
         nvlist => Particles%nvlist_cross
         vlist => Particles%vlist_cross
@@ -326,12 +341,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         nvlist => Particles%nvlist
         vlist => Particles%vlist
     ENDIF
-    eta => Get_dcop(Particles,eta_id)
-    FORALL(i=1:nneighmax,j=1:Particles%Npart) eta(i,j)=0._MK
+    eta => Get_dcop(Particles,eta_id,with_ghosts=with_ghosts)
+    FORALL(i=1:nneighmax,j=1:np_target) eta(i,j)=0._MK
     coeffs => Particles%ops%desc(eta_id)%coeffs(1:nterms)
 
     IF (adaptive) THEN
-        rcp => Get_wps(Particles,Particles%rcp_id)
+        rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=with_ghosts)
     ENDIF
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
@@ -341,7 +356,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         !!! (they must have been already computed)
     ENDIF
 
-    particle_loop: DO ip = 1,Particles%Npart ! loop over all (new) real particles
+    particle_loop: DO ip = 1,np_target ! loop over all target particles
+
+        IF (ip .GT. Particles%Npart .AND. nvlist(ip).LT.ncoeff) THEN
+            !not enough neigbours for this ghost particle - skip it
+            CYCLE particle_loop
+        ENDIF
 
         Z = 0._MK
         b = b_0

@@ -80,13 +80,17 @@ TYPE pnt_array_desc
     CHARACTER(LEN=ppm_char)                        :: name
     !!! name of the vector-valued property
     LOGICAL                                        :: interp
-    !!! True if the operator interpolates data from one set of particles
+    !!! true if the operator interpolates data from one set of particles
     LOGICAL                                        :: is_computed
-    !!! True if the operator has been computed (will be set to False when
+    !!! true if the operator has been computed (will be set to False when
     !!! particles move, or e.g. after particle-particle interpolation)
     LOGICAL                                        :: is_defined
-    !!! True if the operator has been defined (this usually means that
+    !!! true if the operator has been defined (this usually means that
     !!! the user wants to keep it, unless explicitely stated otherwise)
+    LOGICAL                                        :: with_ghosts
+    !!! true if the operator should be computed for ghost particles too. 
+    !!! Note that the resulting values will be wrong for the ghost particles
+    !!! that have some neighbours outside the ghost layers. Default is false.
 END TYPE pnt_array_desc
 
 TYPE ppm_t_operator

@@ -304,10 +304,11 @@ FUNCTION set_wpv(Particles,wpv_id,read_only,ghosts_ok)
 
 END FUNCTION set_wpv
 
-FUNCTION get_dcop(Particles,eta_id)
+FUNCTION get_dcop(Particles,eta_id,with_ghosts)
     TYPE(ppm_t_particles)              :: Particles
     INTEGER                            :: eta_id
     REAL(prec),DIMENSION(:,:),POINTER  :: get_dcop
+    LOGICAL,OPTIONAL                   :: with_ghosts
 
     IF (eta_id .LE. 0 .OR. eta_id .GT. Particles%ops%max_opsid) THEN
         write(*,*) 'ERROR: failed to get operator for id ',eta_id
@@ -315,6 +316,12 @@ FUNCTION get_dcop(Particles,eta_id)
         RETURN
     ENDIF
 
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) THEN
+            get_dcop => Particles%ops%ker(eta_id)%vec(:,1:Particles%Mpart)
+            RETURN
+        ENDIF
+    ENDIF
     get_dcop => Particles%ops%ker(eta_id)%vec(:,1:Particles%Npart)
 
 END FUNCTION get_dcop
@@ -1941,7 +1948,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_mapping_partial
 
-SUBROUTINE particles_mapping_ghosts(Particles,topoid,info,debug)
+SUBROUTINE particles_mapping_ghosts(Particles,topoid,info,ghostsize,debug)
 
     !!!  Ghost mapping for particles
     !!!  Assumptions:
@@ -1967,6 +1974,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !  Optional Arguments
     !-------------------------------------------------------------------------
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
     LOGICAL, OPTIONAL                                   :: debug
     !!! IF true, printout more
     !-------------------------------------------------------------------------
@@ -1974,7 +1983,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     INTEGER                                   :: prop_id
     !!! index variable
-    REAL(ppm_kind_double)                     :: cutoff
+    REAL(MK)                                  :: cutoff
     !!! cutoff radius
     TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
     CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_ghosts'
@@ -2024,11 +2033,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     topo=>ppm_topo(topoid)%t
 
     cutoff = Particles%cutoff + Particles%skin 
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+                &  'using ghostsize < cutoff+skin. Increase ghostsize.',&
+                &  __LINE__,info)
+            GOTO 9999
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
             &  __LINE__,info)
         GOTO 9999
@@ -2040,13 +2060,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         write(*,*) 'cutoff used to create topology = ',topo%ghostsized
 
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'ghostsize of topology may be smaller than that of particles',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
 #endif
-    IF (cutoff .GT. 0.0D0) THEN
+    IF (cutoff .GT. 0._MK) THEN
         IF (Particles%has_ghosts) THEN
             IF (verbose) THEN
                 write(*,*) 'ghosts have already been updated'
@@ -2571,7 +2591,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_have_moved
 
-SUBROUTINE particles_neighlists(Particles,topoid,info,lstore)
+SUBROUTINE particles_neighlists(Particles,topoid,info,lstore,incl_ghosts)
     !-----------------------------------------------------------------
     !  Neighbor lists for particles
     !-----------------------------------------------------------------
@@ -2604,10 +2624,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
     !!! store verlet lists
+    LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
+    !!! if true, then verlet lists are computed for all particles, incl. ghosts.
+    !!! Default is false.
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER                                   :: prop_id,op_id
+    INTEGER                                   :: prop_id,op_id,np_target
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
@@ -2615,6 +2638,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!!
     CHARACTER(LEN = ppm_char)                 :: caller = 'particles_neighlists'
     REAL(KIND(1.D0))                          :: t0
+    TYPE(ppm_t_topo), POINTER                 :: topo
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -2657,10 +2681,30 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !neighbor lists are already up-to-date, nothing to do
         write(*,*) 'neighlists are supposedly already up-to-date, NOTHING to do'
     ELSE
+        !hack to build (potentially incomplete) neighbour lists even 
+        !for ghost particles
+        np_target = Particles%Npart
+        IF (PRESENT(incl_ghosts)) THEN
+            IF (incl_ghosts) THEN
+                np_target = Particles%Mpart
+                IF (KIND(1._MK).NE.8) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,   &
+                        &  'need to implement single-precision',&
+                        &  __LINE__,info)
+                    GOTO 9999
+                ENDIF
+                topo => ppm_topo(topoid)%t
+                topo%min_subd(:,:) = topo%min_subd(:,:) - topo%ghostsized
+                topo%max_subd(:,:) = topo%max_subd(:,:) + topo%ghostsized
+            ENDIF
+        ENDIF
+
         IF (Particles%adaptive) THEN
             !FIXME: when adaptive ghost layers are available
             ghostlayer(1:2*ppm_dim)=Particles%cutoff
-            CALL ppm_inl_vlist(topoid,Particles%xp,Particles%Npart,&
+
+            CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
                 Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,Particles%skin,&
                 symmetry,ghostlayer,info,Particles%vlist,&
                 Particles%nvlist)
@@ -2679,6 +2723,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 CALL ppm_error(999,caller,&
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
+            ENDIF
+        ENDIF
+
+        !restore subdomain sizes (revert hack)
+        IF (PRESENT(incl_ghosts)) THEN
+            IF (incl_ghosts) THEN
+                IF (KIND(1._MK).NE.8) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,   &
+                        &  'need to implement single-precision',&
+                        &  __LINE__,info)
+                    GOTO 9999
+                ENDIF
+                topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
+                topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
+                topo => NULL()
             ENDIF
         ENDIF
     ENDIF
@@ -4006,7 +4066,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
 END SUBROUTINE particles_io_xyz
 
 SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
-        info,name,interp,vector)
+        info,name,interp,vector,with_ghosts)
     !!!------------------------------------------------------------------------!
     !!! Define a DC operator as a linear combination (with scalar coefficients)
     !!! of nterms partial derivatives of arbitrary degrees. These are given by a matrix
@@ -4066,6 +4126,10 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     !!! another. Default is false.
     LOGICAL,OPTIONAL,                   INTENT(IN   )   :: vector
     !!! True if the operator is a vector field. Default is false.
+    LOGICAL,OPTIONAL,                   INTENT(IN   )   :: with_ghosts
+    !!! True if the operator should be computed for ghost particles too. 
+    !!! Note that the resulting values will be wrong for the ghost particles
+    !!! that have some neighbours outside the ghost layers. Default is false.
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -4113,6 +4177,7 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
             Particles%ops%desc(i)%vector = .FALSE.
             Particles%ops%desc(i)%is_computed = .FALSE.
             Particles%ops%desc(i)%is_defined = .FALSE.
+            Particles%ops%desc(i)%with_ghosts = .FALSE.
         ENDDO
     ENDIF
     IF (MINVAL(degree).LT.0) THEN
@@ -4229,6 +4294,11 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
         Particles%ops%max_opsid = eta_id
     Particles%ops%desc(eta_id)%is_defined = .TRUE.
 
+    Particles%ops%desc(eta_id)%with_ghosts = .FALSE.
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) Particles%ops%desc(eta_id)%with_ghosts = .TRUE.
+    ENDIF
+
     !-------------------------------------------------------------------------
     ! Finalize
     !-------------------------------------------------------------------------
@@ -4335,6 +4405,7 @@ SUBROUTINE particles_dcop_free(Particles,eta_id,info)
     Particles%ops%desc(eta_id)%vector = .FALSE.
     Particles%ops%desc(eta_id)%is_computed = .FALSE.
     Particles%ops%desc(eta_id)%is_defined = .FALSE.
+    Particles%ops%desc(eta_id)%with_ghosts = .FALSE.
     Particles%ops%ker(eta_id)%vec=> NULL()
 
     !update indices
@@ -4396,7 +4467,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     !-------------------------------------------------------------------------
     CHARACTER(LEN = ppm_char)                  :: cbuf,filename
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
-    INTEGER                                    :: ip,iq,ineigh,lda
+    INTEGER                                    :: ip,iq,ineigh,lda,np_target
     REAL(KIND(1.D0))                           :: t0
     REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
     REAL(MK),DIMENSION(:),  POINTER            :: wps1 => NULL(),wps2=>NULL()
@@ -4408,6 +4479,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     REAL(MK)                                   :: sig
     LOGICAL                                    :: vector_output
     LOGICAL                                    :: vector_input
+    LOGICAL                                    :: with_ghosts
 
     !-------------------------------------------------------------------------
     ! Initialize
@@ -4524,43 +4596,70 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         ENDIF
     ENDIF
 
+    !If with_ghosts has been set to true (only used in some special cases)
+    !the operator is computed for all particles, including ghosts. The
+    !normal usage is to loop from 1 to Npart only.
+    with_ghosts = Particles%ops%desc(eta_id)%with_ghosts
+    IF (with_ghosts) THEN
+        np_target = Particles%Mpart
+    ELSE
+        np_target = Particles%Npart
+    ENDIF
+
+
     !allocate output field if needed
-    IF (to_id.EQ.0) THEN
-        IF (vector_output) THEN
+    !otherwise simply check that the output array had been allocated
+    !to the right size
+    IF (vector_output) THEN
+        IF (to_id.EQ.0) THEN
             CALL particles_allocate_wpv(Particles,to_id,&
-                Particles%ops%desc(eta_id)%nterms,info,name="dflt_dcop_apply")
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wpv failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+                Particles%ops%desc(eta_id)%nterms,info,&
+                name="dflt_dcop_apply",with_ghosts=with_ghosts)
         ELSE
-            CALL particles_allocate_wps(Particles,to_id,&
-                info,name="dflt_dcop_apply")
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,&
-                    'particles_allocate_wps failed',__LINE__,info)
-                GOTO 9999
+            IF (.NOT.Particles%wpv(to_id)%is_mapped .OR. &
+                &  Particles%ops%desc(eta_id)%with_ghosts .AND. &
+                &  .NOT.Particles%wpv(to_id)%has_ghosts) THEN
+                CALL particles_allocate_wpv(Particles,to_id,&
+                    Particles%ops%desc(eta_id)%nterms,info,&
+                    name="dflt_dcop_apply",with_ghosts=with_ghosts,&
+                    iopt=ppm_param_alloc_grow)
             ENDIF
         ENDIF
+    ELSE
+        IF (to_id.EQ.0) THEN
+            CALL particles_allocate_wps(Particles,to_id,&
+                info,name="dflt_dcop_apply",with_ghosts=with_ghosts)
+        ELSE
+            IF (.NOT.Particles%wps(to_id)%is_mapped .OR. &
+                &  Particles%ops%desc(eta_id)%with_ghosts .AND. &
+                &  .NOT.Particles%wps(to_id)%has_ghosts) THEN
+                CALL particles_allocate_wps(Particles,to_id,&
+                    info,name="dflt_dcop_apply",with_ghosts=with_ghosts,&
+                    iopt=ppm_param_alloc_grow)
+            ENDIF
+        ENDIF
+    ENDIF
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,&
+            'particles_allocate_wp failed',__LINE__,info)
+        GOTO 9999
     ENDIF
 
 
     IF (vector_output) THEN
-        dwpv => Get_wpv(Particles,to_id)
+        dwpv => Get_wpv(Particles,to_id,with_ghosts=with_ghosts)
         lda = Particles%ops%desc(eta_id)%nterms
-        DO ip = 1,Particles%Npart 
+        DO ip = 1,np_target
             dwpv(1:lda,ip) = 0._MK
         ENDDO
     ELSE
-        dwps => Get_wps(Particles,to_id)
-        DO ip = 1,Particles%Npart 
+        dwps => Get_wps(Particles,to_id,with_ghosts=with_ghosts)
+        DO ip = 1,np_target
             dwps(ip) = 0._MK
         ENDDO
     ENDIF
-    eta => Get_dcop(Particles,eta_id)
+    eta => Get_dcop(Particles,eta_id,with_ghosts=with_ghosts)
 
 
     IF (Particles%ops%desc(eta_id)%interp) THEN
@@ -4569,7 +4668,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         IF (vector_output) THEN
             IF(vector_input) THEN
                 wpv2 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
-                DO ip = 1,Particles%Npart
+                DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
                         dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
@@ -4579,7 +4678,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                 wpv2 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
             ELSE
                 wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
-                DO ip = 1,Particles%Npart
+                DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
                         dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
@@ -4590,7 +4689,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             ENDIF
         ELSE
             wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
-            DO ip = 1,Particles%Npart
+            DO ip = 1,np_target
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)
                     dwps(ip) = dwps(ip) + wps2(iq) * eta(ineigh,ip)
@@ -4605,7 +4704,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         IF (vector_output) THEN
             IF(vector_input) THEN
                 wpv1 => Get_wpv(Particles,from_id,with_ghosts=.TRUE.)
-                DO ip = 1,Particles%Npart
+                DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
                         dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
@@ -4616,7 +4715,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                 wpv1 => Set_wpv(Particles,from_id,read_only=.TRUE.)
             ELSE
                 wps1 => Get_wps(Particles,from_id,with_ghosts=.TRUE.)
-                DO ip = 1,Particles%Npart
+                DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
                         dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
@@ -4628,7 +4727,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             ENDIF
         ELSE
             wps1 => Get_wps(Particles,from_id,with_ghosts=.TRUE.)
-            DO ip = 1,Particles%Npart
+            DO ip = 1,np_target
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)
                     dwps(ip) = dwps(ip) + (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
@@ -4640,9 +4739,20 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
 
     eta => Set_dcop(Particles,eta_id)
     IF (vector_output) THEN
-        dwpv => Set_wpv(Particles,to_id)
+        IF (with_ghosts) THEN
+            !we assume that the ghosts are up-to-date even though
+            !they clearly are not. we assume you know what you are
+            !doing when using this option.
+            dwpv => Set_wpv(Particles,to_id,ghosts_ok=.TRUE.)
+        ELSE
+            dwpv => Set_wpv(Particles,to_id)
+        ENDIF
     ELSE
-        dwps => Set_wps(Particles,to_id)
+        IF (with_ghosts) THEN
+            dwps => Set_wps(Particles,to_id,ghosts_ok=.TRUE.)
+        ELSE
+            dwps => Set_wps(Particles,to_id)
+        ENDIF
     ENDIF
     nvlist => NULL()
     vlist => NULL()
