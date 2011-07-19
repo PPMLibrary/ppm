@@ -118,7 +118,7 @@ MODULE ppm_module_ctrl
        &    logical_array_func, string_array_func,                  &
        &    complex_array_func, dcomplex_array_func,                &
 #endif
-       &    reset, add_cmd, ctrl_file_test,                         &
+       &    reset, add_cmd, ctrl_file_test, break_help,             &
        &    find_arg, find_flag, arg_count,                         &
        &    enabling_flag, disabling_flag, exit_gracefully
 
@@ -1276,6 +1276,65 @@ CONTAINS
     END IF
   END SUBROUTINE arg_group
   !------------------------------------------------------------------------
+  !  Help string break
+  !------------------------------------------------------------------------
+  SUBROUTINE break_help(ht, w, prefix, unit, skip_first_line)
+    ! args
+    CHARACTER(LEN=*),  INTENT(IN   ) :: ht
+    INTEGER,           INTENT(IN   ) :: w
+    CHARACTER(LEN=*),  INTENT(IN   ) :: prefix
+    INTEGER,           INTENT(IN   ) :: unit
+    LOGICAL, OPTIONAL, INTENT(IN   ) :: skip_first_line
+    ! vars
+    INTEGER :: start
+    INTEGER :: break
+    INTEGER :: next
+    INTEGER :: end
+    INTEGER :: skip
+    LOGICAL :: fl
+    IF (.NOT. PRESENT(skip_first_line)) THEN
+       fl = .TRUE.
+    ELSE
+       fl = skip_first_line
+    END IF
+    start = 1
+    break = 1
+    next  = 1
+    end   = LEN(ht)
+    ! line loop
+    DO WHILE (start .LT. end)
+       ! break < start + w < next
+       DO WHILE (next .LT. end .AND. next .LT. start+w)
+          ! find next blank or new line
+          skip = 1
+          DO WHILE (next .LT. end .AND. ht(next:next) .NE. ' ')
+             IF (next .LT. end) THEN
+                IF (ht(next:next+1) .EQ. '\n') THEN
+                   ! line break
+                   skip = 3
+                   break = next - 1
+                   next = next + 2
+                   GOTO 1234
+                END IF
+             END IF
+             next = next + 1
+          END DO
+          break = next
+          next = next + 1
+       END DO
+       ! print line
+1234   IF (fl) THEN
+          fl = .FALSE.
+       ELSE
+          WRITE(unit,'(A)',advance='no') prefix
+       END IF
+       WRITE (unit,'(A)') ht(start:break)
+       ! itterate
+       start = break + skip
+       break = next
+    END DO
+  END SUBROUTINE break_help
+  !------------------------------------------------------------------------
   !  Print command line help
   !------------------------------------------------------------------------
   SUBROUTINE print_help
@@ -1296,11 +1355,13 @@ CONTAINS
 '  help                          Print this help message and exit.',&
 '                  short flag :  -h',&
 '                   long flag :  --help'
+             WRITE (*,*) ""
           END IF
           IF (ctrl_enabled) THEN
              WRITE (*,'(A,/A)') &
 '  control file                  Print sample control file and exit.',&
 '                   long flag :  --print-ctrl'
+             WRITE (*,*) ""
           END IF
        END IF
        group_loop: DO i=1,group_size(k)
