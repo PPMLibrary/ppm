@@ -505,6 +505,7 @@ test_suite ppm_module_ctrl
 
   test ctrl_file
     INTEGER :: rank
+    rank = 0
 #ifdef __MPI
     CALL MPI_Comm_Rank(MPI_COMM_WORLD, rank, info)
 #endif
@@ -531,7 +532,8 @@ test_suite ppm_module_ctrl
     ! open file for writing
     scf = 123
     IF (rank .EQ. 0) THEN
-       OPEN(scf, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
+write(*,*) 'opening file'
+       OPEN(scf, FILE='src/ctrl/test/__test_ctrl__84103784983274__', IOSTAT=ios, ACTION='WRITE')
        Assert_Equal(ios, 0)
        WRITE(scf,'(A)') 'idefault = 42'
        WRITE(scf,'(A)') 'iflag    = 42'
@@ -553,7 +555,8 @@ test_suite ppm_module_ctrl
        CLOSE(scf)
     END IF
     ! supply arg
-    CALL add_cmd('__test_ctrl__84103784983274__')
+write(*,*) 'supply arg'
+    CALL add_cmd('src/ctrl/test/__test_ctrl__84103784983274__')
     CALL add_cmd('-f', '1337')
     ! parse
     CALL parse_args(info)
@@ -577,7 +580,8 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
     IF (rank .EQ. 0) THEN
-       CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl')
+write(*,*) 'del file'
+       CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl__84103784983274__')
     END IF
   end test
 
