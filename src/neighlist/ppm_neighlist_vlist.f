@@ -177,6 +177,12 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
+#if   __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#elif __KIND == __SINGLE_PRECISION
+      eps = ppm_myepss
+#endif
+
 
       !-------------------------------------------------------------------------
       !  If the user gave an explicit list of particles to be included, use
