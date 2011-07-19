@@ -532,7 +532,6 @@ test_suite ppm_module_ctrl
     ! open file for writing
     scf = 123
     IF (rank .EQ. 0) THEN
-write(*,*) 'opening file'
        OPEN(scf, FILE='src/ctrl/test/__test_ctrl__84103784983274__', IOSTAT=ios, ACTION='WRITE')
        Assert_Equal(ios, 0)
        WRITE(scf,'(A)') 'idefault = 42'
@@ -555,7 +554,6 @@ write(*,*) 'opening file'
        CLOSE(scf)
     END IF
     ! supply arg
-write(*,*) 'supply arg'
     CALL add_cmd('src/ctrl/test/__test_ctrl__84103784983274__')
     CALL add_cmd('-f', '1337')
     ! parse
@@ -580,7 +578,6 @@ write(*,*) 'supply arg'
     Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
     IF (rank .EQ. 0) THEN
-write(*,*) 'del file'
        CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl__84103784983274__')
     END IF
   end test
