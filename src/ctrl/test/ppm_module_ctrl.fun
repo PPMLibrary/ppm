@@ -145,6 +145,19 @@ test_suite ppm_module_ctrl
     Assert_Equal(info, 0)
   end test
 
+  test multiplied({idefault: 1, iflag: 2},
+                  {idefault: [2,3,4], iflag: [1,3,5]})
+    IF (idefault .EQ. 1) THEN
+       Assert_Equal(iflag,2)
+    END IF
+    IF (idefault .EQ. 2) THEN
+       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+    END IF
+    IF (idefault .EQ. 3) THEN
+       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+    END IF
+  end test
+
   test arg_manipulation
     ! add args
     ! plain cmd arg
