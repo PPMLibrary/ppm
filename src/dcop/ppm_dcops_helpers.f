@@ -62,23 +62,25 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
 
-    INTEGER , DIMENSION (:)  , POINTER   :: indx,valid,indxnew,roworder
-    REAL(MK), DIMENSION (:)  , POINTER   :: bnew,bnew_2,exact_b,exact_b_2,real_b
-    REAL(MK), DIMENSION (:,:), POINTER   :: bnew_n,exact_b_n
-    REAL(MK), DIMENSION (:,:), POINTER   :: Anew,Acopy
+    ! arguments
+    REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   ) :: A 
+    REAL(MK), DIMENSION (:)  , POINTER,INTENT(INOUT) :: x_or_b
+    INTEGER,                           INTENT(  OUT) :: info
+
+    ! local variables
+    INTEGER , DIMENSION (:)  , POINTER   :: indx=>NULL(),valid=>NULL()
+    INTEGER , DIMENSION (:)  , POINTER   :: indxnew=>NULL(),roworder=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: bnew=>NULL(),exact_b=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: real_b=>NULL()
+    REAL(MK), DIMENSION (:,:), POINTER   :: Anew=>NULL(),Acopy=>NULL()
     REAL(MK)                             :: tolerance_lse = 1e-1
 
-    ! arguments
-    REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   ):: A 
-    REAL(MK), DIMENSION (:)  , POINTER  :: x_or_b
-    INTEGER, INTENT(OUT)                  :: info
-    ! local variables
-    INTEGER                               :: n,nnew
-    INTEGER                               :: i,j,inew,jnew,itemp
-    LOGICAL                               :: check = .TRUE.
-    CHARACTER(LEN = 256),PARAMETER    :: caller = 'solveLSE'
-    CHARACTER(LEN = 256)              :: cbuf
-    REAL(MK)                            :: closetozero
+    INTEGER                              :: n,nnew
+    INTEGER                              :: i,j,inew,jnew,itemp
+    LOGICAL                              :: check = .TRUE.
+    CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE'
+    CHARACTER(LEN = 256)                 :: cbuf
+    REAL(MK)                             :: closetozero
 
     !=======================================================================!
     ! init
@@ -371,20 +373,22 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #endif
     ! arguments
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   )  :: A 
-    REAL(MK), DIMENSION (:)  , POINTER  :: x_or_b, x_or_b_2
+    REAL(MK), DIMENSION (:)  , POINTER,INTENT(INOUT)  :: x_or_b, x_or_b_2
     INTEGER, INTENT(OUT)                  :: info
     ! local variables
-    INTEGER , DIMENSION (:)  , POINTER   :: indx,valid,indxnew,roworder
-    REAL(MK), DIMENSION (:)  , POINTER   :: bnew,bnew_2,exact_b,exact_b_2,real_b
-    REAL(MK), DIMENSION (:,:), POINTER   :: bnew_n,exact_b_n
-    REAL(MK), DIMENSION (:,:), POINTER   :: Anew,Acopy
+    INTEGER , DIMENSION (:)  , POINTER   :: indx=>NULL(),valid=>NULL()
+    INTEGER , DIMENSION (:)  , POINTER   :: indxnew=>NULL(),roworder=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: bnew=>NULL(),bnew_2=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: exact_b=>NULL(),exact_b_2=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: real_b=>NULL()
+    REAL(MK), DIMENSION (:,:), POINTER   :: Anew=>NULL(),Acopy=>NULL()
     REAL(MK)                             :: tolerance_lse = 1e-1
-    INTEGER                               :: n,nnew
-    INTEGER                               :: i,j,inew,jnew,itemp
-    LOGICAL                               :: check = .TRUE.
-    CHARACTER(LEN = 256),PARAMETER    :: caller = 'solveLSE_2'
-    CHARACTER(LEN = 256)              :: cbuf
-    REAL(MK)                            :: closetozero
+    INTEGER                              :: n,nnew
+    INTEGER                              :: i,j,inew,jnew,itemp
+    LOGICAL                              :: check = .TRUE.
+    CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE_2'
+    CHARACTER(LEN = 256)                 :: cbuf
+    REAL(MK)                             :: closetozero
 
     !=======================================================================!
     ! init
@@ -733,21 +737,22 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     ! arguments
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   )  :: A 
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(INOUT)  :: x_or_b
-    INTEGER, INTENT(IN)                                 :: n_eq
-    INTEGER, INTENT(OUT)                                :: info
+    INTEGER, INTENT(IN)                               :: n_eq
+    INTEGER, INTENT(OUT)                              :: info
 
     ! local variables
-    INTEGER , DIMENSION (:)  , POINTER   :: indx,valid,indxnew,roworder
-    REAL(MK), DIMENSION (:)  , POINTER   :: bnew,bnew_2,exact_b,exact_b_2,real_b
-    REAL(MK), DIMENSION (:,:), POINTER   :: bnew_n,exact_b_n
-    REAL(MK), DIMENSION (:,:), POINTER   :: Anew,Acopy
+    INTEGER , DIMENSION (:)  , POINTER   :: indx=>NULL(),valid=>NULL()
+    INTEGER , DIMENSION (:)  , POINTER   :: indxnew=>NULL(),roworder=>NULL()
+    REAL(MK), DIMENSION (:)  , POINTER   :: real_b=>NULL()
+    REAL(MK), DIMENSION (:,:), POINTER   :: bnew_n=>NULL(),exact_b_n=>NULL()
+    REAL(MK), DIMENSION (:,:), POINTER   :: Anew=>NULL(),Acopy=>NULL()
     REAL(MK)                             :: tolerance_lse = 1e-1
-    INTEGER                               :: n,nnew
-    INTEGER                               :: i,j,k,inew,jnew,itemp
-    LOGICAL                               :: check = .TRUE.
-    CHARACTER(LEN = 256),PARAMETER        :: caller = 'solveLSE_n'
-    CHARACTER(LEN = 256)                  :: cbuf
-    REAL(MK)                            :: closetozero
+    INTEGER                              :: n,nnew
+    INTEGER                              :: i,j,k,inew,jnew,itemp
+    LOGICAL                              :: check = .TRUE.
+    CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE_n'
+    CHARACTER(LEN = 256)                 :: cbuf
+    REAL(MK)                             :: closetozero
 
     !=======================================================================!
     ! init
@@ -1051,15 +1056,15 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
     ! optional argument
     REAL(MK),OPTIONAL,                INTENT(  OUT) :: min_sv
     ! local variables
-    INTEGER                               :: j
-    CHARACTER(LEN = ppm_char)             :: cbuf
-    CHARACTER(LEN = ppm_char)             :: caller = 'ppm_matrix_svd'
-    REAL(KIND(1.D0))                      :: t0
+    INTEGER                              :: j
+    CHARACTER(LEN = ppm_char)            :: cbuf
+    CHARACTER(LEN = ppm_char)            :: caller = 'ppm_matrix_svd'
+    REAL(KIND(1.D0))                     :: t0
 
-    REAL(MK), DIMENSION (:), POINTER      :: offdiag, diag
-    INTEGER                               :: lwork, mm,nnn
-    REAL(MK), DIMENSION (:), POINTER      :: work
-    REAL(MK), DIMENSION (:,:), POINTER    :: tauq,taup
+    REAL(MK), DIMENSION (:),   POINTER   :: offdiag=>NULL(), diag=>NULL()
+    INTEGER                              :: lwork,mm,nnn
+    REAL(MK), DIMENSION (:),   POINTER   :: work=>NULL()
+    REAL(MK), DIMENSION (:,:), POINTER   :: tauq=>NULL(),taup=>NULL()
 
 
     mm = m

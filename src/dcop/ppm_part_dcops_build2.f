@@ -370,6 +370,7 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
             byh = 2._MK/rcp(ip)
         ENDIF
 
+
         neighbour_loop: DO ineigh = 1,nvlist(ip) 
             iq = vlist(ineigh,ip) ! index in the "old particles" set
 
@@ -464,6 +465,11 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         CALL solveLSE_n(Z,b,nterms,info)
         ! now b contain the solutions to the LSEs A*x_i=b_i for i=1:nterms
         IF (info .NE. 0) THEN
+            IF (ip .GT. Particles%Npart) THEN
+                !ignore error in matrix inversion for ghost particles
+                ! simply skip it
+                CYCLE particle_loop
+            ENDIF
             !writes the coordinate of the stencil that lead to the error
             IF (ppm_dim .EQ. 2 ) THEN
                 myformat = TRIM(ADJUSTL('(2(E30.22))'))

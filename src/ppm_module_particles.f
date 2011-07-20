@@ -2748,7 +2748,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-----------------------------------------------------------------------
     Particles%neighlists = .TRUE.
     Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
-    Particles%nneighmax = MAXVAL(Particles%nvlist(1:Particles%Npart))
+    Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
 
     ! TODO: maybe the MPI_Allreduce is not really needed for production runs
     ! This is mainly used for debugging/warnings
