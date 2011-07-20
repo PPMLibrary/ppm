@@ -305,6 +305,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
         GOTO 9999
     ENDIF
+    eta => Get_dcop(Particles,eta_id,with_ghosts=with_ghosts)
+    FORALL(i=1:ldc(1),j=1:np_target) eta(i,j)=0._MK
 
     !----------------------------------------------------------------------!
     ! Compute diff op weights
@@ -341,8 +343,6 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         nvlist => Particles%nvlist
         vlist => Particles%vlist
     ENDIF
-    eta => Get_dcop(Particles,eta_id,with_ghosts=with_ghosts)
-    FORALL(i=1:nneighmax,j=1:np_target) eta(i,j)=0._MK
     coeffs => Particles%ops%desc(eta_id)%coeffs(1:nterms)
 
     IF (adaptive) THEN
