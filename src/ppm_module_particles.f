@@ -2648,7 +2648,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Particles).OR..NOT.ASSOCIATED(Particles%xp)) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Particles structure had not been defined. Call allocate first',&
             &  __LINE__,info)
         GOTO 9999
@@ -2657,7 +2657,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     IF (.NOT.Particles%ontopology .OR. Particles%active_topoid.NE.topoid) THEN
         !Particles have not been mapped onto this topology
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Do a partial/global mapping before',&
             &  __LINE__,info)
         GOTO 9999
@@ -2665,7 +2665,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     IF (.NOT.Particles%has_ghosts) THEN
         info = ppm_error_error
-        CALL ppm_error(999,caller,   &
+        CALL ppm_error(ppm_err_argument,caller,   &
             &  'Ghosts have not been updated. They are needed for neighlists',&
             &  __LINE__,info)
         GOTO 9999
@@ -2677,9 +2677,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         symmetry = .FALSE.
     ENDIF
 
-    IF ( Particles%neighlists ) THEN
+    IF (Particles%neighlists) THEN
         !neighbor lists are already up-to-date, nothing to do
-        write(*,*) 'neighlists are supposedly already up-to-date, NOTHING to do'
+        info = ppm_error_notice
+        CALL ppm_error(999,caller,   &
+            &  'neighlists are supposedly already up-to-date, NOTHING to do',&
+            &  __LINE__,info)
     ELSE
         !hack to build (potentially incomplete) neighbour lists even 
         !for ghost particles
@@ -2710,7 +2713,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles%nvlist)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
+                CALL ppm_error(ppm_err_sub_failed,caller,&
                     'ppm_inl_vlist failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -2720,7 +2723,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 Particles%nvlist,info,lstore=lstore)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(999,caller,&
+                CALL ppm_error(ppm_err_sub_failed,caller,&
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -2741,41 +2744,41 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 topo => NULL()
             ENDIF
         ENDIF
-    ENDIF
 
-    !-----------------------------------------------------------------------
-    !Update state
-    !-----------------------------------------------------------------------
-    Particles%neighlists = .TRUE.
-    Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
-    Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
+        !-----------------------------------------------------------------------
+        !Update state
+        !-----------------------------------------------------------------------
+        Particles%neighlists = .TRUE.
+        Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
+        Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
 
-    ! TODO: maybe the MPI_Allreduce is not really needed for production runs
-    ! This is mainly used for debugging/warnings
+        ! TODO: maybe the MPI_Allreduce is not really needed for production runs
+        ! This is mainly used for debugging/warnings
 #ifdef __MPI
-    CALL MPI_Allreduce(Particles%nneighmin,Particles%nneighmin,1,&
-        MPI_INTEGER,MPI_MIN,ppm_comm,info)
-    CALL MPI_Allreduce(Particles%nneighmax,Particles%nneighmax,1,&
-        MPI_INTEGER,MPI_MAX,ppm_comm,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,'MPI_Allreduce failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        CALL MPI_Allreduce(Particles%nneighmin,Particles%nneighmin,1,&
+            MPI_INTEGER,MPI_MIN,ppm_comm,info)
+        CALL MPI_Allreduce(Particles%nneighmax,Particles%nneighmax,1,&
+            MPI_INTEGER,MPI_MAX,ppm_comm,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_mpi_fail,caller,'MPI_Allreduce failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
 #endif
-    ! DC operators that do not use a xset neighbour list, if they exist, 
-    ! are no longer valid (they depend on the neighbour lists)
-    IF (ASSOCIATED(Particles%ops)) THEN
-        DO op_id=1,Particles%ops%max_opsid
-            IF (.NOT.Particles%ops%desc(op_id)%interp) THEN
-                Particles%ops%desc(op_id)%is_computed = .FALSE.
-            ENDIF
-        ENDDO
+        ! DC operators that do not use a xset neighbour list, if they exist, 
+        ! are no longer valid (they depend on the neighbour lists)
+        IF (ASSOCIATED(Particles%ops)) THEN
+            DO op_id=1,Particles%ops%max_opsid
+                IF (.NOT.Particles%ops%desc(op_id)%interp) THEN
+                    Particles%ops%desc(op_id)%is_computed = .FALSE.
+                ENDIF
+            ENDDO
+        ENDIF
+
+        IF (verbose) &
+            write(*,*) 'computed neighlists'
+
     ENDIF
-
-
-    IF (verbose) &
-        write(*,*) 'computed neighlists'
     !-----------------------------------------------------------------------
     ! Finalize
     !-----------------------------------------------------------------------
