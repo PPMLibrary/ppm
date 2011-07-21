@@ -28,7 +28,7 @@
       !-------------------------------------------------------------------------
 
       SUBROUTINE ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
-                                  isublist,nsublist,info)
+      &                                isublist,nsublist,info)
       !!! This routine returns the subdomain boundaries and boundary
       !!! conditions
 
