@@ -75,6 +75,9 @@ MODULE ppm_module_ctrl
 !!! default :: [_42_] default value
 !!! min :: [_4_] minimum value for numeric types
 !!! max :: [_30_] maximum value
+!!! help :: ['Description.'] help message to display in the auto
+!!! generated ctrl file and command line help. You can use +\n+ to
+!!! force a line break.
 !!! default_func :: [_external_func_] custom function to compute the
 !!! value of the variable after other globals have been set (only
 !!! available when compiled with F2003 support)
