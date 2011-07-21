@@ -28,10 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,np,cutoff,lsymm,clist,nm, &
+      SUBROUTINE ppm_neighlist_clist_s(topoid,xp,np,cutoff,lsymm,clist, &
      &                                 info,pidx)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,np,cutoff,lsymm,clist,nm, &
+      SUBROUTINE ppm_neighlist_clist_d(topoid,xp,np,cutoff,lsymm,clist, &
      &                                 info,pidx)
       !!! Create cell lists for all subs of this processor.
       !!!
@@ -72,7 +72,7 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_data_neighlist
+      USE ppm_module_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -99,12 +99,8 @@
       !!! due to round-off, but it always >= cutoff.
       LOGICAL                 , INTENT(IN   )    :: lsymm
       !!! Use symmetry?
-      TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist
-      !!! Number of cells in each space direction
-      !!! clist(isub)%lhbx(ibox)
-      INTEGER, DIMENSION(:,:) , POINTER          :: nm
-      !!! Number of cells in x,y,(z) direction (including the ghosts cells)
-      !!! in each subdomain. 1st index: direction. second index: subid.
+      TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: clist
+      !!! Cell list data structure
       INTEGER                 , INTENT(  OUT)    :: info
       !!! Returns 0 upon success
       INTEGER, DIMENSION(:)   , OPTIONAL         :: pidx
@@ -131,7 +127,7 @@
       INTEGER                                 :: nsbc
       LOGICAL, DIMENSION(2*ppm_dim)           :: isbc
       INTEGER                                 :: iopt
-      INTEGER, DIMENSION(2)                   :: ldc
+      INTEGER, DIMENSION(1)                   :: ldc
       LOGICAL                                 :: valid
       TYPE(ppm_t_topo)          , POINTER     :: topo => NULL()
       REAL(MK)                                :: eps
@@ -162,17 +158,6 @@
       !-------------------------------------------------------------------------
       !  Allocate nm
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      ldc(1) = ppm_dim
-      ldc(2) = topo%nsublist
-      CALL ppm_alloc(nm,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
-     &            'Numbers of cells NM',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      nm = 0
 
       !-------------------------------------------------------------------------
       !  Allocate clist to the number of subs this processor has
@@ -197,6 +182,7 @@
               GOTO 9999
           ENDIF
           DO i=1,topo%nsublist
+              NULLIFY(clist(i)%nm)
               NULLIFY(clist(i)%lpdx)
               NULLIFY(clist(i)%lhbx)
           ENDDO
@@ -277,14 +263,26 @@
 #endif
 
           !---------------------------------------------------------------------
+          !  Allocate cell number array
+          !---------------------------------------------------------------------
+          iopt = ppm_param_alloc_fit
+          ldc(1) = ppm_dim
+          CALL ppm_alloc(clist(idom)%nm,ldc,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_clist',  &
+ &                   'Numbers of cells NM',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          !---------------------------------------------------------------------
           !  Determine number of cell boxes and effective cell size.
           !---------------------------------------------------------------------
           DO i=1,ppm_dim
               ! number of cells based on a cellsize = cutoff 
-              nm(i,idom) = INT((xmax(i) - xmin(i))/cutoff(i))
+              clist(idom)%nm(i) = INT((xmax(i) - xmin(i))/cutoff(i))
               ! make at least one box
-              IF (nm(i,idom) .LT. 1) nm(i,idom) = 1
-              cellsize(i) = (xmax(i) - xmin(i))/REAL(nm(i,idom),MK)
+              IF (clist(idom)%nm(i) .LT. 1) clist(idom)%nm(i) = 1
+              cellsize(i) = (xmax(i) - xmin(i))/REAL(clist(idom)%nm(i),MK)
           ENDDO
 
           !---------------------------------------------------------------------
@@ -317,35 +315,37 @@
               IF (PRESENT(pidx)) THEN
                   npdx = SIZE(pidx,1)
                   CALL ppm_util_rank2d(xp(1:2,pidx),npdx,xmin(1:2),xmax(1:2),&
-     &                    nm(1:2,idom),ngl(1:4),clist(idom)%lpdx,&
+     &                    clist(idom)%nm(1:2),ngl(1:4),clist(idom)%lpdx,&
      &                    clist(idom)%lhbx,info)
               ELSE
-                  CALL ppm_util_rank2d(xp,np,xmin(1:2),xmax(1:2),nm(1:2,idom),&
-     &                    ngl(1:4),clist(idom)%lpdx,clist(idom)%lhbx,info)
+                  CALL ppm_util_rank2d(xp,np,xmin(1:2),xmax(1:2),&
+     &                    clist(idom)%nm(1:2),ngl(1:4),clist(idom)%lpdx,&
+     &                    clist(idom)%lhbx,info)
               ENDIF
               !-----------------------------------------------------------------
               !  We have to increase nm by the ghost layers to provide the same
               !  behaviour as before the change of interface of ppm_util_rank
               !-----------------------------------------------------------------
-              nm(1,idom) = nm(1,idom) + ngl(1) + ngl(3)
-              nm(2,idom) = nm(2,idom) + ngl(2) + ngl(4)
+              clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(3)
+              clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(4)
           ELSEIF (ppm_dim .EQ. 3) THEN
               IF (PRESENT(pidx)) THEN
                   npdx = SIZE(pidx,1)
                   CALL ppm_util_rank3d(xp(1:3,pidx),npdx,xmin(1:3),xmax(1:3),&
-     &                    nm(1:3,idom),ngl(1:6),clist(idom)%lpdx,&
+     &                    clist(idom)%nm(1:3),ngl(1:6),clist(idom)%lpdx,&
      &                    clist(idom)%lhbx,info)
               ELSE
-                  CALL ppm_util_rank3d(xp,np,xmin(1:3),xmax(1:3),nm(1:3,idom),&
-     &                    ngl(1:6),clist(idom)%lpdx,clist(idom)%lhbx,info)
+                  CALL ppm_util_rank3d(xp,np,xmin(1:3),xmax(1:3),&
+     &                    clist(idom)%nm(1:3),ngl(1:6),clist(idom)%lpdx,&
+     &                    clist(idom)%lhbx,info)
               ENDIF
               !-----------------------------------------------------------------
               !  We have to increase nm by the ghost layers to provide the same
               !  behaviour as before the change of interface of ppm_util_rank
               !-----------------------------------------------------------------
-              nm(1,idom) = nm(1,idom) + ngl(1) + ngl(4)
-              nm(2,idom) = nm(2,idom) + ngl(2) + ngl(5)
-              nm(3,idom) = nm(3,idom) + ngl(3) + ngl(6)
+              clist(idom)%nm(1) = clist(idom)%nm(1) + ngl(1) + ngl(4)
+              clist(idom)%nm(2) = clist(idom)%nm(2) + ngl(2) + ngl(5)
+              clist(idom)%nm(3) = clist(idom)%nm(3) + ngl(3) + ngl(6)
           ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_error

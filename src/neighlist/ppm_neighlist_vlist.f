@@ -28,10 +28,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,lstore)
+     &               nvlist,info,clist,pidx,lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,lstore)
+     &               nvlist,info,clist,pidx,lstore)
       !!! Create Verlet lists for all particles of this processor.
       !!!
       !!! TIP: Ghostparticles must be included when passing the positions 
@@ -65,7 +65,6 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_data_neighlist
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -95,8 +94,6 @@
       !!! Verlet list skin layer thickness.
       LOGICAL                 , INTENT(IN   ) :: lsymm
       !!! Use symmetry?
-      INTEGER                 , INTENT(  OUT) :: info
-      !!! Returns status, 0 upon success
       INTEGER, DIMENSION(:,:) , POINTER       :: vlist
       !!! Verlet list. First index: particles with which particle ip interacts.
       !!! Second index: ip. The second index only runs up to the
@@ -105,11 +102,15 @@
       !!! This is only allocated and returned if lstore is .TRUE.
       INTEGER, DIMENSION(  :) , POINTER       :: nvlist
       !!! Number of particles with which ip has to interact. Index: ip.
-      INTEGER, DIMENSION(  :) , OPTIONAL      :: pidx
+      INTEGER                 , INTENT(  OUT) :: info
+      !!! Returns status, 0 upon success
+      TYPE(ppm_t_clist), DIMENSION(:),POINTER,OPTIONAL :: clist
+      !!! Cell list data structure.
+      INTEGER, DIMENSION(  :) , OPTIONAL               :: pidx
       !!! OPTIONAL indices of those particles that are to be included in the
       !!! list. By default all particles are taken. If given, particles
       !!! indices in Verlet lists are relative to xp(:,pidx) and not xp(:,:)
-      LOGICAL, INTENT(IN)     , OPTIONAL      :: lstore
+      LOGICAL, INTENT(IN)     , OPTIONAL               :: lstore
       !!! OPTIONAL Set this to .TRUE. to store (and return) the Verlet lists in
       !!! vlist. If this is false, only nvlist is determined and returned.
       !!! Default is .TRUE.
@@ -122,7 +123,7 @@
       ! effective number of particles
       REAL(MK), DIMENSION(ppm_dim)               :: min_phys,max_phys
       ! domain extents
-      REAL(MK), DIMENSION(ppm_dim)            :: xmin,xmax
+      REAL(MK), DIMENSION(ppm_dim)               :: xmin,xmax
       ! subdomain extents 
       INTEGER                                    :: npdx
       ! counters
@@ -149,13 +150,12 @@
       INTEGER, DIMENSION(2)                      :: lda
       INTEGER                                    :: iopt
       ! number of cells in all directions
-      INTEGER, DIMENSION(:,:), POINTER           :: nm  => NULL()
-      ! cell offsets for box index
       INTEGER                                    :: n1,n2,nz
       INTEGER, DIMENSION(3)                      :: lb
       INTEGER                                    :: nsbc
       LOGICAL, DIMENSION(2*ppm_dim)              :: isbc
       CHARACTER(LEN=ppm_char)                    :: mesg
+      TYPE(ppm_t_clist), DIMENSION(:),POINTER    :: cl
       ! store vlist?
       LOGICAL                                    :: lst
       LOGICAL                                    :: valid
@@ -182,7 +182,6 @@
 #elif __KIND == __SINGLE_PRECISION
       eps = ppm_myepss
 #endif
-
 
       !-------------------------------------------------------------------------
       !  If the user gave an explicit list of particles to be included, use
@@ -242,20 +241,29 @@
           bsize(i) = cutoff + skin
       ENDDO
       cut2 = bsize(1)*bsize(1)
+      
       !-------------------------------------------------------------------------
       !  Generate cell lists 
+      !  Check if, user is providing a cell list, to skip this step
       !-------------------------------------------------------------------------
-      IF (PRESENT(pidx)) THEN
-          CALL ppm_neighlist_clist(topoid,xp(:,pidx),npdx,bsize, &
-     &                             lsymm,clist,nm,info)
+      IF (PRESENT(clist)) THEN
+          cl => clist
       ELSE
-          CALL ppm_neighlist_clist(topoid,xp,npdx,bsize,lsymm,clist,nm,info)
+          cl => ppm_clist
       ENDIF
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_sub_failed,'ppm_neighlist_vlist',   &
-     &          'Building cell lists failed.',__LINE__,info)
-          GOTO 9999
+      IF (.NOT.(PRESENT(clist).AND.ASSOCIATED(clist))) THEN
+          IF (PRESENT(pidx)) THEN
+              CALL ppm_neighlist_clist(topoid,xp(:,pidx),npdx,bsize, &
+     &                                 lsymm,cl,info)
+          ELSE
+              CALL ppm_neighlist_clist(topoid,xp,npdx,bsize,lsymm,cl,info)
+          ENDIF
+          IF (info .NE. 0) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_sub_failed,'ppm_neighlist_vlist',   &
+     &             'Building cell lists failed.',__LINE__,info)
+              GOTO 9999
+          ENDIF
       ENDIF
       !-------------------------------------------------------------------------
       !  Generate cell neighbor lists 
@@ -322,18 +330,18 @@
           ELSE
               lb(:) = 0
           ENDIF
-          n1  = nm(1,idom)
-          n2  = nm(1,idom)*nm(2,idom)
+          n1  = cl(idom)%nm(1)
+          n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
           IF (ppm_dim.EQ.3) THEN
-              nz  = nm(3,idom)
+              nz  = cl(idom)%nm(3)
           ELSE IF (ppm_dim .EQ. 2) THEN
               n2 = 0
               nz = lb(3)+2
           ENDIF 
           ! loop over all REAL cells (the -2 at the end does this)
           DO k=lb(3),nz-2
-              DO j=lb(2),nm(2,idom)-2
-                  DO i=lb(1),nm(1,idom)-2
+              DO j=lb(2),cl(idom)%nm(2)-2
+                  DO i=lb(1),cl(idom)%nm(1)-2
                       ! index of the center box
                       cbox = i + 1 + n1*j + n2*k
                       ! loop over all box-box interactions
@@ -346,8 +354,8 @@
                           !-----------------------------------------------------
                           !  Read indices and check if empty
                           !-----------------------------------------------------
-                          istart = clist(idom)%lhbx(ibox)
-                          iend   = clist(idom)%lhbx(ibox+1)-1
+                          istart = cl(idom)%lhbx(ibox)
+                          iend   = cl(idom)%lhbx(ibox+1)-1
                           IF (iend .LT. istart) CYCLE
                           !-----------------------------------------------------
                           !  Within the box itself use symmetry and avoid 
@@ -355,10 +363,10 @@
                           !-----------------------------------------------------
                           IF (ibox .EQ. jbox) THEN
                               DO ipart=istart,iend
-                                  ip = clist(idom)%lpdx(ipart)
+                                  ip = cl(idom)%lpdx(ipart)
                                   IF (lsymm) THEN
                                       DO jpart=(ipart+1),iend
-                                          jp = clist(idom)%lpdx(jpart)
+                                          jp = cl(idom)%lpdx(jpart)
                                           ! translate to real particle
                                           ! index if needed
                                           IF (PRESENT(pidx)) THEN
@@ -385,11 +393,11 @@
                                   ELSE
 #ifdef __VECTOR
                                       DO jpart=istart,iend
-                                          jp = clist(idom)%lpdx(jpart)
+                                          jp = cl(idom)%lpdx(jpart)
                                           IF (jp .EQ. ip) CYCLE
 #else
                                       DO jpart=(ipart+1),iend
-                                          jp = clist(idom)%lpdx(jpart)
+                                          jp = cl(idom)%lpdx(jpart)
 #endif
                                           ! translate to real particle
                                           ! index if needed
@@ -424,17 +432,17 @@
                           !-----------------------------------------------------
                           ELSE
                               ! get pointers to first and last particle 
-                              jstart = clist(idom)%lhbx(jbox)
-                              jend   = clist(idom)%lhbx(jbox+1)-1
+                              jstart = cl(idom)%lhbx(jbox)
+                              jend   = cl(idom)%lhbx(jbox+1)-1
                               ! skip this iinter if empty
                               If (jend .LT. jstart) CYCLE
                               ! loop over all particles inside this cell
                               DO ipart=istart,iend
-                                  ip = clist(idom)%lpdx(ipart)
+                                  ip = cl(idom)%lpdx(ipart)
                                   ! check against all particles 
                                   ! in the other cell
                                   DO jpart=jstart,jend
-                                      jp = clist(idom)%lpdx(jpart)
+                                      jp = cl(idom)%lpdx(jpart)
                                       ! translate to real particle
                                       ! index if needed
                                       IF (PRESENT(pidx)) THEN
@@ -506,20 +514,20 @@
           !  BUILD VERLET LISTS 
           !---------------------------------------------------------------------
           DO idom=1,topo%nsublist
-              n1  = nm(1,idom)
-              n2  = nm(1,idom)*nm(2,idom)
+              n1  = cl(idom)%nm(1)
+              n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
               IF (ppm_dim.EQ.3) THEN
-                  nz  = nm(3,idom)
+                  nz  = cl(idom)%nm(3)
               ELSE IF (ppm_dim .EQ. 2) THEN
                   n2 = 0
                   nz = lb(3)+2
               ENDIF 
               ! get number of cells in this subdomain
-              nbox = SIZE(clist(idom)%lhbx,1)-1
+              nbox = SIZE(cl(idom)%lhbx,1)-1
               ! loop over all REAL cells (the -2 at the end does this)
               DO k=lb(3),nz-2
-                  DO j=lb(2),nm(2,idom)-2
-                      DO i=lb(1),nm(1,idom)-2
+                  DO j=lb(2),cl(idom)%nm(2)-2
+                      DO i=lb(1),cl(idom)%nm(1)-2
                           ! index of the center box
                           cbox = i + 1 + n1*j + n2*k
                           ! loop over all box-box interactions
@@ -532,8 +540,8 @@
                               !-------------------------------------------------
                               !  Read indices and check if empty
                               !-------------------------------------------------
-                              istart = clist(idom)%lhbx(ibox)
-                              iend   = clist(idom)%lhbx(ibox+1)-1
+                              istart = cl(idom)%lhbx(ibox)
+                              iend   = cl(idom)%lhbx(ibox+1)-1
                               IF (iend .LT. istart) CYCLE
                               !-------------------------------------------------
                               !  Within the box itself use symmetry and avoid 
@@ -541,11 +549,11 @@
                               !-------------------------------------------------
                               IF (ibox .EQ. jbox) THEN
                                   DO ipart=istart,iend
-                                      ip = clist(idom)%lpdx(ipart)
+                                      ip = cl(idom)%lpdx(ipart)
                                       kk = nvlist(ip)
                                       IF (lsymm) THEN
                                           DO jpart=(ipart+1),iend
-                                              jp = clist(idom)%lpdx(jpart)
+                                              jp = cl(idom)%lpdx(jpart)
                                               ! translate to real particle
                                               ! index if needed
                                               IF (PRESENT(pidx)) THEN
@@ -573,11 +581,11 @@
                                       ELSE
 #ifdef __VECTOR
                                           DO jpart=istart,iend
-                                              jp = clist(idom)%lpdx(jpart)
+                                              jp = cl(idom)%lpdx(jpart)
                                               IF (jp .EQ. ip) CYCLE
 #else
                                           DO jpart=(ipart+1),iend
-                                              jp = clist(idom)%lpdx(jpart)
+                                              jp = cl(idom)%lpdx(jpart)
 #endif
                                               ! translate to real particle
                                               ! index if needed
@@ -617,18 +625,18 @@
                               !-------------------------------------------------
                               ELSE
                                   ! get pointers to first and last particle 
-                                  jstart = clist(idom)%lhbx(jbox)
-                                  jend   = clist(idom)%lhbx(jbox+1)-1
+                                  jstart = cl(idom)%lhbx(jbox)
+                                  jend   = cl(idom)%lhbx(jbox+1)-1
                                   ! skip this iinter if empty
                                   IF (jend .LT. jstart) CYCLE
                                   ! loop over all particles inside this cell
                                   DO ipart=istart,iend
-                                      ip = clist(idom)%lpdx(ipart)
+                                      ip = cl(idom)%lpdx(ipart)
                                       kk = nvlist(ip)
                                       ! check against all particles 
                                       ! in the other cell
                                       DO jpart=jstart,jend
-                                          jp = clist(idom)%lpdx(jpart)
+                                          jp = cl(idom)%lpdx(jpart)
                                           ! translate to real particle
                                           ! index if needed
                                           IF (PRESENT(pidx)) THEN
@@ -685,12 +693,6 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
      &         'Box interaction index JNP',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(nm,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
-     &         'Numbers of cells NM',__LINE__,info)
       ENDIF
 
       !-------------------------------------------------------------------------
