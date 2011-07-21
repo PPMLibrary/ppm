@@ -41,7 +41,7 @@
       !!! [NOTE]
       !!! ====================================================
       !!! The list needs to be rebuilt as soon as a particle
-      !!! has moved a distance larger than skin. It is the
+      !!! has moved a distance larger than `0.5*skin`. It is the
       !!! *users* responsibility to detect when this is the
       !!! case and *call* this routine again.
       !!!
@@ -51,11 +51,11 @@
       !!! the two cases for lsymm have their own duplicated
       !!! loops since the lsymm=F case does not vectorize.
       !!! lsymm=T (using symmetry) however does.
+      !!! ====================================================
       !!!
-      !!! The VECTOR case was tested and found to vectorize
+      !!! NOTE: The VECTOR case was tested and found to vectorize
       !!! on the NEC SX-5 even without compiler directives.
       !!! Requires (almost) two repetitions of the main loops.
-      !!! ====================================================
 #endif
 
       !-------------------------------------------------------------------------
@@ -93,7 +93,7 @@
       REAL(MK)                , INTENT(IN   ) :: skin
       !!! Verlet list skin layer thickness.
       LOGICAL                 , INTENT(IN   ) :: lsymm
-      !!! Use symmetry?
+      !!! Use symmetry
       INTEGER, DIMENSION(:,:) , POINTER       :: vlist
       !!! Verlet list. First index: particles with which particle ip interacts.
       !!! Second index: ip. The second index only runs up to the
@@ -105,7 +105,13 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       TYPE(ppm_t_clist), DIMENSION(:),POINTER,OPTIONAL :: clist
-      !!! Cell list data structure.
+      !!! Cell list data structure. Pass this argument as null to force
+      !!! this routine to recreate a cell list and store it in clist. Otherwise,
+      !!! the cell list in clist is (re)used for the vlist being created.
+      !!! PPM will use internal data structures to store the clist if this
+      !!! argument is not passed.
+      !!!
+      !!! NOTE: use ppm_destroy_clist to deallocate the cell list.
       INTEGER, DIMENSION(  :) , OPTIONAL               :: pidx
       !!! OPTIONAL indices of those particles that are to be included in the
       !!! list. By default all particles are taken. If given, particles

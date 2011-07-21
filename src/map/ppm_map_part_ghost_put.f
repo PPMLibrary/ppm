@@ -50,8 +50,8 @@
       !!! the (costly) call to `ppm_map_part_ghost_get`. Positions can be pushed
       !!! using the `ppm_map_part_ghost_push` routine.
       !!! 
-      !!! .Implementation Notes
       !!! [NOTE]
+      !!! .Implementation Notes
       !!! ======================================================================
       !!! This routine swaps the send and receive lists of the
       !!! mapping routine to allow sending back the value/data
