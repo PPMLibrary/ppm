@@ -36,15 +36,14 @@
       MODULE ppm_module_neighlist
       !!! This module provides neighbor
       !!! search routines (cell lists, Verlet lists).
-         
-         USE ppm_module_data_neighlist, ONLY: ppm_type_ptr_to_clist
-         
-         !----------------------------------------------------------------------
-         !  Temporary cell list memory
-         !----------------------------------------------------------------------
-         TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist => NULL()
-         PRIVATE :: clist
-         
+      
+         USE ppm_module_typedef, ONLY: ppm_t_clist
+        
+
+         TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: ppm_clist
+         PRIVATE :: ppm_clist
+
+
          !----------------------------------------------------------------------
          !  Define interface to ppm_clist_destroy
          !----------------------------------------------------------------------
@@ -71,6 +70,8 @@
             MODULE PROCEDURE ppm_neighlist_vlist_d
             MODULE PROCEDURE ppm_neighlist_vlist_s
          END INTERFACE
+
+
 
          !----------------------------------------------------------------------
          !  include the source 
