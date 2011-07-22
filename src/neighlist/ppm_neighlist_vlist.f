@@ -1,3 +1,4 @@
+      !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_neighlist_vlist
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -28,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,clist,pidx,lstore)
+     &               nvlist,info,pidx,clist,lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,clist,pidx,lstore)
+     &               nvlist,info,pidx,clist,lstore)
       !!! Create Verlet lists for all particles of this processor.
       !!!
       !!! TIP: Ghostparticles must be included when passing the positions 
@@ -104,6 +105,10 @@
       !!! Number of particles with which ip has to interact. Index: ip.
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      INTEGER, DIMENSION(  :) , OPTIONAL               :: pidx
+      !!! OPTIONAL indices of those particles that are to be included in the
+      !!! list. By default all particles are taken. If given, particles
+      !!! indices in Verlet lists are relative to xp(:,pidx) and not xp(:,:)
       TYPE(ppm_t_clist), DIMENSION(:),POINTER,OPTIONAL :: clist
       !!! Cell list data structure. Pass this argument as null to force
       !!! this routine to recreate a cell list and store it in clist. Otherwise,
@@ -112,10 +117,6 @@
       !!! argument is not passed.
       !!!
       !!! NOTE: use ppm_destroy_clist to deallocate the cell list.
-      INTEGER, DIMENSION(  :) , OPTIONAL               :: pidx
-      !!! OPTIONAL indices of those particles that are to be included in the
-      !!! list. By default all particles are taken. If given, particles
-      !!! indices in Verlet lists are relative to xp(:,pidx) and not xp(:,:)
       LOGICAL, INTENT(IN)     , OPTIONAL               :: lstore
       !!! OPTIONAL Set this to .TRUE. to store (and return) the Verlet lists in
       !!! vlist. If this is false, only nvlist is determined and returned.
