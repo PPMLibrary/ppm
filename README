@@ -1,12 +1,61 @@
 PPM core package README
 =======================
-v1.2, September 2010
+v1.2.1, July 2011
 
 
 Introduction
 ------------
 
 This is the PPM core source package.
+
+Changes
+-------
+
+.1.2.1
+************************************************************************
+This versions brings many bug fixes and several new features
+
+.New features:
+- Re-implemented Vizing's graph coloring algorithm in Fortran
+- Added support for homogeneous symmetric boundary conditions
+  (Dirichlet, Neumann). The ghost mapping and neighbor list routines
+  properly support boundary conditions now. (Note: The user still has to make
+  sure the properties of boundary condition ghost particles reflect the correct
+  boundary condition value.)
+- Added Unit testing support using funit (http://nasarb.rubyforge.org/funit/).
+- Added a control file and argument handling module to simplify the process
+  of reading, parsing and evaluating the parameters passed to ppm clients.
+- Added ppm topology query routines and shortened ppm_mktopo argument list.
+  There should be in most cases no need to call ppm_topo_get anymore.
+- The user can now mange cell lists himself to save unnecessary computations.
+- Renamings: ppm_module_user -> ppm_module_core, 
+  ppm_module_user_util -> ppm_module_core_util
+
+.Fixes
+- Fixed several critical bugs in the ghost mapping routines
+- Fixed ppm_mesh_block_intersect
+- Fixed bugs in error handling and reporting
+- Fixed `make install` to copy all modules to `$prefix/include/ppm/`
+- Several minor fixes and improvements in the ppm build system.
+************************************************************************
+
+.1.2_p1
+************************************************************************
+This is a bug fix release, we fixed several important bugs:
+
+- Fixed several critical bugs in mesh mapping routines
+- Fixed bugs in remeshing routines that prevented clients using those
+  routines from compiling properly
+- Fixed a bug in the cartesian communication scheduling routine
+- Fixed build system to not link against GNU math library when compiling
+  with ifort
+- cleaned many annoying compiler warnings
+************************************************************************
+
+.1.2
+************************************************************************
+Initial release of new PPM library
+************************************************************************
 
 
 Package contents
@@ -72,7 +121,7 @@ $ ./configure --help
 This is what will be returned:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-`configure' configures PPM 1.2.0 to adapt to many kinds of systems.
+`configure' configures PPM 1.2.1 to adapt to many kinds of systems.
 
 Usage: ./configure [OPTION]... [VAR=VALUE]...
 
@@ -148,6 +197,7 @@ Optional Features:
   --enable-crayfishpack   enable __CRAYFISHPACK (default is no)
   --enable-hypre          enable __HYPRE (default is no)
   --enable-no-microinstr  enable __NOMICROINSTRUCTIONS (default is no)
+  --enable-dev            enable development mode (default is no)
   --enable-debug          enable debug mode (default is no)
 
 Some influential environment variables:
@@ -201,10 +251,16 @@ $ ./configure --enable-mpi=openmpi LDFLAGS=-L../../metis/lib --enable-linux
 
 `./configure` on Mac OS X workstation with the MacPorts gcc compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-$ ./configure CC=gcc-mp-4.4 FC=gfortran-mp-4.4 CXX=g++-mp-4.4 \
-              LDFLAGS=-L/Users/omar/sw/metis/gcc/lib 
+$ ./configure FC=gfortran-mp-4.4 LDFLAGS=-L../../metis/gcc/lib 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-(while the CC and CXX flags are not really needed)
+
+`./configure` on a computer with OpenMPI installed in a non-standard location
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+./configure --enable-mpi=openmpi FC=/opt/openmpi/1.5/bin/mpif90 \
+            LDFLAGS=-L../../metis/gcc/lib
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 
 Step 2: Compiling PPM core
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
