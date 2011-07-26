@@ -25,6 +25,14 @@ cmap = {-1: 'k',\
         4 : 'y',\
         5 : 'c',\
         6 : 'm'}
+    
+def isreal(el):
+    if el[-1] == -1: return False
+    else: return True
+
+def isghost(el):
+    if el[-1] == -1: return True
+    else: return False
 
 
 class SubDomain(object):
@@ -509,19 +517,28 @@ class AppForm(QMainWindow):
         self.axes.add_patch(p)
         p = Polygon(gl,fill=False,linewidth=0.4,linestyle='dashed',ec='k')
         self.axes.add_patch(p)
+   
     
     def plotdat2(self,x,y,tag):
         """Plot 2D particle positions."""
+        realx,realy,realtag = zip(*filter(isreal,zip(x,y,tag)))
+        gx,gy,gtag = zip(*filter(isghost,zip(x,y,tag)))
         try:
-            self.axes.scatter(x,y,s=5,c=[cmap[t] for t in tag],linewidths=0)
+            self.axes.scatter(realx,realy,s=5,c=[cmap[t] for t in realtag],linewidths=0)
+            self.axes.scatter(gx,gy,s=5,c=[cmap[t] for t in \
+                gtag],linewidths=0,alpha=0.6)
         except KeyError:
             print "invalid color tag"
 
     
     def plotdat3(self,x,y,z,tag):
         """Plot 3D particle positions."""
+        realx,realy,realz,realtag = zip(*filter(isreal,zip(x,y,z,tag)))
+        gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
         try:
-            self.axes.scatter(x,y,z,s=10,c=[cmap[t] for t in tag],linewidths=0)
+            self.axes.scatter(realx,realy,realz,s=10,c=[cmap[t] for t in realtag],linewidths=0)
+            self.axes.scatter(gx,gy,gz,s=10,c=[cmap[t] for t in \
+                gtag],linewidths=0,alpha=0.6)
         except KeyError:
             print "invalid color tag"
 
