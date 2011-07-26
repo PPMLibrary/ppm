@@ -162,7 +162,7 @@
       INTEGER                                    :: nsbc
       LOGICAL, DIMENSION(2*ppm_dim)              :: isbc
       CHARACTER(LEN=ppm_char)                    :: mesg
-      TYPE(ppm_t_clist), DIMENSION(:),POINTER    :: cl
+      TYPE(ppm_t_clist), DIMENSION(:),POINTER    :: cl => NULL()
       ! store vlist?
       LOGICAL                                    :: lst
       LOGICAL                                    :: valid
@@ -176,20 +176,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_neighlist_vlist',t0,info)
-      !-------------------------------------------------------------------------
-      !  Check Arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF
-
-#if   __KIND == __DOUBLE_PRECISION
-      eps = ppm_myepsd
-#elif __KIND == __SINGLE_PRECISION
-      eps = ppm_myepss
-#endif
-
+      
       !-------------------------------------------------------------------------
       !  If the user gave an explicit list of particles to be included, use
       !  the size of this list as the effective number of particles. Use
@@ -210,6 +197,21 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+      
+      !-------------------------------------------------------------------------
+      !  Check Arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+        CALL check
+        IF (info .NE. 0) GOTO 9999
+      ENDIF
+
+#if   __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#elif __KIND == __SINGLE_PRECISION
+      eps = ppm_myepss
+#endif
+
       
       !-------------------------------------------------------------------------
       ! Determine if there are any (non-)symmetric boundary conditions
