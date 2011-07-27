@@ -504,7 +504,6 @@
       ENDDO ! end of subs on local processor
 
 
-
       !-------------------------------------------------------------------------
       !  At the end the nlist2 should be zero
       !-------------------------------------------------------------------------
@@ -575,6 +574,7 @@
 
       ENDIF ! of 3D
 
+      print *,'ngl',nghostplus
       !-------------------------------------------------------------------------
       !  Ok, now we have a shorter list of potential ghosts to search 
       !  allocate memory for the lghosts 
@@ -1045,7 +1045,7 @@
             ENDIF ! 2/3 dimension 
            
          ENDDO ! end of loop over subs on local processor
-      ENDIF ! of periodic ghosts
+      ENDIF ! of BC ghosts
 
       !-------------------------------------------------------------------------
       !  Update the buffer pointer (ie the current iset ... or the number of
@@ -1132,14 +1132,14 @@
                      !  upper/right part of the sub
                      !----------------------------------------------------------
                      xmini = xminf
-                     xmaxi = xminf + ghostsize
+                     xmaxi = xmaxf + ghostsize
 
                      ymini = yminf 
-                     ymaxi = yminf + ghostsize
+                     ymaxi = ymaxf + ghostsize
 
                      IF (ppm_dim.EQ.3) THEN
                         zmini = zminf 
-                        zmaxi = zminf + ghostsize
+                        zmaxi = zmaxf + ghostsize
                      ENDIF 
                      !----------------------------------------------------------
                      ! If we are at the border of the physical domain we have
