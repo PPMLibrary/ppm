@@ -131,10 +131,10 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     !!-------------------------------------------------------------------------!
     !! Count number of new particles to insert
     !!-------------------------------------------------------------------------!
-    IF (PRESENT(wp_fun)) THEN
-        ! counting how many particles have to be added
-        ! if not enough neighbours, add nb_new_part particle
-        IF (opts%level_set) THEN
+    ! counting how many particles have to be added
+    ! if not enough neighbours, add nb_new_part particle
+    IF (opts%level_set) THEN
+        IF (PRESENT(wp_fun)) THEN
             xp => Get_xp(Particles)
             DO ip=1,Npart
                 IF (nvlist(ip) .LT. nvlist_theoretical) THEN
@@ -147,29 +147,23 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
             ENDDO
             xp => Set_xp(Particles,read_only=.TRUE.)
         ELSE
-            DO ip=1,Npart
-                IF (nvlist(ip) .LT. nvlist_theoretical) &
-                    add_part = add_part + nb_new_part
-            ENDDO
-        ENDIF
-    ELSE
-        IF (opts%level_set) THEN
             level => Get_wps(Particles,Particles%level_id)
             wp    => Get_wps(Particles,Particles%adapt_wpid)
             DO ip=1,Npart
                 IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                    IF (ABS(level(ip)).LT.opts%nb_width*nb_fun(wp(ip),opts%scale_D))&
+                    IF (ABS(level(ip)).LT.opts%nb_width*nb_fun(wp(ip),&
+                        opts%scale_D))&
                         add_part = add_part + nb_new_part
                 ENDIF
             ENDDO
             level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
             wp    => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-        ELSE
-            DO ip=1,Npart
-                IF (nvlist(ip) .LT. nvlist_theoretical) &
-                    add_part = add_part + nb_new_part
-            ENDDO
         ENDIF
+    ELSE
+        DO ip=1,Npart
+            IF (nvlist(ip) .LT. nvlist_theoretical) &
+                add_part = add_part + nb_new_part
+        ENDDO
     ENDIF
 
     nvlist => NULL()

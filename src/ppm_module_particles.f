@@ -44,7 +44,7 @@ INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
 CONTAINS
 
 FUNCTION get_xp(Particles,with_ghosts)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     LOGICAL,OPTIONAL                 :: with_ghosts
     REAL(prec),DIMENSION(:,:),POINTER:: get_xp
 
@@ -66,11 +66,13 @@ FUNCTION get_xp(Particles,with_ghosts)
 END FUNCTION get_xp
 
 FUNCTION set_xp(Particles,read_only,ghosts_ok)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
     REAL(prec),DIMENSION(:,:),POINTER:: set_xp
+    INTEGER                          :: info
 
+    !FIXME (depreciated)
     IF (PRESENT(ghosts_ok)) THEN
         IF (ghosts_ok) THEN
             set_xp => NULL()
@@ -79,18 +81,20 @@ FUNCTION set_xp(Particles,read_only,ghosts_ok)
     ENDIF
 
     IF (PRESENT(read_only)) THEN
-        IF (.NOT.read_only) THEN
-            Particles%has_ghosts = .FALSE.
+        IF (read_only) THEN
+            set_xp => NULL()
+            RETURN
         ENDIF
-    ELSE
-        Particles%has_ghosts = .FALSE.
     ENDIF
+
+    info = 0
+    CALL particles_updated_positions(Particles,info)
     set_xp => NULL()
 
 END FUNCTION set_xp
 
 FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wpi_id
     LOGICAL,OPTIONAL                 :: with_ghosts
     INTEGER,DIMENSION(:),POINTER     :: get_wpi
@@ -129,7 +133,7 @@ FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
 END FUNCTION get_wpi
 
 FUNCTION set_wpi(Particles,wpi_id,read_only,ghosts_ok)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wpi_id
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
@@ -159,7 +163,7 @@ FUNCTION set_wpi(Particles,wpi_id,read_only,ghosts_ok)
 END FUNCTION set_wpi
 
 FUNCTION get_wps(Particles,wps_id,with_ghosts)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wps_id
     LOGICAL,OPTIONAL                 :: with_ghosts
     REAL(prec),DIMENSION(:),POINTER  :: get_wps
@@ -200,7 +204,7 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
 END FUNCTION get_wps
 
 FUNCTION set_wps(Particles,wps_id,read_only,ghosts_ok)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wps_id
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
@@ -231,7 +235,7 @@ FUNCTION set_wps(Particles,wps_id,read_only,ghosts_ok)
 END FUNCTION set_wps
 
 FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wpv_id,lda
     LOGICAL,OPTIONAL                 :: with_ghosts
     REAL(prec),DIMENSION(:,:),POINTER:: get_wpv
@@ -274,7 +278,7 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
 END FUNCTION get_wpv
 
 FUNCTION set_wpv(Particles,wpv_id,read_only,ghosts_ok)
-    TYPE(ppm_t_particles)            :: Particles
+    TYPE(ppm_t_particles),POINTER    :: Particles
     INTEGER                          :: wpv_id
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
@@ -305,7 +309,7 @@ FUNCTION set_wpv(Particles,wpv_id,read_only,ghosts_ok)
 END FUNCTION set_wpv
 
 FUNCTION get_dcop(Particles,eta_id,with_ghosts)
-    TYPE(ppm_t_particles)              :: Particles
+    TYPE(ppm_t_particles),POINTER      :: Particles
     INTEGER                            :: eta_id
     REAL(prec),DIMENSION(:,:),POINTER  :: get_dcop
     LOGICAL,OPTIONAL                   :: with_ghosts
@@ -327,7 +331,7 @@ FUNCTION get_dcop(Particles,eta_id,with_ghosts)
 END FUNCTION get_dcop
 
 FUNCTION set_dcop(Particles,eta_id)
-    TYPE(ppm_t_particles)             :: Particles
+    TYPE(ppm_t_particles),POINTER     :: Particles
     INTEGER                           :: eta_id
     REAL(prec),DIMENSION(:,:),POINTER :: set_dcop
 

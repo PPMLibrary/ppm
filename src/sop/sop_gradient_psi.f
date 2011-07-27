@@ -7,6 +7,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_particles
+    USE ppm_module_map_part
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -34,10 +35,10 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     INTEGER                               :: ip,iq,ineigh,iunit,di
     REAL(KIND(1.D0))                      :: t0
     REAL(MK)                              :: dist2,rr,meanD,nn,rd
-    REAL(MK),DIMENSION(ppm_dim)              :: dist
+    REAL(MK),DIMENSION(ppm_dim)           :: dist
     REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
-    CHARACTER (LEN = ppm_char)             :: caller='sop_gradient_psi'
-    CHARACTER (LEN = ppm_char)             :: filename,cbuf
+    CHARACTER (LEN = ppm_char)            :: caller='sop_gradient_psi'
+    CHARACTER (LEN = ppm_char)            :: filename,cbuf
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
     REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
@@ -70,7 +71,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
-        CALL ppm_write(ppm_rank,caller,'need to compute neighbour lists first',info)
+        CALL ppm_write(ppm_rank,caller,&
+            'need to compute neighbour lists first',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -230,10 +232,26 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     !! Get ghosts for gradient_psi (then, during the linesearch, 
     !! we can move ghost particles directly, without communicating)
     !!-------------------------------------------------------------------------!
-    CALL particles_mapping_ghosts(Particles,topo_id,info)
+    CALL ppm_map_part_push(Gradient_Psi,ppm_dim,Particles%Npart,info)
     IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,'mapping_ghosts failed.',info)
-        info = -1
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'ppm_map_part_push failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL ppm_map_part_send(Particles%Npart,Particles%Mpart,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'ppm_map_part_send failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL ppm_map_part_pop(Gradient_Psi,ppm_dim,Particles%Npart, &
+        Particles%Mpart,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'ppm_map_part_pop failed',__LINE__,info)
         GOTO 9999
     ENDIF
 

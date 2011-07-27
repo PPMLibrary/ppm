@@ -228,7 +228,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !!-------------------------------------------------------------------------!
     it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
             &          it_adapt .LT. it_adapt_max .AND. &
-            &     ((Psi_max .GT. Psi_thresh) .OR. Particles%nneighmin .LT. nneigh_adapt))
+            &     ((Psi_max .GT. Psi_thresh) .OR. &
+            &                 Particles%nneighmin .LT. nneigh_adapt))
 
         it_adapt = it_adapt + 1
 
@@ -253,7 +254,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'particles_neighlists failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -267,7 +268,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !Particles%vlist,fuse_radius,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'sop_fuse_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -276,7 +277,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'sop_spawn_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -284,7 +285,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'particles_updated_positions failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -296,7 +297,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_apply_bc(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'particles_apply_bc failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -304,7 +305,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_mapping_partial(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'particles_mapping_partial failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -312,7 +313,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,&
+            CALL ppm_error(ppm_err_sub_failed,caller,&
                 'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
@@ -326,8 +327,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             CALL sop_compute_D(Particles,D_fun,opts,info,     &
                 wp_fun=wp_fun,wp_grad_fun=wp_grad_fun)
             IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'sop_compute_D failed',info)
-                info = -1
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'sop_compute_D failed',__LINE__,info)
                 GOTO 9999
             ENDIF
         ELSE
@@ -397,13 +399,15 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         rcp => Set_wps(Particles,Particles%rcp_id)
 
 #if debug_verbosity > 1
-        WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',Particles%itime,'_',it_adapt
+        WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',&
+            Particles%itime,'_',it_adapt
         CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_updated_cutoff failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -412,7 +416,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_mapping_ghosts failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -496,8 +501,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             xp => Set_xp(Particles,ghosts_ok=.TRUE.)
             step_previous = step
 
-            !write(*,*) 'DBG: ',MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Mpart)))
-
             D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
             CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (info .NE. 0) THEN
@@ -548,16 +551,17 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
-        xp => Get_xp(Particles,with_ghosts=.TRUE.)
-        DO ip=1,Particles%Mpart
+        xp => Get_xp(Particles)
+        DO ip=1,Particles%Npart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
         ENDDO
-        xp =>NULL()
+        xp => Set_xp(Particles)
 
 #if debug_verbosity > 2
 #ifdef __MPI
-        CALL MPI_Allreduce(step*MAXVAL(ABS(Gradient_Psi(1:ppm_dim,1:Particles%Npart))),&
+        CALL MPI_Allreduce(step*MAXVAL(&
+            ABS(Gradient_Psi(1:ppm_dim,1:Particles%Npart))),&
             tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
             WRITE(cbuf,*) 'Moved particles: max displacement= ',tmpvar2
@@ -565,55 +569,17 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 #endif
 #endif
-
-        CALL particles_updated_positions(Particles,info)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_updated_positions failed.',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-
         !!---------------------------------------------------------------------!
         !! /end Line search **
         !!---------------------------------------------------------------------!
 
-#if writeout_verbosity > 2
-#if debug_verbosity > 2
-        !!---------------------------------------------------------------------!
-        !! Some writeout
-        !!---------------------------------------------------------------------!
-        !xp => Get_xp(Particles)
-        !D => Get_wps(Particles,Particles%D_id)
-        !rcp => Get_wps(Particles,Particles%rcp_id)
-        !IF (opts%write_pdb) THEN
-            !CALL sop_io(it_adapt+1000,debugdir,xp,ppm_dim,Particles%Npart,Particles%Mpart,info,&
-                !rcp=rcp,D=D)
-            !IF (info .NE. 0) THEN
-                !CALL ppm_write(ppm_rank,caller,'sop_io failed.',info)
-                !info = -1
-                !GOTO 9999
-            !ENDIF
-        !ENDIF
-        !IF (opts%write_xyz) THEN
-            !CALL sop_io_xyz(it_adapt+1000,debugdir,xp,ppm_dim,Particles%Npart,&
-                !Particles%Mpart,info,rcp=rcp,D=D)
-            !IF (info .NE. 0) THEN
-                !CALL ppm_write(ppm_rank,caller,'sop_io_xyz failed.',info)
-                !info = -1
-                !GOTO 9999
-            !ENDIF
-        !ENDIF
-        !xp => NULL()
-        !D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-        !rcp => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
-#endif
-#endif
-
 #if debug_verbosity > 0
 #ifdef __MPI
         CALL MPI_Allreduce(Psi_max,tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
-        CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-        CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+        CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,&
+            MPI_INTEGER,MPI_SUM,ppm_comm,info)
+        CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,&
+            MPI_INTEGER,MPI_SUM,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
             WRITE(cbuf,'(A,I3,2(A,E11.4),A,I4,1X,I4,1X,A,I6,A,I6,A,E7.2)') &
                 'it_adapt= ',it_adapt,&
@@ -665,11 +631,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     IF (Particles%nneighmin .LT. opts%nneigh_critical) THEN
         IF (it_adapt .LT. 9999) THEN
             CALL ppm_write(ppm_rank,caller,&
-                'min nb of neighbr not enough. Going back to adaptation loop',info)
+                'min nb of neighbr not enough. Going back to adaptation loop',&
+                info)
             GOTO 7099
         ELSE
             CALL ppm_write(ppm_rank,caller,&
-                'not enough neighbours and max nb of iterations exceeded. Major Fail.',&
+                'not enough neigh and max nb of iter exceeded. Major Fail.',&
                 info)
             info = -1
             GOTO 9999
@@ -677,7 +644,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     ELSE
 #if debug_verbosity > 0
         IF (ppm_rank.EQ.0) & 
-            CALL ppm_write(ppm_rank,caller,'enough neighbours, we are good to go.',info)
+            CALL ppm_write(ppm_rank,caller,&
+            'enough neighbours, we are good to go.',info)
 #endif
     ENDIF
 
@@ -1281,7 +1249,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_updated_cutoff failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_updated_cutoff failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1290,7 +1259,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         !---------------------------------------------------------------------!
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_mapping_ghosts failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_mapping_ghosts failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1306,7 +1276,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         ENDIF
 
 
-#if debug_verbosity > 1
+#if debug_verbosity > 2
         CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,&
             20000+it_adapt,info)
         CALL sop_dump_debug(Particles%wps(Particles%rcp_id)%vec,&
@@ -1319,8 +1289,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 Particles%Npart,60000+it_adapt,info)
             CALL sop_dump_debug(Particles%wps(Particles%level_id)%vec,&
                 Particles%Npart,80000+it_adapt,info)
-            CALL sop_dump_debug(Particles%wpv(Particles%level_grad_id)%vec,ppm_dim,&
-                Particles%Npart,90000+it_adapt,info)
+            CALL sop_dump_debug(Particles%wpv(Particles%level_grad_id)%vec,&
+                ppm_dim,Particles%Npart,90000+it_adapt,info)
         ENDIF
 #endif
         !!---------------------------------------------------------------------!
@@ -1551,7 +1521,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_updated_positions failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_updated_positions failed.',info)
             info = -1
             GOTO 9999
         ENDIF

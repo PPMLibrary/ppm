@@ -461,7 +461,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                     xp => Get_xp(Particles)
                     DO ip=1,Particles%Npart
                         IF (ABS(level_fun(xp(1:ppm_dim,ip))) .GT. &
-                &   opts%nb_width2*nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) THEN
+                &   opts%nb_width2*nb_fun(wp_fun(xp(1:ppm_dim,ip)),&
+                &                                       opts%scale_D)) THEN
                             rcp(ip) = 1.3_MK * rcp(ip)
                         ENDIF
                     ENDDO
@@ -776,7 +777,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (PRESENT(stats)) &
         stats%nb_grad_desc_steps = stats%nb_grad_desc_steps + num_it
 
-#if debug_verbosity > 1
+#if debug_verbosity > 2
     CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1004,info)
     CALL sop_dump_debug(Particles%wps(Particles%D_id)%vec,Particles%Npart,1005,info)
 #endif
