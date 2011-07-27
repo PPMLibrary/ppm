@@ -334,6 +334,8 @@ class AppForm(QMainWindow):
             self.axes.set_zlabel('z')
         
         self.canvas.draw()
+        if self.dim == 3:
+            self.axes.mouse_init()
 
 
     def open_data(self):
@@ -521,26 +523,38 @@ class AppForm(QMainWindow):
     
     def plotdat2(self,x,y,tag):
         """Plot 2D particle positions."""
-        realx,realy,realtag = zip(*filter(isreal,zip(x,y,tag)))
-        gx,gy,gtag = zip(*filter(isghost,zip(x,y,tag)))
         try:
-            self.axes.scatter(realx,realy,s=5,c=[cmap[t] for t in realtag],linewidths=0)
-            self.axes.scatter(gx,gy,s=5,c=[cmap[t] for t in \
-                gtag],linewidths=0,alpha=0.6)
+            rx,ry,rtag = zip(*filter(isreal,zip(x,y,tag)))
+            self.axes.scatter(rx,ry,s=5,c=[cmap[t] for t in \
+                rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"
+        try:
+            gx,gy,gtag = zip(*filter(isghost,zip(x,y,tag)))
+            self.axes.scatter(gx,gy,s=5,c=[cmap[t] for t in \
+                gtag],linewidths=0,alpha=0.6,zorder=10)
+        except KeyError:
+            print "invalid color tag"
+        except ValueError:
+            print "no ghosts"
 
     
     def plotdat3(self,x,y,z,tag):
         """Plot 3D particle positions."""
-        realx,realy,realz,realtag = zip(*filter(isreal,zip(x,y,z,tag)))
-        gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
         try:
-            self.axes.scatter(realx,realy,realz,s=10,c=[cmap[t] for t in realtag],linewidths=0)
+            rx,ry,rz,rtag = zip(*filter(isreal,zip(x,y,z,tag)))
+            self.axes.scatter(rx,ry,rz,s=10,c=[cmap[t] for t in \
+                rtag],linewidths=0)
+        except KeyError:
+            print "invalid color tag"
+        try:
+            gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
             self.axes.scatter(gx,gy,gz,s=10,c=[cmap[t] for t in \
                 gtag],linewidths=0,alpha=0.6)
         except KeyError:
             print "invalid color tag"
+        except ValueError:
+            print "no ghosts"
 
 
 def main():
