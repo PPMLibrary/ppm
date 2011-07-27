@@ -574,7 +574,6 @@
 
       ENDIF ! of 3D
 
-      print *,'ngl',nghostplus
       !-------------------------------------------------------------------------
       !  Ok, now we have a shorter list of potential ghosts to search 
       !  allocate memory for the lghosts 
