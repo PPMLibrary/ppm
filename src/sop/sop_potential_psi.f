@@ -28,7 +28,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
-    REAL(MK)                              :: dist2,rr,meanD,rd
+    REAL(MK)                              :: dist2,rr,meanD,rd,rc
     REAL(MK),DIMENSION(ppm_dim)           :: dist
     REAL(KIND(1.D0))                      :: t0
     CHARACTER (LEN=256)                   :: caller='sop_potential_psi'
@@ -36,6 +36,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     REAL(MK)                              :: Psi_part,attractive_radius
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
     REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
 
@@ -61,8 +62,10 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    rcp  => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
-        CALL ppm_write(ppm_rank,caller,'need to compute neighbour lists first',info)
+        CALL ppm_write(ppm_rank,caller,&
+            'need to compute neighbour lists first',info)
         info = -1
         GOTO 9999
     ENDIF
@@ -101,9 +104,10 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             !meanD = MAX(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. 2._MK * opts%maximum_D) CYCLE
+            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             rd = rr / meanD
+            rc = rr / (MIN(rcp(ip),rcp(iq)))
 
 #include "potential/potential.f90"
 
@@ -115,6 +119,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     xp => Set_xp(Particles,read_only=.TRUE.)
     D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 

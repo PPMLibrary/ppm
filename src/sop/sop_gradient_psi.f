@@ -34,13 +34,14 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
     REAL(KIND(1.D0))                      :: t0
-    REAL(MK)                              :: dist2,rr,meanD,nn,rd
+    REAL(MK)                              :: rr,meanD,nn,rd,rc
     REAL(MK),DIMENSION(ppm_dim)           :: dist
     REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
     CHARACTER (LEN = ppm_char)            :: caller='sop_gradient_psi'
     CHARACTER (LEN = ppm_char)            :: filename,cbuf
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
     REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
 
@@ -70,6 +71,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    rcp  => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
         CALL ppm_write(ppm_rank,caller,&
             'need to compute neighbour lists first',info)
@@ -104,8 +106,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             iq = vlist(ineigh,ip)
 
             dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-            dist2 = SUM(dist**2)
-            rr = SQRT(dist2)
+            rr = SQRT(SUM(dist**2))
 
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles less than 1e-12! ',&
@@ -126,7 +127,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             meanD = MIN(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. 2._MK * opts%maximum_D) CYCLE
+            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
@@ -135,11 +136,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             ! here we can choose between different interaction potentials
             !------------------------------------------------------------------!
             rd = rr / meanD
-
-        !----------------------------------------------------------------------!
-        ! Damp the displacement of particles in transition regions
-        ! (hack...)
-        !----------------------------------------------------------------------!
+            rc = rr / (MIN(rcp(ip),rcp(iq)))
 
 #include "potential/potential_gradient.f90"
 
@@ -168,7 +165,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
         !ENDIF
         !ENDDO
-        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
+        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. &
+            &          MIN(nn**2,Particles%cutoff**2)) THEN
             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
                 MIN(nn,Particles%cutoff)* 0.9_MK / &
                 SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
@@ -203,11 +201,12 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     xp => Set_xp(Particles,read_only=.TRUE.)
     D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 
 
-#if debug_verbosity > 1
+#if debug_verbosity > 2
     !For debugging, not needed
     CALL sop_dump_debug(Potential,Particles%Npart,477,info)
     !end debugging

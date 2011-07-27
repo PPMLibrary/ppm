@@ -207,7 +207,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !step_min = 1E-8; step_stall = 1E-14
         step_min = 1E-3; step_stall = 1E-14
     ENDIF
-    step_max = 0.1_MK
+    step_max = 0.1_MK ! 0.1_MK
     it_adapt_max = 9999
 
     step = 1._MK
@@ -263,9 +263,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
         CALL sop_fuse_particles(Particles,opts,info)
-        !CALL sop_fuse_particles(Particles%xp,Particles%wps(Particles%rcp_id)%vec,&
-            !Particles%wps(Particles%D_id)%vec,Particles%Npart,Particles%nvlist,&
-            !Particles%vlist,fuse_radius,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -273,6 +270,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        !if(it_adapt.LE.50)then
         !Insert (spawn) new particles where needed
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
@@ -281,6 +279,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'sop_spawn_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
+        !endif
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
@@ -339,6 +338,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
 
         IF (.NOT. PRESENT(wp_fun)) THEN
+            !------------------------------------------------------------------!
+            ! Update D and cutoff radii
+            !------------------------------------------------------------------!
 
             !The following is used to prevent particles with small D from
             ! drifting away inside the domain, eventually generating plenty
@@ -355,7 +357,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 Particles_old%Npart,D_old,Particles%skin,&
                 ghostlayer,info,vlist_cross,nvlist_cross)
             D_old = D_old / opts%rcp_over_D
-            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
+            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
+                read_only=.TRUE.)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,&
                     'ppm_inl_xset_vlist failed.',info)
@@ -374,6 +377,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
             D     => Get_wps(Particles,    Particles%D_id)
             D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
+            rcp => Get_wps(Particles,Particles%rcp_id)
             DO ip=1,Particles%Npart
                 minDold=HUGE(1._MK)
                 DO ineigh=1,nvlist_cross(ip)
@@ -381,22 +385,29 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                     minDold=MIN(minDold,D_old(iq))
                 ENDDO
                 !D(ip) = MAX(D(ip),minDold)
+                !when Dtilde/D is large, increase rcp
+                rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
                 D(ip) = minDold
             ENDDO
             D     => Set_wps(Particles,    Particles%D_id)
-            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
+            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
+                read_only=.TRUE.)
+            rcp => Set_wps(Particles,Particles%rcp_id)
+        ELSE
+            !------------------------------------------------------------------!
+            ! Update cutoff radii
+            !------------------------------------------------------------------!
+            D => Get_wps(Particles,Particles%D_id)
+            Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+            rcp => Get_wps(Particles,Particles%rcp_id)
+            DO ip=1,Particles%Npart
+                rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
+            ENDDO
+            Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+            D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+            rcp => Set_wps(Particles,Particles%rcp_id)
         ENDIF
 
-        !---------------------------------------------------------------------!
-        ! Update cutoff radii
-        !---------------------------------------------------------------------!
-        D => Get_wps(Particles,Particles%D_id)
-        rcp => Get_wps(Particles,Particles%rcp_id)
-        DO ip=1,Particles%Npart
-            rcp(ip) = opts%rcp_over_D * D(ip)
-        ENDDO
-        D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-        rcp => Set_wps(Particles,Particles%rcp_id)
 
 #if debug_verbosity > 1
         WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',&
