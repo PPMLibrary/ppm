@@ -61,9 +61,10 @@ subroutine old_inl_vlist_2d(topo_id,topo,xp,rcp,cutoff,npart,mpart,&
     integer                           :: ibegin,iend,jbegin,jend
     real(mk)                          :: dist2,cutoff2
     real(mk),dimension(2)          :: cellsize
-    integer, dimension(:,:), pointer              :: ncells
-    type(ppm_type_ptr_to_clist), dimension(:), pointer  :: clist
-    integer,                     dimension(:,:),pointer :: ind,jnd
+    integer, dimension(:,:), pointer              :: ncells => null()
+    type(ppm_type_ptr_to_clist), dimension(:), pointer  :: clist => null()
+    integer,                     dimension(:,:),pointer :: ind => null()
+    integer,                     dimension(:,:),pointer :: jnd => null()
     integer                                             :: nnd
     integer                                             :: ndim = 2
 
