@@ -89,7 +89,7 @@ $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
         sed -e 's#$*.o#$(OBJ_DIR)/$*.o $@#' \
             -e 's#$$#\\#' \
             -e 's#\\\\#\\#' > $@
-	@$(CPP) -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	@$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	@grep "INCLUDE " $(OBJ_DIR)/__$*.f | \
         sed -e 's#^[ \t]*##' \
             -e '/^!/d' \
@@ -110,7 +110,7 @@ $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
 
 # This handles the pre-processing and does the actual compiling
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.f
-	$(CPP) -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
+	$(CPP) -traditional-cpp -P $(CPPINCLS) $< > $(OBJ_DIR)/__$*.f
 	$(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $(OBJ_DIR)/__$*.f
 	@mv $(builddir)/*.mod $(MODULES_DIR)
 	@rm $(OBJ_DIR)/__$*.f
