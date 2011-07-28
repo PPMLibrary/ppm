@@ -183,7 +183,7 @@ call ppm_map_part_pop(rcp,np,mp,info)
 call ppm_map_part_pop(xp,ndim,np,mp,info)
 print *,rank,'np: ',np,' ghosts: ',mp -np
 print *,rank,'done'
-
+print *,rank,'is ghost_get set?',ppm_map_type_isactive(ppm_param_map_ghost_get)
 call ppm_dbg_print(topoid,max_rcp,1,1,info,xp,np,mp)
 
 
