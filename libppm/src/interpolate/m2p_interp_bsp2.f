@@ -124,9 +124,11 @@
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1,ilist2
-      REAL(MK), DIMENSION(:)       , POINTER :: min_phys,max_phys
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -145,15 +147,16 @@
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub, max_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       REAL(mk)                               :: xp1,xp2,xp3
       REAL(mk)                               :: wx1,wx2,wx3
       REAL(mk), DIMENSION(ppm_dim)           :: x0
       INTEGER                                :: ldn
-      TYPE(ppm_t_equi_mesh), POINTER         :: mesh
-      TYPE(ppm_t_topo)     , POINTER         :: topo
+      TYPE(ppm_t_equi_mesh), POINTER         :: mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------

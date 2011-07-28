@@ -92,11 +92,11 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: len_phys
-      REAL(MK):: t0
+      REAL(MK)                     :: t0
       INTEGER , DIMENSION(ppm_dim) :: ldc
-      INTEGER :: i,j,k
-      INTEGER :: istat,iopt,isize
-      CHARACTER(ppm_char) :: mesg
+      INTEGER                      :: i,j,k
+      INTEGER                      :: istat,iopt,isize
+      CHARACTER(ppm_char)          :: mesg
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------

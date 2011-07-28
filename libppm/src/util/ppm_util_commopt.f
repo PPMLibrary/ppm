@@ -83,15 +83,15 @@
       ! DISTINCT neighbor pairs, i.e. 1<->2 and 2<->1 is the same and only
       ! listed once. even indices are first points, odd ones second ones of
       ! the same edges.
-      INTEGER, DIMENSION(:  ) , POINTER     :: ilinks
+      INTEGER, DIMENSION(:  ) , POINTER     :: ilinks      => NULL()
       ! optimal edge coloring determined. sequence of triples (p1,p2,c),...
       ! with p1 and p2 being the 2 vertices of each edge and c its color.
-      INTEGER, DIMENSION(:  ) , POINTER     :: optres
+      INTEGER, DIMENSION(:  ) , POINTER     :: optres      => NULL()
       ! number of neighbors of all every CPU. index: MPI rank
-      INTEGER, DIMENSION(:  ) , POINTER     :: nneighprocs
+      INTEGER, DIMENSION(:  ) , POINTER     :: nneighprocs => NULL()
       ! all neighbors of all processors. 1st index: neighbor nr., 2nd:
       ! processor rank
-      INTEGER, DIMENSION(:,:) , POINTER     :: ineighprocs
+      INTEGER, DIMENSION(:,:) , POINTER     :: ineighprocs => NULL()
       INTEGER                               :: i,j,maxneigh,isize,ii,isin
       ! processor ranks
       INTEGER                               :: p1,p2
@@ -102,7 +102,7 @@
       ! MPI comm status
       INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
 #endif
-      TYPE(ppm_t_topo),      POINTER        :: topo
+      TYPE(ppm_t_topo),      POINTER        :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

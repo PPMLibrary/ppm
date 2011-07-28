@@ -197,13 +197,16 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(:,:), POINTER :: ineigh,subs_bc
-      INTEGER , DIMENSION(  :), POINTER :: nneigh,nchld
+      INTEGER , DIMENSION(:,:), POINTER :: ineigh  => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: subs_bc => NULL()
+      INTEGER , DIMENSION(  :), POINTER :: nneigh  => NULL()
+      INTEGER , DIMENSION(  :), POINTER :: nchld   => NULL()
       INTEGER , DIMENSION(3,1)          :: nnodes
       INTEGER , DIMENSION(3)            :: ldc
       REAL(MK), DIMENSION(3,2)          :: weights
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box,max_box
+      REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
       INTEGER                           :: i,j,k,Ntot,iopt,treetype
       INTEGER                           :: istat,nbox,isub
@@ -211,11 +214,11 @@
       INTEGER, DIMENSION(ppm_dim)       :: Nm
       CHARACTER(ppm_char)               :: mesg
       INTEGER                           :: nsublist
-      INTEGER , DIMENSION(  :), POINTER :: isublist
+      INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
       INTEGER                           :: nsubs
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
-      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
+      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -628,7 +631,6 @@
       !  Find and define the boundary conditions on the subs on the local
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
-      NULLIFY(subs_bc)
       CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
      &                        nsubs,subs_bc,info)
       IF (info.NE.0) THEN

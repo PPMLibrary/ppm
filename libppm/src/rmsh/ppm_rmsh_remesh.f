@@ -154,8 +154,11 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)             :: len_phys
-      REAL(MK), DIMENSION(:,:,:)   , POINTER   :: wx1,wx2,wx3
-      REAL(MK), DIMENSION(:)       , POINTER   :: min_phys,max_phys
+      REAL(MK), DIMENSION(:,:,:)   , POINTER   :: wx1 => NULL()
+      REAL(MK), DIMENSION(:,:,:)   , POINTER   :: wx2 => NULL()
+      REAL(MK), DIMENSION(:,:,:)   , POINTER   :: wx3 => NULL()
+      REAL(MK), DIMENSION(:)       , POINTER   :: min_phys => NULL()
+      REAL(MK), DIMENSION(:)       , POINTER   :: max_phys => NULL()
       REAL(MK), DIMENSION(ppm_dim)             :: dxi,dx
       REAL(MK)                                 :: dv1,dv2,dv3,epsilon
       INTEGER,  DIMENSION(ppm_dim)             :: Nc
@@ -170,13 +173,13 @@
       INTEGER                                  :: ndata1_max,ndata2_max
       INTEGER                                  :: ndata3_max,nsubs,idim
       INTEGER,  DIMENSION(ppm_dim)             :: Nm
-      INTEGER,  DIMENSION(:,:),      POINTER   :: ndata
-      INTEGER,  DIMENSION(:,:),      POINTER   :: istart
+      INTEGER,  DIMENSION(:,:),      POINTER   :: ndata  => NULL()
+      INTEGER,  DIMENSION(:,:),      POINTER   :: istart => NULL()
       INTEGER,  DIMENSION(6)                   :: bcdef
       LOGICAL                                  :: consistent
       INTEGER                                  :: maptype
-      TYPE(ppm_t_equi_mesh), POINTER           :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER           :: topo
+      TYPE(ppm_t_equi_mesh), POINTER           :: p_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER           :: topo   => NULL()
       LOGICAL                                  :: valid
 #if __MODE == __SCA
       INTEGER                                  :: lda = 1

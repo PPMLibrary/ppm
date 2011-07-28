@@ -92,12 +92,16 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim) :: len_phys
-      REAL(MK), DIMENSION(2)       :: vector_in,vector_out
-      REAL(MK):: mean_npbx,var_npbx
-      REAL(MK):: t0
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box,max_box,work
-      INTEGER , DIMENSION(:), POINTER :: npbx,npbxg,ppb
+      REAL(MK), DIMENSION(ppm_dim)      :: len_phys
+      REAL(MK), DIMENSION(2)            :: vector_in,vector_out
+      REAL(MK)                          :: mean_npbx,var_npbx
+      REAL(MK)                          :: t0
+      REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: work    => NULL()
+      INTEGER , DIMENSION(:), POINTER   :: npbx    => NULL()
+      INTEGER , DIMENSION(:), POINTER   :: npbxg   => NULL()
+      INTEGER , DIMENSION(:), POINTER   :: ppb     => NULL()
       INTEGER , DIMENSION(ppm_dim) :: ldc,ldd
       INTEGER :: ibox,fbox,jbox,kbox,lbox,nbox,ilevel,nlevel,isize
       INTEGER :: i,j,k,iopt,ipart,ii,jj,mem_req

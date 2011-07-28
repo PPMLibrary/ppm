@@ -99,7 +99,8 @@
       !   According to Knuth, V.3, the optimum value of M is around 9.
       INTEGER, PARAMETER                    :: m = 9
       INTEGER                               :: stklength, dn
-      INTEGER, DIMENSION(:), POINTER        :: lstk, rstk
+      INTEGER, DIMENSION(:), POINTER        :: lstk => NULL()
+      INTEGER, DIMENSION(:), POINTER        :: rstk => NULL()
       INTEGER                               :: i,j,n,l,r,p,istk,       &
                                             &  indexp,indext,          &
                                             &  inlistu, inlistl

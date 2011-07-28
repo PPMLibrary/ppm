@@ -70,7 +70,7 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(2)     :: ldu
-      TYPE(ppm_t_topo), POINTER :: topo
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
       INTEGER                   :: i,j,k
       INTEGER                   :: iopt
       CHARACTER(ppm_char)       :: mesg

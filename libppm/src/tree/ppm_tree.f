@@ -227,12 +227,14 @@
       INTEGER , DIMENSION(1)                  :: ldc1
       INTEGER , DIMENSION(3)                  :: cutdir
       REAL(MK), DIMENSION(3)                  :: cutpos,boxlen
-      REAL(MK), DIMENSION(:  ), POINTER       :: cpos,costc
-      INTEGER , DIMENSION(:  ), POINTER       :: icut
-      REAL(MK), DIMENSION(:,:), POINTER       :: minc,maxc
+      REAL(MK), DIMENSION(:  ), POINTER       :: cpos  => NULL()
+      REAL(MK), DIMENSION(:  ), POINTER       :: costc => NULL()
+      INTEGER , DIMENSION(:  ), POINTER       :: icut  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER       :: minc  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER       :: maxc  => NULL()
 #if   __TYPE == __DECOMP
-      REAL(MK), DIMENSION(:  ), POINTER       :: boxcost
-      INTEGER , DIMENSION(:  ), POINTER       :: blevel
+      REAL(MK), DIMENSION(:  ), POINTER       :: boxcost => NULL()
+      INTEGER , DIMENSION(:  ), POINTER       :: blevel  => NULL()
       INTEGER                                 :: nlevel
 #endif
       INTEGER                                 :: nboxlist,nadd,k2,itype
