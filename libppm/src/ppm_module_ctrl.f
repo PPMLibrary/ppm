@@ -18,195 +18,355 @@
 !  CH-8092 Zurich, Switzerland
 !--------------------------------------------------------------------------
 MODULE ppm_module_ctrl
+!!! This module provides an easy way to handle command line
+!!! arguments and control files.
+!!!
+!!! .Intended Usage
+!!!
+!!! This module assumes that you will create a module that contains
+!!! all your global variables (which we will call +client_global+) and
+!!! gives you an easy way of supplying values for these variables,
+!!! either through command line arguments or control files.
+!!! 
+!!! To do this, you have to create a subroutine (which we will call
+!!! +define_args+) that will hold the initialization code. See the
+!!! following example.
+!!!
+!!! [source,fortran]
+!!! ----
+!!! MODULE client_global
+!!!   USE ppm_module_ctrl
+!!!   INTEGER :: example
+!!! CONTAINS
+!!!   SUBROUTINE define_args
+!!!      CALL arg(exampe, 'example',     &
+!!!               flag      = '-e',      &
+!!!               ctrl_name = 'example')
+!!!   END SUBROUTINE define_args
+!!! END MODULE client_global
+!!! ----
+!!! 
+!!! This will create an argument of type +integer+ that can be set
+!!! either through the command line flag _'-e'_ or the control file
+!!! variable _'example'_. Please take note that the command line flag
+!!! will override the setting in the control file if both are
+!!! supplied.
+!!!
+!!! For this code to work you need to +call define_args+ somewhere in
+!!! your initialization code, followed by a +call parse_args(info)+. 
+!!! After +parse_args+ completes your globals will be initialized
+!!! with the supplied values.
+!!!
+!!! The function +arg+ is overloaded to support +integer+, +real+,
+!!! +character+ and +logical+ arguments or fixed sized arrays of these
+!!! types. The first two arguments are required and they are: the
+!!! variable itself (to which a pointer will be stored) and the name
+!!! of the variable (used for printing help messages).
+!!!
+!!! All other arguments are optional and the details of how they work
+!!! can be found below. Here is just a short overview and reference
+!!! of the available options:
+!!! [horizontal]
+!!! flag :: [_'-f'_] single character command line flag
+!!! long_flag :: [_'--long-flag'_] long command line flag (starts with
+!!! --)
+!!! ctrl_name :: [_'name'_] name of the control file varible
+!!! default :: [_42_] default value
+!!! min :: [_4_] minimum value for numeric types, or length for strings
+!!! max :: [_30_] maximum value/length
+!!! default_func :: [_external_func_] custom function to compute the
+!!! value of the variable after other globals have been set
+!!! validator :: [_external_func_] custom function to validate the
+!!! variable value
+!!!
+!!! By default the module supports _-h_ and _--help_ flags for
+!!! printing the help message, and _--print-ctrl_ for printing a
+!!! sample control file. There is also an optional first positional
+!!! argument that is interpreted as the name of the control file.
+!!!
+!!! To make the output prettier you can add calls to
+!!! +arg_group(_'name'_)+ to your +define_args+ and all calls to
+!!! +arg+ following a group definition will be put into that group.
+!!!
+!!!! If any one of the printing flags is present +parse_args+ will return
+!!! _exit_gracefully_ which you should check for and exit gracefully.
+!!!
+
   !------------------------------------------------------------------------
   !  Modules
   !------------------------------------------------------------------------
+  USE ppm_module_data,    ONLY: ppm_rank, ppm_comm
   USE ppm_module_typedef
-  USE ppm_module_data, ONLY: ppm_rank, ppm_comm
+  USE ppm_module_substart
+  USE ppm_module_substop
+  USE ppm_module_error
   IMPLICIT NONE
   !------------------------------------------------------------------------
   !  Interface
   !------------------------------------------------------------------------
   PUBLIC :: arg, arg_group, parse_args, disable_help, disable_ctrl, &
        &    set_ctrl_name,                                          &
-       &    integer_dflt, real_dflt, char_dflt, logical_dflt,       & 
-       &    integer_array_dflt, real_array_dflt,                    &
-       &    char_array_dflt, logical_array_dflt,                    &
-       &    integer_vdtr, real_vdtr, char_vdtr, logical_vdtr,       &
-       &    integer_array_vdtr, real_array_vdtr,                    &
-       &    char_array_vdtr, logical_array_vdtr,                    &
+       &    integer_func, longint_func, single_func, double_func,   & 
+       &    logical_func, string_func, complex_func, dcomplex_func, & 
+       &    integer_array_func, longint_array_func,                 &
+       &    single_array_func, double_array_func,                   &
+       &    logical_array_func, string_array_func,                  &
+       &    complex_array_func, dcomplex_array_func,                &
        &    reset, add_cmd, ctrl_file_test,                         &
        &    find_arg, find_flag, arg_count,                         &
-       &    enabling_flag, disabling_flag
+       &    enabling_flag, disabling_flag, exit_gracefully
 
   PRIVATE
+
+  ! TEMP FIX
+!   INTEGER, PARAMETER :: ppm_kind_int32      = 4
+!   INTEGER, PARAMETER :: ppm_kind_int64      = 8
+!   INTEGER, PARAMETER :: ppm_kind_single     = KIND(1.0E0)
+!   INTEGER, PARAMETER :: ppm_kind_double     = KIND(1.0D0)
+
+
 #ifdef __MPI
   INCLUDE 'mpif.h'
 #endif
   !------------------------------------------------------------------------
   !  Types
   !------------------------------------------------------------------------
+  ! scalar
 
-! scalars
 #define DTYPE INTEGER
+#define __INTEGER
 #include "ctrl/type.f"
-#undef DTYPE
-#define DTYPE REAL
-#include "ctrl/type.f"
-#undef DTYPE
-#define DTYPE CHAR
-#define STRING
-#include "ctrl/type.f"
-#undef STRING
-#undef DTYPE
-#define DTYPE LOGICAL
-#define BOOL
-#include "ctrl/type.f"
-#undef BOOL
-#undef DTYPE
 
-! array versions
+#define DTYPE LONGINT
+#define __LONGINT
+#include "ctrl/type.f"
+
+#define DTYPE SINGLE
+#define __SINGLE
+#include "ctrl/type.f"
+
+#define DTYPE DOUBLE
+#define __DOUBLE
+#include "ctrl/type.f"
+
+#define DTYPE LOGICAL
+#define __LOGICAL
+#include "ctrl/type.f"
+
+#define DTYPE STRING
+#define __STRING
+#include "ctrl/type.f"
+
+#define DTYPE COMPLEX
+#define __COMPLEX
+#include "ctrl/type.f"
+
+#define DTYPE DCOMPLEX
+#define __DCOMPLEX
+#include "ctrl/type.f"
+
+  ! array
 #define ARRAY
+
 #define DTYPE INTEGER
+#define __INTEGER
 #include "ctrl/type.f"
-#undef DTYPE
-#define DTYPE REAL
+
+#define DTYPE LONGINT
+#define __LONGINT
 #include "ctrl/type.f"
-#undef DTYPE
-#define DTYPE CHAR
-#define STRING
+
+#define DTYPE SINGLE
+#define __SINGLE
 #include "ctrl/type.f"
-#undef STRING
-#undef DTYPE
+
+#define DTYPE DOUBLE
+#define __DOUBLE
+#include "ctrl/type.f"
+
 #define DTYPE LOGICAL
-#define BOOL
+#define __LOGICAL
 #include "ctrl/type.f"
-#undef BOOL
-#undef DTYPE
+
+#define DTYPE STRING
+#define __STRING
+#include "ctrl/type.f"
+
+#define DTYPE COMPLEX
+#define __COMPLEX
+#include "ctrl/type.f"
+
+#define DTYPE DCOMPLEX
+#define __DCOMPLEX
+#include "ctrl/type.f"
+
 #undef ARRAY
+
   !------------------------------------------------------------------------
   !  Interfaces
   !------------------------------------------------------------------------
   INTERFACE arg
      ! scalar
      MODULE PROCEDURE INTEGER_add_arg
-     MODULE PROCEDURE REAL_add_arg
+     MODULE PROCEDURE LONGINT_add_arg
+     MODULE PROCEDURE SINGLE_add_arg
+     MODULE PROCEDURE DOUBLE_add_arg
      MODULE PROCEDURE LOGICAL_add_arg
-     MODULE PROCEDURE CHAR_add_arg
+     MODULE PROCEDURE STRING_add_arg
+     MODULE PROCEDURE COMPLEX_add_arg
+     MODULE PROCEDURE DCOMPLEX_add_arg
      ! array
      MODULE PROCEDURE INTEGER_array_add_arg
-     MODULE PROCEDURE REAL_array_add_arg
+     MODULE PROCEDURE LONGINT_array_add_arg
+     MODULE PROCEDURE SINGLE_array_add_arg
+     MODULE PROCEDURE DOUBLE_array_add_arg
      MODULE PROCEDURE LOGICAL_array_add_arg
-     MODULE PROCEDURE CHAR_array_add_arg
+     MODULE PROCEDURE STRING_array_add_arg
+     MODULE PROCEDURE COMPLEX_array_add_arg
+     MODULE PROCEDURE DCOMPLEX_array_add_arg
   END INTERFACE
 
   ABSTRACT INTERFACE
      !---------------------------------------------------------------------
-     !  Default functions
+     !  Defaults and Validators
      !---------------------------------------------------------------------
      ! scalar
-     LOGICAL FUNCTION INTEGER_dflt(variable)
+     LOGICAL FUNCTION INTEGER_func(variable)
        INTEGER, POINTER :: variable
-     END FUNCTION INTEGER_dflt
-     LOGICAL FUNCTION REAL_dflt(variable)
-       REAL, POINTER :: variable
-     END FUNCTION REAL_dflt
-     LOGICAL FUNCTION LOGICAL_dflt(variable)
+     END FUNCTION INTEGER_func
+
+     LOGICAL FUNCTION LONGINT_func(variable)
+       INTEGER(8), POINTER :: variable
+     END FUNCTION LONGINT_func
+
+     LOGICAL FUNCTION SINGLE_func(variable)
+       REAL(KIND(1.0E0)), POINTER :: variable
+     END FUNCTION SINGLE_func
+
+     LOGICAL FUNCTION DOUBLE_func(variable)
+       REAL(KIND(1.0D0)), POINTER :: variable
+     END FUNCTION DOUBLE_func
+
+     LOGICAL FUNCTION LOGICAL_func(variable)
        LOGICAL, POINTER :: variable
-     END FUNCTION LOGICAL_dflt
-     LOGICAL FUNCTION CHAR_dflt(variable)
-       CHARACTER(LEN=256), POINTER :: variable
-     END FUNCTION CHAR_dflt
+     END FUNCTION LOGICAL_func
+
+     LOGICAL FUNCTION STRING_func(variable)
+       CHARACTER(LEN=*), POINTER :: variable
+     END FUNCTION STRING_func
+
+     LOGICAL FUNCTION COMPLEX_func(variable)
+       COMPLEX(KIND(1.0E0)), POINTER :: variable
+     END FUNCTION COMPLEX_func
+
+     LOGICAL FUNCTION DCOMPLEX_func(variable)
+       COMPLEX(KIND(1.0D0)), POINTER :: variable
+     END FUNCTION DCOMPLEX_func
+
      ! array
-     LOGICAL FUNCTION INTEGER_array_dflt(variable)
+     LOGICAL FUNCTION INTEGER_array_func(variable)
        INTEGER, DIMENSION(:), POINTER :: variable
-     END FUNCTION INTEGER_array_dflt
-     LOGICAL FUNCTION REAL_array_dflt(variable)
-       REAL, DIMENSION(:), POINTER :: variable
-     END FUNCTION REAL_array_dflt
-     LOGICAL FUNCTION LOGICAL_array_dflt(variable)
+     END FUNCTION INTEGER_array_func
+
+     LOGICAL FUNCTION LONGINT_array_func(variable)
+       INTEGER(8), DIMENSION(:), POINTER :: variable
+     END FUNCTION LONGINT_array_func
+
+     LOGICAL FUNCTION SINGLE_array_func(variable)
+       REAL(KIND(1.0E0)), DIMENSION(:), POINTER :: variable
+     END FUNCTION SINGLE_array_func
+
+     LOGICAL FUNCTION DOUBLE_array_func(variable)
+       REAL(KIND(1.0D0)), DIMENSION(:), POINTER :: variable
+     END FUNCTION DOUBLE_array_func
+
+     LOGICAL FUNCTION LOGICAL_array_func(variable)
        LOGICAL, DIMENSION(:), POINTER :: variable
-     END FUNCTION LOGICAL_array_dflt
-     LOGICAL FUNCTION CHAR_array_dflt(variable)
+     END FUNCTION LOGICAL_array_func
+
+     LOGICAL FUNCTION STRING_array_func(variable)
        CHARACTER(LEN=*), DIMENSION(:), POINTER :: variable
-     END FUNCTION CHAR_array_dflt
-     !---------------------------------------------------------------------
-     !  Validators
-     !---------------------------------------------------------------------
-     ! scalar
-     LOGICAL FUNCTION INTEGER_vdtr(variable)
-       INTEGER, POINTER           :: variable
-     END FUNCTION INTEGER_vdtr
-     LOGICAL FUNCTION REAL_vdtr(variable)
-       REAL, POINTER              :: variable
-     END FUNCTION REAL_vdtr
-     LOGICAL FUNCTION LOGICAL_vdtr(variable)
-       LOGICAL, POINTER           :: variable
-     END FUNCTION LOGICAL_vdtr
-     LOGICAL FUNCTION CHAR_vdtr(variable)
-       CHARACTER(LEN=*), POINTER  :: variable
-     END FUNCTION CHAR_vdtr
-     ! arrays
-     LOGICAL FUNCTION INTEGER_array_vdtr(variable)
-       INTEGER, DIMENSION(:), POINTER           :: variable
-     END FUNCTION INTEGER_array_vdtr
-     LOGICAL FUNCTION REAL_array_vdtr(variable)
-       REAL, DIMENSION(:), POINTER              :: variable
-     END FUNCTION REAL_array_vdtr
-     LOGICAL FUNCTION LOGICAL_array_vdtr(variable)
-       LOGICAL, DIMENSION(:), POINTER           :: variable
-     END FUNCTION LOGICAL_array_vdtr
-     LOGICAL FUNCTION CHAR_array_vdtr(variable)
-       CHARACTER(LEN=*), DIMENSION(:), POINTER  :: variable
-     END FUNCTION CHAR_array_vdtr
+     END FUNCTION STRING_array_func
+
+     LOGICAL FUNCTION COMPLEX_array_func(variable)
+       COMPLEX(KIND(1.0E0)), DIMENSION(:), POINTER :: variable
+     END FUNCTION COMPLEX_array_func
+
+     LOGICAL FUNCTION DCOMPLEX_array_func(variable)
+       COMPLEX(KIND(1.0D0)), DIMENSION(:), POINTER :: variable
+     END FUNCTION DCOMPLEX_array_func
+
   END INTERFACE
   !------------------------------------------------------------------------
   !  Constants
   !------------------------------------------------------------------------
-  LOGICAL, PARAMETER       :: enabling_flag=.true.
-  LOGICAL, PARAMETER       :: disabling_flag=.false.
+  LOGICAL, PARAMETER       :: enabling_flag   = .true.
+!!! Value for type option of logical args. Presence of flag sets
+!!! variable to +.TRUE.+
+  LOGICAL, PARAMETER       :: disabling_flag  = .false.
+!!! Value for type option of logical args. Presence of flag sets
+!!! variable to +.FALSE.+
+  INTEGER, PARAMETER       :: exit_gracefully = 42
+!!! Value of the +info+ argument of +parse_args+ that signals that
+!!! the program should exit without error.
   !------------------------------------------------------------------------
   !  Variables
   !------------------------------------------------------------------------
   ! by how much to grow storage
-  INTEGER,             PARAMETER               :: di = 10
+  INTEGER,                           PARAMETER    :: di = 10
   ! scalar
-  TYPE(INTEGER_arg),   POINTER, DIMENSION(:)   :: INTEGER_args   => NULL()
-  INTEGER                                      :: INTEGER_args_i = 0
-  TYPE(REAL_arg),      POINTER, DIMENSION(:)   :: REAL_args      => NULL()
-  INTEGER                                      :: REAL_args_i    = 0
-  TYPE(LOGICAL_arg),   POINTER, DIMENSION(:)   :: LOGICAL_args   => NULL()
-  INTEGER                                      :: LOGICAL_args_i = 0
-  TYPE(CHAR_arg),      POINTER, DIMENSION(:)   :: CHAR_args      => NULL()
-  INTEGER                                      :: CHAR_args_i    = 0
+  TYPE(INTEGER_arg),        POINTER, DIMENSION(:) :: INTEGER_args    => NULL()
+  INTEGER                                         :: INTEGER_args_i  = 0
+  TYPE(LONGINT_arg),        POINTER, DIMENSION(:) :: LONGINT_args    => NULL()
+  INTEGER                                         :: LONGINT_args_i  = 0
+  TYPE(SINGLE_arg),         POINTER, DIMENSION(:) :: SINGLE_args     => NULL()
+  INTEGER                                         :: SINGLE_args_i   = 0
+  TYPE(DOUBLE_arg),         POINTER, DIMENSION(:) :: DOUBLE_args     => NULL()
+  INTEGER                                         :: DOUBLE_args_i   = 0
+  TYPE(LOGICAL_arg),        POINTER, DIMENSION(:) :: LOGICAL_args    => NULL()
+  INTEGER                                         :: LOGICAL_args_i  = 0
+  TYPE(STRING_arg),         POINTER, DIMENSION(:) :: STRING_args     => NULL()
+  INTEGER                                         :: STRING_args_i   = 0
+  TYPE(COMPLEX_arg),        POINTER, DIMENSION(:) :: COMPLEX_args    => NULL()
+  INTEGER                                         :: COMPLEX_args_i  = 0
+  TYPE(DCOMPLEX_arg),       POINTER, DIMENSION(:) :: DCOMPLEX_args   => NULL()
+  INTEGER                                         :: DCOMPLEX_args_i = 0
   ! add arrays
-  TYPE(INTEGER_array_arg), POINTER, DIMENSION(:)   :: INTEGER_array_args   => NULL()
-  INTEGER                                      :: INTEGER_array_args_i = 0
-  TYPE(REAL_array_arg),    POINTER, DIMENSION(:)   :: REAL_array_args      => NULL()
-  INTEGER                                      :: REAL_array_args_i    = 0
-  TYPE(LOGICAL_array_arg), POINTER, DIMENSION(:)   :: LOGICAL_array_args   => NULL()
-  INTEGER                                      :: LOGICAL_array_args_i = 0
-  TYPE(CHAR_array_arg),    POINTER, DIMENSION(:)   :: CHAR_array_args      => NULL()
-  INTEGER                                      :: CHAR_array_args_i    = 0
+  TYPE(INTEGER_array_arg),  POINTER, DIMENSION(:) :: INTEGER_array_args    => NULL()
+  INTEGER                                         :: INTEGER_array_args_i  = 0
+  TYPE(LONGINT_array_arg),  POINTER, DIMENSION(:) :: LONGINT_array_args    => NULL()
+  INTEGER                                         :: LONGINT_array_args_i  = 0
+  TYPE(SINGLE_array_arg),   POINTER, DIMENSION(:) :: SINGLE_array_args     => NULL()
+  INTEGER                                         :: SINGLE_array_args_i   = 0
+  TYPE(DOUBLE_array_arg),   POINTER, DIMENSION(:) :: DOUBLE_array_args     => NULL()
+  INTEGER                                         :: DOUBLE_array_args_i   = 0
+  TYPE(LOGICAL_array_arg),  POINTER, DIMENSION(:) :: LOGICAL_array_args    => NULL()
+  INTEGER                                         :: LOGICAL_array_args_i  = 0
+  TYPE(STRING_array_arg),   POINTER, DIMENSION(:) :: STRING_array_args     => NULL()
+  INTEGER                                         :: STRING_array_args_i   = 0
+  TYPE(COMPLEX_array_arg),  POINTER, DIMENSION(:) :: COMPLEX_array_args    => NULL()
+  INTEGER                                         :: COMPLEX_array_args_i  = 0
+  TYPE(DCOMPLEX_array_arg), POINTER, DIMENSION(:) :: DCOMPLEX_array_args   => NULL()
+  INTEGER                                         :: DCOMPLEX_array_args_i = 0
   ! arg storage
-  CHARACTER(LEN=256),  POINTER, DIMENSION(:)   :: cmd_args       => NULL()
-  INTEGER,             POINTER, DIMENSION(:)   :: cmd_args_len   => NULL()
-  LOGICAL,             POINTER, DIMENSION(:)   :: cmd_args_used  => NULL()
-  INTEGER                                      :: cmd_args_i=0
-  INTEGER                                      :: cmd_i=0
+  CHARACTER(LEN=ppm_char),  POINTER, DIMENSION(:) :: cmd_args       => NULL()
+  INTEGER,                  POINTER, DIMENSION(:) :: cmd_args_len   => NULL()
+  LOGICAL,                  POINTER, DIMENSION(:) :: cmd_args_used  => NULL()
+  INTEGER                                         :: cmd_args_i     =  0
+  INTEGER                                         :: cmd_i          =  0
   ! arg groups
-  CHARACTER(LEN=256),  POINTER, DIMENSION(:)   :: groups         => NULL()
-  INTEGER,             POINTER, DIMENSION(:)   :: group_size     => NULL()
-  LOGICAL,             POINTER, DIMENSION(:)   :: group_has_ctrl => NULL()
-  LOGICAL,             POINTER, DIMENSION(:)   :: group_has_arg  => NULL()
-  INTEGER                                      :: groups_i=-1
+  CHARACTER(LEN=ppm_char),  POINTER, DIMENSION(:) :: groups         => NULL()
+  INTEGER,                  POINTER, DIMENSION(:) :: group_size     => NULL()
+  LOGICAL,                  POINTER, DIMENSION(:) :: group_has_ctrl => NULL()
+  LOGICAL,                  POINTER, DIMENSION(:) :: group_has_arg  => NULL()
+  INTEGER                                         :: groups_i       =  -1
   ! special args
-  LOGICAL                                      :: help_enabled   = .TRUE.
-  LOGICAL                                      :: ctrl_enabled   = .TRUE.
-  CHARACTER(LEN=256)                           :: ctrl_file_name = 'Ctrl'
-  CHARACTER(LEN=ppm_char)                      :: ctrl_file_test = ''
+  LOGICAL                                         :: help_enabled   = .TRUE.
+  LOGICAL                                         :: ctrl_enabled   = .TRUE.
+  CHARACTER(LEN=ppm_char)                         :: ctrl_file_name = 'Ctrl'
+  CHARACTER(LEN=ppm_char)                         :: ctrl_file_test = ''
   ! test run
-  LOGICAL                                      :: in_test        = .FALSE.
+  LOGICAL                                         :: in_test        = .FALSE.
 
 CONTAINS
   !------------------------------------------------------------------------
@@ -234,7 +394,7 @@ CONTAINS
     !----------------------------------------------------------------------
     !  Initialize
     !----------------------------------------------------------------------
-!    CALL substart(caller, t0, info)
+    CALL substart(caller, t0, info)
     !----------------------------------------------------------------------
     !  Do everything on rank 0 and bcast at the end
     !----------------------------------------------------------------------
@@ -243,10 +403,24 @@ CONTAINS
        !  Copy default values into variables
        !-------------------------------------------------------------------
        CALL apply_defaults(info)
+       IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_argument, caller, &
+               'Applying defaults failed!', __LINE__, info)
+          GOTO 9999
+       END IF
        !-------------------------------------------------------------------
        !  Read in the command line
        !-------------------------------------------------------------------
-       IF (.NOT. in_test) CALL read_cmd_args
+       IF (.NOT. in_test) THEN
+          CALL read_cmd_args(info)
+          IF (info .NE. 0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_alloc, caller, &
+                  'Reading command line args failed!', __LINE__, info)
+             GOTO 9999
+          END IF
+       END IF
        !-------------------------------------------------------------------
        !  Parse help flag
        !-------------------------------------------------------------------
@@ -255,7 +429,7 @@ CONTAINS
           IF (.NOT. ok) CALL find_flag('--help', ok)
           IF (ok) THEN
              CALL print_help
-             info = 1
+             info = exit_gracefully
              GOTO 9999
           END IF
        END IF
@@ -263,7 +437,12 @@ CONTAINS
        !  Parse rest of the command line
        !-------------------------------------------------------------------
        CALL parse_cmd_line(info)
-       IF (info .NE. 0) GOTO 9999
+       IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_argument, caller, &
+                  'Parsing command line args failed!', __LINE__, info)
+          GOTO 9999
+       END IF
        !-------------------------------------------------------------------
        !  Control file
        !-------------------------------------------------------------------
@@ -271,7 +450,7 @@ CONTAINS
           CALL find_flag('--print-ctrl', ok)
           IF (ok) THEN
              CALL print_ctrl
-             info = 1
+             info = exit_gracefully
              GOTO 9999
           END IF
           CALL find_arg(1, ok, ctrl_file_name)
@@ -279,22 +458,43 @@ CONTAINS
           !  Parse control file
           !----------------------------------------------------------------
           CALL parse_ctrl_file(info)
+          IF (info .NE. 0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_argument, caller, &
+                  'Parsing control file failed!', __LINE__, info)
+             GOTO 9999
+          END IF
        END IF
        !-------------------------------------------------------------------
        !  Call default funcs
        !-------------------------------------------------------------------
        CALL call_default_funcs(info)
-       IF (info .NE. 0) GOTO 9999
+       IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_argument, caller, &
+               'Calling default functions failed!', __LINE__, info)
+          GOTO 9999
+       END IF
        !-------------------------------------------------------------------
        !  Check minmax
        !-------------------------------------------------------------------
        CALL check_minmax(info)
-       IF (info .NE. 0) GOTO 9999
+       IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_argument, caller, &
+               'Min/max check failed!', __LINE__, info)
+          GOTO 9999
+       END IF
        !-------------------------------------------------------------------
        !  Run validators
        !-------------------------------------------------------------------
        CALL call_validator_funcs(info)
-       IF (info .NE. 0) GOTO 9999
+       IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_argument, caller, &
+               'Calling validator functions failed!', __LINE__, info)
+          GOTO 9999
+       END IF
        !-------------------------------------------------------------------
        !  DONE!
        !-------------------------------------------------------------------
@@ -326,49 +526,75 @@ CONTAINS
     !----------------------------------------------------------------------
 9999 CONTINUE
     ! cleanup
-    CALL deallocate_memory
-!    CALL substop(caller, t0, info)
+    CALL deallocate_memory(info .NE. 0)
+    CALL substop(caller, t0, info)
     RETURN
   END SUBROUTINE parse_args
   !------------------------------------------------------------------------
   !  Cleanup
   !------------------------------------------------------------------------
-  SUBROUTINE deallocate_memory
-    IF (ASSOCIATED(INTEGER_args))       DEALLOCATE(INTEGER_args)
-    IF (ASSOCIATED(REAL_args))          DEALLOCATE(REAL_args)
-    IF (ASSOCIATED(LOGICAL_args))       DEALLOCATE(LOGICAL_args)
-    IF (ASSOCIATED(CHAR_args))          DEALLOCATE(CHAR_args)
-    IF (ASSOCIATED(INTEGER_array_args)) DEALLOCATE(INTEGER_array_args)
-    IF (ASSOCIATED(REAL_array_args))    DEALLOCATE(REAL_array_args)
-    IF (ASSOCIATED(LOGICAL_array_args)) DEALLOCATE(LOGICAL_array_args)
-    IF (ASSOCIATED(CHAR_array_args))    DEALLOCATE(CHAR_array_args)
-    IF (ASSOCIATED(groups))             DEALLOCATE(groups)
-    IF (ASSOCIATED(group_size))         DEALLOCATE(group_size)
-    IF (ASSOCIATED(group_has_ctrl))     DEALLOCATE(group_has_ctrl)
-    IF (ASSOCIATED(group_has_arg))      DEALLOCATE(group_has_arg)
+  SUBROUTINE deallocate_memory(all)
+    LOGICAL, INTENT(IN   ) :: all
+    IF (all) THEN
+       IF (ASSOCIATED(cmd_args))         DEALLOCATE(cmd_args)
+       IF (ASSOCIATED(cmd_args_len))     DEALLOCATE(cmd_args_len)
+       IF (ASSOCIATED(cmd_args_used))    DEALLOCATE(cmd_args_used)
+    END IF
+    ! scalar
+    IF (ASSOCIATED(INTEGER_args))        DEALLOCATE(INTEGER_args)
+    IF (ASSOCIATED(LONGINT_args))        DEALLOCATE(LONGINT_args)
+    IF (ASSOCIATED(SINGLE_args))         DEALLOCATE(SINGLE_args)
+    IF (ASSOCIATED(DOUBLE_args))         DEALLOCATE(DOUBLE_args)
+    IF (ASSOCIATED(LOGICAL_args))        DEALLOCATE(LOGICAL_args)
+    IF (ASSOCIATED(STRING_args))         DEALLOCATE(STRING_args)
+    IF (ASSOCIATED(COMPLEX_args))        DEALLOCATE(COMPLEX_args)
+    IF (ASSOCIATED(DCOMPLEX_args))       DEALLOCATE(DCOMPLEX_args)
+    ! array
+    IF (ASSOCIATED(INTEGER_array_args))  DEALLOCATE(INTEGER_array_args)
+    IF (ASSOCIATED(LONGINT_array_args))  DEALLOCATE(LONGINT_array_args)
+    IF (ASSOCIATED(SINGLE_array_args))   DEALLOCATE(SINGLE_array_args)
+    IF (ASSOCIATED(DOUBLE_array_args))   DEALLOCATE(DOUBLE_array_args)
+    IF (ASSOCIATED(LOGICAL_array_args))  DEALLOCATE(LOGICAL_array_args)
+    IF (ASSOCIATED(STRING_array_args))   DEALLOCATE(STRING_array_args)
+    IF (ASSOCIATED(COMPLEX_array_args))  DEALLOCATE(COMPLEX_array_args)
+    IF (ASSOCIATED(DCOMPLEX_array_args)) DEALLOCATE(DCOMPLEX_array_args)
+    ! other
+    IF (ASSOCIATED(groups))              DEALLOCATE(groups)
+    IF (ASSOCIATED(group_size))          DEALLOCATE(group_size)
+    IF (ASSOCIATED(group_has_ctrl))      DEALLOCATE(group_has_ctrl)
+    IF (ASSOCIATED(group_has_arg))       DEALLOCATE(group_has_arg)
   END SUBROUTINE deallocate_memory
 
   SUBROUTINE reset
-    CALL deallocate_memory
-    IF (ASSOCIATED(cmd_args))           DEALLOCATE(cmd_args)
-    IF (ASSOCIATED(cmd_args_len))       DEALLOCATE(cmd_args_len)
-    IF (ASSOCIATED(cmd_args_used))      DEALLOCATE(cmd_args_used)
-    INTEGER_args_i       = 0
-    REAL_args_i          = 0
-    LOGICAL_args_i       = 0
-    CHAR_args_i          = 0
-    INTEGER_array_args_i = 0
-    REAL_array_args_i    = 0
-    LOGICAL_array_args_i = 0
-    CHAR_array_args_i    = 0
-    cmd_args_i           = 0
-    cmd_i                = 0
-    groups_i             = -1
-    help_enabled         = .TRUE.
-    ctrl_enabled         = .TRUE.
-    ctrl_file_name       = 'Ctrl'
-    ctrl_file_test       = ''
-    in_test              = .FALSE.
+!!! Debugging and testing routine. Resets all module variables.
+    CALL deallocate_memory(.TRUE.)
+    ! scalar
+    INTEGER_args_i        = 0
+    LONGINT_args_i        = 0
+    SINGLE_args_i         = 0
+    DOUBLE_args_i         = 0
+    LOGICAL_args_i        = 0
+    STRING_args_i         = 0
+    COMPLEX_args_i        = 0
+    DCOMPLEX_args_i       = 0
+    ! array
+    INTEGER_array_args_i  = 0
+    LONGINT_array_args_i  = 0
+    SINGLE_array_args_i   = 0
+    DOUBLE_array_args_i   = 0
+    LOGICAL_array_args_i  = 0
+    STRING_array_args_i   = 0
+    COMPLEX_array_args_i  = 0
+    DCOMPLEX_array_args_i = 0
+    ! other
+    cmd_args_i            = 0
+    cmd_i                 = 0
+    groups_i              = -1
+    help_enabled          = .TRUE.
+    ctrl_enabled          = .TRUE.
+    ctrl_file_name        = 'Ctrl'
+    ctrl_file_test        = ''
+    in_test               = .FALSE.
   END SUBROUTINE reset
   !-------------------------------------------------------------------------
   !  Apply defaults
@@ -377,44 +603,45 @@ CONTAINS
     INTEGER, INTENT(  OUT) :: info
     INTEGER                :: i
     ! scalar
-    DO i=1,INTEGER_args_i
-       IF (INTEGER_args(i)%default_set) &
-            INTEGER_args(i)%variable = INTEGER_args(i)%default
-    END DO
-    DO i=1,REAL_args_i
-       IF (REAL_args(i)%default_set) &
-            REAL_args(i)%variable = REAL_args(i)%default
-    END DO
-    DO i=1,CHAR_args_i
-       IF (CHAR_args(i)%default_set) &
-            CHAR_args(i)%variable = CHAR_args(i)%default
-    END DO
-    DO i=1,LOGICAL_args_i
-       IF (LOGICAL_args(i)%default_set) &
-            LOGICAL_args(i)%variable = LOGICAL_args(i)%default
-    END DO
-    ! array
-    DO i=1,INTEGER_array_args_i
-       IF (INTEGER_array_args(i)%default_set) &
-            INTEGER_array_args(i)%variable = INTEGER_array_args(i)%default
-    END DO
-    DO i=1,REAL_array_args_i
-       IF (REAL_array_args(i)%default_set) &
-            REAL_array_args(i)%variable = REAL_array_args(i)%default
-    END DO
-    DO i=1,CHAR_array_args_i
-       IF (CHAR_array_args(i)%default_set) &
-            CHAR_array_args(i)%variable = CHAR_array_args(i)%default
-    END DO
-    DO i=1,LOGICAL_array_args_i
-       IF (LOGICAL_array_args(i)%default_set) &
-            LOGICAL_array_args(i)%variable = LOGICAL_array_args(i)%default
-    END DO
+#define DTYPE INTEGER
+#include "ctrl/default.f"
+#define DTYPE LONGINT
+#include "ctrl/default.f"
+#define DTYPE SINGLE
+#include "ctrl/default.f"
+#define DTYPE DOUBLE
+#include "ctrl/default.f"
+#define DTYPE LOGICAL
+#include "ctrl/default.f"
+#define DTYPE STRING
+#include "ctrl/default.f"
+#define DTYPE COMPLEX
+#include "ctrl/default.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/default.f"
+  ! array
+#define DTYPE INTEGER_array
+#include "ctrl/default.f"
+#define DTYPE LONGINT_array
+#include "ctrl/default.f"
+#define DTYPE SINGLE_array
+#include "ctrl/default.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/default.f"
+#define DTYPE LOGICAL_array
+#include "ctrl/default.f"
+#define DTYPE STRING_array
+#include "ctrl/default.f"
+#define DTYPE COMPLEX_array
+#include "ctrl/default.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/default.f"
   END SUBROUTINE apply_defaults
   !------------------------------------------------------------------------
   !  Read in command line args
   !------------------------------------------------------------------------
-  SUBROUTINE read_cmd_args
+  SUBROUTINE read_cmd_args(info)
+    INTEGER, INTENT(  OUT)          :: info
     CHARACTER(LEN=ppm_char)         :: cbuf
     INTEGER                         :: i, start, nargc
 #ifdef __MPI
@@ -449,9 +676,10 @@ CONTAINS
        IF (ASSOCIATED(cmd_args))      DEALLOCATE(cmd_args)
        IF (ASSOCIATED(cmd_args_len))  DEALLOCATE(cmd_args_len)
        IF (ASSOCIATED(cmd_args_used)) DEALLOCATE(cmd_args_used)
-       ALLOCATE(cmd_args(1:cmd_args_i))
-       ALLOCATE(cmd_args_len(1:cmd_args_i))
-       ALLOCATE(cmd_args_used(1:cmd_args_i))
+       ALLOCATE(cmd_args(1:cmd_args_i),      STAT=info)
+       ALLOCATE(cmd_args_len(1:cmd_args_i),  STAT=info)
+       ALLOCATE(cmd_args_used(1:cmd_args_i), STAT=info)
+       IF (info .NE. 0) RETURN
        cmd_args_used = .FALSE.
        ! read in all args
        DO i=1,cmd_args_i
@@ -464,42 +692,48 @@ CONTAINS
   !  Parse command line
   !-------------------------------------------------------------------------
   SUBROUTINE parse_cmd_line(info)
-    INTEGER, INTENT(  OUT) :: info
-    INTEGER                :: i, ios
-    LOGICAL                :: ok
-    CHARACTER(LEN=256)     :: value
+    INTEGER, INTENT(  OUT)      :: info
+    CHARACTER(LEN=*), PARAMETER :: caller = 'parse_cmd_line'
+    CHARACTER(LEN=ppm_char)     :: cvar
+    INTEGER                     :: i, ios
+    LOGICAL                     :: ok
+    LOGICAL                     :: err = .FALSE.
+    CHARACTER(LEN=256)          :: value
     ! scalar
 #define DTYPE INTEGER
 #include "ctrl/parse_arg.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
 #include "ctrl/parse_arg.f"
-#undef DTYPE
-#define DTYPE CHAR
+#define DTYPE SINGLE
 #include "ctrl/parse_arg.f"
-#undef DTYPE
+#define DTYPE DOUBLE
+#include "ctrl/parse_arg.f"
 #define DTYPE LOGICAL
-#define BOOL
+#define __LOGICAL
 #include "ctrl/parse_arg.f"
-#undef BOOL
-#undef DTYPE
-    ! array
-#define ARRAY
+#define DTYPE STRING
+#include "ctrl/parse_arg.f"
+#define DTYPE COMPLEX
+#include "ctrl/parse_arg.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/parse_arg.f"
+  ! array
 #define DTYPE INTEGER_array
 #include "ctrl/parse_arg.f"
-#undef DTYPE
-#define DTYPE REAL_array
+#define DTYPE LONGINT_array
 #include "ctrl/parse_arg.f"
-#undef DTYPE
-#define DTYPE CHAR_array
+#define DTYPE SINGLE_array
 #include "ctrl/parse_arg.f"
-#undef DTYPE
+#define DTYPE DOUBLE_array
+#include "ctrl/parse_arg.f"
 #define DTYPE LOGICAL_array
-#define BOOL
 #include "ctrl/parse_arg.f"
-#undef BOOL
-#undef DTYPE
-#undef ARRAY
+#define DTYPE STRING_array
+#include "ctrl/parse_arg.f"
+#define DTYPE COMPLEX_array
+#include "ctrl/parse_arg.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/parse_arg.f"
 9999 CONTINUE
   END SUBROUTINE parse_cmd_line
   !------------------------------------------------------------------------
@@ -509,6 +743,8 @@ CONTAINS
     INTEGER, INTENT(  OUT)      :: info
     CHARACTER(LEN=*), PARAMETER :: caller='parse_ctrl_file'
     CHARACTER(LEN=ppm_char)     :: cbuf, cvalue, carg, cvar
+    CHARACTER(LEN=ppm_char)     :: current_var
+    CHARACTER(LEN=10000)        :: errmsg
     INTEGER                     :: ilenctrl
     INTEGER                     :: iUnit, istat, ios
     LOGICAL                     :: lExist
@@ -520,24 +756,27 @@ CONTAINS
     !-------------------------------------------------------------
     ilenctrl = LEN_TRIM(ctrl_file_name)
     IF (ilenctrl .LT. 1) THEN
-       WRITE (*,*) "No ctrl file given!"
-       info = -1
+       info = ppm_error_fatal
+       CALL ppm_error(ppm_err_argument, caller, &
+            'No ctrl file given', __LINE__, info)
        GOTO 9999
     END IF
     INQUIRE(FILE=ctrl_file_name, EXIST=lExist)
     IF (.NOT. lExist) THEN
-       WRITE(*,'(2A)') 'No such file: ', ctrl_file_name(1:ilenctrl)
-       info = -1
+       info = ppm_error_fatal
+       WRITE(cvar,'(2A)') 'No such file: ', ctrl_file_name(1:ilenctrl)
+       CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
        GOTO 9999
     END IF
     !-------------------------------------------------------------
     !  Open the file
     !-------------------------------------------------------------
-    iUnit = 20
+    iUnit = 19
     OPEN(iUnit, FILE=ctrl_file_name, IOSTAT=ios, ACTION='READ')
     IF (ios .NE. 0) THEN
-       WRITE(*,'(2A)') 'Failed to open file: ', ctrl_file_name(1:ilenctrl)
-       info = -1
+       info = ppm_error_fatal
+       WRITE(cvar,'(2A)') 'Failed to open file: ', ctrl_file_name(1:ilenctrl)
+       CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
        GOTO 9999
     END IF
     !-------------------------------------------------------------
@@ -545,6 +784,7 @@ CONTAINS
     !-------------------------------------------------------------
     iline = 0
     var_loop: DO
+       iline = iline + 1
        !----------------------------------------------------------
        !  Read line
        !----------------------------------------------------------
@@ -576,8 +816,9 @@ CONTAINS
           !  Exit if missing
           !-------------------------------------------------------
           IF (idx .LT. 0) THEN
-             WRITE(*, '(A,I5)') 'Incorrect line: ', iline
-             info = -1
+             info = ppm_error_fatal
+             WRITE(cvar,'(A,I5)') 'Incorrect line: ', iline
+             CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
              GOTO 9999
           ENDIF
           !-------------------------------------------------------
@@ -595,225 +836,208 @@ CONTAINS
           ! scalar
 #define DTYPE INTEGER
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
-#define DTYPE CHAR
+#define DTYPE SINGLE
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
+#define DTYPE DOUBLE
+#include "ctrl/parse_ctrl.f"
 #define DTYPE LOGICAL
-#define BOOL
 #include "ctrl/parse_ctrl.f"
-#undef BOOL
-#undef DTYPE
-          ! array
-#define ARRAY
-#define DTYPE INTEGER
+#define DTYPE STRING
+#define __STRING
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE COMPLEX
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
-#define DTYPE CHAR
+#define DTYPE DCOMPLEX
 #include "ctrl/parse_ctrl.f"
-#undef DTYPE
-#define DTYPE LOGICAL
-#define BOOL
+  ! array
+#define DTYPE INTEGER_array
 #include "ctrl/parse_ctrl.f"
-#undef BOOL
-#undef DTYPE          
-#undef ARRAY
+#define DTYPE LONGINT_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE SINGLE_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE LOGICAL_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE STRING_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE COMPLEX_array
+#include "ctrl/parse_ctrl.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/parse_ctrl.f"
        END IF
     END DO var_loop
+    GOTO 9999
+300 CONTINUE
+    info = ppm_error_fatal
+    WRITE(errmsg,'(5A,I5,2A)') 'Error reading variable: ',     &
+                 current_var(1:LEN_TRIM(current_var)),         &
+                 ' from string: ', cvalue(1:LEN_TRIM(cvalue)), &
+                 ' on line: ', iline,                          &
+                 ' of file: ', ctrl_file_name(1:ilenctrl)
+    CALL ppm_error(ppm_err_argument, caller, errmsg, __LINE__, info)
+    GOTO 9999
 200 CONTINUE
-    WRITE(*,'(A,I5,2A)') 'Error reading line: ', iline,     &
-         &               ' of file: ', ctrl_file_name(1:ilenctrl)
-    info = -1
+    info = ppm_error_fatal
+    WRITE(errmsg,'(A,I5,2A)') 'Error reading line: ', iline,     &
+         &                  ' of file: ', ctrl_file_name(1:ilenctrl)
+    CALL ppm_error(ppm_err_argument, caller, errmsg, __LINE__, info)
     GOTO 9999
 100 CONTINUE
     !----------------------------------------------------------------------
     !  Close file
     !----------------------------------------------------------------------
-    CLOSE(iUnit)
 9999 CONTINUE
+    CLOSE(iUnit)
     RETURN
   END SUBROUTINE parse_ctrl_file
   !------------------------------------------------------------------------
   !  Call default funcs
   !------------------------------------------------------------------------
   SUBROUTINE call_default_funcs(info)
-    INTEGER, INTENT(  OUT) :: info
-    INTEGER  :: i
-    DO i=1,INTEGER_args_i
-       IF (ASSOCIATED(INTEGER_args(i)%default_func)) THEN
-          IF (.NOT. INTEGER_args(i)%default_func(INTEGER_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,REAL_args_i
-       IF (ASSOCIATED(REAL_args(i)%default_func)) THEN
-          IF (.NOT. REAL_args(i)%default_func(REAL_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,CHAR_args_i
-       IF (ASSOCIATED(CHAR_args(i)%default_func)) THEN
-          IF (.NOT. CHAR_args(i)%default_func(CHAR_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,LOGICAL_args_i
-       IF (ASSOCIATED(LOGICAL_args(i)%default_func)) THEN
-           IF (.NOT. LOGICAL_args(i)%default_func(LOGICAL_args(i)%variable)) THEN
-              info = 1
-              GOTO 9999
-           END IF
-       END IF
-    END DO
-    DO i=1,INTEGER_array_args_i
-       IF (ASSOCIATED(INTEGER_array_args(i)%default_func)) THEN
-          IF (.NOT. INTEGER_array_args(i)%default_func(INTEGER_array_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,REAL_array_args_i
-       IF (ASSOCIATED(REAL_array_args(i)%default_func)) THEN
-          IF (.NOT. REAL_array_args(i)%default_func(REAL_array_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,CHAR_array_args_i
-       IF (ASSOCIATED(CHAR_array_args(i)%default_func)) THEN
-          IF (.NOT. CHAR_array_args(i)%default_func(CHAR_array_args(i)%variable)) THEN
-             info = 1
-             GOTO 9999
-          END IF
-       END IF
-    END DO
-    DO i=1,LOGICAL_array_args_i
-       IF (ASSOCIATED(LOGICAL_array_args(i)%default_func)) THEN
-           IF (.NOT. LOGICAL_array_args(i)%default_func(LOGICAL_array_args(i)%variable)) THEN
-              info = 1
-              GOTO 9999
-           END IF
-       END IF
-    END DO
+    INTEGER, INTENT(  OUT)      :: info
+    CHARACTER(LEN=*), PARAMETER :: caller = 'call_default_funcs'
+    INTEGER                     :: i
+#define DTYPE INTEGER
+#include "ctrl/default_func.f"
+#define DTYPE LONGINT
+#include "ctrl/default_func.f"
+#define DTYPE SINGLE
+#include "ctrl/default_func.f"
+#define DTYPE DOUBLE
+#include "ctrl/default_func.f"
+#define DTYPE LOGICAL
+#include "ctrl/default_func.f"
+#define DTYPE STRING
+#include "ctrl/default_func.f"
+#define DTYPE COMPLEX
+#include "ctrl/default_func.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/default_func.f"
+  ! array
+#define DTYPE INTEGER_array
+#include "ctrl/default_func.f"
+#define DTYPE LONGINT_array
+#include "ctrl/default_func.f"
+#define DTYPE SINGLE_array
+#include "ctrl/default_func.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/default_func.f"
+#define DTYPE LOGICAL_array
+#include "ctrl/default_func.f"
+#define DTYPE STRING_array
+#include "ctrl/default_func.f"
+#define DTYPE COMPLEX_array
+#include "ctrl/default_func.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/default_func.f"
 9999 CONTINUE
   END SUBROUTINE call_default_funcs
   !------------------------------------------------------------------------
   !  Check min max
   !------------------------------------------------------------------------
   SUBROUTINE check_minmax(info)
-    INTEGER, INTENT(  OUT) :: info
-    INTEGER  :: i
-    DO i=1,INTEGER_args_i
-       IF (INTEGER_args(i)%variable .GT. INTEGER_args(i)%max .OR. &
-            INTEGER_args(i)%variable .LT. INTEGER_args(i)%min) THEN
-          WRITE (*,*) 'Argument ', INTEGER_args(i)&
-               &%name(1:LEN_TRIM(INTEGER_args(i)%name)), &
-               ' fails min max check!'
-          info = 1
-          GOTO 9999
-       END IF
-    END DO
-    DO i=1,REAL_args_i
-       IF (REAL_args(i)%variable .GT. REAL_args(i)%max .OR. &
-               REAL_args(i)%variable .LT. REAL_args(i)%min) THEN
-          WRITE (*,*) 'Argument ', REAL_args(i)%name(1:LEN_TRIM(REAL_args(i)%name)), &
-               ' fails min max check!'
-          info = 1
-          GOTO 9999
-       END IF
-    END DO
-    DO i=1,INTEGER_array_args_i
-       IF (ANY(INTEGER_array_args(i)%variable .GT. INTEGER_array_args(i)%max) .OR. &
-           ANY(INTEGER_array_args(i)%variable .LT. INTEGER_array_args(i)%min)) THEN
-          WRITE (*,*) 'Argument ', INTEGER_array_args(i)&
-               &%name(1:LEN_TRIM(INTEGER_array_args(i)%name)), &
-               ' fails min max check!'
-          info = 1
-          GOTO 9999
-       END IF
-    END DO
-    DO i=1,REAL_array_args_i
-       IF (ANY(REAL_array_args(i)%variable .GT. REAL_array_args(i)%max) .OR. &
-           ANY(REAL_array_args(i)%variable .LT. REAL_array_args(i)%min)) THEN
-          WRITE (*,*) 'Argument ', REAL_array_args(i)%name(1:LEN_TRIM(REAL_array_args(i)%name)), &
-               ' fails min max check!'
-          info = 1
-          GOTO 9999
-       END IF
-    END DO
+    INTEGER, INTENT(  OUT)      :: info
+    CHARACTER(LEN=*), PARAMETER :: caller = 'check_minmax'
+    CHARACTER(LEN=ppm_char)     :: cvar
+    INTEGER                     :: i
+#define DTYPE INTEGER
+#include "ctrl/minmax.f"
+#define DTYPE LONGINT
+#include "ctrl/minmax.f"
+#define DTYPE SINGLE
+#include "ctrl/minmax.f"
+#define DTYPE DOUBLE
+#include "ctrl/minmax.f"
+#define ARRAY
+#define DTYPE INTEGER_array
+#include "ctrl/minmax.f"
+#define DTYPE LONGINT_array
+#include "ctrl/minmax.f"
+#define DTYPE SINGLE_array
+#include "ctrl/minmax.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/minmax.f"
+#undef ARRAY
 9999 CONTINUE
   END SUBROUTINE check_minmax
   !------------------------------------------------------------------------
   !  Call validator functions
   !------------------------------------------------------------------------
   SUBROUTINE call_validator_funcs(info)
-    INTEGER, INTENT(  OUT) :: info
-    INTEGER  :: i
+    INTEGER, INTENT(  OUT)      :: info
+    CHARACTER(LEN=*), PARAMETER :: caller = 'call_validator_funcs'
+    CHARACTER(LEN=ppm_char)     :: cvar
+    INTEGER                     :: i
     ! scalar
 #define DTYPE INTEGER
 #include "ctrl/validate.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
 #include "ctrl/validate.f"
-#undef DTYPE
-#define DTYPE CHAR
+#define DTYPE SINGLE
 #include "ctrl/validate.f"
-#undef DTYPE
+#define DTYPE DOUBLE
+#include "ctrl/validate.f"
 #define DTYPE LOGICAL
 #include "ctrl/validate.f"
-#undef DTYPE
-    ! array
-#define ARRAY
+#define DTYPE STRING
+#include "ctrl/validate.f"
+#define DTYPE COMPLEX
+#include "ctrl/validate.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/validate.f"
+  ! array
 #define DTYPE INTEGER_array
 #include "ctrl/validate.f"
-#undef DTYPE
-#define DTYPE REAL_array
+#define DTYPE LONGINT_array
 #include "ctrl/validate.f"
-#undef DTYPE
-#define DTYPE CHAR_array
+#define DTYPE SINGLE_array
 #include "ctrl/validate.f"
-#undef DTYPE
+#define DTYPE DOUBLE_array
+#include "ctrl/validate.f"
 #define DTYPE LOGICAL_array
 #include "ctrl/validate.f"
-#undef DTYPE
-#undef ARRAY
+#define DTYPE STRING_array
+#include "ctrl/validate.f"
+#define DTYPE COMPLEX_array
+#include "ctrl/validate.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/validate.f"
 9999 CONTINUE
   END SUBROUTINE call_validator_funcs
   !------------------------------------------------------------------------
   !  Special args
   !------------------------------------------------------------------------
   SUBROUTINE disable_help
+!!! Turns of help flag parsing.
     help_enabled = .FALSE.
   END SUBROUTINE disable_help
 
   SUBROUTINE disable_ctrl
+!!! Turns of control file parsing.
     ctrl_enabled = .FALSE.
   END SUBROUTINE disable_ctrl
 
   SUBROUTINE set_ctrl_name(name)
+!!! Sets the control file name.
     CHARACTER(LEN=*), INTENT(IN   )  :: name
+!!! Name of the control file.
     ctrl_file_name = name
   END SUBROUTINE set_ctrl_name
   !------------------------------------------------------------------------
   !  Set command line args (usefull for running tests)
   !------------------------------------------------------------------------
   SUBROUTINE add_cmd(arg, value)
+!!! Debugging and testing procedure. First call replaces the actual
+!!! command arguments with the supplied values. Can be called many
+!!! times to incrementally build the fake argument list.
     CHARACTER(LEN=*), INTENT(IN   )           :: arg
+!!! Argument string to be appended to the list.
     CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL :: value
+!!! Optional value to append.
     CHARACTER(LEN=256), POINTER, DIMENSION(:) :: temp_a => NULL()
     INTEGER,            POINTER, DIMENSION(:) :: temp_l => NULL()
     INTEGER                                   :: inc
@@ -856,21 +1080,37 @@ CONTAINS
   !-------------------------------------------------------------------------
   !  Look-up flags
   !-------------------------------------------------------------------------
-  SUBROUTINE find_flag(name, success, value)
-    CHARACTER(LEN=*), INTENT(IN   )             :: name
+  SUBROUTINE find_flag(flag, success, value, err)
+!!! Returns the value supplied with the flag _flag_.
+    CHARACTER(LEN=*), INTENT(IN   )             :: flag
+!!! Flag string (eg. _'-f'_ or _'--flag'_).
     LOGICAL,          INTENT(  OUT)             :: success
+!!! True on success. False if there is no such flag or the value is
+!!! not supplied.
     CHARACTER(LEN=*), INTENT(  OUT), OPTIONAL   :: value
+!!! The value of supplied for the flag (character string).
+    LOGICAL,          INTENT(  OUT), OPTIONAL   :: err
+!!! Returns .TRUE. if the flag was supplied without a value.
     INTEGER                                     :: i
+    CHARACTER(LEN=*), PARAMETER                 :: caller = 'find_flag'
+    CHARACTER(LEN=ppm_char)                     :: cvar
+    INTEGER                                     :: info
     success = .FALSE.
+    IF (PRESENT(err)) err = .FALSE.
+    IF (cmd_args_i .EQ. 0) RETURN
     DO i=1,cmd_args_i
-       IF (cmd_args(i)(1:cmd_args_len(i)) .EQ. name) THEN
+       IF (cmd_args(i)(1:cmd_args_len(i)) .EQ. flag) THEN
           success          = .TRUE.
           IF (.NOT. cmd_args_used(i)) cmd_i = cmd_i - 1
           cmd_args_used(i) = .TRUE.
           IF (PRESENT(value)) THEN
              IF (i+1 .GT. cmd_args_i) THEN
                 success = .FALSE.
-                WRITE (*,*) "Flag ", name, " requires an argument."
+                IF (PRESENT(err)) err = .TRUE.
+                info    = ppm_error_warning
+                WRITE (cvar,*) "Flag ", flag, " requires an argument."
+                CALL ppm_error(ppm_err_argument, caller, cvar, &
+                     __LINE__, info)
              ELSE
                 value = cmd_args(i+1)
                 IF (.NOT. cmd_args_used(i+1)) cmd_i = cmd_i - 1
@@ -885,15 +1125,21 @@ CONTAINS
   !  Get arg count
   !------------------------------------------------------------------------
   INTEGER FUNCTION arg_count()
+!!! Returns the number of positional arguments found.
     arg_count = cmd_i
   END FUNCTION arg_count
   !------------------------------------------------------------------------
   !  Look-up args (after all flags have been read!!!)
   !------------------------------------------------------------------------
   SUBROUTINE find_arg(position, success, value)
+!!! Returns a positional argument at _position_.
     INTEGER,          INTENT(IN   )  :: position
-    CHARACTER(LEN=*), INTENT(INOUT)  :: value
+!!! Index of the positional argument, 1 based.
     LOGICAL,          INTENT(  OUT)  :: success
+!!! True on success. False if there is no positional arg with the
+!!! supplied index.
+    CHARACTER(LEN=*), INTENT(INOUT)  :: value
+!!! The value of the positional argument (character string).
     INTEGER                          :: i, j
     j = 0
     success = .FALSE.
@@ -912,7 +1158,9 @@ CONTAINS
   !  Argument groups
   !------------------------------------------------------------------------
   SUBROUTINE arg_group(name)
+!!! Defines an argument group.
     CHARACTER(LEN=*), INTENT(IN   )            :: name
+!!! Group name
     CHARACTER(LEN=256), POINTER, DIMENSION(:)  :: temp_g
     INTEGER,            POINTER, DIMENSION(:)  :: temp_s
     LOGICAL,            POINTER, DIMENSION(:)  :: temp_c
@@ -950,8 +1198,13 @@ CONTAINS
   !  Print command line help
   !------------------------------------------------------------------------
   SUBROUTINE print_help
+!!! Prints usage information to the standard output.
     INTEGER  :: i, j, k, l
-    WRITE (*,'(A)') "Usage: progname {ctrl-file} [options]"
+    IF (ctrl_enabled) THEN
+       WRITE (*,'(A)') "Usage: progname {ctrl-file} [options]"
+    ELSE
+       WRITE (*,'(A)') "Usage: progname [options]"
+    END IF
     DO k=0,groups_i
        WRITE (*,'(/A)') groups(k)
        IF (k .EQ. 0 .AND. i .EQ. 1) THEN
@@ -970,39 +1223,51 @@ CONTAINS
        group_loop: DO i=1,group_size(k)
           ! scalar
 #define DTYPE INTEGER
+#define __INTEGER
 #include "ctrl/help.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
+#define __LONGINT
 #include "ctrl/help.f"
-#undef DTYPE
+#define DTYPE SINGLE
+#define __SINGLE
+#include "ctrl/help.f"
+#define DTYPE DOUBLE
+#define __DOUBLE
+#include "ctrl/help.f"
 #define DTYPE LOGICAL
-#define BOOL
+#define __LOGICAL
 #include "ctrl/help.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR
-#define STRING
+#define DTYPE STRING
+#define __STRING
 #include "ctrl/help.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX
+#include "ctrl/help.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/help.f"
           ! array
 #define ARRAY
 #define DTYPE INTEGER_array
+#define __INTEGER
 #include "ctrl/help.f"
-#undef DTYPE
-#define DTYPE REAL_array
+#define DTYPE LONGINT_array
+#define __LONGINT
 #include "ctrl/help.f"
-#undef DTYPE
+#define DTYPE SINGLE_array
+#define __SINGLE
+#include "ctrl/help.f"
+#define DTYPE DOUBLE_array
+#define __DOUBLE
+#include "ctrl/help.f"
 #define DTYPE LOGICAL_array
-#define BOOL
+#define __LOGICAL
 #include "ctrl/help.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR_array
-#define STRING
+#define DTYPE STRING_array
+#define __STRING
 #include "ctrl/help.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX_array
+#include "ctrl/help.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/help.f"
 #undef ARRAY
        END DO group_loop
     END DO
@@ -1011,6 +1276,7 @@ CONTAINS
   !  Print sample control file
   !------------------------------------------------------------------------
   SUBROUTINE print_ctrl
+!!! Prints a sample control file to standard output.
     INTEGER  :: i, j, k, l
     IF (groups_i .EQ. -1) THEN
        WRITE (*,*) "No args have been defined..."
@@ -1030,38 +1296,42 @@ CONTAINS
           ! scalar
 #define DTYPE INTEGER
 #include "ctrl/ctrl_comment.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
 #include "ctrl/ctrl_comment.f"
-#undef DTYPE
+#define DTYPE SINGLE
+#include "ctrl/ctrl_comment.f"
+#define DTYPE DOUBLE
+#include "ctrl/ctrl_comment.f"
 #define DTYPE LOGICAL
-#define BOOL
+#define __LOGICAL
 #include "ctrl/ctrl_comment.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR
-#define STRING
+#define DTYPE STRING
+#define __STRING
 #include "ctrl/ctrl_comment.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX
+#include "ctrl/ctrl_comment.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/ctrl_comment.f"
           ! array
 #define ARRAY
 #define DTYPE INTEGER_array
 #include "ctrl/ctrl_comment.f"
-#undef DTYPE
-#define DTYPE REAL_array
+#define DTYPE LONGINT_array
 #include "ctrl/ctrl_comment.f"
-#undef DTYPE
+#define DTYPE SINGLE_array
+#include "ctrl/ctrl_comment.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/ctrl_comment.f"
 #define DTYPE LOGICAL_array
-#define BOOL
+#define __LOGICAL
 #include "ctrl/ctrl_comment.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR_array
-#define STRING
+#define DTYPE STRING_array
+#define __STRING
 #include "ctrl/ctrl_comment.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX_array
+#include "ctrl/ctrl_comment.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/ctrl_comment.f"
 #undef ARRAY
        END DO comment_loop
 
@@ -1071,38 +1341,40 @@ CONTAINS
           ! scalar
 #define DTYPE INTEGER
 #include "ctrl/ctrl.f"
-#undef DTYPE
-#define DTYPE REAL
+#define DTYPE LONGINT
 #include "ctrl/ctrl.f"
-#undef DTYPE
+#define DTYPE SINGLE
+#include "ctrl/ctrl.f"
+#define DTYPE DOUBLE
+#include "ctrl/ctrl.f"
 #define DTYPE LOGICAL
-#define BOOL
 #include "ctrl/ctrl.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR
-#define STRING
+#define DTYPE STRING
+#define __STRING
 #include "ctrl/ctrl.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX
+#include "ctrl/ctrl.f"
+#define DTYPE DCOMPLEX
+#include "ctrl/ctrl.f"
           ! array
 #define ARRAY
 #define DTYPE INTEGER_array
 #include "ctrl/ctrl.f"
-#undef DTYPE
-#define DTYPE REAL_array
+#define DTYPE LONGINT_array
 #include "ctrl/ctrl.f"
-#undef DTYPE
+#define DTYPE SINGLE_array
+#include "ctrl/ctrl.f"
+#define DTYPE DOUBLE_array
+#include "ctrl/ctrl.f"
 #define DTYPE LOGICAL_array
-#define BOOL
 #include "ctrl/ctrl.f"
-#undef BOOL
-#undef DTYPE
-#define DTYPE CHAR_array
-#define STRING
+#define DTYPE STRING_array
+#define __STRING
 #include "ctrl/ctrl.f"
-#undef STRING
-#undef DTYPE
+#define DTYPE COMPLEX_array
+#include "ctrl/ctrl.f"
+#define DTYPE DCOMPLEX_array
+#include "ctrl/ctrl.f"
 #undef ARRAY
        END DO var_loop
 
@@ -1111,39 +1383,41 @@ CONTAINS
   !------------------------------------------------------------------------
   !  Debug
   !------------------------------------------------------------------------
-  SUBROUTINE dump_defines
-    INTEGER :: i
-    WRITE (*,'(//A)') "DUMPING DEFINED ARGS"
-    WRITE (*,'(//A/)') "Integers: "
-    DO i=1,INTEGER_args_i
-#define DTYPE INTEGER
-#include "ctrl/dump.f"
-#undef DTYPE
-    END DO
-    WRITE (*,'(//A/)') "Reals: "
-    DO i=1,REAL_args_i
-#define DTYPE REAL
-#include "ctrl/dump.f"
-#undef DTYPE
-    END DO
-    WRITE (*,'(//A/)') "Chars: "
-    DO i=1,CHAR_args_i
-#define DTYPE CHAR
-#define STRING
-#include "ctrl/dump.f"
-#undef STRING
-#undef DTYPE
-    END DO
-    WRITE (*,'(//A/)') "Logicals: "
-    DO i=1,LOGICAL_args_i
-#define DTYPE LOGICAL
-#define BOOL
-#include "ctrl/dump.f"
-#undef BOOL
-#undef DTYPE
-    END DO
-  END SUBROUTINE dump_defines
+!   SUBROUTINE dump_defines
+! !!! Debugging procedure. Prints all defined args.
+!     INTEGER :: i
+!     WRITE (*,'(//A)') "DUMPING DEFINED ARGS"
+!     WRITE (*,'(//A/)') "Integers: "
+!     DO i=1,INTEGER_args_i
+! #define DTYPE INTEGER
+! #include "ctrl/dump.f"
+! #undef DTYPE
+!     END DO
+!     WRITE (*,'(//A/)') "Reals: "
+!     DO i=1,REAL_args_i
+! #define DTYPE REAL
+! #include "ctrl/dump.f"
+! #undef DTYPE
+!     END DO
+!     WRITE (*,'(//A/)') "Chars: "
+!     DO i=1,CHAR_args_i
+! #define DTYPE CHAR
+! #define STRING
+! #include "ctrl/dump.f"
+! #undef STRING
+! #undef DTYPE
+!     END DO
+!     WRITE (*,'(//A/)') "Logicals: "
+!     DO i=1,LOGICAL_args_i
+! #define DTYPE LOGICAL
+! #define BOOL
+! #include "ctrl/dump.f"
+! #undef BOOL
+! #undef DTYPE
+!     END DO
+!   END SUBROUTINE dump_defines
   SUBROUTINE dump_args
+!!! Debugging procedure. Prints all supplied command line args.
     INTEGER :: i
     WRITE (*,'(//A/)') 'DUMPING COMMAND ARGS'
     DO i=1,cmd_args_i
@@ -1160,50 +1434,72 @@ CONTAINS
   !------------------------------------------------------------------------
 
   ! scalar
-
 #define DTYPE INTEGER
+#define __INTEGER
 #include "ctrl/adder.f"
-#undef DTYPE
 
-#define DTYPE REAL
+#define DTYPE LONGINT
+#define __LONGINT
 #include "ctrl/adder.f"
-#undef DTYPE
 
-#define DTYPE CHAR
-#define STRING
+#define DTYPE SINGLE
+#define __SINGLE
 #include "ctrl/adder.f"
-#undef STRING
-#undef DTYPE
+
+#define DTYPE DOUBLE
+#define __DOUBLE
+#include "ctrl/adder.f"
 
 #define DTYPE LOGICAL
-#define BOOL
+#define __LOGICAL
 #include "ctrl/adder.f"
-#undef BOOL
-#undef DTYPE
+
+#define DTYPE STRING
+#define __STRING
+#include "ctrl/adder.f"
+
+#define DTYPE COMPLEX
+#define __COMPLEX
+#include "ctrl/adder.f"
+
+#define DTYPE DCOMPLEX
+#define __DCOMPLEX
+#include "ctrl/adder.f"
 
   ! array
-
 #define ARRAY
 
-#define DTYPE INTEGER
+#define DTYPE INTEGER_array
+#define __INTEGER
 #include "ctrl/adder.f"
-#undef DTYPE
 
-#define DTYPE REAL
+#define DTYPE LONGINT_array
+#define __LONGINT
 #include "ctrl/adder.f"
-#undef DTYPE
 
-#define DTYPE CHAR
-#define STRING
+#define DTYPE SINGLE_array
+#define __SINGLE
 #include "ctrl/adder.f"
-#undef STRING
-#undef DTYPE
 
-#define DTYPE LOGICAL
-#define BOOL
+#define DTYPE DOUBLE_array
+#define __DOUBLE
 #include "ctrl/adder.f"
-#undef BOOL
-#undef DTYPE
+
+#define DTYPE LOGICAL_array
+#define __LOGICAL
+#include "ctrl/adder.f"
+
+#define DTYPE STRING_array
+#define __STRING
+#include "ctrl/adder.f"
+
+#define DTYPE COMPLEX_array
+#define __COMPLEX
+#include "ctrl/adder.f"
+
+#define DTYPE DCOMPLEX_array
+#define __DCOMPLEX
+#include "ctrl/adder.f"
 
 #undef ARRAY
 
