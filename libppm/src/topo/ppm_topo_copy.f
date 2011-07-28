@@ -44,7 +44,6 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_typedef
-      USE ppm_module_check_id
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -324,22 +323,6 @@
               info = ppm_error_error
               CALL ppm_error(ppm_err_ppm_noinit,'ppm_topo_copy',       &
      &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          CALL ppm_check_topoid(intopo,valid,info)
-          IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_copy', &
-     &             'intopo invalid',&
-     &              __LINE__, info)
-              GOTO 8888
-          ENDIF
-          CALL ppm_check_topoid(outtopo,valid,info)
-          IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_topo_copy', &
-     &             'outtopo invalid',&
-     &              __LINE__, info)
               GOTO 8888
           ENDIF
  8888     CONTINUE
