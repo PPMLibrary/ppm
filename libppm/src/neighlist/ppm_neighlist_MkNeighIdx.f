@@ -82,7 +82,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                              :: i,j,k,l,ibox,jbox,nz,idm
+      INTEGER                              :: i,j,k,l,ibox,nz
       REAL(MK)                             :: t0
       ! alloc
       INTEGER, DIMENSION(2)                :: lda

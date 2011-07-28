@@ -290,7 +290,7 @@
           ! every edge of a node has distinct color, using minimum number of
           ! of colors possible (which is degree + 1)
           !---------------------------------------------------------------------
-          CALL ppm_color_edge(ppm_nproc,nlinks,ilinks,optres)
+          CALL ppm_color_edge(ppm_nproc,ilinks,optres)
           !CALL vizing_coloring(ppm_nproc,nlinks,ilinks,optres)
           !---------------------------------------------------------------------
           !  optres now contains the result as a sequence of nlinks triples

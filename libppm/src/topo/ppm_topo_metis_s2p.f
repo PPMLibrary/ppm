@@ -416,11 +416,11 @@
       IF (meansp .GT. 0.05_ppm_kind_double) lasymm = .TRUE.
 
       IF (ppm_debug .GT. 0) THEN
-          WRITE(mesg,'(A,F6.4)') 'Slowest processor: ',minsp
+          WRITE(mesg,'(A,F7.4)') 'Slowest processor: ',minsp
           CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
-          WRITE(mesg,'(A,F6.4)') 'Fastest processor: ',maxsp
+          WRITE(mesg,'(A,F7.4)') 'Fastest processor: ',maxsp
           CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
-          WRITE(mesg,'(A,F6.4)') 'Processor speed imbalance: ',meansp
+          WRITE(mesg,'(A,F7.4)') 'Processor speed imbalance: ',meansp
           CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
           IF (lasymm) THEN
              CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p', &
