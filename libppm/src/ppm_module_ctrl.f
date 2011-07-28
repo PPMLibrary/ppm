@@ -58,10 +58,11 @@ MODULE ppm_module_ctrl
 !!! with the supplied values.
 !!!
 !!! The function +arg+ is overloaded to support +integer+, +real+,
-!!! +character+ and +logical+ arguments or fixed sized arrays of these
-!!! types. The first two arguments are required and they are: the
-!!! variable itself (to which a pointer will be stored) and the name
-!!! of the variable (used for printing help messages).
+!!! +character+, +logical+ and +complex+ arguments or fixed sized
+!!! arrays of these types. The first two arguments are required and
+!!! they are: the variable itself (to which a pointer will be
+!!! stored) and the name of the variable (used for printing help
+!!! messages).
 !!!
 !!! All other arguments are optional and the details of how they work
 !!! can be found below. Here is just a short overview and reference
