@@ -59,23 +59,23 @@
       !-------------------------------------------------------------------------
       !  Declaration of arrays
       !-------------------------------------------------------------------------
-      TYPE(vertex), ALLOCATABLE, DIMENSION(:) :: node
+      TYPE(vertex), DIMENSION(:), POINTER :: node => NULL()
       !!! Array of nodes
-      INTEGER, DIMENSION(:), ALLOCATABLE      :: nelem
+      INTEGER, DIMENSION(:), POINTER          :: nelem => NULL()
       !!! array for number of nodes that are adjacent to each node
-      INTEGER, DIMENSION(:), ALLOCATABLE      :: offset
+      INTEGER, DIMENSION(:), POINTER          :: offset => NULL()
       !!! where to put the next node in the adjacency list of another
-      TYPE(list), DIMENSION(:), ALLOCATABLE   :: edges_per_node
+      TYPE(list), DIMENSION(:), POINTER       :: edges_per_node => NULL()
       !!! number of edges per node
-      TYPE(list), DIMENSION(:), ALLOCATABLE   :: lists
+      TYPE(list), DIMENSION(:), POINTER       :: lists => NULL()
       !!! array of adjacency lists, one for each node
-      INTEGER, ALLOCATABLE, DIMENSION(:,:)    :: node_sat
+      INTEGER, DIMENSION(:,:), POINTER        :: node_sat => NULL()
       !!! 2-D array for keeping nodes according to their d-sat values
       !!! and degrees where rows are dsat values and columns are node
       !!! numbers sorted by degree of nodes
-      INTEGER, ALLOCATABLE, DIMENSION(:)      :: size_heap
+      INTEGER, DIMENSION(:), POINTER          :: size_heap => NULL()
       !!! size of the heap for each row (d-sat value)
-      LOGICAL,    ALLOCATABLE, DIMENSION(:)   :: used_color
+      LOGICAL, DIMENSION(:), POINTER          :: used_color => NULL()
       !!! Array to be used to count number of distinct colors
 
       !-------------------------------------------------------------------------
