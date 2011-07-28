@@ -38,17 +38,15 @@ module Funit
         ts_content = $2
         ts_trailing = $3
         print_started(ts_name)
-        if((!File.exist?(ts_name+"_fun.f")) || File.mtime(ts_name+"_fun.f") < File.mtime(test_file+".fun")) then
+        if((!File.exist?(ts_name+"_fun.f")) || (File.mtime(ts_name+"_fun.f") < File.mtime(test_file+".fun"))) then
           if ( File.read('../../'+ts_name+'.f').match(/\s*module\s+#{ts_name}/i) ) then
             TestSuite.new(ts_name, ts_content, ts_trailing, false)
           else
             TestSuite.new(ts_name, ts_content, ts_trailing, true)
           end
-        end
-        if (funit_exists?(ts_name)) then
-          print_done("not changed")
-        else
           print_done("regenerated!")
+        else
+          print_done("not changed")
         end
         test_suites.push(ts_name)
       }
