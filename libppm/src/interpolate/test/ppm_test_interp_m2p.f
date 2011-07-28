@@ -207,12 +207,12 @@ program ppm_test_interp_m2p
     enddo
     do j=1,ndata(2,1)
         do i=1,ndata(1,1)
-	        do aj = 2,nmom
-	           field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
+            do aj = 2,nmom
+               field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
                field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
                f_moments(aj) = f_moments(aj) + field_wp(1,i,j,1)*field_x(1)**alpha(1,aj)*field_x(2)**alpha(2,aj)
-	        enddo
-	        f_moments(1) = f_moments(1) + field_wp(1,i,j,1)*h(1)*h(2)
+            enddo
+            f_moments(1) = f_moments(1) + field_wp(1,i,j,1)*h(1)*h(2)
         enddo
     enddo
 
@@ -231,7 +231,7 @@ program ppm_test_interp_m2p
     enddo
 
 
-	!print *, 'Maximum 3rd moment diff / h^3', maxm3/h**3
+    !print *, 'Maximum 3rd moment diff / h^3', maxm3/h**3
 
 
     !----------------
