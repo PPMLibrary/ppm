@@ -127,7 +127,9 @@ module Funit
       write(log,*) ""
       noAssertFailed = .false.
       numFailures    = numFailures + 1
+#ifdef __MPI
       call MPI_Abort(funit_comm, funit_info)
+#endif
     else
       write(log,*) " success!"
       numAssertsTested = numAssertsTested + 1
