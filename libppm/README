@@ -17,6 +17,7 @@ following files and directories:
 
 ----------------------------------
    4.2K Makefile.in   The Makefile template used by configure
+   610B NOTICE
     11K README        This file
     25K README.html   The HTML version of this file
    717B aclocal.m4
@@ -179,7 +180,9 @@ Following options are especially important:
 - `--prefix`: If you like to install PPM and the target directory is not the
   system's standard directory (`/usr/`) then you have to define this directory
   here. You must provide the full path. It is not necessary to install PPM.
-  Building it and leaving it in the compilation directory is sufficient.
+  Building it and leaving it in the compilation directory is sufficient. If you
+  provide a directory here it must already exist - it will not be created by the
+  build system.
 - `FC` etc.: If you wish to not use MPI or you have to specify exactly which
   compiler executable should be used, then you can use this flag to set your
   compiler.
@@ -258,8 +261,8 @@ and link against libppm.a:
 Enjoy the PPM experience!
 
 
-Authors and Acknowledgements
-----------------------------
+Contributors and Acknowledgements
+---------------------------------
 
 The current development team of PPM core consists of:
 
@@ -270,7 +273,7 @@ The current development team of PPM core consists of:
 
 Information on PPM can be found on: http://www.ppm-library.org
 
-Many thanks to:
+Many thanks for their continued support go to:
 
 - Prof. Petros Koumoutsakos (CSE Lab, ETH Zurich)+
 - Prof. Jens Walther (Fluid Mechanics, DTU Copenhagen)+
