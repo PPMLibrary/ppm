@@ -342,9 +342,6 @@ CONTAINS
     IF (ASSOCIATED(REAL_array_args))    DEALLOCATE(REAL_array_args)
     IF (ASSOCIATED(LOGICAL_array_args)) DEALLOCATE(LOGICAL_array_args)
     IF (ASSOCIATED(CHAR_array_args))    DEALLOCATE(CHAR_array_args)
-    IF (ASSOCIATED(cmd_args))           DEALLOCATE(cmd_args)
-    IF (ASSOCIATED(cmd_args_len))       DEALLOCATE(cmd_args_len)
-    IF (ASSOCIATED(cmd_args_used))      DEALLOCATE(cmd_args_used)
     IF (ASSOCIATED(groups))             DEALLOCATE(groups)
     IF (ASSOCIATED(group_size))         DEALLOCATE(group_size)
     IF (ASSOCIATED(group_has_ctrl))     DEALLOCATE(group_has_ctrl)
@@ -353,6 +350,9 @@ CONTAINS
 
   SUBROUTINE reset
     CALL deallocate_memory
+    IF (ASSOCIATED(cmd_args))           DEALLOCATE(cmd_args)
+    IF (ASSOCIATED(cmd_args_len))       DEALLOCATE(cmd_args_len)
+    IF (ASSOCIATED(cmd_args_used))      DEALLOCATE(cmd_args_used)
     INTEGER_args_i       = 0
     REAL_args_i          = 0
     LOGICAL_args_i       = 0
