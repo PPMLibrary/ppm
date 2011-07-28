@@ -30,7 +30,7 @@
 SUBROUTINE ppm_dbg_print_s(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 #elif __KIND == __DOUBLE_PRECISION
 SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
-#ENDIF
+#endif
       !!! This routine provides a simple means to visualize particles and
       !!! domain decompositions for debugging and monitoring purposes.
       !!!
@@ -56,13 +56,13 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 #include "ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
-#ENDIF 
+#endif
 
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
-#ENDIF
+#endif
     
       ! arguments
       INTEGER,            INTENT(IN)    :: topoid
@@ -100,7 +100,7 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       INTEGER                           :: maxmp
       INTEGER                           :: iproc
       INTEGER, DIMENSION(:),  POINTER   :: req => NULL()
-#ENDIF
+#endif
        
       CALL substart('ppm_dbg_print',t0,info)
 
@@ -122,7 +122,7 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 
 #ifdef __MPI
       IF (ppm_rank.eq.0) THEN
-#ENDIF
+#endif
       CALL ppm_topo_get(topoid,topo,info)
       open(iunit,file=sfname)
    
@@ -136,7 +136,7 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       close(iunit)
 #ifdef __MPI
       ENDIF
-#ENDIF
+#endif
       
       IF (present(xp).AND.present(np)) THEN
           IF (present(mp)) THEN
@@ -242,7 +242,7 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
               write(iunit,pfmt) xp(:,i),-1
           ENDDO
           close(iunit)
-#ENDIF
+#endif
       ENDIF
       !-------------------------------------------------------------------------
       !  Return 
@@ -254,4 +254,4 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 end SUBROUTINE ppm_dbg_print_s
 #elif __KIND == __DOUBLE_PRECISION
 end SUBROUTINE ppm_dbg_print_d
-#ENDIF
+#endif
