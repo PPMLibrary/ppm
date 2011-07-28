@@ -324,10 +324,10 @@
       !-------------------------------------------------------------------------
       !  error severity levels
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_error_notice              = -4
-      INTEGER, PARAMETER :: ppm_error_warning             = -3
-      INTEGER, PARAMETER :: ppm_error_error               = -2
-      INTEGER, PARAMETER :: ppm_error_fatal               = -1
+      INTEGER, PARAMETER :: ppm_error_notice              = -1
+      INTEGER, PARAMETER :: ppm_error_warning             = -2
+      INTEGER, PARAMETER :: ppm_error_error               = -3
+      INTEGER, PARAMETER :: ppm_error_fatal               = -4
 
       !-------------------------------------------------------------------------
       !  Toplogy parameters
