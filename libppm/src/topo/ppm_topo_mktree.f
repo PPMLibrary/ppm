@@ -437,7 +437,7 @@
       !  Store the topology internally
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,isublist,nsublist,&
+     &                    sub2proc,nsubs,bcdef,minboxsize,isublist,nsublist,&
      &                    nneigh,ineigh,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
