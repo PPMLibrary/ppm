@@ -173,7 +173,7 @@ test_suite ppm_module_interp_p2m
         &               bcdef,ghostsize,cost,nm,info)
         
         call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
-                        isublist,nsublist,info)
+        &               isublist,nsublist,info)
 
 
         allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
@@ -301,8 +301,8 @@ test_suite ppm_module_interp_p2m
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)
         
-        call ppm_topo_get_meshinfo(topoid,meshid,istart,ndata,maxndata,&
-                        isublist,nsublist,info)
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
         
 
         allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
