@@ -28,6 +28,8 @@ This versions brings many bug fixes and several new features
 - Added ppm topology query routines and shortened ppm_mktopo argument list.
   There should be in most cases no need to call ppm_topo_get anymore.
 - The user can now mange cell lists himself to save unnecessary computations.
+- Added a tool to help PPM client developers with debugging. This tool
+  visualizes domain decompositions and particle positions
 - Renamings: ppm_module_user -> ppm_module_core, 
   ppm_module_user_util -> ppm_module_core_util
 
