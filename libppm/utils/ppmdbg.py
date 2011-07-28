@@ -1,0 +1,150 @@
+#!/usr/bin/env python
+
+from mpl_toolkits.mplot3d import Axes3D 
+from matplotlib.patches import Polygon
+import matplotlib.pyplot as plt 
+import numpy as np 
+import sys
+
+def sub2rect(minc,maxc):
+    x1 = minc[0]
+    y1 = minc[1]
+    x2 = maxc[0]
+    y2 = maxc[1]
+    f = np.array([(x1,y1),(x2,y1),(x2,y2),(x1,y2)])
+    return f
+
+
+def sub2cube(minc,maxc):
+    x1 = minc[0]
+    y1 = minc[1]
+    z1 = minc[2]
+    x2 = maxc[0]
+    y2 = maxc[1]
+    z2 = maxc[2]
+
+    sx = x2 - x1
+    sy = y2 - y1
+    sz = z2 - z1
+   
+    # front face
+    f1x = np.array([x1,x2])
+    f1y = np.array([[y1,y1],[y1,y1]])
+    f1z = np.array([z1,z2])
+    f1x,f1z = np.meshgrid(f1x,f1z)
+
+    # back face
+    f2x = np.array([x1,x2])
+    f2y = np.array([[y2,y2],[y2,y2]])
+    f2z = np.array([z1,z2])
+    f2x,f2z = np.meshgrid(f2x,f2z)
+
+    # left face
+    f3x = np.array([[x1,x1],[x1,x1]])
+    f3y = np.array([y1,y2])
+    f3z = np.array([z1,z2])
+    f3y,f3z = np.meshgrid(f3y,f3z)
+
+    
+    # right face
+    f4x = np.array([[x2,x2],[x2,x2]])
+    f4y = np.array([y1,y2])
+    f4z = np.array([z1,z2])
+    f4y,f4z = np.meshgrid(f4y,f4z)
+
+    # bottom face
+    f5x = np.array([x1,x2])
+    f5y = np.array([y1,y2])
+    f5z = np.array([[z1,z1],[z1,z1]])
+    f5x,f5y = np.meshgrid(f5x,f5y)
+
+    # top face
+    f6x = np.array([x1,x2])
+    f6y = np.array([y1,y2])
+    f6z = np.array([[z2,z2],[z2,z2]])
+    f6x,f6y = np.meshgrid(f6x,f6y)
+
+    return [(f1x,f1y,f1z),(f2x,f2y,f2z),(f3x,f3y,f3z),(f4x,f4y,f4z),\
+            (f5x,f5y,f5z),(f6x,f6y,f6z)]
+
+def plotsub3(ax,f):
+    ax.plot_surface(f[0][0],f[0][1],f[0][2],alpha=0.1) 
+    ax.plot_surface(f[1][0],f[1][1],f[1][2],alpha=0.1) 
+    ax.plot_surface(f[2][0],f[2][1],f[2][2],alpha=0.1) 
+    ax.plot_surface(f[3][0],f[3][1],f[3][2],alpha=0.1) 
+    ax.plot_surface(f[4][0],f[4][1],f[4][2],alpha=0.1) 
+    ax.plot_surface(f[5][0],f[5][1],f[5][2],alpha=0.1)
+
+def plotsub2(ax,f):
+    p = Polygon(f,alpha=0.1)
+    ax.add_patch(p)
+
+def plotdat2(ax,x,y,tag):
+    ax.scatter(x,y,s=2,c=tag,linewidths=0)
+
+def plotdat3(ax,x,y,z,tag):
+    ax.scatter(x,y,z,s=4,linewidths=0)
+
+def main():
+    subfilen = sys.argv[1]
+    datfilen = sys.argv[2]
+    
+    fig = plt.figure()
+
+    subfile = open(subfilen)
+    l1 = subfile.readline()
+    dim = (len(l1.strip().split()) - 1)/2
+    print dim
+    subfile.seek(0)
+    
+    if dim == 2:
+        ax = fig.add_subplot(111)
+        for l in subfile:
+            r = l.strip().split()
+            min_sub = [float(r[0]),float(r[1])]
+            max_sub = [float(r[2]),float(r[3])]
+            faces = sub2rect(min_sub,max_sub)
+            plotsub2(ax,faces)
+    elif dim == 3:
+        ax = Axes3D(fig)
+        for l in subfile:
+            r = l.strip().split()
+            min_sub = [float(r[0]),float(r[1]),float(r[2])]
+            max_sub = [float(r[3]),float(r[4]),float(r[5])]
+            faces = sub2cube(min_sub,max_sub)
+            plotsub3(ax,faces)
+    subfile.close()
+
+    datfile = open(datfilen)
+    x = []
+    y = []
+    if dim == 3:
+        z = []
+    c = []
+    if dim == 2:
+        for l in datfile:
+            r = l.strip().split()
+            x.append(float(r[0]))
+            y.append(float(r[1]))
+            c.append(int(r[2]))
+        plotdat2(ax,x,y,c)
+    elif dim == 3:
+        for l in datfile:
+            r = l.strip().split()
+            x.append(float(r[0]))
+            y.append(float(r[1]))
+            z.append(float(r[2]))
+            c.append(int(r[3]))
+        plotdat3(ax,x,y,z,c)
+    datfile.close()
+   
+    
+    ax.set_xlabel('x')
+    ax.set_ylabel('y')
+    if dim == 3:
+        ax.set_zlabel('z')
+    plt.show()
+
+
+if __name__ == "__main__":
+    main()
