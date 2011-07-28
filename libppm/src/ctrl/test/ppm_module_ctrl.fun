@@ -1,20 +1,28 @@
 test_suite ppm_module_ctrl
 
-  integer            :: idefault, iflag, ilong_flag
-  real               :: rdefault, rflag, rlong_flag
-  character(len=256) :: cdefault, cflag, clong_flag
+  integer            :: idefault, iflag,  ilong_flag
+  integer(8)         :: gdefault, gflag,  glong_flag
+  real               :: rdefault, rflag,  rlong_flag
+  real(8)            :: ddefault, dflag,  dlong_flag
+  character(len=256) :: cdefault, cflag,  clong_flag
   logical            :: ldefault, leflag, lelong_flag
   logical            ::           ldflag, ldlong_flag
+  complex            :: pdefault, pflag,  plong_flag
+  complex(8)         :: xdefault, xflag,  xlong_flag
 
   integer,            dimension(3) :: iarray, iaflag, ialflag
+  integer(8),         dimension(3) :: garray, gaflag, galflag
   real,               dimension(3) :: rarray, raflag, ralflag
+  real(8),            dimension(3) :: darray, daflag, dalflag
   character(len=256), dimension(3) :: carray, caflag, calflag
   logical,            dimension(3) :: larray, laflag, lalflag
+  complex,            dimension(3) :: parray, paflag, palflag
+  complex(8),         dimension(3) :: xarray, xaflag, xalflag
 
   character(len=256) :: value
   logical            :: ok
 
-  integer :: info, ios
+  integer :: info, ios, scf
 
   setup
     CALL disable_ctrl
@@ -32,9 +40,15 @@ test_suite ppm_module_ctrl
     idefault    = 0
     iflag       = 0
     ilong_flag  = 0
+    gdefault    = 0
+    gflag       = 0
+    glong_flag  = 0
     rdefault    = 0
     rflag       = 0
     rlong_flag  = 0
+    ddefault    = 0
+    dflag       = 0
+    dlong_flag  = 0
     cdefault    = ''
     cflag       = ''
     clong_flag  = ''
@@ -43,6 +57,12 @@ test_suite ppm_module_ctrl
     lelong_flag = .false.
     ldflag      = .false.
     ldlong_flag = .false.
+    pdefault    = (0,0)
+    pflag       = (0,0)
+    plong_flag  = (0,0)
+    xdefault    = (0,0)
+    xflag       = (0,0)
+    xlong_flag  = (0,0)
     value       = ''
     ok          = .false.
     info        = 0
@@ -69,6 +89,7 @@ test_suite ppm_module_ctrl
          max       = 1.0,              &
          help      = "Test if real printing works.")
     CALL arg_group("Second Group")
+
     CALL arg(cdefault, 'some_char',    &
          flag      = '-c',             &
          long_flag = '--char',         &
@@ -110,12 +131,14 @@ test_suite ppm_module_ctrl
          ctrl_name = 'bool_array',     &
          default   = (/.true.,.false.,.true./), &
          help      = "Test if bool array printing works.")
+    write (log,*) 'args added...'
     ! supply flag
 !    CALL add_cmd('-h')
 !    CALL add_cmd('--help')
 !    CALL add_cmd('--print-ctrl')
     ! parse args
     CALL parse_args(info)
+    write (log,*) 'args parsed...'
     Assert_Equal(info, 0)
   end test
 
@@ -244,7 +267,40 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(ialflag, (/1, 2, 3/))
   end test
 
-  test real_args
+  test long_args
+    ! define
+    CALL arg(gdefault,   'gdefault',   default   = 42_8    )
+    CALL arg(gflag,      'gflag',      flag      = '-f'    )
+    CALL arg(glong_flag, 'glong_flag', long_flag = '--flag')
+    ! supply
+    CALL add_cmd('-f',     '42')
+    CALL add_cmd('--flag', '42')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Equal(gdefault,   42)
+    Assert_Equal(gflag,      42)
+    Assert_Equal(glong_flag, 42)
+  end test
+
+  test long_array_args
+    ! define
+    CALL arg(garray,  'garray',  default   = (/1_8,2_8,3_8/))
+    CALL arg(gaflag,  'gaflag',  flag      = '-f'           )
+    CALL arg(galflag, 'galflag', long_flag = '--flag'       )
+    ! supply
+    CALL add_cmd('-f',     '1,2,3'  )
+    CALL add_cmd('--flag', '1, 2, 3')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Array_Equal(garray,  (/1, 2, 3/))
+    Assert_Array_Equal(gaflag,  (/1, 2, 3/))
+    Assert_Array_Equal(galflag, (/1, 2, 3/))
+  end test
+
+
+  test single_args
     ! define
     CALL arg(rdefault,   'rdefault',   default   = 0.1337  )
     CALL arg(rflag,      'rflag',      flag      = '-f'    )
@@ -260,7 +316,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(rlong_flag, 0.1337)
   end test
 
-  test real_array_args
+  test single_array_args
     ! define
     CALL arg(rarray,  'rarray',  default   = (/1.1,2.2,3.3/))
     CALL arg(raflag,  'raflag',  flag      = '-f'     )
@@ -276,7 +332,39 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(ralflag, (/1.1, 2.2, 3.3/))
   end test
 
-  test char_args
+  test double_args
+    ! define
+    CALL arg(ddefault,   'ddefault',   default   = 0.1337_8 )
+    CALL arg(dflag,      'dflag',      flag      = '-f'     )
+    CALL arg(dlong_flag, 'dlong_flag', long_flag = '--flag' )
+    ! supply
+    CALL add_cmd('-f',     '0.1337')
+    CALL add_cmd('--flag', '0.1337')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Equal(ddefault,   0.1337_8)
+    Assert_Equal(dflag,      0.1337_8)
+    Assert_Equal(dlong_flag, 0.1337_8)
+  end test
+
+  test double_array_args
+    ! define
+    CALL arg(darray,  'darray',  default   = (/1.1_8,2.2_8,3.3_8/))
+    CALL arg(daflag,  'daflag',  flag      = '-f'                 )
+    CALL arg(dalflag, 'dalflag', long_flag = '--flag'             )
+    ! supply
+    CALL add_cmd('-f',     '1.1,2.2,3.3'  )
+    CALL add_cmd('--flag', '1.1, 2.2, 3.3')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Array_Equal(darray,  (/1.1_8, 2.2_8, 3.3_8/))
+    Assert_Array_Equal(daflag,  (/1.1_8, 2.2_8, 3.3_8/))
+    Assert_Array_Equal(dalflag, (/1.1_8, 2.2_8, 3.3_8/))
+  end test
+
+  test string_args
     CALL arg(cdefault,   'cdefault',   default   = 'hrkljus')
     CALL arg(cflag,      'cflag',      flag      = '-f')
     CALL arg(clong_flag, 'clong_flag', long_flag = '--flag')
@@ -291,7 +379,7 @@ test_suite ppm_module_ctrl
     Assert_Equal(clong_flag, 'hrkljus')
   end test
 
-  test char_array_args
+  test string_array_args
     ! define
     CALL arg(carray,  'carray',  default   = (/'foo','bar','baz'/))
     CALL arg(caflag,  'caflag',  flag      = '-f'     )
@@ -348,32 +436,113 @@ test_suite ppm_module_ctrl
     Assert_LArray_Equal(lalflag, (/.true.,.false.,.true./))
   end test
 
+  test complex_args
+    ! define
+    CALL arg(pdefault,   'pdefault',   default   = (0,1)   )
+    CALL arg(pflag,      'pflag',      flag      = '-f'    )
+    CALL arg(plong_flag, 'plong_flag', long_flag = '--flag')
+    ! supply
+    CALL add_cmd('-f',     '(0,1)')
+    CALL add_cmd('--flag', '(0,1)')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Equal(pdefault,   (0,1))
+    Assert_Equal(pflag,      (0,1))
+    Assert_Equal(plong_flag, (0,1))
+  end test
+
+  test complex_array_args
+    ! define
+    CALL arg(parray,  'parray',  default   = (/(1,0),(0,1),(-1,0)/))
+    CALL arg(paflag,  'paflag',  flag      = '-f'     )
+    CALL arg(palflag, 'palflag', long_flag = '--flag' )
+    ! supply
+    CALL add_cmd('-f',     '(1,0),(0,1),(-1,0)'  )
+    CALL add_cmd('--flag', '(1,0), (0,1), (-1,0)')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Array_Equal(parray,  (/(1,0),(0,1),(-1,0)/))
+    Assert_Array_Equal(paflag,  (/(1,0),(0,1),(-1,0)/))
+    Assert_Array_Equal(palflag, (/(1,0),(0,1),(-1,0)/))
+  end test
+
+  test dcomplex_args
+    ! define
+    CALL arg(xdefault,   'xdefault',   default   = (0._8,1._8)   )
+    CALL arg(xflag,      'xflag',      flag      = '-f'    )
+    CALL arg(xlong_flag, 'xlong_flag', long_flag = '--flag')
+    ! supply
+    CALL add_cmd('-f',     '(0,1)')
+    CALL add_cmd('--flag', '(0,1)')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Equal(xdefault,   (0,1))
+    Assert_Equal(xflag,      (0,1))
+    Assert_Equal(xlong_flag, (0,1))
+  end test
+
+  test dcomplex_array_args
+    ! define
+    CALL arg(xarray,  'xarray',  default   = (/(1._8,0._8),(0._8,1._8),(-1._8,0._8)/))
+    CALL arg(xaflag,  'xaflag',  flag      = '-f'     )
+    CALL arg(xalflag, 'xalflag', long_flag = '--flag' )
+    ! supply
+    CALL add_cmd('-f',     '(1,0),(0,1),(-1,0)'  )
+    CALL add_cmd('--flag', '(1,0), (0,1), (-1,0)')
+    ! parse
+    CALL parse_args(info)
+    ! test
+    Assert_Array_Equal(xarray,  (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
+    Assert_Array_Equal(xaflag,  (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
+    Assert_Array_Equal(xalflag, (/(1_8,0_8),(0_8,1_8),(-1_8,0_8)/))
+  end test
+
   test ctrl_file
     ! auto enables ctrl_file
     CALL reset
     ! define
     CALL arg(idefault, 'idefault', ctrl_name = 'idefault')
     CALL arg(iflag,    'iflag',    ctrl_name = 'iflag', flag='-f')
+    CALL arg(gdefault, 'gdefault', ctrl_name = 'gdefault')
     CALL arg(rdefault, 'rdefault', ctrl_name = 'rdefault')
+    CALL arg(ddefault, 'ddefault', ctrl_name = 'ddefault')
     CALL arg(cdefault, 'cdefault', ctrl_name = 'cdefault')
     CALL arg(ldefault, 'ldefault', ctrl_name = 'ldefault')
+    CALL arg(pdefault, 'pdefault', ctrl_name = 'pdefault')
+    CALL arg(xdefault, 'xdefault', ctrl_name = 'xdefault')
     CALL arg(iarray,   'iarray',   ctrl_name = 'iarray')
+    CALL arg(garray,   'garray',   ctrl_name = 'garray')
     CALL arg(rarray,   'rarray',   ctrl_name = 'rarray')
+    CALL arg(darray,   'darray',   ctrl_name = 'darray')
     CALL arg(carray,   'carray',   ctrl_name = 'carray')
     CALL arg(larray,   'larray',   ctrl_name = 'larray')
+    CALL arg(parray,   'parray',   ctrl_name = 'parray')
+    CALL arg(xarray,   'xarray',   ctrl_name = 'xarray')
     ! open file for writing
-    OPEN(20, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
+    scf = 123
+    OPEN(scf, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
     Assert_Equal(ios, 0)
-    WRITE(20,'(A)') 'idefault = 42'
-    WRITE(20,'(A)') 'iflag    = 42'
-    WRITE(20,'(A)') 'rdefault = 0.1337'
-    WRITE(20,'(A)') 'cdefault = hrkljus'
-    WRITE(20,'(A)') 'ldefault = T'
-    WRITE(20,'(A)') 'iarray   = 1    2    3'
-    WRITE(20,'(A)') 'rarray   = 1.1  2.2  3.3'
-    WRITE(20,'(A)') 'carray   = foo, bar, baz'
-    WRITE(20,'(A)') 'larray   = T    F    T'
-    CLOSE(20)
+    WRITE(scf,'(A)') 'idefault = 42'
+    WRITE(scf,'(A)') 'iflag    = 42'
+    WRITE(scf,'(A)') 'gdefault = 42'
+    WRITE(scf,'(A)') 'rdefault = 0.1337'
+    WRITE(scf,'(A)') 'ddefault = 0.1337'
+    WRITE(scf,'(A)') 'cdefault = hrkljus'
+    WRITE(scf,'(A)') 'ldefault = T'
+    WRITE(scf,'(A)') 'pdefault = (0,1)'
+    WRITE(scf,'(A)') 'xdefault = (0,1)'
+    WRITE(scf,'(A)') 'iarray   = 1,   2,   3'
+    WRITE(scf,'(A)') 'garray   = 1,   2,   3'
+    WRITE(scf,'(A)') 'rarray   = 1.1, 2.2, 3.3'
+    WRITE(scf,'(A)') 'darray   = 1.1, 2.2, 3.3'
+    WRITE(scf,'(A)') 'carray   = foo, bar, baz'
+    WRITE(scf,'(A)') 'larray   = T,   F,   T'
+    WRITE(scf,'(A)') 'parray   = (1,0), (0,1), (-1,0)'
+    WRITE(scf,'(A)') 'xarray   = (1,0), (0,1), (-1,0)'
+    CLOSE(scf)
     ! supply arg
     CALL add_cmd('src/ctrl/test/__test_ctrl')
     CALL add_cmd('-f', '1337')
@@ -382,27 +551,35 @@ test_suite ppm_module_ctrl
     ! test
     Assert_Equal(idefault,   42)
     Assert_Equal(iflag,      1337) ! flags override control file !
+    Assert_Equal(gdefault,   42)
     Assert_Equal(rdefault,   0.1337)
+    Assert_Equal(ddefault,   0.1337_8)
     Assert_Equal(cdefault,   'hrkljus')
     Assert_True(ldefault)
+    Assert_Equal(pdefault,   (0,1))
+    Assert_Equal(xdefault,   (0,1))
     Assert_Array_Equal(iarray, (/1, 2, 3/))
+    Assert_Array_Equal(garray, (/1, 2, 3/))
     Assert_Array_Equal(rarray, (/1.1, 2.2, 3.3/))
+    Assert_Array_Equal(darray, (/1.1_8, 2.2_8, 3.3_8/))
     Assert_Array_Equal(carray, (/'foo', 'bar', 'baz'/))
     Assert_LArray_Equal(larray, (/.true., .false., .true./))
+    Assert_Array_Equal(parray, (/(1,0), (0,1), (-1,0)/))
+    Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
     CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl')
   end test
 
   test default_funcs
     ! procedure declarations
-    procedure(INTEGER_dflt)       int_def
-    procedure(REAL_dflt)          flt_def
-    procedure(CHAR_dflt)          chr_def
-    procedure(LOGICAL_dflt)       log_def
-    procedure(INTEGER_array_dflt) inta_def
-    procedure(REAL_array_dflt)    flta_def
-    procedure(CHAR_array_dflt)    chra_def
-    procedure(LOGICAL_array_dflt) loga_def
+    procedure(integer_func)       int_def
+    procedure(single_func)        flt_def
+    procedure(string_func)        chr_def
+    procedure(logical_func)       log_def
+    procedure(integer_array_func) inta_def
+    procedure(single_array_func)  flta_def
+    procedure(string_array_func)  chra_def
+    procedure(logical_array_func) loga_def
     ! define
     CALL arg(idefault, 'idefault', default_func = int_def)
     CALL arg(rdefault, 'rdefault', default_func = flt_def)

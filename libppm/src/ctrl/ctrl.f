@@ -10,7 +10,7 @@
                      (1:LEN_TRIM(WRAP(DTYPE)_args(j)%ctrl_name))
 
                 IF (WRAP(DTYPE)_args(j)%default_set) THEN
-#ifdef STRING
+#ifdef __STRING
 #ifdef ARRAY
                    WRITE (*,'(A)',advance='no') '= '
                    DO l=LBOUND(WRAP(DTYPE)_args(j)%default,1), &
@@ -34,3 +34,5 @@
              CYCLE var_loop
           END IF
        END DO
+#undef DTYPE
+#undef __STRING

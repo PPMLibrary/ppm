@@ -1,93 +1,167 @@
 #define WRAP(a) a
-#ifdef ARRAY
-  SUBROUTINE WRAP(DTYPE)_array_add_arg(variable, name, flag, long_flag, ctrl_name, &
-#else
   SUBROUTINE WRAP(DTYPE)_add_arg(variable, name, flag, long_flag, ctrl_name, &
-#endif
+!!! Adds a new arg definition.
        &                         default, default_func,                      &
-#ifndef BOOL
-#ifndef STRING
+#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
        &                         min, max,                                   &
+#elif defined(__STRING)
+!       &                         min_len, max_len,                           &
 #endif
-#endif
-#ifdef BOOL
-#ifndef ARRAY
+#if defined(__LOGICAL) && !defined(ARRAY)
                                  type, &
-#endif
 #endif
                                  validator, help)
     !----------------------------------------------------------------------
     !  Arguments
     !----------------------------------------------------------------------
-#ifdef STRING
 #ifdef ARRAY
-    CHARACTER(LEN=*), DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
-    CHARACTER(LEN=*), DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default    
+
+#ifdef __INTEGER
+     INTEGER,                  DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     INTEGER,                  DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__LONGINT)
+     INTEGER(ppm_kind_int64),  DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     INTEGER(ppm_kind_int64),  DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__SINGLE)
+     REAL(ppm_kind_single),    DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     REAL(ppm_kind_single),    DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__DOUBLE)
+     REAL(ppm_kind_double),    DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     REAL(ppm_kind_double),    DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__LOGICAL)
+     LOGICAL,                  DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     LOGICAL,                  DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__STRING)
+     CHARACTER(LEN=*),         DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     CHARACTER(LEN=*),         DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__COMPLEX)
+     COMPLEX(ppm_kind_single), DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     COMPLEX(ppm_kind_single), DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__DCOMPLEX)
+     COMPLEX(ppm_kind_double), DIMENSION(:), TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     COMPLEX(ppm_kind_double), DIMENSION(:), OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#endif
+
 #else
-    CHARACTER(LEN=*), TARGET,              INTENT(IN   ) :: variable
-    CHARACTER(LEN=*),            OPTIONAL, INTENT(IN   ) :: default
+
+#ifdef __INTEGER
+     INTEGER,                                TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     INTEGER,                                OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__LONGINT)
+     INTEGER(ppm_kind_int64),                TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     INTEGER(ppm_kind_int64),                OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__SINGLE)
+     REAL(ppm_kind_single),                  TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     REAL(ppm_kind_single),                  OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__DOUBLE)
+     REAL(ppm_kind_double),                  TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     REAL(ppm_kind_double),                  OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__LOGICAL)
+     LOGICAL,                                TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     LOGICAL,                                OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__STRING)
+     CHARACTER(LEN=*),                       TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     CHARACTER(LEN=*),                       OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__COMPLEX)
+     COMPLEX(ppm_kind_single),               TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     COMPLEX(ppm_kind_single),               OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
+#elif defined(__DCOMPLEX)
+     COMPLEX(ppm_kind_double),               TARGET,   INTENT(IN   ) :: variable
+!!! Global variable to bind to.
+     COMPLEX(ppm_kind_double),               OPTIONAL, INTENT(IN   ) :: default
+!!! Default value.
 #endif
-#else
-#ifdef ARRAY
-    DTYPE, DIMENSION(:), TARGET,           INTENT(IN   ) :: variable
-    DTYPE, DIMENSION(:),         OPTIONAL, INTENT(IN   ) :: default    
-#else
-    DTYPE, TARGET,                         INTENT(IN   ) :: variable
-    DTYPE,                       OPTIONAL, INTENT(IN   ) :: default
+
 #endif
-#ifndef BOOL
-    DTYPE,                       OPTIONAL, INTENT(IN   ) :: min
-    DTYPE,                       OPTIONAL, INTENT(IN   ) :: max
+
+#ifdef __INTEGER
+     INTEGER,                                OPTIONAL, INTENT(IN   ) :: min
+!!! Minimum value of arg.
+     INTEGER,                                OPTIONAL, INTENT(IN   ) :: max
+!!! Maximum value of arg.
+#elif defined(__LONGINT)
+     INTEGER(ppm_kind_int64),                OPTIONAL, INTENT(IN   ) :: min
+!!! Minimum value of arg.
+     INTEGER(ppm_kind_int64),                OPTIONAL, INTENT(IN   ) :: max
+!!! Maximum value of arg.
+#elif defined(__SINGLE)
+     REAL(ppm_kind_single),                  OPTIONAL, INTENT(IN   ) :: min
+!!! Minimum value of arg.
+     REAL(ppm_kind_single),                  OPTIONAL, INTENT(IN   ) :: max
+!!! Maximum value of arg.
+#elif defined(__DOUBLE)
+     REAL(ppm_kind_double),                  OPTIONAL, INTENT(IN   ) :: min
+!!! Minimum value of arg.
+     REAL(ppm_kind_double),                  OPTIONAL, INTENT(IN   ) :: max
+!!! Maximum value of arg.
+#elif defined(__STRING)
+!    INTEGER,                                OPTIONAL, INTENT(IN   ) :: min_len
+!!! Minimum length of string.
+!    INTEGER,                                OPTIONAL, INTENT(IN   ) :: max_len
+!!! Maximum length of string.
 #endif
+
+#if defined(__LOGICAL) && !defined(ARRAY)
+    LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: type
+!!! Type of flag. Logical flags require no value to be supplied.
+!!! Instead the behavior depends on this argument. One of:
+!!! enabling_flag :: Presence of flag sets variable to .TRUE.
+!!! disabling_flag :: Presence of flag sets variable to .FALSE.
 #endif
-#ifdef BOOL
-#ifndef ARRAY
-    LOGICAL,                    OPTIONAL, INTENT(IN   ) :: type
-#endif
-#endif
-    CHARACTER(LEN=*),                      INTENT(IN   ) :: name
-    CHARACTER(LEN=2),            OPTIONAL, INTENT(IN   ) :: flag
-    CHARACTER(LEN=*),            OPTIONAL, INTENT(IN   ) :: long_flag
-    CHARACTER(LEN=*),            OPTIONAL, INTENT(IN   ) :: ctrl_name
-    CHARACTER(LEN=*),            OPTIONAL, INTENT(IN   ) :: help
-#ifdef ARRAY
-    PROCEDURE(WRAP(DTYPE)_array_dflt), OPTIONAL         :: default_func
-    PROCEDURE(WRAP(DTYPE)_array_vdtr), OPTIONAL         :: validator
-#else
-    PROCEDURE(WRAP(DTYPE)_dflt), OPTIONAL               :: default_func
-    PROCEDURE(WRAP(DTYPE)_vdtr), OPTIONAL               :: validator
-#endif
+    CHARACTER(LEN=*),                                  INTENT(IN   ) :: name
+!!! Name of the arg for use in the auto generated usage message/ctrl file.
+    CHARACTER(LEN=2),                        OPTIONAL, INTENT(IN   ) :: flag
+!!! Single character flag (eg. _'-f'_).
+    CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: long_flag
+!!! Long flag (eg. _'--flag'_). Has to start with _'--'_!
+    CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: ctrl_name
+!!! Control file variable name.
+    CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: help
+!!! Help string for the auto generated usage message/ctrl file.
+    PROCEDURE(WRAP(DTYPE)_func),             OPTIONAL                :: default_func
+!!! Default function.
+    PROCEDURE(WRAP(DTYPE)_func),             OPTIONAL                :: validator
+!!! Validator function.
     !----------------------------------------------------------------------
     !  Local variables
     !----------------------------------------------------------------------
-#ifdef ARRAY
-    TYPE(WRAP(DTYPE)_array_arg), DIMENSION(:), POINTER      :: temp
-    TYPE(WRAP(DTYPE)_array_arg)                             :: def
-#else
     TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER            :: temp
     TYPE(WRAP(DTYPE)_arg)                                   :: def
-#endif
     !----------------------------------------------------------------------
     !  Body
     !----------------------------------------------------------------------
     ! create default group
     IF (groups_i .EQ. -1) CALL arg_group("General Options")
-#ifdef ARRAY
-    ! allocate initial storage
-    IF (.NOT. ASSOCIATED(WRAP(DTYPE)_array_args)) THEN
-       ALLOCATE(WRAP(DTYPE)_array_args(1:di))
-       WRAP(DTYPE)_array_args_i = 0
-    END IF
-    ! increment counter
-    WRAP(DTYPE)_array_args_i = WRAP(DTYPE)_array_args_i + 1
-    ! grow storage by di if needed
-    IF (WRAP(DTYPE)_array_args_i .GT. SIZE(WRAP(DTYPE)_array_args)) THEN
-       ALLOCATE(temp(1:SIZE(WRAP(DTYPE)_array_args)+di))
-       temp(1:SIZE(WRAP(DTYPE)_array_args)) = WRAP(DTYPE)_array_args
-       DEALLOCATE(WRAP(DTYPE)_array_args)
-       WRAP(DTYPE)_array_args => temp
-    END IF
-#else
     ! allocate initial storage
     IF (.NOT. ASSOCIATED(WRAP(DTYPE)_args)) THEN
        ALLOCATE(WRAP(DTYPE)_args(1:di))
@@ -102,7 +176,6 @@
        DEALLOCATE(WRAP(DTYPE)_args)
        WRAP(DTYPE)_args => temp
     END IF
-#endif
     ! populate structure
     def%variable  => variable
     def%name      =  name
@@ -115,11 +188,9 @@
     def%long_flag = ''
     def%ctrl_name = ''
     def%help      = ''
-#ifndef BOOL
-#ifndef STRING
+#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
     def%min       = -HUGE(min)
     def%max       =  HUGE(max)
-#endif
 #endif
     ! supplied values
     IF (PRESENT(flag)) THEN
@@ -147,8 +218,7 @@
     END IF
     IF (PRESENT(default_func)) def%default_func => default_func
     IF (PRESENT(validator))    def%validator    => validator
-#ifndef BOOL
-#ifndef STRING
+#if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
     IF (PRESENT(min)) THEN
        def%min                  =  min
        def%min_set              =  .TRUE.
@@ -157,23 +227,33 @@
        def%max                  =  max
        def%max_set              =  .TRUE.
     END IF
+#elif defined(__STRING)
+!     IF (PRESENT(min_len)) THEN
+!        def%min                  =  min_len
+!        def%min_set              =  .TRUE.
+!     END IF
+!     IF (PRESENT(max_len)) THEN
+!        def%max                  =  max_len
+!        def%max_set              =  .TRUE.
+!     END IF
 #endif
-#endif
-#ifdef BOOL
-#ifndef ARRAY
+#if defined(__LOGICAL) && !defined(ARRAY)
     IF (PRESENT(type)) THEN
        def%type         =  type
     END IF
-#endif
 #endif
     ! group
     def%group            = groups_i
     group_size(groups_i) = group_size(groups_i) + 1
     def%group_i          = group_size(groups_i)
-#ifdef ARRAY
-    WRAP(DTYPE)_array_args(WRAP(DTYPE)_array_args_i) = def
-  END SUBROUTINE WRAP(DTYPE)_array_add_arg
-#else
     WRAP(DTYPE)_args(WRAP(DTYPE)_args_i) = def
   END SUBROUTINE WRAP(DTYPE)_add_arg
-#endif
+#undef DTYPE
+#undef __INTEGER
+#undef __LONGINT
+#undef __SINGLE
+#undef __DOUBLE
+#undef __LOGICAL
+#undef __STRING
+#undef __COMPLEX
+#undef __DCOMPLEX
