@@ -1,7 +1,6 @@
 #define WRAP(a) a
   SUBROUTINE WRAP(DTYPE)_add_arg(variable, name, flag, long_flag, ctrl_name, &
-!!! Adds a new arg definition.
-       &                         default, default_func,                      &
+       &                         default,                                    &
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
        &                         min, max,                                   &
 #elif defined(__STRING)
@@ -10,7 +9,11 @@
 #if defined(__LOGICAL) && !defined(ARRAY)
                                  type, &
 #endif
-                                 validator, help)
+#ifdef __F2003
+                                 default_func, validator, &
+#endif
+                                 help)
+!!! Adds a new arg definition.
     !----------------------------------------------------------------------
     !  Arguments
     !----------------------------------------------------------------------
@@ -148,10 +151,12 @@
 !!! Control file variable name.
     CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: help
 !!! Help string for the auto generated usage message/ctrl file.
+#ifdef __F2003
     PROCEDURE(WRAP(DTYPE)_func),             OPTIONAL                :: default_func
 !!! Default function.
     PROCEDURE(WRAP(DTYPE)_func),             OPTIONAL                :: validator
 !!! Validator function.
+#endif
     !----------------------------------------------------------------------
     !  Local variables
     !----------------------------------------------------------------------
@@ -222,18 +227,16 @@
        def%default              =  default
        def%default_set          =  .TRUE.
     END IF
+#ifdef __F2003
     IF (PRESENT(default_func)) THEN
        def%default_func         => default_func
        def%default_func_set     =  .TRUE.
-    ELSE
-       def%default_func_set     =  .FALSE.
     END IF
     IF (PRESENT(validator)) THEN
        def%validator            => validator
        def%validator_set        =  .TRUE.
-    ELSE
-       def%validator_set        =  .FALSE.
     END IF
+#endif
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
     IF (PRESENT(min)) THEN
        def%min                  =  min

@@ -1,10 +1,6 @@
 #define WRAP(a) a
 
-#ifdef ARRAY
-  TYPE WRAP(DTYPE)_array_arg
-#else
   TYPE WRAP(DTYPE)_arg
-#endif
 
 #ifdef ARRAY
 
@@ -99,17 +95,13 @@
      LOGICAL                                             :: clf_supplied  = .FALSE.
      INTEGER                                             :: group
      INTEGER                                             :: group_i
+#ifdef __F2003
      LOGICAL                                             :: default_func_set = .FALSE.
      LOGICAL                                             :: validator_set = .FALSE.
-#ifdef ARRAY
-     PROCEDURE(WRAP(DTYPE)_array_func), POINTER, NOPASS :: default_func => NULL()
-     PROCEDURE(WRAP(DTYPE)_array_func), POINTER, NOPASS :: validator    => NULL()     
-  END TYPE WRAP(DTYPE)_array_arg
-#else
      PROCEDURE(WRAP(DTYPE)_func), POINTER, NOPASS :: default_func => NULL()
      PROCEDURE(WRAP(DTYPE)_func), POINTER, NOPASS :: validator    => NULL()
-  END TYPE WRAP(DTYPE)_arg
 #endif
+  END TYPE WRAP(DTYPE)_arg
 #undef __INTEGER
 #undef __LONGINT
 #undef __SINGLE
