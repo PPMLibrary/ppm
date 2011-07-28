@@ -12,7 +12,7 @@ include Funit
 
 prog_source_dirs = ['.']
 use_mpi = false
-procs = [1]
+procs = "1"
   
 opts = GetoptLong.new(
  ['--help',    '-h', GetoptLong::NO_ARGUMENT],
