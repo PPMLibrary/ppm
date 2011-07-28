@@ -415,7 +415,11 @@
 #endif
 
 #if __KIND == __SINGLE_PRECISION
+#ifdef __DEBUG
+      FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
+#else
       PURE FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
+#endif
       !!! Given the index of the cell, returns whether the cell is
       !!! empty or not.
       IMPLICIT NONE
