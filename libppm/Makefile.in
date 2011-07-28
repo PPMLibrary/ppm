@@ -37,6 +37,7 @@ LIB_PPM := libppm.a
 TARGET  := $(builddir)/lib/$(LIB_PPM)
 SHELL := /bin/sh
 CPP := cpp
+FUNIT = ./utils/funit/bin/funit
 
 # These are important build directories
 SRC_DIR := $(builddir)/src
@@ -131,6 +132,10 @@ install: all
 # This compiles, and copies the PPM library
 new: all install
 
+ftest: all
+	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
+	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
+	CPP=$(CPP) DEFINE=$(DEFINE) FSFLAG=$(MODFLAG) $(FUNIT)
 
 test: all
 	make --directory=src/map/test FC=$(FC) CPP="$(CPP)" \
