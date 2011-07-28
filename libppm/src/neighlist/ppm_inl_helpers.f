@@ -276,6 +276,77 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION is_xset_Neighbor_s(red_idx, blue_idx, red, rcred, blue, &
+ &                  rcblue, skin) RESULT(isNeigh)
+#elif __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION is_xset_Neighbor_d(red_idx, blue_idx, red, rcred, blue, &
+ &                  rcblue, skin) RESULT(isNeigh)
+#endif
+      !!! Given indices of two particles, checks whether the euclidian distance
+      !!! is smaller than the sum of minimum cutoff radius of these particles
+      !!! and the skin, then RETURNs TRUE if so. Works for nD.
+          IMPLICIT NONE
+#if   __KIND == __SINGLE_PRECISION
+          INTEGER, PARAMETER :: mk = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+          INTEGER, PARAMETER :: mk = ppm_kind_double
+#endif
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+          INTEGER,  INTENT(IN)                 :: red_idx
+          !!! Index of first particle
+          INTEGER,  INTENT(IN)                 :: blue_idx
+          !!! Index of second particle
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: red
+          !!! Coordinate array of particles (red)
+          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcred
+          !!! Cutoff radii of particles (red)
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: blue
+          !!! Coordinate array of particles (blue)
+          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcblue
+          !!! Cutoff radii of particles (blue)
+          REAL(MK), INTENT(IN)                 :: skin
+          !!! Skin parameter
+          LOGICAL                              :: isNeigh
+          !!! Return value. TRUE if particles are neighbors
+
+      !---------------------------------------------------------------------
+      !  Local variables and counters
+      !---------------------------------------------------------------------
+          REAL(MK)                             :: total_dist
+          ! Euclidian distance between particles
+          REAL(MK)                             :: rcutoff
+          ! Minimum cutoff radius, plus skin.
+          INTEGER                              :: i
+          ! Counter
+
+          ! Initialize RETURN value to FALSE
+          isNeigh = .FALSE.
+
+
+          ! Initialize euclidian distance to 0
+          total_dist = 0
+          ! Add squares of distances on each axis, then take square root of it
+          total_dist = total_dist + (red(1, red_idx) - blue(1, blue_idx))**2
+          total_dist = total_dist + (red(2, red_idx) - blue(2, blue_idx))**2
+          DO i = 3, ppm_dim
+              total_dist = total_dist + (red(i, red_idx) - blue(i, blue_idx))**2
+          END DO
+          total_dist = sqrt(total_dist)
+
+          ! Pick smallest cutoff radius and add skin on it
+          rcutoff = MIN(rcred(red_idx), rcblue(blue_idx)) + skin
+
+          ! Return TRUE if they are neighbors
+          IF(total_dist .LE. rcutoff)  isNeigh = .TRUE.
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION is_xset_Neighbor_s
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION is_xset_Neighbor_d
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
       FUNCTION cross_neighbor_s(p_idx, p_neigh, xp, actual_domain) RESULT(isCrossNeigh)
 #elif __KIND == __DOUBLE_PRECISION
       FUNCTION cross_neighbor_d(p_idx, p_neigh, xp, actual_domain) RESULT(isCrossNeigh)

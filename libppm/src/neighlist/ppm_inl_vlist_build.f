@@ -143,7 +143,7 @@
 
           !---------------------------------------------------------------------
           !  From first cell until center cell, check whether they are empty
-          !  or not and store those in empty list that contain no cells in
+          !  or not and store those in empty list that contain no particles in
           !  their region.
           !---------------------------------------------------------------------
           ! From first cell to (center-1)th cell
