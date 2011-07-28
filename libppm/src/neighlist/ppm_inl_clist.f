@@ -28,10 +28,10 @@
      !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE create_inl_clist_s(xp, Mp, cutoff, skin, actual_domain, &
+      SUBROUTINE create_inl_clist_s(xp, Np, Mp, cutoff, skin, actual_domain, &
      & ghost_extend, lsymm, clist, info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE create_inl_clist_d(xp, Mp, cutoff, skin, actual_domain, &
+      SUBROUTINE create_inl_clist_d(xp, Np, Mp, cutoff, skin, actual_domain, &
      & ghost_extend, lsymm, clist, info)
 #endif
       !!! Given particle coordinates(xp), number of all particles including
@@ -52,6 +52,8 @@
       !---------------------------------------------------------------------
       REAL(MK), INTENT(IN), DIMENSION(:,:)         :: xp
       !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
+      INTEGER , INTENT(IN)                         :: Np
+      !!! Number of real particles
       INTEGER , INTENT(IN)                         :: Mp
       !!! Number of all particles including ghost particles
       REAL(MK), INTENT(IN), DIMENSION(:)           :: cutoff
@@ -114,6 +116,7 @@
       END IF
       
 
+      clist%n_real_p = Np
       clist%n_all_p = Mp
 
       !-------------------------------------------------------------------------

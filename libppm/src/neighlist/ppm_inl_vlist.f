@@ -311,7 +311,7 @@
       !-------------------------------------------------------------------------
       !  Create inhomogeneous cell list
       !-------------------------------------------------------------------------
-          CALL ppm_create_inl_clist(xp, Mp, cutoff, skin, actual_domain, &
+          CALL ppm_create_inl_clist(xp, Np, Mp, cutoff, skin, actual_domain, &
      & ghostlayer, lsymm, clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
