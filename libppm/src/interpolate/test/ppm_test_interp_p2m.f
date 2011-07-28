@@ -35,10 +35,7 @@ program ppm_test_interp_p2m
     use ppm_module_interp_p2m
     use ppm_module_init
     use ppm_module_finalize
-    use ppm_module_map_part_global
-    use ppm_module_map_part_push
-    use ppm_module_map_part_pop
-    use ppm_module_map_part_send
+    use ppm_module_map
 
     implicit none
 
