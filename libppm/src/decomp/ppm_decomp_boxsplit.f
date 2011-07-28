@@ -84,7 +84,7 @@
       !-------------------------------------------------------------------------
       REAL(MK)                        :: t0
       REAL(MK), DIMENSION(ppm_dim)    :: cen_box
-      INTEGER , DIMENSION(:), POINTER :: npbx_temp
+      INTEGER , DIMENSION(:), POINTER :: npbx_temp => NULL()
       INTEGER , DIMENSION(ppm_dim)    :: Nm
       INTEGER                         :: idx,jdx,k,iopt
       INTEGER , DIMENSION(1)          :: lda ! dummy for ppm_alloc

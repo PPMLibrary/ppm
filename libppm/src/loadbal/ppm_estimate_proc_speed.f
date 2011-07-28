@@ -89,9 +89,9 @@
       REAL(MK)                         :: xmax,ymax,zmax,r2,r2i,r6i,fs,en
       REAL(MK)                         :: tmin,tmax
       REAL(MK), DIMENSION(3)           :: rx,ri,rj,fi,fj
-      REAL(MK), DIMENSION(:), POINTER  :: alltim
+      REAL(MK), DIMENSION(:), POINTER  :: alltim  => NULL()
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER  :: sendtim
+      REAL(MK), DIMENSION(:), POINTER  :: sendtim => NULL()
 #endif
       REAL(ppm_kind_double)            :: rsum
       INTEGER                          :: i,j,N,iopt

@@ -100,8 +100,10 @@
       CHARACTER(ppm_char)              :: mesg
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo,target_topo
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh,target_mesh
+      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

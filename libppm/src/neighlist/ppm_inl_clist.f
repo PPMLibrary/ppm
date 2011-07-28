@@ -81,7 +81,7 @@
       ! Parameter used for recursive function for first level only.
       INTEGER                                       :: level
       ! Depth level.
-      TYPE(ppm_t_topo),        POINTER              :: topo
+      TYPE(ppm_t_topo),        POINTER              :: topo => NULL()
       ! Topology.
 
       !---------------------------------------------------------------------

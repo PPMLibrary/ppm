@@ -46,13 +46,13 @@
           !!! TRUE if the vertex is colored
           INTEGER :: loc_heap
           !!! location of vertex in heap list
-          INTEGER, DIMENSION(:), POINTER :: list
+          INTEGER, DIMENSION(:), POINTER :: list => NULL()
           !!! list of vertices that the vertex is connected to
       END TYPE vertex
 
       TYPE list
       !!! declaration of type: list
-          INTEGER, DIMENSION(:), POINTER :: adj_edge
+          INTEGER, DIMENSION(:), POINTER :: adj_edge => NULL()
           !!! list of adjacent node of the node
       END TYPE list
 

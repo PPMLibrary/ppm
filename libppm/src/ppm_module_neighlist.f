@@ -42,7 +42,7 @@
          !----------------------------------------------------------------------
          !  Temporary cell list memory
          !----------------------------------------------------------------------
-         TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist
+         TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist => NULL()
          PRIVATE :: clist
          
          !----------------------------------------------------------------------

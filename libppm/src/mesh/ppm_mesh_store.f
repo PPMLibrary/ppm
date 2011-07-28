@@ -72,7 +72,7 @@
       INTEGER                   :: iopt,ld,ud,kk,i,j,isub
       REAL(ppm_kind_double)     :: t0
       LOGICAL                   :: valid
-      TYPE(ppm_t_topo), POINTER :: topo
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

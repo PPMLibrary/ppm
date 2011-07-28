@@ -156,22 +156,25 @@
       !-------------------------------------------------------------------------
       INTEGER                           :: i,j,treetype,nbox,isub
       INTEGER                           :: iopt
-      INTEGER, DIMENSION(:,:), POINTER  :: ineigh,subs_bc
+      INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(1  )           :: Nmdummy,ldc
       INTEGER, DIMENSION(3,1)           :: nnodes
-      INTEGER, DIMENSION(:  ), POINTER  :: nneigh,nchld
+      INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
+      INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(1,1)          :: xpdummy
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
       REAL(MK), DIMENSION(3,2)          :: weights
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box,max_box
+      REAL(MK), DIMENSION(:,:), POINTER :: min_box  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_box  => NULL()
       CHARACTER(LEN=ppm_char)           :: mesg
       INTEGER                           :: nsublist, nsubs
-      INTEGER , DIMENSION(  :), POINTER :: isublist
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub
-      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc
+      INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
+      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

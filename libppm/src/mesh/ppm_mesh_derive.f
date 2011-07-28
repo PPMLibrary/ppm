@@ -74,15 +74,16 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)  :: t0
-      INTEGER                :: nsubs,i,j,iopt
-      INTEGER, DIMENSION(2)  :: ldc
-      INTEGER, DIMENSION(ppm_dim)  :: Nm
-      INTEGER, DIMENSION(:,:), POINTER :: nno,ist
-      CHARACTER(LEN=ppm_char) :: mesg
-      LOGICAL                 :: valid
-      TYPE(ppm_t_equi_mesh), POINTER   :: p_mesh
-      TYPE(ppm_t_topo)     , POINTER   :: topo
+      REAL(ppm_kind_double)            :: t0
+      INTEGER                          :: nsubs,i,j,iopt
+      INTEGER, DIMENSION(2)            :: ldc
+      INTEGER, DIMENSION(ppm_dim)      :: Nm
+      INTEGER, DIMENSION(:,:), POINTER :: nno => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: ist => NULL()
+      CHARACTER(LEN=ppm_char)          :: mesg
+      LOGICAL                          :: valid
+      TYPE(ppm_t_equi_mesh), POINTER   :: p_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER   :: topo   => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

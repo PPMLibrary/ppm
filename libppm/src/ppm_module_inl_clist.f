@@ -52,7 +52,7 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER, DIMENSION(:,:), POINTER :: borders 
+        INTEGER, DIMENSION(:,:), POINTER :: borders  => NULL()
         !!! contains the boundaries in the particle rank array separating the
         !!! particles belonging to different cells.
         !!!
@@ -70,9 +70,11 @@
         !!!
         !!! index 6 is 1 if the cell contains particles in deeper levels,
         !!! otherwise it is -1
-        INTEGER, DIMENSION(:),   POINTER :: rank      !rank of particles
-        INTEGER, DIMENSION(:),   POINTER :: rankByPos !rank of particles
-        INTEGER, DIMENSION(:),   POINTER :: rc_borders
+        INTEGER, DIMENSION(:),   POINTER :: rank       => NULL()
+        ! rank of particles
+        INTEGER, DIMENSION(:),   POINTER :: rankByPos  => NULL()
+        ! rank of particles
+        INTEGER, DIMENSION(:),   POINTER :: rc_borders => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables

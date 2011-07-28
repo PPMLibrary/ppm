@@ -97,15 +97,16 @@
       REAL(MK)                          :: t0,mincost,maxcost
       INTEGER, DIMENSION(ppm_dim)       :: ldl,ldu
       INTEGER, DIMENSION(3,1), TARGET   :: ndummy
-      INTEGER, DIMENSION(:,:), POINTER  :: nnodes
+      INTEGER, DIMENSION(:,:), POINTER  :: nnodes => NULL()
       INTEGER                           :: i,proc
       INTEGER                           :: iopt,minproc,maxproc
       LOGICAL                           :: valid
       CHARACTER(LEN=ppm_char)           :: mesg
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER   :: sendcost, proccost
+      REAL(MK), DIMENSION(:), POINTER   :: sendcost => NULL()
+      REAL(MK), DIMENSION(:), POINTER   :: proccost => NULL()
 #endif
-      TYPE(ppm_t_topo)      , POINTER   :: topo
+      TYPE(ppm_t_topo)      , POINTER   :: topo     => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
