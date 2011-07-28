@@ -87,6 +87,8 @@
         INTEGER :: n_all_p
         INTEGER :: insuf_hash_table
 
+        TYPE(ppm_htable) :: lookup
+
         INTERFACE ppm_create_inl_clist
             MODULE PROCEDURE create_inl_clist_s
             MODULE PROCEDURE create_inl_clist_d
