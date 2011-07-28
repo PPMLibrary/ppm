@@ -768,9 +768,8 @@ do ii=1,5
     call ppm_map_part_pop(rcp,np,mp,info)
     call ppm_map_part_pop(xp,ndim,np,mp,info)
 
-    call ppm_dbg_print(topoid,xp,mp,1,2,info)
+    call ppm_dbg_print(topoid,xp,mp,0.0_mk,1,2,info)
 
-    stop
 
     call ppm_inl_vlist(topoid,xp,np,mp,rcp,skin, &
         & lsymm,ghostlayer,info,vlist,nvlist)
