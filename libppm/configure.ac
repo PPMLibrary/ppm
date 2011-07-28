@@ -158,9 +158,9 @@ AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
   [enable development mode (default is no)])],[dev_compile=yes])
 if test "x${dev_compile}" = xyes; then
     if test "x${vendor}" == xintel; then
-        AC_SUBST(DEBUG,["-g -check pointers -check bounds -traceback"])
+        AC_SUBST(DEBUG,["-g -O1 -check pointers -check bounds -traceback"])
     elif test "x${vendor}" == xgnu; then
-      AC_SUBST(DEBUG,["-g -fbounds-check -fbacktrace"])
+      AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace"])
     else
       AC_SUBST(DEBUG,["-g"])
     fi
