@@ -29,8 +29,8 @@
       MODULE ppm_module_inl_hash
       !!! This module provides the utility to insert index of a cell and its position
       !!! on 'borders' array, as the range of indices of cells can be very too large
-      !!! to allocate memory space for whole range. Hence, hash table is the workaround
-      !!! for the redundancy in terms of memory consumption.
+      !!! to allocate memory space for whole range. Hence, hash table is the 
+      !!! workaround for the redundancy in terms of memory consumption.
 
          USE ppm_module_data
          USE ppm_module_alloc
@@ -45,19 +45,30 @@
         INTEGER(ppm_kind_int64), PARAMETER                   :: seed2 = 1243832038
         !!! Hardcoded seed value taken from MurmurHash
 
-        !-------------------------------------------------------------------------
-        !  Declaration of arrays
-        !-------------------------------------------------------------------------
-        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: htable_keys => NULL()
-        !!! Array for keeping hash table keys.
-        INTEGER,          DIMENSION(:), POINTER :: htable_borders_pos => NULL()
-        !!! Array for keeping positions of cells on "borders" array.
+        TYPE ppm_htable
+          !---------------------------------------------------------------------
+          !  Declaration of arrays
+          !---------------------------------------------------------------------
+          INTEGER(ppm_kind_int64),DIMENSION(:),POINTER :: keys => NULL()
+          !!! Array for keeping hash table keys.
+          INTEGER,        DIMENSION(:), POINTER :: borders_pos => NULL()
+          !!! Array for keeping positions of cells on "borders" array.
+    
+          !---------------------------------------------------------------------
+          !  Declaration of variables
+          !--------------------------------------------------------------------
+          INTEGER                                              :: nrow
+          !!! number of rows in hash table
+!          CONTAINS
+!              PROCEDURE :: create => create_htable
+!              PROCEDURE :: destroy => destroy_htable
+!              PROCEDURE :: insert => hash_insert
+!              FUNCTION :: search => hash_search
 
-        !-------------------------------------------------------------------------
-        !  Declaration of variables
-        !-------------------------------------------------------------------------
-        INTEGER                                              :: ht_nrow
-        !!! number of rows in hash table
+        END TYPE
+        PRIVATE :: seed1, seed2
+!        PRIVATE :: create_htable, destroy_htable, hash_insert, hash_search
+!        PRIVATE :: h_func, h_key
 
         CONTAINS
 

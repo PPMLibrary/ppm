@@ -138,8 +138,8 @@
       ncell = CEILING(n_all_p/1.0) !Hardcoded estimation of number of cells
       DO WHILE(insuf_hash_table .NE. 0)
           insuf_hash_table = 0      ! set insufficient_hash_table flag to 0
-          CALL create_htable(ncell,info) ! create hash table
-          lda(2) = ht_nrow
+          CALL create_htable(lookup,ncell,info) ! create hash table
+          lda(2) = lookup%nrow
           iopt = ppm_param_alloc_fit
           ! Number of rows of "borders" array depends on dimensionality.
           IF(ppm_dim .EQ. 2)       THEN
@@ -168,7 +168,7 @@
           borders_pos_max = 0
 
           borders_pos = borders_pos + 1
-          CALL hash_insert(idx0, borders_pos, info)
+          CALL hash_insert(lookup,idx0, borders_pos, info)
           IF(ppm_dim .EQ. 2)    THEN
               borders(6, borders_pos)  = n_all_p
           ELSE
@@ -182,7 +182,7 @@
           ! Sort particles by their position
           CALL SortByPosition(xp, cutoff, skin, rank, whole_domain, idx, 0)
           IF(insuf_hash_table .NE. 0) THEN ! If hash table is not sufficient
-              CALL destroy_htable(info)        ! Destroy hash table
+              CALL destroy_htable(lookup,info)        ! Destroy hash table
               iopt = ppm_param_dealloc
               lda = 0
               ! Deallocate "borders" array
@@ -332,7 +332,7 @@
 
       empty = .TRUE.                           ! Set empty to TRUE
       parentIdx   = parent(c_idx)              ! Get index of parent cell
-      borders_pos = hash_search(parentIdx)     ! Search parent in hash table
+      borders_pos = hash_search(lookup,parentIdx) ! Search parent in hash table
       IF(borders_pos .EQ. htable_null)  RETURN ! Return FALSE if not found
       empty = .FALSE.                          ! Set empty to FALSE and return
       END FUNCTION isEmpty
@@ -727,7 +727,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:) :: domain
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: domain
       !!! Physical extent of the domain
       REAL(MK)                                   :: minLength
       !!! Maximum side length
@@ -775,7 +775,7 @@
       !!! Skin parameter
       INTEGER,   INTENT(INOUT), DIMENSION(:)          :: rank_pos
       !!! ranks of particles
-      REAL(MK),  INTENT(IN),    DIMENSION(:)  :: ownregion
+      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: ownregion
       !!! Region that will be used to sort particles within
       INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
       !!! Index of cell to be processed
@@ -855,7 +855,7 @@
 
       ! Insert current cell in hash table.
       borders_pos = borders_pos + 1
-      CALL hash_insert(idx, borders_pos, info)
+      CALL hash_insert(lookup,idx, borders_pos, info)
       IF(info .NE. 0)   THEN
           insuf_hash_table = 1
           RETURN
@@ -1012,7 +1012,7 @@
       ! If the desired level is reached, update the entry on borders
       ! array, such that it contains border indices for children cells.
       IF(getCellDepth(idx) + 1 .GE. level)  THEN
-          borders_pos = hash_search(idx)
+          borders_pos = hash_search(lookup,idx)
 
           IF(ppm_dim .EQ. 2)       THEN
               borders(1, borders_pos) = increment
