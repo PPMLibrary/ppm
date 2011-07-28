@@ -28,9 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_util_rank3d_s(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info)
+      SUBROUTINE ppm_util_rank3d_s(xp,Np,xmin,xmax,nm,ngl,lpdx,lhbx,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_util_rank3d_d(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info)
+      SUBROUTINE ppm_util_rank3d_d(xp,Np,xmin,xmax,nm,ngl,lpdx,lhbx,info)
 #endif
       !!! Sort particles in cells. Create index table to
       !!! particles and pointer to first particle in each cell.
@@ -76,18 +76,18 @@
       !!! Minimum extent of mesh (not including any ghost layer)
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmax
       !!! Maximum extent of mesh (not including any ghost layer)
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm
+      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: nm
       !!! Number of mesh points (cells)
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Ngl
+      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: ngl
       !!! Number of ghost layers to add. The ghost layers will be added to
       !!! the domain passed in xmin(:) and xmax()
       !!!
-      !!! * Nm(1) : added layers below xmin(1)
-      !!! * Nm(2) : added layers below xmin(2)
-      !!! * Nm(3) : added layers below xmin(3)
-      !!! * Nm(4) : added layers above xmax(1)
-      !!! * Nm(5) : added layers above xmax(2)
-      !!! * Nm(6) : added layers above xmax(3)
+      !!! * nm(1) : added layers below xmin(1)
+      !!! * nm(2) : added layers below xmin(2)
+      !!! * nm(3) : added layers below xmin(3)
+      !!! * nm(4) : added layers above xmax(1)
+      !!! * nm(5) : added layers above xmax(2)
+      !!! * nm(6) : added layers above xmax(3)
       INTEGER , DIMENSION(:)  , POINTER       :: lpdx
       !!! Index of particles in cells ( lpdx(icnt) )
       INTEGER , DIMENSION(:)  , POINTER       :: lhbx
@@ -116,7 +116,7 @@
       INTEGER, DIMENSION(:), POINTER          :: cbox  => NULL()
       INTEGER, DIMENSION(:), POINTER          :: npbx  => NULL()
       ! total number of cells in each direction (including ghost layers)
-      INTEGER, DIMENSION(3)                   :: Nmtot
+      INTEGER, DIMENSION(3)                   :: nmtot
       CHARACTER(LEN=ppm_char)                 :: msg
       ! dimensions for allocate
       INTEGER, DIMENSION(1)                   :: ldc
@@ -143,10 +143,10 @@
       !-------------------------------------------------------------------------
       !  Compute total number of mesh cells (global and in each direction)
       !-------------------------------------------------------------------------
-      Nmtot(1) = Nm(1) + Ngl(1) + Ngl(4)
-      Nmtot(2) = Nm(2) + Ngl(2) + Ngl(5)
-      Nmtot(3) = Nm(3) + Ngl(3) + Ngl(6)
-      nbox  = Nmtot(1) * Nmtot(2) * Nmtot(3)
+      nmtot(1) = nm(1) + ngl(1) + ngl(4)
+      nmtot(2) = nm(2) + ngl(2) + ngl(5)
+      nmtot(3) = nm(3) + ngl(3) + ngl(6)
+      nbox  = nmtot(1) * nmtot(2) * nmtot(3)
       
       !-------------------------------------------------------------------------
       !  Allocate memory
@@ -187,9 +187,9 @@
       !-------------------------------------------------------------------------
       !  Compute mesh spacing
       !-------------------------------------------------------------------------
-      rdx   = REAL(Nm(1),MK)/(xmax(1) - xmin(1))
-      rdy   = REAL(Nm(2),MK)/(xmax(2) - xmin(2))
-      rdz   = REAL(Nm(3),MK)/(xmax(3) - xmin(3))
+      rdx   = REAL(nm(1),MK)/(xmax(1) - xmin(1))
+      rdy   = REAL(nm(2),MK)/(xmax(2) - xmin(2))
+      rdz   = REAL(nm(3),MK)/(xmax(3) - xmin(3))
 
       !-------------------------------------------------------------------------
       !  Compute non-dimensional cell co-ordinates (min. extent of mesh)
@@ -247,7 +247,7 @@
       icount = 0
       info   = 0
       icorr  = 0
-      n2     = Nmtot(1) * Nmtot(2)
+      n2     = nmtot(1) * nmtot(2)
       DO ipart=1,Np
          !----------------------------------------------------------------------
          !  This has to be a FLOOR and not an INT. The latter would give
@@ -257,9 +257,9 @@
          !  The subtraction has to come before the multiplication due to 
          !  Nummerical errors. (dach)
          !----------------------------------------------------------------------
-         i = FLOOR((xp(1,ipart) - x0) * rdx) + Ngl(1)
-         j = FLOOR((xp(2,ipart) - y0) * rdy) + Ngl(2)
-         k = FLOOR((xp(3,ipart) - z0) * rdz) + Ngl(3)
+         i = FLOOR((xp(1,ipart) - x0) * rdx) + ngl(1)
+         j = FLOOR((xp(2,ipart) - y0) * rdy) + ngl(2)
+         k = FLOOR((xp(3,ipart) - z0) * rdz) + ngl(3)
          
          ! The calculated indices are only correct on the lower boundary.
          ! On the upper boundary it may happen that particles inside the 
@@ -268,41 +268,41 @@
          
          ! if particle is outside the physical domain but index belongs to a
          ! real cell -> move particle to ghost cell 
-         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. Nm(1)+Ngl(1)) THEN
-            i = Nm(1) + Ngl(1)
+         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
+            i = nm(1) + ngl(1)
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. Nm(2)+Ngl(2)) THEN
-            j = Nm(2) + Ngl(2)
+         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
+            j = nm(2) + ngl(2)
             icorr = icorr + 1
          ENDIF
-         if (xp(3,ipart) .GE. xmax(3) .AND. k .LT. Nm(3)+Ngl(3)) THEN
-            k = Nm(3) + Ngl(3)
+         if (xp(3,ipart) .GE. xmax(3) .AND. k .LT. nm(3)+ngl(3)) THEN
+            k = nm(3) + ngl(3)
             icorr = icorr + 1
          ENDIF
          
          ! if particle is inside the physical domain but index belongs to a
          ! ghost cell -> move particle in real cell
-         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. Nm(1)+Ngl(1)) THEN
-            i = Nm(1) + Ngl(1) - 1
+         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
+            i = nm(1) + ngl(1) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. Nm(2)+Ngl(2)) THEN
-            j = Nm(2) + Ngl(2) - 1
+         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
+            j = nm(2) + ngl(2) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(3,ipart) .LT. xmax(3) .AND. k .GE. Nm(3)+Ngl(3)) THEN
-            k = Nm(3) + Ngl(3) - 1
+         if (xp(3,ipart) .LT. xmax(3) .AND. k .GE. nm(3)+ngl(3)) THEN
+            k = nm(3) + ngl(3) - 1
             icorr = icorr + 1
          ENDIF
 
          ! ignore particles outside the mesh (numbering is from 0...n-1
          ! since we are using INT !!!
-         IF ((i .GE. 0 .AND. i .LT. Nmtot(1)) .AND.  &
-     &       (j .GE. 0 .AND. j .LT. Nmtot(2)) .AND.  &
-     &       (k .GE. 0 .AND. k .LT. Nmtot(3))) THEN
+         IF ((i .GE. 0 .AND. i .LT. nmtot(1)) .AND.  &
+     &       (j .GE. 0 .AND. j .LT. nmtot(2)) .AND.  &
+     &       (k .GE. 0 .AND. k .LT. nmtot(3))) THEN
             icount      = icount + 1
-            ibox        = i + 1 + j*Nmtot(1) + k*n2 
+            ibox        = i + 1 + j*nmtot(1) + k*n2 
             pbox(ipart) = ibox
          ELSE
             ! particle is in no box
@@ -437,58 +437,58 @@
      &           'Np must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(1) .LT. 0) THEN
+         IF (ngl(1) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(1) must be >= 0',__LINE__,info)
+     &           'ngl(1) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(2) .LT. 0) THEN
+         IF (ngl(2) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(2) must be >= 0',__LINE__,info)
+     &           'ngl(2) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(3) .LT. 0) THEN
+         IF (ngl(3) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(3) must be >= 0',__LINE__,info)
+     &           'ngl(3) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(4) .LT. 0) THEN
+         IF (ngl(4) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(4) must be >= 0',__LINE__,info)
+     &           'ngl(4) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(5) .LT. 0) THEN
+         IF (ngl(5) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(5) must be >= 0',__LINE__,info)
+     &           'ngl(5) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Ngl(6) .LT. 0) THEN
+         IF (ngl(6) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Ngl(6) must be >= 0',__LINE__,info)
+     &           'ngl(6) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Nm(1) .LE. 0) THEN
+         IF (nm(1) .LE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Nm(1) must be >0',__LINE__,info)
+     &           'nm(1) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Nm(2) .LE. 0) THEN
+         IF (nm(2) .LE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Nm(2) must be >0',__LINE__,info)
+     &           'nm(2) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (Nm(3) .LE. 0) THEN
+         IF (nm(3) .LE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank3d',  &
-     &           'Nm(3) must be >0',__LINE__,info)
+     &           'nm(3) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (xmax(1) .LE. xmin(1)) THEN
