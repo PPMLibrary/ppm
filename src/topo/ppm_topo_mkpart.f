@@ -207,8 +207,8 @@
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
-      INTEGER                           :: i,j,k,Ntot,iopt,treetype
-      INTEGER                           :: istat,nbox,isub
+      INTEGER                           :: i,Ntot,iopt,treetype
+      INTEGER                           :: nbox,isub
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
       INTEGER, DIMENSION(ppm_dim)       :: Nm
       CHARACTER(ppm_char)               :: mesg

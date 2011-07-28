@@ -383,8 +383,6 @@
           ! To form bitwise representation of first particle
           INTEGER                                    :: region2
           ! To form bitwise representation of second particle
-          INTEGER                                    :: i
-          ! Counter
 
           !---------------------------------------------------------------------
           !  Initialize return value to FALSE and local variables to 0
@@ -443,8 +441,6 @@
       !-------------------------------------------------------------------------
           INTEGER                             :: info
           ! If operation is successful, it is set to 0.
-          INTEGER                             :: i
-          ! Counter
           INTEGER                             :: iopt
           INTEGER, DIMENSION(1)               :: lda
 
@@ -576,7 +572,9 @@
       !  Arguments
       !-------------------------------------------------------------------------
           INTEGER(ppm_kind_int64),  INTENT(IN)                   :: cell_idx
-          REAL(MK), DIMENSION(:,:), INTENT(IN)                   :: xp
+          REAL(MK),  DIMENSION(:,:),INTENT(IN)                   :: xp
+          !!! this is basically a dummy argument to force fortran to generate
+          !!! two versions of this routine
           TYPE(ppm_clist),          INTENT(IN)                   :: clist
           INTEGER,   DIMENSION(:),  INTENT(INOUT)                :: list
           INTEGER,                  INTENT(INOUT)                :: nlist

@@ -192,13 +192,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,j,nbox,iopt,isub
+      INTEGER                           :: i,nbox,iopt,isub
       INTEGER, DIMENSION(2  )           :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
+      REAL(MK)                          :: t0,lmyeps
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
