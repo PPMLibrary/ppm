@@ -68,7 +68,7 @@
       CALL initialize_nodes()
 
       !-------------------------------------------------------------------------
-      !  Insert all nodes in binary heap lists. They'll all go to 0th row of
+      !  Insert all nodes in binary heap lists. They will all go to 0th row of
       !  binary heap lists as all of them has dsat-value 0 in the beginning
       !-------------------------------------------------------------------------
       DO i = 1, nedges
@@ -87,7 +87,7 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  coloring array is modified such that it's of the form (p1,p2,c) ...
+      !  coloring array is modified such that it is of the form (p1,p2,c) ...
       !-------------------------------------------------------------------------
       DO i = 1, nedges
           coloring(3*i-2) = edge_array(2*i-1)
@@ -228,7 +228,7 @@
               ENDIF
           ENDDO
           ! -2 comes from the fact that both edges will contain the
-          ! edge itself. So, two edge won't take place and they occupy
+          ! edge itself. So, two edge wont take place and they occupy
           ! a place of 2 elements
           END SUBROUTINE allocate_edge_lists
 
@@ -551,10 +551,10 @@
           ! if the node is already colored set its dsat-value to -1 and return
           IF(node(idx)%iscolored) THEN
               node(idx)%dsat = -1
-          ! if the node wasn't colored, compute its dsat-value and update in
+          ! if the node was not colored, compute its dsat-value and update in
           ! binary heap list, if necessary
           ELSE
-              ! set used_color's elements to TRUE if that color was used
+              ! set used_colors elements to TRUE if that color was used
               ! in at least one of the neighbors.
               DO i = 1, size(node(idx)%list)
                   neighbor = node(idx)%list(i)
@@ -581,7 +581,7 @@
           !---------------------------------------------------------------------
           !  Removes the colored node from binary heap list and updates
           !  its neighbors, such that if the dsat value of the neighbor
-          !  has changed, it's removed from the heaplist and inserted in
+          !  has changed, it is removed from the heaplist and inserted in
           !  the new list
           !---------------------------------------------------------------------
           SUBROUTINE update_neighbors(idx)
@@ -595,7 +595,7 @@
           CALL delete_node(idx)
           DO i = 1, size(node(idx)%list)
               neighbor = node(idx)%list(i) ! get index of neighbor
-              CALL compute_dsat(neighbor)  ! compute neighbors' dsat-values
+              CALL compute_dsat(neighbor)  ! compute neighbors dsat-values
           ENDDO
           END SUBROUTINE update_neighbors
 
@@ -614,13 +614,13 @@
               used_color(i) = .FALSE.
           ENDDO
 
-          ! set used_color array's elements to TRUE if that color was used
+          ! set used_color arrays elements to TRUE if that color was used
           DO i = 1, size(node(idx)%list)
               color_idx = node(idx)%list(i)
               used_color(node(color_idx)%color) = .TRUE.
           ENDDO
 
-          ! get the minimum color that wasn't used and color the edge with it
+          ! get the minimum color that was not used and color the edge with it
           DO i = 1, ncolor
               IF(.NOT. used_color(i)) THEN
                   node(idx)%color = i
