@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_clist_s(xp, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, info)
+     & ghost_extend, lsymm, info, clist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_clist_d(xp, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, info)
+     & ghost_extend, lsymm, info, clist)
 #endif
       !!! Given particle coordinates(xp), number of all particles including
       !!! ghost particles(Mp), cutoff radii of particles(cutoff), skin parameter
@@ -50,25 +50,26 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
+      REAL(MK), INTENT(IN), DIMENSION(:,:)         :: xp
       !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-      INTEGER , INTENT(IN)                       :: Mp
+      INTEGER , INTENT(IN)                         :: Mp
       !!! Number of all particles including ghost particles
-      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      REAL(MK), INTENT(IN), DIMENSION(:)           :: cutoff
       !!! Particles cutoff radii
-      REAL(MK), INTENT(IN)                       :: skin
+      REAL(MK), INTENT(IN)                         :: skin
       !!! Skin parameter
-      REAL(MK),      DIMENSION(2*ppm_dim)        :: actual_domain
+      REAL(MK),      DIMENSION(2*ppm_dim)          :: actual_domain
       ! Physical extent of actual domain without ghost layers.
-      REAL(MK), INTENT(IN), DIMENSION(ppm_dim) :: ghost_extend
+      REAL(MK), INTENT(IN), DIMENSION(ppm_dim)     :: ghost_extend
       !!! Extra area/volume over the actual domain introduced by
       !!! ghost layers.
-      LOGICAL,  INTENT(IN)                       :: lsymm
+      LOGICAL,  INTENT(IN)                         :: lsymm
       !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
       !!! layers only in (+) directions in all axes. Else, we have ghost
       !!! layers in all directions.
-      INTEGER , INTENT(OUT)                      :: info
+      INTEGER , INTENT(OUT)                        :: info
       !!! Info to be returned. 0 if SUCCESSFUL.
+      TYPE(ppm_clist), INTENT(INOUT)               :: clist
 
       !---------------------------------------------------------------------
       !  Local variables and parameters
@@ -98,7 +99,7 @@
 
       !<<<<<<<<<<<<<<<<<<<<<<<<< Start of the code >>>>>>>>>>>>>>>>>>>>>>>>>!
 
-      CALL substart('ppm_inl_clist',t0,info)
+      CALL substart('ppm_create_inl_clist',t0,info)
 
       IF(lsymm) THEN
           DO i = 1, ppm_dim
@@ -111,16 +112,17 @@
               whole_domain(2*i)   = actual_domain(2*i)   + ghost_extend(i)
           END DO
       END IF
+      
 
-      n_all_p = Mp
+      clist%n_all_p = Mp
 
       !-------------------------------------------------------------------------
       !  Allocate rank array, which will be used to sort particles, instead
       !  of modifying input arrays which are xp and cutoff.
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
-      lda(1) = n_all_p
-      CALL ppm_alloc(rank, lda, iopt, info)
+      lda(1) = clist%n_all_p
+      CALL ppm_alloc(clist%rank, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
@@ -134,18 +136,21 @@
       !  deallocate borders array. Then double the size and retry, until
       !  it is successful.
       !-------------------------------------------------------------------------
-      insuf_hash_table = 1
-      ncell = CEILING(n_all_p/1.0) !Hardcoded estimation of number of cells
-      DO WHILE(insuf_hash_table .NE. 0)
-          insuf_hash_table = 0      ! set insufficient_hash_table flag to 0
-          CALL create_htable(lookup,ncell,info) ! create hash table
-          lda(2) = lookup%nrow
+
+
+
+      clist%grow_htable = .TRUE.
+      clist%ncell = CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
+      DO WHILE(clist%grow_htable)
+          clist%grow_htable = .FALSE.     ! set insufficient_hash_table flag to 0
+          CALL create_htable(clist%lookup,clist%ncell,info) ! create hash table
+          lda(2) = clist%lookup%nrow
           iopt = ppm_param_alloc_fit
           ! Number of rows of "borders" array depends on dimensionality.
           IF(ppm_dim .EQ. 2)       THEN
               lda(1) = 6
               ! Allocate "borders" array for 2D case
-              CALL ppm_alloc(borders, lda, iopt, info)
+              CALL ppm_alloc(clist%borders, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
@@ -154,7 +159,7 @@
           ELSEIF(ppm_dim .EQ. 3)   THEN
               lda(1) = 10
               ! Allocate "borders" array for 3D case
-              CALL ppm_alloc(borders, lda, iopt, info)
+              CALL ppm_alloc(clist%borders, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
@@ -163,70 +168,70 @@
           END IF
 
           ! Initialize array and variables
-          borders         = 0
-          borders_pos     = 0
-          borders_pos_max = 0
+          clist%borders         = 0
+          clist%borders_pos     = 0
+          clist%borders_pos_max = 0
 
-          borders_pos = borders_pos + 1
-          CALL hash_insert(lookup,idx0, borders_pos, info)
+          clist%borders_pos = clist%borders_pos + 1
+          CALL hash_insert(clist%lookup,idx0, clist%borders_pos, info)
           IF(ppm_dim .EQ. 2)    THEN
-              borders(6, borders_pos)  = n_all_p
+              clist%borders(6, clist%borders_pos)  = clist%n_all_p
           ELSE
-              borders(10, borders_pos) = n_all_p
+              clist%borders(10, clist%borders_pos) = clist%n_all_p
           ENDIF
 
-          DO i = 1, n_all_p
-              rank(i) = i
+          DO i = 1, clist%n_all_p
+              clist%rank(i) = i
           END DO
 
           ! Sort particles by their position
-          CALL SortByPosition(xp, cutoff, skin, rank, whole_domain, idx, 0)
-          IF(insuf_hash_table .NE. 0) THEN ! If hash table is not sufficient
-              CALL destroy_htable(lookup,info)        ! Destroy hash table
+          CALL SortByPosition(xp, cutoff, skin, clist%rank, clist,whole_domain, idx, 0)
+          IF(clist%grow_htable) THEN ! If hash table is not sufficient
+              CALL destroy_htable(clist%lookup,info)        ! Destroy hash table
               iopt = ppm_param_dealloc
               lda = 0
               ! Deallocate "borders" array
-              CALL ppm_alloc(borders, lda, iopt, info)
+              CALL ppm_alloc(clist%borders, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_dealloc,'ppm_create_cell_list',   &
  &                               'borders',__LINE__,info)
               END IF
-              ncell = ncell*2             ! Double the number of cells
+              clist%ncell = clist%ncell*2             ! Double the number of cells
           END IF
       END DO
 
       !-------------------------------------------------------------------------
       !  Re-initialize rank array.
       !-------------------------------------------------------------------------
-      DO i = 1, n_all_p
-          rank(i) = i
+      DO i = 1, clist%n_all_p
+          clist%rank(i) = i
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Sort particles by their cutoff radii in descending order.
       !-------------------------------------------------------------------------
-      CALL sortByRC(cutoff, skin, rank)
+      CALL sortByRC(cutoff, skin, clist%rank)
 
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
       !-------------------------------------------------------------------------
-      max_depth = getMaxDepth(cutoff, whole_domain)
+      clist%max_depth = getMaxDepth(cutoff, clist, whole_domain)
 
       !-------------------------------------------------------------------------
       !  Allocate rc_borders array, in order to store borders on rank
       !  array, that will contain particles of that level.
       !-------------------------------------------------------------------------
       ldl(1) = 0
-      ldu(1) = max_depth
-      CALL ppm_alloc(rc_borders, ldl, ldu, iopt, info)
+      ldu(1) = clist%max_depth
+      CALL ppm_alloc(clist%rc_borders, ldl, ldu, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
  &                       'rc_borders',__LINE__,info)
           GOTO 9999
       END IF
-      rc_borders(0) = 1
+      clist%rc_borders(0) = 1
 
       !-------------------------------------------------------------------------
       !  Get borders on particle rank array for different levels, such that
@@ -234,28 +239,28 @@
       !  indices on the rank array, which will contain particles of that
       !  level.
       !-------------------------------------------------------------------------
-      CALL getRC_Borders(cutoff, skin, whole_domain,info)
+      CALL getRC_Borders(cutoff, skin, clist, whole_domain,info)
 
       !-------------------------------------------------------------------------
       !  For every level of depth, sort particles by their cutoff radii and
       !  positions. So in the end, we have particles that are sorted by
       !  their position in their own chunk of depth.
       !-------------------------------------------------------------------------
-      CALL SortByRC_Pos(xp, cutoff, skin, rank(rc_borders(0):&
- &                      (rc_borders(1) - 1)), whole_domain, &
- &                      idx0, 1, rc_borders(0)-1)
+      CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(0):&
+ &                      (clist%rc_borders(1) - 1)), clist, whole_domain, &
+ &                      idx0, 1, clist%rc_borders(0)-1)
 
-      DO level = 2, max_depth
-          CALL SortByRC_Pos(xp, cutoff, skin, rank(rc_borders(level-1):&
- &                          (rc_borders(level) - 1)), whole_domain, &
- &                          idx, level, rc_borders(level-1)-1)
+      DO level = 2, clist%max_depth
+          CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(level-1):&
+ &                          (clist%rc_borders(level) - 1)), clist, whole_domain, &
+ &                          idx, level, clist%rc_borders(level-1)-1)
       END DO
 
 
       !-------------------------------------------------------------------------
       !  Deallocate rc_borders array as its of no use anymore.
       !-------------------------------------------------------------------------
-      CALL ppm_alloc(rc_borders, lda, iopt, info)
+      CALL ppm_alloc(clist%rc_borders, lda, iopt, info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'ppm_create_inl_clist',     &
@@ -268,19 +273,19 @@
       !  particles in deeper levels and otherwise set to 1.
       !-------------------------------------------------------------------------
       IF(ppm_dim .EQ. 2)  THEN
-          DO i = 1, borders_pos_max
-              IF((borders(5, i) - borders(1, i)) .NE. borders(6, i))  THEN
-                  borders(6, i) = -1
+          DO i = 1, clist%borders_pos_max
+              IF((clist%borders(5, i) - clist%borders(1, i)) .NE. clist%borders(6, i))  THEN
+                  clist%borders(6, i) = -1
               ELSE
-                  borders(6, i) = 1
+                  clist%borders(6, i) = 1
               END IF
           END DO
       ELSEIF(ppm_dim .EQ. 3)  THEN
-          DO i = 1, borders_pos_max
-              IF((borders(9, i) - borders(1, i)) .NE. borders(10, i))  THEN
-                  borders(10, i) = -1
+          DO i = 1, clist%borders_pos_max
+              IF((clist%borders(9, i) - clist%borders(1, i)) .NE. clist%borders(10, i))  THEN
+                  clist%borders(10, i) = -1
               ELSE
-                  borders(10, i) = 1
+                  clist%borders(10, i) = 1
               END IF
           END DO
       END IF
@@ -291,6 +296,102 @@
       END SUBROUTINE create_inl_clist_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE create_inl_clist_d
+#endif
+
+#if __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_destroy_inl_clist(clist,info)
+      !!! deallocates all arrays in clist, sets variables back to
+      !!! default values and calls the destructor for the hash table
+      
+      USE ppm_module_substart
+      USE ppm_module_substop
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      TYPE(ppm_clist), INTENT(INOUT)               :: clist
+      INTEGER , INTENT(OUT)                        :: info
+      !!! Info to be returned. 0 if SUCCESSFUL.
+      !---------------------------------------------------------------------
+      !  Local Variables
+      !---------------------------------------------------------------------
+      INTEGER                                       :: iopt
+      INTEGER, DIMENSION(2)                         :: lda
+      REAL(ppm_kind_single)                         :: t0
+
+      CALL substart('ppm_destroy_inl_clist',t0,info)
+          
+      iopt = ppm_param_dealloc
+      lda = 0
+      !-------------------------------------------------------------------------
+      !  Deallocate borders array which contains cell lists.
+      !-------------------------------------------------------------------------
+      CALL ppm_alloc(clist%borders, lda, iopt, info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,'destroy_inl_vlist',   &
+          &                       'borders',__LINE__,info)
+          GOTO 9999
+      END IF
+
+      !-------------------------------------------------------------------------
+      !  Deallocate rank array.
+      !-------------------------------------------------------------------------
+      CALL ppm_alloc(clist%rank,lda, iopt, info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,'destry_inl_vlist',   &
+          &                       'rank',__LINE__,info)
+          GOTO 9999
+      END IF
+
+      !-------------------------------------------------------------------------
+      !  Deallocate rankByPos array.
+      !-------------------------------------------------------------------------
+      CALL ppm_alloc(clist%rankByPos,  lda, iopt, info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,'destroy_inl_vlist',   &
+          &                       'rankByPos',__LINE__,info)
+          GOTO 9999
+      END IF
+
+      !-------------------------------------------------------------------------
+      !  Deallocate rc_borders
+      !-------------------------------------------------------------------------
+      CALL ppm_alloc(clist%rc_borders, lda, iopt, info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,'destroy_inl_vlist',   &
+          &                       'rc_borders',__LINE__,info)
+          GOTO 9999
+      END IF
+
+      !-------------------------------------------------------------------------
+      !  Destroy hash table.
+      !-------------------------------------------------------------------------
+      CALL destroy_htable(clist%lookup,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
+          &            'Could not destroy htable',__LINE__,info)
+          GOTO 9999
+      END IF
+
+      NULLIFY(clist%rc_borders,clist%rankByPos,clist%rank,clist%borders)
+
+      clist%borders_pos      = 0
+      clist%borders_pos_max  = 0
+      clist%max_depth        = 0
+      clist%ncell            = 0
+      clist%n_real_p         = 0
+      clist%n_all_p          = 0
+      clist%grow_htable      = .TRUE.
+      
+9999  CONTINUE
+      CALL substop('ppm_destroy_inl_clist',t0,info)
+
+      END SUBROUTINE ppm_destroy_inl_clist
 #endif
 
 #if __KIND == __SINGLE_PRECISION
@@ -311,7 +412,7 @@
 #endif
 
 #if __KIND == __SINGLE_PRECISION
-      PURE FUNCTION isEmpty(c_idx) RESULT(empty)
+      PURE FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
       !!! Given the index of the cell, returns whether the cell is
       !!! empty or not.
       IMPLICIT NONE
@@ -320,6 +421,8 @@
       !---------------------------------------------------------------------
       INTEGER(ppm_kind_int64), INTENT(IN) :: c_idx
       !!! Input index
+      TYPE(ppm_htable), INTENT(IN)        :: lookup
+      !!! hash table
       logical                             :: empty
       !!! Logical result
       !---------------------------------------------------------------------
@@ -372,9 +475,11 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getCellCoor_Depth_s(cell_idx, domain, coor, cell_depth,info)
+      SUBROUTINE getCellCoor_Depth_s(cell_idx, domain, coor, cell_depth, &
+ &                     max_depth,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getCellCoor_Depth_d(cell_idx, domain, coor, cell_depth,info)
+      SUBROUTINE getCellCoor_Depth_d(cell_idx, domain, coor, cell_depth, &
+ &                     max_depth,info)
 #endif
       !!! Given the cell index and the domain, modifies coor and
       !!! cell_depth variables such that coor contains midpoint
@@ -394,12 +499,14 @@
       INTEGER(ppm_kind_int64), INTENT(IN)             :: cell_idx
       !!! Index of the cell whose midpoint coordinates and depth will be
       !!! returned.
-      REAL(MK),                DIMENSION(2*ppm_dim)   :: domain
+      REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN)      :: domain
       !!! Physical extent of whole domain including ghost layers.
-      REAL(MK),                DIMENSION(ppm_dim)     :: coor
+      REAL(MK), DIMENSION(ppm_dim), INTENT(INOUT)     :: coor
       !!! Midpoint coordinates of the cell to be returned.
-      INTEGER                                         :: cell_depth
+      INTEGER,                      INTENT(INOUT)     :: cell_depth
       !!! Depth of the cell to be returned.
+      INTEGER,                      INTENT(IN)        :: max_depth
+      !!! maximum cell depth in cell tree
       INTEGER                                         :: info
       !!! 0 on success
 
@@ -748,9 +855,11 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      RECURSIVE SUBROUTINE SortByPosition_s(xp, cutoff, skin, rank_pos, ownregion, idx, increment)
+      RECURSIVE SUBROUTINE SortByPosition_s(xp, cutoff, skin, rank,clist,ownregion, &
+ &                         idx, increment)
 #elif __KIND == __DOUBLE_PRECISION
-      RECURSIVE SUBROUTINE SortByPosition_d(xp, cutoff, skin, rank_pos, ownregion, idx, increment)
+      RECURSIVE SUBROUTINE SortByPosition_d(xp, cutoff, skin, rank,clist,ownregion, &
+ &                         idx, increment)
 #endif
       !!! The recursive subroutine which sorts the particles by their position;
       !!! given particles coordinates, their cutoff radii, skin parameter,
@@ -773,14 +882,17 @@
       !!! Input array for particles cutoff radii
       REAL(MK),  INTENT(IN)                           :: skin
       !!! Skin parameter
-      INTEGER,   INTENT(INOUT), DIMENSION(:)          :: rank_pos
-      !!! ranks of particles
+      INTEGER, INTENT(INOUT), DIMENSION(:)            :: rank
+      !!! rank array
+      TYPE(ppm_clist), INTENT(INOUT)                  :: clist
+      !!! cell list
       REAL(MK),  INTENT(IN),    DIMENSION(:)          :: ownregion
       !!! Region that will be used to sort particles within
       INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
       !!! Index of cell to be processed
       INTEGER,   INTENT(IN)                           :: increment
       !!! Start index in particles arrays.
+
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
@@ -801,17 +913,17 @@
       INTEGER                                         :: info
 
       ! If hash table is not sufficiently large, RETURN
-      ! Use of insuf_hash_table parameter globally ensures that
+      ! Use of grow_htable parameter globally ensures that
       ! every recursive subroutine will stop.
 
-      IF(insuf_hash_table .NE. 0)   RETURN
+      IF(clist%grow_htable)   RETURN
 
       ! If no particles are assigned, return
-      IF(size(rank_pos) .LT. 1) RETURN
+      IF(size(rank) .LT. 1) RETURN
 
       ! Get maximum side length and the minimum cutoff radius
       minSideLength = getMinimumSideLength(ownregion)
-      minRC = getMinimumRC(cutoff, skin, rank_pos)
+      minRC = getMinimumRC(cutoff, skin, rank)
 
       ! If the cell is small enough, stop recursion for this cell.
       IF(minRC .GE. minSideLength) THEN
@@ -825,24 +937,24 @@
 
       ! Divide particles to 2, that are on the left of midpoint
       ! x-coordinate and on the right of it.
-      CALL partition(xp, rank_pos, mid_coor(1), bx, 1)
+      CALL partition(xp, rank, mid_coor(1), bx, 1)
 
       ! Divide particles that are on the left of midpoint x-coordinate
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
-      CALL partition(xp, rank_pos(1:bx-1), mid_coor(2), byLeft,  2)
+      CALL partition(xp, rank(1:bx-1), mid_coor(2), byLeft,  2)
 
       ! Divide particles that are on the right of midpoint x-coordinate
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
-      CALL partition(xp, rank_pos(bx:),    mid_coor(2), byRight, 2)
+      CALL partition(xp, rank(bx:),    mid_coor(2), byRight, 2)
       ! Increment border for upper-right portion
       byRight       = byRight       + bx      - 1
 
       ! If in 3D, keep on subdividing
       IF(ppm_dim .EQ. 3)  THEN
-          CALL partition(xp, rank_pos(1:byLeft-1),   mid_coor(3), bzBottomLeft,  3)
-          CALL partition(xp, rank_pos(byLeft:bx-1),  mid_coor(3), bzBottomRight, 3)
-          CALL partition(xp, rank_pos(bx:byRight-1), mid_coor(3), bzTopLeft,     3)
-          CALL partition(xp, rank_pos(byRight:),     mid_coor(3), bzTopRight,    3)
+          CALL partition(xp, rank(1:byLeft-1),   mid_coor(3), bzBottomLeft,  3)
+          CALL partition(xp, rank(byLeft:bx-1),  mid_coor(3), bzBottomRight, 3)
+          CALL partition(xp, rank(bx:byRight-1), mid_coor(3), bzTopLeft,     3)
+          CALL partition(xp, rank(byRight:),     mid_coor(3), bzTopRight,    3)
 
           ! Increment border indices accordingly.
           bzBottomRight = bzBottomRight + byLeft  - 1
@@ -854,25 +966,25 @@
       CALL setSubregions(ownregion, subregions,info)
 
       ! Insert current cell in hash table.
-      borders_pos = borders_pos + 1
-      CALL hash_insert(lookup,idx, borders_pos, info)
+      clist%borders_pos = clist%borders_pos + 1
+      CALL hash_insert(clist%lookup,idx, clist%borders_pos, info)
       IF(info .NE. 0)   THEN
-          insuf_hash_table = 1
+          clist%grow_htable = .TRUE.
           RETURN
       END IF
 
       ! Keep track of maximum number of cells, to be used later.
-      IF(borders_pos .GT. borders_pos_max)   THEN
-          borders_pos_max = borders_pos
+      IF(clist%borders_pos .GT. clist%borders_pos_max)   THEN
+          clist%borders_pos_max = clist%borders_pos
       END IF
 
       ! Set last row as number of particles within the physical region
       ! of the cell, later to be used to understand whether the cell has
       ! particles in deeper levels or not.
       IF(ppm_dim .EQ. 2)       THEN
-          borders(6, borders_pos) = size(rank)
+          clist%borders(6, clist%borders_pos) = size(rank)
       ELSEIF(ppm_dim .EQ. 3)   THEN
-          borders(10, borders_pos) = size(rank)
+          clist%borders(10, clist%borders_pos) = size(rank)
       END IF
 
       ! Set increment parameters for recursive calls. This one is done
@@ -891,30 +1003,30 @@
 
       ! Call recursive calls
       IF(ppm_dim .EQ. 2)       THEN
-          CALL SortByPosition(xp, cutoff, skin, rank_pos(1:byLeft-1),      &
+          CALL SortByPosition(xp, cutoff, skin, rank(1:byLeft-1), clist,      &
  &                    subregions(1,:), 4*idx-2, incArray(1))
-          CALL SortByPosition(xp, cutoff, skin, rank_pos(byLeft:bx-1), &
+          CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bx-1), clist, &
  &                    subregions(2,:), 4*idx-1, incArray(2))
-          CALL SortByPosition(xp, cutoff, skin, rank_pos(bx:byRight-1),&
+          CALL SortByPosition(xp, cutoff, skin, rank(bx:byRight-1), clist, &
  &                    subregions(3,:), 4*idx,   incArray(3))
-          CALL SortByPosition(xp, cutoff, skin, rank_pos(byRight:),    &
+          CALL SortByPosition(xp, cutoff, skin, rank(byRight:), clist, &
  &                    subregions(4,:), 4*idx+1, incArray(4))
       ELSEIF(ppm_dim .EQ. 3)   THEN
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(1:bzBottomLeft-1),  &
+           CALL SortByPosition(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist,  &
  &                    subregions(1,:), 8*idx-6, incArray(1))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(bzBottomLeft:byLeft-1), &
+           CALL SortByPosition(xp, cutoff, skin, rank(bzBottomLeft:byLeft-1),clist, &
  &                    subregions(2,:), 8*idx-5, incArray(2))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(byLeft:bzBottomRight-1),&
+           CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bzBottomRight-1),clist,&
  &                    subregions(3,:), 8*idx-4, incArray(3))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(bzBottomRight:bx-1),    &
+           CALL SortByPosition(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist,&
  &                    subregions(4,:), 8*idx-3, incArray(4))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(bx:bzTopLeft-1),        &
+           CALL SortByPosition(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist,  &
  &                    subregions(5,:), 8*idx-2, incArray(5))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(bzTopLeft:byRight-1),   &
+           CALL SortByPosition(xp, cutoff, skin, rank(bzTopLeft:byRight-1),clist, &
  &                    subregions(6,:), 8*idx-1, incArray(6))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(byRight:bzTopRight-1),  &
+           CALL SortByPosition(xp, cutoff, skin, rank(byRight:bzTopRight-1),clist,&
  &                    subregions(7,:), 8*idx  , incArray(7))
-           CALL SortByPosition(xp, cutoff, skin, rank_pos(bzTopRight:),           &
+           CALL SortByPosition(xp, cutoff, skin, rank(bzTopRight:),clist, &
  &                    subregions(8,:), 8*idx+1, incArray(8))
       END IF
 #if   __KIND == __SINGLE_PRECISION
@@ -924,9 +1036,11 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      RECURSIVE SUBROUTINE SortByRC_Pos_s(xp, cutoff, skin, rank, ownregion, idx, level, increment)
+      RECURSIVE SUBROUTINE SortByRC_Pos_s(xp, cutoff, skin, rank,clist, ownregion, &
+ &                         idx, level, increment)
 #elif __KIND == __DOUBLE_PRECISION
-      RECURSIVE SUBROUTINE SortByRC_Pos_d(xp, cutoff, skin, rank, ownregion, idx, level, increment)
+      RECURSIVE SUBROUTINE SortByRC_Pos_d(xp, cutoff, skin, rank,clist, ownregion, &
+ &                         idx, level, increment)
 #endif
       !!! The recursive subroutine which sorts the particles by their position
       !!! and their cutoff radii; given particles coordinates, their cutoff
@@ -949,9 +1063,11 @@
       !!! Input array for particles cutoff radii
       REAL(MK),  INTENT(IN)                           :: skin
       !!! Skin parameter
-      INTEGER,   INTENT(INOUT), DIMENSION(:)          :: rank
-      !!! ranks of particles
-      REAL(MK),  INTENT(IN),    DIMENSION(:)  :: ownregion
+      INTEGER, INTENT(INOUT), DIMENSION(:)            :: rank
+      !!! rank array
+      TYPE(ppm_clist), INTENT(INOUT)                  :: clist
+      !!! cell list
+      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: ownregion
       !!! Region that will be used to sort particles within
       INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
       !!! Index of cell to be processed
@@ -1012,24 +1128,24 @@
       ! If the desired level is reached, update the entry on borders
       ! array, such that it contains border indices for children cells.
       IF(getCellDepth(idx) + 1 .GE. level)  THEN
-          borders_pos = hash_search(lookup,idx)
+          clist%borders_pos = hash_search(clist%lookup,idx)
 
           IF(ppm_dim .EQ. 2)       THEN
-              borders(1, borders_pos) = increment
-              borders(2, borders_pos) = byLeft        + increment - 1
-              borders(3, borders_pos) = bx            + increment - 1
-              borders(4, borders_pos) = byRight       + increment - 1
-              borders(5, borders_pos) = size(rank)    + increment
+              clist%borders(1, clist%borders_pos) = increment
+              clist%borders(2, clist%borders_pos) = byLeft        + increment - 1
+              clist%borders(3, clist%borders_pos) = bx            + increment - 1
+              clist%borders(4, clist%borders_pos) = byRight       + increment - 1
+              clist%borders(5, clist%borders_pos) = size(rank)    + increment
           ELSEIF(ppm_dim .EQ. 3)   THEN
-              borders(1, borders_pos) = increment
-              borders(2, borders_pos) = bzBottomLeft  + increment - 1
-              borders(3, borders_pos) = byLeft        + increment - 1
-              borders(4, borders_pos) = bzBottomRight + increment - 1
-              borders(5, borders_pos) = bx            + increment - 1
-              borders(6, borders_pos) = bzTopLeft     + increment - 1
-              borders(7, borders_pos) = byRight       + increment - 1
-              borders(8, borders_pos) = bzTopRight    + increment - 1
-              borders(9, borders_pos) = size(rank)    + increment
+              clist%borders(1, clist%borders_pos) = increment
+              clist%borders(2, clist%borders_pos) = bzBottomLeft  + increment - 1
+              clist%borders(3, clist%borders_pos) = byLeft        + increment - 1
+              clist%borders(4, clist%borders_pos) = bzBottomRight + increment - 1
+              clist%borders(5, clist%borders_pos) = bx            + increment - 1
+              clist%borders(6, clist%borders_pos) = bzTopLeft     + increment - 1
+              clist%borders(7, clist%borders_pos) = byRight       + increment - 1
+              clist%borders(8, clist%borders_pos) = bzTopRight    + increment - 1
+              clist%borders(9, clist%borders_pos) = size(rank)    + increment
           END IF
           RETURN
       ! Else, keep on subdividing and calling recursive calls for
@@ -1049,30 +1165,30 @@
           END IF
 
           IF(ppm_dim .EQ. 2)  THEN
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(1:byLeft-1),      &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(1:byLeft-1),clist, &
 &                    subregions(1,:), 4*idx-2, level, incArray(1))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(byLeft:bx-1), &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(byLeft:bx-1),clist, &
 &                    subregions(2,:), 4*idx-1, level, incArray(2))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:byRight-1),&
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:byRight-1),clist,&
 &                    subregions(3,:), 4*idx, level, incArray(3))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(byRight:),    &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(byRight:),clist,&
 &                    subregions(4,:), 4*idx+1, level, incArray(4))
           ELSEIF(ppm_dim .EQ. 3)   THEN
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(1:bzBottomLeft-1),      &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist, &
 &                    subregions(1,:), 8*idx-6, level, incArray(1))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzBottomLeft:byLeft-1), &
+              CALL SortByRC_Pos(xp, cutoff, skin,rank(bzBottomLeft:byLeft-1),clist, &
 &                    subregions(2,:), 8*idx-5, level, incArray(2))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(byLeft:bzBottomRight-1),&
+              CALL SortByRC_Pos(xp, cutoff, skin,rank(byLeft:bzBottomRight-1),clist,&
 &                    subregions(3,:), 8*idx-4, level, incArray(3))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzBottomRight:bx-1),    &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist,&
 &                    subregions(4,:), 8*idx-3, level, incArray(4))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:bzTopLeft-1),        &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist,  &
 &                    subregions(5,:), 8*idx-2, level, incArray(5))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzTopLeft:byRight-1),   &
+              CALL SortByRC_Pos(xp, cutoff, skin,rank(bzTopLeft:byRight-1),clist,&
 &                    subregions(6,:), 8*idx-1, level, incArray(6))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(byRight:bzTopRight-1),  &
+              CALL SortByRC_Pos(xp, cutoff, skin,rank(byRight:bzTopRight-1),clist,  &
 &                    subregions(7,:), 8*idx, level, incArray(7))
-              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzTopRight:),           &
+              CALL SortByRC_Pos(xp, cutoff, skin, rank(bzTopRight:),clist, &
 &                    subregions(8,:), 8*idx+1, level, incArray(8))
           END IF
       END IF
@@ -1103,7 +1219,7 @@
       !---------------------------------------------------------------------
       REAL(MK), INTENT(IN),    DIMENSION(:,:) :: xp
       !!! Input array for particles coordinates
-      INTEGER,  INTENT(INOUT), DIMENSION(:)   :: rank
+      INTEGER,  DIMENSION(:), INTENT(INOUT)   :: rank
       !!! ranks of particles
       REAL(MK), INTENT(IN)                    :: midPoint
       !!! Midpoint that particles will be partitioned by
@@ -1266,9 +1382,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      PURE FUNCTION lastIdxForRC_s(cutoff, skin, inputRC) RESULT(idx)
+      PURE FUNCTION lastIdxForRC_s(cutoff, skin, clist, inputRC) RESULT(idx)
 #elif __KIND == __DOUBLE_PRECISION
-      PURE FUNCTION lastIdxForRC_d(cutoff, skin, inputRC) RESULT(idx)
+      PURE FUNCTION lastIdxForRC_d(cutoff, skin, clist, inputRC) RESULT(idx)
 #endif
       !!! For a given cutoff radius, returns the last index in the rank
       !!! array that is greater than or equal to this cutoff radius; given
@@ -1289,6 +1405,8 @@
       !!! Input array for particles cutoff radii
       REAL(MK), INTENT(IN)               :: skin
       !!! Skin parameter
+      TYPE(ppm_clist), INTENT(IN)        :: clist
+      !!! rank array
       REAL(MK), INTENT(IN)               :: inputRC
       !!! Input cutoff radius
       INTEGER                            :: idx
@@ -1302,11 +1420,11 @@
       INTEGER                            :: mid
 
       low  = 1
-      high = size(rank)
+      high = size(clist%rank)
       mid = FLOOR(REAL((low + high)/2))
 
       DO WHILE((mid .NE. low) .OR. (mid .NE. high))
-          IF((cutoff(rank(mid)) + skin) .GE. inputRC)   THEN
+          IF((cutoff(clist%rank(mid)) + skin) .GE. inputRC)   THEN
               low = mid + 1
           ELSE
               high = mid
@@ -1317,7 +1435,7 @@
 
       idx = mid
 
-      IF((mid .EQ. high) .AND. ((cutoff(rank(mid))+skin) .GE. inputRC)) THEN
+      IF((mid .EQ. high) .AND. ((cutoff(clist%rank(mid))+skin) .GE. inputRC)) THEN
           idx = mid + 1
       END IF
 #if   __KIND == __SINGLE_PRECISION
@@ -1327,9 +1445,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-       FUNCTION getMaxDepth_s(cutoff, domain)    RESULT(depthMax)
+       FUNCTION getMaxDepth_s(cutoff, clist, domain)    RESULT(depthMax)
 #elif __KIND == __DOUBLE_PRECISION
-       FUNCTION getMaxDepth_d(cutoff, domain)    RESULT(depthMax)
+       FUNCTION getMaxDepth_d(cutoff, clist, domain)    RESULT(depthMax)
 #endif
       !!! This function returns the maximum depth within a domain
       IMPLICIT NONE
@@ -1342,6 +1460,7 @@
       !  Arguments
       !---------------------------------------------------------------------
       REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      TYPE(ppm_clist), INTENT(IN)                :: clist
       REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: domain
       INTEGER                                    :: depthMax
 
@@ -1351,7 +1470,7 @@
       REAL(MK)                                   :: rc_min
       REAL(MK)                                   :: minSideLength
 
-      rc_min = cutoff(rank(size(rank)))
+      rc_min = cutoff(clist%rank(size(clist%rank)))
       minSideLength = getMinimumSideLength(domain)
       depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2.0))
 #if   __KIND == __SINGLE_PRECISION
@@ -1361,9 +1480,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getRC_Borders_s(cutoff, skin, domain,info)
+      SUBROUTINE getRC_Borders_s(cutoff, skin, clist, domain,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getRC_Borders_d(cutoff, skin, domain,info)
+      SUBROUTINE getRC_Borders_d(cutoff, skin, clist, domain,info)
 #endif
       !!! Computes the borders on rc_borders array such that two
       !!! consecutive indices will contain borders for particle in that level.
@@ -1382,6 +1501,8 @@
       !!! Input array for particles cutoff radii
       REAL(MK), INTENT(IN)               :: skin
       !!! Skin parameter
+      TYPE(ppm_clist), INTENT(INOUT)     :: clist
+      !!! the cell list
       REAL(MK), DIMENSION(2*ppm_dim)     :: domain
       !!! Physical extent of whole domain including ghost layers
       INTEGER                            :: info
@@ -1400,12 +1521,12 @@
 
       minSideLength = getMinimumSideLength(domain)
 
-      DO i = 1, max_depth
+      DO i = 1, clist%max_depth
           ! minimum cutoff radius has to be greater than
           ! half of the maximum side length
           rc_limit  = minSideLength/2
-          rc_border = lastIdxForRC(cutoff, skin, rc_limit)
-          rc_borders(i) = rc_border
+          rc_border = lastIdxForRC(cutoff, skin, clist, rc_limit)
+          clist%rc_borders(i) = rc_border
           ! maximum side length after a subdivision
           minSideLength = minSideLength/2
       END DO
