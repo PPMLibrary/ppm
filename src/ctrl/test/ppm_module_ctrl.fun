@@ -76,7 +76,7 @@ test_suite ppm_module_ctrl
   test printing
     CALL reset
     ! define some args
-!     CALL disable_ctrl
+    CALL disable_ctrl
     CALL arg(idefault, 'some_int',     &
          flag      = '-i',             &
          long_flag = '--integer',      &
