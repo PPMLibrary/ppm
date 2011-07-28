@@ -571,6 +571,7 @@ test_suite ppm_module_ctrl
   test default_funcs
     ! procedure declarations
     procedure(integer_func)        int_def
+    procedure(integer_func)        revert_on_fail
     procedure(longint_func)        lng_def
     procedure(single_func)         flt_def
     procedure(double_func)         dbl_def
@@ -588,6 +589,8 @@ test_suite ppm_module_ctrl
     procedure(dcomplex_array_func) dcpa_def
     ! define
     CALL arg(idefault, 'idefault', default_func = int_def)
+    CALL arg(iflag,    'iflag',    default_func = revert_on_fail, &
+             flag = '-f', default = 42) ! on default_func fail, revert to default!
     CALL arg(gdefault, 'gdefault', default_func = lng_def)
     CALL arg(rdefault, 'rdefault', default_func = flt_def)
     CALL arg(ddefault, 'ddefault', default_func = dbl_def)
@@ -603,10 +606,13 @@ test_suite ppm_module_ctrl
     CALL arg(larray,   'larray',   default_func = loga_def)
     CALL arg(parray,   'parray',   default_func = cpxa_def)
     CALL arg(xarray,   'xarray',   default_func = dcpa_def)
+    ! supply
+    CALL add_cmd('-f','51')
     ! parse
     CALL parse_args(info)
     ! test
     Assert_Equal(idefault, 42       )
+    Assert_Equal(iflag,    42       )
     Assert_Equal(gdefault, 42       )
     Assert_Equal(rdefault, 0.1337   )
     Assert_Equal(ddefault, 0.1337_8 )
@@ -631,6 +637,11 @@ logical function int_def(var)
   var = 42
   int_def = .true.
 end function int_def
+
+logical function revert_on_fail(var)
+  integer, pointer, intent(in) :: var
+  revert_on_fail = .false.
+end function revert_on_fail
 
 logical function lng_def(var)
   integer(8), pointer, intent(in) :: var
