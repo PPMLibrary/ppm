@@ -77,6 +77,9 @@ if test "x${use_mpi}" == xyes; then
     AC_LANG([C])
 fi
 
+if test "x${use_mpi}" == xyes; then
+    AC_SUBST(FUNIT_FLAGS,["--with-mpi"])
+fi
 
 # Checks for libraries and set preprocessing flags
 
