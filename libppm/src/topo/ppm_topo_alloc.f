@@ -114,16 +114,11 @@
      &               'Could not allocate ppm_topo',__LINE__,info)
                 GOTO 9999
             ENDIF
-            ppm_next_avail_topo = 1
+            ! make sure all pointers are nullified
             DO i=1,SIZE(ppm_topo)
-            	NULLIFY(ppm_topo(i)%t) ! first clean up pointer
-                CALL ppm_alloc(ppm_topo(i)%t,ppm_param_alloc_fit,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
-     &                   'Could not allocate ppm_topo elements',__LINE__,info)
-                ENDIF
+                NULLIFY(ppm_topo(i)%t)
             ENDDO
+            ppm_next_avail_topo = 1
         ELSEIF (ppm_next_avail_topo .GT. SIZE(ppm_topo)) THEN
             ! We need more space in the ppm_topo array, enlarge
             ALLOCATE(temptopo(SIZE(ppm_topo)),STAT=info)
@@ -153,12 +148,6 @@
             ENDDO
             DO i=SIZE(temptopo)+1,SIZE(ppm_topo)
                 NULLIFY(ppm_topo(i)%t)
-                CALL ppm_alloc(ppm_topo(i)%t,ppm_param_alloc_fit,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
-     &                   'Could not allocate ppm_topo elements',__LINE__,info)
-                ENDIF
             ENDDO
             DEALLOCATE(temptopo,STAT=info)
             IF (info .NE. 0) THEN
@@ -168,33 +157,41 @@
             ENDIF
         ENDIF
         topoid = ppm_next_avail_topo
-        ! get a new avail topo ID
-        ! for now we have to check by going through all topos
-        ! but this should be not such a big deal because there are not
-        ! many anyway - it can be done better by using a queue storing all
-        ! free topos
-        topo_idx = MOD(topoid+1,SIZE(ppm_topo)+1)+1
-        DO
-            IF (topo_idx .EQ. topoid) THEN
-                EXIT
-            ENDIF
-            IF (.NOT. ppm_topo(topo_idx)%t%isdefined) THEN
-                ppm_next_avail_topo = topo_idx
-                EXIT
-            ENDIF
-            topo_idx = topo_idx + 1
-        ENDDO
-        IF (topoid .EQ. ppm_next_avail_topo) THEN
-            ppm_next_avail_topo = SIZE(ppm_topo) + 1
-        ENDIF
+        !----------------------------------------------------------------------
+        ! This was one hell of an ugly hack
+        ! TODO: replace this by something much better later
+        !----------------------------------------------------------------------
+!        ! get a new avail topo ID
+!        ! for now we have to check by going through all topos
+!        ! but this should be not such a big deal because there are not
+!        ! many anyway - it can be done better by using a queue storing all
+!        ! free topos
+!        topo_idx = MOD(topoid+1,SIZE(ppm_topo)+1)+1
+!        DO
+!            IF (topo_idx .EQ. topoid) THEN
+!                EXIT
+!            ENDIF
+!            IF (.NOT. ppm_topo(topo_idx)%t%isdefined) THEN
+!                ppm_next_avail_topo = topo_idx
+!                EXIT
+!            ENDIF
+!            topo_idx = topo_idx + 1
+!        ENDDO
+!        IF (topoid .EQ. ppm_next_avail_topo) THEN
+!            ppm_next_avail_topo = SIZE(ppm_topo) + 1
+!        ENDIF
       ENDIF
 
+      CALL ppm_alloc(ppm_topo(topoid)%t,ppm_param_alloc_fit,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_error
+          CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
+ &            'Could not allocate ppm_topo elements',__LINE__,info)
+      ENDIF
 
       topo => ppm_topo(topoid)%t
 
       topo%ID = topoid
-
-
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the domain
