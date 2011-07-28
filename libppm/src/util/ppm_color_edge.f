@@ -132,21 +132,28 @@
           !  each processor
           !---------------------------------------------------------------------
           SUBROUTINE allocate_processor_lists(input_array)
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER :: i
+          INTEGER :: info
           INTEGER, DIMENSION(:), INTENT(in) :: input_array
 
           ALLOCATE(nelem(1:nvertices), STAT=alloc_error)
           IF(alloc_error .NE. 0) THEN
-              PRINT *, "Error in allocation of nelem array in           &
-     &allocate_processor_lists()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &            'Could not allocate nelem',&
+     &            __LINE__, info)
               RETURN
           ENDIF
 
           ALLOCATE(edges_per_node(1:nvertices), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of edges_per_node array in  &
-     &allocate_processor_lists()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &            'Could not allocate edges_per_node',&
+     &            __LINE__, info)
               RETURN
           ENDIF
           nelem = 0
@@ -158,12 +165,13 @@
           ENDDO
 
           DO i = 1, nvertices
-              ALLOCATE(edges_per_node(i)%adj_edge(1:nelem(i)),          &
-     &STAT=alloc_error)
+              ALLOCATE(edges_per_node(i)%adj_edge(1:nelem(i)),STAT=alloc_error)
               IF(alloc_error .NE. 0) then
-                  PRINT *, "Error in allocation of adj_edge in          &
-     &allocate_processor_lists()!"
-                  RETURN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &             'Could not allocate edges_per_node%adj_edge',&
+     &             __LINE__, info)
+                   RETURN
               ENDIF
           ENDDO
           END SUBROUTINE allocate_processor_lists
@@ -174,14 +182,20 @@
           !  adj. list of proc. 5 will contain 1.
           !---------------------------------------------------------------------
           SUBROUTINE fill_processor_lists(input_array)
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER                           :: i
+          INTEGER                           :: info
           INTEGER                           :: pos
           INTEGER, DIMENSION(:), INTENT(in) :: input_array
 
           ALLOCATE(offset(1:nvertices), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-             PRINT *, "Error in alloc. of offset in fill_processor_lists!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &            'Could not allocate offset',&
+     &            __LINE__, info)
              RETURN
           ENDIF
           offset = 1
@@ -201,17 +215,23 @@
           ! Allocates lists for adj. edges of each edge
           !---------------------------------------------------------------------
           SUBROUTINE allocate_edge_lists(input_array)
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER                           :: i
           INTEGER                           :: size1
           INTEGER                           :: size2
           INTEGER                           :: node1
           INTEGER                           :: node2
+          INTEGER                           :: info
           INTEGER, DIMENSION(:), INTENT(in) :: input_array
 
           ALLOCATE(lists(1:nedges), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in alloc. of lists in allocate_edge_lists()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &            'Could not allocate lists',&
+     &            __LINE__, info)
               RETURN
           ENDIF
 
@@ -222,8 +242,10 @@
               size2 = size(edges_per_node(node2)%adj_edge)
               ALLOCATE(lists(i)%adj_edge(1:(size1+size2-2)))
               IF(alloc_error .NE. 0) then
-                PRINT *, "Error in allocation of adj_edge in            &
-     &allocate_edge_lists()!"
+                 info = ppm_error_error
+                 CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate lists%ajd_edge',&
+     &               __LINE__, info)
                 RETURN
               ENDIF
           ENDDO
@@ -237,6 +259,8 @@
           !---------------------------------------------------------------------
           SUBROUTINE fill_edge_lists(input_array)
           !!! Adjacent edges of edges are found, so that line graph is formed
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER :: i
           INTEGER :: j
@@ -247,12 +271,16 @@
           INTEGER :: node2
           INTEGER :: v1
           INTEGER :: v2
+          INTEGER :: info
           INTEGER, DIMENSION(:), INTENT(in) :: input_array
 
           DEALLOCATE(offset)
           ALLOCATE(offset(1:nedges), STAT = alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of offset in fill_edge_lists()!"
+                 info = ppm_error_error
+                 CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate offset',&
+     &               __LINE__, info)
               RETURN
           ENDIF
           offset = 1 !Same offset array is used also in this subrout.
@@ -290,12 +318,18 @@
           !---------------------------------------------------------------------
           SUBROUTINE assign_edge_lists()
 
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER :: i
+          INTEGER :: info
 
           ALLOCATE(node(1:nedges), STAT = alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of node in assign_edge_lists()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate node', &
+     &               __LINE__, info)
               RETURN
           ENDIF
           DO i = 1, nedges
@@ -350,19 +384,26 @@
           !  initialization of heap list
           !---------------------------------------------------------------------
           SUBROUTINE initialize_binary_heap()
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
+          INTEGER                      :: info
 
           ALLOCATE(node_sat(0:max_degree, 1:nedges), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of node_sat in                &
-     &initialize_binary_heap()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate node_sat', &
+     &               __LINE__, info)
               RETURN
           ENDIF
 
           ALLOCATE(size_heap(0:max_degree), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of size_heap in               &
-     &initialize_binary_heap()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate size_heap', &
+     &               __LINE__, info)
               RETURN
           ENDIF
           node_sat  = -1
@@ -513,8 +554,11 @@
           !  initializes nodes
           !---------------------------------------------------------------------
           SUBROUTINE initialize_nodes()
+          USE ppm_module_data
+          USE ppm_module_error
           IMPLICIT NONE
           INTEGER             :: i
+          INTEGER             :: info
 
           ncolor = max_degree                     ! # colors is max_degree
           DO i=1, nedges
@@ -527,8 +571,10 @@
 
           ALLOCATE(used_color(0:ncolor), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
-              PRINT *, "Error in allocation of used_color in              &
-     &initialize_nodes()!"
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_color_edge', &
+     &               'Could not allocate used_color', &
+     &               __LINE__, info)
               RETURN
           ENDIF
           used_color = .FALSE.

@@ -31,42 +31,42 @@
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_field_pop_2d_sca_s(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_field_pop_2d_sca_d(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_2d_sca_sc(target_topoid,target_meshid,fdata,&
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_2d_sca_dc(target_topoid,target_meshid,fdata,&
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __INTEGER
       SUBROUTINE ppm_map_field_pop_2d_sca_i(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_field_pop_2d_sca_l(target_topoid,target_meshid,fdata, &
-     &                   ghostsize,info,mask)
+     &                   ghostsize,info,mask,poptype)
 #endif
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_field_pop_2d_vec_s(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_field_pop_2d_vec_d(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_2d_vec_sc(target_topoid,target_meshid,fdata,&
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_map_field_pop_2d_vec_dc(target_topoid,target_meshid,fdata,&
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __INTEGER
       SUBROUTINE ppm_map_field_pop_2d_vec_i(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_field_pop_2d_vec_l(target_topoid,target_meshid,fdata, &
-     &                   lda,ghostsize,info,mask)
+     &                   lda,ghostsize,info,mask,poptype)
 #endif
 #endif
       !!! This routine pops the list buffer for 2D mesh data
@@ -148,6 +148,7 @@
       !!!
       !!! 1st-2nd index: mesh (i,j)                                            +
       !!! 3rd: isub.
+      INTEGER                        , OPTIONAL      :: poptype
 #if   __DIM == __VFIELD
       INTEGER                        , INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
@@ -215,37 +216,7 @@
          !----------------------------------------------------------------------
          !  now, if in debug mode, check the rest
          !----------------------------------------------------------------------
-          IF (PRESENT(mask)) THEN
-              xhi = 0
-              yhi = 0
-              DO i=1,target_topo%nsublist
-                  isub = target_topo%isublist(i)
-                  IF (target_mesh%nnodes(1,isub).GT.xhi) THEN
-                      xhi = target_mesh%nnodes(1,isub)
-                  ENDIF
-                  IF (target_mesh%nnodes(2,isub).GT.yhi) THEN
-                      yhi = target_mesh%nnodes(2,isub)
-                  ENDIF
-              ENDDO
-              IF (SIZE(mask,1) .LT. xhi) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
-     &                'x dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              IF (SIZE(mask,2) .LT. yhi) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
-     &                'y dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              IF (SIZE(mask,3) .LT. target_topo%nsublist) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
-     &                'mask data for some subs is missing',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
+         CALL check_two
       ENDIF
 
 
@@ -259,10 +230,16 @@
         CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &       'ghost_init must not be called directly by the user',__LINE__,info)
         GOTO 9999
-      ELSEIF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
-        rtype = ppm_param_pop_add
       ELSE
-        rtype = ppm_param_pop_replace
+          IF (PRESENT(poptype)) THEN
+              rtype = poptype
+          ELSE
+              IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
+                rtype = ppm_param_pop_add
+              ELSE
+                rtype = ppm_param_pop_replace
+              ENDIF
+          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -3327,15 +3304,51 @@
      &            'ghostsize must be >=0 in all dimensions',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF ((rtype .NE. ppm_param_pop_replace) .AND.     &
-     &        (rtype .NE. ppm_param_pop_add)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
-     &            'Unknown receive type specified',__LINE__,info)
-              GOTO 8888
+          IF (PRESENT(poptype)) THEN
+              IF ((poptype .NE. ppm_param_pop_replace) .AND.     &
+     &            (poptype .NE. ppm_param_pop_add)) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
+     &                'Unknown pop type specified',__LINE__,info)
+                  GOTO 8888
+              ENDIF
           ENDIF
  8888     CONTINUE
       END SUBROUTINE check
+      SUBROUTINE check_two
+          IF (PRESENT(mask)) THEN
+              xhi = 0
+              yhi = 0
+              DO i=1,target_topo%nsublist
+                  isub = target_topo%isublist(i)
+                  IF (target_mesh%nnodes(1,isub).GT.xhi) THEN
+                      xhi = target_mesh%nnodes(1,isub)
+                  ENDIF
+                  IF (target_mesh%nnodes(2,isub).GT.yhi) THEN
+                      yhi = target_mesh%nnodes(2,isub)
+                  ENDIF
+              ENDDO
+              IF (SIZE(mask,1) .LT. xhi) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
+     &                'x dimension of mask does not match mesh',__LINE__,info)
+                  GOTO 7777
+              ENDIF
+              IF (SIZE(mask,2) .LT. yhi) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
+     &                'y dimension of mask does not match mesh',__LINE__,info)
+                  GOTO 7777
+              ENDIF
+              IF (SIZE(mask,3) .LT. target_topo%nsublist) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
+     &                'mask data for some subs is missing',__LINE__,info)
+                  GOTO 7777
+              ENDIF
+          ENDIF
+ 7777     CONTINUE
+     END SUBROUTINE check_two
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_field_pop_2d_sca_s
