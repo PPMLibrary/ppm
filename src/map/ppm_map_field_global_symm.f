@@ -30,8 +30,7 @@
       SUBROUTINE ppm_map_field_global_symm(topoid,target_topoid,            &
      &                                meshid,target_meshid,info)
       !!! This routine maps field data between two topologies
-      !!! (which however need compatible meshes defined on
-      !!! them) using a global mapping (i.e. every processor
+      !!! using a global mapping (i.e. every processor
       !!! communicates with every other). Source mesh must be
       !!! on the current field topology. Global lists with
       !!! all mesh blocks that have to be send and/or
@@ -144,14 +143,15 @@
       !  Check if origin and target meshes are compatible (i.e. have the
       !  same number of grid points in the whole comput. domain)
       !-------------------------------------------------------------------------
-      DO i=1,pdim
+      IF (ppm_debug .GT. 0) THEN
+        DO i=1,pdim
           IF (mesh%Nm(i) .NE. target_mesh%Nm(i)) THEN
-              info = ppm_error_error
+              info = ppm_error_notice
               CALL ppm_error(ppm_err_bad_mesh,'ppm_map_field_global_symm',  &
      &            'source and destination meshes are incompatible',__LINE__,info)
-              GOTO 9999
           ENDIF
-      ENDDO
+        ENDDO
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the local temporary sendlists
