@@ -666,6 +666,7 @@ enable_sxf90
 enable_crayfishpack
 enable_hypre
 enable_no_microinstr
+enable_dev
 enable_debug
 '
       ac_precious_vars='build_alias
@@ -1311,6 +1312,7 @@ Optional Features:
   --enable-crayfishpack   enable __CRAYFISHPACK (default is no)
   --enable-hypre          enable __HYPRE (default is no)
   --enable-no-microinstr  enable __NOMICROINSTRUCTIONS (default is no)
+  --enable-dev            enable development mode (default is no)
   --enable-debug          enable debug mode (default is no)
 
 Some influential environment variables:
@@ -5714,45 +5716,6 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 fi
 
-# for now let's use the C compiler to check the vendor we're using here
-# this of course means that we HAVE to set all compiler flags to compilers of
-# the same vendor (which is anyway a good idea)
-
-{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for C compiler vendor" >&5
-$as_echo_n "checking for C compiler vendor... " >&6; }
-if test "${ax_cv_c_compiler_vendor+set}" = set; then :
-  $as_echo_n "(cached) " >&6
-else
-  ax_cv_c_compiler_vendor=unknown
-  # note: don't check for gcc first since some other compilers define __GNUC__
-  for ventest in intel:__ICC,__ECC,__INTEL_COMPILER ibm:__xlc__,__xlC__,__IBMC__,__IBMCPP__ pathscale:__PATHCC__,__PATHSCALE__ gnu:__GNUC__ sun:__SUNPRO_C,__SUNPRO_CC hp:__HP_cc,__HP_aCC dec:__DECC,__DECCXX,__DECC_VER,__DECCXX_VER borland:__BORLANDC__,__TURBOC__ comeau:__COMO__ cray:_CRAYC kai:__KCC lcc:__LCC__ metrowerks:__MWERKS__ sgi:__sgi,sgi microsoft:_MSC_VER watcom:__WATCOMC__ portland:__PGI; do
-    vencpp="defined("`echo $ventest | cut -d: -f2 | sed 's/,/) || defined(/g'`")"
-    cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-int
-main ()
-{
-
-#if !($vencpp)
-      thisisanerror;
-#endif
-
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_c_try_compile "$LINENO"; then :
-  ax_cv_c_compiler_vendor=`echo $ventest | cut -d: -f1`; break
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
-  done
-
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_c_compiler_vendor" >&5
-$as_echo "$ax_cv_c_compiler_vendor" >&6; }
-
-
 
 # Checks for libraries and set preprocessing flags
 
@@ -5768,6 +5731,25 @@ ac_compile='$FC -c $FCFLAGS $ac_fcflags_srcext conftest.$ac_ext >&5'
 ac_link='$FC -o conftest$ac_exeext $FCFLAGS $LDFLAGS $ac_fcflags_srcext conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_fc_compiler_gnu
 
+
+# Check the compiler vendor.. this list should be extended of course
+# but let's hope that this will work in most cases
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking your Fortran compiler vendor" >&5
+$as_echo_n "checking your Fortran compiler vendor... " >&6; }
+vendor=none
+for vendorkp in gnu:gfortran intel:Intel sun:Sun portland:Portland; do
+    str=`echo $vendorkp | cut -d: -f2`
+    if `$FC -V 2>&1 | grep -q $str`; then
+        vendor=`echo $vendorkp | cut -d: -f1`;
+        { $as_echo "$as_me:${as_lineno-$LINENO}: result: $vendor" >&5
+$as_echo "$vendor" >&6; }
+        break;
+    fi;
+done
+if test "x${vendor}" = xnone; then
+    { $as_echo "$as_me:${as_lineno-$LINENO}: result: unknown" >&5
+$as_echo "unknown" >&6; }
+fi;
 
 # Check for METIS
 have_metis=no
@@ -5877,6 +5859,25 @@ if test "${enable_no_microinstr+set}" = set; then :
 fi
 
 
+dev_compile=no
+# Check whether --enable-dev was given.
+if test "${enable_dev+set}" = set; then :
+  enableval=$enable_dev; dev_compile=yes
+fi
+
+if test "x${dev_compile}" = xyes; then
+    if test "x${vendor}" == xintel; then
+        DEBUG="-g -O1 -check pointers -check bounds -traceback"
+
+    elif test "x${vendor}" == xgnu; then
+      DEBUG="-g -O0 -fbounds-check -fbacktrace"
+
+    else
+      DEBUG="-g"
+
+    fi
+fi
+
 debug_compile=no
 # Check whether --enable-debug was given.
 if test "${enable_debug+set}" = set; then :
@@ -5884,10 +5885,19 @@ if test "${enable_debug+set}" = set; then :
 fi
 
 if test "x${debug_compile}" = xyes; then
-  echo"#define __DEBUG" >> ./src/ppm_define.h
-  DEBUG=-g
+    echo "#define __DEBUG" >> ./src/ppm_define.h
+    if test "x${vendor}" == xintel; then
+        DEBUG="-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"
 
+    elif test "x${vendor}" == xgnu; then
+      DEBUG="-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"
+
+    else
+      DEBUG="-O1 -g"
+
+    fi
 fi
+
 
 
   # Generate Makefiles
