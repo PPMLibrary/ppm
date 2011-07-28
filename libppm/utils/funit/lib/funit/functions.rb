@@ -59,7 +59,7 @@ module Funit
 
     <% file_dependencies.each do |source,dep| -%>
     <%= "#{source.sub(/\.f/i,'.o')}: #{source} #{dep.map{ |d| d.sub(/\.f/i,'.o') }.join(' ')}" %>
-    <%= "\t(cd #{File.dirname(source)}; #{ENV['CPP']} #{ENV['DEFINE']} -DFUNIT_TEST -traditional-cpp -P #{File.basename(source)} __#{File.basename(source)} && #{ENV['FC']} #{ENV['FCFLAGS']} #{sourceflag} -c __#{File.basename(source)} -o #{File.basename(source, '.*')}.o && rm __#{File.basename(source)})" %>
+    <%= "\t(cd #{File.dirname(source)}; #{ENV['CPP']} #{ENV['DEFINE']} -DFUNIT_TEST -traditional-cpp -P #{File.basename(source)} __#{File.basename(source)} && #{ENV['FC']} #{ENV['FCFLAGS']} -I#{Dir.pwd+'/'+ENV['MODULES']} #{sourceflag} -c __#{File.basename(source)} -o #{File.basename(source, '.*')}.o && rm __#{File.basename(source)})" %>
     <% end -%>
   }.gsub(/^    /,''), nil, '-' ) # turn off newlines for <% -%>
 
