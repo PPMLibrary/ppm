@@ -16,6 +16,8 @@ The `.tar.gz` package you have downloaded should contain on the toplevel the
 following files and directories:
 
 ----------------------------------
+    34K COPYING       The License
+   7.5K COPYING.LESSER
    4.2K Makefile.in   The Makefile template used by configure
    610B NOTICE
     11K README        This file
@@ -261,24 +263,13 @@ and link against libppm.a:
 Enjoy the PPM experience!
 
 
-Contributors and Acknowledgements
----------------------------------
+Contributors
+------------
 
-The current development team of PPM core consists of:
+The PPM library is being maintained and developed by the CSE-lab (group of
+Professor Petros Koumoutsakos) and the MOSAIC group (Professor Ivo F.
+Sbalzarini) at ETH Zurich, and the Center for Fluid Dynamics at DTU (group of
+Professor Jens Walther).
 
-- Omar Awile
-- Omer Demirel
-- Ferit Buyukkececi
-- Ivo F. Sbalzarini
+PPM core package maintainer: Omar Awile <omar.awile@inf.ethz.ch>
 
-Information on PPM can be found on: http://www.ppm-library.org
-
-Many thanks for their continued support go to:
-
-- Prof. Petros Koumoutsakos (CSE Lab, ETH Zurich)+
-- Prof. Jens Walther (Fluid Mechanics, DTU Copenhagen)+
-- The original PPM developer team: Michael Bergdorf, Evangelos Kotsalis, Simone Hieber, Bettina Polasek, Philippe Chatelain
-
-Funding by the Hasler Foundation (Switzerland) and SystemsX.ch, the Swiss
-National Initiative in Systems Biology, evaluated by the Swiss National Science
-Foundation.
