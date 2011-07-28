@@ -14,4 +14,5 @@ $(targets) : $(sources)
 	./$@
 
 clean :
+	rm -f __*
 	rm -f $(targets)
