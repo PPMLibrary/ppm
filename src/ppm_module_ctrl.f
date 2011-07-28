@@ -1,4 +1,4 @@
-!--------------------------------------------------------------------------
+!----*- f90 -*-------------------------------------------------------------
 !  Module       :                    ppm_module_ctrl
 !--------------------------------------------------------------------------
 !
@@ -90,7 +90,7 @@ MODULE ppm_module_ctrl
 !!! +arg_group(_'name'_)+ to your +define_args+ and all calls to
 !!! +arg+ following a group definition will be put into that group.
 !!!
-!!!! If any one of the printing flags is present +parse_args+ will return
+!!! If any one of the printing flags is present +parse_args+ will return
 !!! _exit_gracefully_ which you should check for and exit gracefully.
 !!!
 
