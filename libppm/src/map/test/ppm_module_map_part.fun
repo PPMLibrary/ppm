@@ -2,9 +2,11 @@ test_suite ppm_module_map_part
 
 
 #include "../../ppm_define.h"
+
 #ifdef __MPI
-INCLUDE 'mpif.h'
+    INCLUDE "mpif.h"
 #endif
+
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = 3.1415926535897931_mk
@@ -57,7 +59,6 @@ real(mk)                         :: t0,t1,t2,t3
 
 #ifdef __MPI
         comm = mpi_comm_world
-        call mpi_init(info)
         call mpi_comm_rank(comm,rank,info)
         call mpi_comm_size(comm,nproc,info)
 #else
@@ -73,9 +74,6 @@ real(mk)                         :: t0,t1,t2,t3
         use ppm_module_finalize
 
         call ppm_finalize(info)
-#ifdef __MPI
-        call MPI_finalize(info)
-#endif
 
         deallocate(min_phys,max_phys,len_phys,ghostsize,nm)
 
