@@ -192,14 +192,14 @@ Following options are especially important:
   directories (e.g. `/usr/lib`) you must specify the directory to the libmetis.a
   file here.
 
-Here two example on how you could run the configure command
+Here two examples on how you could run the configure command
 
-.configure on Linux cluster using OpenMPI (and intel compilers, wrapped)
+`.configure` on Linux cluster using OpenMPI (and intel compilers, wrapped)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ ./configure --enable-mpi=openmpi LDFLAGS=-L../../metis/lib --enable-linux
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.configure on Mac OS X workstation with the MacPorts gcc compilers
+`./configure` on Mac OS X workstation with the MacPorts gcc compilers
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 $ ./configure CC=gcc-mp-4.4 FC=gfortran-mp-4.4 CXX=g++-mp-4.4 \
               LDFLAGS=-L/Users/omar/sw/metis/gcc/lib 
@@ -251,12 +251,12 @@ Compiling PPM client code against PPM core
 ------------------------------------------
 When compiling your PPM client code you need to first include the PPM core modules: 
 
-- in `.include/` relative to this directory. Check which compiler flag needs to
+- in `include/` relative to this directory. Check which compiler flag needs to
   be used to include Fortran module directories.
 
 and link against libppm.a:
 
-- in `.lib/` relative to this directory. Add -L[path to lib] -lppm to the
+- in `lib/` relative to this directory. Add -L[path to lib] -lppm to the
   linking command of your compilation process.
 
 
