@@ -99,6 +99,7 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       integer, dimension(3)             :: lda
       integer                           :: maxmp
       integer                           :: iproc
+      integer, dimension(:),  pointer   :: req => NULL()
 #endif
        
       CALL substart('ppm_dbg_print',t0,info)
@@ -168,57 +169,70 @@ subroutine ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
               goto 9999
           endif
           
-          ! allocate allxp array
-          maxmp = maxval(allmp)
-          lda(1) = ppm_dim
-          lda(2) = maxmp
-          lda(3) = ppm_nproc
-          call ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
-          call ppm_alloc(buf,lda,ppm_param_alloc_fit,info)
-          if (info .NE. 0) then
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
-     &            'failed to allocate allxp or buf',__LINE__,info)
-              goto 9999
-          endif
-          
-          ! now let all procs communicate with rank 0
           if (ppm_rank.eq.0) then
+              ! allocate allxp array
+              maxmp = maxval(allmp)
+              lda(1) = ppm_dim
+              lda(2) = maxmp
+              lda(3) = ppm_nproc
+              call ppm_alloc(allxp,lda,ppm_param_alloc_fit,info)
+              call ppm_alloc(buf,lda,ppm_param_alloc_fit,info)
+              if (info .NE. 0) then
+                  info = ppm_error_fatal
+                  CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
+         &            'failed to allocate allxp or buf',__LINE__,info)
+                  goto 9999
+              endif
+              
+              lda(1) = ppm_nproc
+              call ppm_alloc(req,lda,ppm_param_alloc_fit,info)
+              if (info .NE. 0) then
+                  info = ppm_error_fatal
+                  CALL ppm_error(ppm_err_alloc,'ppm_dbg_print',     &
+         &            'failed to allocate req',__LINE__,info)
+                  goto 9999
+              endif
+              
               do i=1,allmp(1)
                   allxp(:,i,1) = xp(:,i)
               enddo
 
-              do iproc=2,ppm_nproc
-                  call mpi_sendrecv(xp,allmp(iproc),ppm_mpi_kind,buf, &
- &                              0,0,allmp(iproc),ppm_mpi_kind,iproc,  &
- &                              0,ppm_comm,info)
+          ! now let all procs communicate with rank 0
+              do iproc=1,ppm_nproc-1
+!                  call mpi_irecv(buf,allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
+! &                              0,ppm_comm,req(iproc+1),info)
+                  call mpi_recv(allxp(:,:,iproc+1),allmp(iproc+1)*ppm_dim,ppm_mpi_kind,iproc,  &
+ &                              0,ppm_comm,MPI_STATUS_IGNORE,info)
                   if (info .NE. 0) then
                       info = ppm_error_fatal
                       call ppm_error(ppm_err_mpi_fail,'ppm_dbg_print',   &
      &                'failed to sendrecv xp',__LINE__,info)
                       goto 9999
                   endif
-                  do i=1,allmp(iproc)
-                      allxp(:,i,iproc) = buf(:,i)
+              enddo
+!              do iproc=1,ppm_nproc-1
+!                  call mpi_wait(req(iproc+1),MPI_STATUS_IGNORE,info)
+!                  do i=1,allmp(iproc+1)
+!                      allxp(:,i,iproc+1) = buf(:,i)
+!                  enddo
+!                  print *,'xp',iproc,allxp(:,1:allmp(iproc+1),iproc+1)
+!              enddo
+              
+              open(iunit,file=pfname,access='append')
+              do iproc=1,ppm_nproc
+                  do i=1,allnp(iproc)
+                      write(iunit,pfmt) allxp(:,i,iproc),colortag
+                  enddo
+                  do i=allnp(iproc)+1,allmp(iproc)
+                      write(iunit,pfmt) allxp(:,i,iproc),-1
                   enddo
               enddo
+              close(iunit)
+              call ppm_alloc(allxp,lda,ppm_param_dealloc,info)
+              call ppm_alloc(buf,lda,ppm_param_dealloc,info)
           else
-              call mpi_sendrecv(xp,mpart,ppm_mpi_kind,buf,0,0,mpart,&
- &                              ppm_mpi_kind,ppm_rank,0,ppm_comm,info)
+              call mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
           endif
-          open(iunit,file=pfname,access='append')
-          do iproc=1,ppm_nproc
-              do i=1,allnp(iproc)
-                  write(iunit,pfmt) allxp(:,i,iproc),colortag
-              enddo
-              do i=allnp(iproc)+1,allmp(iproc)
-                  write(iunit,pfmt) allxp(:,i,iproc),-1
-              enddo
-          enddo
-          close(iunit)
-          call ppm_alloc(allxp,lda,ppm_param_dealloc,info)
-          call ppm_alloc(buf,lda,ppm_param_dealloc,info)
-
 #else  
           open(iunit,file=pfname,access='append')
           do i=1,np
