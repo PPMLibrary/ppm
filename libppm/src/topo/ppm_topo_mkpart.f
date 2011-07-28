@@ -130,8 +130,8 @@
       !!! *  ppm_param_assign_dual_comm
       !!! *  ppm_param_assign_user_defined
       !!!
-      !!! The latter uses the external library METIS and is only
-      !!! available if ppm was compiled with METIS support.
+      !!! *nodal* and *dual* assignments  use the external library METIS 
+      !!! and are only available if ppm was compiled with METIS support.
       INTEGER                 , INTENT(INOUT) :: topoid
       !!! ID number identifying the topology.
       !!! If topoid == 0 on input a new topology is created and the new topoid
@@ -160,7 +160,7 @@
       !!! [NOTE]
       !!! There is no more ppm_param_decomp_null. If the user does not
       !!! want to define a geometric decomposition there is no need for a
-      !!! topology
+      !!! topology.
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
       !!! Minimum of physical extend of the computational domain
       !!!
