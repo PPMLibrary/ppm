@@ -77,15 +77,13 @@
      REAL(ppm_kind_double)                               :: min
      REAL(ppm_kind_double)                               :: max
 #elif defined(__STRING)
-     INTEGER                                             :: min
-     INTEGER                                             :: max
+!      INTEGER                                             :: min
+!      INTEGER                                             :: max
 #endif
      LOGICAL                                             :: min_set       = .FALSE.
      LOGICAL                                             :: max_set       = .FALSE.
-#ifdef __LOGICAL
-#ifndef ARRAY
+#if defined(__LOGICAL) && !defined(ARRAY)
      LOGICAL                                             :: type          = .TRUE. ! enable
-#endif
 #endif
      LOGICAL                                             :: default_set   = .FALSE.
      CHARACTER(LEN=256)                                  :: name
@@ -100,6 +98,8 @@
      LOGICAL                                             :: clf_supplied  = .FALSE.
      INTEGER                                             :: group
      INTEGER                                             :: group_i
+     LOGICAL                                             :: default_func_set = .FALSE.
+     LOGICAL                                             :: validator_set = .FALSE.
 #ifdef ARRAY
      PROCEDURE(WRAP(DTYPE)_array_func), POINTER, NOPASS :: default_func => NULL()
      PROCEDURE(WRAP(DTYPE)_array_func), POINTER, NOPASS :: validator    => NULL()     
