@@ -17,7 +17,7 @@
 
 # Initialization
 AC_PREREQ(2.61)
-AC_INIT(PPM, 1.0.2)
+AC_INIT(PPM, 1.2.0)
 
 # Reset existing preprocessing flags
 touch ./src/ppm_define.h
@@ -41,8 +41,8 @@ AC_ARG_ENABLE([mpi],
     use_mpi=yes],
   [AC_MSG_NOTICE([MPI was not enabled. Building non-parallel version of PPM.])])
 
-: ${CFLAGS="-O3"}
 : ${CXXFLAGS="-O3"}
+: ${CFLAGS="-O3"}
 : ${FCFLAGS="-O3"}
 
 # Checks for basic compiler and flags
@@ -108,27 +108,6 @@ else
   echo "#define __METIS" >> ./src/ppm_define.h
 fi
 
-
-# Check to see if fftw3 was enabled with -enable-ffts3
-#use_fftw3=no
-#AC_ARG_ENABLE([fftw3],,[use_fftw3=yes])
-#
-## If it was enabled than check that the library exists
-#if test "x${use_fftw3}" = xyes; then
-#  have_fftw=no
-#  AC_CHECK_LIB([fftw3],[dfftw_execute])
-#  AC_SEARCH_LIBS([dfftw_execute],[fftw3],[have_fftw=yes])
-#  if test "x${have_fftw}" = xno; then
-#    echo "------------------------------------------"
-#    echo " You are trying to use FFTW to build PPM. "
-#    echo " Either the library is missing or incorrectly compiled/linked."
-#    echo " It can be downloaded at: http://www.fftw.org/download.html"
-#    echo "------------------------------------------"
-#    (exit 1); exit 1;
-#  fi
-#  echo "#define __FFTW" >> ./src/ppm_define.h
-#fi
-
 # Check to see if linux was enabled with -enable-linux
 AC_ARG_ENABLE([linux],[AS_HELP_STRING([--enable-linux],
   [compile for linux (default is no)])],[echo "#define __Linux" >> ./src/ppm_define.h])
@@ -165,17 +144,6 @@ AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
 AC_ARG_ENABLE([debug],[AS_HELP_STRING([--enable-debug],
   [enable debug mode (default is no)])],
   [AC_SUBST(DEBUG,-O0)])
-
-# Switch language back to C for checking libraries
-AC_LANG([C])
-
-# Checks for header files
-AC_HEADER_STDC
-AC_CHECK_HEADERS([stdlib.h])
-
-# Checks for typedefs and structures
-AC_C_CONST
-AC_C_INLINE
 
 # Generate Makefiles
 AC_CONFIG_FILES([Makefile])
