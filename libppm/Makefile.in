@@ -19,6 +19,7 @@
 prefix = @prefix@
 exec_prefix = @exec_prefix@
 libdir = @libdir@
+includedir = @includedir@
 builddir = @builddir@
 LIBS = @LIBS@
 LDFLAGS = @LDFLAGS@
@@ -117,13 +118,15 @@ clean:
 	rm -fR $(OBJ_DIR)
 	rm -fR $(MODULES_DIR)
 	rm -fR $(builddir)/lib
-	rm -f $(libdir)/$(LIB_PPM)
 
 # This copies the PPM library into libdir
 install: all
 	@echo '[ deploying to '$(libdir)']'
 	@cp $(TARGET) $(libdir)
 	@ranlib $(libdir)/$(LIB_PPM)
+	@echo '[ deploying modules to '$(includedir)/ppm']'
+	@mkdir -p $(includedir)/ppm
+	@cp $(MODULES_DIR)/* $(includedir)/ppm
 
 # This cleans, compiles, and copies the PPM library
 new: all install
