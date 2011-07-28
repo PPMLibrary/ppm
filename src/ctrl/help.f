@@ -6,8 +6,10 @@
               WRAP(DTYPE)_args(j)%long_flag_set)) THEN
              WRITE (*,'(A,A)',advance='no') "  ", WRAP(DTYPE)_args(j)%name(1:28)
              IF (WRAP(DTYPE)_args(j)%help_set) THEN
-                WRITE (*,*) "  ", &
-                     WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+                WRITE (*,'(A)',advance='no') "  "
+                CALL break_help(WRAP(DTYPE)_args(j)%help     &
+                     (1:LEN_TRIM(WRAP(DTYPE)_args(j)%help)), &
+                     50, "                                ", 6)
              ELSE
                 WRITE (*,*) ''
              END IF
@@ -76,6 +78,7 @@
                      scratch(1:LEN_TRIM(scratch))
              END IF
 #endif
+             WRITE(*,*) ""
              CYCLE group_loop
           END IF
        END DO
