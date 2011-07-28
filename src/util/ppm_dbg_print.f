@@ -27,9 +27,9 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-SUBROUTINE ppm_dbg_print_s(topoid,ghostlayer,step,colortag,info,xp,np,mp)
+SUBROUTINE ppm_dbg_print_s(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
+SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #endif
       !!! This routine provides a simple means to visualize particles and
       !!! domain decompositions for debugging and monitoring purposes.
@@ -82,6 +82,9 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
       INTEGER,            INTENT(IN),OPTIONAL    :: mp
       !!! number of particles including ghost particles
       !!! if omitted it is assumed that np=mp
+      LOGICAL,            INTENT(IN),OPTIONAL    :: append
+      !!! Should the particle positions be appended to an existing file or the
+      !!! file overwritten (default).
       ! local vars
       CHARACTER(128)                     :: sfmt,pfmt
       CHARACTER(64)                     :: sfname,pfname
@@ -216,8 +219,11 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
 !                  ENDDO
 !                  print *,'xp',iproc,allxp(:,1:allmp(iproc+1),iproc+1)
 !              ENDDO
-              
-              open(iunit,file=pfname,access='append')
+              IF (present(append).AND.append) then
+                  OPEN(iunit,file=pfname,access='append')
+              ELSE
+                  OPEN(iunit,file=pfname)
+              ENDIF
               DO iproc=1,ppm_nproc
                   DO i=1,allnp(iproc)
                       WRITE(iunit,pfmt) allxp(:,i,iproc),colortag
@@ -233,7 +239,11 @@ SUBROUTINE ppm_dbg_print_d(topoid,ghostlayer,step,colortag,info,xp,np,mp)
               CALL mpi_send(xp,mpart*ppm_dim,ppm_mpi_kind,0,0,ppm_comm,info)
           ENDIF
 #else  
-          OPEN(iunit,file=pfname,access='append')
+          IF (present(append).AND.append) then
+              OPEN(iunit,file=pfname,access='append')
+          ELSE
+              OPEN(iunit,file=pfname)
+          ENDIF
           DO i=1,np
               WRITE(iunit,pfmt) xp(:,i),colortag
           ENDDO
