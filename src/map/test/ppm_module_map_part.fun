@@ -343,7 +343,6 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_map_part_pop(w,npart,newnpart,info)
         call ppm_map_part_pop(p,ndim,npart,newnpart,info)
         npart=newnpart
-
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
@@ -357,14 +356,13 @@ real(mk)                         :: t0,t1,t2,t3
         
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
-
+        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
         call ppm_map_part_store(info)
 
         call ppm_map_part_ghost_put(topoid,info)
         call ppm_map_part_push(w,npart,info)
         call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
+        call ppm_map_part_ghost_pop(w,1,npart,mpart,info)
 
         call ppm_map_part_load(info)
         call ppm_map_part_push(p,ndim,npart,info,.TRUE.)

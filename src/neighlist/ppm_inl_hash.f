@@ -311,7 +311,11 @@
 
       END SUBROUTINE hash_insert
 
+#ifdef __DEBUG
+      FUNCTION hash_search(table,key) result(value)
+#else
       ELEMENTAL FUNCTION hash_search(table,key) result(value)
+#endif
       !!! Given the key, searchs the key on the hash table and returns the
       !!! corresponding value.
       !!!
