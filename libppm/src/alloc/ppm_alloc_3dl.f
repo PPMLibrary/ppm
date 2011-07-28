@@ -28,22 +28,25 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_alloc_3dls(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_s(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D real single arrays
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_alloc_3dld(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_d(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D real double arrays
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_3dlsc(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_sc(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D complex single arrays
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_alloc_3dldc(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_dc(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D complex double arrays
 #elif __KIND == __INTEGER
-      SUBROUTINE ppm_alloc_3dli(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_i(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D integer arrays
+#elif __KIND == __LONGINT
+      SUBROUTINE alloc_3dl_li(adata,ldl,ldu,iopt,info)
+      !!! (Re)allocates the memory of 3D 64bit integer arrays
 #elif __KIND == __LOGICAL
-      SUBROUTINE ppm_alloc_3dll(adata,ldl,ldu,iopt,info)
+      SUBROUTINE alloc_3dl_l(adata,ldl,ldu,iopt,info)
       !!! (Re)allocates the memory of 3D logical arrays
 #endif
       !!! (pointers) based on absolute lower and upper index bounds.
@@ -73,6 +76,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:,:), POINTER :: adata
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:,:), POINTER :: adata
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:), POINTER :: adata
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:,:), POINTER :: adata
 #endif
@@ -104,6 +109,8 @@
       COMPLEX(ppm_kind_double), DIMENSION(:,:,:), POINTER :: work
 #elif __KIND == __INTEGER
       INTEGER                 , DIMENSION(:,:,:), POINTER :: work
+#elif __KIND == __LONGINT
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:), POINTER :: work
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:,:,:), POINTER :: work
 #endif
@@ -133,6 +140,8 @@
       work => work_3ddc
 #elif __KIND == __INTEGER
       work => work_3di
+#elif __KIND == __LONGINT
+      work => work_3dli
 #elif __KIND == __LOGICAL
       work => work_3dl
 #endif
@@ -452,16 +461,18 @@
       CALL substop('ppm_alloc_3dl',t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_alloc_3dls
+      END SUBROUTINE alloc_3dl_s
 #elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_alloc_3dld
+      END SUBROUTINE alloc_3dl_d
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_3dlsc
+      END SUBROUTINE alloc_3dl_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_alloc_3dldc
+      END SUBROUTINE alloc_3dl_dc
 #elif __KIND == __INTEGER
-      END SUBROUTINE ppm_alloc_3dli
+      END SUBROUTINE alloc_3dl_i
+#elif __KIND == __LONGINT
+      END SUBROUTINE alloc_3dl_li
 #elif __KIND == __LOGICAL
-      END SUBROUTINE ppm_alloc_3dll
+      END SUBROUTINE alloc_3dl_l
 #endif
 
