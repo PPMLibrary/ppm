@@ -586,11 +586,11 @@
          ENDDO
          IF (assig .EQ. ppm_param_assign_user_defined) THEN
             IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-               info = ppm_error_warning
+               info = ppm_error_error
                CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
      &             'decomp type is set to user_defined for this assignment',&
      &             __LINE__, info)
-               decomp = ppm_param_decomp_user_defined
+               GOTO 8888
             ENDIF
             IF(user_nsubs .LE. 0) THEN
                info = ppm_error_error
