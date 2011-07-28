@@ -5,7 +5,7 @@
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
        &                         min, max,                                   &
 #elif defined(__STRING)
-!       &                         min_len, max_len,                           &
+!        &                         min, max,                                   &
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
                                  type, &
@@ -125,10 +125,10 @@
      REAL(ppm_kind_double),                  OPTIONAL, INTENT(IN   ) :: max
 !!! Maximum value of arg.
 #elif defined(__STRING)
-!    INTEGER,                                OPTIONAL, INTENT(IN   ) :: min_len
-!!! Minimum length of string.
-!    INTEGER,                                OPTIONAL, INTENT(IN   ) :: max_len
-!!! Maximum length of string.
+!      INTEGER,                                OPTIONAL, INTENT(IN   ) :: min
+! !!! Minimum length of string.
+!      INTEGER,                                OPTIONAL, INTENT(IN   ) :: max
+! !!! Maximum length of string.
 #endif
 
 #if defined(__LOGICAL) && !defined(ARRAY)
@@ -216,8 +216,18 @@
        def%default              =  default
        def%default_set          =  .TRUE.
     END IF
-    IF (PRESENT(default_func)) def%default_func => default_func
-    IF (PRESENT(validator))    def%validator    => validator
+    IF (PRESENT(default_func)) THEN
+       def%default_func         => default_func
+       def%default_func_set     =  .TRUE.
+    ELSE
+       def%default_func_set     =  .FALSE.
+    END IF
+    IF (PRESENT(validator)) THEN
+       def%validator            => validator
+       def%validator_set        =  .TRUE.
+    ELSE
+       def%validator_set        =  .FALSE.
+    END IF
 #if defined(__INTEGER) || defined(__LONGINT) || defined(__SINGLE) || defined(__DOUBLE)
     IF (PRESENT(min)) THEN
        def%min                  =  min
@@ -228,12 +238,12 @@
        def%max_set              =  .TRUE.
     END IF
 #elif defined(__STRING)
-!     IF (PRESENT(min_len)) THEN
-!        def%min                  =  min_len
+!     IF (PRESENT(min)) THEN
+!        def%min                  =  min
 !        def%min_set              =  .TRUE.
 !     END IF
-!     IF (PRESENT(max_len)) THEN
-!        def%max                  =  max_len
+!     IF (PRESENT(max)) THEN
+!        def%max                  =  max
 !        def%max_set              =  .TRUE.
 !     END IF
 #endif
