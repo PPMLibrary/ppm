@@ -60,6 +60,7 @@ module #{@suite_name}_fun
  implicit none
 
  logical :: noAssertFailed
+ integer :: log
 
  public :: test_#@suite_name
 
@@ -200,23 +201,30 @@ module #{@suite_name}_fun
 
       puts <<-NEXTONE
 
- subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures )
+ subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh )
 
   integer :: nTests
   integer :: nAsserts
   integer :: nAssertsTested
   integer :: nFailures
+  integer :: lfh
 
   continue
-  
+
+  log = lfh  
+
   call funit_init
 
       NEXTONE
 
       @tests.each do |test_name|
-        puts "\n  call funit_setup"
+        puts "\n  write(log,*) 'setting up...'"
+        puts "  call funit_setup"
+        puts "  write(log,*) 'Entering #{test_name}...'\n"
         puts "  call #{test_name}"
+        puts "  write(log,*) 'Leaving #{test_name}...'\n"
         puts "  call funit_teardown"
+        puts "  write(log,*) 'cleaned up...'"
       end
 
       puts <<-LASTONE
