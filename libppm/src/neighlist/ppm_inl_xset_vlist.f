@@ -103,7 +103,7 @@
       INTEGER                                    :: isub
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
-      REAL(MK), POINTER   , DIMENSION(:)         :: rcred
+      REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
       REAL(MK)                                   :: max_phys
 
       !-------------------------------------------------------------------------
@@ -117,7 +117,7 @@
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
       
-      lda(1) = mred
+      lda(1) = nred
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
       IF (info .NE. 0) THEN
@@ -125,6 +125,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
     &                       'nvlist',__LINE__,info)
       END IF
+      lda(1) = mred
       CALL ppm_alloc(rcred, lda, iopt, info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
@@ -140,7 +141,7 @@
 #elif   __KIND == __DOUBLE_PRECISION
       max_phys = MAXVAL(topo%max_physd-topo%min_physd)
 #endif
-      rcred(1:nred) = max_phys
+      rcred(1:mred) = max_phys
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
       ! (neigh_max) is set to 0.
@@ -218,7 +219,7 @@
 
               DO i = 1, n_part
                   DO j = 1, nvlist_sub(i)
-                      vlist(j, red_p_id(i)) = red_p_id(vlist_sub(j, i))
+                      vlist(j, red_p_id(i)) = blue_p_id(vlist_sub(j, i))
                   END DO
               ENDDO
           END IF
@@ -429,7 +430,6 @@
           ELSE
               lst = .TRUE.
           END IF
-
           CALL get_xset_VerletLists(red, rcred, red_clist, blue, rcblue, blue_clist, &
  &                            skin, whole_domain, &
      &                        curr_dom, vlist, nvlist, lst,info)
@@ -609,7 +609,6 @@
       !  Set size of nvlist. 
       !-------------------------------------------------------------------------
           lda(1) = red_clist%n_real_p ! Store number of neighbors of real particles only
-      print *,'red_clist%n_real_p: ',red_clist%n_real_p
       !-------------------------------------------------------------------------
       !  Allocate nvlist array and initialize it to 0.
       !-------------------------------------------------------------------------
@@ -626,7 +625,7 @@
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
       !-------------------------------------------------------------------------
-          DO i = 1, red_clist%n_all_p
+          DO i = 1, red_clist%n_real_p
               p_idx = red_clist%rank(i)
               CALL count_xset_neigh(p_idx, red_clist, blue_clist, &
  &                 whole_domain, &
@@ -672,7 +671,7 @@
               !  Fill in verlet lists depending on whether lists will be
               !  symmetric or not.
               !-----------------------------------------------------------------
-              DO i = 1, red_clist%n_all_p
+              DO i = 1, red_clist%n_real_p
                   p_idx = red_clist%rank(i)
                   CALL get_xset_neigh(p_idx, red_clist, blue_clist, & 
  &                     whole_domain,  &

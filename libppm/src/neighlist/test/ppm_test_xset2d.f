@@ -443,11 +443,11 @@ call ppm_map_part_send(nred,newnp,info)
 call ppm_map_part_pop(xp_red,ndim,nred,newnp,info)
 nred=newnp
 
-call ppm_map_part_global(topoid,xp_red,nblue,info)
+call ppm_map_part_global(topoid,xp_blue,nblue,info)
 call ppm_map_part_push(rcp_blue,nblue,info)
 call ppm_map_part_send(nblue,newnp,info)
 call ppm_map_part_pop(rcp_blue,nblue,newnp,info)
-call ppm_map_part_pop(xp_red,ndim,nred,newnp,info)
+call ppm_map_part_pop(xp_blue,ndim,nblue,newnp,info)
 nblue=newnp
 
 call ppm_topo_check(topoid,xp_red,nred,ok,info)
@@ -469,7 +469,6 @@ call ppm_dbg_print(topoid,max_rcp,2,1,info,xp_red,nred,mred)
 
 call ppm_dbg_print(topoid,max_rcp,2,1,info,xp_blue,nblue,mblue)
 
-
 call ppm_inl_xset_vlist(topoid,xp_red,nred,mred,&
  &                   xp_blue,nblue,mblue,rcp_blue,skin,    &
  &                   ghostlayer,info,vlist,nvlist)
@@ -485,6 +484,8 @@ do i=1,nred
         write(*,'(a)') '!! --------------- !!'
         write(*,'(a)') '!! failed'
         print *, '!!    nvlist are not equal for ip = ',i
+        print * ,'!! nvlist:  ',nvlist(i)
+        print * ,'!! nvlist2: ',nvlist2(i)
         write(*,'(a)') '!! --------------- !!'
         goto 8000
     endif
@@ -526,8 +527,8 @@ call ppm_finalize(info)
 call mpi_finalize(info)
 #endif
 
-deallocate(xp_red,min_phys,max_phys,len_phys,ghostsize,nm)
-deallocate(xp_blue,rcp_blue,nvlist,nvlist2,vlist,vlist2)
+!deallocate(xp_red,min_phys,max_phys,len_phys,ghostsize,nm)
+!deallocate(xp_blue,rcp_blue,nvlist,nvlist2,vlist,vlist2)
 
 if (rank.eq.0) print *, 'done.'
 
