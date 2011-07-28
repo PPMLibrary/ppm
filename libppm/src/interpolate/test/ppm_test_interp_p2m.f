@@ -55,11 +55,9 @@ program ppm_test_interp_p2m
     integer                         :: topoid,meshid
     real(MK),dimension(:,:),pointer :: xp,wp
     real(MK),dimension(:  ),pointer :: min_phys,max_phys,h
-    real(MK)                        :: ghostlayer
     integer, dimension(:  ),pointer :: ghostsize
     integer                         :: i,j,p_i,ai,aj
     integer, dimension(6)           :: bcdef
-    integer, parameter              :: isymm = 0
     real(MK),dimension(:  ),pointer :: cost
     integer, dimension(:,:),pointer :: istart,ndata
     integer, dimension(:  ),pointer :: nm
@@ -93,7 +91,7 @@ program ppm_test_interp_p2m
         max_phys(i) = 1.0_mk
         ghostsize(i) = 2
     enddo
-    bcdef(1:6) = ppm_param_bcdef_periodic
+    bcdef(1:6) = ppm_param_bcdef_freespace
 
     nullify(xp)
     nullify(wp)
@@ -113,7 +111,6 @@ program ppm_test_interp_p2m
     allocate(xp(ndim,np),wp(nspec,np),stat=info)
     !call random_seed(put=(/17,42/))
     call random_number(xp)
-    xp = xp / 3.0_mk
     wp = 0.0_mk
 
 
@@ -149,13 +146,14 @@ program ppm_test_interp_p2m
     allocate(field_wp(nspec,(1-ghostsize(1)):(ndata(1,1)+ghostsize(1)),         &
     &        (1-ghostsize(2)):(ndata(2,1)+ghostsize(2)),1),stat=info) ! 2d
     !allocate(field_wp(nspec,ndata(1,1),ndata(2,1),ndata(3,1),1),stat=info) ! 3d
-    field_wp = 0.0_mk
+
     do i=1,ndim
         h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
     enddo
 
     NULLIFY(topo)
     CALL ppm_topo_get(topoid,topo,info)
+    print *,topoid,meshid
 
     print *, 'finished initialization'
 
@@ -170,29 +168,21 @@ program ppm_test_interp_p2m
     endif
     np = mp
 
-    ghostlayer = maxval(h)*REAL(ghostsize(1),MK)
     maxm3 = 0.0_mk
     do p_i=1,np
         !----------------
         ! p --> m
         !----------------
-        ! NOT NEEDED because of ghost put       
-!        call ppm_map_part_ghost_get(topoid,xp,ndim,np,isymm,ghostlayer,info)
-!        call ppm_map_part_push(wp,1,np,info)
-!        call ppm_map_part_send(np,mp,info)
-!        call ppm_map_part_pop(wp,1,np,mp,info)
-!        call ppm_map_part_pop(xp,ndim,np,mp,info)
-        
+        wp(1,p_i) = 1.0_mk
         call ppm_interp_p2m(topoid,meshid,xp,np,wp,1,kernel,ghostsize,field_wp,info)
-
 
         !----------------
         ! test p --> m
         !----------------
         f_moments = 0.0_mk
         p_moments = 0.0_mk
-        do j = 1, ndata(2,1)-1
-            do i = 1,ndata(1,1)-1
+        do j = 1-ghostsize(2), ndata(2,1)+ghostsize(2)
+            do i = 1-ghostsize(1),ndata(1,1)+ghostsize(1)
                 field_x(1) = min_phys(1) + h(1)*real(i-1,mk)
                 field_x(2) = min_phys(2) + h(2)*real(j-1,mk)
                 do aj = 1,nmom
@@ -202,7 +192,7 @@ program ppm_test_interp_p2m
             enddo
         enddo
         do aj = 1,nmom
-           p_moments(aj) = wp(1,p_i)*xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
+           p_moments(aj) = xp(1,p_i)**alpha(1,aj)*xp(2,p_i)**alpha(2,aj)
         enddo
         do aj = 1,6
             if (abs(f_moments(aj) - p_moments(aj)) .GT. tol) then
@@ -213,16 +203,16 @@ program ppm_test_interp_p2m
                 stop 'ERROR: p2m interpolation: moments not conserved.'
             endif
         enddo
-!        do aj = 7,10
-!            if (abs(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
-!                maxm3 = abs(f_moments(aj) - p_moments(aj))
-!            endif
-!        enddo
+        do aj = 7,10
+            if (abs(f_moments(aj) - p_moments(aj)) .GT. maxm3) then
+                maxm3 = abs(f_moments(aj) - p_moments(aj))
+            endif
+        enddo
 
         wp(1,p_i) = 0.0_mk
     enddo
 
-!    print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
+    print *, 'Maximum 3rd moment difference / h^3', maxm3/h**3
     !----------------
     ! m --> p
     !----------------
