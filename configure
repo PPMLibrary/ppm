@@ -703,7 +703,7 @@ program_suffix=NONE
 program_transform_name=s,x,x,
 silent=
 site=
-srcdir=src
+srcdir=
 verbose=
 x_includes=NONE
 x_libraries=NONE
@@ -2254,16 +2254,22 @@ ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 # Reset existing preprocessing flags
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
 #touch ./src/ppm_define.h
 #rm ./src/ppm_define.h
 #touch ./src/ppm_define.h
 CPPFLAGS=""
 
+<<<<<<< HEAD
 =======
 touch ./$srcdir/ppm_define.h
 rm ./$srcdir/ppm_define.h
 touch ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 
 
 # if MPI is enabled try grabbing those compiler wrappers first
@@ -5794,12 +5800,18 @@ fi
 
 if test "x${use_f03}" = xyes; then
 <<<<<<< HEAD
+<<<<<<< HEAD
     CPPFLAGS="$CPPFLAGS -D__F2003"
 
 #    echo "#define __F2003" >> ./src/ppm_define.h
 =======
     echo "#define __F2003" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+    CPPFLAGS="$CPPFLAGS -D__F2003"
+
+#    echo "#define __F2003" >> ./src/ppm_define.h
+>>>>>>> updated build system
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 else
@@ -5819,11 +5831,16 @@ $as_echo_n "checking if your MPI is usable... " >&6; }
 _ACEOF
 if ac_fn_fc_try_link "$LINENO"; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
   CPPFLAGS="$CPPFLAGS -D__MPI"
 
 =======
   echo "#define __MPI" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+  CPPFLAGS="$CPPFLAGS -D__MPI"
+
+>>>>>>> updated build system
 else
   #                     [echo "#define __MPI" >> ./src/ppm_define.h],
                      as_fn_error $? "Cannot build PPM with MPI support like this" "$LINENO" 5
@@ -5833,7 +5850,7 @@ rm -f core conftest.err conftest.$ac_objext \
     { $as_echo "$as_me:${as_lineno-$LINENO}: result: yes" >&5
 $as_echo "yes" >&6; }
 #    AC_CHECK_LIB([],[MPI_Init],[
-#                  echo "#define __MPI" >> ./$srcdir/ppm_define.h
+#                  echo "#define __MPI" >> ./src/ppm_define.h],
 #                  [AC_MSG_ERROR([Cannot build PPM with MPI support like this])])
 fi
 ac_ext=c
@@ -5937,25 +5954,37 @@ if test "x${have_metis}" = xno; then
   (exit 1); exit 1;
 else
 <<<<<<< HEAD
+<<<<<<< HEAD
   CPPFLAGS="$CPPFLAGS -D__METIS"
 
 #  echo "#define __METIS" >> ./src/ppm_define.h
 =======
   echo "#define __METIS" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+  CPPFLAGS="$CPPFLAGS -D__METIS"
+
+#  echo "#define __METIS" >> ./src/ppm_define.h
+>>>>>>> updated build system
 fi
 
 # Check to see if linux was enabled with -enable-linux
 # Check whether --enable-linux was given.
 if test "${enable_linux+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_linux; CPPFLAGS="$CPPFLAGS -D__Linux"
 
 #  [echo "#define __Linux" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_linux; echo "#define __Linux" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
@@ -5963,13 +5992,19 @@ fi
 # Check whether --enable-etime was given.
 if test "${enable_etime+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_etime; CPPFLAGS="$CPPFLAGS -D__ETIME"
 
 #  [echo "#define __ETIME" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_etime; echo "#define __ETIME" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
@@ -5977,78 +6012,114 @@ fi
 # Check whether --enable-vector was given.
 if test "${enable_vector+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_vector; CPPFLAGS="$CPPFLAGS -D__VECTOR"
 
 #  [echo "#define __VECTOR" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_vector; echo "#define __VECTOR" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
 # Check whether --enable-mathkeisan was given.
 if test "${enable_mathkeisan+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_mathkeisan; CPPFLAGS="$CPPFLAGS -D__MATHKEISAN"
 
 #  [echo "#define __MATHKEISAN" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_mathkeisan; echo "#define __MATHKEISAN" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
 # Check whether --enable-sxf90 was given.
 if test "${enable_sxf90+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_sxf90; CPPFLAGS="$CPPFLAGS -D__SXF90"
 
 #  [echo "#define __SXF90" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_sxf90; echo "#define __SXF90" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
 # Check whether --enable-crayfishpack was given.
 if test "${enable_crayfishpack+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_crayfishpack; CPPFLAGS="$CPPFLAGS -D__CRAYFISHPACK"
 
 #  [echo "#define __CRAYFISHPACK" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_crayfishpack; echo "#define __CRAYFISHPACK" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
 # Check whether --enable-hypre was given.
 if test "${enable_hypre+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_hypre; CPPFLAGS="$CPPFLAGS -D__HYPRE"
 
 #  [echo "#define __HYPRE" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_hypre; echo "#define __HYPRE" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
 # Check whether --enable-no-microinstr was given.
 if test "${enable_no_microinstr+set}" = set; then :
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
   enableval=$enable_no_microinstr; CPPFLAGS="$CPPFLAGS -D__NOMICROINSTRUCTIONS"
 
 #  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h]
 
+<<<<<<< HEAD
 =======
   enableval=$enable_no_microinstr; echo "#define __NOMICROINSTRUCTIONS" >> ./$srcdir/ppm_define.h
 >>>>>>> minor
+=======
+>>>>>>> updated build system
 fi
 
 
@@ -6079,14 +6150,20 @@ fi
 
 if test "x${debug_compile}" = xyes; then
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> updated build system
     CPPFLAGS="$CPPFLAGS -D__DEBUG"
 
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
+<<<<<<< HEAD
 =======
     echo "#define __DEBUG" >> ./$srcdir/ppm_define.h
     if test "x${vendor}" == xintel; then
 >>>>>>> minor
+=======
+>>>>>>> updated build system
         DEBUG="-O1 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback"
 
     elif test "x${vendor}" = xgnu; then
