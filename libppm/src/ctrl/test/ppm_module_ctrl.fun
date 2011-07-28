@@ -151,6 +151,9 @@ test_suite ppm_module_ctrl
     CALL add_cmd('finalize')
     CALL add_cmd('stop')
 
+    ! to see that args work after info
+    CALL parse_args(info)
+
     ! check flag function (out of order but before arg)
     CALL find_flag('-b', ok, value)
     Assert_True(ok)
