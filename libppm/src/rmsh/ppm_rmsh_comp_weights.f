@@ -49,10 +49,10 @@
       USE ppm_module_substop
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_data_rmsh
       USE ppm_module_write
       USE ppm_module_util_time
+      USE ppm_module_check_id
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -178,7 +178,7 @@
       !  Check meshid and topoid validity
       !--------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-         CALL check_topoid(topoid,valid,info)
+         CALL ppm_check_topoid(topoid,valid,info)
          IF (.NOT. valid) THEN
              info = ppm_error_error
                CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights',  &

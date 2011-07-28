@@ -797,7 +797,7 @@
                GOTO 8888
             ENDIF
          ENDDO
-         CALL check_topoid(topoid,valid,info)
+         CALL ppm_check_topoid(topoid,valid,info)
          IF (.NOT. valid) THEN
              info = ppm_error_error
                CALL ppm_error(ppm_err_argument,'ppm_rmsh_remesh',  &
