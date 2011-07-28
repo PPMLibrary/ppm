@@ -306,6 +306,47 @@ class AppForm(QMainWindow):
     def on_pick(self):
         """ pick event handler for mpl canvas."""
         pass
+    
+    def on_wheel(self,event):
+        zoom_factor = 0.8
+        if event.step > 0:
+            zoom = zoom_factor/event.step
+        else:
+            zoom = (-1*event.step)/zoom_factor
+        xlim = self.axes.get_xlim()
+        ylim = self.axes.get_ylim()
+        xdist = xlim[1]-xlim[0]
+        ydist = ylim[1]-ylim[0]
+        zoom_xdist = (xdist*zoom)/2.0
+        zoom_ydist = (ydist*zoom)/2.0
+
+        if self.dim == 2:
+            zoom_center = (event.xdata,event.ydata)
+            new_xlim = (zoom_center[0] - zoom_xdist, \
+                        zoom_center[0] + zoom_xdist)
+            new_ylim = (zoom_center[1] - zoom_ydist, \
+                        zoom_center[1] + zoom_ydist)
+        elif self.dim == 3:
+            zlim = self.axes.get_zlim3d()
+            zdist = (zlim[1]-zlim[0])*zoom
+            zoom_zdist = (zdist*zoom)/2.0
+            zoom_center = [xlim[0]+xdist/2.0, \
+                           ylim[0]+ydist/2.0, \
+                           zlim[0]+zdist/2.0]
+            new_xlim = (zoom_center[0] - zoom_xdist, \
+                        zoom_center[0] + zoom_xdist)
+            new_ylim = (zoom_center[1] - zoom_ydist, \
+                        zoom_center[1] + zoom_ydist)
+            new_zlim = (zoom_center[1] - zoom_zdist, \
+                        zoom_center[1] + zoom_zdist)
+            self.axes.set_zlim3d(new_zlim)
+        
+        self.axes.set_xlim(new_xlim)
+        self.axes.set_ylim(new_ylim)
+        
+        self.canvas.draw()
+        if self.dim == 3:
+            self.axes.mouse_init()
 
     def on_draw(self):
         """ Redraws the figure."""
@@ -411,6 +452,7 @@ class AppForm(QMainWindow):
         # Bind the 'pick' event for clicking on one of the bars
         #
         self.canvas.mpl_connect('pick_event', self.on_pick)
+        self.canvas.mpl_connect('scroll_event', self.on_wheel)
         
         # Create the navigation toolbar, tied to the canvas
         #
