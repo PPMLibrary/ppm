@@ -9,7 +9,9 @@ test_suite ppm_module_interp_p2m
 
     integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
+#ifdef __MPI
     integer, parameter              :: comm = mpi_comm_world
+#endif
     integer                         :: ndim,nspec
     integer                         :: rank
     integer                         :: nproc
@@ -228,7 +230,7 @@ test_suite ppm_module_interp_p2m
             call mpi_allreduce(f_moments2,f_mom_global2,nmom2,ppm_mpi_kind,MPI_SUM,&
             &                  comm,info)
 #else
-            f_mom_global = f_moments2
+            f_mom_global2 = f_moments2
 #endif
             do aj = 1,nmom2
                 p_moments2(aj) = xp(1,p_i)**alpha2(1,aj)*xp(2,p_i)**alpha2(2,aj)
