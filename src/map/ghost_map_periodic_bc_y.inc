@@ -46,7 +46,7 @@
                ighost(k) = ighost(i)
                xt(1,k)   = xt(1,i) 
                xt(2,k)   = xt(2,i) + len_phys(2)
-               xt_offset(1,k) = xt_offset(i,i)
+               xt_offset(1,k) = xt_offset(1,i)
                xt_offset(2,k) = len_phys(2)
                IF (ppm_dim.EQ.3) THEN
                   xt(3,k)   = xt(3,i)
