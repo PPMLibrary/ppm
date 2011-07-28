@@ -87,9 +87,9 @@ AX_COMPILER_VENDOR
 
 # this test should be omitted if the compiler is intel, they provide their own
 # math implementation
-if test "x${ax_cv_c_compiler_vendor}" != xintel; then
-  AC_CHECK_LIB([m],[sqrt])
-fi
+#if test "x${ax_cv_c_compiler_vendor}" != xintel; then
+#  AC_CHECK_LIB([m],[sqrt])
+#fi
 
 # Make sure that the libraries are compiled with Fortran
 AC_LANG([Fortran])
