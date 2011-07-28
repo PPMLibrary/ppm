@@ -19,18 +19,21 @@ integer                         :: topoid
 integer                         :: np = 100000
 integer                         :: mp
 integer                         :: newnp
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: rcp
-real(mk),dimension(:,:),pointer :: wp
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h,p_h
-real(mk),dimension(:  ),pointer :: len_phys
-real(mk),dimension(:  ),pointer :: ghostlayer
-integer, dimension(:  ),pointer :: ghostsize
+real(mk),dimension(:,:),pointer :: xp => NULL()
+real(mk),dimension(:  ),pointer :: rcp => NULL()
+real(mk),dimension(:,:),pointer :: wp => NULL()
+real(mk),dimension(:  ),pointer :: min_phys => NULL()
+real(mk),dimension(:  ),pointer :: max_phys => NULL()
+real(mk),dimension(:  ),pointer :: h => NULL()
+real(mk),dimension(:  ),pointer :: p_h => NULL()
+real(mk),dimension(:  ),pointer :: len_phys => NULL()
+real(mk),dimension(:  ),pointer :: ghostlayer => NULL()
+integer, dimension(:  ),pointer :: ghostsize => NULL()
 integer                         :: i,j,k,sum1,sum2
 integer                         :: p_i
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
-integer, dimension(:  ),pointer :: nm
+real(mk),dimension(:  ),pointer :: cost => NULL()
+integer, dimension(:  ),pointer :: nm => NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 real(mk), dimension(:),allocatable :: randnb
@@ -248,7 +251,7 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: npart = 1
         integer                         :: newnpart
         integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p
+        real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk), parameter             :: gl = 0.1_mk
     
         allocate(p(ndim,npart))
@@ -283,7 +286,6 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
         
         call ppm_topo_check(topoid,p,npart,ok,info)
-        print *, npart,mpart
         assert_true(ok)
         !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
 
@@ -300,8 +302,8 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: npart = 8
         integer                         :: newnpart
         integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p
-        real(mk),dimension(:)  ,pointer :: w
+        real(mk),dimension(:,:),pointer :: p => NULL()
+        real(mk),dimension(:)  ,pointer :: w => NULL()
         real(mk),dimension(2)           :: check
         real(mk), parameter             :: gl = 0.1_mk
     
@@ -477,7 +479,7 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: npart = 1
         integer                         :: newnpart
         integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p
+        real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk), parameter             :: gl = 0.1_mk
     
         allocate(p(ndim,npart))
@@ -512,7 +514,6 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
         
         call ppm_topo_check(topoid,p,npart,ok,info)
-        print *, npart,mpart
         assert_true(ok)
         call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
 
