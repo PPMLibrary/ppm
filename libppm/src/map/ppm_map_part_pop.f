@@ -273,7 +273,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        'newNpart*bdim = ',Mpart*bdim
+     &        'newNpart*bdim = ',newNpart*bdim
           CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
       ENDIF
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
