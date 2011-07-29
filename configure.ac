@@ -244,7 +244,7 @@ if test "x${debug_compile}" = xyes; then
     AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__DEBUG"])
 #    echo "#define __DEBUG" >> ./src/ppm_define.h
     if test "x${vendor}" = xintel; then
-        AC_SUBST(DEBUG,["-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -traceback -diag-disable 10120"])
+        AC_SUBST(DEBUG,["-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -check uninit -traceback -diag-disable 10120"])
     elif test "x${vendor}" = xgnu; then
       AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
     else

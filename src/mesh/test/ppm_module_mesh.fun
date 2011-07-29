@@ -25,7 +25,7 @@ integer, dimension(:  ),pointer :: ghostsize => NULL()
 integer                         :: i,j
 integer                         :: nsublist
 integer, dimension(:  ),pointer :: isublist => NULL()
-integer, dimension(6)           :: bcdef
+integer, dimension(2*ndim)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost => NULL()
 real(mk),dimension(:,:,:),pointer :: field => NULL()
 real(mk),dimension(:,:,:),pointer :: field_ref => NULL()
@@ -57,11 +57,9 @@ logical                          :: lsymm = .false.,ok
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
-        bcdef(1:6) = ppm_param_bcdef_periodic
+        bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
-        np = 0
-        nullify(xp)
-        
+        np = 0 
         nullify(field,field_ref)
         nullify(isublist,istart,ndata,istart_ref,ndata_ref)
 
@@ -114,8 +112,6 @@ logical                          :: lsymm = .false.,ok
 !--------------- teardown ---------------------
     teardown
         
-        deallocate(xp,stat=info)
-        !deallocate(seed,randnb)
 
     end teardown
 !----------------------------------------------
@@ -147,6 +143,7 @@ logical                          :: lsymm = .false.,ok
         assig  = ppm_param_assign_internal
 
         topoid = 0
+        meshid = -1
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
         &               bcdef,ghostsize,cost,nm,info)

@@ -196,8 +196,8 @@
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      INTEGER , DIMENSION(:,:), POINTER :: istart
-      INTEGER , DIMENSION(:,:), POINTER :: ndata
+      INTEGER, DIMENSION(:,:), POINTER  :: istart  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: ndata   => NULL()
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec,meshdx
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
