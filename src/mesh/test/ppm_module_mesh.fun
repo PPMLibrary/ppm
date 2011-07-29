@@ -15,20 +15,26 @@ real(mk)                        :: tol
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
 integer                         :: meshid,meshid_ref
-real(mk),dimension(:  ),pointer :: min_phys,max_phys,h
+real(mk),dimension(:  ),pointer :: min_phys => NULL()
+real(mk),dimension(:  ),pointer :: max_phys => NULL()
+real(mk),dimension(:  ),pointer :: h => NULL()
 integer                         :: np
-real(mk),dimension(:,:),pointer :: xp
-real(mk),dimension(:  ),pointer :: len_phys
-integer, dimension(:  ),pointer :: ghostsize
+real(mk),dimension(:,:),pointer :: xp => NULL()
+real(mk),dimension(:  ),pointer :: len_phys => NULL()
+integer, dimension(:  ),pointer :: ghostsize => NULL()
 integer                         :: i,j
 integer                         :: nsublist
-integer, dimension(:  ),pointer :: isublist
+integer, dimension(:  ),pointer :: isublist => NULL()
 integer, dimension(6)           :: bcdef
-real(mk),dimension(:  ),pointer :: cost
-real(mk),dimension(:,:,:),pointer :: field
-real(mk),dimension(:,:,:),pointer :: field_ref
-integer, dimension(:  ),pointer :: nm,nm_ref
-integer ,dimension(:,:),pointer :: istart,ndata,istart_ref,ndata_ref
+real(mk),dimension(:  ),pointer :: cost => NULL()
+real(mk),dimension(:,:,:),pointer :: field => NULL()
+real(mk),dimension(:,:,:),pointer :: field_ref => NULL()
+integer, dimension(:  ),pointer :: nm => NULL()
+integer, dimension(:  ),pointer :: nm_ref => NULL()
+integer ,dimension(:,:),pointer :: istart => NULL()
+integer ,dimension(:,:),pointer :: ndata => NULL()
+integer ,dimension(:,:),pointer :: istart_ref => NULL()
+integer ,dimension(:,:),pointer :: ndata_ref => NULL()
 integer, dimension(ndim)        :: maxndata
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
