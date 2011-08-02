@@ -1,6 +1,6 @@
 PPM core package README
 =======================
-v1.2.1, July 2011
+v1.2.1, August 2011
 
 
 Introduction
@@ -71,16 +71,18 @@ following files and directories:
    7.5K COPYING.LESSER
    4.2K Makefile.in   The Makefile template used by configure
    610B NOTICE
-    11K README        This file
-    25K README.html   The HTML version of this file
+    14K README        This file
+    28K README.html   The HTML version of this file
    717B aclocal.m4
     44K config.guess
+    25K config.status
     33K config.sub
-   203K configure     The build configure script
-   5.1K configure.ac  Thie build configure script template
-    13K install-sh
-   204B m4            Contains build scripts
-   3.6K src           Contains the source code
+   205K configure     The build configure script
+   8.5K configure.ac  Thie build configure script template
+    14K install-sh
+    16K m4            Contains build scripts
+   4.7M src           Contains the source code
+   292K utils         Contains the PPM debug utility and FUnit
 ----------------------------------
 
 After you compile PPM core there will be further directories for the binaries
