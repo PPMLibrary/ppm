@@ -227,7 +227,42 @@
               ENDDO
           END IF
       ENDDO
+9999  CONTINUE
       CALL substop('ppm_inl_vlist',t0,info)
+      RETURN
+      CONTAINS
+      SUBROUTINE check
+          LOGICAL :: valid
+
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (skin .LT. 0.0_MK) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'skin must be >= 0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'Geometric topology required',__LINE__,info)
+                  GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+              CALL ppm_check_topoid(topoid,valid,info)
+              IF (.NOT. valid) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &                 'topoid out of range',__LINE__,info)
+                  GOTO 8888
+              ENDIF
+          ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE inl_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -663,37 +698,6 @@
 9999      CONTINUE
           CALL substop('getVerletLists',t0,info)
           RETURN
-      CONTAINS
-      SUBROUTINE check
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (skin .LT. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'skin must be >= 0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &            'Geometric topology required',__LINE__,info)
-                  GOTO 8888
-          ENDIF
-          IF (topoid .NE. ppm_param_topo_undefined) THEN
-              CALL ppm_check_topoid(topoid,valid,info)
-              IF (.NOT. valid) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
-     &                 'topoid out of range',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-          ENDIF
- 8888     CONTINUE
-      END SUBROUTINE check
 
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getVerletLists_s
