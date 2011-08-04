@@ -16,7 +16,8 @@ Changes
 This versions brings many bug fixes and several new features
 
 .New features:
-- Re-implemented Vizing's graph coloring algorithm in Fortran
+- Implemented Brelaz' graph coloring algorithm in Fortran, replacing the C++
+  Vizing implementation.
 - Added support for homogeneous symmetric boundary conditions
   (Dirichlet, Neumann). The ghost mapping and neighbor list routines
   properly support boundary conditions now. (Note: The user still has to make
