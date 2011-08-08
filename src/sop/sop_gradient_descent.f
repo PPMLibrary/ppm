@@ -122,6 +122,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     INTEGER                             :: tmpvari1,tmpvari2
     LOGICAL                             :: need_derivatives
     INTEGER                             :: topo_id
+    LOGICAL                             :: adding_particles
+    INTEGER                             :: nb_spawn
 
     !should be removed once the argument lists for the inl routines
     !have been updated to inhomogeneous ghostlayers
@@ -189,6 +191,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     ENDIF
 
     it_adapt = 0
+    adding_particles=.TRUE.
     Psi_max = HUGE(1._MK)
     Psi_global = HUGE(1._MK)
     Psi_global_old = HUGE(1._MK)
@@ -228,8 +231,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !!-------------------------------------------------------------------------!
     it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
             &          it_adapt .LT. it_adapt_max .AND. &
-            &     ((Psi_max .GT. Psi_thresh) .OR. &
-            &                 Particles%nneighmin .LT. nneigh_adapt))
+            &     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles)
 
         it_adapt = it_adapt + 1
 
@@ -259,6 +261,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        !call check_duplicates(Particles)
 
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
@@ -269,17 +272,29 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'sop_fuse_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
+        !we only removed particles, but they didnt move.
+        Particles%areinside=.TRUE.
+        Particles%ontopology=.TRUE.
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
+        CALL particles_neighlists(Particles,topo_id,info)
+
+        !call check_duplicates(Particles)
 
         !if(it_adapt.LE.50)then
         !Insert (spawn) new particles where needed
-        CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun)
+        CALL  sop_spawn_particles(Particles,opts,info,&
+            nb_part_added=nb_spawn,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,caller,&
                 'sop_spawn_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
+
+            adding_particles= (nb_spawn .GT. 0)
         !endif
+
+        !call check_duplicates(Particles)
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
@@ -601,11 +616,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 #endif
 #endif
+        CALL MPI_Allreduce(adding_particles,adding_particles,1,&
+            MPI_LOGICAL,MPI_LOR,ppm_comm,info)
 
     ENDDO it_adapt_loop
 
     !------------------------------------------------------------------
-    ! Since particles have moved, we need to recompute the neigbour lists
+    ! Since particles have moved, we need to remap them
     !------------------------------------------------------------------
     CALL particles_apply_bc(Particles,topo_id,info)
     IF (info .NE. 0) THEN
@@ -620,44 +637,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             'particles_apply_bc failed',info)
         info = -1
         GOTO 9999
-    ENDIF
-    CALL particles_mapping_ghosts(Particles,topo_id,info)
-    IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,&
-            'particles_apply_bc failed',info)
-        info = -1
-        GOTO 9999
-    ENDIF
-    CALL particles_neighlists(Particles,topo_id,info)
-    IF (info .NE. 0) THEN
-        CALL ppm_write(ppm_rank,caller,&
-            'particles_neighlists failed',info)
-        info = -1
-        GOTO 9999
-    ENDIF
-    !------------------------------------------------------------------
-    ! In the (unlikely) event that neighmin is less than the critical
-    ! number of neighbours needed, go back into the adaptation loop
-    !------------------------------------------------------------------
-    IF (Particles%nneighmin .LT. opts%nneigh_critical) THEN
-        IF (it_adapt .LT. 9999) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'min nb of neighbr not enough. Going back to adaptation loop',&
-                info)
-            GOTO 7099
-        ELSE
-            CALL ppm_write(ppm_rank,caller,&
-                'not enough neigh and max nb of iter exceeded. Major Fail.',&
-                info)
-            info = -1
-            GOTO 9999
-        ENDIF
-    ELSE
-#if debug_verbosity > 0
-        IF (ppm_rank.EQ.0) & 
-            CALL ppm_write(ppm_rank,caller,&
-            'enough neighbours, we are good to go.',info)
-#endif
     ENDIF
 
 
