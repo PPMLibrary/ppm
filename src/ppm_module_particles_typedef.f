@@ -42,6 +42,9 @@ TYPE pnt_array_1d
     !!! true if there is a one-to-one mapping with the particles
     LOGICAL                                      :: map_parts
     !!! true if partial mappings are desired for this property (default)
+    !!! (if false, the array for this property is not reallocated when
+    !!! particles move to a different processor or when they are
+    !!! interpolated from one distribution to another)
     LOGICAL                                      :: map_ghosts
     !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_1d
@@ -59,6 +62,9 @@ TYPE pnt_array_2d
     !!! true if there is a one-to-one mapping with the particles
     LOGICAL                                      :: map_parts
     !!! true if partial mappings are desired for this property (default)
+    !!! (if false, the array for this property is not reallocated when
+    !!! particles move to a different processor or when they are
+    !!! interpolated from one distribution to another)
     LOGICAL                                      :: map_ghosts
     !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_2d

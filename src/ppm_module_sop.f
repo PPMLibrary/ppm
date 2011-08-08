@@ -39,7 +39,7 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 2
+#define debug_verbosity 0
 #define __USE_RANDOMNUMBERS 1
 
      USE ppm_module_data

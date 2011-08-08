@@ -400,7 +400,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
         ! Compute gradients using PSE kernels
-        coeffs=1._MK; order=2; degree = 0
+        coeffs=1._MK; order=4; degree = 0
         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
         eta_id = 0
         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&

@@ -341,6 +341,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             need_derivatives=.TRUE.
     ENDIF
 
+    IF (PRESENT(stats)) stats%min_sv=HUGE(1._mk)
+
     ! Check that the scalar field on which particles are supposed to adapt
     ! has been defined or is provided by an analytical function
     IF (.NOT.PRESENT(wp_fun)) THEN
