@@ -415,6 +415,23 @@
 #endif
 
 #if __KIND == __SINGLE_PRECISION
+      PURE FUNCTION child(idx) RESULT(child_idx)
+      !!! Given the index of child cell, returns the index of its first child.
+      !!! Works for nD.
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64), INTENT(IN) :: idx
+      !!! Input index
+      INTEGER(ppm_kind_int64)             :: child_idx
+      !!! Index of first child cell to be returned
+
+      child_idx = ISHFT(idx,ppm_dim) - (2**ppm_dim-2)
+      END FUNCTION child
+#endif
+
+#if __KIND == __SINGLE_PRECISION
 #ifdef __DEBUG
       FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
 #else
