@@ -1065,6 +1065,7 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
     INTEGER                              :: lwork,mm,nnn
     REAL(MK), DIMENSION (:),   POINTER   :: work=>NULL()
     REAL(MK), DIMENSION (:,:), POINTER   :: tauq=>NULL(),taup=>NULL()
+    REAL(MK), PARAMETER                  :: ppm_tolerance_svd = 1E-10
 
 
     mm = m
@@ -1149,7 +1150,7 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
     !! Raise an error if the singular value is below a threshold
     !!----------------------------------------------------------------------
 
-    IF (MINVAL(diag) .LT. 0.001_mk) THEN
+    IF (MINVAL(diag) .LT. ppm_tolerance_svd) THEN
         WRITE(cbuf,'(A,E20.6)')'singular value. Min = ', MINVAL(diag)
         CALL ppm_write(ppm_rank,caller,cbuf, info)
         info = -1
