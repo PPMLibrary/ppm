@@ -40,6 +40,8 @@ INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
 
     INTEGER , PRIVATE, DIMENSION(3)    :: ldc
     !!! Number of elements in all dimensions for allocation
+    !FIXME
+    REAL(prec),DIMENSION(:),POINTER    :: tmp_cutoff
 
 CONTAINS
 
@@ -2595,7 +2597,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_have_moved
 
-SUBROUTINE particles_neighlists(Particles,topoid,info,lstore,incl_ghosts)
+SUBROUTINE particles_neighlists(Particles,topoid,info,&
+        lstore,incl_ghosts,knn)
     !-----------------------------------------------------------------
     !  Neighbor lists for particles
     !-----------------------------------------------------------------
@@ -2605,6 +2608,7 @@ SUBROUTINE particles_neighlists(Particles,topoid,info,lstore,incl_ghosts)
     !
     USE ppm_module_neighlist
     USE ppm_module_inl_vlist
+    USE ppm_module_inl_k_vlist
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2631,13 +2635,18 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
     !!! if true, then verlet lists are computed for all particles, incl. ghosts.
     !!! Default is false.
+    INTEGER, OPTIONAL,                  INTENT(IN   )      :: knn
+    !!! if present, neighbour lists are constructed such that each particle
+    !!! has at least knn neighbours.
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER                                   :: prop_id,op_id,np_target
+    INTEGER                                   :: prop_id,op_id,np_target,i
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
+    LOGICAL                                   :: ensure_knn
+    !!! uses a neighbour-finding algorithm that finds enough neighbours
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
     CHARACTER(LEN = ppm_char)                 :: caller = 'particles_neighlists'
@@ -2680,6 +2689,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ELSE
         symmetry = .FALSE.
     ENDIF
+    IF (PRESENT(knn)) THEN
+        ensure_knn = .TRUE.
+    ELSE
+        ensure_knn = .FALSE.
+    ENDIF
 
     IF (Particles%neighlists) THEN
         !neighbor lists are already up-to-date, nothing to do
@@ -2711,15 +2725,40 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             !FIXME: when adaptive ghost layers are available
             ghostlayer(1:2*ppm_dim)=Particles%cutoff
 
-            CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
-                Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,Particles%skin,&
-                symmetry,ghostlayer,info,Particles%vlist,&
-                Particles%nvlist)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'ppm_inl_vlist failed',__LINE__,info)
-                GOTO 9999
+            IF (ensure_knn) THEN
+                !FIXME when kd trees are implemented
+
+    ldc(1) = Particles%Mpart
+    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to allocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
+                
+                CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
+                    Particles%Mpart,tmp_cutoff,&
+                    knn,symmetry,ghostlayer,info,Particles%vlist,&
+                    Particles%nvlist)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'ppm_inl_k_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ELSE
+                CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
+                    Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
+                    Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
+                    Particles%nvlist)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'ppm_inl_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
             ENDIF
         ELSE
             CALL ppm_neighlist_vlist(topoid,Particles%xp,Particles%Mpart,&
@@ -2792,7 +2831,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
 END SUBROUTINE particles_neighlists
 
-SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,lstore)
+SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,&
+        lstore,knn)
     !------------------------------------------------------------------------
     !  Cross-set neighbor lists for particles
     !  Find the neighbours of each (real) Particles_1 within all Particles_2
@@ -2802,6 +2842,7 @@ SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,lstore)
     ! * Ghost positions for Particles_2 have been computed
     !
     USE ppm_module_inl_xset_vlist
+    USE ppm_module_inl_xset_k_vlist
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2824,15 +2865,19 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
     !!! store verlet lists
+    INTEGER, OPTIONAL,                  INTENT(IN   )      :: knn
+    !!! Minimum number of neighbours required
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER                                   :: iopt
     !!! allocation mode, see one of ppm_alloc_* subroutines.
-    INTEGER                                   :: prop_id,op_id
+    INTEGER                                   :: prop_id,op_id,i
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
+    LOGICAL                                   :: ensure_knn
+    !!! uses a neighbour-finding algorithm that finds enough neighbours
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
     CHARACTER(LEN = ppm_char)          :: caller = 'particles_neighlists_xset'
@@ -2884,24 +2929,55 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             &  __LINE__,info)
         GOTO 9999
     ENDIF
+    IF (PRESENT(knn)) THEN
+        ensure_knn = .TRUE.
+    ELSE
+        ensure_knn = .FALSE.
+    ENDIF
 
     IF ( Particles_2%neighlists_cross ) THEN
         !neighbor lists are already up-to-date, nothing to do
-        write(*,*) 'xset neighlists are supposedly already up-to-date, NOTHING to do'
+        write(*,*) 'xset neighlists supposedly already up-to-date, NOTHING to do'
     ELSE
         IF (Particles_2%adaptive) THEN
             !FIXME: when adaptive ghost layers are available
             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
-            CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
-                Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
-                Particles_2%Mpart,Particles_2%wps(Particles_2%rcp_id)%vec,&
-                Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
-                Particles_1%nvlist_cross,lstore)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(999,caller,&
-                    'ppm_inl_xset_vlist failed',__LINE__,info)
-                GOTO 9999
+            IF (ensure_knn) THEN
+                !FIXME when kd trees are implemented
+
+    ldc(1) = Particles_2%Mpart
+    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,   &
+            &            'failed to allocate ops%desc',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    FORALL(i=1:Particles_2%Mpart) tmp_cutoff(i) = Particles_2%h_avg
+                CALL ppm_inl_xset_k_vlist(topoid,Particles_1%xp,&
+                    Particles_1%Npart,Particles_1%Mpart,Particles_2%xp,&
+                    Particles_2%Npart,&
+                    Particles_2%Mpart,tmp_cutoff,&
+                    knn,ghostlayer,info,Particles_1%vlist_cross,&
+                    Particles_1%nvlist_cross)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_inl_xset_k_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+            ELSE
+                CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
+                    Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
+                    Particles_2%Mpart,Particles_2%wps(Particles_2%rcp_id)%vec,&
+                    Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
+                    Particles_1%nvlist_cross,lstore)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_inl_xset_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
             ENDIF
         ELSE
             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
