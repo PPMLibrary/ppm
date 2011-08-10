@@ -380,7 +380,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 
     CALL particles_updated_nb_part(Particles,info,&
         preserve_wps=(/Particles%D_id,Particles%rcp_id/),&
-        preserve_wpv=(/ INTEGER :: /))
+        preserve_wpv= (/ (i, i=1,0) /)) !F90-friendly way to init an empty array
+        !preserve_wpv=(/ INTEGER :: /)) !valid only in F2003
     IF (info .NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,   &

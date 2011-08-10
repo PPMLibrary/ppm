@@ -156,6 +156,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(ppm_dim)           :: coeffs
     INTEGER,      DIMENSION(ppm_dim)           :: order
     INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
+    REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -475,8 +476,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
         IF (PRESENT(wp_fun)) THEN
             DO ip=1,Particles%Npart
-                Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),&
-                    wp_grad_fun(xp(1:ppm_dim,ip)),opts)
+                wp_grad_fun0= wp_grad_fun(xp(1:ppm_dim,ip))
+                Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)
             ENDDO
         ELSE
             wp_grad => Get_wpv(Particles,adapt_wpgradid)
