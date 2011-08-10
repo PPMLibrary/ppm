@@ -7,9 +7,8 @@ USE ppm_module_util_dbg
 USE ppm_module_data
 
  !------------------------------------------------------------
- ! 3D
- ! This test suite tests the topology creation in 2D
- ! All possible decompositions in 2D are tested with the 
+ ! This test suite tests the topology creation in 3D
+ ! All possible decompositions in 3D are tested with the 
  ! following set of particles:
  ! 1) Random in [0,1] with random cutoff [0.05]
  ! 2) Random origin in [-8,8], periodic, the closer to this origin

@@ -139,7 +139,7 @@
             ms2(j) = 2.0_MK*minboxsize(j)
 
             !--------------------------------------------------------------------
-            ! We need to check if path of non cutable regions is equal to box
+            ! We need to check if the first cutpos is less then maxbox-ghostsize
             !--------------------------------------------------------------------
             is_possible(j) = .TRUE.
             
@@ -148,19 +148,18 @@
                k = 1
                IF (result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsize(j)) THEN
                
-                  ! Find the first constraint in the minboxsize position
+                  ! Find the first constraint at the minboxsize position
                   temp_r = k
                   DO WHILE (.NOT.((min_box(j,i)+minboxsize(j)-lmyeps).GT.result_array(j,k,1) &
             &                         .AND. (min_box(j,i)+minboxsize(j)+lmyeps).LT.result_array(j,k,2)))
                      IF (result_array(j,k,2) .GT. result_array(j,temp_r,2)) THEN
                         temp_r = k
-                     ENDIF  
+                     ENDIF
                      k = k+1  
                      IF (k .GT. num_constr(i,j)) THEN
                         EXIT
                      ENDIF
                   ENDDO
-               
 
                   ! check if we have found one
                   IF (k .LE. num_constr(i,j)) THEN
@@ -183,7 +182,7 @@
                         ENDDO
                      ELSE
                         k = k-1
-                     ENDIF 
+                     ENDIF
                      
    !                IF (result_array(j,k,1)+lmyeps .LT. min_box(j,i)+minboxsizes(j,i)) THEN
    !                   !     until distance is >= 0

@@ -585,9 +585,9 @@
 !       ENDIF      
 ! 
 !       DO i=1,nsubs
-! 
+!             
 !             IF(ppm_rank .EQ. 0)THEN
-!                print *, i, min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i), minboxsizes(1,i), minboxsizes(2,i)
+!                print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i), minboxsizes(1,i), minboxsizes(2,i)
 !             ENDIF
 ! 
 !       ENDDO
