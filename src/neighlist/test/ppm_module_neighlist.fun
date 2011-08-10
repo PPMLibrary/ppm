@@ -17,6 +17,7 @@ real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
 integer                         :: np = 100000
+integer                         :: npart
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
@@ -108,6 +109,74 @@ real(mk)                         :: eps
         deallocate(seed,randnb)
 
     end teardown
+
+    test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_map
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+
+        integer                         :: mpart
+        integer                         :: newnpart
+        integer                         :: oldip,ip = -1
+        real(mk),dimension(:,:),pointer :: p => NULL()
+        real(mk),dimension(ndim)        :: cp
+        real(mk), parameter             :: gl = 0.001_mk
+        real(mk), parameter             :: skin = 0.0_mk
+        integer, dimension(:),pointer   :: nvlist => NULL()
+        integer, dimension(:,:),pointer :: vlist => NULL()
+        integer                         :: snpart 
+        integer                         :: i,j,k
+        integer, dimension(:),pointer   :: pidx
+
+        allocate(p(ndim,npart))
+        snpart = int(sqrt(real(npart,mk)))
+        k = 0
+        do i=1,snpart
+            do j=1,snpart
+                k = k + 1
+                p(1,k) = (i-1)*(1.0_mk/(snpart+1))
+                p(2,k) = (j-1)*(1.0_mk/(snpart+1))
+            enddo
+        enddo
+        npart = k
+        bcdef(1:6) = ppm_param_bcdef_freespace
+        nullify(nvlist,vlist)
+        allocate(pidx(npart))
+        forall(k=1:npart) pidx(k) = k
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl+skin,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
+        
+        call ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
+        &                        vlist,nvlist,info,pidx)
+        
+        assert_equal(info,0)
+        deallocate(p,vlist,nvlist,pidx)
+    end test
+
 
     test symBC_neighlist
         ! tests symmetric boundary conditions and ghost get
