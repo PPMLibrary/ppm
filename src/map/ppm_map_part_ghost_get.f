@@ -387,15 +387,28 @@
             !  sub cannot be ghosts on other processors. Thus the ghosts must 
             !  be found at the lower/left of the sub
             !-------------------------------------------------------------------
+            
             xmini = xminf + ghostsize
-            xmaxi = xmaxf
+            IF ((ABS(xmaxf - max_phys(1)).LT. eps).AND.lextra(2)) THEN
+                xmaxi = xmaxf - ghostsize
+            ELSE
+                xmaxi = xmaxf
+            ENDIF
 
             ymini = yminf + ghostsize
-            ymaxi = ymaxf
+            IF ((ABS(ymaxf - max_phys(2)).LT. eps).AND.lextra(4)) THEN
+                ymaxi = ymaxf - ghostsize
+            ELSE
+                ymaxi = ymaxf
+            ENDIF
  
             IF (ppm_dim.EQ.3) THEN
                zmini = zminf + ghostsize
-               zmaxi = zmaxf
+               IF ((ABS(zmaxf - max_phys(3)).LT. eps).AND.lextra(6)) THEN
+                   zmaxi = zmaxf - ghostsize
+               ELSE
+                   zmaxi = zmaxf
+               ENDIF
             ENDIF 
          ELSE
             !-------------------------------------------------------------------
@@ -515,7 +528,8 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Initialize the total number of ghosts incl. those due to periodicity
+      !  Initialize the total number of ghosts incl. those due to boundary
+      !  conditions
       !-------------------------------------------------------------------------
       nghostplus = nghost
 

@@ -361,7 +361,7 @@ real(mk)                         :: t0,t1,t2,t3
         
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
         call ppm_map_part_store(info)
 
         call ppm_map_part_ghost_put(topoid,info)
@@ -507,7 +507,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_send(npart,mpart,info)
@@ -515,7 +515,69 @@ real(mk)                         :: t0,t1,t2,t3
         
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+
+
+    end test
+    
+    test get_mixed_bc
+        ! tests symmetric and periodic BC conditions and ghost get
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+        integer                         :: npart = 256
+        integer                         :: snpart = 16
+        integer                         :: newnpart
+        integer                         :: mpart
+        real(mk),dimension(:,:),pointer :: p => NULL()
+        real(mk), parameter             :: gl = 0.1_mk
+        real(mk)                        :: h
+    
+        h = len_phys(1)/(snpart)
+        allocate(p(ndim,npart))
+        k = 0
+        do i=1,snpart
+            do j=1,snpart
+                k = k + 1
+                p(1,k) = h/2 + (i-1)*h
+                p(2,k) = h/2 + (j-1)*h
+            enddo
+        enddo
+        npart = k
+        bcdef(1:2) = ppm_param_bcdef_periodic
+        bcdef(3:4) = ppm_param_bcdef_symmetry
+        bcdef(5:6) = ppm_param_bcdef_freespace
+        !bcdef(1:6) = ppm_param_bcdef_periodic
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        !decomp = ppm_param_decomp_xpencil
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+        call ppm_topo_check(topoid,p,npart,ok,info)
+
+        assert_true(ok)
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        assert_equal(mpart-npart,104)
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        assert_true(ok)
+        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart,mpart)
 
 
     end test
