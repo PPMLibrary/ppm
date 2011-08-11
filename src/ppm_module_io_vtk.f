@@ -288,9 +288,11 @@
               WRITE(iUnit,'(A)') "    <PPoints>"
               WRITE(iUnit,'(A)') "      <PDataArray NumberOfComponents='3' type='Float64' />"
               WRITE(iUnit,'(A)') "    </PPoints>"
+              ! find the basename of the file
               DO i=0,ppm_nproc-1
-                 WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='", &
-                      fname(1:LEN_TRIM(fname)), ".", i, ".vtp' />"
+                 WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='",     &
+                      fname(INDEX(fname, '/', .true.)+1:LEN_TRIM(fname)), &
+                      ".", i, ".vtp' />"
               END DO
               ! close
 #include "vtk/print_end_header.f"

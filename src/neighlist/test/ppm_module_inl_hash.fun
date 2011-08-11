@@ -30,15 +30,15 @@ integer, parameter :: size = 200
   end test
 
   test weird_bug
-    integer, dimension(9), parameter :: seed = (/11,   5234,   451,  &
-                                                 173,  423,    7473, & 
-                                                 9257, 817259, 819257 /)
+    integer, dimension(9), parameter :: seed = (/11370, 5237,   451,  &
+                                                 173,   7,      7473, & 
+                                                 9257,  817259, 819257 /)
     integer(8) :: k, inserts1, inserts2
     integer    :: i
     integer    :: o
     integer(4) :: rsize
-    integer    :: hsize1 = 1000
-    integer    :: hsize2 = 200
+    integer    :: hsize1 = 3000
+    integer    :: hsize2 = 1000
     integer    :: range  = 180 ! < hsize!!!
     integer    :: repeat = 10000
     real       :: r
