@@ -123,6 +123,12 @@
       !!! Boundary conditions for the topology
       !!!
       !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       INTEGER                 , INTENT(IN   ) :: assig
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
