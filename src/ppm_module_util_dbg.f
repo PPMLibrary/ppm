@@ -32,6 +32,8 @@
       !-------------------------------------------------------------------------
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
+#define __SCALAR 3
+#define __VECTOR 4
 
       MODULE ppm_module_util_dbg
       !!! This module provides the routines
@@ -40,15 +42,17 @@
          !  Define interfaces to the main topology routine(s)
          !----------------------------------------------------------------------
          INTERFACE ppm_dbg_print
-            MODULE PROCEDURE ppm_dbg_print_s
-            MODULE PROCEDURE ppm_dbg_print_d
+            MODULE PROCEDURE dbg_print_sca_s
+            MODULE PROCEDURE dbg_print_sca_d
+            MODULE PROCEDURE dbg_print_vec_s
+            MODULE PROCEDURE dbg_print_vec_d
          END INTERFACE
 
          !----------------------------------------------------------------------
          !  include the source
          !----------------------------------------------------------------------
          CONTAINS
-
+#define __CTAG __SCALAR
 #define __KIND __SINGLE_PRECISION
 #include "util/ppm_dbg_print.f"
 #undef __KIND
@@ -56,6 +60,17 @@
 #define __KIND __DOUBLE_PRECISION
 #include "util/ppm_dbg_print.f"
 #undef __KIND
+#undef __CTAG
+
+#define __CTAG __VECTOR
+#define __KIND __SINGLE_PRECISION
+#include "util/ppm_dbg_print.f"
+#undef __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "util/ppm_dbg_print.f"
+#undef __KIND
+#undef __CTAG
 
 
       END MODULE ppm_module_util_dbg
