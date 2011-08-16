@@ -317,11 +317,11 @@
               DO i=1,ppm_dim
                   ! if we are at are the phys_dom border and have (non-)symmetirc
                   ! BCs then add a ghost layer
-                  IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc(i)) THEN
+                  IF ((ABS(xmin(i)-min_phys(i)).LT.eps).AND.isbc((i-1)*2+1)) THEN
                       ngl(i) = 1
                   ENDIF
               ENDDO
-              DO i=ppm_dim+1,2*ppm_dim   ! layers on upper-right side
+              DO i=ppm_dim+1,2*ppm_dim  ! layers on upper-right side ngl(i) = 1
                   ngl(i) = 1
               ENDDO
           ELSE                       ! DO NOT EXPLOIT SYMMETRY => ghost layers 

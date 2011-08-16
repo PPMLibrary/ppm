@@ -129,7 +129,7 @@ real(mk)                         :: eps
         integer                         :: snpart 
         integer                         :: i,j,k
         integer, dimension(:),pointer   :: pidx
-
+        
         allocate(p(ndim,npart))
         snpart = int(sqrt(real(npart,mk)))
         k = 0
@@ -175,6 +175,85 @@ real(mk)                         :: eps
         
         assert_equal(info,0)
         deallocate(p,vlist,nvlist,pidx)
+    end test
+    
+    test symbcvlistsize
+        ! tests symmetric boundary conditions and vlist size/content
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+        use ppm_module_map
+        use ppm_module_test
+        !integer                         :: npart = 20**2
+        integer                         :: npart = 20
+        integer                         :: newnpart
+        integer                         :: mpart
+        real(mk),dimension(:,:),pointer :: p => NULL()
+        real(mk),dimension(  :),pointer :: w => NULL()
+        real(mk), parameter             :: gl = 0.1_mk
+        real(mk)                        :: h
+        real(mk), parameter             :: skin = 0.01_mk
+        integer, dimension(:),pointer   :: nvlist => NULL()
+        integer, dimension(:,:),pointer :: vlist => NULL()
+   
+        allocate(p(2,npart))
+        h = 0.05_mk
+        do i=1,npart
+            p(1,i) = h/2.0_mk + h*(i-1)
+            p(2,i) = h/2.0_mk
+        enddo
+
+        bcdef(1:2) = ppm_param_bcdef_freespace
+        bcdef(3:4) = ppm_param_bcdef_symmetry
+        bcdef(5:6) = ppm_param_bcdef_freespace
+        
+        allocate(w(npart))
+        w(:) = rank+1
+        call mpi_barrier(comm,info)
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_xpencil
+        !decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_push(w,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(w,npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+        call ppm_topo_check(topoid,p,npart,ok,info)
+
+        assert_true(ok)
+        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
+        call ppm_map_part_push(w,npart,info)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(w,npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        
+        assert_true(ok)
+        call ppm_neighlist_vlist(topoid,p,mpart,gl/2.0_mk,skin,.TRUE.,&
+        &                        vlist,nvlist,info)
+        
+
+        !call ppm_dbg_print(topoid,gl,1,nvlist,info,p,npart,mpart)
+        assert_equal(vlist(1,1),21)
+        assert_equal(vlist(2,1),2)
+        assert_equal(vlist(1,10),30)
+        assert_equal(vlist(2,10),11)
+        assert_equal(vlist(1,20),40)
     end test
 
 

@@ -330,16 +330,10 @@
           !---------------------------------------------------------------------
           !  Lower box bound depends on symmetry and boundary condition
           !---------------------------------------------------------------------
-          IF (.NOT.lsymm) THEN
-              DO i=1,ppm_dim
-                  IF (ABS(xmin(i)-min_phys(i)).LT.eps .AND.isbc(i)) THEN 
-                      lb(i) = 0
-                  ELSE
-                      lb(i) = 1
-                  ENDIF
-              ENDDO
-          ELSE
+          IF (lsymm) THEN
               lb(:) = 0
+          ELSE
+              lb(:) = 1
           ENDIF
           n1  = cl(idom)%nm(1)
           n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
