@@ -242,7 +242,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
                       GOTO 9999
                   ENDIF
 #if __CTAG == __VECTOR
-                  CALL mpi_recv(allctag(:,:,iproc+1),allmp(iproc+1),&
+                  CALL mpi_recv(allctag(:,iproc+1),allmp(iproc+1),&
                   &             MPI_INTEGER,iproc,  &
                   &             0,ppm_comm,MPI_STATUS_IGNORE,info)
                   IF (info .NE. 0) THEN
