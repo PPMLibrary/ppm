@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :              ppm_module_util_dbg
+      !  Module       :            ppm_module_test
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -26,51 +26,36 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-
+     
       !-------------------------------------------------------------------------
       !  Define types
       !-------------------------------------------------------------------------
-#define __SINGLE_PRECISION 1
-#define __DOUBLE_PRECISION 2
-#define __SCALAR 3
-#define __VECTOR 4
+#define __SINGLE_PRECISION         1
+#define __DOUBLE_PRECISION         2
 
-      MODULE ppm_module_util_dbg
-      !!! This module provides the routines
-      !!! that solve cubic equations with real roots.
+      MODULE ppm_module_test
+      !!! This module provides useful routines for ppm unit test cases
+
+         INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
+         INTEGER, PARAMETER :: ppm_param_part_init_random    = 2
+
          !----------------------------------------------------------------------
-         !  Define interfaces to the main topology routine(s)
+         !  Define interfaces to part_init
          !----------------------------------------------------------------------
-         INTERFACE ppm_dbg_print
-            MODULE PROCEDURE dbg_print_sca_s
-            MODULE PROCEDURE dbg_print_sca_d
-            MODULE PROCEDURE dbg_print_vec_s
-            MODULE PROCEDURE dbg_print_vec_d
+         INTERFACE part_init
+            MODULE PROCEDURE part_inits
+            MODULE PROCEDURE part_initd
          END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  include the source
-         !----------------------------------------------------------------------
+
          CONTAINS
-#define __CTAG __SCALAR
+
 #define __KIND __SINGLE_PRECISION
-#include "util/ppm_dbg_print.f"
+#include "test/part_init.f"
 #undef __KIND
-
 #define __KIND __DOUBLE_PRECISION
-#include "util/ppm_dbg_print.f"
-#undef __KIND
-#undef __CTAG
-
-#define __CTAG __VECTOR
-#define __KIND __SINGLE_PRECISION
-#include "util/ppm_dbg_print.f"
+#include "test/part_init.f"
 #undef __KIND
 
-#define __KIND __DOUBLE_PRECISION
-#include "util/ppm_dbg_print.f"
-#undef __KIND
-#undef __CTAG
 
-
-      END MODULE ppm_module_util_dbg
+      END MODULE ppm_module_test

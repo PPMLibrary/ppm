@@ -534,7 +534,7 @@ class AppForm(QMainWindow):
         for i in range(6):
             try:
                 self.axes.plot_surface(f[i][0],f[i][1],f[i][2],alpha=0.05,\
-                        color=cmap[cpu%(nc+1)+1]) 
+                        color=cmap[cpu%(nc-1)+1]) 
             except KeyError:
                 print "invalid color tag"
     
@@ -548,7 +548,7 @@ class AppForm(QMainWindow):
         """Plot a 2D subdomain."""
         nc = len(cmap.keys())
         try:
-            p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc+1)+1],linewidth=0)
+            p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc-1)+1],linewidth=0)
         except KeyError:
             print "invalid color tag"
         self.axes.add_patch(p)
@@ -565,9 +565,10 @@ class AppForm(QMainWindow):
     
     def plotdat2(self,x,y,tag):
         """Plot 2D particle positions."""
+        nc = len(cmap.keys())
         try:
             rx,ry,rtag = zip(*filter(isreal,zip(x,y,tag)))
-            self.axes.scatter(rx,ry,s=5,c=[cmap[t] for t in \
+            self.axes.scatter(rx,ry,s=5,c=[cmap[t%(nc-1)+1] for t in \
                 rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"
@@ -583,9 +584,10 @@ class AppForm(QMainWindow):
     
     def plotdat3(self,x,y,z,tag):
         """Plot 3D particle positions."""
+        nc = len(cmap.keys())
         try:
             rx,ry,rz,rtag = zip(*filter(isreal,zip(x,y,z,tag)))
-            self.axes.scatter(rx,ry,rz,s=10,c=[cmap[t] for t in \
+            self.axes.scatter(rx,ry,rz,s=10,c=[cmap[t%(nc-1)+1] for t in \
                 rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"

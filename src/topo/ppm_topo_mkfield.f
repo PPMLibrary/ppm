@@ -142,7 +142,13 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! First index is 1-6 (each of the faces)
+      !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ighostsize
       !!! Size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
