@@ -11,7 +11,8 @@ test_suite ppm_module_interp_p2m
 #ifdef __MPI
     integer, parameter              :: comm = mpi_comm_world
 #endif
-    integer                         :: ndim,nspec
+    integer                         :: ndim
+    integer                         :: nspec
     integer                         :: rank
     integer                         :: nproc
     integer                         :: decomp
@@ -27,7 +28,7 @@ test_suite ppm_module_interp_p2m
     real(mk),dimension(:  ),pointer :: h => NULL()
     integer, dimension(:  ),pointer :: ghostsize => NULL()
     integer                         :: i,j,k,p_i,ai,aj,it,isub
-    integer, dimension(6)           :: bcdef
+    integer, dimension(:  ),pointer :: bcdef => NULL()
     real(mk),dimension(:  ),pointer :: cost => NULL()
     integer, dimension(:,:),pointer :: istart => NULL()
     integer, dimension(:,:),pointer :: ndata => NULL()
@@ -60,7 +61,6 @@ test_suite ppm_module_interp_p2m
 
         tol = 100.0_mk*epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
-        bcdef(1:6) = ppm_param_bcdef_freespace
 
         allocate(min_phys(3),max_phys(3),ghostsize(3),&
         &         nm(3),h(3),field_x(3),stat=info)
@@ -121,6 +121,7 @@ test_suite ppm_module_interp_p2m
         deallocate(field_wp2,field_wp3,stat=info)
         deallocate(seed)
         deallocate(cost)
+        deallocate(bcdef)
 
     end teardown
 !------------------------------------------------------------------------------
@@ -143,6 +144,8 @@ test_suite ppm_module_interp_p2m
         integer                          :: nsublist
         ndim = 2
         nspec = 1
+        allocate(bcdef(2*ndim))
+        bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
             min_phys(i) = 0.0_mk
@@ -272,6 +275,8 @@ test_suite ppm_module_interp_p2m
         
         ndim = 3
         nspec = 1
+        allocate(bcdef(2*ndim))
+        bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
             min_phys(i) = 0.0_mk
