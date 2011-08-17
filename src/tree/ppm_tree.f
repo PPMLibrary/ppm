@@ -1104,22 +1104,22 @@
           ENDIF
       ENDIF
 #if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcst_s,ldc,iopt,info)
+      CALL ppm_alloc(pcst_s,ldc,iopt,info2)
 #else
-      CALL ppm_alloc(pcst_d,ldc,iopt,info)
+      CALL ppm_alloc(pcst_d,ldc,iopt,info2)
 #endif
-      IF (info .NE. 0) THEN
+      IF (info2 .NE. 0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
      &        'particle cost part PCOST',__LINE__,info)
       ENDIF
 #ifdef __MPI
 #if   __KIND == __SINGLE_PRECISION
-      CALL ppm_alloc(pcsum_s,ldc,iopt,info)
+      CALL ppm_alloc(pcsum_s,ldc,iopt,info2)
 #else
-      CALL ppm_alloc(pcsum_d,ldc,iopt,info)
+      CALL ppm_alloc(pcsum_d,ldc,iopt,info2)
 #endif
-      IF (info .NE. 0) THEN
+      IF (info2 .NE. 0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
      &        'particle cost sums PCSUM',__LINE__,info)
@@ -1153,14 +1153,14 @@
      &        'tree levels of boxes BLEVEL',__LINE__,info)
       ENDIF
       IF (have_particles) THEN
-          CALL ppm_alloc(npbx,ldc,iopt,info)
-          IF (info .NE. 0) THEN
+          CALL ppm_alloc(npbx,ldc,iopt,info2)
+          IF (info2 .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
      &            'number of particles per box NPBX',__LINE__,info)
           ENDIF
-          CALL ppm_alloc(cbox,ldc,iopt,info)
-          IF (info .NE. 0) THEN
+          CALL ppm_alloc(cbox,ldc,iopt,info2)
+          IF (info2 .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_dealloc,'ppm_tree',     &
      &            'temporary box pointers CBOX',__LINE__,info)
