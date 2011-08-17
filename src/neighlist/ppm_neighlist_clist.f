@@ -371,6 +371,8 @@
  &                   'work xp array wxp',__LINE__,info)
               GOTO 9999
           ENDIF
+      ELSE
+          NULLIFY(wxp)
       ENDIF
 
       !-------------------------------------------------------------------------
