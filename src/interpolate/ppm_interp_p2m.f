@@ -494,7 +494,7 @@
      &                   xp(1,ipart).LE.max_sub(1,idoml) .AND. &
      &                   xp(2,ipart).LE.max_sub(2,idoml) ) ) THEN
 
-                 IF(   (xp(1,ipart).LT.max_sub(1,idom) .OR.  &
+                 IF(   (xp(1,ipart).LT.max_sub(1,idoml) .OR.  &
      &                       (topo%subs_bc(2,idoml).EQ.1   .AND.    &
      &                       bcdef(2).NE. ppm_param_bcdef_periodic)).AND.&
      &                      (xp(2,ipart).LT.max_sub(2,idoml) .OR.  &
