@@ -123,10 +123,16 @@
       !  Allocate memory for structures
       !-------------------------------------------------------------------------
 
-
       iopt = ppm_param_alloc_fit
       lda(1) = ppm_dim
       lda(2) = topo%nsubs
+      CALL ppm_alloc(nm,lda,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_get_meshinfo',    &
+     &        'global mesh size NM',__LINE__,info)
+          GOTO 9999
+      ENDIF
       CALL ppm_alloc(istart,lda,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
