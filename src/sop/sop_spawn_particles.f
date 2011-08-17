@@ -110,14 +110,14 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     CALL substart(caller,t0,info)
 #endif
 
-    IF (opts%level_set) THEN
-        IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &    'incompatible optional arguments',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_argument,caller,   &
+!                 &    'incompatible optional arguments',__LINE__,info)
+!             GOTO 9999
+!         ENDIF
+!     ENDIF
 
     IF (PRESENT(nneigh_threshold)) THEN
         nvlist_theoretical = nneigh_threshold
@@ -135,41 +135,43 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     !!-------------------------------------------------------------------------!
     ! counting how many particles have to be added
     ! if not enough neighbours, add nb_new_part particle
-    IF (opts%level_set) THEN
-        IF (PRESENT(wp_fun)) THEN
-            xp => Get_xp(Particles)
-            DO ip=1,Npart
-                IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                    lev = level_fun(xp(1:ppm_dim,ip))
-                    IF (ABS(lev) .LT. opts%nb_width*&
-                        nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) THEN
-                        add_part = add_part + nb_new_part
-                    ENDIF
-                ENDIF
-            ENDDO
-            xp => Set_xp(Particles,read_only=.TRUE.)
-        ELSE
-            level => Get_wps(Particles,Particles%level_id)
-            wp    => Get_wps(Particles,Particles%adapt_wpid)
-            DO ip=1,Npart
-                IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                    IF (ABS(level(ip)).LT.opts%nb_width*nb_fun(wp(ip),&
-                        opts%scale_D))&
-                        add_part = add_part + nb_new_part
-                ENDIF
-            ENDDO
-            level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
-            wp    => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-        ENDIF
-    ELSE
-        !DO ip=1,Npart
-            !IF (nvlist(ip) .LT. nvlist_theoretical) &
-                !add_part = add_part + nb_new_part
-        !ENDDO
-        CALL check_quadrants(Particles,info)
-        add_part = COUNT(Particles%nvlist .GT. 0) * nb_new_part
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (PRESENT(wp_fun)) THEN
+!             xp => Get_xp(Particles)
+!             DO ip=1,Npart
+!                 IF (nvlist(ip) .LT. nvlist_theoretical) THEN
+!                     lev = level_fun(xp(1:ppm_dim,ip))
+!                     IF (ABS(lev) .LT. opts%nb_width*&
+!                         nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) THEN
+!                         add_part = add_part + nb_new_part
+!                     ENDIF
+!                 ENDIF
+!             ENDDO
+!             xp => Set_xp(Particles,read_only=.TRUE.)
+!         ELSE
+!             level => Get_wps(Particles,Particles%level_id)
+!             wp    => Get_wps(Particles,Particles%adapt_wpid)
+!             DO ip=1,Npart
+!                 IF (nvlist(ip) .LT. nvlist_theoretical) THEN
+!                     IF (ABS(level(ip)).LT.opts%nb_width*nb_fun(wp(ip),&
+!                         opts%scale_D))&
+!                         add_part = add_part + nb_new_part
+!                 ENDIF
+!             ENDDO
+!             level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
+!             wp    => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+!         ENDIF
+!     ELSE
+        DO ip=1,Npart
+            write(*,*) nvlist(ip), nvlist_theoretical
+            IF (nvlist(ip) .LT. nvlist_theoretical) &
+                add_part = add_part + nb_new_part
+        ENDDO
+!         CALL check_quadrants(Particles,info)
+!         add_part = COUNT(Particles%nvlist .GT. 0) * nb_new_part
+!     ENDIF
 
+write(*,*) nvlist_theoretical
     nvlist => NULL()
 
 #if debug_verbosity > 1
@@ -209,6 +211,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         ENDIF
 
 #ifdef __USE_RANDOMNUMBERS
+
     !!-------------------------------------------------------------------------!
     !! Draw random numbers to add noise on positions of new particles
     !!-------------------------------------------------------------------------!
@@ -261,30 +264,30 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     D => Particles%wps(Particles%D_id)%vec      !same reason
     rcp => Particles%wps(Particles%rcp_id)%vec  !same reason
     nvlist => Particles%nvlist
-    IF (opts%level_set) THEN
-        IF (.NOT. PRESENT(level_fun)) THEN
-            level => Get_wps(Particles,Particles%level_id)
-            wp    => Get_wps(Particles,Particles%adapt_wpid)
-        ENDIF
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (.NOT. PRESENT(level_fun)) THEN
+!             level => Get_wps(Particles,Particles%level_id)
+!             wp    => Get_wps(Particles,Particles%adapt_wpid)
+!         ENDIF
+!     ENDIF
 
     IF (ppm_dim .EQ. 2) THEN
         add_particles2d: DO ip=1,Npart
 
-            !IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-            IF (Particles%nvlist(ip).GT.0) THEN
+            IF (nvlist(ip) .LT. nvlist_theoretical) THEN
+            !IF (Particles%nvlist(ip).GT.0) THEN
                 !FOR LEVEL SETS ONLY
-                IF (opts%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ENDIF
-                ENDIF
+!                 IF (opts%level_set) THEN
+!                     IF (PRESENT(wp_fun)) THEN
+!                         lev = level_fun(xp(1:ppm_dim,ip))
+!                         IF (ABS(lev) .GE. opts%nb_width*&
+!                             nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
+!                             CYCLE add_particles2d
+!                     ELSE
+!                         IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
+!                             CYCLE add_particles2d
+!                     ENDIF
+!                 ENDIF
 
                 DO i=1,nb_new_part
                     add_part = add_part + 1
@@ -317,17 +320,17 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 
             IF (nvlist(ip) .LT. nvlist_theoretical) THEN
                 !FOR LEVEL SETS ONLY
-                IF (Particles%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ENDIF
-                ENDIF
+!                 IF (Particles%level_set) THEN
+!                     IF (PRESENT(wp_fun)) THEN
+!                         lev = level_fun(xp(1:ppm_dim,ip))
+!                         IF (ABS(lev) .GE. opts%nb_width*&
+!                             nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
+!                             CYCLE add_particles3d
+!                     ELSE
+!                         IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
+!                             CYCLE add_particles3d
+!                     ENDIF
+!                 ENDIF
 
                 DO i=1,nb_new_part
                     add_part = add_part + 1
@@ -362,12 +365,12 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         ENDDO add_particles3d
     ENDIF
 
-    IF (opts%level_set) THEN
-        IF (.NOT. PRESENT(level_fun)) THEN
-            level => Set_wps(Particles,Particles%level_id)
-            wp    => Set_wps(Particles,Particles%adapt_wpid)
-        ENDIF
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (.NOT. PRESENT(level_fun)) THEN
+!             level => Set_wps(Particles,Particles%level_id)
+!             wp    => Set_wps(Particles,Particles%adapt_wpid)
+!         ENDIF
+!     ENDIF
     !!-------------------------------------------------------------------------!
     !!new size Npart
     !!-------------------------------------------------------------------------!

@@ -180,15 +180,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
     IF (.NOT.PRESENT(wp_grad_fun) .AND. PRESENT(wp_fun)) THEN
-        IF (Particles%level_set) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                & 'provided analytical function values but no &
-                & function gradients. With level sets, &
-                & this case is not yet implemented',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
+!         IF (Particles%level_set) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_argument,caller,   &
+!                 & 'provided analytical function values but no &
+!                 & function gradients. With level sets, &
+!                 & this case is not yet implemented',&
+!                 &  __LINE__,info)
+!             GOTO 9999
+!         ENDIF
     ENDIF
     !-------------------------------------------------------------------------!
     ! Perform consistency checks
@@ -220,22 +220,22 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    IF (opts%level_set) THEN
-        IF (.NOT. Particles%level_set) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Need to enable level-set for Particles first',&
-            &  __LINE__,info)
-        GOTO 9999
-        ENDIF
-        IF (PRESENT(wp_fun) .AND..NOT.PRESENT(level_fun)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Need to provide analytical level function',&
-            &  __LINE__,info)
-        GOTO 9999
-        ENDIF
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (.NOT. Particles%level_set) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_argument,caller,   &
+!             &  'Need to enable level-set for Particles first',&
+!             &  __LINE__,info)
+!         GOTO 9999
+!         ENDIF
+!         IF (PRESENT(wp_fun) .AND..NOT.PRESENT(level_fun)) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_argument,caller,   &
+!             &  'Need to provide analytical level function',&
+!             &  __LINE__,info)
+!         GOTO 9999
+!         ENDIF
+!     ENDIF
 
     !-------------------------------------------------------------------------!
     ! Determines whether we will need to approximate derivatives
@@ -260,39 +260,39 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
     ENDIF
-
-    IF (opts%level_set) THEN
-        ! Check that the level set has been defined or
-        ! is provided by an analytical function
-        IF (PRESENT(level_fun)) THEN
-            IF (.NOT.PRESENT(level_grad_fun)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,   &
-                    &  'need to analytical gradients for level function',&
-                    &  __LINE__,info)
-                GOTO 9999
-            ENDIF
-        ELSE
-            !check if a scalar property has already been specified as the argument
-            !for the resolution function (i.e. the particles will adapt to resolve
-            !this property well)
-            IF (Particles%level_id.EQ.0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,   &
-                    &  'need to define level_id first',&
-                    &  __LINE__,info)
-                GOTO 9999
-            ENDIF
-            IF (Particles%level_grad_id .EQ. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,   &
-                    &  'need to define level_grad_id first',&
-                    &  __LINE__,info)
-                GOTO 9999
-            ENDIF
-        ENDIF
-    ENDIF
-
+! 
+!     IF (opts%level_set) THEN
+!         ! Check that the level set has been defined or
+!         ! is provided by an analytical function
+!         IF (PRESENT(level_fun)) THEN
+!             IF (.NOT.PRESENT(level_grad_fun)) THEN
+!                 info = ppm_error_error
+!                 CALL ppm_error(ppm_err_argument,caller,   &
+!                     &  'need to analytical gradients for level function',&
+!                     &  __LINE__,info)
+!                 GOTO 9999
+!             ENDIF
+!         ELSE
+!             !check if a scalar property has already been specified as the argument
+!             !for the resolution function (i.e. the particles will adapt to resolve
+!             !this property well)
+!             IF (Particles%level_id.EQ.0) THEN
+!                 info = ppm_error_error
+!                 CALL ppm_error(ppm_err_argument,caller,   &
+!                     &  'need to define level_id first',&
+!                     &  __LINE__,info)
+!                 GOTO 9999
+!             ENDIF
+!             IF (Particles%level_grad_id .EQ. 0) THEN
+!                 info = ppm_error_error
+!                 CALL ppm_error(ppm_err_argument,caller,   &
+!                     &  'need to define level_grad_id first',&
+!                     &  __LINE__,info)
+!                 GOTO 9999
+!             ENDIF
+!         ENDIF
+!     ENDIF
+! 
 
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
@@ -433,12 +433,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
 
     if_D_needs_grad: IF (opts%D_needs_gradients) THEN
-        IF (opts%level_set) THEN
-            CALL ppm_write(ppm_rank,caller,&
-                'D_needs_gradients with level_sets: not supported',info)
-            info = -1
-            GOTO 9999
-        ENDIF
+!         IF (opts%level_set) THEN
+!             CALL ppm_write(ppm_rank,caller,&
+!                 'D_needs_gradients with level_sets: not supported',info)
+!             info = -1
+!             GOTO 9999
+!         ENDIF
 
         IF (.NOT.PRESENT(wp_grad_fun)) THEN
             IF (.NOT. Particles%neighlists) THEN
@@ -505,30 +505,30 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
         IF (PRESENT(wp_fun)) THEN
             xp => Get_xp(Particles,with_ghosts=.TRUE.)
-            IF (opts%level_set) THEN
-                DO ip=1,Particles%Mpart
-                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,&
-                        opts,level_fun(xp(1:ppm_dim,ip)))
-                ENDDO
-            ELSE
+!             IF (opts%level_set) THEN
+!                 DO ip=1,Particles%Mpart
+!                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,&
+!                         opts,level_fun(xp(1:ppm_dim,ip)))
+!                 ENDDO
+!             ELSE
                 DO ip=1,Particles%Mpart
                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
                 ENDDO
-            ENDIF
+!             ENDIF
             xp => Set_xp(Particles,read_only=.TRUE.)
         ELSE
             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-            IF (opts%level_set) THEN
-                level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
-                DO ip=1,Particles%Mpart
-                    Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts,level(ip))
-                ENDDO
-                level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
-            ELSE
+!             IF (opts%level_set) THEN
+!                 level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
+!                 DO ip=1,Particles%Mpart
+!                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts,level(ip))
+!                 ENDDO
+!                 level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
+!             ELSE
                 DO ip=1,Particles%Mpart
                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts)
                 ENDDO
-            ENDIF
+!             ENDIF
             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
         ENDIF
         Dtilde => Set_wps(Particles,Particles%Dtilde_id,&

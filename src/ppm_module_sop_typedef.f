@@ -82,6 +82,8 @@
          REAL(prec)                            :: maximum_D      
          ! minimum resolution
          REAL(prec)                            :: minimum_D      
+         ! maximum difference of axes in anisotropic
+         REAL(prec)                            :: max_factor_aniso      
          ! stopping criterion for particle adaptation
          REAL(prec)                            :: adaptivity_criterion    
          !counter for the number of gradient descent steps performed

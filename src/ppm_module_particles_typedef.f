@@ -165,6 +165,7 @@ TYPE ppm_t_particles
     ! Neighbor lists
     REAL(prec)                                      :: cutoff
     !!! cutoff radius
+    !!! in the anisotropic case this is the max axes
     REAL(prec)                                      :: skin
     !!! skin layer around the particles
     INTEGER                                         :: isymm
@@ -252,6 +253,10 @@ TYPE ppm_t_particles
     LOGICAL                                         :: anisotropic
     !!! true if the particles have their own cutoff radii
     !!! in this case, the G tensor will be stored in wpv(G_id)%vec
+    !!! the tensors are stored as transformation from anisotropic 
+    !!! to isotropic case, i.e. as the inverse of the ellipses' axes
+    !!! 2D: [t11, t12, t21, t22]
+    !!! 3D: [t11, t12, t13, t21, t22, t23, t31, t32, t33]
     INTEGER                                         :: G_id
     !!! index where G is stored
 

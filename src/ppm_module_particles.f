@@ -1478,6 +1478,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             Particles%max_wpvid = wp_id
         ENDIF
 
+        ! We assume that if the user allocates an array for the tensors,
+        ! then it means the particles are meant to be adaptive.
+        IF (Particles%G_id.NE.0) Particles%anisotropic=.TRUE.
+
         IF (Particles%max_wpvid .GT. SIZE(Particles%wpv)) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,&
@@ -2728,15 +2732,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             IF (ensure_knn) THEN
                 !FIXME when kd trees are implemented
 
-    ldc(1) = Particles%Mpart
-    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
+               ldc(1) = Particles%Mpart
+               CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+               IF (info .NE. 0) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'failed to allocate ops%desc',__LINE__,info)
+                  GOTO 9999
+               ENDIF
+               FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
                 
                 CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
                     Particles%Mpart,tmp_cutoff,&
@@ -2761,16 +2765,28 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ELSE
+           
             CALL ppm_neighlist_vlist(topoid,Particles%xp,Particles%Mpart,&
-                Particles%cutoff,Particles%skin,symmetry,Particles%vlist,&
-                Particles%nvlist,info,lstore=lstore)
+               Particles%cutoff,Particles%skin,symmetry,Particles%vlist,&
+               Particles%nvlist,info,lstore=lstore)
             IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'ppm_neighlist_vlist failed',__LINE__,info)
-                GOTO 9999
+               info = ppm_error_error
+               CALL ppm_error(ppm_err_sub_failed,caller,&
+                  'ppm_neighlist_vlist failed',__LINE__,info)
+               GOTO 9999
             ENDIF
+
         ENDIF
+
+        IF (Particles%anisotropic) THEN
+               ! this is the anisotropic neighbor search
+               ! No matter if adaptive or not
+
+               !use ppm_inl_vlist
+
+               
+        ENDIF
+
 
         !restore subdomain sizes (revert hack)
         IF (PRESENT(incl_ghosts)) THEN
@@ -3701,6 +3717,95 @@ SUBROUTINE particles_initialize(Particles,Npart_global,info,&
     ENDIF
 END SUBROUTINE particles_initialize
 
+! a anisotropic version of the particles initialization which inclued inverse matrix init
+SUBROUTINE particles_initialize_anisotropic(Particles,Npart_global,cutoff,info,&
+        distrib,topoid,minphys,maxphys,name)
+    !-----------------------------------------------------------------------
+    ! Set initial particle positions
+    !-----------------------------------------------------------------------
+    USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_topo
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)      :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(INOUT)      :: Npart_global
+    !!! total number of particles that will be initialized
+    INTEGER,                            INTENT(  OUT)      :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional arguments
+    !-------------------------------------------------------------------------
+    INTEGER,OPTIONAL,                   INTENT(IN   )      :: distrib
+    !!! type of initial distribution. One of
+    !!! ppm_param_part_init_cartesian (default)
+    !!! ppm_param_part_init_random
+    INTEGER,OPTIONAL,                   INTENT(IN   )      :: topoid
+    !!! topology id (used only to get the extent of the physical domain)
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: minphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: maxphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),                           INTENT(IN   )      :: cutoff
+    !!! cutoff of the particles used for tensor init
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
+
+    ! Local
+    INTEGER                                                :: ip
+    REAL(MK),DIMENSION(:,:),POINTER                        :: inv=>NULL()
+    REAL                                                   :: ratio
+
+    IF (ppm_dim .eq. 2) THEN
+        CALL  particles_initialize2d(Particles,Npart_global,info,&
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
+
+        ! init inverse matrix which transforms distances to anisotropic case
+        Particles%G_id = 0
+        call particles_allocate_wpv(Particles,Particles%G_id,4,info,name='inv_tensor')
+
+        write(*,*) Particles%Npart
+
+        ratio = 1/cutoff
+        inv => get_wpv(Particles,Particles%G_id)
+        FORALL(ip=1:Particles%Npart) 
+            inv(1,ip) = ratio;
+            inv(2,ip) = 0;
+            inv(3,ip) = 0;
+            inv(4,ip) = ratio;
+        END FORALL
+
+    ELSE
+        CALL  particles_initialize3d(Particles,Npart_global,info,&
+            distrib,topoid,minphys,maxphys,cutoff,name=name)
+
+        ! init inverse matrix which transforms distances to anisotropic case
+        Particles%G_id = 0
+        call particles_allocate_wpv(Particles,Particles%G_id,9,info,name='inv_tensor')
+
+        ratio = 1/cutoff
+        inv => get_wpv(Particles,Particles%G_id)
+        FORALL(ip=1:Particles%Npart) 
+            inv(1,ip) = ratio;
+            inv(2,ip) = 0;
+            inv(3,ip) = 0;
+            inv(4,ip) = 0;
+            inv(5,ip) = ratio;
+            inv(6,ip) = 0;
+            inv(7,ip) = 0;
+            inv(8,ip) = 0;
+            inv(9,ip) = ratio;
+        END FORALL
+
+    ENDIF
+
+END SUBROUTINE particles_initialize_anisotropic
 
 SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
         with_ghosts,wps_list,wpv_list)

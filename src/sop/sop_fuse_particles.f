@@ -105,16 +105,16 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     CALL substart(caller,t0,info)
 #endif
 
-    IF (opts%level_set) THEN
-        IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(999,caller,&
-                    'incompatible optional arguments',__LINE__,info)
-                GOTO 9999
-            ENDIF
-        ENDIF
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF (PRESENT(level_fun) .NEQV. PRESENT(wp_fun)) THEN
+!             IF (info .NE. 0) THEN
+!                 info = ppm_error_error
+!                 CALL ppm_error(999,caller,&
+!                     'incompatible optional arguments',__LINE__,info)
+!                 GOTO 9999
+!             ENDIF
+!         ENDIF
+!     ENDIF
     IF (.NOT. Particles%neighlists) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,&
@@ -131,12 +131,12 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
     rcp=> Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
-    IF (opts%level_set) THEN
-        IF(.NOT.PRESENT(level_fun)) &
-            level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
-        IF(.NOT.PRESENT(wp_fun)) &
-            wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF(.NOT.PRESENT(level_fun)) &
+!             level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
+!         IF(.NOT.PRESENT(wp_fun)) &
+!             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
+!     ENDIF
 
     !removme
     !DO ip=1,Particles%Npart
@@ -151,23 +151,23 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     !! Mark particles for deletion (by changing nvlist to 999)
     !!-------------------------------------------------------------------------!
     particle_loop: DO ip=1,Npart
-        IF (opts%level_set) THEN
-            !kill particles that are too far away from the interface
-            IF(PRESENT(level_fun)) THEN
-                lev = level_fun(xp(1:ppm_dim,ip))
-                IF (ABS(lev) .GT.  opts%nb_width_kill*&
-                    nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) THEN
-                    nvlist(ip)=999
-                    CYCLE particle_loop
-                ENDIF
-            ELSE
-                IF (ABS(level(ip)).GT.&
-                    & opts%nb_width_kill*nb_fun(wp(ip),opts%scale_D)) THEN
-                    nvlist(ip)=999
-                    CYCLE particle_loop
-                ENDIF
-            ENDIF
-        ENDIF
+!         IF (opts%level_set) THEN
+!             !kill particles that are too far away from the interface
+!             IF(PRESENT(level_fun)) THEN
+!                 lev = level_fun(xp(1:ppm_dim,ip))
+!                 IF (ABS(lev) .GT.  opts%nb_width_kill*&
+!                     nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) THEN
+!                     nvlist(ip)=999
+!                     CYCLE particle_loop
+!                 ENDIF
+!             ELSE
+!                 IF (ABS(level(ip)).GT.&
+!                     & opts%nb_width_kill*nb_fun(wp(ip),opts%scale_D)) THEN
+!                     nvlist(ip)=999
+!                     CYCLE particle_loop
+!                 ENDIF
+!             ENDIF
+!         ENDIF
         IF (nvlist(ip) .GT. opts%nneigh_critical) THEN
             DO ineigh=1,nvlist(ip)
                 iq=vlist(ineigh,ip)
@@ -238,10 +238,10 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                 D(ip) = D(Npart-del_part)
                 rcp(ip) = rcp(Npart-del_part)
                 nvlist(ip) = nvlist(Npart-del_part)
-                IF (opts%level_set .AND. .NOT.PRESENT(level_fun)) THEN
-                    level(ip) = level(Npart-del_part)
-                    wp(ip) = wp(Npart-del_part)
-                ENDIF
+!                 IF (opts%level_set .AND. .NOT.PRESENT(level_fun)) THEN
+!                     level(ip) = level(Npart-del_part)
+!                     wp(ip) = wp(Npart-del_part)
+!                 ENDIF
             ENDIF
             del_part = del_part+1
         ENDIF
@@ -258,12 +258,12 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     xp => Set_xp(Particles)
     D  => Set_wps(Particles,Particles%D_id)
     rcp=> Set_wps(Particles,Particles%rcp_id)
-    IF (opts%level_set) THEN
-        IF(.NOT.PRESENT(level_fun)) &
-            level=> Set_wps(Particles,Particles%level_id)
-        IF(.NOT.PRESENT(wp_fun)) &
-            wp => Set_wps(Particles,Particles%adapt_wpid)
-    ENDIF
+!     IF (opts%level_set) THEN
+!         IF(.NOT.PRESENT(level_fun)) &
+!             level=> Set_wps(Particles,Particles%level_id)
+!         IF(.NOT.PRESENT(wp_fun)) &
+!             wp => Set_wps(Particles,Particles%adapt_wpid)
+!     ENDIF
 
     !!-------------------------------------------------------------------------!
     !! Finalize

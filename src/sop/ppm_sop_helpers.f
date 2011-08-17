@@ -36,7 +36,8 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%diff_eq => NULL()
     opts%order_approx = 4
     opts%maximum_D = 1._MK
-    opts%minimum_D = 0.01_MK     
+    opts%minimum_D = 0.01_MK    
+    opts%max_factor_aniso = 5.0_MK 
     opts%nb_grad_desc_steps = 0
     opts%nneigh_theo = 24
     opts%nneigh_critical = 20
