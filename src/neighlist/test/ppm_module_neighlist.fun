@@ -116,35 +116,29 @@ real(mk)                         :: eps
         use ppm_module_map
         use ppm_module_topo_check
         use ppm_module_util_dbg
+        use ppm_module_test
 
         integer                         :: mpart
         integer                         :: newnpart
         integer                         :: oldip,ip = -1
         real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk),dimension(ndim)        :: cp
-        real(mk), parameter             :: gl = 0.001_mk
+        real(mk)                        :: gl = 0.001_mk
         real(mk), parameter             :: skin = 0.0_mk
+        real(mk)                        :: h
         integer, dimension(:),pointer   :: nvlist => NULL()
         integer, dimension(:,:),pointer :: vlist => NULL()
         integer                         :: snpart 
         integer                         :: i,j,k
         integer, dimension(:),pointer   :: pidx
         
-        allocate(p(ndim,npart))
-        snpart = int(sqrt(real(npart,mk)))
-        k = 0
-        do i=1,snpart
-            do j=1,snpart
-                k = k + 1
-                p(1,k) = (i-1)*(1.0_mk/(snpart+1))
-                p(2,k) = (j-1)*(1.0_mk/(snpart+1))
-            enddo
-        enddo
-        npart = k
+        call part_init(p,npart,min_phys,max_phys,info,&
+        &    ppm_param_part_init_cartesian,0.5_mk)
+        print *,npart
+        h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
+        gl = 0.0_mk
         bcdef(1:6) = ppm_param_bcdef_freespace
-        nullify(nvlist,vlist)
-        allocate(pidx(npart))
-        forall(k=1:npart) pidx(k) = k
+        nullify(nvlist,vlist,pidx)
 
         !----------------
         ! make topology
@@ -170,8 +164,11 @@ real(mk)                         :: eps
         call ppm_topo_check(topoid,p,npart,ok,info)
         !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
         
-        call ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
-        &                        vlist,nvlist,info,pidx)
+        allocate(pidx(npart))
+        forall(k=1:npart) pidx(k) = k
+        
+        call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
+        &                        vlist,nvlist,info)!,pidx)
         
         assert_equal(info,0)
         deallocate(p,vlist,nvlist,pidx)
@@ -184,7 +181,6 @@ real(mk)                         :: eps
         use ppm_module_topo_check
         use ppm_module_util_dbg
         use ppm_module_map
-        use ppm_module_test
         !integer                         :: npart = 20**2
         integer                         :: npart = 20
         integer                         :: newnpart
