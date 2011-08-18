@@ -49,6 +49,7 @@
         xt_offset(2,k) = xt_offset(2,i)
         IF ( ppm_dim == 3) THEN
            xt(3,k)   = xt(3,i)
+           xt_offset(3,k) = xt_offset(3,i)
         END IF
      END IF
   END DO
