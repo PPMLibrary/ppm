@@ -7,7 +7,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
-    USE ppm_module_inl_xset_k_vlist
+    !USE ppm_module_inl_xset_k_vlist
     USE ppm_module_dcops
     USE ppm_module_io_vtk
 
@@ -88,10 +88,10 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !!-----------------------------------------------------------------!
     D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     ghostlayer=Particles%cutoff
-    CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
-        Particles%Npart,Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-        Particles_old%Mpart,D_old,opts%nneigh_critical,&
-        ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
+!     CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
+!         Particles%Npart,Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
+!         Particles_old%Mpart,D_old,opts%nneigh_critical,&
+!         ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
     Particles%neighlists_cross = .TRUE.
     IF (info .NE. 0) THEN
         info = ppm_error_error

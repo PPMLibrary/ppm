@@ -26,6 +26,27 @@
      ! ETH Zurich
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
+#if __ANISO == __YES
+
+#if   __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE count_xset_neigh_s_aniso(red_refidx, red_clist, blue_clist, domain, &
+ &               red, rcred, blue, rcblue, skin, nvlist)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE count_xset_neigh_d_aniso(red_refidx, red_clist, blue_clist, domain, &
+ &               red, rcred, blue, rcblue, skin, nvlist)
+#endif
+#elif __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE get_xset_neigh_s_aniso(red_refidx, red_clist, blue_clist, domain, &
+ &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE get_xset_neigh_d_aniso(red_refidx, red_clist, blue_clist, domain, &
+ &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+#endif
+#endif
+
+#elif __ANISO == __NO
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE count_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
@@ -42,6 +63,8 @@
       SUBROUTINE get_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
  &               red, rcred, blue, rcblue, skin, vlist, nvlist)
 #endif
+#endif
+
 #endif
       !!! Given the particle index, this subroutine locates the cell that this
       !!! cell is located in, gathers all particles in these cells and updates
@@ -66,12 +89,22 @@
           !!! Pysical extent of whole domain including ghost layers
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: red 
           !!! Particle coordinates red
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcred
-          !!! Particle cutoff radii red
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: rcred
+      !!! Red particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: rcred
+      !!! Red particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: blue
           !!! Particle coordinates blue
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcblue
-          !!! Particle cutoff radii blue
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: rcblue
+      !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
+      !!! Blue particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
 #if __ACTION == __GET
@@ -375,6 +408,23 @@
           DO i = 1, own_nred
               used(own_red(i)) = .TRUE.
           END DO
+#if __ANISO == __YES
+
+#if   __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE count_xset_neigh_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE count_xset_neigh_d_aniso
+#endif
+#elif __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE get_xset_neigh_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE get_xset_neigh_d_aniso
+#endif
+#endif
+
+#elif __ANISO == __NO
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE count_xset_neigh_s
@@ -386,5 +436,6 @@
       END SUBROUTINE get_xset_neigh_s
 #elif   __KIND == __DOUBLE_PRECISION
       END SUBROUTINE get_xset_neigh_d
+#endif
 #endif
 #endif

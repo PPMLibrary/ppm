@@ -16,7 +16,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,threshold,need_deriv,stats)
 
-    USE ppm_module_inl_xset_vlist
+    !USE ppm_module_inl_xset_vlist
     USE ppm_module_io_vtk
 
     IMPLICIT NONE
@@ -341,7 +341,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
             !!-----------------------------------------------------------------!
-            !! Get anisotropic requirements directly using the given funcs
+            !! haeckic: Get anisotropic requirements directly using the given funcs
             !!-----------------------------------------------------------------!
             CALL sop_compute_D(Particles,D_fun,opts,info,     &
                 wp_fun=wp_fun,wp_grad_fun=wp_grad_fun)
@@ -372,10 +372,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
             D_old = D_old * opts%rcp_over_D
             ghostlayer=Particles%cutoff
-            CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
-                Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-                Particles_old%Npart,D_old,Particles%skin,&
-                ghostlayer,info,vlist_cross,nvlist_cross)
+!             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
+!                 Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
+!                 Particles_old%Npart,D_old,Particles%skin,&
+!                 ghostlayer,info,vlist_cross,nvlist_cross)
             D_old = D_old / opts%rcp_over_D
             D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
                 read_only=.TRUE.)

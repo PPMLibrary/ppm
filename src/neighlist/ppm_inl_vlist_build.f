@@ -26,6 +26,24 @@
      ! ETH Zurich
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
+#if __ANISO == __YES
+
+#if   __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE count_neigh_s_aniso(p_idx, clist, domain, xp, cutoff, skin, nvlist)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE count_neigh_d_aniso(p_idx, clist, domain, xp, cutoff, skin, nvlist)
+#endif
+#elif __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE get_neigh_s_aniso(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE get_neigh_d_aniso(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
+#endif
+#endif
+
+#elif __ANISO == __NO
+
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE count_neigh_s(p_idx, clist, domain, xp, cutoff, skin, nvlist)
@@ -38,6 +56,8 @@
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE get_neigh_d(p_idx, clist, domain, xp, cutoff, skin, vlist, nvlist)
 #endif
+#endif
+
 #endif
       !!! Given the particle index, this subroutine locates the cell that this
       !!! cell is located in, gathers all particles in these cells and updates
@@ -59,8 +79,13 @@
           !!! Pysical extent of whole domain including ghost layers
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
           !!! Particle coordinates
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
-          !!! Particle cutoff radii
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
 #if __ACTION == __GET
@@ -133,6 +158,7 @@
           !---------------------------------------------------------------------
           CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, & 
  &                               clist%max_depth, info)
+
 
           !---------------------------------------------------------------------
           !  Compute offset coordinates, which will be used to find neighbor cells
@@ -233,7 +259,6 @@
 
               ! Get particles in the neighbor cell
               CALL getParticlesInCell(n_idx, xp, clist, neigh_plist, neigh_nplist)
-
               ! For each particle in the reference cell
               DO m = 1, own_nplist
                   ! Pick a reference particle
@@ -350,6 +375,7 @@
                           ! If they are neighbors and ...
                           IF(isNeighbor(p_ref, p_neigh, xp, cutoff, skin))  THEN
                               ! If reference particle is real ...
+
                               IF(p_ref .LE. clist%n_real_p) THEN
                                   ! Store neighbor particle in verlet list
                                   ! of reference particle
@@ -380,6 +406,25 @@
           DO i = 1, own_nplist
               used(own_plist(i)) = .TRUE.
           END DO
+
+#if __ANISO == __YES
+
+#if   __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE count_neigh_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE count_neigh_d_aniso
+#endif
+#elif __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE get_neigh_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE get_neigh_d_aniso
+#endif
+#endif
+
+#elif __ANISO == __NO
+
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE count_neigh_s
@@ -393,6 +438,31 @@
       END SUBROUTINE get_neigh_d
 #endif
 #endif
+#endif
+
+
+#if __ANISO == __YES
+
+#if  __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+          SUBROUTINE count_neigh_sym_s_aniso(p_idx, clist, domain, actual_domain,   &
+          &xp, cutoff, skin, nvlist)
+#elif   __KIND == __DOUBLE_PRECISION
+          SUBROUTINE count_neigh_sym_d_aniso(p_idx, clist, domain, actual_domain,   &
+          &xp, cutoff, skin, nvlist)
+#endif
+#elif __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+          SUBROUTINE get_neigh_sym_s_aniso(p_idx, clist, domain, actual_domain,   &
+          &xp, cutoff, skin, vlist, nvlist)
+#elif   __KIND == __DOUBLE_PRECISION
+          SUBROUTINE get_neigh_sym_d_aniso(p_idx, clist, domain, actual_domain,   &
+          &xp, cutoff, skin, vlist, nvlist)
+#endif
+#endif
+
+#elif __ANISO == __NO
+
 
 #if  __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
@@ -411,6 +481,10 @@
           &xp, cutoff, skin, vlist, nvlist)
 #endif
 #endif
+
+
+#endif
+
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -430,8 +504,13 @@
           !!! Physical extent of actual domain excluding ghost layers
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
           !!! Particle coordinates
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
-          !!! Particle cutoff radii
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
 #if __ACTION == __GET
@@ -809,6 +888,24 @@
           DO i = 1, own_nplist
               used(own_plist(i)) = .TRUE.
           END DO
+#if __ANISO == __YES
+
+#if   __ACTION == __COUNT
+#if   __KIND == __SINGLE_PRECISION
+        END SUBROUTINE count_neigh_sym_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+        END SUBROUTINE count_neigh_sym_d_aniso
+#endif
+#elif   __ACTION == __GET
+#if   __KIND == __SINGLE_PRECISION
+        END SUBROUTINE get_neigh_sym_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+        END SUBROUTINE get_neigh_sym_d_aniso
+#endif
+#endif
+
+#elif __ANISO == __NO
+
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
         END SUBROUTINE count_neigh_sym_s
@@ -821,4 +918,6 @@
 #elif   __KIND == __DOUBLE_PRECISION
         END SUBROUTINE get_neigh_sym_d
 #endif
+#endif
+
 #endif

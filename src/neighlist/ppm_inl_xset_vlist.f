@@ -27,7 +27,29 @@
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
 
-
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+#if   __MODE == __INL
+      SUBROUTINE inl_xset_vlist_s_aniso(topoid,red,nred,mred, &
+ &                   blue,nblue,mblue,rcblue,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#elif __MODE == __HNL
+      SUBROUTINE hnl_xset_vlist_s_aniso(topoid,red,nred,mred, &
+ &                   blue,nblue,mblue,cutoff,dim_len,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#endif
+#elif __KIND == __DOUBLE_PRECISION
+#if   __MODE == __INL
+      SUBROUTINE inl_xset_vlist_d_aniso(topoid,red,nred,mred,&
+ &                   blue,nblue,mblue,rcblue,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#elif __MODE == __HNL
+      SUBROUTINE hnl_xset_vlist_d_aniso(topoid,red,nred,mred,&
+ &                   blue,nblue,mblue,cutoff,dim_len,skin,    &
+ &                   ghostlayer,info,vlist,nvlist,lstore)
+#endif
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
 #if   __MODE == __INL
       SUBROUTINE inl_xset_vlist_s(topoid,red,nred,mred, &
@@ -47,6 +69,7 @@
       SUBROUTINE hnl_xset_vlist_d(topoid,red,nred,mred,&
  &                   blue,nblue,mblue,cutoff,skin,    &
  &                   ghostlayer,info,vlist,nvlist,lstore)
+#endif
 #endif
 #endif
       !!! Inhomogeneous cross-set neighborlists. This routine provides
@@ -79,12 +102,27 @@
       !!! Number of real blue particles
       INTEGER , INTENT(IN)                       :: mblue
       !!! Number of all blue particles including ghost particles
+
 #if   __MODE == __INL
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: rcblue
+      !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
       REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
       !!! Blue particle cutoff radii array
+#endif
+
 #elif __MODE == __HNL
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      !!! Blue particle cutoff radii homogenous, only 1 ellpise
+      INTEGER , INTENT(IN)                      :: dim_len
+      !!! just used to make interfaces not ambigous, length of tensor array
+#elif __ANISO == __NO
       REAL(MK), INTENT(IN)                       :: cutoff
       !!! Blue particle cutoff radii scalar
+#endif
+      
 #endif
       REAL(MK), INTENT(IN)                       :: skin
       !!! Skin parameter
@@ -108,8 +146,13 @@
       REAL(MK), DIMENSION(2*ppm_dim)             :: curr_sub
       REAL(MK), DIMENSION(:,:), POINTER          :: red_sub    => NULL()
       REAL(MK), DIMENSION(:,:), POINTER          :: blue_sub   => NULL()
+#if __ANISO == __YES 
+      REAL(MK), DIMENSION(:,:)  , POINTER        :: rcred_sub => NULL()
+      REAL(MK), DIMENSION(:,:)  , POINTER        :: rcblue_sub => NULL()
+#elif __ANISO == __NO
       REAL(MK), DIMENSION(:)  , POINTER          :: rcred_sub => NULL()
       REAL(MK), DIMENSION(:)  , POINTER          :: rcblue_sub => NULL()
+#endif
       INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
       INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
       INTEGER , DIMENSION(:)  , POINTER          :: red_p_id   => NULL()
@@ -127,10 +170,19 @@
       INTEGER                                    :: isub
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
+#if __ANISO == __YES
+      REAL(MK), POINTER   , DIMENSION(:,:)       :: rcred => NULL()
+#elif __ANISO == __NO
       REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
+#endif
       REAL(MK)                                   :: max_sub_size
 #if   __MODE == __HNL
+#if __ANISO == __YES
+      REAL(MK), POINTER, DIMENSION(:,:),SAVE     :: rcblue
+#elif __ANISO == __NO
       REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
+#endif
+
 #endif
 
       !-------------------------------------------------------------------------
@@ -145,6 +197,39 @@
       !create an array of homogeneous cutoffs
       ! TODO: this is an inefficient hack
       ! (one would need to use the routines for homogeneous lists instead)
+#if __ANISO == __YES
+      IF (ppm_rank .EQ. 2) THEN
+         lda(1) = 4
+      ELSE
+         lda(1) = 9
+      ENDIF
+      lda(2) = mblue
+      iopt = ppm_param_alloc_grow
+      CALL ppm_alloc(rcblue,lda,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
+    &                       'rcblue',__LINE__,info)
+      END IF
+
+      ! Copy the transform matrix
+      IF (ppm_rank .EQ. 2) THEN
+         rcblue(1,:) = cutoff(1)
+         rcblue(2,:) = cutoff(2)
+         rcblue(3,:) = cutoff(3)
+         rcblue(4,:) = cutoff(4)
+      ELSE
+         rcblue(1,:) = cutoff(1)
+         rcblue(2,:) = cutoff(2)
+         rcblue(3,:) = cutoff(3)
+         rcblue(4,:) = cutoff(4)
+         rcblue(5,:) = cutoff(5)
+         rcblue(6,:) = cutoff(6)
+         rcblue(7,:) = cutoff(7)
+         rcblue(8,:) = cutoff(8)
+         rcblue(9,:) = cutoff(9)
+      ENDIF
+#elif __ANISO == __NO
       lda(1) = mblue
       iopt = ppm_param_alloc_grow
       CALL ppm_alloc(rcblue,lda,iopt,info)
@@ -154,6 +239,8 @@
     &                       'rcblue',__LINE__,info)
       END IF
       rcblue = cutoff
+#endif
+
 #endif
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
@@ -166,8 +253,18 @@
           CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
     &                       'nvlist',__LINE__,info)
       END IF
+#if __ANISO == __YES
+      IF (ppm_rank .EQ. 2) THEN
+         lda(1) = 4
+      ELSE
+         lda(1) = 9
+      ENDIF
+      lda(2) = mred
+      CALL ppm_alloc(rcred, lda, iopt, info)
+#elif __ANISO == __NO
       lda(1) = mred
       CALL ppm_alloc(rcred, lda, iopt, info)
+#endif
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
@@ -191,7 +288,28 @@
 #endif
       ENDDO
 
+
+#if __ANISO == __YES
+      IF (ppm_rank .EQ. 2) THEN
+         rcred(1,:) = 1/max_sub_size
+         rcred(2,:) = 0
+         rcred(3,:) = 0
+         rcred(4,:) = 1/max_sub_size
+      ELSE
+         rcred(1,:) = 1/max_sub_size
+         rcred(2,:) = 0
+         rcred(3,:) = 0
+         rcred(4,:) = 0
+         rcred(5,:) = 1/max_sub_size
+         rcred(6,:) = 0
+         rcred(7,:) = 0
+         rcred(8,:) = 0
+         rcred(9,:) = 1/max_sub_size
+      ENDIF
+#elif __ANISO == __NO
       rcred(1:mred) = max_sub_size
+#endif
+
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
       ! (neigh_max) is set to 0.
@@ -275,6 +393,22 @@
           END IF
       ENDDO
       CALL substop('ppm_inl_vlist',t0,info)
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+#if   __MODE == __INL
+      END SUBROUTINE inl_xset_vlist_s_aniso
+#elif __MODE == __HNL
+      END SUBROUTINE hnl_xset_vlist_s_aniso
+#endif
+#elif __KIND == __DOUBLE_PRECISION
+#if   __MODE == __INL
+      END SUBROUTINE inl_xset_vlist_d_aniso
+#elif __MODE == __HNL
+      END SUBROUTINE hnl_xset_vlist_d_aniso
+#endif
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
 #if   __MODE == __INL
       END SUBROUTINE inl_xset_vlist_s
@@ -288,9 +422,24 @@
       END SUBROUTINE hnl_xset_vlist_d
 #endif
 #endif
+#endif
 
       !if __MODE == _HNL -> skip till end of file
 #if   __MODE == __INL
+
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE create_inl_xset_vlist_s_aniso(red,nred,mred,rcred,blue,nblue,&
+ &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+ &                        vlist, nvlist, lstore)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE create_inl_xset_vlist_d_aniso(red,nred,mred,rcred,blue,nblue,&
+ &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+ &                        vlist, nvlist, lstore)
+#endif
+
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_xset_vlist_s(red,nred,mred,rcred,blue,nblue,&
  &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
@@ -299,6 +448,7 @@
       SUBROUTINE create_inl_xset_vlist_d(red,nred,mred,rcred,blue,nblue,&
  &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
  &                        vlist, nvlist, lstore)
+#endif
 #endif
       !!! This subroutine creates verlet lists for particles whose coordinates
       !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -322,16 +472,26 @@
           !!! Number of real red particles
           INTEGER , INTENT(IN)                       :: mred
           !!! Number of all red particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: rcred
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)         :: rcred
-          !!! Red particles cutoff radii
+          !!! Blue particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN), DIMENSION(:,:)       :: blue
           !!! Coordinates array for refernece particles (blue)
           INTEGER , INTENT(IN)                       :: nblue
           !!! Number of real blue particles
           INTEGER , INTENT(IN)                       :: mblue
           !!! Number of all blue particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: rcblue
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)         :: rcblue
-          !!! blue particles cutoff radii
+          !!! Blue particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN)                       :: skin
           !!! Skin parameter
           REAL(MK), DIMENSION(2*ppm_dim)             :: curr_dom
@@ -577,12 +737,31 @@
 9999  CONTINUE
       CALL substop('create_inl_vlist',t0,info)
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE create_inl_xset_vlist_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE create_inl_xset_vlist_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE create_inl_xset_vlist_s
 #elif   __KIND == __DOUBLE_PRECISION
       END SUBROUTINE create_inl_xset_vlist_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE get_xset_VerletLists_s_aniso(red, rcred, red_clist, blue, rcblue, &
+ &                                blue_clist, skin, whole_domain,    &
+ &                                curr_dom, vlist, nvlist, lstore,info)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE get_xset_VerletLists_d_aniso(red, rcred, red_clist, blue, rcblue, &
+ &                                blue_clist, skin, whole_domain,    &
+ &                                curr_dom, vlist, nvlist, lstore,info)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE get_xset_VerletLists_s(red, rcred, red_clist, blue, rcblue, &
  &                                blue_clist, skin, whole_domain,    &
@@ -591,6 +770,7 @@
       SUBROUTINE get_xset_VerletLists_d(red, rcred, red_clist, blue, rcblue, &
  &                                blue_clist, skin, whole_domain,    &
  &                                curr_dom, vlist, nvlist, lstore,info)
+#endif
 #endif
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
@@ -607,14 +787,24 @@
       !-------------------------------------------------------------------------
           REAL(MK), INTENT(IN), DIMENSION(:,:)  :: red
           !!! coordinates array of red particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: rcred
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)    :: rcred
-          !!! Red particles cutoff radii
+          !!! Blue particle cutoff radii array
+#endif
           TYPE(ppm_clist), INTENT(IN)           :: red_clist
           !!! Red particle cell list
           REAL(MK), INTENT(IN), DIMENSION(:,:)  :: blue
           !!! coordinates array of blue particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: rcblue
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)    :: rcblue
-          !!! Blue particles cutoff radii
+          !!! Blue particle cutoff radii array
+#endif
           TYPE(ppm_clist), INTENT(IN)           :: blue_clist
           !!! Blue particle cell list
           REAL(MK), INTENT(IN)                  :: skin
@@ -741,10 +931,17 @@
 
 9999      CONTINUE
           CALL substop('get_xset_VerletLists',t0,info)
-
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE get_xset_VerletLists_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE get_xset_VerletLists_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE get_xset_VerletLists_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE get_xset_VerletLists_d
+#endif
 #endif
 #endif

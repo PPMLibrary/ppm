@@ -31,6 +31,8 @@
       !!! This module is used to create cell lists stored in various depths, providing
       !!! ease of USE to form inhomogeneous cell lists
 
+#define __YES 1
+#define __NO 2
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
@@ -94,6 +96,8 @@
         END TYPE
 
         INTERFACE ppm_create_inl_clist
+            MODULE PROCEDURE create_inl_clist_s_aniso
+            MODULE PROCEDURE create_inl_clist_d_aniso
             MODULE PROCEDURE create_inl_clist_s
             MODULE PROCEDURE create_inl_clist_d
         END INTERFACE
@@ -109,6 +113,8 @@
         END INTERFACE
 
         INTERFACE getMinimumRC
+            MODULE PROCEDURE getMinimumRC_s_aniso
+            MODULE PROCEDURE getMinimumRC_d_aniso
             MODULE PROCEDURE getMinimumRC_s
             MODULE PROCEDURE getMinimumRC_d
         END INTERFACE
@@ -119,11 +125,15 @@
         END INTERFACE
 
         INTERFACE SortByPosition
+            MODULE PROCEDURE SortByPosition_s_aniso
+            MODULE PROCEDURE SortByPosition_d_aniso
             MODULE PROCEDURE SortByPosition_s
             MODULE PROCEDURE SortByPosition_d
         END INTERFACE
 
         INTERFACE SortByRC_Pos
+            MODULE PROCEDURE SortByRC_Pos_s_aniso
+            MODULE PROCEDURE SortByRC_Pos_d_aniso
             MODULE PROCEDURE SortByRC_Pos_s
             MODULE PROCEDURE SortByRC_Pos_d
         END INTERFACE
@@ -134,21 +144,29 @@
         END INTERFACE
 
         INTERFACE sortByRC
+            MODULE PROCEDURE sortByRC_s_aniso
+            MODULE PROCEDURE sortByRC_d_aniso
             MODULE PROCEDURE sortByRC_s
             MODULE PROCEDURE sortByRC_d
         END INTERFACE
 
         INTERFACE partitionByRC
+            MODULE PROCEDURE partitionByRC_s_aniso
+            MODULE PROCEDURE partitionByRC_d_aniso
             MODULE PROCEDURE partitionByRC_s
             MODULE PROCEDURE partitionByRC_d
         END INTERFACE
 
         INTERFACE lastIdxForRC
+            MODULE PROCEDURE lastIdxForRC_s_aniso
+            MODULE PROCEDURE lastIdxForRC_d_aniso
             MODULE PROCEDURE lastIdxForRC_s
             MODULE PROCEDURE lastIdxForRC_d
         END INTERFACE
 
         INTERFACE getRC_Borders
+            MODULE PROCEDURE getRC_Borders_s_aniso
+            MODULE PROCEDURE getRC_Borders_d_aniso
             MODULE PROCEDURE getRC_Borders_s
             MODULE PROCEDURE getRC_Borders_d
         END INTERFACE
@@ -159,16 +177,32 @@
         END INTERFACE
 
         INTERFACE getMaxDepth
+            MODULE PROCEDURE getMaxDepth_s_aniso
+            MODULE PROCEDURE getMaxDepth_d_aniso
             MODULE PROCEDURE getMaxDepth_s
             MODULE PROCEDURE getMaxDepth_d
         END INTERFACE
 
+        INTERFACE particles_longer_axis
+            MODULE PROCEDURE particles_longer_axis_s
+            MODULE PROCEDURE particles_longer_axis_d
+        END INTERFACE
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters of the module
         !-------------------------------------------------------------------------
 
         CONTAINS
 
+#define __ANISO __YES
+#define __KIND __SINGLE_PRECISION
+#include "neighlist/ppm_inl_clist.f"
+#undef  __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "neighlist/ppm_inl_clist.f"
+#undef  __KIND
+#undef __ANISO
+
+#define __ANISO __NO
 #define __KIND __SINGLE_PRECISION
 #include "neighlist/ppm_inl_clist.f"
 #undef  __KIND
@@ -178,5 +212,9 @@
 
 #undef __SINGLE_PRECISION
 #undef __DOUBLE_PRECISION
+#undef __ANISO
+#undef __YES
+#undef __NO
+
 
       END MODULE ppm_module_inl_clist

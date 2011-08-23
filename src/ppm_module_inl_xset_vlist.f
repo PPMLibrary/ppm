@@ -36,6 +36,9 @@
 #define __GET 4
 #define __INL 5
 #define __HNL 6
+#define __YES 1
+#define __NO 2
+
         !-------------------------------------------------------------------------
         !  Used modules
         !-------------------------------------------------------------------------
@@ -73,6 +76,10 @@
         !  Declaration of interfaces
         !-------------------------------------------------------------------------
         INTERFACE ppm_inl_xset_vlist
+            MODULE PROCEDURE inl_xset_vlist_s_aniso
+            MODULE PROCEDURE inl_xset_vlist_d_aniso
+            MODULE PROCEDURE hnl_xset_vlist_s_aniso
+            MODULE PROCEDURE hnl_xset_vlist_d_aniso
             MODULE PROCEDURE inl_xset_vlist_s
             MODULE PROCEDURE inl_xset_vlist_d
             MODULE PROCEDURE hnl_xset_vlist_s
@@ -80,27 +87,37 @@
         END INTERFACE
 
         INTERFACE create_inl_xset_vlist
+            MODULE PROCEDURE create_inl_xset_vlist_s_aniso
+            MODULE PROCEDURE create_inl_xset_vlist_d_aniso
             MODULE PROCEDURE create_inl_xset_vlist_s
             MODULE PROCEDURE create_inl_xset_vlist_d
         END INTERFACE
 
         INTERFACE get_xset_VerletLists
+            MODULE PROCEDURE get_xset_VerletLists_s_aniso
+            MODULE PROCEDURE get_xset_VerletLists_d_aniso
             MODULE PROCEDURE get_xset_VerletLists_s
             MODULE PROCEDURE get_xset_VerletLists_d
         END INTERFACE
 
 
         INTERFACE count_xset_neigh
+            MODULE PROCEDURE count_xset_neigh_s_aniso
+            MODULE PROCEDURE count_xset_neigh_d_aniso
             MODULE PROCEDURE count_xset_neigh_s
             MODULE PROCEDURE count_xset_neigh_d
         END INTERFACE
 
         INTERFACE get_xset_neigh
+            MODULE PROCEDURE get_xset_neigh_s_aniso
+            MODULE PROCEDURE get_xset_neigh_d_aniso
             MODULE PROCEDURE get_xset_neigh_s
             MODULE PROCEDURE get_xset_neigh_d
         END INTERFACE
         
         INTERFACE getParticleCoorDepth
+            MODULE PROCEDURE getParticleCoorDepth_s_aniso
+            MODULE PROCEDURE getParticleCoorDepth_d_aniso
             MODULE PROCEDURE getParticleCoorDepth_s
             MODULE PROCEDURE getParticleCoorDepth_d
         END INTERFACE
@@ -111,6 +128,8 @@
         END INTERFACE
 
         INTERFACE getSubdomainParticles
+            MODULE PROCEDURE getSubdomainParticles_s_aniso
+            MODULE PROCEDURE getSubdomainParticles_d_aniso
             MODULE PROCEDURE getSubdomainParticles_s
             MODULE PROCEDURE getSubdomainParticles_d
         END INTERFACE
@@ -121,6 +140,8 @@
         END INTERFACE
         
         INTERFACE is_xset_Neighbor
+            MODULE PROCEDURE is_xset_Neighbor_s_aniso
+            MODULE PROCEDURE is_xset_Neighbor_d_aniso
             MODULE PROCEDURE is_xset_Neighbor_s
             MODULE PROCEDURE is_xset_Neighbor_d
         END INTERFACE
@@ -142,7 +163,40 @@
 !!! to be completed when test driver is removed!
 
         CONTAINS
+#define __ANISO __YES
+#define __KIND __SINGLE_PRECISION
+#define __MODE __INL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#define __MODE __HNL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#include "neighlist/ppm_inl_helpers.f"
+#define __ACTION __COUNT
+#include "neighlist/ppm_inl_xset_vlist_build.f"
+#undef __ACTION
+#define __ACTION __GET
+#include "neighlist/ppm_inl_xset_vlist_build.f"
+#undef __ACTION
+#undef  __KIND
+#define __KIND __DOUBLE_PRECISION
+#define __MODE __INL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#define __MODE __HNL
+#include "neighlist/ppm_inl_xset_vlist.f"
+#undef __MODE
+#include "neighlist/ppm_inl_helpers.f"
+#define __ACTION __COUNT
+#include "neighlist/ppm_inl_xset_vlist_build.f"
+#undef __ACTION
+#define __ACTION __GET
+#include "neighlist/ppm_inl_xset_vlist_build.f"
+#undef __ACTION
+#undef  __KIND
+#undef __ANISO
 
+#define __ANISO __NO
 #define __KIND __SINGLE_PRECISION
 #define __MODE __INL
 #include "neighlist/ppm_inl_xset_vlist.f"
@@ -180,4 +234,8 @@
 #undef __GET
 #undef __INL
 #undef __HNL
+#undef __ANISO
+#undef __YES
+#undef __NO
+
       END MODULE ppm_module_inl_xset_vlist

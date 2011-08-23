@@ -2612,7 +2612,7 @@ SUBROUTINE particles_neighlists(Particles,topoid,info,&
     !
     USE ppm_module_neighlist
     USE ppm_module_inl_vlist
-    USE ppm_module_inl_k_vlist
+!     USE ppm_module_inl_k_vlist
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2742,10 +2742,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                ENDIF
                FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
                 
-                CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
-                    Particles%Mpart,tmp_cutoff,&
-                    knn,symmetry,ghostlayer,info,Particles%vlist,&
-                    Particles%nvlist)
+!                 CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
+!                     Particles%Mpart,tmp_cutoff,&
+!                     knn,symmetry,ghostlayer,info,Particles%vlist,&
+!                     Particles%nvlist)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -2753,16 +2753,33 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     GOTO 9999
                 ENDIF
             ELSE
+
                 CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
                     Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
                     Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
                     Particles%nvlist)
+                
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_sub_failed,caller,&
                         'ppm_inl_vlist failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
+            ENDIF
+
+        
+        ELSEIF (Particles%anisotropic) THEN
+            ghostlayer(1:2*ppm_dim)=Particles%cutoff
+            CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
+                    Particles%Mpart,Particles%wpv(Particles%G_id)%vec,&
+                    Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
+                    Particles%nvlist)
+            
+            IF (info .NE. 0) THEN
+               info = ppm_error_error
+               CALL ppm_error(ppm_err_sub_failed,caller,&
+                  'ppm_inl_vlist failed',__LINE__,info)
+               GOTO 9999
             ENDIF
         ELSE
            
@@ -2777,16 +2794,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDIF
 
         ENDIF
-
-        IF (Particles%anisotropic) THEN
-               ! this is the anisotropic neighbor search
-               ! No matter if adaptive or not
-
-               !use ppm_inl_vlist
-
-               
-        ENDIF
-
 
         !restore subdomain sizes (revert hack)
         IF (PRESENT(incl_ghosts)) THEN
@@ -2858,7 +2865,7 @@ SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,&
     ! * Ghost positions for Particles_2 have been computed
     !
     USE ppm_module_inl_xset_vlist
-    USE ppm_module_inl_xset_k_vlist
+!     USE ppm_module_inl_xset_k_vlist
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2961,21 +2968,21 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             IF (ensure_knn) THEN
                 !FIXME when kd trees are implemented
 
-    ldc(1) = Particles_2%Mpart
-    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    FORALL(i=1:Particles_2%Mpart) tmp_cutoff(i) = Particles_2%h_avg
-                CALL ppm_inl_xset_k_vlist(topoid,Particles_1%xp,&
-                    Particles_1%Npart,Particles_1%Mpart,Particles_2%xp,&
-                    Particles_2%Npart,&
-                    Particles_2%Mpart,tmp_cutoff,&
-                    knn,ghostlayer,info,Particles_1%vlist_cross,&
-                    Particles_1%nvlist_cross)
+                ldc(1) = Particles_2%Mpart
+                CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+                IF (info .NE. 0) THEN
+                   info = ppm_error_error
+                   CALL ppm_error(ppm_err_alloc,caller,   &
+                         &            'failed to allocate ops%desc',__LINE__,info)
+                   GOTO 9999
+                ENDIF
+                FORALL(i=1:Particles_2%Mpart) tmp_cutoff(i) = Particles_2%h_avg
+!                 CALL ppm_inl_xset_k_vlist(topoid,Particles_1%xp,&
+!                     Particles_1%Npart,Particles_1%Mpart,Particles_2%xp,&
+!                     Particles_2%Npart,&
+!                     Particles_2%Mpart,tmp_cutoff,&
+!                     knn,ghostlayer,info,Particles_1%vlist_cross,&
+!                     Particles_1%nvlist_cross)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,&
@@ -2983,11 +2990,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     GOTO 9999
                 ENDIF
             ELSE
-                CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
-                    Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
-                    Particles_2%Mpart,Particles_2%wps(Particles_2%rcp_id)%vec,&
-                    Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
-                    Particles_1%nvlist_cross,lstore)
+
+               CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
+                        Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
+                        Particles_2%Mpart,Particles_2%wps(Particles_2%rcp_id)%vec,&
+                        Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
+                        Particles_1%nvlist_cross,lstore)
+               
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(999,caller,&
@@ -2995,6 +3004,22 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     GOTO 9999
                 ENDIF
             ENDIF
+
+        
+        ELSEIF (Particles_2%anisotropic) THEN
+             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
+             CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
+                        Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
+                        Particles_2%Mpart,Particles_2%wpv(Particles_2%G_id)%vec,&
+                        Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
+                        Particles_1%nvlist_cross,lstore)
+               
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,&
+                        'ppm_inl_xset_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
         ELSE
             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
             CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
@@ -3389,8 +3414,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !!!
     CHARACTER(LEN = ppm_char)             :: caller = 'particles_update_cutoff'
-    REAL(KIND(1.D0))                      :: t0
-    INTEGER                               :: prop_id
+    REAL(KIND(1.D0))                      :: t0, ratio
+    INTEGER                               :: prop_id, ip
+    REAL(MK),DIMENSION(:,:),POINTER       :: inv=>NULL()
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -3412,6 +3438,36 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-----------------------------------------------------------------------
     IF (Particles%adaptive) THEN
         Particles%wps(Particles%rcp_id)%vec = cutoff
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Update cutoffs of anisotropic particles
+    !-----------------------------------------------------------------------
+    IF (Particles%anisotropic) THEN
+         ratio = 1/cutoff
+         IF(ppm_dim .EQ. 2) THEN
+            inv => get_wpv(Particles,Particles%G_id)
+            FORALL(ip=1:Particles%Npart) 
+                  inv(1,ip) = ratio;
+                  inv(2,ip) = 0;
+                  inv(3,ip) = 0;
+                  inv(4,ip) = ratio;
+            END FORALL
+         ELSE
+            inv => get_wpv(Particles,Particles%G_id)
+            FORALL(ip=1:Particles%Npart) 
+                  inv(1,ip) = ratio;
+                  inv(2,ip) = 0;
+                  inv(3,ip) = 0;
+                  inv(4,ip) = 0;
+                  inv(5,ip) = ratio;
+                  inv(6,ip) = 0;
+                  inv(7,ip) = 0;
+                  inv(8,ip) = 0;
+                  inv(9,ip) = ratio;
+            END FORALL
+         ENDIF
+         
     ENDIF
 
     !-----------------------------------------------------------------------
@@ -3476,9 +3532,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !-------------------------------------------------------------------------
     !!!
     CHARACTER(LEN = ppm_char)             :: caller = 'particles_updated_cutoff'
-    REAL(MK)                              :: cutoff_new
+    REAL(MK)                              :: cutoff_new, cutoff_temp
     REAL(KIND(1.D0))                      :: t0
-    INTEGER                               :: prop_id
+    INTEGER                               :: prop_id,i
+    REAL(MK),DIMENSION(:,:),POINTER       :: inv=>NULL()
+    REAL(MK),DIMENSION(:),POINTER         :: axes
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -3509,12 +3567,44 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 GOTO 9999
             ENDIF
 #endif
+        ELSEIF (Particles%anisotropic) THEN
+            ! get the maximum axis of all anisotropic particles
+            cutoff_new = 0;
+            ! get the anisotropic information stored as inverse matrix
+            inv => get_wpv(Particles,Particles%G_id)
+            DO i = 1,Particles%Npart
+
+               ! get the real axes and calc length of longer axes
+               CALL particles_inverse_matrix(inv(:,i),axes,info)
+
+               IF (ppm_dim .EQ. 2) THEN
+                  cutoff_temp = sqrt(axes(1)*axes(1) + axes(3)*axes(3))
+               ELSE
+                  cutoff_temp = sqrt(axes(1)*axes(1) + axes(4)*axes(4) + axes(7)*axes(7))
+               ENDIF
+
+               IF (cutoff_new .LT. cutoff_temp) THEN
+                  cutoff_new = cutoff_temp
+               ENDIF
+            ENDDO
+
+#ifdef __MPI
+            CALL MPI_Allreduce(cutoff_new,cutoff_new,1,ppm_mpi_kind,&
+                MPI_MAX,ppm_comm,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'MPI_Allreduce failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+#endif
+
         ELSE
             CALL ppm_write(ppm_rank,caller,'NOTICE: call particles_update_cutoff() &
             &   instead to avoid rebuilding ghost layers' ,info)
             cutoff_new = Particles%cutoff
         ENDIF
     ENDIF
+
 
     ! Update states
     ! If cutoff has increased, then ghosts may no longer be 
@@ -3756,11 +3846,8 @@ SUBROUTINE particles_initialize_anisotropic(Particles,Npart_global,cutoff,info,&
     !!! cutoff of the particles used for tensor init
     CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
     !!! name for this set of particles
-
     ! Local
     INTEGER                                                :: ip
-    REAL(MK),DIMENSION(:,:),POINTER                        :: inv=>NULL()
-    REAL                                                   :: ratio
 
     IF (ppm_dim .eq. 2) THEN
         CALL  particles_initialize2d(Particles,Npart_global,info,&
@@ -3768,18 +3855,9 @@ SUBROUTINE particles_initialize_anisotropic(Particles,Npart_global,cutoff,info,&
 
         ! init inverse matrix which transforms distances to anisotropic case
         Particles%G_id = 0
-        call particles_allocate_wpv(Particles,Particles%G_id,4,info,name='inv_tensor')
+        CALL particles_allocate_wpv(Particles,Particles%G_id,4,info,name='inv_tensor')
 
-        write(*,*) Particles%Npart
-
-        ratio = 1/cutoff
-        inv => get_wpv(Particles,Particles%G_id)
-        FORALL(ip=1:Particles%Npart) 
-            inv(1,ip) = ratio;
-            inv(2,ip) = 0;
-            inv(3,ip) = 0;
-            inv(4,ip) = ratio;
-        END FORALL
+        CALL particles_update_cutoff(Particles,cutoff,info)
 
     ELSE
         CALL  particles_initialize3d(Particles,Npart_global,info,&
@@ -3787,21 +3865,9 @@ SUBROUTINE particles_initialize_anisotropic(Particles,Npart_global,cutoff,info,&
 
         ! init inverse matrix which transforms distances to anisotropic case
         Particles%G_id = 0
-        call particles_allocate_wpv(Particles,Particles%G_id,9,info,name='inv_tensor')
+        CALL particles_allocate_wpv(Particles,Particles%G_id,9,info,name='inv_tensor')
 
-        ratio = 1/cutoff
-        inv => get_wpv(Particles,Particles%G_id)
-        FORALL(ip=1:Particles%Npart) 
-            inv(1,ip) = ratio;
-            inv(2,ip) = 0;
-            inv(3,ip) = 0;
-            inv(4,ip) = 0;
-            inv(5,ip) = ratio;
-            inv(6,ip) = 0;
-            inv(7,ip) = 0;
-            inv(8,ip) = 0;
-            inv(9,ip) = ratio;
-        END FORALL
+        CALL particles_update_cutoff(Particles,cutoff,info)
 
     ENDIF
 
@@ -5075,6 +5141,228 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
 
 
 END SUBROUTINE particles_apply_dcops
+
+!haeckic: add a give axes of anisotropic particle function
+SUBROUTINE particles_inverse_matrix(Matrix_A,Matrix_B,info)
+
+   !!! Calculates inverse of matrix A into new allocated B
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    REAL(MK),DIMENSION(:) ,            INTENT(IN)       :: Matrix_A
+    !!! matrix to be inverted
+    REAL(MK),DIMENSION(:),POINTER,     INTENT(OUT)      :: Matrix_B
+    !!! resulting matrix
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_inverse_matrix'
+    REAL(MK)                                :: t0, det
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+    IF (ppm_dim .EQ. 2) THEN
+
+      ! alloc Matrix_B
+      CALL ppm_alloc(Matrix_B,(/ 4 /),ppm_param_alloc_fit,info)
+
+      ! set Matrix_B
+      ! det(A) = t11*t22 - t12*t21
+      det = Matrix_A(1)*Matrix_A(4) - Matrix_A(2)*Matrix_A(3)
+
+      Matrix_B(1) = (1/det)*Matrix_A(4)
+      Matrix_B(2) = -(1/det)*Matrix_A(2)
+      Matrix_B(3) = -(1/det)*Matrix_A(3)
+      Matrix_B(4) = (1/det)*Matrix_A(1)
+
+    ELSE
+      ! alloc Matrix_B
+      CALL ppm_alloc(Matrix_B,(/ 9 /),ppm_param_alloc_fit,info)
+      ! det(A) = aei + bfg + cdh − gec − hfa − idb. 
+      det = Matrix_A(1)*Matrix_A(5)*Matrix_A(9) + Matrix_A(2)*Matrix_A(6)*Matrix_A(7) &
+   &      + Matrix_A(3)*Matrix_A(4)*Matrix_A(8) - Matrix_A(3)*Matrix_A(5)*Matrix_A(7) &
+   &      - Matrix_A(1)*Matrix_A(6)*Matrix_A(8) - Matrix_A(2)*Matrix_A(4)*Matrix_A(9)
+
+      Matrix_B(1) = (1/det)*(Matrix_A(5)*Matrix_A(9) - Matrix_A(6)*Matrix_A(8))
+      Matrix_B(2) = (1/det)*(Matrix_A(3)*Matrix_A(8) - Matrix_A(2)*Matrix_A(9))
+      Matrix_B(3) = (1/det)*(Matrix_A(2)*Matrix_A(6) - Matrix_A(3)*Matrix_A(5))
+      Matrix_B(4) = (1/det)*(Matrix_A(6)*Matrix_A(7) - Matrix_A(4)*Matrix_A(9))
+      Matrix_B(5) = (1/det)*(Matrix_A(1)*Matrix_A(9) - Matrix_A(3)*Matrix_A(7))
+      Matrix_B(6) = (1/det)*(Matrix_A(3)*Matrix_A(4) - Matrix_A(1)*Matrix_A(6))
+      Matrix_B(7) = (1/det)*(Matrix_A(4)*Matrix_A(8) - Matrix_A(5)*Matrix_A(7))
+      Matrix_B(8) = (1/det)*(Matrix_A(2)*Matrix_A(7) - Matrix_A(1)*Matrix_A(8))
+      Matrix_B(9) = (1/det)*(Matrix_A(1)*Matrix_A(5) - Matrix_A(2)*Matrix_A(4))
+
+    ENDIF
+
+    CALL substop(caller,t0,info)
+
+
+END SUBROUTINE particles_inverse_matrix
+
+SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
+
+   !!! Calculates distance between particle i and j, using i_th Ellipse
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN)    :: i_th
+    !!! Index of origin particle, its ellipse is taken
+    INTEGER,                            INTENT(IN)    :: j_th
+    !!! Index of distanced particle
+    REAL(MK),                           INTENT(OUT)    :: dist
+    !!! Distance with respect to i_th inverse
+    INTEGER,                             INTENT(OUT)    :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_anisotropic_distance'
+    REAL(MK)                                :: t0
+    REAL(MK),DIMENSION(:,:),POINTER         :: inv => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER        :: xp => NULL()
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. Particles%anisotropic) THEN
+         info = ppm_error_error
+         CALL ppm_error(ppm_err_alloc,caller,&
+               'particles_anisotropic_distance failed, not anisotropic particles!',__LINE__,info)
+         GOTO 9999
+    ENDIF
+
+
+    inv => get_wpv(Particles,Particles%G_id,.TRUE.)
+    xp => get_xp(Particles,.TRUE.)
+
+    IF (ppm_dim .EQ. 2) THEN
+
+      dist = (inv(1,i_th)*(xp(1,j_th)-xp(1,i_th)) + inv(2,i_th)*(xp(2,j_th)-xp(2,i_th)))**2
+      dist = dist + (inv(3,i_th)*(xp(1,j_th)-xp(1,i_th)) + inv(4,i_th)*(xp(2,j_th)-xp(2,i_th)))**2
+      dist = sqrt(dist)
+
+    ELSE
+    
+      dist = (inv(1,i_th)*(xp(1,j_th)-xp(1,i_th)) + inv(2,i_th)*(xp(2,j_th)-xp(2,i_th)) &
+              & + inv(3,i_th)*(xp(3,j_th)-xp(3,i_th)))**2
+      dist = dist + (inv(4,i_th)*(xp(1,j_th)-xp(1,i_th)) + inv(5,i_th)*(xp(2,j_th)-xp(2,i_th)) &
+              & + inv(6,i_th)*(xp(3,j_th)-xp(3,i_th)))**2
+      dist = dist + (inv(7,i_th)*(xp(1,j_th)-xp(1,i_th)) + inv(8,i_th)*(xp(2,j_th)-xp(2,i_th)) &
+              & + inv(9,i_th)*(xp(3,j_th)-xp(3,i_th)))**2
+      dist = sqrt(dist)
+
+    ENDIF
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+END SUBROUTINE particles_anisotropic_distance
+
+SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,dist,info)
+
+   !!! Calculates distance of particle i in set Particles 1 to particle j in set 2
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles1
+    !!! Data structure containing the particles
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles2
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN)    :: i_th
+    !!! Index of origin particle, its ellipse is taken
+    INTEGER,                            INTENT(IN)    :: j_th
+    !!! Index of distanced particle
+    REAL(MK),                           INTENT(OUT)    :: dist
+    !!! Distance with respect to i_th inverse
+    INTEGER,                             INTENT(OUT)    :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_anisotropic_distance'
+    REAL(MK)                                :: t0
+    REAL(MK),DIMENSION(:,:),POINTER         :: inv1 => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER        :: xp1 => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER        :: xp2 => NULL()
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. Particles1%anisotropic .OR. .NOT. Particles2%anisotropic) THEN
+         info = ppm_error_error
+         CALL ppm_error(ppm_err_alloc,caller,&
+               'particles_anisotropic_distance failed, not anisotropic particles!',__LINE__,info)
+         GOTO 9999
+    ENDIF
+
+
+    inv1 => get_wpv(Particles1,Particles1%G_id,.TRUE.)
+    xp1 => get_xp(Particles1,.TRUE.)
+    xp2 => get_xp(Particles2)
+
+    IF (ppm_dim .EQ. 2) THEN
+
+      dist = (inv1(1,i_th)*(xp2(1,j_th)-xp1(1,i_th)) + inv1(2,i_th)*(xp2(2,j_th)-xp1(2,i_th)))**2
+      dist = dist + (inv1(3,i_th)*(xp2(1,j_th)-xp1(1,i_th)) + inv1(4,i_th)*(xp2(2,j_th)-xp1(2,i_th)))**2
+      dist = sqrt(dist)
+
+    ELSE
+    
+      dist = (inv1(1,i_th)*(xp2(1,j_th)-xp1(1,i_th)) + inv1(2,i_th)*(xp2(2,j_th)-xp1(2,i_th)) &
+              & + inv1(3,i_th)*(xp2(3,j_th)-xp1(3,i_th)))**2
+      dist = dist + (inv1(4,i_th)*(xp2(1,j_th)-xp1(1,i_th)) + inv1(5,i_th)*(xp2(2,j_th)-xp1(2,i_th)) &
+              & + inv1(6,i_th)*(xp2(3,j_th)-xp1(3,i_th)))**2
+      dist = dist + (inv1(7,i_th)*(xp2(1,j_th)-xp1(1,i_th)) + inv1(8,i_th)*(xp2(2,j_th)-xp1(2,i_th)) &
+              & + inv1(9,i_th)*(xp2(3,j_th)-xp1(3,i_th)))**2
+      dist = sqrt(dist)
+
+    ENDIF
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+END SUBROUTINE particles_sep_anisotropic_distance
+
 
 END MODULE ppm_module_particles
 

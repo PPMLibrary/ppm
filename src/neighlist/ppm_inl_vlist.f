@@ -27,6 +27,17 @@
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
 
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE inl_vlist_s_aniso(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
+     & ghostlayer, info, vlist, nvlist, lstore)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE inl_vlist_d_aniso(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
+     & ghostlayer, info, vlist, nvlist, lstore)
+#endif
+
+#elif __ANISO == __NO
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE inl_vlist_s(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
@@ -34,6 +45,8 @@
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE inl_vlist_d(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
      & ghostlayer, info, vlist, nvlist, lstore)
+#endif
+
 #endif
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
@@ -52,8 +65,13 @@
       !!! Number of real particles
       INTEGER , INTENT(IN)                       :: Mp
       !!! Number of all particles including ghost particles
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
       REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
-      !!! Particle cutoff radii array
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)                       :: skin
       !!! Skin parameter
       LOGICAL,  INTENT(IN)                       :: lsymm
@@ -79,7 +97,11 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(2*ppm_dim)             :: actual_subdomain
       REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub     => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub => NULL()
+#if __ANISO == __YES
+      REAL(MK), DIMENSION(:,:), POINTER          :: cutoff_sub => NULL()
+#elif __ANISO == __NO
+      REAL(MK), DIMENSION(:), POINTER            :: cutoff_sub => NULL()
+#endif
       INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
       INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
       INTEGER , DIMENSION(:)  , POINTER          :: p_id       => NULL()
@@ -173,6 +195,7 @@
      &             skin, lsymm, actual_subdomain, ghostlayer, info, vlist_sub,&
      &             nvlist_sub,lst)
 
+! 
           IF(lsymm)  THEN
               n_part = Mp_sub
           ELSE
@@ -216,18 +239,38 @@
           END IF
       ENDDO
       CALL substop('ppm_inl_vlist',t0,info)
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE inl_vlist_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE inl_vlist_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE inl_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE inl_vlist_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE create_inl_vlist_s_aniso(xp, Np, Mp, cutoff, skin, lsymm, &
+     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE create_inl_vlist_d_aniso(xp, Np, Mp, cutoff, skin, lsymm, &
+     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+#endif
+
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_vlist_s(xp, Np, Mp, cutoff, skin, lsymm, &
      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_vlist_d(xp, Np, Mp, cutoff, skin, lsymm, &
      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+#endif
 #endif
       !!! This subroutine creates verlet lists for particles whose coordinates
       !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -251,8 +294,13 @@
           !!! Number of real particles
           INTEGER , INTENT(IN)                       :: Mp
           !!! Number of all particles including ghost particles
-          REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
-          !!! Particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)           :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)             :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                       :: skin
           !!! Skin parameter
           LOGICAL,  INTENT(IN)                       :: lsymm
@@ -390,6 +438,7 @@
               GOTO 9999
           END IF
 
+
       !-------------------------------------------------------------------------
       !  Call getVerletLists subroutine. If lstore is not present, default case
       !  which is lstore = TRUE is applied.
@@ -464,6 +513,15 @@
 
 9999  CONTINUE
       CALL substop('create_inl_vlist',t0,info)
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE create_inl_vlist_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE create_inl_vlist_d_aniso
+#endif
+
+#elif __ANISO == __NO
 
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE create_inl_vlist_s
@@ -471,12 +529,28 @@
       END SUBROUTINE create_inl_vlist_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE getVerletLists_s_aniso(xp, cutoff, clist, skin, lsymm, whole_domain,    &
+     & actual_domain, vlist, nvlist, lstore,info)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE getVerletLists_d_aniso(xp, cutoff, clist, skin, lsymm, whole_domain,    &
+     & actual_domain, vlist, nvlist, lstore,info)
+#endif
+
+#elif __ANISO == __NO
+
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain,    &
      & actual_domain, vlist, nvlist, lstore,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain,    &
      & actual_domain, vlist, nvlist, lstore,info)
+#endif
+
 #endif
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
@@ -494,8 +568,13 @@
       !-------------------------------------------------------------------------
           REAL(MK), INTENT(IN), DIMENSION(:,:)  :: xp
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
-          !!! Particles cutoff radii
+           !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                  :: skin
           !!! Skin parameter
           TYPE(ppm_clist), INTENT(IN)           :: clist
@@ -536,7 +615,7 @@
       !  Allocate used array, which will be used as a mask for particles,
       !  to keep track of whether they were used before or not. Then,
       !  initialize it to FALSE.
-      !-------------------------------------------------------------------------
+!       !-------------------------------------------------------------------------
 
       CALL substart('getVerletLists',t0,info)
           iopt = ppm_param_alloc_fit
@@ -581,6 +660,7 @@
                   & actual_domain, xp, cutoff, skin, nvlist)
               END DO
           ELSE                          ! If lists are not symmetric
+
               DO p_idx = 1, clist%n_all_p
                   CALL count_neigh(clist%rank(p_idx), clist, whole_domain, &
                   & xp, cutoff, skin, nvlist)
@@ -650,9 +730,18 @@
 
 9999      CONTINUE
           CALL substop('getVerletLists',t0,info)
+#if __ANISO == __YES
 
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE getVerletLists_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE getVerletLists_d_aniso
+#endif
+
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getVerletLists_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getVerletLists_d
+#endif
 #endif

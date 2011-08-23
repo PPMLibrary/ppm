@@ -27,12 +27,24 @@
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE create_inl_clist_s_aniso(xp, Np, Mp, cutoff, skin, actual_domain, &
+     & ghost_extend, lsymm, clist, info)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE create_inl_clist_d_aniso(xp, Np, Mp, cutoff, skin, actual_domain, &
+     & ghost_extend, lsymm, clist, info)
+#endif
+
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_clist_s(xp, Np, Mp, cutoff, skin, actual_domain, &
      & ghost_extend, lsymm, clist, info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_clist_d(xp, Np, Mp, cutoff, skin, actual_domain, &
      & ghost_extend, lsymm, clist, info)
+#endif
+
 #endif
       !!! Given particle coordinates(xp), number of all particles including
       !!! ghost particles(Mp), cutoff radii of particles(cutoff), skin parameter
@@ -56,8 +68,13 @@
       !!! Number of real particles
       INTEGER , INTENT(IN)                         :: Mp
       !!! Number of all particles including ghost particles
-      REAL(MK), INTENT(IN), DIMENSION(:)           :: cutoff
-      !!! Particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)                         :: skin
       !!! Skin parameter
       REAL(MK),      DIMENSION(2*ppm_dim)          :: actual_domain
@@ -115,7 +132,6 @@
           END DO
       END IF
       
-
       clist%n_real_p = Np
       clist%n_all_p = Mp
 
@@ -139,8 +155,6 @@
       !  deallocate borders array. Then double the size and retry, until
       !  it is successful.
       !-------------------------------------------------------------------------
-
-
 
       clist%grow_htable = .TRUE.
       clist%ncell = CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
@@ -215,6 +229,15 @@
       !  Sort particles by their cutoff radii in descending order.
       !-------------------------------------------------------------------------
       CALL sortByRC(cutoff, skin, clist%rank)
+! #if __ANISO == __YES
+!       DO i = 1, clist%n_all_p
+!           write(*,*) i, clist%rank(i), particles_longer_axis(cutoff(:,clist%rank(i)))
+!       ENDDO
+! #elif __ANISO == __NO
+!       DO i = 1, clist%n_all_p
+!           write(*,*) i, clist%rank(i), cutoff(clist%rank(i))
+!       ENDDO
+! #endif
 
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
@@ -235,6 +258,7 @@
           GOTO 9999
       END IF
       clist%rc_borders(0) = 1
+
 
       !-------------------------------------------------------------------------
       !  Get borders on particle rank array for different levels, such that
@@ -295,12 +319,21 @@
 
 9999  CONTINUE
       CALL substop('ppm_create_inl_clist',t0,info)
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE create_inl_clist_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE create_inl_clist_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE create_inl_clist_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE create_inl_clist_d
 #endif
+#endif
 
+#if __ANISO == __YES
 #if __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_destroy_inl_clist(clist,info)
       !!! deallocates all arrays in clist, sets variables back to
@@ -728,11 +761,23 @@
       END FUNCTION getCellIdx_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION getMinimumRC_s_aniso(cutoff, skin, rank) RESULT(minRC)
+#elif __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION getMinimumRC_d_aniso(cutoff, skin, rank) RESULT(minRC)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       PURE FUNCTION getMinimumRC_s(cutoff, skin, rank) RESULT(minRC)
 #elif __KIND == __DOUBLE_PRECISION
       PURE FUNCTION getMinimumRC_d(cutoff, skin, rank) RESULT(minRC)
 #endif
+#endif
+
+
       !!! Given the cutoff radii and rank arrays and the skin
       !!! parameter, returns the minimum cutoff radius within these arrays.
       IMPLICIT NONE
@@ -744,13 +789,18 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK),  INTENT(IN), DIMENSION(:) :: cutoff
-      !!! Cutoff radii array
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK),  INTENT(IN)               :: skin
       !!! Skin parameter
       INTEGER,   INTENT(IN), DIMENSION(:) :: rank
       !!! Rank array, containing particles ranks
-      REAL(MK)                            :: minRC
+      REAL(MK)                            :: minRC, tempRC
       !!! Minimum cutoff radius to be returned
 
       !---------------------------------------------------------------------
@@ -760,6 +810,20 @@
 
       ! Set minimum cutoff radius to a great value.
       minRC = HUGE(1)
+
+! haeckic added anisotropic case
+#if __ANISO == __YES
+      ! Search for a smaller cutoff radius through whole array of aniostropic particles.
+      IF(size(rank).GT.0) THEN
+        minRC = particles_longer_axis(cutoff(:,rank(1)))
+        DO i = 2, size(rank)
+            tempRC = particles_longer_axis(cutoff(:,rank(i)))
+            IF(tempRC .LT. minRC) THEN
+                minRC = tempRC
+            END IF
+        END DO
+      END IF
+#elif __ANISO == __NO      
       ! Search for a smaller cutoff radius through whole array of particles.
       IF(size(rank).GT.0) THEN
         minRC = cutoff(rank(1))
@@ -769,15 +833,25 @@
             END IF
         END DO
       END IF
+#endif
 
       ! Add skin parameter on the found minimum cutoff radius.
       minRC = minRC + skin
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION getMinimumRC_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION getMinimumRC_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMinimumRC_s
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION getMinimumRC_d
 #endif
+#endif
 
+#if __ANISO == __YES
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE setSubregions_s(ownregion, subregions,info)
 #elif __KIND == __DOUBLE_PRECISION
@@ -886,12 +960,24 @@
       END FUNCTION getMinimumSideLength_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      RECURSIVE SUBROUTINE SortByPosition_s_aniso(xp, cutoff, skin, rank,clist,ownregion, &
+ &                         idx, increment)
+#elif __KIND == __DOUBLE_PRECISION
+      RECURSIVE SUBROUTINE SortByPosition_d_aniso(xp, cutoff, skin, rank,clist,ownregion, &
+ &                         idx, increment)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_s(xp, cutoff, skin, rank,clist,ownregion, &
  &                         idx, increment)
 #elif __KIND == __DOUBLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_d(xp, cutoff, skin, rank,clist,ownregion, &
  &                         idx, increment)
+#endif
 #endif
       !!! The recursive subroutine which sorts the particles by their position;
       !!! given particles coordinates, their cutoff radii, skin parameter,
@@ -910,8 +996,13 @@
       !-------------------------------------------------------------------------
       REAL(MK),  INTENT(IN),    DIMENSION(:,:)        :: xp
       !!! Input array for particles coordinates
-      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)            :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)              :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK),  INTENT(IN)                           :: skin
       !!! Skin parameter
       INTEGER, INTENT(INOUT), DIMENSION(:)            :: rank
@@ -1061,18 +1152,37 @@
            CALL SortByPosition(xp, cutoff, skin, rank(bzTopRight:),clist, &
  &                    subregions(8,:), 8*idx+1, incArray(8))
       END IF
+
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE SortByPosition_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE SortByPosition_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE SortByPosition_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE SortByPosition_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      RECURSIVE SUBROUTINE SortByRC_Pos_s_aniso(xp, cutoff, skin, rank,clist, ownregion, &
+ &                         idx, level, increment)
+#elif __KIND == __DOUBLE_PRECISION
+      RECURSIVE SUBROUTINE SortByRC_Pos_d_aniso(xp, cutoff, skin, rank,clist, ownregion, &
+ &                         idx, level, increment)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       RECURSIVE SUBROUTINE SortByRC_Pos_s(xp, cutoff, skin, rank,clist, ownregion, &
  &                         idx, level, increment)
 #elif __KIND == __DOUBLE_PRECISION
       RECURSIVE SUBROUTINE SortByRC_Pos_d(xp, cutoff, skin, rank,clist, ownregion, &
  &                         idx, level, increment)
+#endif
 #endif
       !!! The recursive subroutine which sorts the particles by their position
       !!! and their cutoff radii; given particles coordinates, their cutoff
@@ -1091,8 +1201,13 @@
       !---------------------------------------------------------------------
       REAL(MK),  INTENT(IN),    DIMENSION(:,:)        :: xp
       !!! Input array for particles coordinates
-      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)            :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)              :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK),  INTENT(IN)                           :: skin
       !!! Skin parameter
       INTEGER, INTENT(INOUT), DIMENSION(:)            :: rank
@@ -1224,12 +1339,21 @@
 &                    subregions(8,:), 8*idx+1, level, incArray(8))
           END IF
       END IF
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE SortByRC_Pos_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE SortByRC_Pos_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE SortByRC_Pos_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE SortByRC_Pos_d
 #endif
+#endif
 
+#if __ANISO == __YES
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE partition_s(xp, rank, midPoint, border, axis)
 #elif __KIND == __DOUBLE_PRECISION
@@ -1305,10 +1429,20 @@
       END SUBROUTINE partition_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      RECURSIVE SUBROUTINE sortByRC_s_aniso(cutoff, skin, rank)
+#elif __KIND == __DOUBLE_PRECISION
+      RECURSIVE SUBROUTINE sortByRC_d_aniso(cutoff, skin, rank)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       RECURSIVE SUBROUTINE sortByRC_s(cutoff, skin, rank)
 #elif __KIND == __DOUBLE_PRECISION
       RECURSIVE SUBROUTINE sortByRC_d(cutoff, skin, rank)
+#endif
 #endif
       !!! Recursive algorithm which sorts particles by their cutoff radii
       !!! in descending order; given cutoff radii, skin parameter and the
@@ -1322,8 +1456,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN),    DIMENSION(:) :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)  :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)                  :: skin
       !!! Skin parameter
       INTEGER,  INTENT(INOUT), DIMENSION(:) :: rank
@@ -1334,21 +1473,38 @@
       INTEGER                               :: marker
 
       ! Keep on partitioning and sorting, recursively.
+
       IF(size(rank) .GT. 1) THEN
          CALL partitionByRC(cutoff, skin, rank, marker)
          CALL sortByRC(cutoff, skin, rank(:marker-1))
          CALL sortByRC(cutoff, skin, rank(marker:))
       END IF
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE sortByRC_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE sortByRC_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE sortByRC_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE sortByRC_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE partitionByRC_s_aniso(cutoff, skin, rank, marker)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE partitionByRC_d_aniso(cutoff, skin, rank, marker)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE partitionByRC_s(cutoff, skin, rank, marker)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE partitionByRC_d(cutoff, skin, rank, marker)
+#endif
 #endif
       !!! This subroutine partitions particles by their cutoff radii and
       !!! updates marker; given cutoff radii, skin parameter and rank array.
@@ -1361,8 +1517,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN),    DIMENSION(:) :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)  :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)                  :: skin
       !!! Skin parameter
       INTEGER,  INTENT(INOUT), DIMENSION(:) :: rank
@@ -1380,18 +1541,49 @@
       
       ! This pivoting strategy broke the code in some specific cases
       !pivot = (cutoff(rank(1)) + cutoff(rank(size(rank))))/2
+
+      ! haeckic change here for anisotropic!!!
+      ! PROBLEM: If all particles have the same cutoff or the pivot is
+      ! chosen in a bad way, then here we get a problem with the rank...
+      ! this is not only an anisotropic problem.
+
+#if __ANISO == __YES
+      pivot = particles_longer_axis(cutoff(:,rank(size(rank)/2))) + skin
+#elif __ANISO == __NO
       pivot = cutoff(rank(size(rank)/2)) + skin
+#endif
+
       i= 0
       j= size(rank) + 1
-
+      
       DO WHILE(i .LT. j)
          j = j - 1
+#if __ANISO == __YES
+         DO WHILE((particles_longer_axis(cutoff(:,rank(j))) + skin) .LT. pivot-1d-12)
+
+#elif __ANISO == __NO
          DO WHILE((cutoff(rank(j)) + skin) .LT. pivot)
+#endif
             j = j-1
+
+         IF (j .EQ. 1) THEN
+            EXIT
+         ENDIF
          END DO
+
          i = i + 1
+#if __ANISO == __YES
+         
+         DO WHILE((particles_longer_axis(cutoff(:,rank(i))) + skin) .GT. pivot+1d-12)
+
+#elif __ANISO == __NO
          DO WHILE((cutoff(rank(i)) + skin) .GT. pivot)
+#endif
             i = i + 1
+
+         IF (i .EQ. size(rank)) THEN
+            EXIT
+         ENDIF
          END DO
          IF (i .LT. j) THEN
             temp = rank(i)
@@ -1400,23 +1592,38 @@
          END IF
       ENDDO
 
-
       IF (i .EQ. j) THEN
          marker = i + 1
       ELSE
          marker = i
       END IF
-      
+     
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE partitionByRC_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE partitionByRC_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE partitionByRC_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE partitionByRC_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION lastIdxForRC_s_aniso(cutoff, skin, clist, inputRC) RESULT(idx)
+#elif __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION lastIdxForRC_d_aniso(cutoff, skin, clist, inputRC) RESULT(idx)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       PURE FUNCTION lastIdxForRC_s(cutoff, skin, clist, inputRC) RESULT(idx)
 #elif __KIND == __DOUBLE_PRECISION
       PURE FUNCTION lastIdxForRC_d(cutoff, skin, clist, inputRC) RESULT(idx)
+#endif
 #endif
       !!! For a given cutoff radius, returns the last index in the rank
       !!! array that is greater than or equal to this cutoff radius; given
@@ -1433,8 +1640,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:) :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)  :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)               :: skin
       !!! Skin parameter
       TYPE(ppm_clist), INTENT(IN)        :: clist
@@ -1455,8 +1667,13 @@
       high = size(clist%rank)
       mid = FLOOR(REAL((low + high)/2))
 
+      ! haeckic change
       DO WHILE((mid .NE. low) .OR. (mid .NE. high))
+#if __ANISO == __YES
+          IF((particles_longer_axis(cutoff(:,clist%rank(mid))) + skin) .GE. inputRC)   THEN
+#elif __ANISO == __NO
           IF((cutoff(clist%rank(mid)) + skin) .GE. inputRC)   THEN
+#endif
               low = mid + 1
           ELSE
               high = mid
@@ -1466,20 +1683,39 @@
       END DO
 
       idx = mid
-
+#if __ANISO == __YES
+      IF((mid .EQ. high) .AND. ((particles_longer_axis(cutoff(:,clist%rank(mid)))+skin) .GE. inputRC)) THEN
+#elif __ANISO == __NO
       IF((mid .EQ. high) .AND. ((cutoff(clist%rank(mid))+skin) .GE. inputRC)) THEN
+#endif
           idx = mid + 1
       END IF
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION lastIdxForRC_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION lastIdxForRC_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION lastIdxForRC_s
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION lastIdxForRC_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+       FUNCTION getMaxDepth_s_aniso(cutoff, clist, domain)    RESULT(depthMax)
+#elif __KIND == __DOUBLE_PRECISION
+       FUNCTION getMaxDepth_d_aniso(cutoff, clist, domain)    RESULT(depthMax)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
        FUNCTION getMaxDepth_s(cutoff, clist, domain)    RESULT(depthMax)
 #elif __KIND == __DOUBLE_PRECISION
        FUNCTION getMaxDepth_d(cutoff, clist, domain)    RESULT(depthMax)
+#endif
 #endif
       !!! This function returns the maximum depth within a domain
       IMPLICIT NONE
@@ -1491,7 +1727,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
       REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       TYPE(ppm_clist), INTENT(IN)                :: clist
       REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: domain
       INTEGER                                    :: depthMax
@@ -1502,19 +1744,41 @@
       REAL(MK)                                   :: rc_min
       REAL(MK)                                   :: minSideLength
 
+      ! haeckic changed to consider anisotropic particles
+#if __ANISO == __YES
+      rc_min = particles_longer_axis(cutoff(:,clist%rank(size(clist%rank))))
+#elif __ANISO == __NO
       rc_min = cutoff(clist%rank(size(clist%rank)))
+#endif
+      
       minSideLength = getMinimumSideLength(domain)
       depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2._MK))
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION getMaxDepth_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION getMaxDepth_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMaxDepth_s
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION getMaxDepth_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE getRC_Borders_s_aniso(cutoff, skin, clist, domain,info)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE getRC_Borders_d_aniso(cutoff, skin, clist, domain,info)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getRC_Borders_s(cutoff, skin, clist, domain,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getRC_Borders_d(cutoff, skin, clist, domain,info)
+#endif
 #endif
       !!! Computes the borders on rc_borders array such that two
       !!! consecutive indices will contain borders for particle in that level.
@@ -1529,8 +1793,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:) :: cutoff
-      !!! Input array for particles cutoff radii
+#if __ANISO == __YES
+      REAL(MK), INTENT(IN), DIMENSION(:,:)  :: cutoff
+      !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+      REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
+      !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
       REAL(MK), INTENT(IN)               :: skin
       !!! Skin parameter
       TYPE(ppm_clist), INTENT(INOUT)     :: clist
@@ -1564,8 +1833,68 @@
       END DO
       
       CALL substop('getRC_Borders',t0,info)
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE getRC_Borders_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE getRC_Borders_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getRC_Borders_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getRC_Borders_d
+#endif
+#endif
+
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION particles_longer_axis_s(Matrix_A) RESULT(longax)
+#elif   __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION particles_longer_axis_d(Matrix_A) RESULT(longax)
+#endif
+
+      IMPLICIT NONE
+
+   !!! Returns longer axis of an anisotropic particle, used for ordering
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    REAL(MK),DIMENSION(:),INTENT(IN)       :: Matrix_A
+    !!! matrix to be inverted
+    REAL(MK)                               :: longax,a,b,c,det
+    !!! resulting longer axis + locals
+ 
+    IF (size(Matrix_A) .LT. 5) THEN
+      ! set Matrix_B
+      ! det(A) = t11*t22 - t12*t21
+      det = Matrix_A(1)*Matrix_A(4) - Matrix_A(2)*Matrix_A(3)
+      longax = sqrt((1/det)*Matrix_A(4)*(1/det)*Matrix_A(4) + (1/det)*Matrix_A(3)*(1/det)*Matrix_A(3))
+
+    ELSE
+      ! det(A) = aei + bfg + cdh − gec − hfa − idb. 
+      det = Matrix_A(1)*Matrix_A(5)*Matrix_A(9) + Matrix_A(2)*Matrix_A(6)*Matrix_A(7) &
+   &      + Matrix_A(3)*Matrix_A(4)*Matrix_A(8) - Matrix_A(3)*Matrix_A(5)*Matrix_A(7) &
+   &      - Matrix_A(1)*Matrix_A(6)*Matrix_A(8) - Matrix_A(2)*Matrix_A(4)*Matrix_A(9)
+      
+      a = (1/det)*(Matrix_A(5)*Matrix_A(9) - Matrix_A(6)*Matrix_A(8))  
+      b = (1/det)*(Matrix_A(6)*Matrix_A(7) - Matrix_A(4)*Matrix_A(9))
+      c = (1/det)*(Matrix_A(4)*Matrix_A(8) - Matrix_A(5)*Matrix_A(7))
+
+      longax = sqrt(a*a + b*b + c*c)
+    
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION particles_longer_axis_s
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION particles_longer_axis_d
+#endif
+
 #endif

@@ -26,13 +26,23 @@
      ! ETH Zurich
      ! CH-8092 Zurich, Switzerland
      !-------------------------------------------------------------------------
-
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE getSubdomainParticles_s_aniso(xp, Np, Mp, cutoff, lsymm,             &
+     & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE getSubdomainParticles_d_aniso(xp, Np, Mp, cutoff, lsymm,             &
+     & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getSubdomainParticles_s(xp, Np, Mp, cutoff, lsymm,             &
      & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getSubdomainParticles_d(xp, Np, Mp, cutoff, lsymm,             &
      & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
+#endif
+
 #endif
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
@@ -50,8 +60,13 @@
           !!! Number of real particles
           INTEGER , INTENT(IN)                       :: Mp
           !!! Number of all particles including ghost particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
-          !!! Particles cutoff radii
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           LOGICAL,  INTENT(IN)                       :: lsymm
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
           !!! layers only in (+) directions in all axes. Else, we have ghost
@@ -63,8 +78,13 @@
           !!! ghost layers.
           REAL(MK), POINTER   , DIMENSION(:,:)       :: xp_sub
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          REAL(MK), POINTER   , DIMENSION(:)         :: cutoff_sub
-          !!! Particles cutoff radii
+#if __ANISO == __YES
+          REAL(MK), DIMENSION(:,:), POINTER          :: cutoff_sub
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
+          REAL(MK), DIMENSION(:), POINTER            :: cutoff_sub
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           INTEGER , INTENT(OUT)                      :: Np_sub
           !!! Number of real particles of subdomain
           INTEGER , INTENT(OUT)                      :: Mp_sub
@@ -119,14 +139,26 @@
      &                       'own_plist',__LINE__,info)
           END IF
 
+          ! haeckic changed 
+#if __ANISO == __YES
+          IF (size(cutoff(:,1)) .LT. 5) THEN
+            lda(1) = 4
+          ELSE
+            lda(1) = 9
+          ENDIF
+          lda(2) = Mp_sub
+          CALL ppm_alloc(cutoff_sub, lda, iopt, info)
+#elif __ANISO == __NO
           lda(1) = Mp_sub
           CALL ppm_alloc(cutoff_sub, lda, iopt, info)
+#endif
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_subdomain_particles',     &
      &                       'own_plist',__LINE__,info)
           END IF
-
+          
+          lda(1) = Mp_sub
           CALL ppm_alloc(p_id, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
@@ -140,7 +172,26 @@
                    Np_sub = Np_sub + 1
                    p_id(Np_sub) = i
                    xp_sub(:, Np_sub) = xp(:, i)
+#if __ANISO == __YES
+                  IF (size(cutoff(:,1)) .LT. 5) THEN
+                       cutoff_sub(1,Np_sub) = cutoff(1,i)
+                       cutoff_sub(2,Np_sub) = cutoff(2,i)
+                       cutoff_sub(3,Np_sub) = cutoff(3,i)
+                       cutoff_sub(4,Np_sub) = cutoff(4,i)
+                   ELSE
+                       cutoff_sub(1,Np_sub) = cutoff(1,i)
+                       cutoff_sub(2,Np_sub) = cutoff(2,i)
+                       cutoff_sub(3,Np_sub) = cutoff(3,i)
+                       cutoff_sub(4,Np_sub) = cutoff(4,i)
+                       cutoff_sub(5,Np_sub) = cutoff(5,i)
+                       cutoff_sub(6,Np_sub) = cutoff(6,i)
+                       cutoff_sub(7,Np_sub) = cutoff(7,i)
+                       cutoff_sub(8,Np_sub) = cutoff(8,i)
+                       cutoff_sub(9,Np_sub) = cutoff(9,i)
+                   ENDIF
+#elif __ANISO == __NO
                    cutoff_sub(Np_sub) = cutoff(i)
+#endif
               END IF
           END DO
 
@@ -153,17 +204,44 @@
                       Mp_sub = Mp_sub + 1
                       p_id(Mp_sub) = i
                       xp_sub(:, Mp_sub) = xp(:, i)
-                      cutoff_sub(Mp_sub) = cutoff(i)
+#if __ANISO == __YES
+                   IF (size(cutoff(:,1)) .LT. 5) THEN
+                       cutoff_sub(1,Mp_sub) = cutoff(1,i)
+                       cutoff_sub(2,Mp_sub) = cutoff(2,i)
+                       cutoff_sub(3,Mp_sub) = cutoff(3,i)
+                       cutoff_sub(4,Mp_sub) = cutoff(4,i)
+                   ELSE
+                       cutoff_sub(1,Mp_sub) = cutoff(1,i)
+                       cutoff_sub(2,Mp_sub) = cutoff(2,i)
+                       cutoff_sub(3,Mp_sub) = cutoff(3,i)
+                       cutoff_sub(4,Mp_sub) = cutoff(4,i)
+                       cutoff_sub(5,Mp_sub) = cutoff(5,i)
+                       cutoff_sub(6,Mp_sub) = cutoff(6,i)
+                       cutoff_sub(7,Mp_sub) = cutoff(7,i)
+                       cutoff_sub(8,Mp_sub) = cutoff(8,i)
+                       cutoff_sub(9,Mp_sub) = cutoff(9,i)
+                   ENDIF
+#elif __ANISO == __NO
+                   cutoff_sub(Mp_sub) = cutoff(i)
+#endif
                   END IF
               END IF
           END DO
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE getSubdomainParticles_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE getSubdomainParticles_d_aniso
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getSubdomainParticles_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getSubdomainParticles_d
 #endif
+#endif
 
-
+#if __ANISO == __YES
 #if   __KIND == __SINGLE_PRECISION
       PURE FUNCTION inDomain_s(coor,domain) RESULT(isInDomain)
 #elif __KIND == __DOUBLE_PRECISION
@@ -207,12 +285,22 @@
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION inDomain_d
 #endif
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION isNeighbor_s_aniso(p_idx, p_neigh, xp, cutoff, skin) RESULT(isNeigh)
+#elif __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION isNeighbor_d_aniso(p_idx, p_neigh, xp, cutoff, skin) RESULT(isNeigh)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       PURE FUNCTION isNeighbor_s(p_idx, p_neigh, xp, cutoff, skin) RESULT(isNeigh)
 #elif __KIND == __DOUBLE_PRECISION
       PURE FUNCTION isNeighbor_d(p_idx, p_neigh, xp, cutoff, skin) RESULT(isNeigh)
 #endif
+#endif
+
       !!! Given indices of two particles, checks whether the euclidian distance
       !!! is smaller than the sum of minimum cutoff radius of these particles
       !!! and the skin, then RETURNs TRUE if so. Works for nD.
@@ -231,8 +319,13 @@
           !!! Index of second particle
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
           !!! Coordinate array of particles
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
-          !!! Cutoff radii of particles
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
           LOGICAL                              :: isNeigh
@@ -241,9 +334,14 @@
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
+#if __ANISO == __YES
+          REAL(MK),DIMENSION(ppm_dim)                :: total_dist,dist_transformed
+          ! Euclidian distance between particles
+#elif __ANISO == __NO
           REAL(MK)                             :: total_dist
           ! Euclidian distance between particles
-          REAL(MK)                             :: rcutoff
+#endif
+          REAL(MK)                             :: rcutoff,rcutoff2
           ! Minimum cutoff radius, plus skin.
           INTEGER                              :: i
           ! Counter
@@ -254,6 +352,57 @@
           ! Return FALSE if they are the same particle
           IF(p_idx .EQ. p_neigh)    RETURN
 
+! haeckic change anisotropic
+#if __ANISO == __YES
+
+          ! get distance
+          DO i = 1, ppm_dim
+              total_dist(i) = xp(i, p_neigh) - xp(i, p_idx)
+          END DO
+
+          ! transform
+          IF (ppm_dim .EQ. 2) THEN
+
+            dist_transformed(1) = cutoff(1,p_idx)*total_dist(1) + cutoff(2,p_idx)*total_dist(2)
+            dist_transformed(2) = cutoff(3,p_idx)*total_dist(1) + cutoff(4,p_idx)*total_dist(2)
+            rcutoff = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2)
+
+          ELSE
+
+            dist_transformed(1) = cutoff(1,p_idx)*total_dist(1) + cutoff(2,p_idx)*total_dist(2) &
+            & + cutoff(3,p_idx)*total_dist(3)
+            dist_transformed(2) = cutoff(4,p_idx)*total_dist(1) + cutoff(5,p_idx)*total_dist(2) &
+            & + cutoff(6,p_idx)*total_dist(3)
+            dist_transformed(3) = cutoff(7,p_idx)*total_dist(1) + cutoff(8,p_idx)*total_dist(2) & 
+            & + cutoff(9,p_idx)*total_dist(3)
+            rcutoff = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2 + dist_transformed(3)**2)
+
+          ENDIF
+
+          ! transform
+          IF (ppm_dim .EQ. 2) THEN
+
+            dist_transformed(1) = cutoff(1,p_neigh)*total_dist(1) + cutoff(2,p_neigh)*total_dist(2)
+            dist_transformed(2) = cutoff(3,p_neigh)*total_dist(1) + cutoff(4,p_neigh)*total_dist(2)
+            rcutoff2 = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2)
+
+          ELSE
+
+            dist_transformed(1) = cutoff(1,p_neigh)*total_dist(1) + cutoff(2,p_neigh)*total_dist(2) & 
+            & + cutoff(3,p_neigh)*total_dist(3)
+            dist_transformed(2) = cutoff(4,p_neigh)*total_dist(1) + cutoff(5,p_neigh)*total_dist(2) &
+            & + cutoff(6,p_neigh)*total_dist(3)
+            dist_transformed(3) = cutoff(7,p_neigh)*total_dist(1) + cutoff(8,p_neigh)*total_dist(2) &
+            & + cutoff(9,p_neigh)*total_dist(3)
+            rcutoff2 = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2 + dist_transformed(3)**2)
+
+          ENDIF
+          
+          ! Return TRUE if they are neighbors, i.e. both below 1.0
+          IF(rcutoff .LE. 1.0_mk .AND. rcutoff2 .LE. 1.0_mk)  isNeigh = .TRUE.
+
+
+#elif __ANISO == __NO
           ! Initialize euclidian distance to 0
           total_dist = 0
           ! Add squares of distances on each axis, then take square root of it
@@ -269,11 +418,38 @@
 
           ! Return TRUE if they are neighbors
           IF(total_dist .LE. rcutoff)  isNeigh = .TRUE.
+#endif
+
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION isNeighbor_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION isNeighbor_d_aniso
+#endif
+
+#elif __ANISO == __NO
+
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION isNeighbor_s
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION isNeighbor_d
 #endif
+
+#endif
+
+
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      PURE FUNCTION is_xset_Neighbor_s_aniso(red_idx, blue_idx, red, rcred, blue, &
+ &                  rcblue, skin) RESULT(isNeigh)
+#elif __KIND == __DOUBLE_PRECISION
+      PURE FUNCTION is_xset_Neighbor_d_aniso(red_idx, blue_idx, red, rcred, blue, &
+ &                  rcblue, skin) RESULT(isNeigh)
+#endif
+
+#elif __ANISO == __NO
 
 #if   __KIND == __SINGLE_PRECISION
       PURE FUNCTION is_xset_Neighbor_s(red_idx, blue_idx, red, rcred, blue, &
@@ -281,6 +457,8 @@
 #elif __KIND == __DOUBLE_PRECISION
       PURE FUNCTION is_xset_Neighbor_d(red_idx, blue_idx, red, rcred, blue, &
  &                  rcblue, skin) RESULT(isNeigh)
+#endif
+
 #endif
       !!! Given indices of two particles, checks whether the euclidian distance
       !!! is smaller than the sum of minimum cutoff radius of these particles
@@ -300,12 +478,22 @@
           !!! Index of second particle
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: red
           !!! Coordinate array of particles (red)
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: rcred
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: rcred
-          !!! Cutoff radii of particles (red)
+          !!! Blue particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: blue
           !!! Coordinate array of particles (blue)
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: rcblue
+          !!! Blue particle cutoff radii array, in the anisotropic case
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: rcblue
-          !!! Cutoff radii of particles (blue)
+          !!! Blue particle cutoff radii array
+#endif
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
           LOGICAL                              :: isNeigh
@@ -314,9 +502,14 @@
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
+#if __ANISO == __YES
+          REAL(MK),DIMENSION(ppm_dim)          :: total_dist,dist_transformed
+          ! Euclidian distance between particles
+#elif __ANISO == __NO
           REAL(MK)                             :: total_dist
           ! Euclidian distance between particles
-          REAL(MK)                             :: rcutoff
+#endif
+          REAL(MK)                             :: rcutoff,rcutoff2
           ! Minimum cutoff radius, plus skin.
           INTEGER                              :: i
           ! Counter
@@ -324,7 +517,55 @@
           ! Initialize RETURN value to FALSE
           isNeigh = .FALSE.
 
+! haeckic change anistropic
+#if __ANISO == __YES
 
+          ! get distance
+          DO i = 1, ppm_dim
+              total_dist(i) = red(i, red_idx) - blue(i, blue_idx)
+          END DO
+
+          ! transform
+          IF (ppm_dim .EQ. 2) THEN
+
+            dist_transformed(1) = rcred(1,red_idx)*total_dist(1) + rcred(2,red_idx)*total_dist(2)
+            dist_transformed(2) = rcred(3,red_idx)*total_dist(1) + rcred(4,red_idx)*total_dist(2)
+            rcutoff = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2)
+
+          ELSE
+
+            dist_transformed(1) = rcred(1,red_idx)*total_dist(1) + rcred(2,red_idx)*total_dist(2) &
+            & + rcred(3,red_idx)*total_dist(3)
+            dist_transformed(2) = rcred(4,red_idx)*total_dist(1) + rcred(5,red_idx)*total_dist(2) &
+            & + rcred(6,red_idx)*total_dist(3)
+            dist_transformed(3) = rcred(7,red_idx)*total_dist(1) + rcred(8,red_idx)*total_dist(2) & 
+            & + rcred(9,red_idx)*total_dist(3)
+            rcutoff = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2 + dist_transformed(3)**2)
+
+          ENDIF
+
+          ! transform
+          IF (ppm_dim .EQ. 2) THEN
+
+            dist_transformed(1) = rcblue(1,blue_idx)*total_dist(1) + rcblue(2,blue_idx)*total_dist(2)
+            dist_transformed(2) = rcblue(3,blue_idx)*total_dist(1) + rcblue(4,blue_idx)*total_dist(2)
+            rcutoff2 = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2)
+
+          ELSE
+
+            dist_transformed(1) = rcblue(1,blue_idx)*total_dist(1) + rcblue(2,blue_idx)*total_dist(2) & 
+            & + rcblue(3,blue_idx)*total_dist(3)
+            dist_transformed(2) = rcblue(4,blue_idx)*total_dist(1) + rcblue(5,blue_idx)*total_dist(2) &
+            & + rcblue(6,blue_idx)*total_dist(3)
+            dist_transformed(3) = rcblue(7,blue_idx)*total_dist(1) + rcblue(8,blue_idx)*total_dist(2) &
+            & + rcblue(9,blue_idx)*total_dist(3)
+            rcutoff2 = sqrt(dist_transformed(1)**2 + dist_transformed(2)**2 + dist_transformed(3)**2)
+
+          ENDIF
+
+          ! Return TRUE if they are neighbors, i.e. both below 1.0
+          IF(rcutoff .LE. 1.0_mk .AND. rcutoff2 .LE. 1.0_mk)  isNeigh = .TRUE.
+#elif __ANISO == __NO
           ! Initialize euclidian distance to 0
           total_dist = 0
           ! Add squares of distances on each axis, then take square root of it
@@ -340,12 +581,27 @@
 
           ! Return TRUE if they are neighbors
           IF(total_dist .LE. rcutoff)  isNeigh = .TRUE.
+#endif
+
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      END FUNCTION is_xset_Neighbor_s_aniso
+#elif __KIND == __DOUBLE_PRECISION
+      END FUNCTION is_xset_Neighbor_d_aniso
+#endif
+
+#elif __ANISO == __NO
+      
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION is_xset_Neighbor_s
 #elif __KIND == __DOUBLE_PRECISION
       END FUNCTION is_xset_Neighbor_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
 #if   __KIND == __SINGLE_PRECISION
       FUNCTION cross_neighbor_s(p_idx, p_neigh, xp, actual_domain) RESULT(isCrossNeigh)
 #elif __KIND == __DOUBLE_PRECISION
@@ -424,6 +680,10 @@
       END FUNCTION cross_neighbor_d
 #endif
 
+#endif
+
+#if __ANISO == __YES
+
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE putInEmptyList(c_idx)
       !!! Given the index of the cell, this subroutine stores the cell index
@@ -495,12 +755,23 @@
       END FUNCTION inEmptyList
 #endif
 
+#endif
 
+#if __ANISO == __YES
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE getParticleCoorDepth_s_aniso(p_idx, domain, p_coor, p_depth, xp, cutoff, skin)
+#elif   __KIND == __DOUBLE_PRECISION
+      SUBROUTINE getParticleCoorDepth_d_aniso(p_idx, domain, p_coor, p_depth, xp, cutoff, skin)
+#endif
+#elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getParticleCoorDepth_s(p_idx, domain, p_coor, p_depth, xp, cutoff, skin)
 #elif   __KIND == __DOUBLE_PRECISION
       SUBROUTINE getParticleCoorDepth_d(p_idx, domain, p_coor, p_depth, xp, cutoff, skin)
 #endif
+#endif
+
+
       !!! Given the particle index, this subroutine modifies p_coor array and
       !!! p_depth variables such that they contain coordinates and depth of the
       !!! particle, respectively.
@@ -518,13 +789,19 @@
           REAL(MK), DIMENSION(:)               :: p_coor
           INTEGER,  INTENT(INOUT)              :: p_depth
           REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
+#if __ANISO == __YES
+          REAL(MK), INTENT(IN), DIMENSION(:,:) :: cutoff
+          !!! Particle cutoff radii array, here the inverse transform for anisotropic particles
+#elif __ANISO == __NO
           REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
+          !!! Particle cutoff radii array, here the radius for isotropic particles
+#endif
           REAL(MK), INTENT(IN)                 :: skin
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          REAL(MK)                             :: minSideLength
+          REAL(MK)                             :: minSideLength,cu
           INTEGER                              :: i
 
           ! Get maximum side length of the domain
@@ -533,7 +810,14 @@
           ! Initialize p_depth to 0 and keep on incrementing until we reach the
           ! correct depth.
           p_depth = 0
+
+         ! haeckic change here
+#if __ANISO == __YES
+          cu = particles_longer_axis(cutoff(:,p_idx))
+          DO WHILE(minSideLength .GT. (cu + skin))
+#elif __ANISO == __NO
           DO WHILE(minSideLength .GT. (cutoff(p_idx) + skin))
+#endif
               minSideLength = minSideLength/2
               p_depth = p_depth + 1
           END DO
@@ -548,11 +832,25 @@
           DO i = 3, ppm_dim
               p_coor(i) = xp(i, p_idx)
           END DO
+#if __ANISO == __YES
+
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE getParticleCoorDepth_s_aniso
+#elif   __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE getParticleCoorDepth_d_aniso
+#endif
+
+#elif __ANISO == __NO
+
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getParticleCoorDepth_s
 #elif   __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getParticleCoorDepth_d
 #endif
+
+#endif
+
+#if __ANISO == __YES
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getParticlesInCell_s(cell_idx, xp, clist, list, nlist)
@@ -656,4 +954,6 @@
       END SUBROUTINE getParticlesInCell_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getParticlesInCell_d
+#endif
+
 #endif
