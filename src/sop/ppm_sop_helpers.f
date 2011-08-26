@@ -42,6 +42,8 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%nneigh_critical = 20
     opts%nneigh_toobig = 2000
     opts%check_dcops = .FALSE.
+    opts%add_parts = .TRUE.
+    opts%param_morse = 3.5_MK
 
     9999 CONTINUE
 

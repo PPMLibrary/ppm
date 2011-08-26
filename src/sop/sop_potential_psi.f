@@ -8,6 +8,7 @@
 SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
+    USE ppm_module_io_vtk
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -39,6 +40,9 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
+    REAL(MK)                              :: rho,coeff
+    LOGICAL                               :: no_fusion
+    INTEGER,DIMENSION(:),POINTER          :: fuse
 
 #ifdef finnis_sinclair
     REAL(MK)                              :: rho_part
@@ -72,15 +76,17 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     nvlist => Particles%nvlist
     vlist => Particles%vlist
 
+    fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
-        !attractive_radius = attractive_radius0 * &
-            !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
-            IF (nvlist(ip).GT.30) THEN
-                attractive_radius = opts%attractive_radius0
-            ELSE
-                attractive_radius = 0._MK
-            ENDIF
+
+            !IF (nvlist(ip).GT.30) THEN
+        attractive_radius = opts%attractive_radius0
+            !ELSE
+                !attractive_radius = 0._MK
+            !ENDIF
+
          
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
@@ -92,8 +98,14 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 #if debug_verbosity > 0
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles too small', &
-                    rr,ip,iq,D(ip), D(iq)
+                    rr,ip,iq,D(ip), D(iq),xp(1:ppm_dim,ip),xp(1:ppm_dim,iq)
                 CALL ppm_write(ppm_rank,caller,cbuf,info)
+#if debug_verbosity > 1
+                WRITE(cbuf,'(A)') 'Part_core_dump'
+                CALL ppm_vtk_particle_cloud(cbuf,Particles,info)
+                WRITE(cbuf,*) 'Data written in Part_core_dump.vtk'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+#endif
                 info = -1
                 GOTO 9999
             ENDIF
@@ -107,7 +119,19 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             rd = rr / meanD
-            rc = rr / (MIN(rcp(ip),rcp(iq)))
+
+            if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+                no_fusion = .false.
+            else
+                no_fusion = .true.
+            endif
+
+            if (fuse(ip)+fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+                coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+            else 
+                coeff = 1._mk
+            endif
+            no_fusion = .false.
 
 #include "potential/potential.f90"
 
@@ -147,5 +171,48 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
 END SUBROUTINE sop_potential_psi
 
+SUBROUTINE sop_plot_potential(opts,filename,info)
+    ! write tabulated values of the interaction potential into a file
+    ! using parameters from the opts argument
+
+    IMPLICIT NONE
+#ifdef __MPI
+    INCLUDE 'mpif.h'
+#endif
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
+    CHARACTER(LEN=*),                    INTENT(IN   )   :: filename
+    INTEGER,                             INTENT(OUT  )   :: info
+
+    REAL(MK)   :: rd,rho,meanD,coeff
+    REAL(MK)   :: Psi_part,attractive_radius
+    INTEGER    :: i
+    LOGICAL    :: no_fusion
+
+
+    info = 0
+    no_fusion = .FALSE.
+    attractive_radius = opts%attractive_radius0
+    meanD = 1._mk
+    coeff = 1._mk
+
+    OPEN(UNIT=271,FILE=TRIM(ADJUSTL(filename)),IOSTAT=info)
+    DO i=1,1000
+
+        Psi_part = 0._mk
+        rd = REAL(i,MK)/100._MK
+
+#include "potential/potential.f90"
+
+        WRITE(271,'(2(E22.10,2X))') rd, Psi_part
+    ENDDO
+
+    CLOSE(271)
+
+END SUBROUTINE sop_plot_potential
 
 #undef __KIND

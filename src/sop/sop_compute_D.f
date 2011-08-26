@@ -26,7 +26,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     INTEGER,                              INTENT(  OUT)   :: info
 
     !optional arguments
-
     OPTIONAL                                              :: wp_fun
     !!! if field is known analytically
     OPTIONAL                                              :: wp_grad_fun
@@ -467,6 +466,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             eta => Set_dcop(Particles,eta_id)
             wp_grad => Set_wpv(Particles,adapt_wpgradid)
             xp => Set_xp(Particles,read_only=.TRUE.)
+
+            CALL particles_dcop_free(Particles,eta_id,info)
+            IF (info.ne.0) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,&
+                    'D_needs_gradients with level_sets: not supported',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
         ENDIF
 
         !Compute Dtilde on real particles
@@ -477,7 +485,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         IF (PRESENT(wp_fun)) THEN
             DO ip=1,Particles%Npart
                 wp_grad_fun0= wp_grad_fun(xp(1:ppm_dim,ip))
-                Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)
+                Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts) 
             ENDDO
         ELSE
             wp_grad => Get_wpv(Particles,adapt_wpgradid)
@@ -519,7 +527,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ELSE
             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
             IF (opts%level_set) THEN
-                level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
+                level => Get_wps(Particles,Particles%level_id,&
+                    with_ghosts=.TRUE.)
                 DO ip=1,Particles%Mpart
                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts,level(ip))
                 ENDDO
@@ -582,6 +591,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     Dtilde => Get_wps(Particles,Particles%Dtilde_id)
     DO ip=1,Particles%Npart
         rcp(ip) = opts%rcp_over_D * Dtilde(ip)
+        !TESTING THIS:
+        rcp(ip) = Dtilde(ip)
     ENDDO
     rcp => Set_wps(Particles,Particles%rcp_id)
     Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)

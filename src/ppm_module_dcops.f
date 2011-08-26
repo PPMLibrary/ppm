@@ -218,6 +218,9 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     USE ppm_module_particles_typedef
     USE ppm_module_write
     IMPLICIT NONE
+#ifdef __MPI
+    INCLUDE 'mpif.h'
+#endif
 
     !---------------------------------------------------------
     ! arguments
@@ -240,7 +243,7 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     !---------------------------------------------------------
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_compute'
     CHARACTER(LEN = ppm_char)               :: cbuf
-    REAL(KIND(1.D0))                        :: t0
+    REAL(KIND(1.D0))                        :: t0,t1,t2
     LOGICAL                                 :: interp
 
     !-------------------------------------------------------------------------
@@ -248,6 +251,9 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     !-------------------------------------------------------------------------
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
 
     !-------------------------------------------------------------------------
     ! Check arguments
@@ -273,7 +279,7 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
             __LINE__,info)
         GOTO 9999
     ENDIF
-    IF (.NOT. ASSOCIATED(Particles%ops%desc(eta_id)%degree)) THEN
+    IF (.NOT. Particles%ops%desc(eta_id)%is_defined) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
             & 'Operator not found, use particles_dcop_define first',&
@@ -318,6 +324,9 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     !-------------------------------------------------------------------------
     ! Compute the DC operator
     !-------------------------------------------------------------------------
+
+    Particles%stats%nb_dc_comp = Particles%stats%nb_dc_comp + 1
+
     IF (ppm_dim .EQ. 2) THEN
         CALL ppm_dcop_compute2d(Particles,eta_id,info,interp,c,min_sv)
     ELSE
@@ -326,7 +335,7 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(999,caller,   &
-            & 'ppm_part_dcops failed',&
+            & 'particles_dcop_compute failed',&
             __LINE__,info)
         GOTO 9999
     ENDIF
@@ -335,6 +344,10 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     ! Update states
     !-------------------------------------------------------------------------
     Particles%ops%desc(eta_id)%is_computed = .TRUE.
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Particles%stats%t_dc_comp = Particles%stats%t_dc_comp + (t2-t1)
+#endif
 
     !-------------------------------------------------------------------------
     ! Finalize

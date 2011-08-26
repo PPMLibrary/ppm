@@ -3,7 +3,7 @@
 !!! Get ghost values for Gradient_Psi
 !!!----------------------------------------------------------------------------!
 SUBROUTINE sop_gradient_psi(Particles,topo_id,&
-        Gradient_Psi,Psi_global,Psi_max,opts,info,gradD)
+        Gradient_Psi,Psi_global,Psi_max,opts,info,gradD,gradPsi_max)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_particles
@@ -30,6 +30,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ! Optional arguments
     REAL(MK),DIMENSION(:,:),POINTER,OPTIONAL,INTENT(IN):: gradD
+    REAL(MK),OPTIONAL,                   INTENT(  OUT)   :: gradPsi_max
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
@@ -44,6 +45,9 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
+    REAL(MK)                              :: rho,coeff
+    LOGICAL                               :: no_fusion
+    INTEGER,DIMENSION(:),POINTER          :: fuse
 
 
     !For debugging
@@ -81,9 +85,12 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     nvlist => Particles%nvlist
     vlist => Particles%vlist
 
+    fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+
     !!-------------------------------------------------------------------------!
     !! Compute interaction potential and its gradient
     !!-------------------------------------------------------------------------!
+    IF(PRESENT(gradPsi_max)) gradPsi_max = 0._mk
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
         nn = HUGE(1._MK)
@@ -94,13 +101,11 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !Particles with few neighbours are a bit more reluctant to fuse
         !(not really necessary, but makes insertion/deletion a bit faster
         !in some cases)
-        !attractive_radius = attractive_radius0 * &
-            !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
-            IF (nvlist(ip).GT.30) THEN
-                attractive_radius = opts%attractive_radius0
-            ELSE
-                attractive_radius = 0._MK
-            ENDIF
+            !IF (nvlist(ip).GT.30) THEN
+        attractive_radius = opts%attractive_radius0
+            !ELSE
+                !attractive_radius = 0._MK
+            !ENDIF
 
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
@@ -136,7 +141,20 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             ! here we can choose between different interaction potentials
             !------------------------------------------------------------------!
             rd = rr / meanD
-            rc = rr / (MIN(rcp(ip),rcp(iq)))
+
+            !if (fuse(ip)*fuse(iq).GE.1) then 
+            if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+                no_fusion = .false.
+            else
+                !if (fuse(iq).eq.1) cycle neighbour_loop
+                no_fusion = .true.
+            endif
+
+            if (fuse(ip)+fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+                coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+            else 
+                coeff = 1._mk
+            endif
 
 #include "potential/potential_gradient.f90"
 
@@ -171,6 +189,9 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 MIN(nn,Particles%cutoff)* 0.9_MK / &
                 SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
         ENDIF
+
+        IF(PRESENT(gradPsi_max)) &
+            gradPsi_max = MAX(gradPsi_max, SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2)/D(ip)))
 
 
         !----------------------------------------------------------------------!
@@ -220,12 +241,17 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 #ifdef __MPI
     CALL MPI_Allreduce(Psi_global,Psi_global,1,ppm_mpi_kind,MPI_SUM,ppm_comm,info)
     CALL MPI_Allreduce(Psi_max,Psi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+    IF (PRESENT(gradPsi_max)) &
+        CALL MPI_Allreduce(gradPsi_max,gradPsi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     IF (info .NE. 0) THEN
         CALL ppm_write(ppm_rank,caller,'MPI_Allreduce failed',info)
         info = -1
         GOTO 9999
     ENDIF
 #endif
+
+    IF (PRESENT(gradPsi_max)) &
+        write(*,*) 'in gradient_psi, Max Gradient = ',gradPsi_max
 
     !!-------------------------------------------------------------------------!
     !! Get ghosts for gradient_psi (then, during the linesearch, 

@@ -104,6 +104,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     REAL(MK)                            :: step_min,step_max,step_stall
     INTEGER                             :: it_adapt_max
     REAL(MK)                            :: Psi_max,Psi_global,Psi_global_old
+    REAL(MK)                            :: gradPsi_max, gradPsi_thresh
     REAL(MK)                            :: Psi_1,Psi_2,Psi_thresh
     REAL(MK),DIMENSION(ppm_dim)         :: dist,dist2,dummy_grad
     REAL(MK),DIMENSION(:,:),POINTER     :: Gradient_Psi => NULL()
@@ -113,10 +114,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     REAL(MK),DIMENSION(:),POINTER       :: D => NULL()
     REAL(MK),DIMENSION(:),POINTER       :: rcp => NULL()
     REAL(MK),DIMENSION(:),POINTER       :: Dtilde => NULL()
+    REAL(MK),DIMENSION(:),POINTER       :: Dtilde_old => NULL()
     REAL(MK),DIMENSION(:,:),POINTER     :: xp_old => NULL()
     REAL(MK),DIMENSION(:),POINTER       :: D_old => NULL()
 
-    REAL(MK)                            :: tmpvar1,tmpvar2,minDold
+    REAL(MK)                            :: tmpvar1,tmpvar2
+    REAL(MK)                            :: minDold,minDtildeold
     REAL(MK)                            :: weight,weight_sum
     REAL(MK)                            :: almostzero
     INTEGER                             :: tmpvari1,tmpvari2
@@ -128,6 +131,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !should be removed once the argument lists for the inl routines
     !have been updated to inhomogeneous ghostlayers
     REAL(MK),DIMENSION(2*ppm_dim)       :: ghostlayer
+
+    !testing this
+    INTEGER,DIMENSION(:),POINTER        :: move_part => NULL()
+    INTEGER,DIMENSION(:),POINTER        :: fuse_part => NULL()
+    REAL(MK)                            :: rcp_over_D_save
 
 
     !!-------------------------------------------------------------------------!
@@ -193,6 +201,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     it_adapt = 0
     adding_particles=.TRUE.
     Psi_max = HUGE(1._MK)
+    gradPsi_max = HUGE(1._MK)
     Psi_global = HUGE(1._MK)
     Psi_global_old = HUGE(1._MK)
 
@@ -202,6 +211,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     ELSE
         Psi_thresh = 2.5_MK
     ENDIF
+    gradPsi_thresh = 3E2
 
     IF (MK .EQ. KIND(1.D0)) THEN
         !step_min = 1D-8; step_stall = 1D-14
@@ -210,8 +220,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !step_min = 1E-8; step_stall = 1E-14
         step_min = 1E-3; step_stall = 1E-14
     ENDIF
-    step_max = 0.1_MK ! 0.1_MK
-    it_adapt_max = 9999
+    step_max = 1.4_MK ! 0.1_MK
+    it_adapt_max = 1000
 
     step = 1._MK
     nneigh_adapt = opts%nneigh_theo
@@ -226,12 +236,41 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         GOTO 9999
     ENDIF
 
+    fuse_id = 0
+    CALL particles_allocate_wpi(Particles,fuse_id,info,&
+        iopt=ppm_param_alloc_fit,name='fuse_part')
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,&
+            'particles_allocate_wpi failed', __LINE__,info)
+        GOTO 9999
+    ENDIF
+    fuse_part => get_wpi(Particles,fuse_id)
+    DO ip=1,Particles%Npart
+        fuse_part(ip) = 0
+    ENDDO
+    fuse_part => set_wpi(Particles,fuse_id)
+
+    nb_neigh_id = 0
+    CALL particles_allocate_wpi(Particles,nb_neigh_id,info,&
+        iopt=ppm_param_alloc_fit,name='nb_neigh',zero=.true.)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,&
+            'particles_allocate_wpi failed', __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+
     !!-------------------------------------------------------------------------!
     !! Gradient descent loop until stopping criterion is met
     !!-------------------------------------------------------------------------!
-    it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
-            &          it_adapt .LT. it_adapt_max .AND. &
-            &     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles)
+    adaptation_ok = .false.
+    !it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
+            !&          it_adapt .LT. it_adapt_max .AND. &
+            !&     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles .OR.&
+            !&       gradPsi_max .GT. gradPsi_thresh)
+    it_adapt_loop: DO WHILE (.NOT.adaptation_ok)
 
         it_adapt = it_adapt + 1
 
@@ -252,6 +291,28 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         CALL particles_apply_bc(Particles,topo_id,info)
         CALL particles_mapping_partial(Particles,topo_id,info)
+
+        ! Small hack to speed up ghost_get and neighlists
+        ! (for fusion/insertion of particles, we only need neighbours that are
+        ! very close, so we can safely reduce the cutoff radii)
+        ! The neighbour lists will anyway have to be recomputed later on
+        ! Note that we cannot reduce the cutoffs of particles for which 
+        ! the ratio Dtilde/D is large.
+        ! The factor 1.2 is the same as the one in sop_spawn (check_nn)
+        !
+        rcp => Get_wps(Particles,Particles%rcp_id)
+        D      => Get_wps(Particles,Particles%D_id)
+        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+            rcp(ip) = rcp(ip) * &
+                MIN(1._MK,1.2_MK/ opts%rcp_over_D * Dtilde(ip)/D(ip))
+        rcp => Set_wps(Particles,Particles%rcp_id)
+        D      => Set_wps(Particles,Particles%D_id,read_only=.true.)
+        Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
+        CALL particles_updated_cutoff(Particles,info)
+
+        !! NOTE: the above hack does not seem to have an effect in some
+        !! cases - TODO: check if it is at all needed...
+
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
@@ -265,6 +326,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
+
         CALL sop_fuse_particles(Particles,opts,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -280,19 +342,22 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         !call check_duplicates(Particles)
 
-        !if(it_adapt.LE.50)then
         !Insert (spawn) new particles where needed
-        CALL  sop_spawn_particles(Particles,opts,info,&
-            nb_part_added=nb_spawn,wp_fun=wp_fun)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'sop_spawn_particles failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        adaptation_ok = .true.
+        !IF (opts%add_parts) THEN
+            CALL  sop_spawn_particles(Particles,opts,info,&
+                nb_part_added=nb_spawn,wp_fun=wp_fun)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'sop_spawn_particles failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
 
-            adding_particles= (nb_spawn .GT. 0)
-        !endif
+            adding_particles = (nb_spawn .GT. 0)
+        !ELSE 
+            !adding_particles = .FALSE.
+        !ENDIF
 
         !call check_duplicates(Particles)
 
@@ -324,6 +389,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        ! FIXME 
+        !Is this one really needed???
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -350,7 +417,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ! do not update D
 
         ENDIF Compute_D
-
 
         IF (.NOT. PRESENT(wp_fun)) THEN
             !------------------------------------------------------------------!
@@ -382,7 +448,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDIF
 
 #if debug_verbosity > 0
-            IF (MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
+            IF (it_adapt.eq.1 .and. MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
                 CALL ppm_write(ppm_rank,caller,&
                     'Insufficient number of xset neighbours to compute D',info)
                 info = -1
@@ -390,24 +456,62 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDIF
 #endif
 
+
+            Dtilde  => Get_wps(Particles,Particles%Dtilde_id)
             D     => Get_wps(Particles,    Particles%D_id)
-            D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
+            Dtilde_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
+            D_old => Get_wps(Particles_old,Particles_old%D_id)
             rcp => Get_wps(Particles,Particles%rcp_id)
+            xp => Get_xp(Particles)
+            xp_old => Get_xp(Particles_old,with_ghosts=.true.)
+
             DO ip=1,Particles%Npart
-                minDold=HUGE(1._MK)
-                DO ineigh=1,nvlist_cross(ip)
-                    iq=vlist_cross(ineigh,ip)
-                    minDold=MIN(minDold,D_old(iq))
-                ENDDO
-                !D(ip) = MAX(D(ip),minDold)
-                !when Dtilde/D is large, increase rcp
-                rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
-                D(ip) = minDold
+                if (nvlist_cross(ip).eq.0) then
+                else
+                    minDold=HUGE(1._MK)
+                    tmpvar1=HUGE(1._MK)
+                    Dtilde(ip) = 0._mk
+                    weight_sum = 0._mk
+
+                    DO ineigh=1,nvlist_cross(ip)
+                        iq=vlist_cross(ineigh,ip)
+                        minDold=MIN(minDold,Dtilde_old(iq))
+                    ENDDO
+
+                    n_loop: DO ineigh=1,nvlist_cross(ip)
+                        iq=vlist_cross(ineigh,ip)
+
+                        weight = SUM(((xp(1:ppm_dim,ip)-&
+                            xp_old(1:ppm_dim,iq))/D(ip))**2) ** 2
+                        IF (weight .LT. almostzero) THEN
+                            Dtilde(ip) = Dtilde_old(iq)
+                            weight_sum = 1._mk
+                            EXIT n_loop
+                        ELSE
+                            weight_sum = weight_sum + 1._MK / weight
+                            Dtilde(ip) = Dtilde(ip) + Dtilde_old(iq) / weight
+                        ENDIF
+
+                    ENDDO n_loop
+
+                    Dtilde(ip) = Dtilde(ip) / weight_sum
+
+                    !D(ip) = MAX(D(ip),minDold)
+                    !when Dtilde/D is large, increase rcp
+                    rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
+                    D(ip) = minDold
+                    rcp(ip) = opts%rcp_over_D * D(ip)
+                endif
             ENDDO
             D     => Set_wps(Particles,    Particles%D_id)
-            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
+            D_old => Set_wps(Particles_old,Particles_old%D_id,&
+                read_only=.TRUE.)
+            Dtilde_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
                 read_only=.TRUE.)
             rcp => Set_wps(Particles,Particles%rcp_id)
+            Dtilde  => Set_wps(Particles,Particles%Dtilde_id)
+            xp => Set_xp(Particles,read_only=.true.)
+            xp_old => Set_xp(Particles_old,read_only=.true.)
         ELSE
             !------------------------------------------------------------------!
             ! Update cutoff radii
@@ -457,7 +561,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-#if debug_verbosity > 1
+#if debug_verbosity > 2
         CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,&
             20000+it_adapt,info)
         CALL sop_dump_debug(Particles%wps(Particles%rcp_id)%vec,&
@@ -489,7 +593,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! (on output, the ghost values for Gradient_Psi have been updated)
         !!---------------------------------------------------------------------!
         CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
-            Psi_max,opts,info) 
+            Psi_max,opts,info,gradPsi_max=gradPsi_max) 
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
             info = -1
@@ -613,6 +717,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
                 'Np=',tmpvari1,' Mp=',tmpvari2,' step=',step
             CALL ppm_write(ppm_rank,caller,cbuf,info)
+            CALL particles_print_stats(Particles,info)
         ENDIF
 #endif
 #endif
@@ -654,6 +759,23 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !! Finalize
     !!-------------------------------------------------------------------------!
     DEALLOCATE(Gradient_Psi)
+
+    CALL particles_allocate_wpi(Particles,fuse_id,info,&
+        iopt=ppm_param_dealloc)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_dealloc,caller,&
+            'particles_allocate_wpi (dealloc) failed', __LINE__,info)
+        GOTO 9999
+    ENDIF
+    CALL particles_allocate_wpi(Particles,nb_neigh_id,info,&
+        iopt=ppm_param_dealloc)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_dealloc,caller,&
+            'particles_allocate_wpi (dealloc) failed', __LINE__,info)
+        GOTO 9999
+    ENDIF
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)
@@ -1073,12 +1195,14 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
 #if debug_verbosity > 0
             IF (MINVAL(nvlist_cross(1:Particles%Npart)).EQ.0) THEN
-                CALL ppm_write(ppm_rank,caller,'xlist empty dumping some debug data',info)
+                CALL ppm_write(ppm_rank,caller,&
+                    'xlist empty dumping some debug data',info)
                 DO ip=1,Particles%Npart
                     write(801,*) Particles%xp(1:ppm_dim,ip), nvlist_cross(ip)
                 ENDDO
                 DO ip=1,Particles_old%Npart
-                    write(802,*) Particles_old%xp(1:ppm_dim,ip), opts%rcp_over_D*D_old(ip)
+                    write(802,*) Particles_old%xp(1:ppm_dim,ip), &
+                        opts%rcp_over_D*D_old(ip)
                 ENDDO
                 info = -1
                 GOTO 9999
@@ -1113,12 +1237,14 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 GOTO 9999
             ENDIF
             D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
-            wp_old=> Set_wps(Particles_old,Particles_old%adapt_wpid,read_only=.TRUE.)
+            wp_old=> Set_wps(Particles_old,Particles_old%adapt_wpid,&
+                read_only=.TRUE.)
             wp    => Set_wps(Particles,Particles%adapt_wpid)
 
             IF (Particles%level_id.EQ.0) THEN
                     !removme
-                    CALL ppm_write(ppm_rank,caller,'NOT sure this can ever happen. &
+                    CALL ppm_write(ppm_rank,caller,&
+                        'NOT sure this can ever happen. &
                         &level_id should not be zero here',info)
                     info = -1
                     GOTO 9999
@@ -1127,7 +1253,8 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 level => Get_wps(Particles,Particles%level_id)
                 level_grad => Get_wpv(Particles,Particles%level_grad_id)
                 level_old => Get_wps(Particles_old,Particles_old%level_id)
-                level_grad_old => Get_wpv(Particles_old,Particles_old%level_grad_id)
+                level_grad_old => Get_wpv(Particles_old,&
+                    Particles_old%level_grad_id)
 
                 !! FIXME: these routines also get the ghosts
                 !! (either the state of Particles should be updated

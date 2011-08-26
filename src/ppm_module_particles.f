@@ -186,8 +186,8 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
                     ELSE
                         write(*,*) 'ERROR: tried to get wps (name = ',&
                             & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
-                            & ') with ghosts when ghosts are not up-to-date.&
-                            & Returning NULL pointer'
+                            & ') with ghosts when ghosts are not up-to-date. ',&
+                            & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wps => NULL()
                     ENDIF
@@ -198,8 +198,10 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
-    write(*,*) 'ERROR: tried to get wps when mapping&
-        & is not up-to-date. Returning NULL pointer'
+    write(*,*) 'ERROR: tried to get wps (name = ',&
+        & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
+        & ') when mapping is not up-to-date. ',&
+        & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
     get_wps => NULL()
 
@@ -260,8 +262,10 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
                         get_wpv => &
                             Particles%wpv(wpv_id)%vec(1:lda,1:Particles%Mpart)
                     ELSE
-                        write(*,*) 'ERROR: tried to get wpv with ghosts &
-                            & when ghosts are not up-to-date. Returning NULL pointer'
+                        write(*,*) 'ERROR: tried to get wpv (name = ',&
+                            & TRIM(ADJUSTL(Particles%wpv(wpv_id)%name)),&
+                            & ') with ghosts when ghosts are not up-to-date. ',&
+                            & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wpv => NULL()
                     ENDIF
@@ -272,8 +276,10 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
-    write(*,*) 'ERROR: tried to get wpv when mapping&
-        & is not up-to-date. Returning NULL pointer'
+    write(*,*) 'ERROR: tried to get wpv (name = ',&
+        & TRIM(ADJUSTL(Particles%wpv(wpv_id)%name)),&
+        & ') when mapping is not up-to-date. ',&
+        & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
     get_wpv => NULL()
 
@@ -544,7 +550,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 !        Particles%adapt_wpgradid = 0
         Particles%gi_id = 0
         Particles%rcp_id = 0
-        Particles%eta_id = 0
         Particles%D_id = 0
         Particles%Dtilde_id = 0
         Particles%nn_sq_id = 0
@@ -565,7 +570,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         Particles%time = 0._MK
         Particles%itime = 0
-
 
         IF (verbose) &
             write(*,*) 'Allocated particles with Np=',Npart
@@ -847,7 +851,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !Decrement number of properties
         Particles%nwpi = Particles%nwpi-1
         IF (wp_id .GE. Particles%max_wpiid) THEN
-            Particles%max_wpiid = Particles%max_wpiid - 1
             DO WHILE (.NOT.ASSOCIATED(Particles%wpi(Particles%max_wpiid)%vec) )
                 Particles%max_wpiid = Particles%max_wpiid - 1
                 IF (Particles%max_wpiid.LE.0) EXIT
@@ -1109,7 +1112,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !Decrement number of properties
         Particles%nwps = Particles%nwps-1
         IF (wp_id .GE. Particles%max_wpsid) THEN
-            Particles%max_wpsid = Particles%max_wpsid - 1
             DO WHILE (.NOT.ASSOCIATED(Particles%wps(Particles%max_wpsid)%vec) )
                 Particles%max_wpsid = Particles%max_wpsid - 1
                 IF (Particles%max_wpsid.LE.0) EXIT
@@ -1375,7 +1377,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !Decrement number of properties
         Particles%nwpv = Particles%nwpv-1
         IF (wp_id .GE. Particles%max_wpvid) THEN
-            Particles%max_wpvid = Particles%max_wpvid - 1
             DO WHILE (.NOT.ASSOCIATED(Particles%wpv(Particles%max_wpvid)%vec) )
                 Particles%max_wpvid = Particles%max_wpvid - 1
                 IF (Particles%max_wpvid.LE.0) EXIT
@@ -1509,6 +1510,9 @@ SUBROUTINE particles_mapping_global(Particles,topoid,info,debug)
     !!!   (otherwise -> "unassigned particle error")
 
     USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1537,7 +1541,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     INTEGER                   :: prop_id
     !!! index variable
     CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_global'
-    REAL(KIND(1.D0))          :: t0
+    REAL(KIND(1.D0))          :: t0,t1,t2
     LOGICAL                   :: dbg
     !-------------------------------------------------------------------------
     !  Initialise
@@ -1570,6 +1574,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !Particles have already been mapped onto this topology
         !nothing to do
     ELSE
+        Particles%stats%nb_global_map = Particles%stats%nb_global_map + 1
+#ifdef __MPI
+        t1 = MPI_WTIME(info)
+#endif
         CALL ppm_map_part_global(topoid,Particles%xp,Particles%Npart,info) 
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -1711,6 +1719,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ! particles have been re-indexed and neighbour lists not updated
         Particles%neighlists = .FALSE.
 
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Particles%stats%t_global_map = Particles%stats%t_global_map+(t2-t1)
+#endif
     IF (verbose) &
         write(*,*) 'Finished Global mapping'
 
@@ -1733,6 +1745,9 @@ SUBROUTINE particles_mapping_partial(Particles,topoid,info,debug)
     !!!   (otherwise -> "unassigned particle error")
 
     USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1761,12 +1776,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     INTEGER                   :: prop_id
     !!! index variable
     CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_partial'
-    REAL(KIND(1.D0))          :: t0
+    REAL(KIND(1.D0))          :: t0,t1,t2
     LOGICAL                   :: dbg
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
     CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg = debug
     !-----------------------------------------------------------------
@@ -1798,6 +1816,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             'Particles have not moved since last mapping - not doing anything',&
             &  __LINE__,info)
     ELSE
+        Particles%stats%nb_part_map = Particles%stats%nb_part_map + 1
+
         CALL ppm_map_part_partial(topoid,Particles%xp,Particles%Npart,info) 
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -1942,6 +1962,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     ENDIF
 
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Particles%stats%t_part_map = Particles%stats%t_part_map + (t2-t1)
+#endif
     IF (verbose) &
         write(*,*) 'Finished partial mapping'
 
@@ -1962,6 +1986,9 @@ SUBROUTINE particles_mapping_ghosts(Particles,topoid,info,ghostsize,debug)
     !!!
     USE ppm_module_data, ONLY: ppm_topo
     USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -1993,7 +2020,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !!! cutoff radius
     TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
     CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_ghosts'
-    REAL(KIND(1.D0))                          :: t0
+    REAL(KIND(1.D0))                          :: t0,t1,t2
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
     LOGICAL                                   :: skip_send
@@ -2088,6 +2115,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         IF (.NOT.skip_ghost_get) THEN
+            Particles%stats%nb_ghost_get = Particles%stats%nb_ghost_get + 1
+#ifdef __MPI
+            t1 = MPI_WTIME(info)
+#endif
             CALL ppm_map_part_ghost_get(topoid,Particles%xp,ppm_dim,&
                 Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
@@ -2096,6 +2127,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     'ppm_map_part_ghost_get failed',__LINE__,info)
                 GOTO 9999
             ENDIF
+#ifdef __MPI
+            t2 = MPI_WTIME(info)
+            Particles%stats%t_ghost_get = Particles%stats%t_ghost_get + (t2-t1)
+#endif
             skip_send = .FALSE.
         ENDIF
 
@@ -2110,6 +2145,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         IF(dbg) &
                             write(*,*) 'pushing-wpi ',prop_id,&
                             TRIM(Particles%wpi(prop_id)%name)
+                        Particles%stats%nb_ghost_push = &
+                            Particles%stats%nb_ghost_push + 1
+#ifdef __MPI
+                        t1 = MPI_WTIME(info)
+#endif
                         CALL ppm_map_part_push(Particles%wpi(prop_id)%vec,&
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
@@ -2118,6 +2158,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+#ifdef __MPI
+                        t2 = MPI_WTIME(info)
+                        Particles%stats%t_ghost_push = &
+                            Particles%stats%t_ghost_push + (t2-t1)
+#endif
                         skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpi ',prop_id,&
@@ -2138,6 +2183,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         IF(dbg) &
                             write(*,*) 'pushing-wps ',prop_id,&
                             TRIM(Particles%wps(prop_id)%name)
+                        Particles%stats%nb_ghost_push = &
+                            Particles%stats%nb_ghost_push + 1
+#ifdef __MPI
+                        t1 = MPI_WTIME(info)
+#endif
                         CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                             Particles%Npart,info)
                         IF (info .NE. 0) THEN
@@ -2146,6 +2196,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+#ifdef __MPI
+                        t2 = MPI_WTIME(info)
+                        Particles%stats%t_ghost_push = &
+                            Particles%stats%t_ghost_push + (t2-t1)
+#endif
                         skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wps ',prop_id,&
@@ -2166,6 +2221,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         IF (dbg) &
                             write(*,*) 'pushing-wpv ',prop_id,&
                             TRIM(Particles%wpv(prop_id)%name)
+                        Particles%stats%nb_ghost_push = &
+                            Particles%stats%nb_ghost_push + 1
+#ifdef __MPI
+                        t1 = MPI_WTIME(info)
+#endif
                         CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                             Particles%wpv(prop_id)%lda, Particles%Npart,info)
                         IF (info .NE. 0) THEN
@@ -2174,6 +2234,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                                 'ppm_map_part_push failed',__LINE__,info)
                             GOTO 9999
                         ENDIF
+#ifdef __MPI
+                        t2 = MPI_WTIME(info)
+                        Particles%stats%t_ghost_push = &
+                            Particles%stats%t_ghost_push + (t2-t1)
+#endif
                         skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing-wpv ',prop_id,&
@@ -2609,6 +2674,7 @@ SUBROUTINE particles_neighlists(Particles,topoid,info,&
     USE ppm_module_neighlist
     USE ppm_module_inl_vlist
     USE ppm_module_inl_k_vlist
+    USE ppm_module_kdtree
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2642,6 +2708,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER                                   :: prop_id,op_id,np_target,i
+    INTEGER                                   :: ip,ineigh
     !!! index variable
     LOGICAL                                   :: symmetry
     !!! backward compatibility
@@ -2650,8 +2717,11 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
     CHARACTER(LEN = ppm_char)                 :: caller = 'particles_neighlists'
-    REAL(KIND(1.D0))                          :: t0
+    REAL(KIND(1.D0))                          :: t0,t1,t2
     TYPE(ppm_t_topo), POINTER                 :: topo
+    TYPE(kdtree2),POINTER                     :: tree
+    TYPE(kdtree2_result),ALLOCATABLE          :: results(:)
+    INTEGER                                   :: nneighmin,nneighmax
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -2726,29 +2796,77 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ghostlayer(1:2*ppm_dim)=Particles%cutoff
 
             IF (ensure_knn) THEN
-                !FIXME when kd trees are implemented
 
-    ldc(1) = Particles%Mpart
-    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
-                
-                CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
-                    Particles%Mpart,tmp_cutoff,&
-                    knn,symmetry,ghostlayer,info,Particles%vlist,&
-                    Particles%nvlist)
+                Particles%stats%nb_kdtree = Particles%stats%nb_kdtree+1
+#ifdef __MPI
+                t1 = MPI_WTIME(info)
+#endif
+
+                tree => kdtree2_create(Particles%xp(1:ppm_dim,1:Particles%Mpart),&
+                    sort=.true.,rearrange=.true.)
+                allocate(results(knn+1))
+                ldc(1) = knn
+                ldc(2) = Particles%Npart
+                CALL ppm_alloc(Particles%vlist,ldc,ppm_param_alloc_grow,info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
-                    CALL ppm_error(ppm_err_sub_failed,caller,&
-                        'ppm_inl_k_vlist failed',__LINE__,info)
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'failed to allocate vlist',__LINE__,info)
                     GOTO 9999
                 ENDIF
+                ldc(1) = Particles%Npart
+                CALL ppm_alloc(Particles%nvlist,ldc,ppm_param_alloc_grow,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'failed to allocate vlist',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+                DO ip=1,Particles%Npart
+                    call kdtree2_n_nearest(tp=tree,qv=Particles%xp(1:ppm_dim,ip),&
+                        nn=knn+1,results=results)
+                    !remove ip from the list
+                    ineigh=0
+                    DO i=1,knn+1
+                        IF(results(i)%idx.ne.ip) THEN
+                            ineigh=ineigh+1
+                            Particles%vlist(ineigh,ip)=results(i)%idx
+                        ENDIF
+                    ENDDO
+                    Particles%nvlist(ip)=knn
+                ENDDO
+                call kdtree2_destroy(tree)
+                deallocate(results)
+#ifdef __MPI
+                t2 = MPI_WTIME(info)
+                Particles%stats%t_kdtree = Particles%stats%t_kdtree+(t2-t1)
+#endif
+
+    !ldc(1) = Particles%Mpart
+    !CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+    !IF (info .NE. 0) THEN
+        !info = ppm_error_error
+        !CALL ppm_error(ppm_err_alloc,caller,   &
+            !&            'failed to allocate ops%desc',__LINE__,info)
+        !GOTO 9999
+    !ENDIF
+    !FORALL(i=1:Particles%Mpart) tmp_cutoff(i) = Particles%h_avg
+                !CALL ppm_inl_k_vlist(topoid,Particles%xp,np_target,&
+                    !Particles%Mpart,tmp_cutoff,&
+                    !knn,symmetry,ghostlayer,info,Particles%vlist,&
+                    !Particles%nvlist)
+                !IF (info .NE. 0) THEN
+                    !info = ppm_error_error
+                    !CALL ppm_error(ppm_err_sub_failed,caller,&
+                        !'ppm_inl_k_vlist failed',__LINE__,info)
+                    !GOTO 9999
+                !ENDIF
             ELSE
+                Particles%stats%nb_inl = Particles%stats%nb_inl+1
+
+#ifdef __MPI
+                t1 = MPI_WTIME(info)
+#endif
                 CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
                     Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
                     Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
@@ -2759,8 +2877,17 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         'ppm_inl_vlist failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
+#ifdef __MPI
+                t2 = MPI_WTIME(info)
+                Particles%stats%t_inl = Particles%stats%t_inl + (t2 - t1)
+#endif
             ENDIF
         ELSE
+            Particles%stats%nb_nl = Particles%stats%nb_nl+1
+
+#ifdef __MPI
+            t1 = MPI_WTIME(info)
+#endif
             CALL ppm_neighlist_vlist(topoid,Particles%xp,Particles%Mpart,&
                 Particles%cutoff,Particles%skin,symmetry,Particles%vlist,&
                 Particles%nvlist,info,lstore=lstore)
@@ -2770,6 +2897,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
             ENDIF
+#ifdef __MPI
+            t2 = MPI_WTIME(info)
+            Particles%stats%t_nl = Particles%stats%t_nl + (t2 - t1)
+#endif
         ENDIF
 
         !restore subdomain sizes (revert hack)
@@ -2792,21 +2923,24 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !Update state
         !-----------------------------------------------------------------------
         Particles%neighlists = .TRUE.
-        Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
-        Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
 
         ! TODO: maybe the MPI_Allreduce is not really needed for production runs
         ! This is mainly used for debugging/warnings
 #ifdef __MPI
-        CALL MPI_Allreduce(Particles%nneighmin,Particles%nneighmin,1,&
+        nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
+        nneighmax = MAXVAL(Particles%nvlist(1:np_target))
+        CALL MPI_Allreduce(nneighmin,Particles%nneighmin,1,&
             MPI_INTEGER,MPI_MIN,ppm_comm,info)
-        CALL MPI_Allreduce(Particles%nneighmax,Particles%nneighmax,1,&
+        CALL MPI_Allreduce(nneighmax,Particles%nneighmax,1,&
             MPI_INTEGER,MPI_MAX,ppm_comm,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_mpi_fail,caller,'MPI_Allreduce failed',__LINE__,info)
             GOTO 9999
         ENDIF
+#else
+        Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
+        Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
 #endif
         ! DC operators that do not use a xset neighbour list, if they exist, 
         ! are no longer valid (they depend on the neighbour lists)
@@ -2843,6 +2977,10 @@ SUBROUTINE particles_neighlists_xset(Particles_1,Particles_2,topoid,info,&
     !
     USE ppm_module_inl_xset_vlist
     USE ppm_module_inl_xset_k_vlist
+    USE ppm_module_kdtree
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 #if   __KIND == __SINGLE_PRECISION
 INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
@@ -2881,7 +3019,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
     CHARACTER(LEN = ppm_char)          :: caller = 'particles_neighlists_xset'
-    REAL(KIND(1.D0))                          :: t0
+    REAL(KIND(1.D0))                          :: t0,t1,t2
+    TYPE(kdtree2),POINTER                     :: tree
+    TYPE(kdtree2_result),ALLOCATABLE          :: results(:)
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
@@ -2935,39 +3075,81 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ensure_knn = .FALSE.
     ENDIF
 
-    IF ( Particles_2%neighlists_cross ) THEN
+    IF ( Particles_1%neighlists_cross .and. .not. ensure_knn) THEN
         !neighbor lists are already up-to-date, nothing to do
-        write(*,*) 'xset neighlists supposedly already up-to-date, NOTHING to do'
+        write(*,*) 'xset neighlists supposedly up-to-date, NOTHING to do'
     ELSE
         IF (Particles_2%adaptive) THEN
             !FIXME: when adaptive ghost layers are available
             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
-            IF (ensure_knn) THEN
-                !FIXME when kd trees are implemented
 
-    ldc(1) = Particles_2%Mpart
-    CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    FORALL(i=1:Particles_2%Mpart) tmp_cutoff(i) = Particles_2%h_avg
-                CALL ppm_inl_xset_k_vlist(topoid,Particles_1%xp,&
-                    Particles_1%Npart,Particles_1%Mpart,Particles_2%xp,&
-                    Particles_2%Npart,&
-                    Particles_2%Mpart,tmp_cutoff,&
-                    knn,ghostlayer,info,Particles_1%vlist_cross,&
-                    Particles_1%nvlist_cross)
+            IF (ensure_knn) THEN
+                Particles_1%stats%nb_kdtree = Particles_1%stats%nb_kdtree+1
+
+#ifdef __MPI
+                t1 = MPI_WTIME(info)
+#endif
+                tree => kdtree2_create(Particles_2%xp(1:ppm_dim,1:Particles_2%Mpart),&
+                    sort=.true.,rearrange=.true.)
+                allocate(results(knn))
+                ldc(1) = knn
+                ldc(2) = Particles_1%Npart
+                CALL ppm_alloc(Particles_1%vlist_cross,ldc,ppm_param_alloc_grow,info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
-                    CALL ppm_error(999,caller,&
-                        'ppm_inl_xset_k_vlist failed',__LINE__,info)
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'failed to allocate vlist',__LINE__,info)
                     GOTO 9999
                 ENDIF
+                ldc(1) = Particles_1%Npart
+                CALL ppm_alloc(Particles_1%nvlist_cross,ldc,ppm_param_alloc_grow,info)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_alloc,caller,   &
+                        &            'failed to allocate vlist',__LINE__,info)
+                    GOTO 9999
+                ENDIF
+                DO i=1,Particles_1%Npart
+                    call kdtree2_n_nearest(tp=tree,qv=Particles_1%xp(1:ppm_dim,i),&
+                        nn=knn,results=results)
+                    Particles_1%vlist_cross(1:knn,i)=results(1:knn)%idx
+                    Particles_1%nvlist_cross(i)=knn
+                ENDDO
+                call kdtree2_destroy(tree)
+                deallocate(results)
+#ifdef __MPI
+                t2 = MPI_WTIME(info)
+                Particles_1%stats%t_kdtree = Particles_1%stats%t_kdtree+(t2-t1)
+#endif
+    !ldc(1) = Particles_2%Mpart
+    !CALL ppm_alloc(tmp_cutoff,ldc,ppm_param_alloc_fit,info)
+    !IF (info .NE. 0) THEN
+        !info = ppm_error_error
+        !CALL ppm_error(ppm_err_alloc,caller,   &
+            !&            'failed to allocate ops%desc',__LINE__,info)
+        !GOTO 9999
+    !ENDIF
+    !FORALL(i=1:Particles_2%Mpart) tmp_cutoff(i) = Particles_2%h_avg
+                !CALL ppm_inl_xset_k_vlist(topoid,Particles_1%xp,&
+                    !Particles_1%Npart,Particles_1%Mpart,Particles_2%xp,&
+                    !Particles_2%Npart,&
+                    !Particles_2%Mpart,tmp_cutoff,&
+                    !knn,ghostlayer,info,Particles_1%vlist_cross,&
+                    !Particles_1%nvlist_cross)
+                !IF (info .NE. 0) THEN
+                    !info = ppm_error_error
+                    !CALL ppm_error(999,caller,&
+                        !'ppm_inl_xset_k_vlist failed',__LINE__,info)
+                    !GOTO 9999
+                !ENDIF
             ELSE
-                CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
+                Particles_1%stats%nb_xset_inl = Particles_1%stats%nb_xset_inl+1
+
+#ifdef __MPI
+                t1 = MPI_WTIME(info)
+#endif
+                CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,&
+                    Particles_1%Npart,&
                     Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
                     Particles_2%Mpart,Particles_2%wps(Particles_2%rcp_id)%vec,&
                     Particles_2%skin,ghostlayer,info,Particles_1%vlist_cross,&
@@ -2978,8 +3160,18 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                         'ppm_inl_xset_vlist failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
+#ifdef __MPI
+                t2 = MPI_WTIME(info)
+                Particles_1%stats%t_xset_inl = &
+                    Particles_1%stats%t_xset_inl+(t2-t1)
+#endif
             ENDIF
         ELSE
+            Particles_1%stats%nb_xset_nl = Particles_1%stats%nb_xset_nl+1
+
+#ifdef __MPI
+            t1 = MPI_WTIME(info)
+#endif
             ghostlayer(1:2*ppm_dim)=Particles_2%cutoff
             CALL ppm_inl_xset_vlist(topoid,Particles_1%xp,Particles_1%Npart,&
                 Particles_1%Mpart,Particles_2%xp,Particles_2%Npart,&
@@ -2992,6 +3184,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     'ppm_neighlist_vlist failed',__LINE__,info)
                 GOTO 9999
             ENDIF
+#ifdef __MPI
+            t2 = MPI_WTIME(info)
+            Particles_1%stats%t_xset_nl = Particles_1%stats%t_xset_nl+(t2-t1)
+#endif
         ENDIF
     ENDIF
 
@@ -3979,7 +4175,8 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
                 ALLOCATE(propp_iproc(ndim2,Npart_local),STAT=info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,'allocation failed',__LINE__,info)
+                    CALL ppm_error(ppm_err_alloc,caller,&
+                        'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
 
@@ -4243,14 +4440,14 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'failed to allocate Particles%ops%ker',__LINE__,info)
+                &        'failed to allocate Particles%ops%ker',__LINE__,info)
             GOTO 9999
         ENDIF
         ALLOCATE(Particles%ops%desc(20),STAT=info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'failed to allocate Particles%ops%desc',__LINE__,info)
+                &        'failed to allocate Particles%ops%desc',__LINE__,info)
             GOTO 9999
         ENDIF
         DO i=1,20
@@ -4266,31 +4463,31 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     IF (MINVAL(degree).LT.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'invalid degree: must be positive',__LINE__,info)
+            &       'invalid degree: must be positive',__LINE__,info)
         GOTO 9999
     ENDIF
     IF (MINVAL(order).LT.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'invalid approx order: must be positive',__LINE__,info)
+            &        'invalid approx order: must be positive',__LINE__,info)
         GOTO 9999
     ENDIF
     IF (SIZE(degree).NE.ppm_dim*nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'wrong number of terms in degree argument',__LINE__,info)
+            &       'wrong number of terms in degree argument',__LINE__,info)
         GOTO 9999
     ENDIF
     IF (SIZE(order).NE.nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'wrong number of terms in order argument',__LINE__,info)
+            &       'wrong number of terms in order argument',__LINE__,info)
         GOTO 9999
     ENDIF
     IF (SIZE(coeffs).NE.nterms) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'wrong number of terms in coeffs argument',__LINE__,info)
+            &       'wrong number of terms in coeffs argument',__LINE__,info)
         GOTO 9999
     ENDIF
 
@@ -4551,7 +4748,7 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     CHARACTER(LEN = ppm_char)                  :: cbuf,filename
     CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
     INTEGER                                    :: ip,iq,ineigh,lda,np_target
-    REAL(KIND(1.D0))                           :: t0
+    REAL(KIND(1.D0))                           :: t0,t1,t2
     REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
     REAL(MK),DIMENSION(:),  POINTER            :: wps1 => NULL(),wps2=>NULL()
     REAL(MK),DIMENSION(:,:),POINTER            :: wpv1 => NULL(),wpv2=>NULL()
@@ -4569,6 +4766,9 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     !-------------------------------------------------------------------------
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
 
     !-------------------------------------------------------------------------
     ! Check arguments
@@ -4750,7 +4950,8 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         vlist => Particles%vlist_cross
         IF (vector_output) THEN
             IF(vector_input) THEN
-                wpv2 => Get_wpv(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+                wpv2 => Get_wpv(Particles%Particles_cross,from_id,&
+                    with_ghosts=.TRUE.)
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
@@ -4758,9 +4959,11 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                             wpv2(1:lda,iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
                     ENDDO
                 ENDDO
-                wpv2 => Set_wpv(Particles%Particles_cross,from_id,read_only=.TRUE.)
+                wpv2 => Set_wpv(Particles%Particles_cross,from_id,&
+                    read_only=.TRUE.)
             ELSE
-                wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+                wps2 => Get_wps(Particles%Particles_cross,from_id,&
+                    with_ghosts=.TRUE.)
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
@@ -4768,10 +4971,12 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
                             wps2(iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
                     ENDDO
                 ENDDO
-                wps2 => Set_wps(Particles%Particles_cross,from_id,read_only=.TRUE.)
+                wps2 => Set_wps(Particles%Particles_cross,from_id,&
+                    read_only=.TRUE.)
             ENDIF
         ELSE
-            wps2 => Get_wps(Particles%Particles_cross,from_id,with_ghosts=.TRUE.)
+            wps2 => Get_wps(Particles%Particles_cross,from_id,&
+                with_ghosts=.TRUE.)
             DO ip = 1,np_target
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)
@@ -4813,7 +5018,8 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
             DO ip = 1,np_target
                 DO ineigh = 1,nvlist(ip)
                     iq = vlist(ineigh,ip)
-                    dwps(ip) = dwps(ip) + (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
+                    dwps(ip) = dwps(ip) + &
+                        (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
                 ENDDO
             ENDDO
             wps1 => Set_wps(Particles,from_id,read_only=.TRUE.)
@@ -4839,6 +5045,12 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     ENDIF
     nvlist => NULL()
     vlist => NULL()
+
+    Particles%stats%nb_dc_apply = Particles%stats%nb_dc_apply + 1
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Particles%stats%t_dc_apply = Particles%stats%t_dc_apply+(t2-t1)
+#endif
 
     CALL substop(caller,t0,info)
 
@@ -4970,6 +5182,77 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
 
 
 END SUBROUTINE particles_apply_dcops
+
+SUBROUTINE particles_print_stats(Particles,info)
+    !!!------------------------------------------------------------------------!
+    !!! Print some statistics on screen (ersatz routine...)
+    !!!------------------------------------------------------------------------!
+    USE ppm_module_data, ONLY: ppm_rank
+    USE ppm_module_write
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: cbuf,filename
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_print_stats'
+    REAL(KIND(1.D0))                           :: t0
+    TYPE(particles_stats),POINTER              :: stats
+
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+
+    stats=>Particles%stats
+    write(cbuf,'(A)') 'Number of:  Vlist |     INL | Xset INL|Xset list|  kdtree'
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+    write(cbuf,'(5(A,I8,1X))') 'Iter     ',stats%nb_nl,'|',&
+        stats%nb_inl,'|',stats%nb_xset_inl,&
+       '|',stats%nb_xset_nl,'|',stats%nb_kdtree
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+    write(cbuf,'(5(A,F8.2,1X))') 'Time(s)  ',stats%t_nl,'|',stats%t_inl,'|',&
+        stats%t_xset_inl,'|',stats%t_xset_nl,'|',stats%t_kdtree
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+    write(cbuf,'(A)') 'Number of:  Glob map | Part map | GhostGet | GhostPush| DC comp | DC apply'
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+    write(cbuf,'(6(A,I8,1X))') 'Iter         ',stats%nb_global_map,'|',&
+        stats%nb_part_map,'|', stats%nb_ghost_get,'|',&
+        stats%nb_ghost_push,'|',stats%nb_dc_comp,'|',stats%nb_dc_apply
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+    write(cbuf,'(6(A,F8.2,1X))') 'Time(s)      ',stats%t_global_map,'|',&
+        stats%t_part_map,'|', stats%t_ghost_get,'|',&
+        stats%t_ghost_push,'|',stats%t_dc_comp,'|',stats%t_dc_apply
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+
+
+    stats=>NULL()
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_print_stats
 
 END MODULE ppm_module_particles
 

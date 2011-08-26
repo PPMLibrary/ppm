@@ -75,6 +75,8 @@
          LOGICAL           :: write_xyz    ! writeout xyz files
 
 
+         LOGICAL                               :: add_parts
+         !!! add new particles when needed. Default is .true.
          LOGICAL                               :: D_needs_gradients
          !!! The monitor function depends on the fields gradient
          REAL(prec)                            :: scale_D        ! resolution scale
@@ -92,6 +94,8 @@
          !some parameters used in various functions
          REAL(prec)                            :: param_a !used in module_funcs
          REAL(prec)                            :: param_d0, param_d1,param_p0 
+         REAL(prec)                            :: param_morse ! rho in the Morse
+         !potential
 
          REAL(prec)                            :: attractive_radius0 
          !distance below which particles attract each other
