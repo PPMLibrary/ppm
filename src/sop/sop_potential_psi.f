@@ -28,15 +28,15 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
-    REAL(MK)                              :: dist2,rr,meanD,rd,rc
+    REAL(MK)                              :: dist2,rr,meanD,rd,rc,scaling_ip
     REAL(MK),DIMENSION(ppm_dim)           :: dist
     REAL(KIND(1.D0))                      :: t0
     CHARACTER (LEN=256)                   :: caller='sop_potential_psi'
     CHARACTER (LEN=256)                   :: filename,cbuf
     REAL(MK)                              :: Psi_part,attractive_radius
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
-    REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
-    REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER       :: D => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER       :: inv => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
 
@@ -61,8 +61,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     !!-------------------------------------------------------------------------!
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
-    D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-    rcp  => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
+    D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
         CALL ppm_write(ppm_rank,caller,&
             'need to compute neighbour lists first',info)
@@ -76,18 +76,23 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
         Psi_part = 0._MK
         !attractive_radius = attractive_radius0 * &
             !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
-            IF (nvlist(ip).GT.30) THEN
+            !haeckic: needed that?
+!             IF (nvlist(ip).GT.30) THEN
                 attractive_radius = opts%attractive_radius0
-            ELSE
-                attractive_radius = 0._MK
-            ENDIF
+!             ELSE
+!                 attractive_radius = 0._MK
+!             ENDIF
          
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
 
-            dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-            dist2 = SUM(dist**2)
-            rr = SQRT(dist2)
+!             dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
+!             dist2 = SUM(dist**2)
+!             rr = SQRT(dist2)
+
+            ! haeckic: do the potential calculation
+            CALL particles_anisotropic_distance(Particles,ip,iq,rr,info)
+            scaling_ip = particles_shorter_axis(Particles,ip)**2
 
 #if debug_verbosity > 0
             IF (rr .LE. 1e-12) THEN
@@ -99,15 +104,17 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             ENDIF
 #endif
 
+           
             !meanD = 0.5_MK*(D(ip) + D(iq))
-            meanD = MIN(D(ip) , D(iq))
+            !meanD = MIN(D(ip) , D(iq))
             !meanD = MAX(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
+            ! haeckic: do we do that?
+            !IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
-            rd = rr / meanD
-            rc = rr / (MIN(rcp(ip),rcp(iq)))
+            !rd = rr / meanD
+            !rc = rr / (MIN(rcp(ip),rcp(iq)))
 
 #include "potential/potential.f90"
 
@@ -118,8 +125,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     ENDDO particle_loop
 
     xp => Set_xp(Particles,read_only=.TRUE.)
-    D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-    rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
+    D  => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+    inv  => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 

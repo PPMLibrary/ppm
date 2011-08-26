@@ -224,9 +224,9 @@ TYPE ppm_t_particles
     INTEGER                                         :: rcp_id
     !!! index of the wps array where the cutoff radius is stored
     INTEGER                                         :: D_id
-    !!! index of the wps array where D is stored
+    !!! index of the wps array where D is stored, also used for anisotropic
     INTEGER                                         :: Dtilde_id
-    !!! index of the wps array where D_tilde is stored
+    !!! index of the wps array where D_tilde is stored, also used for anisotropic
     INTEGER                                         :: adapt_wpid
     !!! index of the wps array where is stored the property on 
     !!! which adaptation is based 
@@ -255,10 +255,14 @@ TYPE ppm_t_particles
     !!! in this case, the G tensor will be stored in wpv(G_id)%vec
     !!! the tensors are stored as transformation from anisotropic 
     !!! to isotropic case, i.e. as the inverse of the ellipses' axes
+    !!! which transforms distances to the unit circle
     !!! 2D: [t11, t12, t21, t22]
     !!! 3D: [t11, t12, t13, t21, t22, t23, t31, t32, t33]
     INTEGER                                         :: G_id
     !!! index where G is stored
+    INTEGER                                         :: tensor_length
+    !!! 2d: 4         3d: 9
+    !!! is used in sop for allocation
 
 
     ! spacings between particles

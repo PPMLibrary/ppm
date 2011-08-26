@@ -1,9 +1,15 @@
 !!!----------------------------------------------------------------------------!
-!!! Computes resolution field D
+!!! Computes anisotropic requirements for given Particles
+!!! 
+!!! This functions computes Dtilde and D for anisotropic particles.
+!!! This is done in the following way. The gradient direction is the
+!!! shorter axis of the ellipse, which is scaled with D_fun. The orthogonal
+!!! direction is scaled s.t. the value difference is considered.
+!!! 
 !!!----------------------------------------------------------------------------!
 
 SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
-        wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun,stats)
+                            wp_fun,wp_grad_fun,stats)
 
     USE ppm_module_error
     USE ppm_module_dcops
@@ -26,17 +32,10 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     INTEGER,                              INTENT(  OUT)   :: info
 
     !optional arguments
-
     OPTIONAL                                              :: wp_fun
     !!! if field is known analytically
     OPTIONAL                                              :: wp_grad_fun
     !!! if field gradients are known analytically
-    OPTIONAL                                              :: level_fun
-    !!! if level function is known analytically
-    OPTIONAL                                              :: level_grad_fun
-    !!! if level gradients are known analytically
-    OPTIONAL                                              :: nb_fun
-    !!! if narrow-band function is known analytically
     TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
     !!! statistics on output
 
@@ -59,19 +58,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             REAL(MK),OPTIONAL,          INTENT(IN) :: f2
         END FUNCTION D_fun
 
-        !Function that returns the width of the narrow band
-        FUNCTION nb_fun(kappa,scale_D)
-            USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-            REAL(MK)                             :: nb_fun
-            REAL(MK),                INTENT(IN)  :: kappa
-            REAL(MK),                INTENT(IN)  :: scale_D
-        END FUNCTION nb_fun
-
         !Field function (usually known only during initialisation)
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
@@ -84,19 +70,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
-
-        !Level function (usually known only during initialisation)
-        FUNCTION level_fun(pos)
-            USE ppm_module_data, ONLY: ppm_dim
-            USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-            REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
-            REAL(MK)                                      :: level_fun
-        END FUNCTION level_fun
 
         !Gradient of the field func. (usually known only during initialisation)
         FUNCTION wp_grad_fun(pos)
@@ -111,25 +84,13 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
         END FUNCTION wp_grad_fun
 
-        !Gradient of the level func. (usually known only during initialisation)
-        FUNCTION level_grad_fun(pos)
-            USE ppm_module_data, ONLY: ppm_dim
-            USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-            REAL(MK),DIMENSION(ppm_dim)                      :: level_grad_fun
-            REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
-        END FUNCTION level_grad_fun
     END INTERFACE
 
     ! local variables
     INTEGER                                    :: i,ip,ineigh,iq
     CHARACTER(LEN = 64)                        :: myformat
     CHARACTER(LEN = 256)                       :: cbuf
-    CHARACTER(LEN = 256)                       :: caller='sop_compute_D'
+    CHARACTER(LEN = 256)                       :: caller='sop_compute_req'
     REAL(KIND(1.D0))                           :: t0
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
@@ -140,19 +101,22 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad_old => NULL()
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
+    REAL(MK),     DIMENSION(:,:), POINTER      :: inv => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: rcp => NULL()
-    REAL(MK),     DIMENSION(:),   POINTER      :: D => NULL()
-    REAL(MK),     DIMENSION(:),   POINTER      :: Dtilde => NULL()
+    REAL(MK),     DIMENSION(:,:), POINTER      :: D => NULL()
+    REAL(MK),     DIMENSION(:,:), POINTER      :: Dtilde => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: wp => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: wp_grad => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: level => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_A => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_B => NULL()
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
-    REAL(MK)                                   :: min_D
+    REAL(MK)                                   :: min_D,factor,factor2,old_scale,new_scale
     LOGICAL                                    :: need_derivatives
     REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
-    INTEGER                                    :: topo_id,eta_id
+    INTEGER                                    :: topo_id,eta_id,tensor_length
     REAL(MK),     DIMENSION(ppm_dim)           :: coeffs
     INTEGER,      DIMENSION(ppm_dim)           :: order
     INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
@@ -162,10 +126,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ! Initialize
     !-------------------------------------------------------------------------!
     info = 0
+
 #if debug_verbosity > 0
     CALL substart(caller,t0,info)
 #endif
-    dummy_grad=0._MK
+
+    dummy_grad = 0._MK
     topo_id = Particles%active_topoid
 
     !-------------------------------------------------------------------------!
@@ -179,17 +145,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-    IF (.NOT.PRESENT(wp_grad_fun) .AND. PRESENT(wp_fun)) THEN
-!         IF (Particles%level_set) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_argument,caller,   &
-!                 & 'provided analytical function values but no &
-!                 & function gradients. With level sets, &
-!                 & this case is not yet implemented',&
-!                 &  __LINE__,info)
-!             GOTO 9999
-!         ENDIF
-    ENDIF
+
     !-------------------------------------------------------------------------!
     ! Perform consistency checks
     !-------------------------------------------------------------------------!
@@ -202,11 +158,11 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    !check that we are dealing with adaptive particles 
-    IF (.NOT.Particles%adaptive) THEN
+    !check that we are dealing with anisotropic particles 
+    IF (.NOT.Particles%anisotropic) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
-            &  'These particles have not been declared as adaptive',&
+            &  'These particles have not been declared as anisotropic',&
             &  __LINE__,info)
         GOTO 9999
     ENDIF
@@ -219,23 +175,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-
-!     IF (opts%level_set) THEN
-!         IF (.NOT. Particles%level_set) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_argument,caller,   &
-!             &  'Need to enable level-set for Particles first',&
-!             &  __LINE__,info)
-!         GOTO 9999
-!         ENDIF
-!         IF (PRESENT(wp_fun) .AND..NOT.PRESENT(level_fun)) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_argument,caller,   &
-!             &  'Need to provide analytical level function',&
-!             &  __LINE__,info)
-!         GOTO 9999
-!         ENDIF
-!     ENDIF
 
     !-------------------------------------------------------------------------!
     ! Determines whether we will need to approximate derivatives
@@ -260,39 +199,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
     ENDIF
-! 
-!     IF (opts%level_set) THEN
-!         ! Check that the level set has been defined or
-!         ! is provided by an analytical function
-!         IF (PRESENT(level_fun)) THEN
-!             IF (.NOT.PRESENT(level_grad_fun)) THEN
-!                 info = ppm_error_error
-!                 CALL ppm_error(ppm_err_argument,caller,   &
-!                     &  'need to analytical gradients for level function',&
-!                     &  __LINE__,info)
-!                 GOTO 9999
-!             ENDIF
-!         ELSE
-!             !check if a scalar property has already been specified as the argument
-!             !for the resolution function (i.e. the particles will adapt to resolve
-!             !this property well)
-!             IF (Particles%level_id.EQ.0) THEN
-!                 info = ppm_error_error
-!                 CALL ppm_error(ppm_err_argument,caller,   &
-!                     &  'need to define level_id first',&
-!                     &  __LINE__,info)
-!                 GOTO 9999
-!             ENDIF
-!             IF (Particles%level_grad_id .EQ. 0) THEN
-!                 info = ppm_error_error
-!                 CALL ppm_error(ppm_err_argument,caller,   &
-!                     &  'need to define level_grad_id first',&
-!                     &  __LINE__,info)
-!                 GOTO 9999
-!             ENDIF
-!         ENDIF
-!     ENDIF
-! 
 
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
@@ -329,59 +235,66 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
+
+    ! haeckic: what do to here?
     ! crash if not enough neighbours
     IF (need_derivatives .AND. Particles%nneighmin.LT.opts%nneigh_critical) THEN
-        xp => Get_xp(Particles)
-        rcp => Get_wps(Particles,Particles%rcp_id)
-        WRITE(cbuf,*) 'Not enough neighbours'
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(cbuf,'(2(A,I5,2X))') 'nneigh_critical ',opts%nneigh_critical,&
-            'nneigh_toobig ',opts%nneigh_toobig
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(cbuf,'(A,I5)') 'We have nneighmin = ',Particles%nneighmin
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(cbuf,*) 'Writing debug data to file fort.1230+rank'
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(myformat,'(A,I1,A)') '(',ppm_dim+1,'(E30.16,2X),I4)'
-        DO ip=1,Particles%Npart
-            WRITE(1230+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),Particles%nvlist(ip)
-        ENDDO
-        DO ip=Particles%Npart+1,Particles%Mpart
-            WRITE(1250+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),0
-        ENDDO
-        CALL ppm_write(ppm_rank,caller,&
-            'Calling neighlists anyway, but crashing just after that',info)
-        CALL particles_neighlists(Particles,topo_id,info)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-        WRITE(cbuf,'(A,I5,1X,I5)') 'nneighmin is now: ',Particles%nneighmin
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        WRITE(cbuf,*) 'Writing debug data to file fort.1240+rank'
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        DO ip=1,Particles%Npart
-            WRITE(1240+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),Particles%nvlist(ip)
-        ENDDO
-        DO ip=Particles%Npart+1,Particles%Mpart
-            WRITE(1260+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),0
-        ENDDO
-        xp=>NULL()
-        rcp => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
-        WRITE(cbuf,'(2(A,I6),2(A,E30.20))') 'Npart=',&
-            Particles%Npart,' Mpart=',Particles%Mpart,&
-            ' cutoff=',Particles%cutoff,' skin=',Particles%skin
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        info = -1
-        GOTO 9999
+!         xp => Get_xp(Particles)
+!         rcp => Get_wps(Particles,Particles%rcp_id)
+!         WRITE(cbuf,*) 'Not enough neighbours'
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         WRITE(cbuf,'(2(A,I5,2X))') 'nneigh_critical ',opts%nneigh_critical,&
+!             'nneigh_toobig ',opts%nneigh_toobig
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         WRITE(cbuf,'(A,I5)') 'We have nneighmin = ',Particles%nneighmin
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         WRITE(cbuf,*) 'Writing debug data to file fort.1230+rank'
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         WRITE(myformat,'(A,I1,A)') '(',ppm_dim+1,'(E30.16,2X),I4)'
+!         DO ip=1,Particles%Npart
+!             WRITE(1230+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),Particles%nvlist(ip)
+!         ENDDO
+!         DO ip=Particles%Npart+1,Particles%Mpart
+!             WRITE(1250+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),0
+!         ENDDO
+!         CALL ppm_write(ppm_rank,caller,&
+!             'Calling neighlists anyway, but crashing just after that',info)
+!         CALL particles_neighlists(Particles,topo_id,info)
+!         IF (info .NE. 0) THEN
+!             CALL ppm_write(ppm_rank,caller,'particles_neighlists failed.',info)
+!             info = -1
+!             GOTO 9999
+!         ENDIF
+!         WRITE(cbuf,'(A,I5,1X,I5)') 'nneighmin is now: ',Particles%nneighmin
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         WRITE(cbuf,*) 'Writing debug data to file fort.1240+rank'
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         DO ip=1,Particles%Npart
+!             WRITE(1240+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),Particles%nvlist(ip)
+!         ENDDO
+!         DO ip=Particles%Npart+1,Particles%Mpart
+!             WRITE(1260+ppm_rank,myformat) xp(1:ppm_dim,ip),rcp(ip),0
+!         ENDDO
+!         xp=>NULL()
+!         rcp => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
+!         WRITE(cbuf,'(2(A,I6),2(A,E30.20))') 'Npart=',&
+!             Particles%Npart,' Mpart=',Particles%Mpart,&
+!             ' cutoff=',Particles%cutoff,' skin=',Particles%skin
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         info = -1
+!         GOTO 9999
     ENDIF
 
     !!-------------------------------------------------------------------------!
     !! Compute D (desired resolution)
     !!-------------------------------------------------------------------------!
-    ! (re)allocate Dtilde
-    CALL particles_allocate_wps(Particles,Particles%Dtilde_id,info,&
+    ! (re)allocate Dtilde, which is a tensor
+    IF (ppm_dim .EQ. 2) THEN
+         tensor_length = 4
+    ELSE
+         tensor_length = 9
+    ENDIF
+    CALL particles_allocate_wpv(Particles,Particles%Dtilde_id,tensor_length,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -393,39 +306,40 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     !! Case where we need to approximate derivatives
     !!-------------------------------------------------------------------------!
+    ! haeckic: how to approx derivatives?
     if_needs_derivatives: IF (need_derivatives) THEN
-        IF (.NOT. Particles%neighlists) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'need neighbour lists to be uptodate', __LINE__,info)
-            GOTO 9999
-        ENDIF
-        ! Compute gradients using PSE kernels
-        coeffs=1._MK; order=4; degree = 0
-        FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
-        eta_id = 0
-        CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
-            order,ppm_dim,info,name="gradient",vector=.TRUE.)
-        IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_dcop_define failed', __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (opts%check_dcops .AND. PRESENT(stats)) THEN
-            CALL particles_dcop_compute(Particles,eta_id,info,&
-                c=opts%c,min_sv=stats%min_sv)
-            WRITE(cbuf,*) 'Smallest singular value for gradient was ',stats%min_sv
-            CALL ppm_write(ppm_rank,caller,cbuf,info)
-        ELSE
-            CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
-        ENDIF
-        IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_dcop_compute failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+!         IF (.NOT. Particles%neighlists) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_argument,caller,&
+!                 'need neighbour lists to be uptodate', __LINE__,info)
+!             GOTO 9999
+!         ENDIF
+!         ! Compute gradients using PSE kernels
+!         coeffs=1._MK; order=4; degree = 0
+!         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
+!         eta_id = 0
+!         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
+!             order,ppm_dim,info,name="gradient",vector=.TRUE.)
+!         IF (info.NE.0) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_sub_failed,caller,&
+!                 'particles_dcop_define failed', __LINE__,info)
+!             GOTO 9999
+!         ENDIF
+!         IF (opts%check_dcops .AND. PRESENT(stats)) THEN
+!             CALL particles_dcop_compute(Particles,eta_id,info,&
+!                 c=opts%c,min_sv=stats%min_sv)
+!             WRITE(cbuf,*) 'Smallest singular value for gradient was ',stats%min_sv
+!             CALL ppm_write(ppm_rank,caller,cbuf,info)
+!         ELSE
+!             CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
+!         ENDIF
+!         IF (info.NE.0) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_sub_failed,caller,&
+!                 'particles_dcop_compute failed',__LINE__,info)
+!             GOTO 9999
+!         ENDIF
     ENDIF if_needs_derivatives
 
     !-------------------------------------------------------------------------!
@@ -433,63 +347,124 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
 
     if_D_needs_grad: IF (opts%D_needs_gradients) THEN
-!         IF (opts%level_set) THEN
-!             CALL ppm_write(ppm_rank,caller,&
-!                 'D_needs_gradients with level_sets: not supported',info)
-!             info = -1
-!             GOTO 9999
-!         ENDIF
 
+        ! haeckic: dcop needs to be adapted
         IF (.NOT.PRESENT(wp_grad_fun)) THEN
-            IF (.NOT. Particles%neighlists) THEN
-                CALL ppm_write(ppm_rank,caller,&
-                    'trying to use neighb lists that dont exist',info)
-                info = -1
-                GOTO 9999
-            ENDIF
-            xp=>Get_xp(Particles,with_ghosts=.TRUE.)
-            wp_grad => Get_wpv(Particles,adapt_wpgradid)
-            eta => Get_dcop(Particles,eta_id)
-            wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-
-            DO ip = 1,Particles%Npart 
-                wp_grad(1:ppm_dim,ip) = 0._MK
-            ENDDO
-            DO ip=1,Particles%Npart
-                DO ineigh=1,Particles%nvlist(ip)
-                    iq=Particles%vlist(ineigh,ip)
-                    wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
-                        (wp(iq)-wp(ip))*&
-                        eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
-                ENDDO
-            ENDDO
-            wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-            eta => Set_dcop(Particles,eta_id)
-            wp_grad => Set_wpv(Particles,adapt_wpgradid)
-            xp => Set_xp(Particles,read_only=.TRUE.)
+!             IF (.NOT. Particles%neighlists) THEN
+!                 CALL ppm_write(ppm_rank,caller,&
+!                     'trying to use neighb lists that dont exist',info)
+!                 info = -1
+!                 GOTO 9999
+!             ENDIF
+!             xp=>Get_xp(Particles,with_ghosts=.TRUE.)
+!             wp_grad => Get_wpv(Particles,adapt_wpgradid)
+!             eta => Get_dcop(Particles,eta_id)
+!             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
+! 
+!             DO ip = 1,Particles%Npart 
+!                 wp_grad(1:ppm_dim,ip) = 0._MK
+!             ENDDO
+!             DO ip=1,Particles%Npart
+!                 DO ineigh=1,Particles%nvlist(ip)
+!                     iq=Particles%vlist(ineigh,ip)
+!                     wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
+!                         (wp(iq)-wp(ip))*&
+!                         eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
+!                 ENDDO
+!             ENDDO
+!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+!             eta => Set_dcop(Particles,eta_id)
+!             wp_grad => Set_wpv(Particles,adapt_wpgradid)
+!             xp => Set_xp(Particles,read_only=.TRUE.)
         ENDIF
 
-        !Compute Dtilde on real particles
+        ! Compute Dtilde on real particles
 
         xp => Get_xp(Particles)
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+        Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
 
         IF (PRESENT(wp_fun)) THEN
+            ! For each particle calc the gradient using given functions wp_fun and wp_grad_fun
             DO ip=1,Particles%Npart
-                wp_grad_fun0= wp_grad_fun(xp(1:ppm_dim,ip))
-                Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)
+                ! gradient
+                wp_grad_fun0 = wp_grad_fun(xp(1:ppm_dim,ip))
+
+                ! use this SUM(wp_grad**2)
+                IF (ppm_dim .EQ. 2) THEN
+                     old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2)
+                ELSE
+                     old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2 + wp_grad_fun0(3)**2)
+                ENDIF
+                ! shorter axis scalar
+                new_scale = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)/old_scale
+
+                ! longer axis scalar
+                ! consider maximum relative difference
+                ! haeckic: determine the factor depening on function
+                factor = opts%max_factor_aniso
+                ! set the tensor
+                CALL ppm_alloc(Matrix_A,(/ tensor_length /),ppm_param_alloc_fit,info)
+
+                IF (ppm_dim .EQ. 2) THEN
+                     Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+                     Matrix_A(3) =  factor*new_scale*wp_grad_fun0(1)
+                     Matrix_A(2) = new_scale*wp_grad_fun0(1)
+                     Matrix_A(4) = new_scale*wp_grad_fun0(2)
+
+                     CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+
+                     Dtilde(1,ip) = Matrix_B(1)
+                     Dtilde(2,ip) = Matrix_B(2)
+                     Dtilde(3,ip) = Matrix_B(3)
+                     Dtilde(4,ip) = Matrix_B(4)
+
+                ELSE
+                     ! haeckic: determine 3d orthogonal axes
+                     ! largest
+!                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+!                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
+!                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
+! 
+!                      ! middle
+!                      Matrix_A(2) = -factor*new_scale*wp_grad_fun0(2)
+!                      Matrix_A(5) =  factor*new_scale*wp_grad_fun0(1)
+!                      Matrix_A(8) =  factor*new_scale*wp_grad_fun0(1)
+!                      
+!                      !smallest
+!                      Matrix_A(3) = new_scale*wp_grad_fun0(1)
+!                      Matrix_A(6) = new_scale*wp_grad_fun0(2)
+!                      Matrix_A(9) = new_scale*wp_grad_fun0(3)
+! 
+!                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+! 
+!                      Dtilde(1,ip) = Matrix_B(1)
+!                      Dtilde(2,ip) = Matrix_B(2)
+!                      Dtilde(3,ip) = Matrix_B(3)
+!                      Dtilde(4,ip) = Matrix_B(4)
+!                      Dtilde(5,ip) = Matrix_B(5)
+!                      Dtilde(6,ip) = Matrix_B(6)
+!                      Dtilde(7,ip) = Matrix_B(7)
+!                      Dtilde(8,ip) = Matrix_B(8)
+!                      Dtilde(9,ip) = Matrix_B(9)
+!                      
+                ENDIF
+                
+                
+                
+                
+
             ENDDO
         ELSE
-            wp_grad => Get_wpv(Particles,adapt_wpgradid)
-            wp => Get_wps(Particles,Particles%adapt_wpid)
-            DO ip=1,Particles%Npart
-                Dtilde(ip) = D_fun(wp(ip),wp_grad(1:ppm_dim,ip),opts)
-            ENDDO
-            wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-            wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
+!             wp_grad => Get_wpv(Particles,adapt_wpgradid)
+!             wp => Get_wps(Particles,Particles%adapt_wpid)
+!             DO ip=1,Particles%Npart
+!                 Dtilde(ip) = D_fun(wp(ip),wp_grad(1:ppm_dim,ip),opts)
+!             ENDDO
+!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+!             wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
         ENDIF
 
-        Dtilde => Set_wps(Particles,Particles%Dtilde_id)
+        Dtilde => Set_wpv(Particles,Particles%Dtilde_id)
         xp => Set_xp(Particles,read_only=.TRUE.)
 
         ! Get ghosts for D_tilde
@@ -502,48 +477,59 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
     ELSE ! .NOT. D_needs_grad
 
-        Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
-        IF (PRESENT(wp_fun)) THEN
-            xp => Get_xp(Particles,with_ghosts=.TRUE.)
-!             IF (opts%level_set) THEN
+!         Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+!         IF (PRESENT(wp_fun)) THEN
+!             xp => Get_xp(Particles,with_ghosts=.TRUE.)
 !                 DO ip=1,Particles%Mpart
-!                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,&
-!                         opts,level_fun(xp(1:ppm_dim,ip)))
+!                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
 !                 ENDDO
-!             ELSE
-                DO ip=1,Particles%Mpart
-                    Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
-                ENDDO
-!             ENDIF
-            xp => Set_xp(Particles,read_only=.TRUE.)
-        ELSE
-            wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-!             IF (opts%level_set) THEN
-!                 level => Get_wps(Particles,Particles%level_id,with_ghosts=.TRUE.)
+! 
+!             xp => Set_xp(Particles,read_only=.TRUE.)
+!         ELSE
+!             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
 !                 DO ip=1,Particles%Mpart
-!                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts,level(ip))
+!                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts)
 !                 ENDDO
-!                 level => Set_wps(Particles,Particles%level_id,read_only=.TRUE.)
-!             ELSE
-                DO ip=1,Particles%Mpart
-                    Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts)
-                ENDDO
-!             ENDIF
-            wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-        ENDIF
-        Dtilde => Set_wps(Particles,Particles%Dtilde_id,&
-            read_only=.FALSE.,ghosts_ok=.TRUE.)
+!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+!         ENDIF
+!         Dtilde => Set_wps(Particles,Particles%Dtilde_id,&
+!             read_only=.FALSE.,ghosts_ok=.TRUE.)
 
     ENDIF if_D_needs_grad
 
     !-------------------------------------------------------------------------!
     ! Rescale D_tilde
     !-------------------------------------------------------------------------!
-    Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+    ! minimum length of gradient axes, maximum length of gradient axis
+    ! the relative difference of axes are kept
+    Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     DO ip = 1,Particles%Mpart
-        Dtilde(ip) = MIN(MAX(Dtilde(ip),opts%minimum_D),opts%maximum_D)
+        
+        CALL particles_inverse_matrix(Dtilde(:,ip),Matrix_B,info)
+        old_scale = sqrt(Matrix_B(2)*Matrix_B(2) + Matrix_B(4)*Matrix_B(4))
+        new_scale = MIN(MAX(old_scale,opts%minimum_D),opts%maximum_D)
+        IF (.NOT.(new_scale .EQ. old_scale)) THEN
+            ! inverse scaling!!
+            new_scale = old_scale/new_scale
+            IF (ppm_dim .EQ. 2) THEN
+                  Dtilde(1,ip) = new_scale*Dtilde(1,ip)
+                  Dtilde(2,ip) = new_scale*Dtilde(2,ip)
+                  Dtilde(3,ip) = new_scale*Dtilde(3,ip)
+                  Dtilde(4,ip) = new_scale*Dtilde(4,ip)
+            ELSE
+                  Dtilde(1,ip) = new_scale*Dtilde(1,ip)
+                  Dtilde(2,ip) = new_scale*Dtilde(2,ip)
+                  Dtilde(3,ip) = new_scale*Dtilde(3,ip)
+                  Dtilde(4,ip) = new_scale*Dtilde(4,ip)
+                  Dtilde(5,ip) = new_scale*Dtilde(5,ip)
+                  Dtilde(6,ip) = new_scale*Dtilde(6,ip)
+                  Dtilde(7,ip) = new_scale*Dtilde(7,ip)
+                  Dtilde(8,ip) = new_scale*Dtilde(8,ip)
+                  Dtilde(9,ip) = new_scale*Dtilde(9,ip)
+            ENDIF  
+        ENDIF
     ENDDO
-    Dtilde => Set_wps(Particles,Particles%Dtilde_id,&
+    Dtilde => Set_wpv(Particles,Particles%Dtilde_id,&
         read_only=.FALSE.,ghosts_ok=.TRUE.)
 
     !---------------------------------------------------------------------!
@@ -576,15 +562,33 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
     !---------------------------------------------------------------------!
-    ! Update cutoff radii
+    ! Update the real tensors of the particles using 1/rcp_over_D*Dtilde
     !---------------------------------------------------------------------!
-    rcp => Get_wps(Particles,Particles%rcp_id)
-    Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+    inv => Get_wpv(Particles,Particles%G_id)
+    Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
     DO ip=1,Particles%Npart
-        rcp(ip) = opts%rcp_over_D * Dtilde(ip)
+        ! Set the real tensors
+        ! inverse scaling!!
+        new_scale = 1/(opts%rcp_over_D)
+        IF (ppm_dim .EQ. 2) THEN
+            inv(1,ip) = new_scale * Dtilde(1,ip)
+            inv(2,ip) = new_scale * Dtilde(2,ip)
+            inv(3,ip) = new_scale * Dtilde(3,ip)
+            inv(4,ip) = new_scale * Dtilde(4,ip)
+        ELSE
+            inv(1,ip) = new_scale * Dtilde(1,ip)
+            inv(2,ip) = new_scale * Dtilde(2,ip)
+            inv(3,ip) = new_scale * Dtilde(3,ip)
+            inv(4,ip) = new_scale * Dtilde(4,ip)
+            inv(5,ip) = new_scale * Dtilde(5,ip)
+            inv(6,ip) = new_scale * Dtilde(6,ip)
+            inv(7,ip) = new_scale * Dtilde(7,ip)
+            inv(8,ip) = new_scale * Dtilde(8,ip)
+            inv(9,ip) = new_scale * Dtilde(9,ip)
+        ENDIF
     ENDDO
-    rcp => Set_wps(Particles,Particles%rcp_id)
-    Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+    inv => Set_wpv(Particles,Particles%G_id)
+    Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
@@ -593,6 +597,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             'particles_updated_cutoff failed',__LINE__,info)
         GOTO 9999
     ENDIF
+
+    ! haeckic: what if the topology is not coarse enough? require good enough!
 
     !---------------------------------------------------------------------!
     ! Update ghosts
@@ -604,6 +610,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             'particles_mapping_ghosts failed',__LINE__,info)
         GOTO 9999
     ENDIF
+
     !---------------------------------------------------------------------!
     ! Update neighbour lists
     !---------------------------------------------------------------------!
@@ -616,7 +623,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDIF
 
     IF (Particles%D_id .EQ. 0 ) THEN
-        CALL particles_allocate_wps(Particles,Particles%D_id,&
+         
+        CALL particles_allocate_wpv(Particles,Particles%D_id,tensor_length,&
             info,name='D')
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -625,37 +633,78 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             GOTO 9999
         ENDIF
     ENDIF
-    !---------------------------------------------------------------------!
-    ! D^(n+1) = min(D_tilde^(n+1)(iq)) over all neighbours iq
-    !---------------------------------------------------------------------!
-    D      => Get_wps(Particles,Particles%D_id)
-    Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+
+    !------------------------------------------------------------------------------!
+    ! D is Dtilde scaled with minium length of shorter axis over all neighbours iq
+    !------------------------------------------------------------------------------!
+    D      => Get_wpv(Particles,Particles%D_id)
+    Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     DO ip=1,Particles%Npart
-        D(ip)=Dtilde(ip)
+        ! Copy the tensor and get smallest in neighborhood
+        IF (ppm_dim .EQ. 2) THEN
+            D(1,ip) = Dtilde(1,ip)
+            D(2,ip) = Dtilde(2,ip)
+            D(3,ip) = Dtilde(3,ip)
+            D(4,ip) = Dtilde(4,ip)
+        ELSE
+            D(1,ip) = Dtilde(1,ip)
+            D(2,ip) = Dtilde(2,ip)
+            D(3,ip) = Dtilde(3,ip)
+            D(4,ip) = Dtilde(4,ip)
+            D(5,ip) = Dtilde(5,ip)
+            D(6,ip) = Dtilde(6,ip)
+            D(7,ip) = Dtilde(7,ip)
+            D(8,ip) = Dtilde(8,ip)
+            D(9,ip) = Dtilde(9,ip)
+        ENDIF            
+        ! haeckic: how to choose smallest?
+        ! now: keep relative difference and scale with smallest shortest axis in neigh
+        ! or take completely the same as smalles neighbor?
+        old_scale = particles_shorter_axis(Particles,ip)
+        new_scale = old_scale
         DO ineigh=1,Particles%nvlist(ip)
-            iq=Particles%vlist(ineigh,ip)
-            IF (Dtilde(iq).LT.D(ip)) &
-                D(ip)=Dtilde(iq)
+            iq = Particles%vlist(ineigh,ip)
+            IF (particles_shorter_axis(Particles,iq).LT.new_scale) THEN
+                new_scale = particles_shorter_axis(Particles,iq)
+            ENDIF
         ENDDO
+        ! scale the axes of the ellipse
+        ! inverse scaling
+        new_scale = old_scale/new_scale
+        IF (ppm_dim .EQ. 2) THEN
+            D(1,ip) = new_scale*D(1,ip)
+            D(2,ip) = new_scale*D(2,ip)
+            D(3,ip) = new_scale*D(3,ip)
+            D(4,ip) = new_scale*D(4,ip)
+        ELSE
+            D(1,ip) = new_scale*D(1,ip)
+            D(2,ip) = new_scale*D(2,ip)
+            D(3,ip) = new_scale*D(3,ip)
+            D(4,ip) = new_scale*D(4,ip)
+            D(5,ip) = new_scale*D(5,ip)
+            D(6,ip) = new_scale*D(6,ip)
+            D(7,ip) = new_scale*D(7,ip)
+            D(8,ip) = new_scale*D(8,ip)
+            D(9,ip) = new_scale*D(9,ip)
+        ENDIF
     ENDDO
-    D      => Set_wps(Particles,Particles%D_id)
-    Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+    D      => Set_wpv(Particles,Particles%D_id)
+    Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
-#if debug_verbosity > 0
-    D => Get_wps(Particles,Particles%D_id)
-#ifdef __MPI
-    CALL MPI_Allreduce(MINVAL(D(1:Particles%Npart)),min_D,1,&
-        ppm_mpi_kind,MPI_MIN,ppm_comm,info)
-#else
-    min_D =MINVAL(D(1:Particles%Npart))
-#endif
-    IF (ppm_rank .EQ.0) THEN
-        WRITE(cbuf,'(A,E12.4)') 'Min D = ',min_D
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-    ENDIF
-    D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-#endif
-
+! #if debug_verbosity > 0
+!     D => Get_wpv(Particles,Particles%D_id)
+! #ifdef __MPI
+!     CALL MPI_Allreduce(MINVAL(D(1:Particles%Npart)),min_D,1,&
+!         ppm_mpi_kind,MPI_MIN,ppm_comm,info)
+! #else
+!     min_D =MINVAL(D(1:Particles%Npart))
+! #endif
+!     IF (ppm_rank .EQ.0) THEN
+!         WRITE(cbuf,'(A,E12.4)') 'Min D = ',min_D
+!         CALL ppm_write(ppm_rank,caller,cbuf,info)
+!     ENDIF
+!     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+! #endif
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)

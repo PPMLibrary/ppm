@@ -1480,8 +1480,14 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         ! We assume that if the user allocates an array for the tensors,
         ! then it means the particles are meant to be adaptive.
-        IF (Particles%G_id.NE.0) Particles%anisotropic=.TRUE.
-
+        IF (Particles%G_id.NE.0) THEN
+            Particles%anisotropic=.TRUE.
+            IF (ppm_dim .EQ. 2) THEN
+               Particles%tensor_length = 4
+            ELSE
+               Particles%tensor_length = 9
+            ENDIF
+        ENDIF
         IF (Particles%max_wpvid .GT. SIZE(Particles%wpv)) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,&
@@ -2769,6 +2775,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         
         ELSEIF (Particles%anisotropic) THEN
+        
             ghostlayer(1:2*ppm_dim)=Particles%cutoff
             CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
                     Particles%Mpart,Particles%wpv(Particles%G_id)%vec,&
@@ -3575,6 +3582,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             DO i = 1,Particles%Npart
 
                ! get the real axes and calc length of longer axes
+               ! haeckic: use longer call
                CALL particles_inverse_matrix(inv(:,i),axes,info)
 
                IF (ppm_dim .EQ. 2) THEN
@@ -5258,9 +5266,9 @@ SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
          GOTO 9999
     ENDIF
 
-
-    inv => get_wpv(Particles,Particles%G_id,.TRUE.)
-    xp => get_xp(Particles,.TRUE.)
+    ! this hack is needed because in sampling we need to access outside
+    inv => Particles%wpv(Particles%G_id)%vec
+    xp => Particles%xp
 
     IF (ppm_dim .EQ. 2) THEN
 
@@ -5363,6 +5371,103 @@ SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,di
 
 END SUBROUTINE particles_sep_anisotropic_distance
 
+
+! Returns the length of the longer axis
+FUNCTION particles_longer_axis(Particles, i) RESULT(longax)
+
+      IMPLICIT NONE
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN)    :: i
+    !!! Index of origin particle, its ellipse is taken
+    REAL(MK),DIMENSION(:), POINTER                    :: Matrix_A
+    !!! matrix to be inverted
+    REAL(MK)                                          :: longax,a,b,c,det
+    !!! resulting longer axis + locals
+ 
+    ! Set the reference to the right inverse matrix
+    Matrix_A => Particles%wpv(Particles%G_id)%vec(:,i)
+
+    IF (ppm_dim .EQ. 2) THEN
+      ! set Matrix_B
+      ! det(A) = t11*t22 - t12*t21
+      det = Matrix_A(1)*Matrix_A(4) - Matrix_A(2)*Matrix_A(3)
+      longax = sqrt((1/det)*Matrix_A(4)*(1/det)*Matrix_A(4) + (1/det)*Matrix_A(3)*(1/det)*Matrix_A(3))
+
+    ELSE
+      ! det(A) = aei + bfg + cdh − gec − hfa − idb. 
+      det = Matrix_A(1)*Matrix_A(5)*Matrix_A(9) + Matrix_A(2)*Matrix_A(6)*Matrix_A(7) &
+   &      + Matrix_A(3)*Matrix_A(4)*Matrix_A(8) - Matrix_A(3)*Matrix_A(5)*Matrix_A(7) &
+   &      - Matrix_A(1)*Matrix_A(6)*Matrix_A(8) - Matrix_A(2)*Matrix_A(4)*Matrix_A(9)
+      
+      a = (1/det)*(Matrix_A(5)*Matrix_A(9) - Matrix_A(6)*Matrix_A(8))  
+      b = (1/det)*(Matrix_A(6)*Matrix_A(7) - Matrix_A(4)*Matrix_A(9))
+      c = (1/det)*(Matrix_A(4)*Matrix_A(8) - Matrix_A(5)*Matrix_A(7))
+
+      longax = sqrt(a*a + b*b + c*c)
+    
+    ENDIF
+
+END FUNCTION particles_longer_axis
+
+
+! Returns the length of the longer axis
+FUNCTION particles_shorter_axis(Particles, i) RESULT(shortax)
+
+      IMPLICIT NONE
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN)    :: i
+    !!! Index of origin particle, its ellipse is taken
+    REAL(MK),DIMENSION(:), POINTER                    :: Matrix_A
+    !!! matrix to be inverted
+    REAL(MK)                                          :: shortax,a,b,c,det
+    !!! resulting longer axis + locals
+ 
+    ! Set the reference to the right inverse matrix
+    Matrix_A => Particles%wpv(Particles%G_id)%vec(:,i)
+
+    IF (ppm_dim .EQ. 2) THEN
+      ! set Matrix_B
+      ! det(A) = t11*t22 - t12*t21
+      det = Matrix_A(1)*Matrix_A(4) - Matrix_A(2)*Matrix_A(3)
+      shortax = sqrt((1/det)*Matrix_A(2)*(1/det)*Matrix_A(2) + (1/det)*Matrix_A(1)*(1/det)*Matrix_A(1))
+
+    ELSE
+      ! det(A) = aei + bfg + cdh − gec − hfa − idb. 
+      det = Matrix_A(1)*Matrix_A(5)*Matrix_A(9) + Matrix_A(2)*Matrix_A(6)*Matrix_A(7) &
+   &      + Matrix_A(3)*Matrix_A(4)*Matrix_A(8) - Matrix_A(3)*Matrix_A(5)*Matrix_A(7) &
+   &      - Matrix_A(1)*Matrix_A(6)*Matrix_A(8) - Matrix_A(2)*Matrix_A(4)*Matrix_A(9)
+      
+      a = (1/det)*(Matrix_A(2)*Matrix_A(6) - Matrix_A(3)*Matrix_A(5))  
+      b = (1/det)*(Matrix_A(3)*Matrix_A(4) - Matrix_A(1)*Matrix_A(6))
+      c = (1/det)*(Matrix_A(1)*Matrix_A(5) - Matrix_A(2)*Matrix_A(4))
+
+      shortax = sqrt(a*a + b*b + c*c)
+    
+    ENDIF
+
+END FUNCTION particles_shorter_axis
 
 END MODULE ppm_module_particles
 

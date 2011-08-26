@@ -34,14 +34,14 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
     REAL(KIND(1.D0))                      :: t0
-    REAL(MK)                              :: rr,meanD,nn,rd,rc
-    REAL(MK),DIMENSION(ppm_dim)           :: dist
+    REAL(MK)                              :: rr,rr_iso,meanD,nn,rd,rc,scaling_ip,scaling_iq
+    REAL(MK),DIMENSION(ppm_dim)           :: dist, grad_vec
     REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
     CHARACTER (LEN = ppm_char)            :: caller='sop_gradient_psi'
     CHARACTER (LEN = ppm_char)            :: filename,cbuf
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
-    REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
-    REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER       :: D => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER       :: inv => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
 
@@ -70,8 +70,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     Particles%h_min     = HUGE(1._MK)
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
-    D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
-    rcp  => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
+    D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
         CALL ppm_write(ppm_rank,caller,&
             'need to compute neighbour lists first',info)
@@ -95,18 +95,27 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !(not really necessary, but makes insertion/deletion a bit faster
         !in some cases)
         !attractive_radius = attractive_radius0 * &
-            !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
-            IF (nvlist(ip).GT.30) THEN
+         !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
+
+         ! haeckic: keep that??
+!          IF (nvlist(ip).GT.30) THEN
                 attractive_radius = opts%attractive_radius0
-            ELSE
-                attractive_radius = 0._MK
-            ENDIF
+!          ELSE
+!                attractive_radius = 0._MK
+!          ENDIF
 
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
 
+            ! haeckic: do the right gradient of potential
+
+            ! rr: distance in unit circle
+            ! dist: vector from current point to neighbor point: xq - xp
+            ! rr_iso: distance in real space
+
+            CALL particles_anisotropic_distance(Particles,ip,iq,rr,info)
             dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-            rr = SQRT(SUM(dist**2))
+            rr_iso = SQRT(SUM(dist**2))
 
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles less than 1e-12! ',&
@@ -117,17 +126,32 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 GOTO 9999
             ENDIF
 
+            !haeckic: see derivation for this
+            IF (ppm_dim .EQ. 2) THEN
+               grad_vec(1) = - inv(1,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2)) &
+               &             - inv(3,ip)*(inv(3,ip)*dist(1) + inv(4,ip)*dist(2)) 
+               grad_vec(2) = - inv(2,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2)) &
+               &             - inv(4,ip)*(inv(3,ip)*dist(1) + inv(4,ip)*dist(2))
+            ELSE
+               !haeckic: todo 3d
+            ENDIF
+
+            scaling_ip = particles_shorter_axis(Particles,ip)**2
+            scaling_iq = particles_shorter_axis(Particles,iq)**2
+
+            ! haeckic: add this one later
             !compute nearest-neighbour distance for each particle
-            IF (rr .LT. nn) THEN
-                nn = rr
+            IF (rr_iso .LT. nn) THEN
+                nn = rr_iso
             ENDIF
 
             !meanD = 0.5_MK*(D(ip) + D(iq))
             !meanD = MAX(D(ip) , D(iq))
-            meanD = MIN(D(ip) , D(iq))
+            !meanD = MIN(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
+            ! haeckic: do we need that? NO
+            !IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
@@ -135,13 +159,20 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             !------------------------------------------------------------------!
             ! here we can choose between different interaction potentials
             !------------------------------------------------------------------!
-            rd = rr / meanD
-            rc = rr / (MIN(rcp(ip),rcp(iq)))
+!             rd = rr / meanD
+!             rc = rr / (MIN(rcp(ip),rcp(iq)))
 
 #include "potential/potential_gradient.f90"
 
-        Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) + &
-            dist/rr * gradPsi
+
+
+            ! add part to ip and subtract part from iq
+!             write(*,*) 'Particle', ip, scaling_ip, rr, grad_vec, gradPsi
+!             write(*,*) 'positions', xp(1:ppm_dim,ip), xp(1:ppm_dim,iq), rr_iso
+            Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) &
+                  + scaling_ip/rr * grad_vec * gradPsi
+            Gradient_Psi(1:ppm_dim,iq)=Gradient_Psi(1:ppm_dim,iq) &
+                  - scaling_iq/rr * grad_vec * gradPsi
 
         ENDDO neighbour_loop
 
@@ -165,18 +196,21 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
         !ENDIF
         !ENDDO
-        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. &
-            &          MIN(nn**2,Particles%cutoff**2)) THEN
-            Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
-                MIN(nn,Particles%cutoff)* 0.9_MK / &
-                SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
-        ENDIF
+        !haeckic: how to scale it down? cap it
+
+        ! If the gradient length is bigger than distance to nearest neighbor?
+        ! haeckic: nearest distance has to be in normal space, not on unit circle!! it is done now
+!         IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
+!             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
+!                 MIN(nn,Particles%cutoff) * 0.9_MK / SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
+!         ENDIF
 
 
         !----------------------------------------------------------------------!
         ! Save the minimum and maximum separation distance on this processor
         ! (used for checking stability conditions, for example)
         !----------------------------------------------------------------------!
+        ! haeckic: keep that?
         Particles%h_min = MIN(Particles%h_min,nn)
 
 #if debug_verbosity > 1
@@ -199,9 +233,19 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ENDDO particle_loop
 
+DO ip = 1,Particles%Npart
+        ! The scaling needs to be done after the particle loop, because asymmetric
+        ! If the gradient length is bigger than distance to nearest neighbor?
+        ! haeckic: nearest distance has to be in normal space, not on unit circle!! it is done now
+        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
+            Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
+                MIN(nn,Particles%cutoff) * 0.9_MK / SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
+        ENDIF
+ENDDO 
+
     xp => Set_xp(Particles,read_only=.TRUE.)
-    D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
-    rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
+    D  => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+    inv  => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 
@@ -231,6 +275,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     !! Get ghosts for gradient_psi (then, during the linesearch, 
     !! we can move ghost particles directly, without communicating)
     !!-------------------------------------------------------------------------!
+
     CALL ppm_map_part_push(Gradient_Psi,ppm_dim,Particles%Npart,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -253,7 +298,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             'ppm_map_part_pop failed',__LINE__,info)
         GOTO 9999
     ENDIF
-
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!

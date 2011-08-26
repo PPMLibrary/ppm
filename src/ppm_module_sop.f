@@ -183,9 +183,6 @@
 #include "sop/sop_compute_D.f"
 
 #define __KIND __DOUBLE_PRECISION
-#include "sop/sop_compute_req.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_dump_debug.f"
 
      !!#include "sop/sop_check_debug.f"
