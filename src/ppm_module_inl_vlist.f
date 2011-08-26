@@ -140,6 +140,7 @@
         PRIVATE :: getParticleCoorDepth
         PRIVATE :: inDomain
         PRIVATE :: isNeighbor
+        PRIVATE :: cross_neighbor
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters
         !-------------------------------------------------------------------------

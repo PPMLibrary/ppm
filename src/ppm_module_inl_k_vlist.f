@@ -161,6 +161,7 @@
         PRIVATE :: is_kNeighbor
         PRIVATE :: SortByDist
         PRIVATE :: partitionByDist
+        PRIVATE :: cross_neighbor
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters
         !-------------------------------------------------------------------------
