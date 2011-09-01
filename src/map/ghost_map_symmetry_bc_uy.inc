@@ -52,7 +52,7 @@
         xt(1,k)   = xt(1,i)
         xt(2,k)   = 2.0_MK*ymaxf - xt(2,i)
         xt_offset(1,k) = xt_offset(1,i)
-        xt_offset(2,k) = 2.0_MK*(xmaxf-xt(2,i))
+        xt_offset(2,k) = 2.0_MK*(ymaxf-xt(2,i))
         IF ( ppm_dim == 3 ) THEN
            xt(3,k)   = xt(3,i)
            xt_offset(3,k) = xt_offset(3,i)

@@ -453,19 +453,10 @@ CONTAINS
           GOTO 100
        END IF
        !-------------------------------------------------------------------
-       !  Control file
+       !  Parse Control file
        !-------------------------------------------------------------------
        IF (ctrl_enabled) THEN
-          CALL find_flag('--print-ctrl', ok)
-          IF (ok) THEN
-             CALL print_ctrl
-             info = exit_gracefully
-             GOTO 100
-          END IF
           CALL find_arg(1, ok, ctrl_file_name)
-          !----------------------------------------------------------------
-          !  Parse control file
-          !----------------------------------------------------------------
           CALL parse_ctrl_file(info)
           IF (info .NE. 0) THEN
              info = ppm_error_fatal
@@ -508,6 +499,17 @@ CONTAINS
           GOTO 100
        END IF
 #endif
+       !-------------------------------------------------------------------
+       !  Print Control file
+       !-------------------------------------------------------------------
+       IF (ctrl_enabled) THEN
+          CALL find_flag('--print-ctrl', ok)
+          IF (ok) THEN
+             CALL print_ctrl
+             info = exit_gracefully
+             GOTO 100
+          END IF
+       END IF
        !-------------------------------------------------------------------
        !  DONE!
        !-------------------------------------------------------------------

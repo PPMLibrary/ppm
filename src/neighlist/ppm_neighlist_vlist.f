@@ -81,7 +81,7 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ), POINTER :: xp
       !!! particle co-ordinates
       INTEGER                 , INTENT(IN   ) :: np
       !!! number of particles.
@@ -168,6 +168,7 @@
       LOGICAL                                    :: valid
       TYPE(ppm_t_topo)       , POINTER           :: topo => NULL()
       REAL(MK)                                   :: eps
+      LOGICAL                                    :: lpidx
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -182,10 +183,12 @@
       !  the size of this list as the effective number of particles. Use
       !  np otherwise.
       !-------------------------------------------------------------------------
+      npdx = np
       IF (PRESENT(pidx)) THEN
+          lpidx = .TRUE.
           IF (np .GT. SIZE(pidx,1)) npdx = SIZE(pidx,1)
       ELSE
-          npdx = np
+          lpidx = .FALSE.
       ENDIF
       !-------------------------------------------------------------------------
       !  Do we need to store the Verlet lists or just determine their lengths?
@@ -261,9 +264,8 @@
           cl => ppm_clist
       ENDIF
       IF (.NOT.(PRESENT(clist).AND.ASSOCIATED(clist))) THEN
-          IF (PRESENT(pidx)) THEN
-              CALL ppm_neighlist_clist(topoid,xp(:,pidx),npdx,bsize, &
-     &                                 lsymm,cl,info)
+          IF (lpidx) THEN
+              CALL ppm_neighlist_clist(topoid,xp,npdx,bsize,lsymm,cl,info,pidx)
           ELSE
               CALL ppm_neighlist_clist(topoid,xp,npdx,bsize,lsymm,cl,info)
           ENDIF
@@ -328,16 +330,10 @@
           !---------------------------------------------------------------------
           !  Lower box bound depends on symmetry and boundary condition
           !---------------------------------------------------------------------
-          IF (.NOT.lsymm) THEN
-              DO i=1,ppm_dim
-                  IF (ABS(xmin(i)-min_phys(i)).LT.eps .AND.isbc(i)) THEN 
-                      lb(i) = 0
-                  ELSE
-                      lb(i) = 1
-                  ENDIF
-              ENDDO
-          ELSE
+          IF (lsymm) THEN
               lb(:) = 0
+          ELSE
+              lb(:) = 1
           ENDIF
           n1  = cl(idom)%nm(1)
           n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
@@ -378,7 +374,7 @@
                                           jp = cl(idom)%lpdx(jpart)
                                           ! translate to real particle
                                           ! index if needed
-                                          IF (PRESENT(pidx)) THEN
+                                          IF (lpidx) THEN
                                               ii = pidx(ip)
                                               jj = pidx(jp)
                                           ELSE
@@ -410,7 +406,7 @@
 #endif
                                           ! translate to real particle
                                           ! index if needed
-                                          IF (PRESENT(pidx)) THEN
+                                          IF (lpidx) THEN
                                               ii = pidx(ip)
                                               jj = pidx(jp)
                                           ELSE
@@ -454,7 +450,7 @@
                                       jp = cl(idom)%lpdx(jpart)
                                       ! translate to real particle
                                       ! index if needed
-                                      IF (PRESENT(pidx)) THEN
+                                      IF (lpidx) THEN
                                           ii = pidx(ip)
                                           jj = pidx(jp)
                                       ELSE
@@ -565,7 +561,7 @@
                                               jp = cl(idom)%lpdx(jpart)
                                               ! translate to real particle
                                               ! index if needed
-                                              IF (PRESENT(pidx)) THEN
+                                              IF (lpidx) THEN
                                                   ii = pidx(ip)
                                                   jj = pidx(jp)
                                               ELSE
@@ -598,7 +594,7 @@
 #endif
                                               ! translate to real particle
                                               ! index if needed
-                                              IF (PRESENT(pidx)) THEN
+                                              IF (lpidx) THEN
                                                   ii = pidx(ip)
                                                   jj = pidx(jp)
                                               ELSE
@@ -648,7 +644,7 @@
                                           jp = cl(idom)%lpdx(jpart)
                                           ! translate to real particle
                                           ! index if needed
-                                          IF (PRESENT(pidx)) THEN
+                                          IF (lpidx) THEN
                                               ii = pidx(ip)
                                               jj = pidx(jp)
                                           ELSE
