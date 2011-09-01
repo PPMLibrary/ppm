@@ -39,7 +39,7 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 1
+#define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
 
      USE ppm_module_data
@@ -98,10 +98,14 @@
      REAL(prec)         :: Psi_max  
      INTEGER            :: adapt_wpgradid
      ! id of where the gradient of the field is stored 
-     INTEGER            :: fuse_id
+     INTEGER            :: fuse_id = 0
      ! id of the property storing which particles are candidate for fusion
 
-     INTEGER            :: nb_neigh_id
+     INTEGER            :: nb_neigh_id = 0
+
+     INTEGER            :: potential_before_id = 0
+     INTEGER            :: potential_after_id = 0
+     ! for debugging only
 
      INTEGER            :: memory_used_total
      ! Evaluation of the number of bytes occupied in memory

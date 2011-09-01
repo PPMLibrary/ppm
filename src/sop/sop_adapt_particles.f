@@ -802,11 +802,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (PRESENT(stats)) &
         stats%nb_grad_desc_steps = stats%nb_grad_desc_steps + num_it
 
-#if debug_verbosity > 2
-    CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1004,info)
-    CALL sop_dump_debug(Particles%wps(Particles%D_id)%vec,Particles%Npart,1005,info)
-#endif
-
     !!-------------------------------------------------------------------------!
     !! Compute field values at new particle locations
     !!-------------------------------------------------------------------------!
@@ -839,12 +834,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
-#if debug_verbosity > 2
-    CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1100,info)
-    wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.FALSE.)
-    CALL sop_dump_debug(wp,Particles%Npart,1101,info)
-    wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-#endif
 
     !IF (ppm_rank .EQ. 0) THEN
         !WRITE(filename,'(A,A)') TRIM(debugdir),'Stats.dat'
@@ -864,7 +853,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-#if debug_verbosity > -10
+#if debug_verbosity > 2
     !evaluate memory usage
 
     WRITE(*,*) 'Memory used for Particles_old:'

@@ -50,11 +50,9 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     INTEGER,DIMENSION(:),POINTER          :: fuse
 
 
-    !For debugging
 #if debug_verbosity > 1
-    REAL(MK),DIMENSION(Particles%Npart)             :: Potential
+    REAL(MK),DIMENSION(:),  POINTER       :: Potential
 #endif
-    !end debugging
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -86,6 +84,9 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     vlist => Particles%vlist
 
     fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+#if debug_verbosity > 1
+    Potential => get_wps(Particles,potential_before_id)
+#endif
 
     !!-------------------------------------------------------------------------!
     !! Compute interaction potential and its gradient
@@ -150,7 +151,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 no_fusion = .true.
             endif
 
-            if (fuse(ip)+fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+            if (fuse(ip)+fuse(iq).GE.1 ) then 
                 coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
             else 
                 coeff = 1._mk
@@ -165,11 +166,10 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
         Psi_global = Psi_global + Psi_part
 
-        !For debugging, not needed
+        
 #if debug_verbosity > 1
         Potential(ip)=Psi_part
 #endif
-        !end debugging
 
         !!---------------------------------------------------------------------!
         !! Cap the values of the gradient such that particle displacements 
@@ -191,7 +191,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         ENDIF
 
         IF(PRESENT(gradPsi_max)) &
-            gradPsi_max = MAX(gradPsi_max, SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2)/D(ip)))
+            gradPsi_max = MAX(gradPsi_max, SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))/D(ip))
 
 
         !----------------------------------------------------------------------!
@@ -220,18 +220,17 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ENDDO particle_loop
 
+#if debug_verbosity > 1
+    Potential => set_wps(Particles,potential_before_id)
+#endif
+    fuse  => set_wpi(Particles,fuse_id,read_only=.TRUE.)
+
     xp => Set_xp(Particles,read_only=.TRUE.)
     D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
     rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 
-
-#if debug_verbosity > 2
-    !For debugging, not needed
-    CALL sop_dump_debug(Potential,Particles%Npart,477,info)
-    !end debugging
-#endif
 
     !!-------------------------------------------------------------------------!
     !! Compute the global potential of the particles 
