@@ -106,6 +106,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     INTEGER,DIMENSION(:),POINTER           :: nb_neigh
     REAL(MK),DIMENSION(ppm_dim,Particles%Npart+1:Particles%Mpart)  :: xp_g
     REAL(MK)                               :: dist
+    REAL(MK),DIMENSION(3,12)               :: default_stencil
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -304,129 +305,81 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         ENDIF
     ENDIF
 
-    IF (ppm_dim .EQ. 2) THEN
-        xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = xp(1:ppm_dim,Npart+1:Particles%Mpart)
-        add_particles2d: DO ip=1,Npart
+    !define some default stencils (inspired on sphere packings)
+    ! for use when we want to insert a lot of particles 
+    ! near a given particle which do not yet have any neighbours
 
-            !IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-            !IF (nvlist(ip) .LT. 2) THEN
-            IF (nvlist(ip).NE.0) THEN
-                !FOR LEVEL SETS ONLY
-                IF (opts%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ENDIF
+    !the 2d stencil (unit cell)
+    DO i=1,6
+        angle = PI/3._MK*REAL(i,MK)
+        default_stencil(1:3,i) =  &
+            (/COS(angle),SIN(angle),0._mk/)
+    ENDDO
+    !the 3d stencil (2d stencil completed by 2 additional layers)
+    DO i=1,3
+        angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK) 
+        default_stencil(1:3,6+i)=sqrt(3._mk)/2._mk*&
+            (/COS(angle),SIN(angle),1._mk/sqrt(3._mk)/) 
+    ENDDO
+    DO i=1,3
+        angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK) 
+        default_stencil(1:3,9+i)=sqrt(3._mk)/2._mk*&
+            (/COS(angle),SIN(angle),-1._mk/sqrt(3._mk)/) 
+    ENDDO
+
+
+    xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = xp(1:ppm_dim,Npart+1:Particles%Mpart)
+
+    add_particles: DO ip=1,Npart
+
+        IF (nvlist(ip).NE.0) THEN
+            !FOR LEVEL SETS ONLY
+            IF (opts%level_set) THEN
+                IF (PRESENT(wp_fun)) THEN
+                    lev = level_fun(xp(1:ppm_dim,ip))
+                    IF (ABS(lev) .GE. opts%nb_width*&
+                        nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
+                        CYCLE add_particles
+                ELSE
+                    IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
+                        CYCLE add_particles
                 ENDIF
-
-                !DO i=1,nb_new_part
-                new_part_list: DO i=1,abs(nvlist(ip))
-                    add_part = add_part + 1
-                    angle = 0._MK
-#ifdef __USE_RANDOMNUMBERS
-                    randnb_i = randnb_i + 1
-                    !angle = -PI/4._mk*(randnb(randnb_i)+0.5_mk) 
-                    angle = 2._mk*PI*(randnb(randnb_i)) 
-#endif
-                    !angle = angle + PI/2._mk * &
-                        !REAL(Particles%nvlist(ip),MK)
-
-                        if(nvlist(ip) .gt.0) then
-                            iq = Particles%vlist(i,ip)
-                            if (iq.gt.ip) then
-                                add_part = add_part -1
-                                cycle new_part_list
-                            endif
-                            if (iq .le. Npart) then
-                                dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
-                                xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                    D(ip)/dist * &
-                                    (xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)) !mirror image of q
-                            else
-                                dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
-                                xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                    D(ip)/dist * &
-                                    (xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)) !mirror image of q
-                            endif
-                        else
-                            xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                               D(ip) * (/cos(PI/3._mk * REAL(i,MK)), &
-                               &         sin(PI/3._mk * REAL(i,MK))/)
-                        endif
-
-                    !xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                        !1.0_MK*D(ip)&       !radius
-                        !* (/COS(angle),SIN(angle)/) !direction 
-
-                    D(Npart + add_part)   = D(ip)
-                    Dtilde(Npart + add_part)   = Dtilde(ip)
-                    rcp(Npart + add_part) = rcp(ip)
-                    fuse_part(Npart + add_part)   = fuse_part(ip)
-                    nb_neigh(Npart + add_part)   = nb_neigh(ip)
-#if debug_verbosity > 1
-                    IF (PRESENT(printp)) THEN
-                        write(6000+printp,*) xp(1:ppm_dim,Npart+add_part)
-                        write(7000+printp,'(4(E12.4,2X))') xp(1:ppm_dim,ip),&
-                            xp(1:ppm_dim,ip)- xp(1:ppm_dim,Npart+add_part)
-                    ENDIF
-#endif
-                ENDDO new_part_list
             ENDIF
-        ENDDO add_particles2d
-    ELSE ! if ppm_dim .eq. 3
-        add_particles3d: DO ip=1,Npart
 
-            IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                !FOR LEVEL SETS ONLY
-                IF (Particles%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ENDIF
-                ENDIF
+            new_part_list: DO i=1,abs(nvlist(ip))
+                add_part = add_part + 1
 
-                DO i=1,nb_new_part
-                    add_part = add_part + 1
-
-#ifdef __USE_RANDOMNUMBERS
-                    randnb_i = randnb_i + 1
-#endif
-
-#ifdef __USE_RANDOMNUMBERS
-                    theta1 = ACOS(1._MK - 2._MK*randnb(2*randnb_i))
-                    theta2 = 2._MK * PI * randnb(2*randnb_i-1)
-#else
-                    theta1 = ACOS(SIN(1000._MK*xp(1,ip)/D(ip)))
-                    theta2 = PI * (1._MK+COS(1000._MK*xp(2,ip)/D(ip)))
-#endif
+                if(nvlist(ip) .gt.0) then
+                    iq = Particles%vlist(i,ip)
+                    if (iq.gt.ip) then
+                        add_part = add_part -1
+                        cycle new_part_list
+                    endif
+                    if (iq .le. Npart) then
+                        dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
+                        xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
+                            D(ip)/dist * &
+                            (xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)) !mirror image of q
+                    else
+                        dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
+                        xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
+                            D(ip)/dist * &
+                            (xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)) !mirror image of q
+                    endif
+                else
                     xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                        !random 3D points on a sphere
-                    0.7_MK*D(ip)&       !radius
-                        * (/COS(theta1), &
-                        &   SIN(theta1) * COS(theta2), &
-                        &   SIN(theta1) * SIN(theta2)  &
-                        &   /) 
-                    D(Npart + add_part)   = D(ip)
-                    rcp(Npart + add_part) = rcp(ip)
-#if debug_verbosity > 1
-                    IF (PRESENT(printp)) THEN
-                        write(6000+printp,*) xp(1:ppm_dim,Npart+add_part)
-                    ENDIF
-#endif
-                ENDDO
-            ENDIF
-        ENDDO add_particles3d
-    ENDIF
+                        D(ip) * default_stencil(1:ppm_dim,i)
+                endif
+
+
+                D(Npart + add_part)   = D(ip)
+                Dtilde(Npart + add_part)   = Dtilde(ip)
+                rcp(Npart + add_part) = rcp(ip)
+                fuse_part(Npart + add_part)   = fuse_part(ip)
+                nb_neigh(Npart + add_part)   = nb_neigh(ip)
+            ENDDO new_part_list
+        ENDIF
+    ENDDO add_particles
 
     IF (opts%level_set) THEN
         IF (.NOT. PRESENT(level_fun)) THEN
@@ -694,8 +647,13 @@ SUBROUTINE check_nn(Particles,opts,info)
 
         fuse_part(ip) = very_close_neigh
 
-        nb_close_theo = 6
-        IF (nb_fuse_neigh .GE.1) nb_close_theo = 3
+        IF (ppm_dim.EQ.2) THEN
+            nb_close_theo = 6
+        ELSE
+            nb_close_theo = 12
+        ENDIF
+
+        IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
 
         IF (close_neigh .LE. nb_close_theo) THEN
             IF (close_neigh .LE. nb_close_theo-2) then

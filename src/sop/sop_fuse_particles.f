@@ -164,7 +164,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                 ENDIF
             ENDIF
         ENDIF
-        DO ineigh=1,nvlist(ip)
+        neighbour_loop: DO ineigh=1,nvlist(ip)
             iq=vlist(ineigh,ip)
             dist=SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2)) / &
                 MIN(D(ip),D(iq))
@@ -192,17 +192,19 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                             nvlist(ip) = 999
                             CYCLE particle_loop
                         ELSE IF (xp(di,ip) .EQ. xp(di,iq)) THEN
-                            IF (ip.LT.iq) nvlist(ip) = 999
-                            CYCLE particle_loop
+                            IF (ip.LT.iq) THEN
+                                nvlist(ip) = 999
+                                CYCLE particle_loop
+                            ENDIF
                         ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
                             ! do nothing, this particle is going to stay
                             !  and its neighbour is going to be deleted
-                            CYCLE particle_loop
+                             CYCLE neighbour_loop
                         ENDIF
                     ENDDO
                 ENDIF
             ENDIF
-        ENDDO
+        ENDDO neighbour_loop
     ENDDO particle_loop
 
 #if debug_verbosity > 1
