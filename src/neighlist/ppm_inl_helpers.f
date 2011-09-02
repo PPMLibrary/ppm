@@ -401,7 +401,6 @@
           ! Return TRUE if they are neighbors, i.e. both below 1.0
           IF(rcutoff .LE. 1.0_mk .AND. rcutoff2 .LE. 1.0_mk)  isNeigh = .TRUE.
 
-
 #elif __ANISO == __NO
           ! Initialize euclidian distance to 0
           total_dist = 0

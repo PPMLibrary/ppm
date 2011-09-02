@@ -7,6 +7,7 @@
 !------------------------------------------------------------------------------!
 
 !haeckic: changed this to simple one argument, the distance rr
+! how to keep potential?
 
 IF (rr .GT. attractive_radius) THEN
     !Psi_part = Psi_part + 0.5_MK * meanD**2 /rd**2

@@ -85,7 +85,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !! (note: D_old is used as rcp_old=rcp_over_D*D_old
     !!  on output, D_old may have been changed artificially to increase
     !! rcp_old. Do not use it anymore (except for computing rcp_old))
-    !!-----------------------------------------------------------------!
+    !!--------------------------------------    ---------------------------!
     D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     ghostlayer=Particles%cutoff
 !     CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
@@ -193,95 +193,6 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         ENDIF
     ENDDO
 
-! 
-!     IF (opts%level_set) THEN
-!         CALL particles_dcop_apply(Particles,Particles_old%level_id,&
-!             Particles%level_id,Particles%eta_id,info)
-!         IF (info .NE. 0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_apply failed',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
-! 
-!         !MAJOR FIXME!!!
-!         ! do something better to compute the gradients of level
-!         CALL particles_dcop_free(Particles,Particles%eta_id,info)
-!         IF (info.NE.0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_free failed',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!         ALLOCATE(order(ppm_dim),degree(ppm_dim**2))
-!         order = 2
-!         !define Laplacian operator
-!         degree = 0
-!         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=2 !Laplacian
-!         coeffs = 1._MK
-!         CALL particles_dcop_define(Particles,Particles%eta_id,coeffs,degree,&
-!             order,ppm_dim,info,name="interp",interp=.TRUE.)
-!         IF (info.NE.0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_define failed',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!         DEALLOCATE(order,degree)
-!         CALL particles_dcop_compute(Particles,Particles%eta_id,info,c=opts%c)
-!         IF (info.NE.0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_compute failed',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!         level          => Get_wps(Particles,Particles%level_id)
-!         level_grad     => Get_wpv(Particles,Particles%level_grad_id)
-!         level_old      => Get_wps(Particles_old,Particles_old%level_id)
-!         xp_old         => Get_xp(Particles_old)
-!         xp             => Get_xp(Particles)
-!         eta            => Get_dcop(Particles,Particles%eta_id)
-!         vlist_cross    => Particles%vlist_cross
-!         nvlist_cross   => Particles%nvlist_cross
-!             DO ip = 1,Particles%Npart 
-!                 level_grad(1:ppm_dim,ip) = 0._MK
-!             ENDDO
-!             DO ip = 1,Particles%Npart
-!                 DO ineigh = 1,nvlist_cross(ip)
-!                     iq = vlist_cross(ineigh,ip)
-!                     level_grad(1:ppm_dim,ip) = level_grad(1:ppm_dim,ip) + &
-!                         (level(ip)+level_old(iq)) * 0.5_MK*       & 
-!                         (xp_old(1:ppm_dim,iq)-xp(1:ppm_dim,ip)) * eta(ineigh,ip)
-!                 ENDDO
-!             ENDDO
-!         level          => Set_wps(Particles,Particles%level_id)
-!         level_grad     => Set_wpv(Particles,Particles%level_grad_id)
-!         level_old      => Set_wps(Particles_old,Particles_old%level_id,&
-!             read_only=.TRUE.)
-!         eta            => Set_dcop(Particles,Particles%eta_id)
-!         xp_old         => Set_xp(Particles_old,read_only=.TRUE.)
-!         xp             => Set_xp(Particles,read_only=.TRUE.)
-!         nvlist_cross   => NULL()
-!         vlist_cross    => NULL()
-! 
-!         !level          => Get_wps(Particles,Particles%level_id)
-!         !level_grad     => Get_wpv(Particles,Particles%level_grad_id)
-!         !level_old      => Get_wps(Particles_old,Particles_old%level_id)
-!         !CALL sop_interpolate_particles(&
-!             !Particles_old%xp,level_old,&
-!             !Particles%xp,Particles%Npart,nvlist_cross,&
-!             !vlist_cross,eta,eta_interp,opts,info,wp=level,wp_grad=level_grad)
-!         !level          => Set_wps(Particles,Particles%level_id)
-!         !level_grad     => Set_wpv(Particles,Particles%level_grad_id)
-!         !level_old      => Set_wps(Particles_old,Particles_old%level_id,&
-!             !read_only=.TRUE.)
-!         !IF (info .NE. 0) THEN
-!             !CALL ppm_write(ppm_rank,caller,'sop_interp_particles failed.',info)
-!             !info = -1
-!             !GOTO 9999
-!         !ENDIF
-!     ENDIF
-! 
     !-------------------------------------------------------------------------!
     ! Free DC operator
     !-------------------------------------------------------------------------!

@@ -12,6 +12,7 @@ USE ppm_module_substart
 USE ppm_module_substop
 USE ppm_module_error
 USE ppm_module_write
+USE ppm_module_dcops
 USE ppm_module_data, ONLY: ppm_dim
 
 IMPLICIT NONE
@@ -394,6 +395,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Check arguments
     !-------------------------------------------------------------------------
 
+write(*,*) 'begin'
     !-------------------------------------------------------------------------
     !  Check the allocation type
     !-------------------------------------------------------------------------
@@ -424,11 +426,15 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !----------------------------------------------------------------------
         !  deallocate
         !----------------------------------------------------------------------
+
+write(*,*) 'here0'
         IF (ASSOCIATED(Particles)) THEN
             ! first deallocate all content of Particles
             IF (ASSOCIATED(Particles%xp)) DEALLOCATE(Particles%xp,STAT=info)
             IF (ASSOCIATED(Particles%vlist)) DEALLOCATE(Particles%vlist,STAT=info)
             IF (ASSOCIATED(Particles%nvlist)) DEALLOCATE(Particles%nvlist,STAT=info)
+
+write(*,*) 'here1'
 
             IF (ASSOCIATED(Particles%wpi)) THEN
                 DO i=1,Particles%max_wpiid
@@ -438,6 +444,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDDO
                 DEALLOCATE(Particles%wpi,STAT=info)
             ENDIF
+
+write(*,*) 'here2'
             IF (ASSOCIATED(Particles%wps)) THEN
                 DO i=1,Particles%max_wpsid
                     IF (ASSOCIATED(Particles%wps(i)%vec)) &
@@ -446,6 +454,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDDO
                 DEALLOCATE(Particles%wps,STAT=info)
             ENDIF
+
+write(*,*) 'here3'
             IF (ASSOCIATED(Particles%wpv)) THEN
                 DO i=1,Particles%max_wpvid
                     IF (ASSOCIATED(Particles%wpv(i)%vec)) &
@@ -454,6 +464,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDDO
                 DEALLOCATE(Particles%wpv,STAT=info)
             ENDIF
+
+write(*,*) 'here4'
             IF (ASSOCIATED(Particles%ops)) THEN
                 CALL particles_dcop_deallocate(Particles,info)
                 IF (info .NE. 0) THEN
@@ -463,6 +475,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     GOTO 9999
                 ENDIF
             ENDIF
+
+write(*,*) 'here5'
             DEALLOCATE(Particles,stat=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
@@ -1479,7 +1493,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ENDIF
 
         ! We assume that if the user allocates an array for the tensors,
-        ! then it means the particles are meant to be adaptive.
+        ! then it means the particles are meant to be anisotropic.
         IF (Particles%G_id.NE.0) THEN
             Particles%anisotropic=.TRUE.
             IF (ppm_dim .EQ. 2) THEN
@@ -2706,6 +2720,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ENDIF
 
     IF (Particles%neighlists) THEN
+
         !neighbor lists are already up-to-date, nothing to do
         info = ppm_error_notice
         CALL ppm_error(999,caller,   &
@@ -2788,6 +2803,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                   'ppm_inl_vlist failed',__LINE__,info)
                GOTO 9999
             ENDIF
+
         ELSE
            
             CALL ppm_neighlist_vlist(topoid,Particles%xp,Particles%Mpart,&
@@ -3655,6 +3671,10 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 END SUBROUTINE particles_updated_cutoff
 
 SUBROUTINE particles_compute_hmin(Particles,info)
+
+   ! haeckic: do this for anisotropic particles
+   ! use dimensional distance here, not anisotropic
+      
     !-----------------------------------------------------------------
     !  compute minimum distance between particles
     !-----------------------------------------------------------------
@@ -4689,6 +4709,9 @@ END SUBROUTINE particles_dcop_free
 
 SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         info,input_is_vector)
+
+   ! haeckic: make an anisotropic case
+
     !!!------------------------------------------------------------------------!
     !!! NEW version
     !!! Apply DC kernel stored in eta_id to the scalar property stored
@@ -5373,7 +5396,7 @@ END SUBROUTINE particles_sep_anisotropic_distance
 
 
 ! Returns the length of the longer axis
-FUNCTION particles_longer_axis(Particles, i) RESULT(longax)
+SUBROUTINE particles_longer_axis(Particles, i, longax)
 
       IMPLICIT NONE
 
@@ -5418,11 +5441,11 @@ FUNCTION particles_longer_axis(Particles, i) RESULT(longax)
     
     ENDIF
 
-END FUNCTION particles_longer_axis
+END SUBROUTINE particles_longer_axis
 
 
 ! Returns the length of the longer axis
-FUNCTION particles_shorter_axis(Particles, i) RESULT(shortax)
+SUBROUTINE particles_shorter_axis(Particles, i, shortax)
 
       IMPLICIT NONE
 
@@ -5467,7 +5490,162 @@ FUNCTION particles_shorter_axis(Particles, i) RESULT(shortax)
     
     ENDIF
 
-END FUNCTION particles_shorter_axis
+END SUBROUTINE particles_shorter_axis
+
+! define a get_gradient for anisotropic particles
+SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info)
+
+      IMPLICIT NONE
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)  :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN)    :: adapt_wpgradid
+    !!! resulting gradients for all particles
+    INTEGER,                            INTENT(OUT)   :: info
+    !!! Return status, on success 0.
+
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_get_grad_aniso'
+    REAL(MK),     DIMENSION(ppm_dim)           :: coeffs,wp_grad_temp
+    INTEGER,      DIMENSION(ppm_dim)           :: order
+    INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
+    INTEGER                                    :: eta_id, i, ineigh, iq, ip
+    REAL(MK)                                   :: t0
+    REAL(MK), DIMENSION(:,:),POINTER           :: inv => NULL()
+    REAL(MK), DIMENSION(:),  POINTER           :: wp => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER           :: wp_grad => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER           :: eta => NULL()
+    REAL(MK), DIMENSION(:),  POINTER           :: inv_transpose => NULL()
+
+    info = 0 ! change if error occurs
+
+    CALL substart(caller,t0,info)
+
+    ! check if wpgradid exists, is ok!?
+    IF (adapt_wpgradid.EQ.0) THEN
+       info = ppm_error_error
+       CALL ppm_error(ppm_err_alloc,caller,&
+            'tried to calculate gradient, but adapt_wpgradid not allocated!',__LINE__,info)
+       GOTO 9999
+    ENDIF
+
+    ! 1. calculate the reference gradient
+
+    !Compute gradients using PSE kernels
+    coeffs=1._MK; order=4; degree = 0
+    FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
+    eta_id = 0
+
+    CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
+       order,ppm_dim,info,name="gradient",vector=.TRUE.)
+
+    IF (info.NE.0) THEN
+       info = ppm_error_error
+       CALL ppm_error(ppm_err_sub_failed,caller,&
+             'particles_dcop_define failed', __LINE__,info)
+       GOTO 9999
+    ENDIF
+
+    CALL particles_dcop_compute(Particles,eta_id,info)
+
+    IF (info.NE.0) THEN
+       info = ppm_error_error
+       CALL ppm_error(ppm_err_sub_failed,caller,&
+             'particles_dcop_compute failed',__LINE__,info)
+       GOTO 9999
+    ENDIF
+
+    ! 2. Transform gradient for anisotorpic spaces
+    ! grad_aniso = inv^T * grad_iso
+   
+    wp_grad => Get_wpv(Particles,adapt_wpgradid)
+    eta => Get_dcop(Particles,eta_id)
+    wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
+    inv => get_wpv(Particles,Particles%G_id,.TRUE.)
+
+    DO ip = 1,Particles%Npart 
+         wp_grad(1:ppm_dim,ip) = 0._MK
+    ENDDO
+    
+    ! get the gradient grad_iso
+    DO ip=1,Particles%Npart
+         DO ineigh=1,Particles%nvlist(ip)
+            iq=Particles%vlist(ineigh,ip)
+            wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip) + &
+              & (wp(iq)-wp(ip)) * eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
+         ENDDO
+    ENDDO
+
+    CALL ppm_alloc(inv_transpose,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
+    ! transform into grad_aniso
+    DO ip=1,Particles%Npart
+         IF (ppm_dim .EQ. 2) THEN
+            inv_transpose = (/ inv(1,ip), inv(3,ip), inv(2,ip), inv(4,ip) /)
+            wp_grad_temp = wp_grad(1:ppm_dim,ip)
+            wp_grad(1,ip) = SUM(inv_transpose(1:ppm_dim)*wp_grad_temp)
+            wp_grad(2,ip) = SUM(inv_transpose(ppm_dim+1:2*ppm_dim)*wp_grad_temp)
+         ELSE
+            inv_transpose = (/ inv(1,ip), inv(4,ip), inv(7,ip), &
+                        &      inv(2,ip), inv(5,ip), inv(8,ip), &
+                        &      inv(3,ip), inv(6,ip), inv(9,ip) /)
+            wp_grad_temp = wp_grad(1:ppm_dim,ip)
+            wp_grad(1,ip) = SUM(inv_transpose(1:ppm_dim)*wp_grad_temp)
+            wp_grad(2,ip) = SUM(inv_transpose(ppm_dim+1:2*ppm_dim)*wp_grad_temp)
+            wp_grad(3,ip) = SUM(inv_transpose(2*ppm_dim+1:3*ppm_dim)*wp_grad_temp)
+         ENDIF
+    ENDDO
+
+    wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+    eta => Set_dcop(Particles,eta_id)
+    wp_grad => Set_wpv(Particles,adapt_wpgradid)
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+END SUBROUTINE particles_get_grad_aniso
+
+! define a get_hess for anisotropic particles
+SUBROUTINE particles_get_hess_aniso(Particles, hess, info)
+
+      IMPLICIT NONE
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles
+    !!! Data structure containing the particles
+    REAL(MK),DIMENSION(:,:), POINTER                  :: hess
+    !!! resulting hessian matrix for all particles
+    !!! 2D: [h11, h12, h21, h22]
+    !!! 3D: [h11, h12, h13, h21, h22, h23, h31, h32, h33]
+    INTEGER,                             INTENT(OUT)    :: info
+    !!! Return status, on success 0.
+
+    ! 1. calculate the reference gradient
+    ! 
+    ! 2. Transform gradient for anisotorpic spaces
+ 
+
+END SUBROUTINE particles_get_hess_aniso
 
 END MODULE ppm_module_particles
 

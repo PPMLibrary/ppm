@@ -122,7 +122,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 #endif
 
 
-   !haeckic: do it differently: allocate after Mpart, because we need the ghosts for checking
+   ! haeckic: did it differently: allocate after Mpart, because we need the ghosts for checking
 
     !!-------------------------------------------------------------------------!
     !! Re-allocate (grow) arrays if necessary
@@ -136,7 +136,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                 &    'allocation of xp failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        ! haeckic: check here how to grow the arrays
         lda = (/Particles%tensor_length,Mpart+add_part/)
         CALL ppm_alloc(Particles%wpv(Particles%D_id)%vec,lda,&
             ppm_param_alloc_grow_preserve,info)
@@ -169,7 +168,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
             DEALLOCATE(randnb)
         ENDIF
         IF(alloc_rand) THEN
-            ! haeckic: why Npart + ?
             ALLOCATE(randnb(nb_new_part*ppm_dim*(2*(Npart))),STAT=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
@@ -229,7 +227,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                     angle = 0._MK
 #ifdef __USE_RANDOMNUMBERS
                     randnb_i = randnb_i + 1
-                    angle = -PI/4._mk*(randnb(randnb_i)+0.5_mk) 
+                    angle = 2*PI*(randnb(randnb_i)+0.5_mk) 
 #endif
                     ! Pseudo random
                     angle = angle + PI/2._mk * &
@@ -536,7 +534,7 @@ CALL substop(caller,t0,info)
 
 END SUBROUTINE sop_spawn_particles
 
-!haeckic: do the quadrant
+!haeckic: do the quadrant?
 SUBROUTINE check_quadrants(Particles,info)
     IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION

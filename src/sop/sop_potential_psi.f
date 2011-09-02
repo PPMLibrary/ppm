@@ -61,14 +61,14 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     !!-------------------------------------------------------------------------!
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
-    D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
-    inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
-    IF (.NOT.Particles%neighlists) THEN
-        CALL ppm_write(ppm_rank,caller,&
-            'need to compute neighbour lists first',info)
-        info = -1
-        GOTO 9999
-    ENDIF
+!     D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
+!     inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
+!     IF (.NOT.Particles%neighlists) THEN
+!         CALL ppm_write(ppm_rank,caller,&
+!             'need to compute neighbour lists first',info)
+!         info = -1
+!         GOTO 9999
+!     ENDIF
     nvlist => Particles%nvlist
     vlist => Particles%vlist
 
@@ -92,7 +92,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
             ! haeckic: do the potential calculation
             CALL particles_anisotropic_distance(Particles,ip,iq,rr,info)
-            scaling_ip = particles_shorter_axis(Particles,ip)**2
+            CALL particles_shorter_axis(Particles,ip, scaling_ip)
+            scaling_ip = scaling_ip**2
 
 #if debug_verbosity > 0
             IF (rr .LE. 1e-12) THEN
@@ -125,8 +126,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     ENDDO particle_loop
 
     xp => Set_xp(Particles,read_only=.TRUE.)
-    D  => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
-    inv  => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
+!     D  => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+!     inv  => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 

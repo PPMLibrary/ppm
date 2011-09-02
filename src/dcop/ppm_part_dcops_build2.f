@@ -87,6 +87,11 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     TYPE(ppm_t_particles),POINTER         :: Particles_cross=>NULL()
     REAL(MK)                              :: c_value
     REAL(MK)                              :: min_sv_p
+    
+    ! haeckic: anisotropic additional variables
+    LOGICAL                               :: anisotropic
+    REAL(MK), DIMENSION(:,:),  POINTER    :: inv=>NULL()
+    REAL(MK), DIMENSION(ppm_dim)          :: dx_temp
 
     !!---------------------------------------------------------------------!
     !! Initialize
@@ -139,6 +144,13 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         adaptive = .TRUE.
     ELSE
         adaptive = .FALSE.
+    ENDIF
+    
+    ! haeckic
+    IF (Particles%anisotropic) THEN
+        anisotropic = .TRUE.
+    ELSE
+        anisotropic = .FALSE.
     ENDIF
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
@@ -328,7 +340,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         ENDIF
     ENDDO
     
-    IF (.NOT. adaptive) THEN
+    ! haeckic
+    IF (.NOT. adaptive .AND. .NOT. anisotropic) THEN
         byh = 1._MK/Particles%h_avg
     ENDIF
 
@@ -345,8 +358,12 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     ENDIF
     coeffs => Particles%ops%desc(eta_id)%coeffs(1:nterms)
 
+   ! haeckic
     IF (adaptive) THEN
         rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=with_ghosts)
+    ENDIF
+    IF (anisotropic) THEN
+        inv => Get_wpv(Particles,Particles%G_id,with_ghosts=with_ghosts)
     ENDIF
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
@@ -370,14 +387,27 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
             byh = 2._MK/rcp(ip)
         ENDIF
 
-
         neighbour_loop: DO ineigh = 1,nvlist(ip) 
             iq = vlist(ineigh,ip) ! index in the "old particles" set
 
+            ! haeckic: CHECK THE 2.0_mk 
             ! distance squared between the new particle and the old ones
-            dx(1:ppm_dim,ineigh) = (xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))*byh
-            d2_one2all(ineigh) = SUM(dx(1:ppm_dim,ineigh)**2)
+            IF (anisotropic) THEN
+               ! there is a 2 over rcp(ip)??
+               dx_temp(1:ppm_dim) = (xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))
+               
+               ! Transformation
+               dx(1,ineigh) = SUM(inv(1:ppm_dim,ip)*dx_temp(1:ppm_dim))
+               dx(2,ineigh) = SUM(inv(ppm_dim+1:2*ppm_dim,ip)*dx_temp(1:ppm_dim))
+               IF (ppm_dim .EQ. 3) THEN
+                  dx(3,ineigh) = SUM(inv(2*ppm_dim+1:3*ppm_dim,ip)*dx_temp(1:ppm_dim))
+               ENDIF
 
+            ELSE
+               dx(1:ppm_dim,ineigh) = (xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))*byh
+            ENDIF
+
+            d2_one2all(ineigh) = SUM(dx(1:ppm_dim,ineigh)**2)
             expo = exp(-c_value**2*d2_one2all(ineigh))
 
             ! Fill matrix Z
@@ -405,9 +435,27 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
                 ! Assemble the rhs for the linear system that has to be solved for 
                 ! interpolating functions
                 DO ineigh = 1,nvlist(ip)
-                    !rescaled nearest-neighbour distance  
+                    !rescaled nearest-neighbour distance 
+                    
                     iq = vlist(ineigh,ip)
-                    dist2 = SUM((xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))**2)
+
+                    ! haeckic
+                    IF (anisotropic) THEN
+                       dx_temp(1:ppm_dim) = (xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))
+               
+                        ! Transformation
+                        dist2 = SUM(inv(1:ppm_dim,ip)*dx_temp(1:ppm_dim))**2
+                        dist2 = dist2 + SUM(inv(ppm_dim+1:2*ppm_dim,ip)*dx_temp(1:ppm_dim))**2
+                        IF (ppm_dim .EQ. 3) THEN
+                           dist2 = dist2 + SUM(inv(2*ppm_dim+1:3*ppm_dim,ip)*dx_temp(1:ppm_dim))**2
+                        ENDIF
+                        
+                    ELSE
+                    
+                        dist2 = SUM((xp1(1:ppm_dim,ip) - xp2(1:ppm_dim,iq))**2)
+                    
+                    ENDIF
+                    
                     eta(ineigh,ip) = &
                         primitive(SQRT(dist2/nn_sq(iq)) / 0.9_MK)
 
@@ -495,9 +543,14 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
             GOTO 9999
         ENDIF
 
-        DO i=1,nterms 
-            byh0powerbeta(i) = byh**(sum_degree(i))
-        ENDDO
+         ! haeckic
+        IF (anisotropic) THEN
+            byh0powerbeta = 1.0_mk
+        ELSE
+            DO i=1,nterms 
+                  byh0powerbeta(i) = byh**(sum_degree(i))
+            ENDDO        
+        ENDIF
 
 
         !------------------------------------------------------------------!
@@ -577,6 +630,10 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
     eta => Set_dcop(Particles,eta_id)
     IF (adaptive) THEN
         rcp => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
+    ENDIF
+    ! haeckic
+    IF (anisotropic) THEN
+        inv => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
     ENDIF
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
         nn_sq => Set_wps(Particles_cross,Particles_cross%nn_sq_id,&

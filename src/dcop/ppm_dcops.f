@@ -323,7 +323,7 @@ SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
 #if __MODE == __ADAPTIVE
     byh = 2._MK/rcp(ip)
 #endif
-
+! haeckic: anistropic
         neighbour_loop: DO ineigh = 1,nvlist(ip) 
             iq = vlist(ineigh,ip) ! index in the "old particles" set
 

@@ -86,6 +86,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     !!-------------------------------------------------------------------------!
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
+        
+        !
         nn = HUGE(1._MK)
 #ifdef finnis_sinclair
         rho_part = 0._MK
@@ -107,8 +109,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
 
-            ! haeckic: do the right gradient of potential
-
             ! rr: distance in unit circle
             ! dist: vector from current point to neighbor point: xq - xp
             ! rr_iso: distance in real space
@@ -126,7 +126,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 GOTO 9999
             ENDIF
 
-            !haeckic: see derivation for this
+            !haeckic: check the derivation for this
+            ! seems to be correct, but not proofen
             IF (ppm_dim .EQ. 2) THEN
                grad_vec(1) = - inv(1,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2)) &
                &             - inv(3,ip)*(inv(3,ip)*dist(1) + inv(4,ip)*dist(2)) 
@@ -136,10 +137,11 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                !haeckic: todo 3d
             ENDIF
 
-            scaling_ip = particles_shorter_axis(Particles,ip)**2
-            scaling_iq = particles_shorter_axis(Particles,iq)**2
+            CALL particles_shorter_axis(Particles,ip,scaling_ip)
+            scaling_ip = scaling_ip**2
+            CALL particles_shorter_axis(Particles,iq,scaling_iq)
+            scaling_iq = scaling_iq**2
 
-            ! haeckic: add this one later
             !compute nearest-neighbour distance for each particle
             IF (rr_iso .LT. nn) THEN
                 nn = rr_iso
@@ -150,7 +152,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             !meanD = MIN(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            ! haeckic: do we need that? NO
+            ! haeckic: do we need that?
             !IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
@@ -161,6 +163,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             !------------------------------------------------------------------!
 !             rd = rr / meanD
 !             rc = rr / (MIN(rcp(ip),rcp(iq)))
+
+!haeckic: check the way the potential is used
 
 #include "potential/potential_gradient.f90"
 
@@ -196,7 +200,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
         !ENDIF
         !ENDDO
-        !haeckic: how to scale it down? cap it
+        !haeckic: how to scale it down? cap it, not done here!!
 
         ! If the gradient length is bigger than distance to nearest neighbor?
         ! haeckic: nearest distance has to be in normal space, not on unit circle!! it is done now
@@ -233,10 +237,12 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ENDDO particle_loop
 
+! haeckic: capping done using shorter_axis instead of nn
 DO ip = 1,Particles%Npart
         ! The scaling needs to be done after the particle loop, because asymmetric
+        ! scaled to real distance, not the transformed one
         ! If the gradient length is bigger than distance to nearest neighbor?
-        ! haeckic: nearest distance has to be in normal space, not on unit circle!! it is done now
+        CALL particles_shorter_axis(Particles,ip,nn)
         IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
                 MIN(nn,Particles%cutoff) * 0.9_MK / SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))

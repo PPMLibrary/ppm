@@ -60,7 +60,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
     REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
     REAL(MK),     DIMENSION(:,:),  POINTER :: inv => NULL()
     REAL(MK),     DIMENSION(:,:),  POINTER :: D => NULL()
-    INTEGER                                :: Npart
+    INTEGER                                :: Npart, test1,test2
     INTEGER,      DIMENSION(:),  POINTER   :: nvlist => NULL()
     INTEGER,      DIMENSION(:,:),POINTER   :: vlist => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: level => NULL()
@@ -91,6 +91,26 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
     D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
     inv=> Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
 
+!             ip = 249
+!             DO j=1,nvlist(ip)
+!                iq = vlist(j,ip)
+!                IF(iq.eq.218) THEN
+!                write(*,*) 'have it'
+!                write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
+!                ENDIF
+!             ENDDO
+! 
+!          ip = 218
+!             DO j=1,nvlist(ip)
+!                iq = vlist(j,ip)
+!                IF(iq.eq.249) THEN
+!                   write(*,*) 'have it'
+!                   write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                   write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
+!                ENDIF
+!             ENDDO
+
 
     !removme
     !DO ip=1,Particles%Npart
@@ -104,11 +124,10 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
     !!-------------------------------------------------------------------------!
     !! Mark particles for deletion (by changing nvlist to 999)
     !!-------------------------------------------------------------------------!
-    ! haeckic: mark the right particles for deletion
     particle_loop: DO ip=1,Npart
 
-        IF (nvlist(ip) .GT. opts%nneigh_critical) THEN
-            DO ineigh=1,nvlist(ip)
+        !IF (nvlist(ip) .GT. opts%nneigh_critical) THEN
+            particle_neigh: DO ineigh=1,nvlist(ip)
                 iq=vlist(ineigh,ip)
                 CALL particles_anisotropic_distance(Particles,ip,iq,dist1,info)
                 CALL particles_anisotropic_distance(Particles,iq,ip,dist2,info)
@@ -124,79 +143,107 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
                     GOTO 9999
                 ENDIF
 
+!                   test1 = 117
+!                   test2 = 148
+                  
+!                   test1 = 251
+!                   test2 = 429
+! 
+!                   ! 62, 2429
+!                   ! 1, 1778
+! 
+!                IF(ip.eq.218 .or. ip .eq. 249)THEN
+!                      write(*,*) 'neigh', ip, iq,nvlist(ip), MAXVAL(nvlist)
+!                   ENDIF
+! 
+!                   IF(ABS(Particles%xp(2,ip)-0.920698_mk) .LT. 1e-4 ) THEN
+!                      write(*,*), 'found', ip, Particles%xp(:,ip)
+!                   ENDIF
+!                   IF(ABS(Particles%xp(2,iq)-0.94477_mk) .LT. 1e-4 ) THEN
+!                      write(*,*), 'found', iq, Particles%xp(:,iq)
+!                   ENDIF
 
-!                      IF (ip.eq.14 .and. iq .eq. 1761 ) THEN
-!                         write(*,*) 'disti ',ip,dist1,dist2
-!                         write(*,*) 'inv ',ip, Particles%wpv(Particles%G_id)%vec(:,ip)
-!                         write(*,*) 'inv ',iq, Particles%wpv(Particles%G_id)%vec(:,iq)
-!                      ENDIF
-!                      IF (ip.eq.1761 .and. iq .eq. 14 ) THEN
-!                         write(*,*) 'disti ',ip,dist1,dist2
-!                      ENDIF
-                     IF (ip.eq.881 .and. iq .eq. 880 ) THEN
-                        write(*,*) 'disti ',ip,dist1,dist2
-                     ENDIF
-
-                     IF (ip.eq.881 .or. ip .eq. 880 ) THEN
-                        write(*,*) ip,iq
-                     ENDIF
-
-
-
-                     IF (ip.eq.880 .and. iq .eq. 881 ) THEN
-                        write(*,*) 'disti ',ip,dist1,dist2
-                     ENDIF
-
+!                   IF(ip.eq.test1 .and. iq .eq. test2)THEN
+!                      write(*,*) 'found', ip, Particles%xp(:,ip)
+!                      write(*,*) 'found', iq, Particles%xp(:,iq)
+!                      write(*,*) 'found', dist1,dist2,dist
+!                   ENDIF
+!                   IF(ip.eq.test2 .and. iq .eq. test1)THEN
+!                      write(*,*) 'found', ip, Particles%xp(:,ip)
+!                      write(*,*) 'found', iq, Particles%xp(:,iq)
+!                      write(*,*) 'found', dist1,dist2,dist
+!                   ENDIF
 
                 IF (dist .LT. threshold) THEN
-
-                     ! haeckic: a hack to make the comparison deterministic
-                     dist1 = particles_longer_axis(Particles,ip)
-                     dist2 = particles_longer_axis(Particles,iq)
-
-!                      IF (ip.eq.14 .and. iq .eq. 1761 ) THEN
-!                         write(*,*) 'disti ',ip,dist1-dist2
+                    CALL particles_shorter_axis(Particles,ip,dist1)
+                    CALL particles_shorter_axis(Particles,iq,dist2)
+                    
+                    ! haeckic: if there is still a fusing problem,
+                    ! we need to make this comparison relative to a tolerance
+                    ! Strange: with functions distances are not always the same?!?!?
+                    
+!                     IF(ip.eq.test1 .and. iq .eq. test2)THEN
+!                         write(*,*) 'in', ip,dist1-dist2
 !                      ENDIF
-!                      IF (ip.eq.1761 .and. iq .eq. 14 ) THEN
-!                         write(*,*) 'disti ',ip,dist1-dist2
+!                      IF(ip.eq.test2 .and. iq .eq. test1)THEN
+!                         write(*,*) 'in', ip,dist1-dist2
 !                      ENDIF
 
-                     IF (ip.eq.15 .and. iq .eq. 99 ) THEN
-                        write(*,*) 'disti ',dist1-dist2
-                     ENDIF
-                     IF (ip.eq.99 .and. iq .eq. 15 ) THEN
-                        write(*,*) 'disti ',dist1-dist2
-                     ENDIF
-
+                    
                     ! Delete the particle that have the larger D
                     ! haeckic: decide which one to delete!?!? now just the one with bigger longer axis
+                    ! A simple test, not working because ghosts not deletable
+!                     DO di = 1,ppm_dim
+!                         IF (xp(di,ip) .LT. xp(di,iq)) THEN
+!                            !mark particle for deletion
+!                            nvlist(ip) = 999
+!                            CYCLE particle_loop
+!                         ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
+!                            ! do nothing, this particle is going to stay
+!                            ! and its neighbour is going to be deleted
+!                            ! haeckic: THIS WAS AN ERROR
+!                            !CYCLE particle_loop
+!                         ENDIF
+!                      ENDDO
+               
+
                     IF (dist1.GT.dist2) THEN
+!                      IF(ip.eq.test1 .and. iq .eq. test2)THEN
+!                            write(*,*) 'gt', ip,dist1-dist2
+!                         ENDIF
+!                         IF(ip.eq.test2 .and. iq .eq. test1)THEN
+!                            write(*,*) 'gt', ip,dist1-dist2
+!                         ENDIF
                         nvlist(ip)=999
                         CYCLE particle_loop
                     ELSE IF(dist1.EQ.dist2) THEN
-                                         IF (ip.eq.14 .and. iq .eq. 1761 ) THEN
-                        write(*,*) 'disti ',ip,dist1-dist2
-                     ENDIF
-                     IF (ip.eq.1761 .and. iq .eq. 14 ) THEN
-                        write(*,*) 'disti ',ip,dist1-dist2
-                     ENDIF
+!                     IF(ip.eq.test1 .and. iq .eq. test2)THEN
+!                         write(*,*) 'eq', ip,dist1-dist2
+!                      ENDIF
+!                      IF(ip.eq.test2 .and. iq .eq. test1)THEN
+!                         write(*,*) 'eq', ip,dist1-dist2
+!                      ENDIF
                         ! If equal longer axis, then delete the one that has the "smallest position"
                         ! (any total ordering between particles would do)
                         DO di = 1,ppm_dim
                             IF (xp(di,ip) .LT. xp(di,iq)) THEN
                                 !mark particle for deletion
+!                                 IF(ip.eq.test1 .or. ip .eq. test2)THEN
+!                                     write(*,*) 'delete!!', ip
+!                                  ENDIF
                                 nvlist(ip) = 999
                                 CYCLE particle_loop
                             ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
                                 ! do nothing, this particle is going to stay
                                 ! and its neighbour is going to be deleted
-                                CYCLE particle_loop
+                                ! haeckic: THIS WAS AN ERROR
+                                CYCLE particle_neigh                             
                             ENDIF
                         ENDDO
                     ENDIF
                 ENDIF
-            ENDDO
-        ENDIF
+            ENDDO particle_neigh
+        !ENDIF
     ENDDO particle_loop
 
 #if debug_verbosity > 1
@@ -211,12 +258,21 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
     del_part = 0
 
     del_part_loop: DO ip=Npart,1,-1
+! IF(ip.eq.184 .or. ip .eq. 382)THEN
+!                   write(*,*) 'ok: ', ip
+!                      write(*,*) 'pos', ip, Particles%xp(:,ip)
+!                ENDIF
 
-            IF (ip.eq.881 .or. ip .eq. 880) THEN
-               write(*,*) 'pos',ip, xp(1:ppm_dim,ip)
-            ENDIF
-
-        IF (nvlist(ip) .EQ. 999 ) THEN
+         IF (nvlist(ip) .EQ. 999 ) THEN
+!             IF(ip.eq.1 .or. ip .eq. 382)THEN
+!                   write(*,*) 'got: ', ip, Npart-del_part
+!                ENDIF
+!             IF(ip.eq.1 .or. ip .eq. 354)THEN
+!                   write(*,*) 'got: ', ip, Npart-del_part
+!                ENDIF
+!             IF(ip.eq.184 .or. ip .eq. 285)THEN
+!                   write(*,*) 'got: ', ip, Npart-del_part
+!                ENDIF
 
 #if debug_verbosity > 1
             IF(PRESENT(printp))THEN
@@ -224,55 +280,18 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
             ENDIF
 #endif
 
-            IF (ip.eq.881 .or. ip .eq. 880) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-            IF (ip.eq.843 .or. ip .eq. 842) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-            IF (ip.eq.791 .or. ip .eq. 786) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-            IF (ip.eq.710 .or. ip .eq. 715) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-            IF (ip.eq.595 .or. ip .eq. 605) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-          IF (ip.eq.451 .or. ip .eq. 436) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
-            IF (ip.eq.216 .or. ip .eq. 243) THEN
-               write(*,*) 'here',ip, Npart - del_part
-               write(*,*) 'pos',ip, xp(1:ppm_dim,Npart-del_part)
-            ENDIF
-
             IF (ip .EQ. Npart - del_part) THEN
                 ! no need to copy anything
                 ! this particle will be deleted when Npart is decreased
             ELSE    
                 ! copying particles from the end of xp to the index that has
                 ! to be removed
-                ! haeckic: here a correct copying
                 xp(1:ppm_dim,ip) = xp(1:ppm_dim,Npart-del_part)
                 DO j=1,Particles%tensor_length
+                     !haeckic: why copy D?
                      D(j,ip)   = D(j,Npart-del_part)
                      inv(j,ip) = inv(j,Npart-del_part)
                 ENDDO
-!                 D(ip) = D(Npart-del_part)
-!                 inv(ip) = inv(Npart-del_part)
                 nvlist(ip) = nvlist(Npart-del_part)
             ENDIF
             del_part = del_part+1

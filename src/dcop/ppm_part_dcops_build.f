@@ -350,6 +350,8 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
             byh = 2._MK/rcp(ip)
         ENDIF
 
+         ! haeckic: anisotropic
+
         neighbour_loop: DO ineigh = 1,nvlist(ip) 
             iq = vlist(ineigh,ip) ! index in the "old particles" set
 
@@ -377,7 +379,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
             ENDDO
 
         ENDDO neighbour_loop
-
+         ! haeckic: anistropic
         IF (interp .and. sum_order_d.eq.0) THEN
             ! Assemble the rhs for the linear system that has to be solved for 
             ! interpolating functions
@@ -411,7 +413,7 @@ SUBROUTINE ppm_part_dcops_3d(Particles,eta_id,c,info,&
             info = -1
             GOTO 9999
         ENDIF
-
+! haeckic: anistropic
         byh0powerbeta = byh**(sum_order_d)
 
         !------------------------------------------------------------------!

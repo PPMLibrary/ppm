@@ -16,7 +16,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,threshold,need_deriv,stats)
 
-    !USE ppm_module_inl_xset_vlist
+    USE ppm_module_inl_xset_vlist
     USE ppm_module_io_vtk
 
     IMPLICIT NONE
@@ -114,10 +114,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     REAL(MK),DIMENSION(:,:),POINTER     :: inv => NULL()
     REAL(MK),DIMENSION(:,:),POINTER     :: Dtilde => NULL()
     REAL(MK),DIMENSION(:,:),POINTER     :: xp_old => NULL()
-    REAL(MK),DIMENSION(:),POINTER       :: D_old => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER     :: Dtilde_old => NULL()
 
     REAL(MK)                            :: tmpvar1,tmpvar2,minDold, dist1s, dist2s, dists, min_dist
-    REAL(MK)                            :: weight,weight_sum
+    REAL(MK)                            :: weight,weight_sum, new_scale, old_scale, distance, old_distance, p_scale
     REAL(MK)                            :: almostzero
     INTEGER                             :: tmpvari1,tmpvari2
     LOGICAL                             :: need_derivatives
@@ -269,6 +269,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL particles_apply_bc(Particles,topo_id,info)
         CALL particles_mapping_partial(Particles,topo_id,info)
         CALL particles_mapping_ghosts(Particles,topo_id,info)
+        write(*,*) 'before fuse'
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -276,11 +277,36 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'particles_neighlists failed',__LINE__,info)
             GOTO 9999
         ENDIF
+        
 
-
+!         IF (Particles%Npart .GE. 382) THEN
+!         
+!             ip = 184
+!             DO j=1,Particles%nvlist(ip)
+!                iq = Particles%vlist(j,ip)
+!                IF(iq.eq.382) THEN
+!                write(*,*) 'have it'
+!                write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
+!                ENDIF
+!             ENDDO
+! 
+!          ip = 382
+!             DO j=1,Particles%nvlist(ip)
+!                iq = Particles%vlist(j,ip)
+!                IF(iq.eq.184) THEN
+!                   write(*,*) 'have it'
+!                   write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                   write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
+!                ENDIF
+!             ENDDO
 !         !call check_duplicates(Particles)
-
-
+! 
+!                CALL particles_anisotropic_distance(Particles,249,218,dist1s,info)
+!                CALL particles_anisotropic_distance(Particles,218,249,dist2s,info)
+! 
+!          write(*,*) 'distance', dist1s, dist2s, Particles%xp(:,382), Particles%xp(:,184)
+! ENDIF
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
 
@@ -292,23 +318,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-!          min_dist = 1.0_mk
-!          DO ip=1,Particles%Npart
-!             DO j=1,Particles%nvlist(ip)
-!                iq = Particles%vlist(j,ip)
-!                CALL particles_anisotropic_distance(Particles,ip,iq,dist1s,info)
-!                CALL particles_anisotropic_distance(Particles,iq,ip,dist2s,info)
-!                dists = MIN(dist1s,dist2s)
-!                IF (dists .LT. min_dist) THEN
-!                   min_dist = dists
-!                   k = ip
-!                   di = iq
-!                ENDIF
-! 
-!             ENDDO
-!          ENDDO
-!          write(*,*) 'before 1', min_dist, k, di
-
         !we only removed particles, but they didnt move.
         Particles%areinside=.TRUE.
         Particles%ontopology=.TRUE.
@@ -319,6 +328,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'mapping ghost failed',__LINE__,info)
             GOTO 9999
         ENDIF
+        write(*,*) 'before check'
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -326,22 +336,30 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'neighlists failed here',__LINE__,info)
             GOTO 9999
         ENDIF
-
-!          min_dist = 1.0_mk
-!          DO ip=1,Particles%Npart
+! 
+! IF (Particles%Npart .GE. 382) THEN
+!         
+! 
+!          ip = 184
 !             DO j=1,Particles%nvlist(ip)
 !                iq = Particles%vlist(j,ip)
-!                CALL particles_anisotropic_distance(Particles,ip,iq,dist1s,info)
-!                CALL particles_anisotropic_distance(Particles,iq,ip,dist2s,info)
-!                dists = MIN(dist1s,dist2s)
-!                IF (dists .LT. min_dist) THEN
-!                   min_dist = dists
+!                IF(iq.eq.382) THEN
+!                   write(*,*) 'have it'
+!                   write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                   write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
 !                ENDIF
-! 
 !             ENDDO
-!          ENDDO
-!          write(*,*) 'after ', min_dist
-
+! 
+!          ip = 382
+!             DO j=1,Particles%nvlist(ip)
+!                iq = Particles%vlist(j,ip)
+!                IF(iq.eq.184) THEN
+!                   write(*,*) 'have it'
+!                   write(*,*) 'neigh ',ip, iq, Particles%nvlist(ip)
+!                   write(*,*) Particles%wpv(Particles%G_id)%vec(:,ip)
+!                ENDIF
+!             ENDDO
+! ENDIF
 
         !call check_duplicates(Particles)
 
@@ -354,18 +372,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             DO j=1,Particles%nvlist(ip)
                iq = Particles%vlist(j,ip)
 
-                     
-
                CALL particles_anisotropic_distance(Particles,ip,iq,dist1s,info)
                CALL particles_anisotropic_distance(Particles,iq,ip,dist2s,info)
-               
-               IF (ip.eq.216 .and. iq .eq. 243 ) THEN
-                  write(*,*) 'disti ',ip, dist1s-dist2s, Particles%xp(:,ip)
-               ENDIF
-               IF (ip.eq.243 .and. iq .eq. 216 ) THEN
-                  write(*,*) 'disti ',ip, dist1s-dist2s, Particles%xp(:,ip)
-               ENDIF
-               
+         
                dists = MIN(dist1s,dist2s)
                IF (dists .LT. min_dist) THEN
                   min_dist = dists
@@ -376,13 +385,17 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDDO
          ENDDO
          write(*,*) 'before ', min_dist, k, di
-
+         write(*,*) Particles%xp(:,k), Particles%xp(:,di)
+         write(*,*) Particles%wpv(Particles%G_id)%vec(:,k)- Particles%wpv(Particles%G_id)%vec(:,di)
 
         IF (min_dist+1d-12 .LT. opts%fuse_radius) THEN
-            write(*,*) 'EEEEEERRRRRRRRRROOOOOOOOOOOORRRRRRRRRRRR'
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'sop_gradient_descent fusing problem',__LINE__,info)
+            GOTO 9999
          ENDIF
 
-        CALL  sop_spawn_particles(Particles,opts,info,&
+        CALL sop_spawn_particles(Particles,opts,info,&
             nb_part_added=nb_spawn,wp_fun=wp_fun)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -392,7 +405,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 
         !write(*,*) 'after: ', Particles%Npart, Particles%Mpart
-        ! haeckic: to be changed
         adding_particles = nb_spawn .GT. 0
         !endif
 
@@ -439,148 +451,168 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 
 
-!         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
-!             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
-!             !!-----------------------------------------------------------------!
-!             !! Get anisotropic requirements directly using the given funcs
-!             !!-----------------------------------------------------------------!
-!             CALL sop_compute_D(Particles,D_fun,opts,info,     &
-!                 wp_fun=wp_fun,wp_grad_fun=wp_grad_fun)
-!             IF (info .NE. 0) THEN
-!                 info = ppm_error_error
-!                 CALL ppm_error(ppm_err_sub_failed,caller,&
-!                     'sop_compute_D failed',__LINE__,info)
-!                 GOTO 9999
-!             ENDIF
-!         ELSE
-!             ! do not update D, we make that using the xset and the D of the old particles
-! 
-!         ENDIF Compute_D
-! 
-! 
-!         IF (.NOT. PRESENT(wp_fun)) THEN
-!             !------------------------------------------------------------------!
-!             ! Update D and cutoff radii
-!             !------------------------------------------------------------------!
-! 
-!             ! The following is used to prevent particles with small D from
-!             ! drifting away inside the domain, eventually generating plenty
-!             ! of other small particles that can potentially fill the whole
-!             ! box (defeating the point of having an adaptive scheme...)
-!             ! Roughly, it means that a particle can have a small D only
-!             ! if it has neighbours from the older generation (D_old) that
-!             ! also have a small D.
-! !             D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
-! !             D_old = D_old * opts%rcp_over_D
-! !             ghostlayer=Particles%cutoff
-! !             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
-! !                 Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-! !                 Particles_old%Npart,D_old,Particles%skin,&
-! !                 ghostlayer,info,vlist_cross,nvlist_cross)
-! !             D_old = D_old / opts%rcp_over_D
-! !             D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
-! !                 read_only=.TRUE.)
-! !             IF (info .NE. 0) THEN
-! !                 CALL ppm_write(ppm_rank,caller,&
-! !                     'ppm_inl_xset_vlist failed.',info)
-! !                 info = -1
-! !                 GOTO 9999
-! !             ENDIF
-! ! 
-! ! #if debug_verbosity > 0
-! !             IF (MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
-! !                 CALL ppm_write(ppm_rank,caller,&
-! !                     'Insufficient number of xset neighbours to compute D',info)
-! !                 info = -1
-! !                 GOTO 9999
-! !             ENDIF
-! ! #endif
-! ! 
-! !             D     => Get_wps(Particles,    Particles%D_id)
-! !             D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
-! !             rcp => Get_wps(Particles,Particles%rcp_id)
-! !             DO ip=1,Particles%Npart
-! !                 minDold=HUGE(1._MK)
-! !                 DO ineigh=1,nvlist_cross(ip)
-! !                     iq=vlist_cross(ineigh,ip)
-! !                     minDold=MIN(minDold,D_old(iq))
-! !                 ENDDO
-! !                 !D(ip) = MAX(D(ip),minDold)
-! !                 !when Dtilde/D is large, increase rcp
-! !                 rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
-! !                 D(ip) = minDold
-! !             ENDDO
-! !             D     => Set_wps(Particles,    Particles%D_id)
-! !             D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
-! !                 read_only=.TRUE.)
-! !             rcp => Set_wps(Particles,Particles%rcp_id)
-!         ELSE
-!             !------------------------------------------------------------------!
-!             ! Update cutoff radii
-!             !------------------------------------------------------------------!
-!             D => Get_wpv(Particles,Particles%D_id)
-!             Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
-!             inv => Get_wpv(Particles,Particles%G_id)
-! 
-!             DO ip=1,Particles%Npart
-!                 ! haeckic: do the right thing here 
-!                 !Update inv using Dtilde computed before, do the min?
-!                 !rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
-!                 IF (ppm_dim .EQ. 2) THEN
-! !                      Matrix_A(1) = 0
-! !                      Matrix_A(3) = 0
-! !                      Matrix_A(2) = 0
-! !                      Matrix_A(4) = 0
-! ! 
-! !                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
-! 
-! !                      Dtilde(1,ip) = Matrix_B(1)
-! !                      Dtilde(2,ip) = Matrix_B(2)
-! !                      Dtilde(3,ip) = Matrix_B(3)
-! !                      Dtilde(4,ip) = Matrix_B(4)
+        Compute_D: IF (PRESENT(wp_grad_fun).OR. &
+            (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
+            !!-----------------------------------------------------------------!
+            !! Get anisotropic requirements directly using the given funcs
+            !!-----------------------------------------------------------------!
+            CALL sop_compute_D(Particles,D_fun,opts,info,     &
+                wp_fun=wp_fun,wp_grad_fun=wp_grad_fun)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'sop_compute_D failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            ! do not update D, we make that using the xset and the D of the old particles
+
+        ENDIF Compute_D
+
+
+        IF (.NOT. PRESENT(wp_fun)) THEN
+            !------------------------------------------------------------------!
+            ! Update D and cutoff radii
+            !------------------------------------------------------------------!
+
+            !haeckic: do the update for anisotropic
+            ! xset problem?
+
+            ! The following is used to prevent particles with small D from
+            ! drifting away inside the domain, eventually generating plenty
+            ! of other small particles that can potentially fill the whole
+            ! box (defeating the point of having an adaptive scheme...)
+            ! Roughly, it means that a particle can have a small D only
+            ! if it has neighbours from the older generation (D_old) that
+            ! also have a small D.
+
+            Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id)
+            Dtilde_old = Dtilde_old / opts%rcp_over_D
+            !haeckic: update for inhomogenous boundaries
+            ghostlayer=Particles%cutoff
+            CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
+                Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
+                Particles_old%Npart,Dtilde_old,Particles%skin,& !haeckic: ERROR Mpart?
+                ghostlayer,info,vlist_cross,nvlist_cross)
+            Dtilde_old = Dtilde_old * opts%rcp_over_D
+            Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,&
+                read_only=.TRUE.)
+            IF (info .NE. 0) THEN
+                CALL ppm_write(ppm_rank,caller,&
+                    'ppm_inl_xset_vlist failed.',info)
+                info = -1
+                GOTO 9999
+            ENDIF
+
+#if debug_verbosity > 0
+            IF (MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
+                CALL ppm_write(ppm_rank,caller,&
+                    'Insufficient number of xset neighbours to compute D',info)
+                info = -1
+                GOTO 9999
+            ENDIF
+#endif
+
+            D     => Get_wpv(Particles,    Particles%D_id)
+            Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id)
+            inv => Get_wpv(Particles,Particles%G_id)
+            DO ip=1,Particles%Npart
+            
+                ! get the minimum sized particle in xset neighborhood
+                ! get the direction by taking the closest
+                ! haeckic: how to do that?
+                new_scale = HUGE(1._MK)
+                old_distance = HUGE(1._MK)
+                DO ineigh=1,nvlist_cross(ip)
+                    iq=vlist_cross(ineigh,ip)
+
+                    CALL particles_sep_anisotropic_distance(Particles_old,Particles,iq,ip,distance,info)
+                    CALL particles_shorter_axis(Particles_old,iq,p_scale)
+
+                    IF (p_scale .LT. new_scale) THEN
+                        new_scale = p_scale
+                    ENDIF
+
+                    IF (distance .LT. old_distance) THEN
+                        ! found a close one
+                        ! choose this direction of iq
+                        old_distance = distance
+                        k = iq
+                    ENDIF
+                ENDDO
+
+                ! set tensor of particle
+                CALL particles_shorter_axis(Particles_old,k,old_scale)
+                DO j=1,Particles%tensor_length
+                   D(j,ip)   = (old_scale/new_scale)*Dtilde_old(j,k)
+                   inv(j,ip) = (1/opts%rcp_over_D)*D(j,ip)
+                ENDDO
+
+            ENDDO
+            D     => Set_wpv(Particles,    Particles%D_id)
+            Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,&
+                read_only=.TRUE.)
+            inv => Set_wpv(Particles,Particles%G_id)
+        ELSE
+            !------------------------------------------------------------------!
+            ! Update cutoff radii
+            !------------------------------------------------------------------!
+            D => Get_wpv(Particles,Particles%D_id)
+            Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
+            inv => Get_wpv(Particles,Particles%G_id)
+
+            DO ip=1,Particles%Npart
+                ! haeckic: do the right thing here 
+                !Update inv using Dtilde computed before, do the min?
+                !rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
+                IF (ppm_dim .EQ. 2) THEN
+
 !                        inv(1,ip) = 1/(opts%rcp_over_D)*Dtilde(1,ip)
 !                        inv(2,ip) = 1/(opts%rcp_over_D)*Dtilde(2,ip)
 !                        inv(3,ip) = 1/(opts%rcp_over_D)*Dtilde(3,ip)
 !                        inv(4,ip) = 1/(opts%rcp_over_D)*Dtilde(4,ip)
+
+                       ! haeckic: consider the neighbor seach for minimum
+                       ! add an option?
+                        DO j=1,Particles%tensor_length
+                           inv(j,ip) = (1/opts%rcp_over_D)*D(j,ip)
+                        ENDDO
+
+                ELSE
+                     ! haeckic: determine 3d orthogonal axes
+                     ! largest
+!                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+!                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
+!                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
 ! 
-!                        !haeckic: consider the neighbor seach for minimum
+!                      ! middle
+!                      Matrix_A(2) = -factor*new_scale*wp_grad_fun0(2)
+!                      Matrix_A(5) =  factor*new_scale*wp_grad_fun0(1)
+!                      Matrix_A(8) =  factor*new_scale*wp_grad_fun0(1)
+!                      
+!                      !smallest
+!                      Matrix_A(3) = new_scale*wp_grad_fun0(1)
+!                      Matrix_A(6) = new_scale*wp_grad_fun0(2)
+!                      Matrix_A(9) = new_scale*wp_grad_fun0(3)
 ! 
+!                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
 ! 
-!                 ELSE
-!                      ! haeckic: determine 3d orthogonal axes
-!                      ! largest
-! !                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
-! !                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
-! !                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
-! ! 
-! !                      ! middle
-! !                      Matrix_A(2) = -factor*new_scale*wp_grad_fun0(2)
-! !                      Matrix_A(5) =  factor*new_scale*wp_grad_fun0(1)
-! !                      Matrix_A(8) =  factor*new_scale*wp_grad_fun0(1)
-! !                      
-! !                      !smallest
-! !                      Matrix_A(3) = new_scale*wp_grad_fun0(1)
-! !                      Matrix_A(6) = new_scale*wp_grad_fun0(2)
-! !                      Matrix_A(9) = new_scale*wp_grad_fun0(3)
-! ! 
-! !                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
-! ! 
-! !                      Dtilde(1,ip) = Matrix_B(1)
-! !                      Dtilde(2,ip) = Matrix_B(2)
-! !                      Dtilde(3,ip) = Matrix_B(3)
-! !                      Dtilde(4,ip) = Matrix_B(4)
-! !                      Dtilde(5,ip) = Matrix_B(5)
-! !                      Dtilde(6,ip) = Matrix_B(6)
-! !                      Dtilde(7,ip) = Matrix_B(7)
-! !                      Dtilde(8,ip) = Matrix_B(8)
-! !                      Dtilde(9,ip) = Matrix_B(9)
-! !                      
-!                 ENDIF
-!             ENDDO
-!             Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-!             D => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
-!             inv => Set_wpv(Particles,Particles%G_id)
-!         ENDIF
+!                      Dtilde(1,ip) = Matrix_B(1)
+!                      Dtilde(2,ip) = Matrix_B(2)
+!                      Dtilde(3,ip) = Matrix_B(3)
+!                      Dtilde(4,ip) = Matrix_B(4)
+!                      Dtilde(5,ip) = Matrix_B(5)
+!                      Dtilde(6,ip) = Matrix_B(6)
+!                      Dtilde(7,ip) = Matrix_B(7)
+!                      Dtilde(8,ip) = Matrix_B(8)
+!                      Dtilde(9,ip) = Matrix_B(9)
+!                      
+                ENDIF
+            ENDDO
+            Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+            D => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+            inv => Set_wpv(Particles,Particles%G_id)
+        ENDIF
 
 #if debug_verbosity > 1
         WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',&
@@ -686,6 +718,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !CLOSE(iunit)
         !ENDIF
 
+
         Psi_global_old = Psi_global
         Psi_1 = HUGE(1._MK)
         alpha1 = -1._MK
@@ -705,14 +738,14 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             step_previous = step
 
             !haeckic: why get D?
-            D => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
+            !D => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
             CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
-            D => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+            !D => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
 
             IF (Psi_global .LT. Psi_global_old) THEN 
                 IF (Psi_global .LT. Psi_1) THEN
@@ -742,8 +775,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ENDIF
             ENDIF
 
-            !FIXME
-!             IF (ABS(Psi_global_old - Psi_global)/Psi_global_old .LT. 1E-4)THEN
+            !FIXME, haeckic: this makes potential not always decreasing !?
+            !add maybe later
+!             IF (ABS(Psi_global_old - Psi_global)/ABS(Psi_global_old) .LT. 1E-4)THEN
 !                write(*,*) 'EXIT: ABS'
 !                EXIT linesearch_loop
 !             ENDIF
@@ -756,11 +790,14 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             step = MAX(step_min,MIN(step,step_max))
             write(*,*) 'alpha < 0'
         ELSE
-            !Quadratic fit
-            Psi_1 = Psi_1 - Psi_global_old
-            Psi_2 = Psi_2 - Psi_global_old
-            step = 0.5_MK * (alpha1**2 * Psi_2 - alpha2**2 * Psi_1) / &
-                (alpha1*Psi_2 - alpha2*Psi_1)
+            ! haeckic: the quadratic fit makes potential sometimes increasing!?
+            ! Quadratic fit
+            ! drop it
+            step = alpha1
+!             Psi_1 = Psi_1 - Psi_global_old
+!             Psi_2 = Psi_2 - Psi_global_old
+!             step = 0.5_MK * (alpha1**2 * Psi_2 - alpha2**2 * Psi_1) / &
+!                 (alpha1*Psi_2 - alpha2*Psi_1)
             write(*,*) 'quadratic fit'
         ENDIF
 
@@ -770,14 +807,29 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! to get them through a local mapping anyway...)
         !!---------------------------------------------------------------------!
         !Move particles (including ghosts)
+
         write(*,*) 'Do a step', step
         write(*,*) 'Pot_now: ', Psi_global,' Pot_before: ', Psi_global_old
+        
         xp => Get_xp(Particles)
         DO ip=1,Particles%Npart
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
             & (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
         ENDDO
         xp => Set_xp(Particles)
+
+
+         ! haeckic: for debugging
+!          CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+!          write(*,*) 'DECREASE ', Psi_global, Psi_global_old
+!          IF (Psi_global_old+1d-12 .LT. Psi_global) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_sub_failed,caller,&
+!                 'sop_gradient_descent potential increasing problem',__LINE__,info)
+!             GOTO 9999
+!          ENDIF
+!         
+
 
 #if debug_verbosity > 2
 #ifdef __MPI

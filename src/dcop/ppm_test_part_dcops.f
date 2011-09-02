@@ -273,7 +273,6 @@ SUBROUTINE ppm_test_part_dcops_3d(Particles,eta_id,c,order_deriv,order_approx,&
         CALL pwrite(ppm_rank,caller,' ** FAILED ** ',info)
     ENDIF
 
-
     nvlist => NULL()
     vlist => NULL()
     IF (isinterp) THEN

@@ -113,14 +113,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_B => NULL()
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
-    REAL(MK)                                   :: min_D,factor,factor2,old_scale,new_scale
+    REAL(MK)                                   :: min_D,factor,factor2,old_scale,new_scale,temp_scale
     LOGICAL                                    :: need_derivatives
     REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
-    INTEGER                                    :: topo_id,eta_id,tensor_length
+    INTEGER                                    :: topo_id,eta_id
     REAL(MK),     DIMENSION(ppm_dim)           :: coeffs
     INTEGER,      DIMENSION(ppm_dim)           :: order
     INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
     REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0
+    REAL(MK)                                   :: dummy_wp
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -132,6 +133,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 #endif
 
     dummy_grad = 0._MK
+    dummy_wp = 0._MK
+
     topo_id = Particles%active_topoid
 
     !-------------------------------------------------------------------------!
@@ -236,8 +239,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDIF
 
 
-    ! haeckic: what do to here?
+    ! haeckic: what to do here?
     ! crash if not enough neighbours
+    ! adapt the plotting
     IF (need_derivatives .AND. Particles%nneighmin.LT.opts%nneigh_critical) THEN
 !         xp => Get_xp(Particles)
 !         rcp => Get_wps(Particles,Particles%rcp_id)
@@ -289,12 +293,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !! Compute D (desired resolution)
     !!-------------------------------------------------------------------------!
     ! (re)allocate Dtilde, which is a tensor
-    IF (ppm_dim .EQ. 2) THEN
-         tensor_length = 4
-    ELSE
-         tensor_length = 9
-    ENDIF
-    CALL particles_allocate_wpv(Particles,Particles%Dtilde_id,tensor_length,info,&
+    CALL particles_allocate_wpv(Particles,Particles%Dtilde_id,Particles%tensor_length,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_grow,name='D_tilde')
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -307,39 +306,23 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !! Case where we need to approximate derivatives
     !!-------------------------------------------------------------------------!
     ! haeckic: how to approx derivatives?
+    ! this is put into later if clause
+    ! haecki: what about approximating wp??
+    IF (.NOT.PRESENT(wp_fun)) THEN
+   
+    ENDIF
+
     if_needs_derivatives: IF (need_derivatives) THEN
-!         IF (.NOT. Particles%neighlists) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_argument,caller,&
-!                 'need neighbour lists to be uptodate', __LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!         ! Compute gradients using PSE kernels
-!         coeffs=1._MK; order=4; degree = 0
-!         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
-!         eta_id = 0
-!         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
-!             order,ppm_dim,info,name="gradient",vector=.TRUE.)
-!         IF (info.NE.0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_define failed', __LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!         IF (opts%check_dcops .AND. PRESENT(stats)) THEN
-!             CALL particles_dcop_compute(Particles,eta_id,info,&
-!                 c=opts%c,min_sv=stats%min_sv)
-!             WRITE(cbuf,*) 'Smallest singular value for gradient was ',stats%min_sv
-!             CALL ppm_write(ppm_rank,caller,cbuf,info)
-!         ELSE
-!             CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
-!         ENDIF
-!         IF (info.NE.0) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_sub_failed,caller,&
-!                 'particles_dcop_compute failed',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
+
+         IF (.NOT. Particles%neighlists) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'need neighbour lists to be uptodate', __LINE__,info)
+            GOTO 9999
+         ENDIF
+
+         CALL particles_get_grad_aniso(Particles,adapt_wpgradid,info)
+
     ENDIF if_needs_derivatives
 
     !-------------------------------------------------------------------------!
@@ -348,43 +331,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
     if_D_needs_grad: IF (opts%D_needs_gradients) THEN
 
-        ! haeckic: dcop needs to be adapted
-        IF (.NOT.PRESENT(wp_grad_fun)) THEN
-!             IF (.NOT. Particles%neighlists) THEN
-!                 CALL ppm_write(ppm_rank,caller,&
-!                     'trying to use neighb lists that dont exist',info)
-!                 info = -1
-!                 GOTO 9999
-!             ENDIF
-!             xp=>Get_xp(Particles,with_ghosts=.TRUE.)
-!             wp_grad => Get_wpv(Particles,adapt_wpgradid)
-!             eta => Get_dcop(Particles,eta_id)
-!             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-! 
-!             DO ip = 1,Particles%Npart 
-!                 wp_grad(1:ppm_dim,ip) = 0._MK
-!             ENDDO
-!             DO ip=1,Particles%Npart
-!                 DO ineigh=1,Particles%nvlist(ip)
-!                     iq=Particles%vlist(ineigh,ip)
-!                     wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip)+   &
-!                         (wp(iq)-wp(ip))*&
-!                         eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
-!                 ENDDO
-!             ENDDO
-!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-!             eta => Set_dcop(Particles,eta_id)
-!             wp_grad => Set_wpv(Particles,adapt_wpgradid)
-!             xp => Set_xp(Particles,read_only=.TRUE.)
-        ENDIF
-
-        ! Compute Dtilde on real particles
-
         xp => Get_xp(Particles)
         Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
 
-        IF (PRESENT(wp_fun)) THEN
-            ! For each particle calc the gradient using given functions wp_fun and wp_grad_fun
+        IF (PRESENT(wp_grad_fun)) THEN
+
+            ! For each particle calc the gradient using given functions wp_grad_fun
             DO ip=1,Particles%Npart
                 ! gradient
                 wp_grad_fun0 = wp_grad_fun(xp(1:ppm_dim,ip))
@@ -402,8 +354,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 ! consider maximum relative difference
                 ! haeckic: determine the factor depening on function
                 factor = opts%max_factor_aniso
+            
                 ! set the tensor
-                CALL ppm_alloc(Matrix_A,(/ tensor_length /),ppm_param_alloc_fit,info)
+                CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
 
                 IF (ppm_dim .EQ. 2) THEN
                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
@@ -421,6 +374,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 ELSE
                      ! haeckic: determine 3d orthogonal axes
                      ! largest
+                     ! choose arbitrary axes, because makes sense most of the time
 !                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
 !                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
 !                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
@@ -449,19 +403,161 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 !                      
                 ENDIF
                 
-                
-                
-                
-
             ENDDO
         ELSE
-!             wp_grad => Get_wpv(Particles,adapt_wpgradid)
-!             wp => Get_wps(Particles,Particles%adapt_wpid)
-!             DO ip=1,Particles%Npart
-!                 Dtilde(ip) = D_fun(wp(ip),wp_grad(1:ppm_dim,ip),opts)
-!             ENDDO
-!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-!             wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
+
+            IF (PRESENT(wp_fun)) THEN
+
+               wp_grad => Get_wpv(Particles,adapt_wpgradid)
+               DO ip=1,Particles%Npart
+
+                  ! set gradient
+                  wp_grad_fun0 = wp_grad(1:ppm_dim,ip)
+
+                  ! use this SUM(wp_grad**2)
+                  IF (ppm_dim .EQ. 2) THEN
+                        old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2)
+                  ELSE
+                        old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2 + wp_grad_fun0(3)**2)
+                  ENDIF
+                  ! shorter axis scalar
+                  new_scale = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)/old_scale
+
+                  ! longer axis scalar
+                  ! consider maximum relative difference
+                  ! haeckic: determine the factor depening on function
+                  factor = opts%max_factor_aniso
+               
+                  ! set the tensor
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
+                  IF (ppm_dim .EQ. 2) THEN
+                        Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+                        Matrix_A(3) =  factor*new_scale*wp_grad_fun0(1)
+                        Matrix_A(2) = new_scale*wp_grad_fun0(1)
+                        Matrix_A(4) = new_scale*wp_grad_fun0(2)
+
+                        CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+
+                        Dtilde(1,ip) = Matrix_B(1)
+                        Dtilde(2,ip) = Matrix_B(2)
+                        Dtilde(3,ip) = Matrix_B(3)
+                        Dtilde(4,ip) = Matrix_B(4)
+
+                  ELSE
+                        ! haeckic: determine 3d orthogonal axes
+                        ! largest
+                        ! choose arbitrary axes, because makes sense most of the time
+   !                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
+   ! 
+   !                      ! middle
+   !                      Matrix_A(2) = -factor*new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(5) =  factor*new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(8) =  factor*new_scale*wp_grad_fun0(1)
+   !                      
+   !                      !smallest
+   !                      Matrix_A(3) = new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(6) = new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(9) = new_scale*wp_grad_fun0(3)
+   ! 
+   !                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+   ! 
+   !                      Dtilde(1,ip) = Matrix_B(1)
+   !                      Dtilde(2,ip) = Matrix_B(2)
+   !                      Dtilde(3,ip) = Matrix_B(3)
+   !                      Dtilde(4,ip) = Matrix_B(4)
+   !                      Dtilde(5,ip) = Matrix_B(5)
+   !                      Dtilde(6,ip) = Matrix_B(6)
+   !                      Dtilde(7,ip) = Matrix_B(7)
+   !                      Dtilde(8,ip) = Matrix_B(8)
+   !                      Dtilde(9,ip) = Matrix_B(9)
+   !                      
+                  ENDIF
+                  
+               ENDDO
+               wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
+            
+            ELSE
+               
+               ! approx wp_fun if needed, otherwise a dummy
+               ! haeckic: do the get wp
+               
+               wp_grad => Get_wpv(Particles,adapt_wpgradid)
+               !wp => Get_wps(Particles,Particles%adapt_wpid)
+               DO ip=1,Particles%Npart
+                  ! set gradient
+                  wp_grad_fun0 = wp_grad(1:ppm_dim,ip)
+
+                  ! use this SUM(wp_grad**2)
+                  IF (ppm_dim .EQ. 2) THEN
+                        old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2)
+                  ELSE
+                        old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2 + wp_grad_fun0(3)**2)
+                  ENDIF
+                  ! shorter axis scalar
+                  new_scale = D_fun(dummy_wp,wp_grad_fun0,opts)/old_scale
+
+                  ! longer axis scalar
+                  ! consider maximum relative difference
+                  ! haeckic: determine the factor depening on function
+                  factor = opts%max_factor_aniso
+               
+                  ! set the tensor
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
+                  IF (ppm_dim .EQ. 2) THEN
+                        Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+                        Matrix_A(3) =  factor*new_scale*wp_grad_fun0(1)
+                        Matrix_A(2) = new_scale*wp_grad_fun0(1)
+                        Matrix_A(4) = new_scale*wp_grad_fun0(2)
+
+                        CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+
+                        Dtilde(1,ip) = Matrix_B(1)
+                        Dtilde(2,ip) = Matrix_B(2)
+                        Dtilde(3,ip) = Matrix_B(3)
+                        Dtilde(4,ip) = Matrix_B(4)
+
+                  ELSE
+                        ! haeckic: determine 3d orthogonal axes
+                        ! largest
+                        ! choose arbitrary axes, because makes sense most of the time
+   !                      Matrix_A(1) = -factor*new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(4) =  factor*new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(7) =  factor*new_scale*wp_grad_fun0(1)
+   ! 
+   !                      ! middle
+   !                      Matrix_A(2) = -factor*new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(5) =  factor*new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(8) =  factor*new_scale*wp_grad_fun0(1)
+   !                      
+   !                      !smallest
+   !                      Matrix_A(3) = new_scale*wp_grad_fun0(1)
+   !                      Matrix_A(6) = new_scale*wp_grad_fun0(2)
+   !                      Matrix_A(9) = new_scale*wp_grad_fun0(3)
+   ! 
+   !                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+   ! 
+   !                      Dtilde(1,ip) = Matrix_B(1)
+   !                      Dtilde(2,ip) = Matrix_B(2)
+   !                      Dtilde(3,ip) = Matrix_B(3)
+   !                      Dtilde(4,ip) = Matrix_B(4)
+   !                      Dtilde(5,ip) = Matrix_B(5)
+   !                      Dtilde(6,ip) = Matrix_B(6)
+   !                      Dtilde(7,ip) = Matrix_B(7)
+   !                      Dtilde(8,ip) = Matrix_B(8)
+   !                      Dtilde(9,ip) = Matrix_B(9)
+   !                      
+                  ENDIF
+               ENDDO
+               !wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
+               wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
+               
+            ENDIF
+
+            
         ENDIF
 
         Dtilde => Set_wpv(Particles,Particles%Dtilde_id)
@@ -477,23 +573,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
     ELSE ! .NOT. D_needs_grad
 
-!         Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
-!         IF (PRESENT(wp_fun)) THEN
-!             xp => Get_xp(Particles,with_ghosts=.TRUE.)
-!                 DO ip=1,Particles%Mpart
-!                     Dtilde(ip) = D_fun(wp_fun(xp(1:ppm_dim,ip)),dummy_grad,opts)
-!                 ENDDO
-! 
-!             xp => Set_xp(Particles,read_only=.TRUE.)
-!         ELSE
-!             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-!                 DO ip=1,Particles%Mpart
-!                     Dtilde(ip) = D_fun(wp(ip),dummy_grad,opts)
-!                 ENDDO
-!             wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-!         ENDIF
-!         Dtilde => Set_wps(Particles,Particles%Dtilde_id,&
-!             read_only=.FALSE.,ghosts_ok=.TRUE.)
+         ! haeckic: this case not treated
+         IF (PRESENT(wp_fun)) THEN
+
+         ELSE
+         
+         ENDIF
 
     ENDIF if_D_needs_grad
 
@@ -533,42 +618,13 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         read_only=.FALSE.,ghosts_ok=.TRUE.)
 
     !---------------------------------------------------------------------!
-    ! Increase the desired resolution where it is needed
-    ! D^(n+1) = Min(D^(n),D_tilde^(n+1))
-    !---------------------------------------------------------------------!
-    !IF (Particles%D_id .EQ. 0 ) THEN
-        !CALL particles_allocate_wps(Particles,Particles%D_id,&
-            !info,name='D')
-        !IF (info .NE. 0) THEN
-            !info = ppm_error_error
-            !CALL ppm_error(ppm_err_alloc,caller,&
-                !'particles_allocate_wps failed',__LINE__,info)
-            !GOTO 9999
-        !ENDIF
-        !D => Get_wps(Particles,Particles%D_id)
-        !Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-        !DO ip=1,Particles%Npart
-            !D(ip) = Dtilde(ip)
-        !ENDDO
-    !ELSE
-        !D => Get_wps(Particles,Particles%D_id)
-        !Dtilde => Get_wps(Particles,Particles%Dtilde_id)
-        !DO ip=1,Particles%Npart
-            !D(ip) = MIN(D(ip),Dtilde(ip))
-        !ENDDO
-    !ENDIF
-
-    !D => Set_wps(Particles,Particles%D_id)
-    !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-
-    !---------------------------------------------------------------------!
     ! Update the real tensors of the particles using 1/rcp_over_D*Dtilde
     !---------------------------------------------------------------------!
     inv => Get_wpv(Particles,Particles%G_id)
     Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
     DO ip=1,Particles%Npart
         ! Set the real tensors
-        ! inverse scaling!!
+        ! inverse scaling
         new_scale = 1/(opts%rcp_over_D)
         IF (ppm_dim .EQ. 2) THEN
             inv(1,ip) = new_scale * Dtilde(1,ip)
@@ -598,8 +654,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    ! haeckic: what if the topology is not coarse enough? require good enough!
-
     !---------------------------------------------------------------------!
     ! Update ghosts
     !---------------------------------------------------------------------!
@@ -622,9 +676,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
+    ! Allocate D
     IF (Particles%D_id .EQ. 0 ) THEN
-         
-        CALL particles_allocate_wpv(Particles,Particles%D_id,tensor_length,&
+        CALL particles_allocate_wpv(Particles,Particles%D_id,Particles%tensor_length,&
             info,name='D')
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -660,12 +714,13 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ! haeckic: how to choose smallest?
         ! now: keep relative difference and scale with smallest shortest axis in neigh
         ! or take completely the same as smalles neighbor?
-        old_scale = particles_shorter_axis(Particles,ip)
+        CALL particles_shorter_axis(Particles,ip,old_scale)
         new_scale = old_scale
         DO ineigh=1,Particles%nvlist(ip)
             iq = Particles%vlist(ineigh,ip)
-            IF (particles_shorter_axis(Particles,iq).LT.new_scale) THEN
-                new_scale = particles_shorter_axis(Particles,iq)
+            CALL particles_shorter_axis(Particles,iq,temp_scale) 
+            IF (temp_scale.LT.new_scale) THEN
+                new_scale = temp_scale
             ENDIF
         ENDDO
         ! scale the axes of the ellipse
@@ -690,6 +745,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDDO
     D      => Set_wpv(Particles,Particles%D_id)
     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+
+
 
 ! #if debug_verbosity > 0
 !     D => Get_wpv(Particles,Particles%D_id)
