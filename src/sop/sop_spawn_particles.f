@@ -673,7 +673,7 @@ SUBROUTINE check_nn(Particles,opts,info)
                 ENDDO
                 nvlist(ip) = close_neigh ! min(close_neigh,6-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
-                    nvlist(ip) = -6
+                    nvlist(ip) = 0! -6
                 endif
             ELSE
                 nvlist(ip) = 0

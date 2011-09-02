@@ -295,6 +295,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !! Gradient descent loop until stopping criterion is met
     !!-------------------------------------------------------------------------!
     adaptation_ok = .false.
+#ifdef __USE_LBFGS
+    lbfgs_continue = .FALSE.
+#endif
     !it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
             !&          it_adapt .LT. it_adapt_max .AND. &
             !&     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles .OR.&
@@ -348,18 +351,18 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
 
-        CALL sop_fuse_particles(Particles,opts,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'sop_fuse_particles failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        !we only removed particles, but they didnt move.
-        Particles%areinside=.TRUE.
-        Particles%ontopology=.TRUE.
-        CALL particles_mapping_ghosts(Particles,topo_id,info)
-        CALL particles_neighlists(Particles,topo_id,info)
+        !CALL sop_fuse_particles(Particles,opts,info)
+        !IF (info .NE. 0) THEN
+            !info = ppm_error_error
+            !CALL ppm_error(ppm_err_sub_failed,caller,&
+                !'sop_fuse_particles failed',__LINE__,info)
+            !GOTO 9999
+        !ENDIF
+        !!we only removed particles, but they didnt move.
+        !Particles%areinside=.TRUE.
+        !Particles%ontopology=.TRUE.
+        !CALL particles_mapping_ghosts(Particles,topo_id,info)
+        !CALL particles_neighlists(Particles,topo_id,info)
 
         !call check_duplicates(Particles)
 
@@ -420,6 +423,22 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        !Delete (fuse) particles that are too close to each other
+        !(needs ghost particles to be up-to-date)
+
+        CALL particles_neighlists(Particles,topo_id,info)
+
+        CALL sop_fuse_particles(Particles,opts,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'sop_fuse_particles failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        !we only removed particles, but they didnt move.
+        Particles%areinside=.TRUE.
+        Particles%ontopology=.TRUE.
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
 
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
@@ -613,14 +632,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #ifdef __USE_LBFGS
         !L-BFGS
 
-        ALLOCATE(Work(Particles%Mpart*(2*3+1)+2*3))
-        ALLOCATE(DIAG(Particles%Mpart))
-
-        info = 0
-        lbfgs_continue = .TRUE.
-        i=0
-        bfgs_loop: DO WHILE(lbfgs_continue .and. i.lt.3)
-            i=i+1
+        !info = 0
+        !lbfgs_continue = .TRUE.
+        !i=0
+        !bfgs_loop: DO WHILE(lbfgs_continue .and. i.lt.3)
+            !i=i+1
             CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
                 Psi_max,opts,info,gradPsi_max=gradPsi_max) 
             IF (info .NE. 0) THEN
@@ -634,6 +650,18 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 info = -1
                 GOTO 9999
             ENDIF
+
+        IF ( lbfgs_continue ) THEN
+            info = 1
+        ELSE
+            IF (ALLOCATED(Work)) DEALLOCATE(Work)
+            IF (ALLOCATED(DIAG)) DEALLOCATE(DIAG)
+            ALLOCATE(Work(Particles%Mpart*(2*3+1)+2*3))
+            ALLOCATE(DIAG(Particles%Mpart))
+            DIAG=1._MK
+            info = 0
+        ENDIF
+
 
             CALL LBFGS(Particles%Mpart,3,Particles%xp(1:ppm_dim,1:Particles%Mpart),&
                 Psi_global,Gradient_Psi,.FALSE.,DIAG,(/1,0/),1D-5,EPSILON(1._mk),&
@@ -649,10 +677,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ELSE
                 lbfgs_continue = .FALSE.
             ENDIF
-        ENDDO bfgs_loop
+        !ENDDO bfgs_loop
             
 
-        DEALLOCATE(Work,DIAG)
 
 #elif defined __USE_SD
 
@@ -864,6 +891,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !! Finalize
     !!-------------------------------------------------------------------------!
     DEALLOCATE(Gradient_Psi)
+#ifdef __USE_LBFGS
+    IF (ALLOCATED(Work)) DEALLOCATE(Work)
+    IF (ALLOCATED(DIAG)) DEALLOCATE(DIAG)
+#endif
 #if debug_verbosity > 1
         CALL particles_allocate_wps(Particles,potential_before_id,info,&
             iopt=ppm_param_dealloc)
