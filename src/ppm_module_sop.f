@@ -41,6 +41,7 @@
 
 #define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
+#define __USE_LBFGS 1
 
      USE ppm_module_data
      USE ppm_module_typedef

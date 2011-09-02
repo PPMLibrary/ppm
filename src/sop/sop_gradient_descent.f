@@ -18,6 +18,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     USE ppm_module_inl_xset_vlist
     USE ppm_module_io_vtk
+#ifdef __USE_LBFGS
+    USE ppm_module_lbfgs
+#endif
 
     IMPLICIT NONE
 #ifdef __MPI
@@ -94,7 +97,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     END INTERFACE
 
     ! local variables
-    INTEGER                             :: ip, it_adapt,iq,ineigh,di
+    INTEGER                             :: ip, it_adapt,iq,ineigh,di,i
     INTEGER                             :: iunit
     CHARACTER(LEN = 256)                :: filename,cbuf
     CHARACTER(LEN = 256)                :: caller='sop_gradient_descent'
@@ -136,6 +139,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     INTEGER,DIMENSION(:),POINTER        :: move_part => NULL()
     INTEGER,DIMENSION(:),POINTER        :: fuse_part => NULL()
     REAL(MK)                            :: rcp_over_D_save
+#ifdef __USE_LBFGS
+    LOGICAL                             :: lbfgs_continue
+    REAL(MK),DIMENSION(:),ALLOCATABLE   :: Work
+    REAL(MK),DIMENSION(:),ALLOCATABLE   :: DIAG
+#endif
 
 
     !!-------------------------------------------------------------------------!
@@ -601,6 +609,55 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 #endif
+
+#ifdef __USE_LBFGS
+        !L-BFGS
+
+        ALLOCATE(Work(Particles%Mpart*(2*3+1)+2*3))
+        ALLOCATE(DIAG(Particles%Mpart))
+
+        info = 0
+        lbfgs_continue = .TRUE.
+        i=0
+        bfgs_loop: DO WHILE(lbfgs_continue .and. i.lt.3)
+            i=i+1
+            CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
+                Psi_max,opts,info,gradPsi_max=gradPsi_max) 
+            IF (info .NE. 0) THEN
+                CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
+                info = -1
+                GOTO 9999
+            ENDIF
+            CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+            IF (info .NE. 0) THEN
+                CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
+                info = -1
+                GOTO 9999
+            ENDIF
+
+            CALL LBFGS(Particles%Mpart,3,Particles%xp(1:ppm_dim,1:Particles%Mpart),&
+                Psi_global,Gradient_Psi,.FALSE.,DIAG,(/1,0/),1D-5,EPSILON(1._mk),&
+                Work,info)    
+            IF (info.LT.0) THEN
+                write(*,*) 'IFLAG = ',info
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_dealloc,caller,&
+                    'LBFGS failed', __LINE__,info)
+                GOTO 9999
+            ELSE IF (info.GT.0) THEN
+                lbfgs_continue = .TRUE.
+            ELSE
+                lbfgs_continue = .FALSE.
+            ENDIF
+        ENDDO bfgs_loop
+            
+
+        DEALLOCATE(Work,DIAG)
+
+#elif defined __USE_SD
+
+        !STEEPEST DESCENT
+
         !!---------------------------------------------------------------------!
         !! Compute gradient of the potential
         !! (need ghosts for xp and D)
@@ -613,6 +670,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
+
 
         !!---------------------------------------------------------------------!
         !! Writeout potential-vs-time to file
@@ -652,14 +710,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             xp => Set_xp(Particles,ghosts_ok=.TRUE.)
             step_previous = step
 
-            D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
             CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
-            D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 
             IF (Psi_global .LT. Psi_global_old) THEN 
                 IF (Psi_global .LT. Psi_1) THEN
@@ -707,6 +763,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
         ENDDO
+        xp => Set_xp(Particles)
 
         !REMOVME
 #if debug_verbosity > 1
@@ -719,7 +776,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #endif
         !REMOVME
 
-        xp => Set_xp(Particles)
 
 #if debug_verbosity > 2
 #ifdef __MPI
@@ -735,6 +791,15 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         !! /end Line search **
         !!---------------------------------------------------------------------!
+
+#else
+        WRITE(*,*) 'This routine needs to be compiled with either '
+        WRITE(*,*) '__USE_LBFGS or __USE_SD precompiler flags'
+        info = -1
+        GOTO 9999
+#endif
+!end ifdef between LBFGS and  SD  algorithms
+
 
 #if debug_verbosity > 0
 #ifdef __MPI
