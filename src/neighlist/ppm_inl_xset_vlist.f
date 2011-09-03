@@ -349,6 +349,8 @@
  &                 curr_sub,ghostlayer, blue_sub, rcblue_sub, &
  &                 nblue_sub,mblue_sub,blue_p_id)
 
+
+
           !-----------------------------------------------------------------
           ! Create verlet lists for particles of this subdomain which will
           ! be stored in vlist_sub and nvlist_sub.
@@ -555,6 +557,9 @@
      &                    'ppm_create_inl_clist with blue',__LINE__,info)
               GOTO 9999
           END IF
+
+
+      
 
       !-------------------------------------------------------------------------
       !  Allocate own_plist array, which will be used to get list of particles

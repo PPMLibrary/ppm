@@ -279,6 +279,7 @@
               CALL getParticlesInCell(n_idx, blue, blue_clist, &
  &                                    neigh_blue, neigh_nblue)
               ! For each particle in the reference cell
+              
               DO m = 1, own_nred
                   ! Pick a reference particle
                   red_idx = own_red(m)

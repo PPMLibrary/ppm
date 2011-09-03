@@ -66,7 +66,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     INTEGER                                :: add_part, num_try
     INTEGER,        DIMENSION(2)           :: lda
     INTEGER,        DIMENSION(1)           :: lda1
-    INTEGER, PARAMETER                     :: nb_new_part = 1
+    INTEGER, PARAMETER                     :: nb_new_part = 5
     REAL(MK)                               :: angle, dist, dist1, dist2, leng, min_dist, minmin_d
     REAL(MK), DIMENSION(ppm_dim)           :: displace
 #ifdef __USE_RANDOMNUMBERS
@@ -107,7 +107,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     DO ip=1,Npart
        !write(*,*) nvlist(ip), nvlist_theoretical
        IF (nvlist(ip) .LT. nvlist_theoretical) &
-             add_part = add_part + nb_new_part
+             add_part = add_part + nvlist_theoretical - nvlist(ip)
     ENDDO
 
     write(*,*) 'new particles ', add_part
@@ -168,7 +168,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
             DEALLOCATE(randnb)
         ENDIF
         IF(alloc_rand) THEN
-            ALLOCATE(randnb(nb_new_part*ppm_dim*(2*(Npart))),STAT=info)
+            ALLOCATE(randnb(add_part*ppm_dim*(2*(Npart))),STAT=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,caller,   &
@@ -218,11 +218,12 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
             IF (nvlist(ip) .LT. nvlist_theoretical) THEN
             !IF (Particles%nvlist(ip).GT.0) THEN
 
-                DO i=1,nb_new_part
+               ! haecki: double sampling problem!
+                DO i=1,(nvlist_theoretical-nvlist(ip))
                     add_part = add_part + 1
 
                     !get the isotropic -> anisotropic transofmration matrix
-                    CALL particles_inverse_matrix(inv(:,ip),Matrix_A,info)
+                    CALL particles_inverse_matrix(D(:,ip),Matrix_A,info)
 
                     angle = 0._MK
 #ifdef __USE_RANDOMNUMBERS
@@ -401,8 +402,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 !                      write(*,*) 'Npart samples none found' 
 !                     ENDIF
 
+! (opts%attractive_radius0 + randnb(randnb_i)* &
+!                     & (1.0_mk-2*opts%attractive_radius0))
+
                      ! the only random one
-                    displace = 0.723_MK*(/COS(angle),SIN(angle)/)
+                    displace = 0.749_mk*(/COS(angle),SIN(angle)/)
                     displace = (/Matrix_A(1)*displace(1) + Matrix_A(2)*displace(2),&
                      &           Matrix_A(3)*displace(1) + Matrix_A(4)*displace(2)/)
                     xp(1:ppm_dim,Mpart + add_part) = xp(1:ppm_dim,ip) + displace

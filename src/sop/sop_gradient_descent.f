@@ -242,7 +242,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     !! 3. Psi_max > Psi_thresh OR new particles added, i.e. max potential is below threshold
     it_adapt_loop: DO WHILE (step .GT. step_stall .AND. &
             &          it_adapt .LT. it_adapt_max .AND. &
-            &     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles)
+            &     ((Psi_max .GT. Psi_thresh)))!) .OR. adding_particles)
     
         it_adapt = it_adapt + 1
 
@@ -489,11 +489,19 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id)
             Dtilde_old = Dtilde_old / opts%rcp_over_D
             !haeckic: update for inhomogenous boundaries
+            !haeckic: we need to consider ghosts!?
             ghostlayer=Particles%cutoff
             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
-                Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
+                Particles%Npart,Particles_old%xp,Particles_old%Npart,&
                 Particles_old%Npart,Dtilde_old,Particles%skin,& !haeckic: ERROR Mpart?
                 ghostlayer,info,vlist_cross,nvlist_cross)
+            
+            DO ip=1,Particles_old%Npart
+               !write(*,*) 'part old: ', Particles_old%xp(:,ip), Dtilde_old(:,ip)
+            ENDDO
+            DO ip=1,Particles%Npart
+               !write(*,*) 'part: ', ip, Particles%xp(:,ip), nvlist_cross(ip)
+            ENDDO
             Dtilde_old = Dtilde_old * opts%rcp_over_D
             Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,&
                 read_only=.TRUE.)
@@ -503,6 +511,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 info = -1
                 GOTO 9999
             ENDIF
+
 
 #if debug_verbosity > 0
             IF (MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
@@ -523,6 +532,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ! haeckic: how to do that?
                 new_scale = HUGE(1._MK)
                 old_distance = HUGE(1._MK)
+                IF (nvlist_cross(ip) .LE. 0) THEN
+                  write(*,*) 'PROBLEM! NO neighbors in xset: ', nvlist_cross(ip), Particles%xp(:,ip)
+                ENDIF
                 DO ineigh=1,nvlist_cross(ip)
                     iq=vlist_cross(ineigh,ip)
 
@@ -543,6 +555,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
                 ! set tensor of particle
                 CALL particles_shorter_axis(Particles_old,k,old_scale)
+                !write(*,*) 'distance: ', old_distance
                 DO j=1,Particles%tensor_length
                    D(j,ip)   = (old_scale/new_scale)*Dtilde_old(j,k)
                    inv(j,ip) = (1/opts%rcp_over_D)*D(j,ip)
@@ -648,21 +661,21 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-        min_dist = 1.0_mk
-         DO ip=1,Particles%Npart
-            DO j=1,Particles%nvlist(ip)
-               iq = Particles%vlist(j,ip)
-               CALL particles_anisotropic_distance(Particles,ip,iq,dist1s,info)
-               CALL particles_anisotropic_distance(Particles,iq,ip,dist2s,info)
-               dists = MIN(dist1s,dist2s)
-               IF (dists .LT. min_dist) THEN
-                  min_dist = dists
-                  k = ip
-                  di = iq
-               ENDIF
-
-            ENDDO
-         ENDDO
+!         min_dist = 1.0_mk
+!          DO ip=1,Particles%Npart
+!             DO j=1,Particles%nvlist(ip)
+!                iq = Particles%vlist(j,ip)
+!                CALL particles_anisotropic_distance(Particles,ip,iq,dist1s,info)
+!                CALL particles_anisotropic_distance(Particles,iq,ip,dist2s,info)
+!                dists = MIN(dist1s,dist2s)
+!                IF (dists .LT. min_dist) THEN
+!                   min_dist = dists
+!                   k = ip
+!                   di = iq
+!                ENDIF
+! 
+!             ENDDO
+!          ENDDO
 !          write(*,*) 'after ', min_dist, k, di, Particles%xp(:,k), Particles%xp(:,di)
 
 #if debug_verbosity > 1

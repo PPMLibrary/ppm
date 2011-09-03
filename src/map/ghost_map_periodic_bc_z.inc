@@ -4,7 +4,13 @@
             !----------------------------------------------------------------
             iopt   = ppm_param_alloc_grow_preserve
             ldu(1) = ppm_dim
-            ldu(2) = 2*nghostplus
+            ! HAECKIC: HERE IS AN ALLOCATION HERE SIZE!!!
+            ! should be bigger
+            IF (isymm.EQ.0) THEN
+               ldu(2) = 3*nghostplus
+            ELSE
+               ldu(2) = 2*nghostplus
+            ENDIF
             CALL ppm_alloc(xt,ldu,iopt,info) 
             CALL ppm_alloc(xt_offset,ldu,iopt,info) 
             IF (info.NE.0) THEN

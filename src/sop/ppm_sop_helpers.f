@@ -26,10 +26,10 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%level_set = .FALSE.
     opts%D_needs_gradients = .TRUE.
     opts%scale_D = 1._MK
-    opts%rcp_over_D = 1._MK
+    opts%rcp_over_D = 3._MK
     opts%nb_width = 1._MK
     opts%nb_width2 = 1._MK
-    opts%adaptivity_criterion = 2.5_MK
+    opts%adaptivity_criterion = 80.0_MK
     opts%attractive_radius0 = 0.5_MK
     opts%fuse_radius = 0.40_MK
     opts%param_nb = 1._MK
@@ -39,8 +39,8 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%minimum_D = 0.05_MK    
     opts%max_factor_aniso = 4.0_MK 
     opts%nb_grad_desc_steps = 0
-    opts%nneigh_theo = 4
-    opts%nneigh_critical = 0
+    opts%nneigh_theo = 30
+    opts%nneigh_critical = 20
     opts%nneigh_toobig = 2000
     opts%check_dcops = .FALSE.
 

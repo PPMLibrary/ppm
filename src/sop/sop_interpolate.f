@@ -7,7 +7,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
-    !USE ppm_module_inl_xset_k_vlist
+    USE ppm_module_inl_xset_vlist
     USE ppm_module_dcops
     USE ppm_module_io_vtk
 
@@ -40,7 +40,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old
     REAL(MK),     DIMENSION(:),   POINTER      :: wp_old
-    REAL(MK),     DIMENSION(:),   POINTER      :: D_old
+    REAL(MK),     DIMENSION(:,:),   POINTER      :: D_old
     REAL(MK),     DIMENSION(:),   POINTER      :: level_old => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad_old => NULL()
 
@@ -86,25 +86,34 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !!  on output, D_old may have been changed artificially to increase
     !! rcp_old. Do not use it anymore (except for computing rcp_old))
     !!--------------------------------------    ---------------------------!
-    D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    ! haeckic: use inv? make depending on opt%rcp over d
+    D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    D_old = D_old/2.0_mk 
     ghostlayer=Particles%cutoff
-!     CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
-!         Particles%Npart,Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-!         Particles_old%Mpart,D_old,opts%nneigh_critical,&
-!         ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
+    !haeckic: there is an error, only working for inside particles!?!?!?!?
+    CALL ppm_inl_xset_vlist(Particles%active_topoid,Particles%xp,&
+        Particles%Npart,Particles%Npart,Particles_old%xp,Particles_old%Npart,&
+        Particles_old%Npart,D_old,Particles%skin,&
+        ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
     Particles%neighlists_cross = .TRUE.
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,&
-            'ppm_inl_xset_k_vlist failed.',__LINE__,info)
+            'ppm_inl_xset_vlist failed.',__LINE__,info)
         GOTO 9999
     ENDIF
-    D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+    D_old = D_old*2.0_mk
+    D_old => Set_wpv(Particles_old,Particles_old%D_id,read_only=.TRUE.)
 
     Particles%nneighmin_cross = &
         MINVAL(Particles%nvlist_cross(1:Particles%Npart))
     Particles%nneighmax_cross = &
         MAXVAL(Particles%nvlist_cross(1:Particles%Npart))
+
+    DO ip = 1,Particles%Npart
+      write(*,*) ip, Particles%nvlist_cross(ip)
+    ENDDO
+    write(*,*) 'neighs ', Particles%nneighmin_cross, Particles%nneighmax_cross
 
     !write(cbuf,*) 'Nvlist_cross min/max = ',Particles%nneighmin_cross,&
         !Particles%nneighmax_cross
@@ -143,6 +152,8 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
             GOTO 9999
         ENDIF
         DEALLOCATE(order,degree)
+
+    write(*,*) 'until before'
         CALL particles_dcop_compute(Particles,Particles%eta_id,info,c=opts%c)
         IF (info.NE.0) THEN
             info = ppm_error_error
@@ -157,12 +168,15 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         GOTO 9999
     ENDIF
 
+    write(*,*) 'until here'
+
 
     !!---------------------------------------------------------------------!
     !! Interpolate scalar fields onto new positions
     !! (reallocate arrays if number of particles has changed)
     !!---------------------------------------------------------------------!
     ! Loop through all properties i that are mapped
+    ! interpolation?? inside same Particles set?
     DO i=1,Particles_old%max_wpsid
         IF (Particles_old%wps(i)%is_mapped) THEN
             !skip the properties that do not need to be interpolated

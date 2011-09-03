@@ -395,7 +395,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     !  Check arguments
     !-------------------------------------------------------------------------
 
-write(*,*) 'begin'
     !-------------------------------------------------------------------------
     !  Check the allocation type
     !-------------------------------------------------------------------------
@@ -427,14 +426,11 @@ write(*,*) 'begin'
         !  deallocate
         !----------------------------------------------------------------------
 
-write(*,*) 'here0'
         IF (ASSOCIATED(Particles)) THEN
             ! first deallocate all content of Particles
             IF (ASSOCIATED(Particles%xp)) DEALLOCATE(Particles%xp,STAT=info)
             IF (ASSOCIATED(Particles%vlist)) DEALLOCATE(Particles%vlist,STAT=info)
             IF (ASSOCIATED(Particles%nvlist)) DEALLOCATE(Particles%nvlist,STAT=info)
-
-write(*,*) 'here1'
 
             IF (ASSOCIATED(Particles%wpi)) THEN
                 DO i=1,Particles%max_wpiid
@@ -445,7 +441,6 @@ write(*,*) 'here1'
                 DEALLOCATE(Particles%wpi,STAT=info)
             ENDIF
 
-write(*,*) 'here2'
             IF (ASSOCIATED(Particles%wps)) THEN
                 DO i=1,Particles%max_wpsid
                     IF (ASSOCIATED(Particles%wps(i)%vec)) &
@@ -455,7 +450,6 @@ write(*,*) 'here2'
                 DEALLOCATE(Particles%wps,STAT=info)
             ENDIF
 
-write(*,*) 'here3'
             IF (ASSOCIATED(Particles%wpv)) THEN
                 DO i=1,Particles%max_wpvid
                     IF (ASSOCIATED(Particles%wpv(i)%vec)) &
@@ -465,7 +459,6 @@ write(*,*) 'here3'
                 DEALLOCATE(Particles%wpv,STAT=info)
             ENDIF
 
-write(*,*) 'here4'
             IF (ASSOCIATED(Particles%ops)) THEN
                 CALL particles_dcop_deallocate(Particles,info)
                 IF (info .NE. 0) THEN
@@ -476,7 +469,6 @@ write(*,*) 'here4'
                 ENDIF
             ENDIF
 
-write(*,*) 'here5'
             DEALLOCATE(Particles,stat=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
@@ -4710,7 +4702,8 @@ END SUBROUTINE particles_dcop_free
 SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         info,input_is_vector)
 
-   ! haeckic: make an anisotropic case
+   ! haeckic: problem for anisotropic case
+   ! only works for interpolation, not derivative calculation...
 
     !!!------------------------------------------------------------------------!
     !!! NEW version

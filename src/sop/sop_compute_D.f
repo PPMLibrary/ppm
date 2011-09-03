@@ -8,6 +8,35 @@
 !!! 
 !!!----------------------------------------------------------------------------!
 
+    pure function f0_grad_fun(pos)
+
+        use ppm_module_data, ONLY: ppm_dim
+    integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
+    real(mk),parameter              :: pi = 3.1415926535897931_mk
+        real(mk), dimension(ppm_dim)             :: f0_grad_fun
+        real(mk), dimension(ppm_dim), intent(in) :: pos
+        real(mk)                                 :: beta
+
+        beta = 50.0_mk
+        f0_grad_fun(1) = -beta*2*(pos(1)-0.5)*exp(-beta*((pos(1)-0.5)**2))
+        f0_grad_fun(2) = 0
+
+    end function f0_grad_fun
+
+pure function f0_fun(pos)
+
+        use ppm_module_data, ONLY: ppm_dim
+    integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
+    real(mk),parameter              :: pi = 3.1415926535897931_mk
+        real(mk)                                 :: f0_fun
+        real(mk), dimension(ppm_dim), intent(in) :: pos
+        real(mk)                                 :: beta
+         
+        beta = 50.0_mk
+        f0_fun = exp(-beta*((pos(1)-0.5)**2))
+
+    end function f0_fun
+
 SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                             wp_fun,wp_grad_fun,stats)
 
@@ -322,6 +351,33 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
          ENDIF
 
          CALL particles_get_grad_aniso(Particles,adapt_wpgradid,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                  'particles_get_grad_aniso failed', __LINE__,info)
+            GOTO 9999
+         ENDIF
+
+         ! haeckic: make here a test for derivative of wp using dcops
+         wp_grad => Get_wpv(Particles,adapt_wpgradid)
+         wp => Get_wps(Particles,Particles%adapt_wpid)
+         xp => Get_xp(Particles)
+         old_scale = 0.0_mk
+         new_scale = 0.0_mk
+         DO ip=1,Particles%Npart
+         
+            wp_grad_fun0 = f0_grad_fun(xp(1:ppm_dim,ip))
+!             write(*,*) ip, wp_grad_fun0
+!             write(*,*) ip, wp_grad(1:ppm_dim,ip)
+            old_scale = old_scale+SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
+            dummy_wp = f0_fun(xp(1:ppm_dim,ip))
+            new_scale = new_scale+(wp(ip)-dummy_wp)**2
+         ENDDO
+         write(*,*) 'Squared Error per particle in gradient: ', old_scale/Particles%Npart
+         write(*,*) 'Squared Error per particle in field: ', new_scale/Particles%Npart
+         wp_grad => Set_wpv(Particles,adapt_wpgradid)
+         wp => Set_wps(Particles,Particles%adapt_wpid)
+         xp => Set_xp(Particles,read_only=.TRUE.)
 
     ENDIF if_needs_derivatives
 
@@ -341,6 +397,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 ! gradient
                 wp_grad_fun0 = wp_grad_fun(xp(1:ppm_dim,ip))
 
+
                 ! use this SUM(wp_grad**2)
                 IF (ppm_dim .EQ. 2) THEN
                      old_scale = sqrt(wp_grad_fun0(1)**2 + wp_grad_fun0(2)**2)
@@ -353,6 +410,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 ! longer axis scalar
                 ! consider maximum relative difference
                 ! haeckic: determine the factor depening on function
+                ! do this like follows:
+                ! go through neighbors and take the min_q(min(projection(),h_max))
                 factor = opts%max_factor_aniso
             
                 ! set the tensor
@@ -483,6 +542,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                
                ! approx wp_fun if needed, otherwise a dummy
                ! haeckic: do the get wp
+               ! now a dummy is used
                
                wp_grad => Get_wpv(Particles,adapt_wpgradid)
                !wp => Get_wps(Particles,Particles%adapt_wpid)
@@ -519,6 +579,10 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                         Dtilde(2,ip) = Matrix_B(2)
                         Dtilde(3,ip) = Matrix_B(3)
                         Dtilde(4,ip) = Matrix_B(4)
+
+
+                        !write(*,*) 'Make new: ', Dtilde(:,ip)
+
 
                   ELSE
                         ! haeckic: determine 3d orthogonal axes
@@ -645,7 +709,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDDO
     inv => Set_wpv(Particles,Particles%G_id)
     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
-
+write(*,*) 'heeh bef', Particles%Npart, Particles%cutoff
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -654,6 +718,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
+write(*,*) 'heeh', Particles%cutoff
     !---------------------------------------------------------------------!
     ! Update ghosts
     !---------------------------------------------------------------------!
@@ -665,6 +730,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
+write(*,*) 'heeh2'
     !---------------------------------------------------------------------!
     ! Update neighbour lists
     !---------------------------------------------------------------------!

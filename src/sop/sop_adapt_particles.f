@@ -380,8 +380,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &    'particles_updated_cutoff failed',__LINE__,info)
         GOTO 9999
     ENDIF
-
-    ! haecki: check that problem
+    ! haeckic: check that problem
     ! Problem: The ghost mapping needs to consider D_old cutoff, because they are used!!
     ! need the ghosts for D_old to be correct
     CALL particles_mapping_ghosts(Particles,topo_id,info)
@@ -457,19 +456,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !ENDIF
 
     ! haeckic: Something strange with the datastructure
-    ! 
-    ! keep the Particles_old and create Particles
-    ! 
-    ! 
-    !  CHANGE THIS BACK!!!!
-    ! 
-    !now: copy stuff into Particles_old, because less used
-    ! Particles_old need:
-    ! - Dtilde
-    ! - xp
-    ! - Npart
-    ! - Mpart
-
 
     Particles_old => Particles
     Particles => NULL()
@@ -522,10 +508,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     Particles%nvlist => NULL()
     Particles%vlist => NULL()
-    Particles%neighlists = .FALSE.
+    !Particles%neighlists = .FALSE.
 
     !link the old particles to the new ones in the data structure:
     Particles%Particles_cross => Particles_old
+    Particles_old%Particles_cross => NULL()
 
     CALL particles_allocate_wpv(Particles,Particles%D_id,Particles%tensor_length,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
@@ -535,7 +522,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-    Particles%wpv(Particles_old%D_id)%name = Particles_old%wpv(Particles_old%D_id)%name
+    Particles%wpv(Particles%D_id)%name = Particles_old%wpv(Particles_old%D_id)%name
     
     CALL particles_allocate_wpv(Particles,Particles%G_id,Particles%tensor_length,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
@@ -551,21 +538,26 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ! copy xp and Dtilde
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    inv => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
     xp_old => Get_xp(Particles_old,with_ghosts=.TRUE.)
     D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    inv_old => Get_wpv(Particles_old,Particles_old%G_id,with_ghosts=.TRUE.)
 
     ! copy the properties 
     DO ip=1,Particles%Mpart
          xp(1:ppm_dim,ip) = xp_old(1:ppm_dim,ip)
          DO j =1,Particles%tensor_length
             D(j,ip)   = D_old(j,ip)
+            inv(j,ip) = inv_old(j,ip)
          ENDDO
     ENDDO
 
     xp  => Set_xp(Particles,read_only=.TRUE.)
     D   => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
+    inv   => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
     xp_old  => Set_xp(Particles_old,read_only=.TRUE.)
     D_old   => Set_wpv(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+    inv_old   => Set_wpv(Particles_old,Particles_old%G_id,read_only=.TRUE.)
 
     write(*,*) 'particles ',Particles%wpv(1)%name, Particles%wpv(2)%name,Particles%wpv(3)%name
     write(*,*) Particles%max_wpvid,Particles%nwps, Particles%nwpv
@@ -574,7 +566,10 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     write(*,*) Particles%wpv(1)%is_mapped,Particles%wpv(2)%is_mapped,Particles%wpv(3)%is_mapped
 
     write(*,*) 'particles2 ',Particles_old%wpv(1)%name, Particles_old%wpv(2)%name,Particles_old%wpv(3)%name
-    write(*,*) Particles_old%max_wpvid,Particles_old%nwps, Particles_old%nwpv
+    IF (Particles_old%nwps .gt. 0) THEN
+    write(*,*) 'particles2 ',Particles_old%wps(1)%name, Particles_old%wps(2)%name,Particles_old%wps(3)%name
+    ENDIF
+    write(*,*) Particles_old%max_wpvid,Particles_old%max_wpsid,Particles_old%nwps, Particles_old%nwpv
     write(*,*) Particles_old%D_id, Particles_old%Dtilde_id,Particles_old%G_id
     write(*,*) Particles_old%wpv(1)%is_mapped,Particles_old%wpv(2)%is_mapped,Particles_old%wpv(3)%is_mapped
 
@@ -587,7 +582,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ! 
     ! Particles_old:
     ! - xp
-    ! - wp
+    ! - array(wp)
     ! - D
     ! - Dtilde
     ! - G_id
@@ -609,11 +604,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ! with some compilers (who knows...)
     ! (e.g. wp_grad_fun below may or may not be present)
 
-    CALL sop_gradient_descent(Particles_old,Particles, &
-      nvlist_cross,vlist_cross,                &
-      nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
-      D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
-      need_deriv=need_derivatives,stats=stats)
+!     CALL sop_gradient_descent(Particles_old,Particles, &
+!       nvlist_cross,vlist_cross,                &
+!       nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
+!       D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
+!       need_deriv=need_derivatives,stats=stats)
 
     IF (info .NE. 0) THEN
         info = ppm_error_error
