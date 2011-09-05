@@ -60,6 +60,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     !! Compute interaction potential
     !!-------------------------------------------------------------------------!
 
+    ! HAECKIC: TODO combine aniso with iso
+
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
 !     D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
 !     inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)

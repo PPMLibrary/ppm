@@ -86,14 +86,15 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !!  on output, D_old may have been changed artificially to increase
     !! rcp_old. Do not use it anymore (except for computing rcp_old))
     !!--------------------------------------    ---------------------------!
-    ! haeckic: use inv? make depending on opt%rcp over d
+    ! HAECKIC: TODO what to use as neighbor determination radius
+    ! HAECKIC: How to guarantee number of neighbors??? we only do that on current set not cross!?
+    ! main problem: we need the ghosts!!
     D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     D_old = D_old/2.0_mk 
     ghostlayer=Particles%cutoff
-    !haeckic: there is an error, only working for inside particles!?!?!?!?
     CALL ppm_inl_xset_vlist(Particles%active_topoid,Particles%xp,&
         Particles%Npart,Particles%Npart,Particles_old%xp,Particles_old%Npart,&
-        Particles_old%Npart,D_old,Particles%skin,&
+        Particles_old%Mpart,D_old,Particles%skin,&
         ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
     Particles%neighlists_cross = .TRUE.
     IF (info .NE. 0) THEN
@@ -109,11 +110,6 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         MINVAL(Particles%nvlist_cross(1:Particles%Npart))
     Particles%nneighmax_cross = &
         MAXVAL(Particles%nvlist_cross(1:Particles%Npart))
-
-    DO ip = 1,Particles%Npart
-      write(*,*) ip, Particles%nvlist_cross(ip)
-    ENDDO
-    write(*,*) 'neighs ', Particles%nneighmin_cross, Particles%nneighmax_cross
 
     !write(cbuf,*) 'Nvlist_cross min/max = ',Particles%nneighmin_cross,&
         !Particles%nneighmax_cross
@@ -153,7 +149,6 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         ENDIF
         DEALLOCATE(order,degree)
 
-    write(*,*) 'until before'
         CALL particles_dcop_compute(Particles,Particles%eta_id,info,c=opts%c)
         IF (info.NE.0) THEN
             info = ppm_error_error
@@ -167,8 +162,6 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-
-    write(*,*) 'until here'
 
 
     !!---------------------------------------------------------------------!

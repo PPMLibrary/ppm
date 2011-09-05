@@ -5486,9 +5486,11 @@ SUBROUTINE particles_shorter_axis(Particles, i, shortax)
 END SUBROUTINE particles_shorter_axis
 
 ! define a get_gradient for anisotropic particles
-SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info)
+SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info,with_ghosts)
 
-      IMPLICIT NONE
+    USE ppm_module_map
+
+    IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -5499,11 +5501,13 @@ SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)  :: Particles
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
     !!! Data structure containing the particles
-    INTEGER,                            INTENT(IN)    :: adapt_wpgradid
-    !!! resulting gradients for all particles
-    INTEGER,                            INTENT(OUT)   :: info
+    INTEGER,                            INTENT(IN)      :: adapt_wpgradid
+    !!! resulting gradients for all particles 
+    LOGICAL, OPTIONAL                                   :: with_ghosts
+    !!! do we need the gradients also for the ghosts
+    INTEGER,                            INTENT(OUT)     :: info
     !!! Return status, on success 0.
 
     !-------------------------------------------------------------------------
@@ -5562,6 +5566,9 @@ SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info)
     ! 2. Transform gradient for anisotorpic spaces
     ! grad_aniso = inv^T * grad_iso
    
+    ! HAECKIC: add an option to choose with or without ghosts
+    ! or map them afterwards?
+   
     wp_grad => Get_wpv(Particles,adapt_wpgradid)
     eta => Get_dcop(Particles,eta_id)
     wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
@@ -5604,6 +5611,23 @@ SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info)
     eta => Set_dcop(Particles,eta_id)
     wp_grad => Set_wpv(Particles,adapt_wpgradid)
 
+    ! HAECKIC: do we map correctly?
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) THEN
+            !---------------------------------------------------------------------!
+            ! Update ghosts
+            !---------------------------------------------------------------------!
+            CALL particles_mapping_ghosts(Particles,Particles%active_topoid,info)
+            IF (info .NE. 0) THEN
+                  CALL ppm_write(ppm_rank,caller,&
+                     'particles_mapping_ghosts failed.',info)
+                  info = -1
+                  GOTO 9999
+            ENDIF
+         ENDIF
+    ENDIF
+
+
     CALL substop(caller,t0,info)
 
     9999  CONTINUE ! jump here upon error
@@ -5633,10 +5657,30 @@ SUBROUTINE particles_get_hess_aniso(Particles, hess, info)
     INTEGER,                             INTENT(OUT)    :: info
     !!! Return status, on success 0.
 
-    ! 1. calculate the reference gradient
-    ! 
-    ! 2. Transform gradient for anisotorpic spaces
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_get_hess_aniso'
+    REAL(MK),     DIMENSION(ppm_dim)           :: coeffs,wp_grad_temp
+    INTEGER,      DIMENSION(ppm_dim)           :: order
+    INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
+    INTEGER                                    :: eta_id, i, ineigh, iq, ip
+    REAL(MK)                                   :: t0
+    REAL(MK), DIMENSION(:,:),POINTER           :: inv => NULL()
+    REAL(MK), DIMENSION(:),  POINTER           :: wp => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER           :: wp_grad => NULL()
+    REAL(MK), DIMENSION(:,:),POINTER           :: eta => NULL()
+    REAL(MK), DIMENSION(:),  POINTER           :: inv_transpose => NULL()
+
+    info = 0 ! change if error occurs
  
+    CALL substart(caller,t0,info)
+    
+    ! CODE HERE
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
 
 END SUBROUTINE particles_get_hess_aniso
 

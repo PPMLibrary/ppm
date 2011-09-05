@@ -44,6 +44,10 @@
 SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         wp_fun,wp_grad_fun,wplap_id,return_grad,smallest_sv,stats)
 
+
+    ! HAECKIC: level sets are everywhere dropped
+
+
     USE ppm_module_error
     USE ppm_module_map_part
     USE ppm_module_io_vtk
@@ -143,9 +147,13 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     TYPE(ppm_t_particles), POINTER             :: Particles_old
 
+
+    ! HAECKIC: some definitions are changed for anisotropic particles
+
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
     REAL(MK),     DIMENSION(:,:),   POINTER    :: D => NULL()
     REAL(MK),     DIMENSION(:,:),   POINTER    :: Dtilde => NULL()
+    REAL(MK),     DIMENSION(:,:),   POINTER    :: Dtilde_old => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: wp => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: wp_grad => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: level => NULL()
@@ -297,6 +305,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
+    ! HAECKIC: here a wpv is allocated
+
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
     IF (opts%D_needs_gradients) THEN
@@ -309,7 +319,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
                 !no array has already been specified for wp_grad
                 !need to allocate one
                 CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
-                    ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
+                    ppm_dim,info,with_ghosts=.TRUE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
@@ -319,7 +329,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             ELSE
                 IF (.NOT.Particles%wpv(adapt_wpgradid)%is_mapped) THEN
                     CALL particles_allocate_wpv(Particles,adapt_wpgradid,&
-                        ppm_dim,info,with_ghosts=.FALSE.,&
+                        ppm_dim,info,with_ghosts=.TRUE.,&
                         iopt=ppm_param_alloc_grow_preserve,name='adapt_wpgrad')
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
@@ -350,12 +360,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    ! real tensors have now Dtilde
-    ! Dtilde and D are stored in wpv 
-
-    ! haeckic: add the neighbor consideration option?
-    ! why not set directly in compute_D?
-    ! add a option for that?
+    
+    ! HAECKIC: update inverse tensor
     inv => Get_wpv(Particles,Particles%G_id)
     D => Get_wpv(Particles,Particles%D_id)
     DO ip=1,Particles%Npart
@@ -372,7 +378,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
-    ! Problem: what if cutoff is now bigger than initially???? should not happen...
     CALL particles_updated_cutoff(Particles,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -380,9 +385,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &    'particles_updated_cutoff failed',__LINE__,info)
         GOTO 9999
     ENDIF
-    ! haeckic: check that problem
-    ! Problem: The ghost mapping needs to consider D_old cutoff, because they are used!!
-    ! need the ghosts for D_old to be correct
+
     CALL particles_mapping_ghosts(Particles,topo_id,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -391,7 +394,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    write(*,*) 'after compute D'
     CALL particles_neighlists(Particles,topo_id,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -406,7 +408,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !! (used in the definition of the primitive functions, for
     !! interpolation. Not needed if the functions are known analytically)
     !!-------------------------------------------------------------------------!
-    ! haeckic: do nearest neighbor, used in dcops, in particles_old!!
+    
+    ! HAECKIC: nearest neighbor for anisotropic particles
     IF (.NOT.PRESENT(wp_fun)) THEN
         CALL particles_allocate_wps(Particles,Particles%nn_sq_id,info,name='nn2')
         IF (info.NE.0) THEN
@@ -455,12 +458,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         !ENDIF
     !ENDIF
 
-    ! haeckic: Something strange with the datastructure
-
     Particles_old => Particles
     Particles => NULL()
-
-    !Particles is allocated with size Mpart - ie WITH the ghosts particles
 
     CALL ppm_alloc_particles(Particles,Particles_old%Mpart,&
         ppm_param_alloc_fit,info)
@@ -476,7 +475,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles = Particles_old
     Particles%xp => xp
 
-    !haeckic: do dcops
     !move DC operators from old to new particles
     ! (only move their definitions
     Particles%ops => Particles_old%ops
@@ -506,14 +504,15 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles%nvlist => Particles_old%nvlist
     Particles%vlist => Particles_old%vlist
 
-    Particles%nvlist => NULL()
-    Particles%vlist => NULL()
-    !Particles%neighlists = .FALSE.
+    Particles_old%nvlist => NULL()
+    Particles_old%vlist => NULL()
+    Particles_old%neighlists = .FALSE.
 
     !link the old particles to the new ones in the data structure:
     Particles%Particles_cross => Particles_old
     Particles_old%Particles_cross => NULL()
-
+    
+    ! HAECKIC: properties to copy are wpv
     CALL particles_allocate_wpv(Particles,Particles%D_id,Particles%tensor_length,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
     IF (info.NE.0) THEN
@@ -535,13 +534,27 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles%wpv(Particles%G_id)%name = Particles_old%wpv(Particles_old%G_id)%name
     Particles%nwpv=2
 
+    ! temporary
+!     CALL particles_allocate_wpv(Particles,Particles%Dtilde_id,Particles%tensor_length,info,&
+!         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
+!     IF (info.NE.0) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
+!             &  __LINE__,info)
+!         GOTO 9999
+!     ENDIF
+!     Particles%wpv(Particles%Dtilde_id)%name = Particles_old%wpv(Particles_old%Dtilde_id)%name
+!     Particles%nwpv=3
+
     ! copy xp and Dtilde
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
     inv => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
+!     Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     xp_old => Get_xp(Particles_old,with_ghosts=.TRUE.)
     D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     inv_old => Get_wpv(Particles_old,Particles_old%G_id,with_ghosts=.TRUE.)
+!     Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
 
     ! copy the properties 
     DO ip=1,Particles%Mpart
@@ -549,45 +562,20 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
          DO j =1,Particles%tensor_length
             D(j,ip)   = D_old(j,ip)
             inv(j,ip) = inv_old(j,ip)
+!             Dtilde(j,ip) = Dtilde_old(j,ip)
          ENDDO
     ENDDO
 
     xp  => Set_xp(Particles,read_only=.TRUE.)
     D   => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
     inv   => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
+!     Dtilde   => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
     xp_old  => Set_xp(Particles_old,read_only=.TRUE.)
     D_old   => Set_wpv(Particles_old,Particles_old%D_id,read_only=.TRUE.)
     inv_old   => Set_wpv(Particles_old,Particles_old%G_id,read_only=.TRUE.)
+!     Dtilde_old   => Set_wpv(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
 
-    write(*,*) 'particles ',Particles%wpv(1)%name, Particles%wpv(2)%name,Particles%wpv(3)%name
-    write(*,*) Particles%max_wpvid,Particles%nwps, Particles%nwpv
-    write(*,*) Particles%D_id, Particles%Dtilde_id,Particles%G_id
-    write(*,*) Particles%Npart, Particles%Mpart
-    write(*,*) Particles%wpv(1)%is_mapped,Particles%wpv(2)%is_mapped,Particles%wpv(3)%is_mapped
-
-    write(*,*) 'particles2 ',Particles_old%wpv(1)%name, Particles_old%wpv(2)%name,Particles_old%wpv(3)%name
-    IF (Particles_old%nwps .gt. 0) THEN
-    write(*,*) 'particles2 ',Particles_old%wps(1)%name, Particles_old%wps(2)%name,Particles_old%wps(3)%name
-    ENDIF
-    write(*,*) Particles_old%max_wpvid,Particles_old%max_wpsid,Particles_old%nwps, Particles_old%nwpv
-    write(*,*) Particles_old%D_id, Particles_old%Dtilde_id,Particles_old%G_id
-    write(*,*) Particles_old%wpv(1)%is_mapped,Particles_old%wpv(2)%is_mapped,Particles_old%wpv(3)%is_mapped
-
-    ! Now, work on xp and keep xp_old for interpolation
-    ! 
-    ! Particles:
-    ! - xp
-    ! - D
-    ! - G_id
-    ! 
-    ! Particles_old:
-    ! - xp
-    ! - array(wp)
-    ! - D
-    ! - Dtilde
-    ! - G_id
-    ! 
-
+   ! HAECKIC: DROP Dtilde later
 
     !!-------------------------------------------------------------------------!
     !! Move particles
@@ -604,11 +592,11 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ! with some compilers (who knows...)
     ! (e.g. wp_grad_fun below may or may not be present)
 
-!     CALL sop_gradient_descent(Particles_old,Particles, &
-!       nvlist_cross,vlist_cross,                &
-!       nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
-!       D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
-!       need_deriv=need_derivatives,stats=stats)
+    CALL sop_gradient_descent(Particles_old,Particles, &
+      nvlist_cross,vlist_cross,                &
+      nneighmin_cross,nneighmax_cross,num_it,opts,info,wp_fun=wp_fun,&
+      D_fun=D_fun,wp_grad_fun=wp_grad_fun,threshold=Psi_threshold,&
+      need_deriv=need_derivatives,stats=stats)
 
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -642,7 +630,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         !!---------------------------------------------------------------------!
         !! Otherwise, use particle-to-particle interpolation
         !!---------------------------------------------------------------------!
-        ! haeckic: do the interpolation
         CALL sop_interpolate(Particles_old,Particles,opts,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -703,8 +690,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &    'ppm_alloc_particles failed',__LINE__,info)
         GOTO 9999
     ENDIF
-
-   !haeckic: drop that stuff?
 
     IF(ASSOCIATED(nvlist_cross)) DEALLOCATE(nvlist_cross)
     IF(ASSOCIATED(vlist_cross)) DEALLOCATE(vlist_cross)

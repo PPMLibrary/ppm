@@ -37,9 +37,9 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%order_approx = 4
     opts%maximum_D = 0.2_MK
     opts%minimum_D = 0.05_MK    
-    opts%max_factor_aniso = 4.0_MK 
+    opts%max_factor_aniso = 5.00_MK 
     opts%nb_grad_desc_steps = 0
-    opts%nneigh_theo = 30
+    opts%nneigh_theo = 24
     opts%nneigh_critical = 20
     opts%nneigh_toobig = 2000
     opts%check_dcops = .FALSE.

@@ -122,7 +122,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 #endif
 
 
-   ! haeckic: did it differently: allocate after Mpart, because we need the ghosts for checking
+    ! HAECKIC: arrays are extended compared to Mpart, because maybe needed for comparison
 
     !!-------------------------------------------------------------------------!
     !! Re-allocate (grow) arrays if necessary
@@ -185,7 +185,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                         &            'allocation failed',__LINE__,info)
                     GOTO 9999
                 ENDIF
-                !haeckic: a better seed?
                 DO i=1,ppm_particles_seedsize
                     ppm_particles_seed(i)=ppm_rank*i*i*i*i
                 ENDDO
@@ -211,6 +210,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     nvlist => Particles%nvlist
 
     min_dist = 1.0_mk
+
+   ! HAECKIC: TODO add sampling methods
 
     IF (ppm_dim .EQ. 2) THEN
         add_particles2d: DO ip=1,Npart

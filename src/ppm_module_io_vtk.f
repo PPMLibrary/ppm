@@ -271,7 +271,8 @@
                    "' type='Float64' />"
               END DO
               DO i=1,nb_wpv
-                 nd = Particles%wpv(i)%lda
+              ! haeckic: BUG: we need to store the id of the property i
+                 nd = Particles%wpv(wpv_l(i))%lda
                  DO l=1,nd
                     WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(i))%name), '_', l
                     WRITE(iUnit,'(3A)') "      <PDataArray Name='", &

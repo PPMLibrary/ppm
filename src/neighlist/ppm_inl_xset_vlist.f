@@ -577,6 +577,8 @@
      &                       'own_red',__LINE__,info)
              GOTO 9999
           END IF
+          !HAECKIC: BUGUBUGUBUGUBUG, lda(1) needed to be changed
+          lda(1) = blue_clist%n_all_p
           CALL ppm_alloc(own_blue, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
