@@ -2,15 +2,28 @@
     "http://www.w3.org/TR/xhtml11/DTD/xhtml11.dtd">
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
-<meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.5.3" />
+<meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
+<meta name="generator" content="AsciiDoc 8.6.3" />
 <title>PPM core package README</title>
 <style type="text/css">
-/* Debug borders */
-p, li, dt, dd, div, pre, h1, h2, h3, h4, h5, h6 {
-/*
-  border: 1px solid red;
-*/
+/* Sans-serif font. */
+h1, h2, h3, h4, h5, h6,
+div.title, caption.title,
+thead, p.table.header,
+div#toctitle,
+span#author, span#revnumber, span#revdate, span#revremark,
+div#footer {
+  font-family: Arial,Helvetica,sans-serif;
+}
+
+/* Serif font. */
+div.sectionbody {
+  font-family: Georgia,"Times New Roman",Times,serif;
+}
+
+/* Monospace font. */
+tt {
+  font-size: inherit;
 }
 
 body {
@@ -36,12 +49,12 @@ strong {
 }
 
 tt {
+  font-size: inherit;
   color: navy;
 }
 
 h1, h2, h3, h4, h5, h6 {
   color: #527bbd;
-  font-family: sans-serif;
   margin-top: 1.2em;
   margin-bottom: 0.5em;
   line-height: 1.3;
@@ -61,7 +74,6 @@ h3 + * {
 }
 
 div.sectionbody {
-  font-family: serif;
   margin-left: 0;
 }
 
@@ -77,6 +89,8 @@ p {
 ul, ol, li > p {
   margin-top: 0;
 }
+ul > li     { color: #aaa; }
+ul > li > * { color: black; }
 
 pre {
   padding: 0;
@@ -85,18 +99,15 @@ pre {
 
 span#author {
   color: #527bbd;
-  font-family: sans-serif;
   font-weight: bold;
   font-size: 1.1em;
 }
 span#email {
 }
 span#revnumber, span#revdate, span#revremark {
-  font-family: sans-serif;
 }
 
 div#footer {
-  font-family: sans-serif;
   font-size: small;
   border-top: 2px solid silver;
   padding-top: 0.5em;
@@ -135,7 +146,6 @@ div.content { /* Block element content. */
 /* Block element titles. */
 div.title, caption.title {
   color: #527bbd;
-  font-family: sans-serif;
   font-weight: bold;
   text-align: left;
   margin-top: 1.0em;
@@ -157,13 +167,15 @@ div.content + div.title {
 
 div.sidebarblock > div.content {
   background: #ffffee;
-  border: 1px solid silver;
+  border: 1px solid #dddddd;
+  border-left: 4px solid #f0f0f0;
   padding: 0.5em;
 }
 
 div.listingblock > div.content {
-  border: 1px solid silver;
-  background: #f4f4f4;
+  border: 1px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
+  background: #f8f8f8;
   padding: 0.5em;
 }
 
@@ -171,7 +183,7 @@ div.quoteblock, div.verseblock {
   padding-left: 1.0em;
   margin-left: 1.0em;
   margin-right: 10%;
-  border-left: 5px solid #dddddd;
+  border-left: 5px solid #f0f0f0;
   color: #777777;
 }
 
@@ -182,6 +194,7 @@ div.quoteblock > div.attribution {
 
 div.verseblock > pre.content {
   font-family: inherit;
+  font-size: inherit;
 }
 div.verseblock > div.attribution {
   padding-top: 0.75em;
@@ -258,8 +271,8 @@ div.tableblock > table {
   border: 3px solid #527bbd;
 }
 thead, p.table.header {
-  font-family: sans-serif;
   font-weight: bold;
+  color: #527bbd;
 }
 tfoot {
   font-weight: bold;
@@ -339,6 +352,14 @@ span.footnote, span.footnoteref {
   min-width: 100px;
 }
 
+div.colist td {
+  padding-right: 0.5em;
+  padding-bottom: 0.3em;
+  vertical-align: top;
+}
+div.colist td img {
+  margin-top: 0.3em;
+}
 
 @media print {
   div#footer-badges { display: none; }
@@ -350,7 +371,6 @@ div#toc {
 
 div#toctitle {
   color: #527bbd;
-  font-family: sans-serif;
   font-size: 1.1em;
   font-weight: bold;
   margin-top: 1.0em;
@@ -373,47 +393,7 @@ div.toclevel4 {
   margin-left: 6em;
   font-size: 0.9em;
 }
-/* Workarounds for IE6's broken and incomplete CSS2. */
 
-div.sidebar-content {
-  background: #ffffee;
-  border: 1px solid silver;
-  padding: 0.5em;
-}
-div.sidebar-title, div.image-title {
-  color: #527bbd;
-  font-family: sans-serif;
-  font-weight: bold;
-  margin-top: 0.0em;
-  margin-bottom: 0.5em;
-}
-
-div.listingblock div.content {
-  border: 1px solid silver;
-  background: #f4f4f4;
-  padding: 0.5em;
-}
-
-div.quoteblock-attribution {
-  padding-top: 0.5em;
-  text-align: right;
-}
-
-pre.verseblock-content {
-  font-family: inherit;
-}
-div.verseblock-attribution {
-  padding-top: 0.75em;
-  text-align: left;
-}
-
-div.exampleblock-content {
-  border-left: 3px solid #dddddd;
-  padding-left: 0.5em;
-}
-
-/* IE6 sets dynamically generated links as visited. */
-div#toc a:visited { color: blue; }
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -549,16 +529,146 @@ footnotes: function () {
 /*]]>*/
 </script>
 </head>
-<body>
+<body class="article">
 <div id="header">
 <h1>PPM core package README</h1>
-<span id="author">v1.2, September 2010</span><br />
+<span id="author">v1.2.1, August 2011</span><br />
 </div>
 <div id="content">
+<div class="sect1">
 <h2 id="_introduction">Introduction</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>This is the PPM core source package.</p></div>
 </div>
+</div>
+<div class="sect1">
+<h2 id="_changes">Changes</h2>
+<div class="sectionbody">
+<div class="sidebarblock">
+<div class="content">
+<div class="title">1.2.1</div>
+<div class="paragraph"><p>This versions brings many bug fixes and several new features</p></div>
+<div class="ulist"><div class="title">New features:</div><ul>
+<li>
+<p>
+Implemented Brelaz' graph coloring algorithm in Fortran, replacing the C++
+  Vizing implementation.
+</p>
+</li>
+<li>
+<p>
+Added support for homogeneous symmetric boundary conditions
+  (Dirichlet, Neumann). The ghost mapping and neighbor list routines
+  properly support boundary conditions now. (Note: The user still has to make
+  sure the properties of boundary condition ghost particles reflect the correct
+  boundary condition value.)
+</p>
+</li>
+<li>
+<p>
+Added Unit testing support using funit (<a href="http://nasarb.rubyforge.org/funit/">http://nasarb.rubyforge.org/funit/</a>).
+</p>
+</li>
+<li>
+<p>
+Added a control file and argument handling module to simplify the process
+  of reading, parsing and evaluating the parameters passed to ppm clients.
+</p>
+</li>
+<li>
+<p>
+Added ppm topology query routines and shortened ppm_mktopo argument list.
+  There should be in most cases no need to call ppm_topo_get anymore.
+</p>
+</li>
+<li>
+<p>
+The user can now mange cell lists himself to save unnecessary computations.
+</p>
+</li>
+<li>
+<p>
+Added a tool to help PPM client developers with debugging. This tool
+  visualizes domain decompositions and particle positions
+</p>
+</li>
+<li>
+<p>
+Renamings: ppm_module_user &#8594; ppm_module_core,
+  ppm_module_user_util &#8594; ppm_module_core_util
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Fixes</div><ul>
+<li>
+<p>
+Fixed several critical bugs in the ghost mapping routines
+</p>
+</li>
+<li>
+<p>
+Fixed ppm_mesh_block_intersect
+</p>
+</li>
+<li>
+<p>
+Fixed bugs in error handling and reporting
+</p>
+</li>
+<li>
+<p>
+Fixed <tt>make install</tt> to copy all modules to <tt>$prefix/include/ppm/</tt>
+</p>
+</li>
+<li>
+<p>
+Several minor fixes and improvements in the ppm build system.
+</p>
+</li>
+</ul></div>
+</div></div>
+<div class="sidebarblock">
+<div class="content">
+<div class="title">1.2_p1</div>
+<div class="paragraph"><p>This is a bug fix release, we fixed several important bugs:</p></div>
+<div class="ulist"><ul>
+<li>
+<p>
+Fixed several critical bugs in mesh mapping routines
+</p>
+</li>
+<li>
+<p>
+Fixed bugs in remeshing routines that prevented clients using those
+  routines from compiling properly
+</p>
+</li>
+<li>
+<p>
+Fixed a bug in the cartesian communication scheduling routine
+</p>
+</li>
+<li>
+<p>
+Fixed build system to not link against GNU math library when compiling
+  with ifort
+</p>
+</li>
+<li>
+<p>
+cleaned many annoying compiler warnings
+</p>
+</li>
+</ul></div>
+</div></div>
+<div class="sidebarblock">
+<div class="content">
+<div class="title">1.2</div>
+<div class="paragraph"><p>Initial release of new PPM library</p></div>
+</div></div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_package_contents">Package contents</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The <tt>.tar.gz</tt> package you have downloaded should contain on the toplevel the
@@ -569,20 +679,24 @@ following files and directories:</p></div>
    7.5K COPYING.LESSER
    4.2K Makefile.in   The Makefile template used by configure
    610B NOTICE
-    11K README        This file
-    25K README.html   The HTML version of this file
+    14K README        This file
+    28K README.html   The HTML version of this file
    717B aclocal.m4
     44K config.guess
+    25K config.status
     33K config.sub
-   203K configure     The build configure script
-   5.1K configure.ac  Thie build configure script template
-    13K install-sh
-   204B m4            Contains build scripts
-   3.6K src           Contains the source code</tt></pre>
+   205K configure     The build configure script
+   8.5K configure.ac  Thie build configure script template
+    14K install-sh
+    16K m4            Contains build scripts
+   4.7M src           Contains the source code
+   292K utils         Contains the PPM debug utility and FUnit</tt></pre>
 </div></div>
 <div class="paragraph"><p>After you compile PPM core there will be further directories for the binaries
 and include files.</p></div>
 </div>
+</div>
+<div class="sect1">
 <h2 id="_requirements_for_building_ppm_core">Requirements for building PPM core</h2>
 <div class="sectionbody">
 <div class="ulist"><ul>
@@ -596,7 +710,7 @@ METIS 4: You may download the latest release of METIS 4 from
 </li>
 <li>
 <p>
-an MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
+An MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
   compliant MPI library. If you are compiling PPM on a cluster, most likely your
   sysadmin will have already an MPI installed on the system.
 </p>
@@ -605,10 +719,13 @@ an MPI distribution (optional): Either get OpenMPI, mpich2 or any other MPI 2
 <div class="paragraph"><p>Make sure that all requirements are compiled with the same compiler that you
 will be using to build PPM core.</p></div>
 </div>
+</div>
+<div class="sect1">
 <h2 id="_building_ppm_core">Building PPM core</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>PPM core is built in 3 simple steps:</p></div>
-<h3 id="_step_1_confuring_ppm_core">Step 1: Confuring PPM core</h3><div style="clear:left"></div>
+<div class="sect2">
+<h3 id="_step_1_confuring_ppm_core">Step 1: Confuring PPM core</h3>
 <div class="paragraph"><p>Run the <tt>configure</tt> script to allow the build system to determine the correct
 options to compile PPM core.</p></div>
 <div class="paragraph"><p>It is very important to give <tt>configure</tt> the correct settings to make sure PPM
@@ -620,7 +737,7 @@ core is compiled correctly. To find out which settings are supported type</p></d
 <div class="paragraph"><p>This is what will be returned:</p></div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>`configure' configures PPM 1.2.0 to adapt to many kinds of systems.
+<pre><tt>`configure' configures PPM 1.2.1 to adapt to many kinds of systems.
 
 Usage: ./configure [OPTION]... [VAR=VALUE]...
 
@@ -696,6 +813,7 @@ Optional Features:
   --enable-crayfishpack   enable __CRAYFISHPACK (default is no)
   --enable-hypre          enable __HYPRE (default is no)
   --enable-no-microinstr  enable __NOMICROINSTRUCTIONS (default is no)
+  --enable-dev            enable development mode (default is no)
   --enable-debug          enable debug mode (default is no)
 
 Some influential environment variables:
@@ -759,20 +877,26 @@ Report bugs to the package provider.</tt></pre>
 </p>
 </li>
 </ul></div>
-<div class="paragraph"><p>Here two example on how you could run the configure command</p></div>
+<div class="paragraph"><p>Here two examples on how you could run the configure command</p></div>
+<div class="paragraph"><p><tt>.configure</tt> on Linux cluster using OpenMPI (and intel compilers, wrapped)</p></div>
 <div class="listingblock">
-<div class="title">configure on Linux cluster using OpenMPI (and intel compilers, wrapped)</div>
 <div class="content">
 <pre><tt>$ ./configure --enable-mpi=openmpi LDFLAGS=-L../../metis/lib --enable-linux</tt></pre>
 </div></div>
+<div class="paragraph"><p><tt>./configure</tt> on Mac OS X workstation with the MacPorts gcc compilers</p></div>
 <div class="listingblock">
-<div class="title">configure on Mac OS X workstation with the MacPorts gcc compilers</div>
 <div class="content">
-<pre><tt>$ ./configure CC=gcc-mp-4.4 FC=gfortran-mp-4.4 CXX=g++-mp-4.4 \
-              LDFLAGS=-L/Users/omar/sw/metis/gcc/lib</tt></pre>
+<pre><tt>$ ./configure FC=gfortran-mp-4.4 LDFLAGS=-L../../metis/gcc/lib</tt></pre>
 </div></div>
-<div class="paragraph"><p>(while the CC and CXX flags are not really needed)</p></div>
-<h3 id="_step_2_compiling_ppm_core">Step 2: Compiling PPM core</h3><div style="clear:left"></div>
+<div class="paragraph"><p><tt>./configure</tt> on a computer with OpenMPI installed in a non-standard location</p></div>
+<div class="listingblock">
+<div class="content">
+<pre><tt>./configure --enable-mpi=openmpi FC=/opt/openmpi/1.5/bin/mpif90 \
+            LDFLAGS=-L../../metis/gcc/lib</tt></pre>
+</div></div>
+</div>
+<div class="sect2">
+<h3 id="_step_2_compiling_ppm_core">Step 2: Compiling PPM core</h3>
 <div class="paragraph"><p>If the configure process finished successfully you should see on your screen a
 message that the Makefile has been generated (and you can now find this
 Makefile in this directory).</p></div>
@@ -787,7 +911,9 @@ error persists, please send us a bug-report detailing the previous steps you
 have performed. Also, please include the <tt>config.log</tt> file and the output of
 <tt>export</tt>. Finally, if yu are using MPI, please include which MPI library you are
 using.</p></div>
-<h3 id="_step_3_installing_ppm_core_optional">Step 3: Installing PPM core (optional)</h3><div style="clear:left"></div>
+</div>
+<div class="sect2">
+<h3 id="_step_3_installing_ppm_core_optional">Step 3: Installing PPM core (optional)</h3>
 <div class="paragraph"><p>If you wish to install PPM core you can now use the <tt>make install</tt> command to do
 so:</p></div>
 <div class="listingblock">
@@ -803,13 +929,16 @@ use in this case the sudo command to override this security setting.</p></div>
 </div></div>
 <div class="paragraph"><p>Your PPM core distribution is installed.</p></div>
 </div>
+</div>
+</div>
+<div class="sect1">
 <h2 id="_compiling_ppm_client_code_against_ppm_core">Compiling PPM client code against PPM core</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>When compiling your PPM client code you need to first include the PPM core modules:</p></div>
 <div class="ulist"><ul>
 <li>
 <p>
-in <tt>.include/</tt> relative to this directory. Check which compiler flag needs to
+in <tt>include/</tt> relative to this directory. Check which compiler flag needs to
   be used to include Fortran module directories.
 </p>
 </li>
@@ -818,13 +947,15 @@ in <tt>.include/</tt> relative to this directory. Check which compiler flag need
 <div class="ulist"><ul>
 <li>
 <p>
-in <tt>.lib/</tt> relative to this directory. Add -L[path to lib] -lppm to the
+in <tt>lib/</tt> relative to this directory. Add -L[path to lib] -lppm to the
   linking command of your compilation process.
 </p>
 </li>
 </ul></div>
 <div class="paragraph"><p>Enjoy the PPM experience!</p></div>
 </div>
+</div>
+<div class="sect1">
 <h2 id="_contributors">Contributors</h2>
 <div class="sectionbody">
 <div class="paragraph"><p>The PPM library is being maintained and developed by the CSE-lab (group of
@@ -834,10 +965,11 @@ Professor Jens Walther).</p></div>
 <div class="paragraph"><p>PPM core package maintainer: Omar Awile &lt;<a href="mailto:omar.awile@inf.ethz.ch">omar.awile@inf.ethz.ch</a>&gt;</p></div>
 </div>
 </div>
+</div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2010-09-19 11:27:08 CEST
+Last updated 2011-08-04 12:17:49 CEST
 </div>
 </div>
 </body>

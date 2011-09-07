@@ -32,7 +32,7 @@
       !!! corresponding real particles. This is very useful in the case of
       !!! symmetric interactions as there the ghost particles are also updated.
       !!!
-      !!! [Important] 
+      !!! [IMPORTANT] 
       !!! This routine can only be called after ghost particles have been
       !!! created using the `ppm_map_part_ghost_get` (+push/send/pop sequence)
       !!! routine.
@@ -50,8 +50,8 @@
       !!! the (costly) call to `ppm_map_part_ghost_get`. Positions can be pushed
       !!! using the `ppm_map_part_ghost_push` routine.
       !!! 
-      !!! .Implementation Notes
       !!! [NOTE]
+      !!! .Implementation Notes
       !!! ======================================================================
       !!! This routine swaps the send and receive lists of the
       !!! mapping routine to allow sending back the value/data

@@ -48,6 +48,11 @@
 #endif
 
 #endif
+      
+      !-------------------------------------------------------------------------
+      !  Modules
+      !-------------------------------------------------------------------------
+      USE ppm_module_check_id
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -124,8 +129,15 @@
       INTEGER, DIMENSION(2)                 :: lda
 
       CALL substart('ppm_inl_vlist',t0,info)
+      
+      !-------------------------------------------------------------------------
+      !  Check Arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+        CALL check
+        IF (info .NE. 0) GOTO 9999
+      ENDIF
 
-      ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
       !---------------------------------------------------------------------
       ! In symmetric verlet lists, we need to allocate nvlist for all
@@ -195,7 +207,6 @@
      &             skin, lsymm, actual_subdomain, ghostlayer, info, vlist_sub,&
      &             nvlist_sub,lst)
 
-! 
           IF(lsymm)  THEN
               n_part = Mp_sub
           ELSE
@@ -238,7 +249,42 @@
               ENDDO
           END IF
       ENDDO
+9999  CONTINUE
       CALL substop('ppm_inl_vlist',t0,info)
+      RETURN
+      CONTAINS
+      SUBROUTINE check
+          LOGICAL :: valid
+
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (skin .LT. 0.0_MK) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'skin must be >= 0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'Geometric topology required',__LINE__,info)
+                  GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+              CALL ppm_check_topoid(topoid,valid,info)
+              IF (.NOT. valid) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &                 'topoid out of range',__LINE__,info)
+                  GOTO 8888
+              ENDIF
+          ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
 #if __ANISO == __YES
 
 #if   __KIND == __SINGLE_PRECISION
@@ -615,7 +661,7 @@
       !  Allocate used array, which will be used as a mask for particles,
       !  to keep track of whether they were used before or not. Then,
       !  initialize it to FALSE.
-!       !-------------------------------------------------------------------------
+      !-------------------------------------------------------------------------
 
       CALL substart('getVerletLists',t0,info)
           iopt = ppm_param_alloc_fit
@@ -730,6 +776,7 @@
 
 9999      CONTINUE
           CALL substop('getVerletLists',t0,info)
+          RETURN
 #if __ANISO == __YES
 
 #if   __KIND == __SINGLE_PRECISION
@@ -737,7 +784,6 @@
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE getVerletLists_d_aniso
 #endif
-
 #elif __ANISO == __NO
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getVerletLists_s

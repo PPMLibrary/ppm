@@ -382,14 +382,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             wp_grad_fun0 = f0_grad_fun(xp(1:ppm_dim,ip))
             old_scale = old_scale+SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
             dummy_wp = f0_fun(xp(1:ppm_dim,ip))
-            new_scale = new_scale+(wp(ip)-dummy_wp)**2
+            new_scale = new_scale+((wp(ip)-dummy_wp)**2)
             IF (max_g .LT. SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)) THEN
                max_g = SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
             ENDIF
             IF (max_w .LT. (wp(ip)-dummy_wp)**2) THEN
-               max_w = (wp(ip)-dummy_wp)**2
+               max_w = ((wp(ip)-dummy_wp)**2)
             ENDIF
          ENDDO
+         write(*,*) '----Errors----'
          write(*,*) 'Squared Error per particle in gradient: ', old_scale/Particles%Npart
          write(*,*) 'Max Error per particle in gradient: ', max_g
          write(*,*) 'Squared Error per particle in field: ', new_scale/Particles%Npart

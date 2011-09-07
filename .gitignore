@@ -16,6 +16,7 @@ src/ppm_define.h
 *.dat
 *.o
 *.mod
+*.log
 fort.*
 
 # src/interpolate/test/
