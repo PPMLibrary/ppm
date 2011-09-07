@@ -115,9 +115,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             ! dist: vector from current point to neighbor point: xq - xp
             ! rr_iso: distance in real space
 
-            CALL particles_anisotropic_distance(Particles,ip,iq,rr,info)
+            CALL particles_anisotropic_distance(Particles,ip,iq,Particles%G_id,rr,info)
             dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-!             rr_iso = SQRT(SUM(dist**2))
 
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles less than 1e-12! ',&
@@ -137,16 +136,18 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                ! HAECKIC: TODO 3D case
             ENDIF
 
-            CALL particles_shorter_axis(Particles,ip,scaling_ip)
+            CALL particles_shorter_axis(Particles,ip,Particles%G_id,scaling_ip,info)
             scaling_ip = scaling_ip**2
-            CALL particles_shorter_axis(Particles,iq,scaling_iq)
+            CALL particles_shorter_axis(Particles,iq,Particles%G_id,scaling_iq,info)
             scaling_iq = scaling_iq**2
 
-            !compute nearest-neighbour distance for each particle
-!             IF (rr_iso .LT. nn) THEN
-!                 nn = rr_iso
-!             ENDIF
-
+            
+            ! HAECKIC: The variables
+            ! rr: distance used in gradient potential
+            ! scaling_ip: scaling used for ip
+            ! scaling_iq: scaling used for iq
+            ! grad_vec: additional term for gradient in anisotropic case
+            
             !meanD = 0.5_MK*(D(ip) + D(iq))
             !meanD = MAX(D(ip) , D(iq))
             !meanD = MIN(D(ip) , D(iq))
@@ -194,21 +195,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !! FIXME (account for variable ghost layer sizes)
         !! FIXME vectorize loops
         !!---------------------------------------------------------------------!
-        !DO di=1,ppm_dim
-        !IF (ABS(Gradient_Psi(di,ip)) .GT. MIN(nn,cutoff * 0.5_MK)) THEN
-        !Gradient_Psi(di,ip) = Gradient_Psi(di,ip) * &
-        !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
-        !ENDIF
-        !ENDDO
-        !haeckic: how to scale it down? cap it, not done here!!
-
-        ! If the gradient length is bigger than distance to nearest neighbor?
-        ! haeckic: nearest distance has to be in normal space, not on unit circle!! it is done now
-!         IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
-!             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
-!                 MIN(nn,Particles%cutoff) * 0.9_MK / SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
-!         ENDIF
-
+        ! HAECKIC: the capping is done after the particles loop, as it is asymmetric
 
         !----------------------------------------------------------------------!
         ! Save the minimum and maximum separation distance on this processor
@@ -242,7 +229,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
          ! The scaling needs to be done after the particle loop, because asymmetric
          ! scaled to real distance, not the transformed one
          ! If the gradient length is bigger than distance to nearest neighbor?
-         CALL particles_shorter_axis(Particles,ip,nn)
+         CALL particles_shorter_axis(Particles,ip,Particles%G_id,nn,info)
          IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
                Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
                   MIN(nn,Particles%cutoff) * 0.9_MK / SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))

@@ -105,7 +105,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     INTEGER                             :: it_adapt_max
     REAL(MK)                            :: Psi_max,Psi_global,Psi_global_old
     REAL(MK)                            :: Psi_1,Psi_2,Psi_thresh
-    REAL(MK),DIMENSION(ppm_dim)         :: dist,dist2,dummy_grad
+    REAL(MK),DIMENSION(ppm_dim)         :: dist,dist2,dummy_grad,wp_dir
     REAL(MK),DIMENSION(:,:),POINTER     :: Gradient_Psi => NULL()
     INTEGER                             :: nneigh_adapt
 
@@ -120,7 +120,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     REAL(MK)                            :: tmpvar1,tmpvar2,minDold, dist1s, dist2s, dists, min_dist
     REAL(MK)                            :: weight,weight_sum, new_scale,new_scale_long, distance, old_distance, p_scale
-    REAL(MK)                            :: almostzero, old_scale, old_scale_long
+    REAL(MK)                            :: almostzero, old_scale, old_scale_long, proj, temp_scale
     INTEGER                             :: tmpvari1,tmpvari2
     LOGICAL                             :: need_derivatives
     INTEGER                             :: topo_id
@@ -218,7 +218,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         step_min = 1E-8; step_stall = 1E-14
         !step_min = 1E-3; step_stall = 1E-14
     ENDIF
-    !haeckic: important choice
+    !haeckic: important choice, needs to be smaller in anisotropic
     step_max = 0.05_MK ! 0.1_MK
     it_adapt_max = 1000
 
@@ -393,11 +393,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !------------------------------------------------------------------!
             ! Update D and cutoff radii
             !------------------------------------------------------------------!
-
-            ! HAECKIC: TODO: xset is now without ghost particles
-            !          TODO: here is an error, requirements are different to compute_D -> bug found
-            !          TODO: different axes scales
-
             ! The following is used to prevent particles with small D from
             ! drifting away inside the domain, eventually generating plenty
             ! of other small particles that can potentially fill the whole
@@ -409,7 +404,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
             Dtilde_old = Dtilde_old / opts%rcp_over_D
             ! HAECKIC: TODO update for inhomogenous boundaries
-            ! HAECKIC: for some reasion this xset is not properly working for MPART -> bug found
             ghostlayer=Particles%cutoff
             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
                 Particles%Npart,Particles_old%xp,Particles_old%Npart,&
@@ -435,62 +429,80 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDIF
 #endif
 
-            ! HAECKIC: 3D case!
-
-            D => Get_wpv(Particles,    Particles%D_id)
+            D => Get_wpv(Particles,Particles%D_id)
             Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
             inv => Get_wpv(Particles,Particles%G_id)
             DO ip=1,Particles%Npart
             
                 ! get the minimum sized particle in xset neighborhood
                 ! get the direction by taking the closest particle's dtilde
+                ! 1. get the minimum axis in neighborhood and set ip's to it
+                ! 2. project all neighbors axis on longer one and take min(max(pro1,proj2))
+
                 new_scale = HUGE(1._MK)
-                old_distance = HUGE(1._MK)
-
-                DO ineigh=1,nvlist_cross(ip)
-                    iq=vlist_cross(ineigh,ip)
-
-                    CALL particles_sep_anisotropic_distance(Particles_old,Particles,iq,ip,distance,info)
-                    ! Get shortest axes of Dtilde
-                    CALL particles_inverse_matrix(Dtilde_old(:,iq),Matrix_B,info)
-                    p_scale = sqrt(Matrix_B(2)*Matrix_B(2) + Matrix_B(4)*Matrix_B(4))
-                    
-                    IF (p_scale .LT. new_scale) THEN
-                        ! smaller particle found
-                        new_scale = p_scale
-                        new_scale_long = sqrt(Matrix_B(1)*Matrix_B(1) + Matrix_B(3)*Matrix_B(3))
-                    ENDIF
-
-                    IF (distance .LT. old_distance) THEN
-                        ! found a close one
-                        ! choose this direction of iq
-                        old_distance = distance
-                        k = iq
-                    ENDIF
+                DO ineigh=1,Particles%nvlist(ip)
+                      iq = Particles%vlist(ineigh,ip)
+                      !is iq's Dtilde old shorter
+                      CALL particles_shorter_axis(Particles_old,iq,Particles_old%Dtilde_id,temp_scale,info)
+                      IF (temp_scale.LT.new_scale) THEN
+                         new_scale = temp_scale
+                         k = iq
+                      ENDIF
                 ENDDO
 
-                ! set tensor of particle
-                CALL particles_inverse_matrix(Dtilde_old(:,k),Matrix_B,info)
-                old_scale = sqrt(Matrix_B(2)*Matrix_B(2) + Matrix_B(4)*Matrix_B(4))
-                old_scale_long = sqrt(Matrix_B(1)*Matrix_B(1) + Matrix_B(3)*Matrix_B(3))
+                ! D is now the particle with the smallest axis in the neighborhood
+                D(1:Particles%tensor_length,ip) = Dtilde_old(1:Particles%tensor_length,k)
 
-                ! HAECKIC: TODO different scalling
+                ! 2. set the longer axis to the smallest projection of max of both axis projections
                 IF (ppm_dim.eq.2) THEN
-                     ! HAECKIC: inverse scaling with vector
-                     D(1,ip) = (old_scale_long/new_scale_long)*Dtilde_old(1,k)
-                     D(2,ip) = (old_scale_long/new_scale_long)*Dtilde_old(2,k)
-                     D(3,ip) = (old_scale/new_scale)*Dtilde_old(3,k)
-                     D(4,ip) = (old_scale/new_scale)*Dtilde_old(4,k)
+ 
+                      Matrix_A = D(1:4,ip)
+                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+                      ! get the longer axis
+                      wp_dir = (/Matrix_B(1),Matrix_B(3)/)
+ 
+                      ! get min_q(max(proj h1 on dir,proj h2 on dir))
+                      old_scale = HUGE(1._MK)
+                      DO ineigh=1,Particles%nvlist(ip)
+ 
+                            iq = Particles%vlist(ineigh,ip)
+                            
+                            ! get inverse to have axes
+                            Matrix_A = Dtilde_old(1:Particles%tensor_length,iq)
+                            CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+ 
+                            ! |c| = a.b/|b|
+                            ! proj h1 of iq on direction of longer axis of ip
+                            proj = ABS(SUM((/Matrix_B(1),Matrix_B(3)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
+                            
+                            ! proj h2 of iq on direction of longer axis of ip
+                            proj = MAX(proj,ABS(SUM((/Matrix_B(2),Matrix_B(4)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+ 
+                            IF(old_scale .GT. proj) THEN
+                               ! we found a smaller projection on longer axis
+                               old_scale = proj
+                            ENDIF
+ 
+                      ENDDO
+
+                      ! set the new length of longer axis
+                      ! HAECKIC: THIS DOES NOT COMPILE?!?!?
+                      CALL particles_longer_axis(Particles,ip,Particles%D_id,new_scale,info)
+                      D(1,ip) = (new_scale/old_scale)*D(1,ip)
+                      D(2,ip) = (new_scale/old_scale)*D(2,ip)
+ 
                 ELSE
-                     !HAECKIC: TODO 3D case
+                     ! HAECKIC: TODO 3D case
+
                 ENDIF
                 
+                ! Finally set the inverse tensor scaled with rcp over D
                 inv(1:Particles%tensor_length,ip) = (1/opts%rcp_over_D)*D(1:Particles%tensor_length,ip)
-
+ 
             ENDDO
-            D => Set_wpv(Particles,    Particles%D_id)
-            Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,&
-                read_only=.TRUE.)
+
+            D => Set_wpv(Particles,Particles%D_id)
+            Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
             inv => Set_wpv(Particles,Particles%G_id)
         ELSE
             !------------------------------------------------------------------!

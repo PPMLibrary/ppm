@@ -305,7 +305,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
-    ! HAECKIC: here a wpv is allocated
+    ! HAECKIC: here a wpv is allocated, to be deleted!?
 
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
@@ -360,7 +360,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-    
     ! HAECKIC: update inverse tensor
     inv => Get_wpv(Particles,Particles%G_id)
     D => Get_wpv(Particles,Particles%D_id)
@@ -371,7 +370,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ENDDO
     inv => Set_wpv(Particles,Particles%G_id,read_only=.FALSE.)
     D => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
-
 
 #if debug_verbosity > 1
     WRITE(filename,'(A,I0)') 'P_beforegraddesc_',Particles%itime
@@ -394,6 +392,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
+write(*,*) 'neigh'
     CALL particles_neighlists(Particles,topo_id,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -425,7 +424,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             nn2(ip) = HUGE(1._MK)
             DO ineigh=1,Particles%nvlist(ip)
                 iq=Particles%vlist(ineigh,ip)
-                CALL particles_anisotropic_distance(Particles,ip,iq,dist2,info)
+                CALL particles_anisotropic_distance(Particles,ip,iq,Particles%G_id,dist2,info)
                 nn2(ip) = MIN(nn2(ip),dist2)
             ENDDO
         ENDDO
@@ -534,27 +533,13 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles%wpv(Particles%G_id)%name = Particles_old%wpv(Particles_old%G_id)%name
     Particles%nwpv=2
 
-    ! temporary
-!     CALL particles_allocate_wpv(Particles,Particles%Dtilde_id,Particles%tensor_length,info,&
-!         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
-!     IF (info.NE.0) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
-!             &  __LINE__,info)
-!         GOTO 9999
-!     ENDIF
-!     Particles%wpv(Particles%Dtilde_id)%name = Particles_old%wpv(Particles_old%Dtilde_id)%name
-!     Particles%nwpv=3
-
     ! copy xp and Dtilde
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
     inv => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
-!     Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     xp_old => Get_xp(Particles_old,with_ghosts=.TRUE.)
     D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     inv_old => Get_wpv(Particles_old,Particles_old%G_id,with_ghosts=.TRUE.)
-!     Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
 
     ! copy the properties 
     DO ip=1,Particles%Mpart
@@ -562,20 +547,16 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
          DO j =1,Particles%tensor_length
             D(j,ip)   = D_old(j,ip)
             inv(j,ip) = inv_old(j,ip)
-!             Dtilde(j,ip) = Dtilde_old(j,ip)
          ENDDO
     ENDDO
 
     xp  => Set_xp(Particles,read_only=.TRUE.)
     D   => Set_wpv(Particles,Particles%D_id,read_only=.TRUE.)
     inv   => Set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
-!     Dtilde   => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
     xp_old  => Set_xp(Particles_old,read_only=.TRUE.)
     D_old   => Set_wpv(Particles_old,Particles_old%D_id,read_only=.TRUE.)
     inv_old   => Set_wpv(Particles_old,Particles_old%G_id,read_only=.TRUE.)
-!     Dtilde_old   => Set_wpv(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
 
-   ! HAECKIC: DROP Dtilde later
 
     !!-------------------------------------------------------------------------!
     !! Move particles

@@ -12,7 +12,6 @@ USE ppm_module_substart
 USE ppm_module_substop
 USE ppm_module_error
 USE ppm_module_write
-USE ppm_module_dcops
 USE ppm_module_data, ONLY: ppm_dim
 
 IMPLICIT NONE
@@ -2783,6 +2782,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         
         ELSEIF (Particles%anisotropic) THEN
         
+            !HAECKIC: to do k nearest neighbors
+        
             ghostlayer(1:2*ppm_dim)=Particles%cutoff
             CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
                     Particles%Mpart,Particles%wpv(Particles%G_id)%vec,&
@@ -3588,17 +3589,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ! get the anisotropic information stored as inverse matrix
             inv => get_wpv(Particles,Particles%G_id)
             DO i = 1,Particles%Npart
-
-               ! get the real axes and calc length of longer axes
-               ! haeckic: use longer call
-               CALL particles_inverse_matrix(inv(:,i),axes,info)
-
-               IF (ppm_dim .EQ. 2) THEN
-                  cutoff_temp = sqrt(axes(1)*axes(1) + axes(3)*axes(3))
-               ELSE
-                  cutoff_temp = sqrt(axes(1)*axes(1) + axes(4)*axes(4) + axes(7)*axes(7))
-               ENDIF
-
+               !calc length of longer axes
+               CALL particles_longer_axis(Particles,i,Particles%G_id,cutoff_temp,info)
                IF (cutoff_new .LT. cutoff_temp) THEN
                   cutoff_new = cutoff_temp
                ENDIF
@@ -3664,8 +3656,7 @@ END SUBROUTINE particles_updated_cutoff
 
 SUBROUTINE particles_compute_hmin(Particles,info)
 
-   ! haeckic: do this for anisotropic particles
-   ! use dimensional distance here, not anisotropic
+   ! HAECKIC: how to adapt compute hmin for anisotropic?
       
     !-----------------------------------------------------------------
     !  compute minimum distance between particles
@@ -4702,9 +4693,6 @@ END SUBROUTINE particles_dcop_free
 SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
         info,input_is_vector)
 
-   ! haeckic: problem for anisotropic case
-   ! only works for interpolation, not derivative calculation...
-
     !!!------------------------------------------------------------------------!
     !!! NEW version
     !!! Apply DC kernel stored in eta_id to the scalar property stored
@@ -5166,7 +5154,6 @@ SUBROUTINE particles_apply_dcops(Particles,from_id,to_id,eta_id,sig,&
 
 END SUBROUTINE particles_apply_dcops
 
-!haeckic: add a give axes of anisotropic particle function
 SUBROUTINE particles_inverse_matrix(Matrix_A,Matrix_B,info)
 
    !!! Calculates inverse of matrix A into new allocated B
@@ -5237,9 +5224,10 @@ SUBROUTINE particles_inverse_matrix(Matrix_A,Matrix_B,info)
 
 END SUBROUTINE particles_inverse_matrix
 
-SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
+SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,t_id,dist,info)
 
    !!! Calculates distance between particle i and j, using i_th Ellipse
+   !!! defined by inverse tensor in particles data structure
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -5256,6 +5244,8 @@ SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
     !!! Index of origin particle, its ellipse is taken
     INTEGER,                            INTENT(IN)    :: j_th
     !!! Index of distanced particle
+    INTEGER,                            INTENT(IN)    :: t_id
+    !!! Index of the tensor property used to calc result
     REAL(MK),                           INTENT(OUT)    :: dist
     !!! Distance with respect to i_th inverse
     INTEGER,                             INTENT(OUT)    :: info
@@ -5283,7 +5273,7 @@ SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
     ENDIF
 
     ! this hack is needed because in sampling we need to access outside
-    inv => Particles%wpv(Particles%G_id)%vec
+    inv => Particles%wpv(t_id)%vec
     xp => Particles%xp
 
     IF (ppm_dim .EQ. 2) THEN
@@ -5310,9 +5300,10 @@ SUBROUTINE particles_anisotropic_distance(Particles,i_th,j_th,dist,info)
 
 END SUBROUTINE particles_anisotropic_distance
 
-SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,dist,info)
+SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,t_id,dist,info)
 
    !!! Calculates distance of particle i in set Particles 1 to particle j in set 2
+   !!! defined by inverse tensor in particles data structure
 
 #if   __KIND == __SINGLE_PRECISION
     INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -5331,6 +5322,8 @@ SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,di
     !!! Index of origin particle, its ellipse is taken
     INTEGER,                            INTENT(IN)    :: j_th
     !!! Index of distanced particle
+    INTEGER,                            INTENT(IN)    :: t_id
+    !!! Index of the tensor property used to calc result
     REAL(MK),                           INTENT(OUT)    :: dist
     !!! Distance with respect to i_th inverse
     INTEGER,                             INTENT(OUT)    :: info
@@ -5359,7 +5352,7 @@ SUBROUTINE particles_sep_anisotropic_distance(Particles1,Particles2,i_th,j_th,di
     ENDIF
 
 
-    inv1 => get_wpv(Particles1,Particles1%G_id,.TRUE.)
+    inv1 => get_wpv(Particles1,t_id,.TRUE.)
     xp1 => get_xp(Particles1,.TRUE.)
     xp2 => get_xp(Particles2)
 
@@ -5389,7 +5382,7 @@ END SUBROUTINE particles_sep_anisotropic_distance
 
 
 ! Returns the length of the longer axis
-SUBROUTINE particles_longer_axis(Particles, i, longax)
+SUBROUTINE particles_longer_axis(Particles,i,t_id,longax,info)
 
       IMPLICIT NONE
 
@@ -5406,13 +5399,28 @@ SUBROUTINE particles_longer_axis(Particles, i, longax)
     !!! Data structure containing the particles
     INTEGER,                            INTENT(IN)    :: i
     !!! Index of origin particle, its ellipse is taken
+    INTEGER,                            INTENT(IN)    :: t_id
+    !!! Index of the tensor property used to calc result
+    INTEGER,                            INTENT(OUT)   :: info
+    !!! info
+    REAL(MK),                           INTENT(OUT)  :: longax
+    !!! resulting axis length
     REAL(MK),DIMENSION(:), POINTER                    :: Matrix_A
     !!! matrix to be inverted
-    REAL(MK)                                          :: longax,a,b,c,det
-    !!! resulting longer axis + locals
- 
+    REAL(MK)                                          :: a,b,c,det
+    !!! locals
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_longer_axis'
+    REAL(MK)                                :: t0
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+
+    CALL substart(caller,t0,info)
+
     ! Set the reference to the right inverse matrix
-    Matrix_A => Particles%wpv(Particles%G_id)%vec(:,i)
+    Matrix_A => Particles%wpv(t_id)%vec(:,i)
 
     IF (ppm_dim .EQ. 2) THEN
       ! set Matrix_B
@@ -5434,11 +5442,15 @@ SUBROUTINE particles_longer_axis(Particles, i, longax)
     
     ENDIF
 
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
 END SUBROUTINE particles_longer_axis
 
 
-! Returns the length of the longer axis
-SUBROUTINE particles_shorter_axis(Particles, i, shortax)
+! Returns the length of the longer axis, with given id
+SUBROUTINE particles_shorter_axis(Particles,i,t_id,shortax,info)
 
       IMPLICIT NONE
 
@@ -5455,13 +5467,29 @@ SUBROUTINE particles_shorter_axis(Particles, i, shortax)
     !!! Data structure containing the particles
     INTEGER,                            INTENT(IN)    :: i
     !!! Index of origin particle, its ellipse is taken
+    INTEGER,                            INTENT(IN)    :: t_id
+    !!! Index of the tensor property used to calc result
+    INTEGER,                            INTENT(OUT)   :: info
+    !!! info
+    REAL(MK),                           INTENT(OUT)  :: shortax
+    !!! resulting axis length
     REAL(MK),DIMENSION(:), POINTER                    :: Matrix_A
     !!! matrix to be inverted
-    REAL(MK)                                          :: shortax,a,b,c,det
-    !!! resulting longer axis + locals
- 
+    REAL(MK)                                          :: a,b,c,det
+    !!! locals
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_shorter_axis'
+    REAL(MK)                                :: t0
+   
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+
+    CALL substart(caller,t0,info)
+
+
     ! Set the reference to the right inverse matrix
-    Matrix_A => Particles%wpv(Particles%G_id)%vec(:,i)
+    Matrix_A => Particles%wpv(t_id)%vec(:,i)
 
     IF (ppm_dim .EQ. 2) THEN
       ! set Matrix_B
@@ -5483,206 +5511,12 @@ SUBROUTINE particles_shorter_axis(Particles, i, shortax)
     
     ENDIF
 
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
 END SUBROUTINE particles_shorter_axis
 
-! define a get_gradient for anisotropic particles
-SUBROUTINE particles_get_grad_aniso(Particles,adapt_wpgradid,info,with_ghosts)
-
-    USE ppm_module_map
-
-    IMPLICIT NONE
-
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-
-    !-------------------------------------------------------------------------
-    !  Arguments
-    !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
-    !!! Data structure containing the particles
-    INTEGER,                            INTENT(IN)      :: adapt_wpgradid
-    !!! resulting gradients for all particles 
-    LOGICAL, OPTIONAL                                   :: with_ghosts
-    !!! do we need the gradients also for the ghosts
-    INTEGER,                            INTENT(OUT)     :: info
-    !!! Return status, on success 0.
-
-    !-------------------------------------------------------------------------
-    ! local variables
-    !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_get_grad_aniso'
-    REAL(MK),     DIMENSION(ppm_dim)           :: coeffs,wp_grad_temp
-    INTEGER,      DIMENSION(ppm_dim)           :: order
-    INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
-    INTEGER                                    :: eta_id, i, ineigh, iq, ip
-    REAL(MK)                                   :: t0
-    REAL(MK), DIMENSION(:,:),POINTER           :: inv => NULL()
-    REAL(MK), DIMENSION(:),  POINTER           :: wp => NULL()
-    REAL(MK), DIMENSION(:,:),POINTER           :: wp_grad => NULL()
-    REAL(MK), DIMENSION(:,:),POINTER           :: eta => NULL()
-    REAL(MK), DIMENSION(:),  POINTER           :: inv_transpose => NULL()
-
-    info = 0 ! change if error occurs
-
-    CALL substart(caller,t0,info)
-
-    ! check if wpgradid exists, is ok!?
-    IF (adapt_wpgradid.EQ.0) THEN
-       info = ppm_error_error
-       CALL ppm_error(ppm_err_alloc,caller,&
-            'tried to calculate gradient, but adapt_wpgradid not allocated!',__LINE__,info)
-       GOTO 9999
-    ENDIF
-
-    ! 1. calculate the reference gradient
-
-    !Compute gradients using PSE kernels
-    coeffs=1._MK; order=4; degree = 0
-    FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
-    eta_id = 0
-
-    CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
-       order,ppm_dim,info,name="gradient",vector=.TRUE.)
-
-    IF (info.NE.0) THEN
-       info = ppm_error_error
-       CALL ppm_error(ppm_err_sub_failed,caller,&
-             'particles_dcop_define failed', __LINE__,info)
-       GOTO 9999
-    ENDIF
-
-    CALL particles_dcop_compute(Particles,eta_id,info)
-
-    IF (info.NE.0) THEN
-       info = ppm_error_error
-       CALL ppm_error(ppm_err_sub_failed,caller,&
-             'particles_dcop_compute failed',__LINE__,info)
-       GOTO 9999
-    ENDIF
-
-    ! 2. Transform gradient for anisotorpic spaces
-    ! grad_aniso = inv^T * grad_iso
-   
-    ! HAECKIC: add an option to choose with or without ghosts
-    ! or map them afterwards?
-   
-    wp_grad => Get_wpv(Particles,adapt_wpgradid)
-    eta => Get_dcop(Particles,eta_id)
-    wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
-    inv => get_wpv(Particles,Particles%G_id,.TRUE.)
-
-    DO ip = 1,Particles%Npart 
-         wp_grad(1:ppm_dim,ip) = 0._MK
-    ENDDO
-    
-    ! get the gradient grad_iso
-    DO ip=1,Particles%Npart
-         DO ineigh=1,Particles%nvlist(ip)
-            iq=Particles%vlist(ineigh,ip)
-            wp_grad(1:ppm_dim,ip) = wp_grad(1:ppm_dim,ip) + &
-              & (wp(iq)-wp(ip)) * eta(1+(ineigh-1)*ppm_dim:ineigh*ppm_dim,ip)
-         ENDDO
-    ENDDO
-
-    CALL ppm_alloc(inv_transpose,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
-
-    ! transform into grad_aniso
-    DO ip=1,Particles%Npart
-         IF (ppm_dim .EQ. 2) THEN
-            inv_transpose = (/ inv(1,ip), inv(3,ip), inv(2,ip), inv(4,ip) /)
-            wp_grad_temp = wp_grad(1:ppm_dim,ip)
-            wp_grad(1,ip) = SUM(inv_transpose(1:ppm_dim)*wp_grad_temp)
-            wp_grad(2,ip) = SUM(inv_transpose(ppm_dim+1:2*ppm_dim)*wp_grad_temp)
-         ELSE
-            inv_transpose = (/ inv(1,ip), inv(4,ip), inv(7,ip), &
-                        &      inv(2,ip), inv(5,ip), inv(8,ip), &
-                        &      inv(3,ip), inv(6,ip), inv(9,ip) /)
-            wp_grad_temp = wp_grad(1:ppm_dim,ip)
-            wp_grad(1,ip) = SUM(inv_transpose(1:ppm_dim)*wp_grad_temp)
-            wp_grad(2,ip) = SUM(inv_transpose(ppm_dim+1:2*ppm_dim)*wp_grad_temp)
-            wp_grad(3,ip) = SUM(inv_transpose(2*ppm_dim+1:3*ppm_dim)*wp_grad_temp)
-         ENDIF
-    ENDDO
-
-    wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-    eta => Set_dcop(Particles,eta_id)
-    wp_grad => Set_wpv(Particles,adapt_wpgradid)
-
-    ! HAECKIC: do we map correctly?
-    IF (PRESENT(with_ghosts)) THEN
-        IF (with_ghosts) THEN
-            !---------------------------------------------------------------------!
-            ! Update ghosts
-            !---------------------------------------------------------------------!
-            CALL particles_mapping_ghosts(Particles,Particles%active_topoid,info)
-            IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,&
-                     'particles_mapping_ghosts failed.',info)
-                  info = -1
-                  GOTO 9999
-            ENDIF
-         ENDIF
-    ENDIF
-
-
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE ! jump here upon error
-
-END SUBROUTINE particles_get_grad_aniso
-
-! define a get_hess for anisotropic particles
-SUBROUTINE particles_get_hess_aniso(Particles, hess, info)
-
-      IMPLICIT NONE
-
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-
-    !-------------------------------------------------------------------------
-    !  Arguments
-    !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,     INTENT(IN)    :: Particles
-    !!! Data structure containing the particles
-    REAL(MK),DIMENSION(:,:), POINTER                  :: hess
-    !!! resulting hessian matrix for all particles
-    !!! 2D: [h11, h12, h21, h22]
-    !!! 3D: [h11, h12, h13, h21, h22, h23, h31, h32, h33]
-    INTEGER,                             INTENT(OUT)    :: info
-    !!! Return status, on success 0.
-
-    !-------------------------------------------------------------------------
-    ! local variables
-    !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_get_hess_aniso'
-    REAL(MK),     DIMENSION(ppm_dim)           :: coeffs,wp_grad_temp
-    INTEGER,      DIMENSION(ppm_dim)           :: order
-    INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
-    INTEGER                                    :: eta_id, i, ineigh, iq, ip
-    REAL(MK)                                   :: t0
-    REAL(MK), DIMENSION(:,:),POINTER           :: inv => NULL()
-    REAL(MK), DIMENSION(:),  POINTER           :: wp => NULL()
-    REAL(MK), DIMENSION(:,:),POINTER           :: wp_grad => NULL()
-    REAL(MK), DIMENSION(:,:),POINTER           :: eta => NULL()
-    REAL(MK), DIMENSION(:),  POINTER           :: inv_transpose => NULL()
-
-    info = 0 ! change if error occurs
- 
-    CALL substart(caller,t0,info)
-    
-    ! CODE HERE
-
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE ! jump here upon error
-
-END SUBROUTINE particles_get_hess_aniso
 
 END MODULE ppm_module_particles
 

@@ -60,8 +60,6 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     !! Compute interaction potential
     !!-------------------------------------------------------------------------!
 
-    ! HAECKIC: TODO combine aniso with iso
-
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
 !     D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
 !     inv  => Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
@@ -93,9 +91,14 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 !             rr = SQRT(dist2)
 
             ! haeckic: do the potential calculation
-            CALL particles_anisotropic_distance(Particles,ip,iq,rr,info)
-            CALL particles_shorter_axis(Particles,ip, scaling_ip)
+            CALL particles_anisotropic_distance(Particles,ip,iq,Particles%G_id,rr,info)
+            CALL particles_shorter_axis(Particles,ip,Particles%G_id,scaling_ip,info)
             scaling_ip = scaling_ip**2
+
+
+            ! HAECKIC: The variables
+            ! rr: the distance used in potential
+            ! scaling_ip: scaling used for potential
 
 #if debug_verbosity > 0
             IF (rr .LE. 1e-12) THEN

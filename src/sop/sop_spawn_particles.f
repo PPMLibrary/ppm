@@ -103,7 +103,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     ! counting how many particles have to be added
     ! if not enough neighbours, add nb_new_part particle
 
-    ! haeckic: add opts% which sampling method is used: random, closestconsider and quadrant
+    ! HAECKIC: add opts% which sampling method is used: random, closestconsider and quadrant
+
     DO ip=1,Npart
        !write(*,*) nvlist(ip), nvlist_theoretical
        IF (nvlist(ip) .LT. nvlist_theoretical) &
@@ -219,11 +220,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
             IF (nvlist(ip) .LT. nvlist_theoretical) THEN
             !IF (Particles%nvlist(ip).GT.0) THEN
 
-               ! haecki: double sampling problem!
+               ! HAECKIC: double sampling problem!
                 DO i=1,(nvlist_theoretical-nvlist(ip))
                     add_part = add_part + 1
 
-                    !get the isotropic -> anisotropic transofmration matrix
+                    ! get the isotropic -> anisotropic transofmration matrix
                     CALL particles_inverse_matrix(D(:,ip),Matrix_A,info)
 
                     angle = 0._MK
@@ -244,7 +245,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                     ! haeckic: add the minimum distance to other particles (=attractive radius)
                     ! we only compare with neighbors of ip
                     ! maybe: add a checking of neighbors of neighbors of ip
-                    ! If after 100 tries no success, then do a random one
+                    ! If after 100 tries no success, then do decrease min_dist
 !                     too_close = .TRUE.
 !                     num_try = 1
                     !write(*,*) 'start',xp(1:ppm_dim,ip), inv(2,ip), inv(3,ip)
@@ -421,6 +422,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 !                         0.723_MK*D(ip)&       !radius
 !                         * (/COS(angle),SIN(angle)/) !direction 
                     DO j=1,Particles%tensor_length
+                        ! why D? we update it anyway...
                         D(j,Mpart + add_part)   = D(j,ip)
                         inv(j,Mpart + add_part) = inv(j,ip)
                     ENDDO
@@ -455,7 +457,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                     theta2 = PI * (1._MK+COS(1000._MK*xp(2,ip)/D(ip)))
 #endif
 
-                    ! haeckic: do the correct sampling in 3d
+                    ! HAECKIC: TODO 3D sampling for anisotropic case
+
 !                     xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
 !                         !random 3D points on a sphere
 !                     0.7_MK*D(ip)&       !radius
@@ -465,6 +468,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 !                         &   /) 
 !                     D(Npart + add_part)   = D(ip)
 !                     inv(Npart + add_part) = inv(ip)
+
 #if debug_verbosity > 1
                     IF (PRESENT(printp)) THEN
                         write(6000+printp,*) xp(1:ppm_dim,Npart+add_part)

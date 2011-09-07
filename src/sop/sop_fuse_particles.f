@@ -87,6 +87,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
     vlist => Particles%vlist
     Npart = Particles%Npart
 
+    ! HAECKIC: different gets
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wpv(Particles,Particles%D_id,with_ghosts=.TRUE.)
     inv=> Get_wpv(Particles,Particles%G_id,with_ghosts=.TRUE.)
@@ -108,15 +109,16 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
         !IF (nvlist(ip) .GT. opts%nneigh_critical) THEN
             particle_neigh: DO ineigh=1,nvlist(ip)
                 iq=vlist(ineigh,ip)
-                CALL particles_anisotropic_distance(Particles,ip,iq,dist1,info)
-                CALL particles_anisotropic_distance(Particles,iq,ip,dist2,info)
+                
+                !HAECKIC: different distance calculation
+                CALL particles_anisotropic_distance(Particles,ip,iq,Particles%G_id,dist1,info)
+                CALL particles_anisotropic_distance(Particles,iq,ip,Particles%G_id,dist2,info)
                 dist = MIN(dist1,dist2)
-                !dist=SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2)) / MIN(D(ip),D(iq))
                 IF (dist .LT. 1D-8) THEN
                     WRITE(*,*) 'dist = ',dist, ' 2 particles very close'
                     WRITE(*,*) xp(1:ppm_dim,ip)
                     WRITE(*,*) xp(1:ppm_dim,iq)
-                    !WRITE(*,*) D(ip),D(iq)
+                    !WRITE(*,*) D(ip),D(iq) not working for anisotropic
                     WRITE(*,*) 'something is probably wrong...'
                     info = -1
                     GOTO 9999
@@ -124,11 +126,10 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
 
 
                 IF (dist .LT. threshold) THEN
-                    CALL particles_shorter_axis(Particles,ip,dist1)
-                    CALL particles_shorter_axis(Particles,iq,dist2)
+                    CALL particles_shorter_axis(Particles,ip,Particles%G_id,dist1,info)
+                    CALL particles_shorter_axis(Particles,iq,Particles%G_id,dist2,info)
                     
                     ! HAECKIC: TODO make this comparison relative
-                    !          TODO a case where too much get deleted -> [1,2,3,4,5,6,7,8,10] close together
                                         
                     ! Delete the particle that have the larger D
                     IF (dist1.GT.dist2) THEN
@@ -184,7 +185,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
                 ! to be removed
                 xp(1:ppm_dim,ip) = xp(1:ppm_dim,Npart-del_part)
                 DO j=1,Particles%tensor_length
-                     ! HAECKIC: TODO why copy D? not Dtilde?
+                     ! HAECKIC: TODO why copy D? is recomputed anyway!?
                      D(j,ip)   = D(j,Npart-del_part)
                      inv(j,ip) = inv(j,Npart-del_part)
                 ENDDO

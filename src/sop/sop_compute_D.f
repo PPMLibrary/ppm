@@ -8,6 +8,7 @@
 !!! 
 !!!----------------------------------------------------------------------------!
 
+    !todo: drop this
     pure function f0_grad_fun(pos)
 
         use ppm_module_data, ONLY: ppm_dim
@@ -116,7 +117,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     END INTERFACE
 
     ! local variables
-    INTEGER                                    :: i,ip,ineigh,iq
+    INTEGER                                    :: i,ip,ineigh,iq,k
     CHARACTER(LEN = 64)                        :: myformat
     CHARACTER(LEN = 256)                       :: cbuf
     CHARACTER(LEN = 256)                       :: caller='sop_compute_req'
@@ -145,7 +146,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_B => NULL()
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
-    REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,new_scale_long,temp_scale,max_g,max_w
+    REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,proj,temp_scale,max_g,max_w
     LOGICAL                                    :: need_derivatives
     REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
     INTEGER                                    :: topo_id,eta_id
@@ -238,7 +239,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
     
     ! HAECKIC: here a wpv is allocated
-    !          Isn't that done in adapt_particles.f??
     !if the resolution depends on the gradient of wp, determines
     ! where this gradient is allocated
     IF (opts%D_needs_gradients) THEN
@@ -273,12 +273,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             ENDIF
         ENDIF
     ENDIF
-
-
     
-    ! HAECKIC: nothing adapted here
+    ! HAECKIC: adapt this to anisotropic? not really needed...
     ! crash if not enough neighbours
-    ! adapt the plotting
     IF (need_derivatives .AND. Particles%nneighmin.LT.opts%nneigh_critical) THEN
 !         xp => Get_xp(Particles)
 !         rcp => Get_wps(Particles,Particles%rcp_id)
@@ -341,13 +338,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-
-    IF (.NOT.PRESENT(wp_fun)) THEN
-      
-    ! HAECKIC: what if D_fun depends on wp_fun and we don not have it
-
-    ENDIF
-
     !!-------------------------------------------------------------------------!
     !! Case where we need to approximate derivatives
     !!-------------------------------------------------------------------------!
@@ -361,16 +351,18 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
          ENDIF
 
          ! HAECKIC: anisotropic gradient
-         CALL particles_get_grad_aniso(Particles,adapt_wpgradid,info,with_ghosts=.TRUE.)
+         order = 4
+         CALL get_grad_aniso(Particles,Particles%adapt_wpid,adapt_wpgradid,order,info,with_ghosts=.TRUE.)
          IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,&
-                  'particles_get_grad_aniso failed', __LINE__,info)
+                  'get_grad_aniso failed', __LINE__,info)
             GOTO 9999
          ENDIF
 
          
          ! HAECKIC: this is a temporary test for plane example -----------
+         ! todo: drop this
          wp_grad => Get_wpv(Particles,adapt_wpgradid)
          wp => Get_wps(Particles,Particles%adapt_wpid)
          xp => Get_xp(Particles)
@@ -401,31 +393,34 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
          ! ------------------------------------------------------------------
 
     ENDIF if_needs_derivatives
-     
-    ! HAECKIC: Entire next part is changed
+
+    ! the branching is done inside, s.t. we have no code duplication
 
     !-------------------------------------------------------------------------!
     ! Compute D_tilde
     !-------------------------------------------------------------------------!
     if_D_needs_grad: IF (opts%D_needs_gradients) THEN
 
+        ! pre-commands for all branches
         xp => Get_xp(Particles)
         Dtilde => Get_wpv(Particles,Particles%Dtilde_id)
 
         IF (PRESENT(wp_grad_fun)) THEN
-
+            ! pre-commands if wp_grad_fun is present
         ELSE
+            ! pre-commands if wp_grad_fun is not present
             wp_grad => Get_wpv(Particles,adapt_wpgradid,with_ghosts=.TRUE.)
-
-             IF (PRESENT(wp_fun)) THEN
-             
-             ELSE
-               ! get wp approx
-             ENDIF
-
+            IF (PRESENT(wp_fun)) THEN
+               ! pre-commands if wp_grad_fun is not present and wp_fun is present
+            ELSE
+               ! pre-commands if wp_grad_fun and wp_fun is not present
+               ! todo: we need to check if d_fun depends on wp
+               ! if yes we can not use a dummy, but wp directly
+               ! or we assume wp and just use iẗ́!?
+            ENDIF
         ENDIF
 
-        ! For each particle calc the gradient using given functions wp_grad_fun
+        ! For each particle calculate the requirements
         DO ip=1,Particles%Npart
             ! gradient
             IF (PRESENT(wp_grad_fun)) THEN
@@ -444,10 +439,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                   ENDIF
             ENDIF
 
-            ! HAECKIC: TODO: determine orthogonal direction by projection of neighbors in this direction
-            ! 1. project gradient of neighbors and apply d_fun to make of it
-            ! 2. project smaller axes: 0 -> max, else: relative take antiproportional to smaller axes of neigh
-
+            ! maybe drop this
             IF (.NOT. Particles%neighlists) THEN
                info = ppm_error_error
                CALL ppm_error(ppm_err_argument,caller,&
@@ -461,10 +453,11 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             wp_dir = (/-wp_grad_fun0(2),wp_grad_fun0(1)/)
             DO ineigh=1,Particles%nvlist(ip)
                   iq = Particles%vlist(ineigh,ip)
+                  ! projection: dir * (grad . dir / dir . dir )
                   IF (PRESENT(wp_grad_fun)) THEN
-                     wp_dir_temp = (wp_dir*wp_grad_fun(xp(1:ppm_dim,iq)))/SQRT(SUM(wp_dir**2))
+                     wp_dir_temp = wp_dir*SUM(wp_grad_fun(xp(1:ppm_dim,iq))*wp_dir)/SUM(wp_dir**2)
                   ELSE
-                     wp_dir_temp = (wp_dir*wp_grad(1:ppm_dim,iq))/SQRT(SUM(wp_dir**2))
+                     wp_dir_temp = wp_dir*SUM(wp_grad(1:ppm_dim,iq)*wp_dir)/SUM(wp_dir**2)
                   ENDIF
                   IF (SQRT(SUM(wp_grad_fun_proj**2)) .GT. SQRT(SUM(wp_dir_temp**2))) THEN
                      wp_grad_fun_proj = wp_dir_temp
@@ -477,6 +470,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                   IF (PRESENT(wp_fun)) THEN
                      orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
                   ELSE
+                     ! todo: we need to check if d_fun depends on wp
+                     ! if yes we can not use a dummy, but wp directly
+                     ! or we assume wp and just use iẗ́!?
                      orth_len = D_fun(dummy_wp,wp_grad_fun_proj,opts)/old_scale
                   ENDIF
             ENDIF
@@ -485,6 +481,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
 
             IF (ppm_dim .EQ. 2) THEN
+            
+               !todo: rewrite nicely
             
                Matrix_A(1) = -orth_len*wp_grad_fun0(2)
                Matrix_A(3) =  orth_len*wp_grad_fun0(1)
@@ -534,18 +532,20 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ENDDO
         
         IF (PRESENT(wp_grad_fun)) THEN
-
+            ! post_commands if wp_grad_fun is present
         ELSE
+            ! post_commands if wp_grad_fun is not present
              wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
-
              IF (PRESENT(wp_fun)) THEN
-             
+                  ! post_commands if wp_grad_fun is not present and wp_fun is present
              ELSE
-                  ! set wp
+                  ! post_commands if wp_grad_fun is not present and wp_fun is not present
+                  ! todo: set wp
              ENDIF
 
         ENDIF
         
+        ! post_commands for all branches
         Dtilde => Set_wpv(Particles,Particles%Dtilde_id)
         xp => Set_xp(Particles,read_only=.TRUE.)
 
@@ -569,23 +569,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDIF if_D_needs_grad
 
     !-------------------------------------------------------------------------!
-    ! Rescale D_tilde
+    ! Rescale D_tilde (dropped because done inside particles loop)
     !-------------------------------------------------------------------------!
-    ! minimum length of gradient axes, maximum length of gradient axis
-    ! HAECKIC: DROPPED
-!     Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
-!     DO ip = 1,Particles%Mpart
-!         CALL particles_inverse_matrix(Dtilde(:,ip),Matrix_B,info)
-!         old_scale = sqrt(Matrix_B(2)*Matrix_B(2) + Matrix_B(4)*Matrix_B(4))
-!         new_scale = MIN(MAX(old_scale,opts%minimum_D),opts%maximum_D)
-!         IF (.NOT.(new_scale .EQ. old_scale)) THEN
-!             ! inverse scaling
-!             new_scale = old_scale/new_scale
-!             Dtilde(1:Particles%tensor_length,ip) = new_scale * Dtilde(1:Particles%tensor_length,ip)
-!         ENDIF
-!     ENDDO
-!     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,&
-!         read_only=.FALSE.,ghosts_ok=.TRUE.)
 
     !---------------------------------------------------------------------!
     ! Update the real tensors of the particles using 1/rcp_over_D*Dtilde
@@ -596,7 +581,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ! inverse scaling
         new_scale = 1/(opts%rcp_over_D)
         inv(1:Particles%tensor_length,ip) = new_scale * Dtilde(1:Particles%tensor_length,ip)
-
     ENDDO
     inv => Set_wpv(Particles,Particles%G_id)
     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
@@ -643,43 +627,75 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
-
     ! HAECKIC: completely different
+    ! todo: rescale it like discussed
     !------------------------------------------------------------------------------!
-    ! D is Dtilde scaled with minium length of shorter axis over all neighbours iq
+    ! D recomment
     !------------------------------------------------------------------------------!
     D      => Get_wpv(Particles,Particles%D_id)
     Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     DO ip=1,Particles%Npart
-        ! Copy the tensor and get smallest in neighborhood
-        ! HAECKIC: Scaling of axes can be differently
-        ! we acutally should project parts of it on different axes
-        D(1:Particles%tensor_length,ip) = Dtilde(1:Particles%tensor_length,ip)
-        CALL particles_shorter_axis(Particles,ip,old_scale)
-        new_scale = old_scale
-        CALL particles_longer_axis(Particles,ip,new_scale_long)
+    
+        ! 1. Get minimum axes in neighborhood and set ip's to it
+        CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,old_scale,info)
+        CALL particles_shorter_axis(Particles,ip,Particles%Dtilde_id,new_scale,info)
         DO ineigh=1,Particles%nvlist(ip)
             iq = Particles%vlist(ineigh,ip)
-            CALL particles_shorter_axis(Particles,iq,temp_scale) 
+            CALL particles_shorter_axis(Particles,iq,Particles%Dtilde_id,temp_scale,info) 
             IF (temp_scale.LT.new_scale) THEN
                 new_scale = temp_scale
-                CALL particles_longer_axis(Particles,iq,new_scale_long)
+                k = iq
             ENDIF
         ENDDO
-        ! scale the axes of the ellipse
-        ! inverse scaling
-        new_scale = old_scale/new_scale
-        CALL particles_longer_axis(Particles,ip,old_scale)
-        new_scale_long = old_scale/new_scale_long
+
+        D(1:Particles%tensor_length,ip) = Dtilde(1:Particles%tensor_length,k)
+        CALL particles_longer_axis(Particles,k,Particles%Dtilde_id,new_scale,info)
+
+        ! 2. init longer axes with scale of old one
+        !    scale it with min_q(max(project_h1 on longer dir, project_h2 on longer dir))
+        !    init longer axis with old length
         IF (ppm_dim.eq.2) THEN
-            ! HAECKIC: inverse scaling with vector
-            D(1,ip) = new_scale_long*D(1,ip)
-            D(2,ip) = new_scale_long*D(2,ip)
-            D(3,ip) = new_scale*D(3,ip)
-            D(4,ip) = new_scale*D(4,ip)
+            D(1,ip) = (new_scale/old_scale)*D(1,ip)
+            D(2,ip) = (new_scale/old_scale)*D(2,ip)
+
+            Matrix_A = D(1:4,ip)
+            CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+            ! get the longer axis
+            wp_dir = (/Matrix_B(1),Matrix_B(3)/)
+
+            ! get min_q(max(proj h1 on dir,proj h2 on dir))
+            DO ineigh=1,Particles%nvlist(ip)
+
+                  iq = Particles%vlist(ineigh,ip)
+                  
+                  ! get inverse to have axes
+                  Matrix_A = Dtilde(1:Particles%tensor_length,iq)
+                  CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+
+                  ! |c| = a.b/|b|
+                  ! proj h1 of iq on direction of longer axis of ip
+                  proj = ABS(SUM((/Matrix_B(1),Matrix_B(3)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
+                  
+                  ! proj h2 of iq on direction of longer axis of ip
+                  proj = MAX(proj,ABS(SUM((/Matrix_B(2),Matrix_B(4)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+
+                  IF(old_scale .GT. proj) THEN
+                     ! we found a smaller projection on longer axis
+                     old_scale = proj
+                  ENDIF
+
+            ENDDO
+
+            ! set the new length of longer axis
+            CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,new_scale,info)
+            D(1,ip) = (new_scale/old_scale)*D(1,ip)
+            D(2,ip) = (new_scale/old_scale)*D(2,ip)
+
         ELSE
-            !HAECKIC: TODO 3D case
+            ! HAECKIC: TODO 3D case
+
         ENDIF
+
     ENDDO
     D      => Set_wpv(Particles,Particles%D_id)
     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)

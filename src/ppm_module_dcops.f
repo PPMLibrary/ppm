@@ -118,7 +118,7 @@ MODULE ppm_module_dcops
         MODULE PROCEDURE ppm_matrix_svd_s
         MODULE PROCEDURE ppm_matrix_svd_d
     END INTERFACE
-
+    
     !INTERFACE ppm_dcop_check_vandermonde
         !MODULE PROCEDURE ppm_dcop_check_vandermonde_s
         !MODULE PROCEDURE ppm_dcop_check_vandermonde_d
@@ -136,6 +136,7 @@ CONTAINS
 
 #define __KIND __DOUBLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"
+#include "dcop/ppm_dcops_aniso.f"
 
 #define __KIND __DOUBLE_PRECISION
 #define __DIM 2
@@ -172,9 +173,10 @@ CONTAINS
 #define __KIND __DOUBLE_PRECISION
 #include "dcop/ppm_part_dcops.f"
 
-
 #define __KIND __SINGLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"
+! haeckic: add single precision for aniso
+!#include "dcop/ppm_dcops_aniso.f"
 
 #define __KIND __SINGLE_PRECISION
 #define __DIM 2
@@ -216,6 +218,7 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_particles_typedef
+    USE ppm_module_particles
     USE ppm_module_write
     IMPLICIT NONE
 
@@ -344,8 +347,6 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
     9999 CONTINUE ! jump here upon error
 
 END SUBROUTINE particles_dcop_compute
-
-
 
 FUNCTION factorial_m(multi_ind,ndim)
     INTEGER                 :: factorial_m,i,ndim

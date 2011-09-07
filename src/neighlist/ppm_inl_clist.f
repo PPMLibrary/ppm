@@ -229,15 +229,6 @@
       !  Sort particles by their cutoff radii in descending order.
       !-------------------------------------------------------------------------
       CALL sortByRC(cutoff, skin, clist%rank)
-! #if __ANISO == __YES
-!       DO i = 1, clist%n_all_p
-!           write(*,*) i, clist%rank(i), particles_longer_axis(cutoff(:,clist%rank(i)))
-!       ENDDO
-! #elif __ANISO == __NO
-!       DO i = 1, clist%n_all_p
-!           write(*,*) i, clist%rank(i), cutoff(clist%rank(i))
-!       ENDDO
-! #endif
 
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.

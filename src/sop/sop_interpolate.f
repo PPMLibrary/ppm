@@ -86,10 +86,10 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !!  on output, D_old may have been changed artificially to increase
     !! rcp_old. Do not use it anymore (except for computing rcp_old))
     !!--------------------------------------    ---------------------------!
-    ! HAECKIC: TODO what to use as neighbor determination radius
-    ! HAECKIC: How to guarantee number of neighbors??? we only do that on current set not cross!?
-    ! main problem: we need the ghosts!!
+    ! HAECKIC: How to guarantee number of neighbors??? 
+    ! we only do that on current set not cross!?
     D_old => Get_wpv(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    ! HAECKIC: decide which one to use for xset!? 
     D_old = D_old/2.0_mk 
     ghostlayer=Particles%cutoff
     CALL ppm_inl_xset_vlist(Particles%active_topoid,Particles%xp,&
