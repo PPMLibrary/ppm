@@ -128,7 +128,7 @@
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
       REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
-      REAL(MK)                                   :: max_phys
+      REAL(MK)                                   :: max_sub_size
 #if   __MODE == __HNL
       REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
 #endif
@@ -177,12 +177,21 @@
       ! set rcred to a large value to make sure all red particles are on the
       ! top level of the cell tree
       !---------------------------------------------------------------------
+      max_sub_size=0._MK
+      DO rank_sub = 1, topo%nsublist
+          isub = topo%isublist(rank_sub)
 #if   __KIND == __SINGLE_PRECISION
-      max_phys = MAXVAL(topo%max_physs-topo%min_physs)
+          max_sub_size = MAX(max_sub_size,&
+              MAXVAL(topo%max_subs(1:ppm_dim, isub) - &
+              topo%min_subs(1:ppm_dim, isub)))
 #elif   __KIND == __DOUBLE_PRECISION
-      max_phys = MAXVAL(topo%max_physd-topo%min_physd)
+          max_sub_size = MAX(max_sub_size,&
+              MAXVAL(topo%max_subd(1:ppm_dim, isub) - &
+              topo%min_subd(1:ppm_dim, isub)))
 #endif
-      rcred(1:mred) = max_phys
+      ENDDO
+
+      rcred(1:mred) = max_sub_size
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
       ! (neigh_max) is set to 0.
