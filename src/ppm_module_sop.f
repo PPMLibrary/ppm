@@ -41,6 +41,7 @@
 
 #define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
+#define __USE_LBFGS 1
 
      USE ppm_module_data
      USE ppm_module_typedef
@@ -98,6 +99,20 @@
      REAL(prec)         :: Psi_max  
      INTEGER            :: adapt_wpgradid
      ! id of where the gradient of the field is stored 
+     INTEGER            :: fuse_id = 0
+     ! id of the property storing which particles are candidate for fusion
+
+     INTEGER            :: nb_neigh_id = 0
+
+     INTEGER            :: potential_before_id = 0
+     ! for debugging only
+
+     INTEGER            :: memory_used_total
+     ! Evaluation of the number of bytes occupied in memory
+
+     !testing...
+     LOGICAL            :: adaptation_ok
+
      !====================================================================!
      ! random numbers
      !====================================================================!
@@ -109,7 +124,8 @@
      REAL(prec),PARAMETER :: PI = ACOS(-1._prec)
 
 
-     PUBLIC sop_adapt_particles, sop_init_opts, sop_init_stats
+     PUBLIC sop_adapt_particles, sop_init_opts, sop_init_stats,&
+         &  sop_plot_potential
 
 
      CONTAINS

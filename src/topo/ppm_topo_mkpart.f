@@ -112,6 +112,10 @@
       !!! Number of particles
       REAL(MK)                , INTENT(IN   ) :: ghostsize
       !!! Size (width) of the ghost layer.
+      !!!
+      !!! TIP: If the particles are moving and you intend to use the ppm
+      !!! neighbor lists,  this argument must be equal the particle interaction
+      !!! radius plus the skin parameter
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Estimated cost associated with subdomains. Either user-defined on
       !!! input or decomposition result on output.
@@ -119,6 +123,12 @@
       !!! Boundary conditions for the topology
       !!!
       !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       INTEGER                 , INTENT(IN   ) :: assig
       !!! The type of subdomain-to-processor assignment. One of:
       !!!

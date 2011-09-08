@@ -8,12 +8,10 @@
 !!! Uses ppm_alloc to grow/shrink arrays 
 !!!
 !!!
-!!! Remark: One can use MEAN(D(ip),D(iq)) or MIN(D(ip),D(iq)) as the 
-!!!         reference scale for particle fusion.
 !!!
 !!!----------------------------------------------------------------------------!
 SUBROUTINE sop_fuse_particles(Particles,opts,info,&
-        level_fun,wp_fun,nb_fun,printp)
+        level_fun,wp_fun,nb_fun,printp,nb_part_del)
 
     USE ppm_module_alloc, ONLY: ppm_alloc
 
@@ -37,6 +35,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     OPTIONAL                                              :: level_fun
     !!! if level function is known analytically
     INTEGER, OPTIONAL                                     :: printp
+    INTEGER, OPTIONAL                                     :: nb_part_del
     !!! printout particles that are deleted into file fort.(5000+printp)
     ! argument-functions need an interface
     INTERFACE
@@ -91,11 +90,15 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: rcp => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: D => NULL()
+    REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde => NULL()
     INTEGER                                :: Npart
     INTEGER,      DIMENSION(:),  POINTER   :: nvlist => NULL()
     INTEGER,      DIMENSION(:,:),POINTER   :: vlist => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: level => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: wp => NULL()
+
+    INTEGER,DIMENSION(:),POINTER           :: fuse_part
+    INTEGER,DIMENSION(:),POINTER           :: nb_neigh
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -130,6 +133,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    Dtilde  => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     rcp=> Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
     IF (opts%level_set) THEN
         IF(.NOT.PRESENT(level_fun)) &
@@ -137,15 +141,8 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
         IF(.NOT.PRESENT(wp_fun)) &
             wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.TRUE.)
     ENDIF
-
-    !removme
-    !DO ip=1,Particles%Npart
-        !write(107,'(4(E14.5,2X),I5)') xp(1:ppm_dim,ip),D(ip),&
-            !level_fun(xp(1:ppm_dim,ip)),nvlist(ip)
-    !ENDDO
-    !write(*,*) opts%scale_D
-    !stop
-    !removme
+    fuse_part  => Get_wpi(Particles,fuse_id,with_ghosts=.true.)
+    nb_neigh  => Get_wpi(Particles,nb_neigh_id,with_ghosts=.true.)
 
     !!-------------------------------------------------------------------------!
     !! Mark particles for deletion (by changing nvlist to 999)
@@ -168,44 +165,47 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                 ENDIF
             ENDIF
         ENDIF
-        IF (nvlist(ip) .GT. opts%nneigh_critical) THEN
-            DO ineigh=1,nvlist(ip)
-                iq=vlist(ineigh,ip)
-                dist=SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2)) / &
-                    MIN(D(ip),D(iq))
-                IF (dist .LT. 1D-8) THEN
-                    WRITE(*,*) 'dist = ',dist, ' 2 particles very close'
-                    WRITE(*,*) xp(1:ppm_dim,ip)
-                    WRITE(*,*) xp(1:ppm_dim,iq)
-                    WRITE(*,*) D(ip),D(iq)
-                    WRITE(*,*) 'something is probably wrong...'
-                    info = -1
-                    GOTO 9999
-                ENDIF
-                IF (dist .LT. threshold) THEN
-                    ! Delete the particle that have the larger D
-                    IF (D(ip).GT.D(iq)) THEN
-                        nvlist(ip)=999
-                        CYCLE particle_loop
-                    ELSE IF(D(ip).EQ.(D(iq))) THEN
+        neighbour_loop: DO ineigh=1,nvlist(ip)
+            iq=vlist(ineigh,ip)
+            dist=SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2)) / &
+                MIN(D(ip),D(iq))
+            IF (dist .LT. 1D-12) THEN
+                WRITE(*,*) 'dist = ',dist, ' 2 particles very close'
+                WRITE(*,*) xp(1:ppm_dim,ip)
+                WRITE(*,*) xp(1:ppm_dim,iq)
+                WRITE(*,*) D(ip),D(iq)
+                WRITE(*,*) 'something is probably wrong...'
+                !info = -1
+                !GOTO 9999
+            ENDIF
+            IF (dist .LT. threshold) THEN
+                ! Delete the particle that has the larger D
+                IF (D(ip).GT.D(iq)) THEN
+                    nvlist(ip)=999
+                    CYCLE particle_loop
+                ELSE IF(D(ip).EQ.(D(iq))) THEN
 
-                        ! If equal D, then delete the one that has the "smallest position"
-                        ! (any total ordering between particles would do)
-                        DO di = 1,ppm_dim
-                            IF (xp(di,ip) .LT. xp(di,iq)) THEN
-                                !mark particle for deletion
+                    ! If equal D, then delete the one that has the "smallest position"
+                    ! (any total ordering between particles would do)
+                    DO di = 1,ppm_dim
+                        IF (xp(di,ip) .LT. xp(di,iq)) THEN
+                            !mark particle for deletion
+                            nvlist(ip) = 999
+                            CYCLE particle_loop
+                        ELSE IF (xp(di,ip) .EQ. xp(di,iq)) THEN
+                            IF (ip.LT.iq) THEN
                                 nvlist(ip) = 999
                                 CYCLE particle_loop
-                            ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
-                                ! do nothing, this particle is going to stay
-                                !  and its neighbour is going to be deleted
-                                CYCLE particle_loop
                             ENDIF
-                        ENDDO
-                    ENDIF
+                        ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
+                            ! do nothing, this particle is going to stay
+                            !  and its neighbour is going to be deleted
+                             CYCLE neighbour_loop
+                        ENDIF
+                    ENDDO
                 ENDIF
-            ENDDO
-        ENDIF
+            ENDIF
+        ENDDO neighbour_loop
     ENDDO particle_loop
 
 #if debug_verbosity > 1
@@ -236,8 +236,11 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                 ! to be removed
                 xp(1:ppm_dim,ip) = xp(1:ppm_dim,Npart-del_part)
                 D(ip) = D(Npart-del_part)
+                Dtilde(ip) = Dtilde(Npart-del_part)
                 rcp(ip) = rcp(Npart-del_part)
                 nvlist(ip) = nvlist(Npart-del_part)
+                fuse_part(ip) = 0
+                nb_neigh(ip) = nb_neigh(Npart-del_part)
                 IF (opts%level_set .AND. .NOT.PRESENT(level_fun)) THEN
                     level(ip) = level(Npart-del_part)
                     wp(ip) = wp(Npart-del_part)
@@ -257,6 +260,9 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     Particles%Npart = Npart - del_part
     xp => Set_xp(Particles)
     D  => Set_wps(Particles,Particles%D_id)
+    Dtilde  => Set_wps(Particles,Particles%Dtilde_id)
+    fuse_part => Set_wpi(Particles,fuse_id)
+    nb_neigh  => Set_wpi(Particles,nb_neigh_id)
     rcp=> Set_wps(Particles,Particles%rcp_id)
     IF (opts%level_set) THEN
         IF(.NOT.PRESENT(level_fun)) &
@@ -268,15 +274,16 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-#if debug_verbosity > 1
 #ifdef __MPI
     CALL MPI_Allreduce(del_part,del_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
 #endif
+#if debug_verbosity > 1
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,I8,A)') 'Deleting ', del_part,' particles'
         CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
+    IF(PRESENT(nb_part_del)) nb_part_del = del_part
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)

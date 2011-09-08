@@ -42,6 +42,9 @@ TYPE pnt_array_1d
     !!! true if there is a one-to-one mapping with the particles
     LOGICAL                                      :: map_parts
     !!! true if partial mappings are desired for this property (default)
+    !!! (if false, the array for this property is not reallocated when
+    !!! particles move to a different processor or when they are
+    !!! interpolated from one distribution to another)
     LOGICAL                                      :: map_ghosts
     !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_1d
@@ -59,6 +62,9 @@ TYPE pnt_array_2d
     !!! true if there is a one-to-one mapping with the particles
     LOGICAL                                      :: map_parts
     !!! true if partial mappings are desired for this property (default)
+    !!! (if false, the array for this property is not reallocated when
+    !!! particles move to a different processor or when they are
+    !!! interpolated from one distribution to another)
     LOGICAL                                      :: map_ghosts
     !!! true if ghost mappings are desired for this property (default)
 END TYPE pnt_array_2d
@@ -104,6 +110,53 @@ TYPE ppm_t_operator
     INTEGER                                          :: max_opsid
     !!! largest index for operators
 END TYPE ppm_t_operator
+
+TYPE particles_stats
+    INTEGER                                          :: nb_nl = 0
+    !!! number of neighbour lists constructions
+    INTEGER                                          :: nb_inl = 0
+    !!! number of inhomogeneous neighbour lists constructions
+    INTEGER                                          :: nb_xset_inl = 0
+    !!! number of xset inhomogeneous neighbour lists constructions
+    INTEGER                                          :: nb_xset_nl = 0
+    !!! number of xset neighbour lists constructions
+    INTEGER                                          :: nb_dc_comp = 0
+    !!! number of DC operators computation (matrix inversions)
+    INTEGER                                          :: nb_dc_apply = 0
+    !!! number of DC operators evaluation (no matrix inversions)
+    INTEGER                                          :: nb_kdtree = 0
+    !!! number of kdtree constructions
+    INTEGER                                          :: nb_global_map = 0
+    !!! number of global mappings
+    INTEGER                                          :: nb_part_map = 0
+    !!! number of partial mappings
+    INTEGER                                          :: nb_ghost_get = 0
+    !!! number of partial mappings
+    INTEGER                                          :: nb_ghost_push = 0
+    !!! number of partial mappings
+    REAL(prec)                                       :: t_nl = 0._prec
+    !!! time spent for neighbour lists constructions
+    REAL(prec)                                       :: t_inl = 0._prec
+    !!! time spent for inhomogeneous neighbour lists constructions
+    REAL(prec)                                       :: t_xset_inl = 0._prec
+    !!! time spent for xset inhomogeneous neighbour lists constructions
+    REAL(prec)                                       :: t_xset_nl = 0._prec
+    !!! time spent for xset neighbour lists constructions
+    REAL(prec)                                       :: t_dc_comp = 0._prec
+    !!! time spent for DC operators computation (matrix inversions)
+    REAL(prec)                                       :: t_dc_apply = 0._prec
+    !!! time spent for DC operators evaluation (no matrix inversions)
+    REAL(prec)                                       :: t_kdtree = 0._prec
+    !!! time spent for kdtree constructions
+    REAL(prec)                                       :: t_global_map = 0._prec
+    !!! time spent for global mappings
+    REAL(prec)                                       :: t_part_map = 0._prec
+    !!! time spent for partial mappings
+    REAL(prec)                                       :: t_ghost_get = 0._prec
+    !!! time spent for partial mappings
+    REAL(prec)                                       :: t_ghost_push = 0._prec
+    !!! time spent for partial mappings
+END TYPE particles_stats
 
 TYPE ppm_t_particles
 
@@ -200,9 +253,6 @@ TYPE ppm_t_particles
 
 
     ! DC-PSE
-    INTEGER                                         :: eta_id
-    !!! index of the wpv array where the current DC operators are stored
-    !!! Will soon be depreciated by this:
     TYPE(ppm_t_operator),  POINTER                  :: ops => NULL()
     !!! structure that contains the discrete operators
 
@@ -260,6 +310,9 @@ TYPE ppm_t_particles
 
     REAL(prec)                                      :: time
     INTEGER                                         :: itime
+
+    ! runtime statistics
+    TYPE(particles_stats)                           :: stats
 
 END TYPE ppm_t_particles
 

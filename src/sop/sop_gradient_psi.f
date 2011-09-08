@@ -3,7 +3,7 @@
 !!! Get ghost values for Gradient_Psi
 !!!----------------------------------------------------------------------------!
 SUBROUTINE sop_gradient_psi(Particles,topo_id,&
-        Gradient_Psi,Psi_global,Psi_max,opts,info,gradD)
+        Gradient_Psi,Psi_global,Psi_max,opts,info,gradD,gradPsi_max)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_particles
@@ -30,26 +30,29 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ! Optional arguments
     REAL(MK),DIMENSION(:,:),POINTER,OPTIONAL,INTENT(IN):: gradD
+    REAL(MK),OPTIONAL,                   INTENT(  OUT)   :: gradPsi_max
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
     REAL(KIND(1.D0))                      :: t0
-    REAL(MK)                              :: dist2,rr,meanD,nn,rd
+    REAL(MK)                              :: rr,meanD,nn,rd,rc
     REAL(MK),DIMENSION(ppm_dim)           :: dist
     REAL(MK)                              :: Psi_part,gradPsi,attractive_radius
     CHARACTER (LEN = ppm_char)            :: caller='sop_gradient_psi'
     CHARACTER (LEN = ppm_char)            :: filename,cbuf
     REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
     REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
+    REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
+    REAL(MK)                              :: rho,coeff
+    LOGICAL                               :: no_fusion
+    INTEGER,DIMENSION(:),POINTER          :: fuse
 
 
-    !For debugging
 #if debug_verbosity > 1
-    REAL(MK),DIMENSION(Particles%Npart)             :: Potential
+    REAL(MK),DIMENSION(:),  POINTER       :: Potential
 #endif
-    !end debugging
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -70,6 +73,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    rcp  => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
     IF (.NOT.Particles%neighlists) THEN
         CALL ppm_write(ppm_rank,caller,&
             'need to compute neighbour lists first',info)
@@ -79,9 +83,15 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     nvlist => Particles%nvlist
     vlist => Particles%vlist
 
+    fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+#if debug_verbosity > 1
+    Potential => get_wps(Particles,potential_before_id)
+#endif
+
     !!-------------------------------------------------------------------------!
     !! Compute interaction potential and its gradient
     !!-------------------------------------------------------------------------!
+    IF(PRESENT(gradPsi_max)) gradPsi_max = 0._mk
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
         nn = HUGE(1._MK)
@@ -92,20 +102,17 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !Particles with few neighbours are a bit more reluctant to fuse
         !(not really necessary, but makes insertion/deletion a bit faster
         !in some cases)
-        !attractive_radius = attractive_radius0 * &
-            !MIN(REAL(nvlist(ip)-22,MK)/10._MK,1._MK)
-            IF (nvlist(ip).GT.30) THEN
-                attractive_radius = opts%attractive_radius0
-            ELSE
-                attractive_radius = 0._MK
-            ENDIF
+            !IF (nvlist(ip).GT.30) THEN
+        attractive_radius = opts%attractive_radius0
+            !ELSE
+                !attractive_radius = 0._MK
+            !ENDIF
 
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
 
             dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-            dist2 = SUM(dist**2)
-            rr = SQRT(dist2)
+            rr = SQRT(SUM(dist**2))
 
             IF (rr .LE. 1e-12) THEN
                 WRITE(cbuf,*) 'Distance between particles less than 1e-12! ',&
@@ -126,7 +133,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             meanD = MIN(D(ip) , D(iq))
 
             ! Do not interact with particles which are too far away
-            IF (meanD .GT. 2._MK * opts%maximum_D) CYCLE
+            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
@@ -136,10 +143,21 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             !------------------------------------------------------------------!
             rd = rr / meanD
 
-        !----------------------------------------------------------------------!
-        ! Damp the displacement of particles in transition regions
-        ! (hack...)
-        !----------------------------------------------------------------------!
+            !if (fuse(ip)*fuse(iq).GE.1) then 
+            if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+                no_fusion = .false.
+            else
+                !if (fuse(iq).eq.1) cycle neighbour_loop
+                no_fusion = .true.
+            endif
+
+            if (fuse(ip)+fuse(iq).GE.1 ) then 
+                coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+            else 
+                coeff = 1._mk
+            endif
+
+            coeff = 1._mk
 
 #include "potential/potential_gradient.f90"
 
@@ -150,11 +168,10 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
         Psi_global = Psi_global + Psi_part
 
-        !For debugging, not needed
+        
 #if debug_verbosity > 1
         Potential(ip)=Psi_part
 #endif
-        !end debugging
 
         !!---------------------------------------------------------------------!
         !! Cap the values of the gradient such that particle displacements 
@@ -168,11 +185,15 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !MIN(nn,cutoff * 0.5_MK) / ABS(Gradient_Psi(di,ip))
         !ENDIF
         !ENDDO
-        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. MIN(nn**2,Particles%cutoff**2)) THEN
+        IF (SUM(Gradient_Psi(1:ppm_dim,ip)**2) .GT. &
+            &          MIN(nn**2,Particles%cutoff**2)) THEN
             Gradient_Psi(1:ppm_dim,ip) = Gradient_Psi(1:ppm_dim,ip) * &
                 MIN(nn,Particles%cutoff)* 0.9_MK / &
                 SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))
         ENDIF
+
+        IF(PRESENT(gradPsi_max)) &
+            gradPsi_max = MAX(gradPsi_max, SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))/D(ip))
 
 
         !----------------------------------------------------------------------!
@@ -201,17 +222,17 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     ENDDO particle_loop
 
+#if debug_verbosity > 1
+    Potential => set_wps(Particles,potential_before_id)
+#endif
+    fuse  => set_wpi(Particles,fuse_id,read_only=.TRUE.)
+
     xp => Set_xp(Particles,read_only=.TRUE.)
     D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
     nvlist => NULL()
     vlist => NULL()
 
-
-#if debug_verbosity > 1
-    !For debugging, not needed
-    CALL sop_dump_debug(Potential,Particles%Npart,477,info)
-    !end debugging
-#endif
 
     !!-------------------------------------------------------------------------!
     !! Compute the global potential of the particles 
@@ -221,12 +242,17 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 #ifdef __MPI
     CALL MPI_Allreduce(Psi_global,Psi_global,1,ppm_mpi_kind,MPI_SUM,ppm_comm,info)
     CALL MPI_Allreduce(Psi_max,Psi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
+    IF (PRESENT(gradPsi_max)) &
+        CALL MPI_Allreduce(gradPsi_max,gradPsi_max,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     IF (info .NE. 0) THEN
         CALL ppm_write(ppm_rank,caller,'MPI_Allreduce failed',info)
         info = -1
         GOTO 9999
     ENDIF
 #endif
+
+    IF (PRESENT(gradPsi_max)) &
+        write(*,*) 'in gradient_psi, Max Gradient = ',gradPsi_max
 
     !!-------------------------------------------------------------------------!
     !! Get ghosts for gradient_psi (then, during the linesearch, 

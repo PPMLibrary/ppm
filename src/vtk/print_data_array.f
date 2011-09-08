@@ -45,6 +45,15 @@
               IF (i .LT. UBOUND(VTK_SCALAR,1)) &
                    WRITE(iUnit, '(A)', advance='no') " "
            END DO
+#elif defined VTK_INTEGER
+           DO i=LBOUND(VTK_INTEGER,1),UBOUND(VTK_INTEGER,1)
+              WRITE(scratch, *) REAL(VTK_INTEGER(i),8)
+              scratch = ADJUSTL(scratch)
+              WRITE(iUnit, '(A)', advance='no') &
+                   scratch(1:LEN_TRIM(scratch))
+              IF (i .LT. UBOUND(VTK_INTEGER,1)) &
+                   WRITE(iUnit, '(A)', advance='no') " "
+           END DO
 #else
            DO j=LBOUND(VTK_VECTOR,2),UBOUND(VTK_VECTOR,2)
               DO i=LBOUND(VTK_VECTOR,1),UBOUND(VTK_VECTOR,1)
@@ -77,5 +86,6 @@
 #undef VTK_RANGE
 #undef VTK_RANGE_START
 #undef VTK_SCALAR
+#undef VTK_INTEGER
 #undef VTK_VECTOR
 #undef APPEND_ZEROS

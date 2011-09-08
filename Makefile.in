@@ -104,6 +104,7 @@ $(OBJ_DIR)/%.d: $(SRC_DIR)/%.f
 	@grep "USE " $(OBJ_DIR)/__$*.f | \
         sed -e 's#^[ \t]*##' \
             -e '/^!/d' \
+            -e '/95/d' \
             -e 's#,.*##' \
             -e 's#USE #$(OBJ_DIR)/#' \
             -e 's#$$#.o \\#' >> $@
@@ -138,7 +139,8 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
-	CPP=$(CPP) DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
+	CPP=$(CPP) DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) \
+	SRC_DIR=$(SRC_DIR) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
 
 test: all
 	make --directory=$(SRC_DIR)/map/test FC=$(FC) CPP="$(CPP)" \

@@ -1,4 +1,4 @@
-SUBROUTINE sop_spawn_particles(Particles,opts,info,&
+SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         nneigh_threshold,level_fun,wp_fun,nb_fun,printp)
     !!!----------------------------------------------------------------------------!
     !!!
@@ -27,6 +27,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
     INTEGER,                              INTENT(  OUT)   :: info
 
+    INTEGER, OPTIONAL,                    INTENT(  OUT)   :: nb_part_added
     INTEGER, OPTIONAL                                     :: nneigh_threshold
     OPTIONAL                                              :: wp_fun
     OPTIONAL                                              :: nb_fun
@@ -80,6 +81,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: rcp => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: D => NULL()
+    REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: wp => NULL()
     REAL(MK),     DIMENSION(:),  POINTER   :: level => NULL()
     INTEGER                                :: Npart
@@ -94,11 +96,17 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     INTEGER                                :: add_part
     INTEGER,        DIMENSION(2)           :: lda
     INTEGER,        DIMENSION(1)           :: lda1
-    INTEGER, PARAMETER                     :: nb_new_part = 3
+    INTEGER, PARAMETER                     :: nb_new_part = 1
+    REAL(MK)                               :: angle
 #ifdef __USE_RANDOMNUMBERS
     LOGICAL                                :: alloc_rand
 #endif
     !!! number of new particles that are generated locally
+    INTEGER,DIMENSION(:),POINTER           :: fuse_part
+    INTEGER,DIMENSION(:),POINTER           :: nb_neigh
+    REAL(MK),DIMENSION(ppm_dim,Particles%Npart+1:Particles%Mpart)  :: xp_g
+    REAL(MK)                               :: dist
+    REAL(MK),DIMENSION(3,12)               :: default_stencil
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -125,8 +133,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 
     add_part = 0
 
-    nvlist => Particles%nvlist
     Npart = Particles%Npart
+    nvlist => Particles%nvlist(1:Npart)
 
     !!-------------------------------------------------------------------------!
     !! Count number of new particles to insert
@@ -160,10 +168,15 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
             wp    => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
         ENDIF
     ELSE
-        DO ip=1,Npart
-            IF (nvlist(ip) .LT. nvlist_theoretical) &
-                add_part = add_part + nb_new_part
-        ENDDO
+        !DO ip=1,Npart
+            !IF (nvlist(ip) .LT. nvlist_theoretical) &
+            !IF (nvlist(ip) .LT. 2) &
+                !add_part = add_part + nb_new_part
+        !ENDDO
+        !CALL check_quadrants(Particles,info)
+        CALL check_nn(Particles,opts,info)
+        !add_part = COUNT(Particles%nvlist .GT. 0) * nb_new_part
+        add_part = SUM(ABS(Particles%nvlist))
     ENDIF
 
     nvlist => NULL()
@@ -171,6 +184,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 #if debug_verbosity > 1
         IF (PRESENT(printp)) THEN
             OPEN(6000+printp)
+            OPEN(7000+printp)
         ENDIF
 #endif
     !!-------------------------------------------------------------------------!
@@ -194,12 +208,36 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
                 &    'allocation of D failed',__LINE__,info)
             GOTO 9999
         ENDIF
+        CALL ppm_alloc(Particles%wps(Particles%Dtilde_id)%vec,lda1,&
+            ppm_param_alloc_grow_preserve,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of Dtilde failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
         CALL ppm_alloc(Particles%wps(Particles%rcp_id)%vec,lda1,&
             ppm_param_alloc_grow_preserve,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_alloc,caller,   &
                 &    'allocation of rcp failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        CALL ppm_alloc(Particles%wpi(fuse_id)%vec,lda1,&
+            ppm_param_alloc_grow_preserve,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of fuse_part failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        CALL ppm_alloc(Particles%wpi(nb_neigh_id)%vec,lda1,&
+            ppm_param_alloc_grow_preserve,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,   &
+                &    'allocation of nb_neigh failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
@@ -226,7 +264,8 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
             IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
                 CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
                 ldc(1) = ppm_particles_seedsize
-                CALL ppm_alloc(ppm_particles_seed,ldc(1:1),ppm_param_alloc_fit,info)
+                CALL ppm_alloc(ppm_particles_seed,ldc(1:1),&
+                ppm_param_alloc_fit,info)
                 IF (info .NE. 0) THEN
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_alloc,caller,   &
@@ -254,8 +293,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
     xp => Particles%xp !Cannot use get_xp, because we need access to elements
     ! of the array xp that are beyond Particles%Npart
     D => Particles%wps(Particles%D_id)%vec      !same reason
+    Dtilde => Particles%wps(Particles%Dtilde_id)%vec      !same reason
     rcp => Particles%wps(Particles%rcp_id)%vec  !same reason
-    nvlist => Particles%nvlist
+    nvlist => Particles%nvlist(1:Npart)
+    fuse_part => Particles%wpi(fuse_id)%vec      !same reason
+    nb_neigh => Particles%wpi(nb_neigh_id)%vec      !same reason
     IF (opts%level_set) THEN
         IF (.NOT. PRESENT(level_fun)) THEN
             level => Get_wps(Particles,Particles%level_id)
@@ -263,101 +305,81 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
         ENDIF
     ENDIF
 
-    IF (ppm_dim .EQ. 2) THEN
-        add_particles2d: DO ip=1,Npart
+    !define some default stencils (inspired on sphere packings)
+    ! for use when we want to insert a lot of particles 
+    ! near a given particle which do not yet have any neighbours
 
-            IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                !FOR LEVEL SETS ONLY
-                IF (opts%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles2d
-                    ENDIF
+    !the 2d stencil (unit cell)
+    DO i=1,6
+        angle = PI/3._MK*REAL(i,MK)
+        default_stencil(1:3,i) =  &
+            (/COS(angle),SIN(angle),0._mk/)
+    ENDDO
+    !the 3d stencil (2d stencil completed by 2 additional layers)
+    DO i=1,3
+        angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK) 
+        default_stencil(1:3,6+i)=sqrt(3._mk)/2._mk*&
+            (/COS(angle),SIN(angle),1._mk/sqrt(3._mk)/) 
+    ENDDO
+    DO i=1,3
+        angle = PI/6._MK + 2._MK*PI/3._MK* REAL(i,MK) 
+        default_stencil(1:3,9+i)=sqrt(3._mk)/2._mk*&
+            (/COS(angle),SIN(angle),-1._mk/sqrt(3._mk)/) 
+    ENDDO
+
+
+    xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = xp(1:ppm_dim,Npart+1:Particles%Mpart)
+
+    add_particles: DO ip=1,Npart
+
+        IF (nvlist(ip).NE.0) THEN
+            !FOR LEVEL SETS ONLY
+            IF (opts%level_set) THEN
+                IF (PRESENT(wp_fun)) THEN
+                    lev = level_fun(xp(1:ppm_dim,ip))
+                    IF (ABS(lev) .GE. opts%nb_width*&
+                        nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
+                        CYCLE add_particles
+                ELSE
+                    IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
+                        CYCLE add_particles
                 ENDIF
-
-                DO i=1,nb_new_part
-                    add_part = add_part + 1
-
-#ifdef __USE_RANDOMNUMBERS
-                    randnb_i = randnb_i + 1
-#endif
-
-                    xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                        0.7_MK*D(ip)&       !radius
-#ifdef __USE_RANDOMNUMBERS
-                        * (/COS(2.094_MK*i + randnb(randnb_i)),&
-                            &   SIN(2.094_MK*i + randnb(randnb_i)) &
-                            &   /) !direction (n 2pi/3) + random phase
-#else
-                        * (/COS(2.094_MK*i + 1000._MK*xp(1,ip)/D(ip)) , &
-                            &   SIN(2.094_MK*i + 1000._MK*xp(1,ip)/D(ip)) &
-                            &   /) !direction (n 2pi/3) + random phase
-#endif
-
-                    D(Npart + add_part)   = D(ip)
-                    rcp(Npart + add_part) = rcp(ip)
-#if debug_verbosity > 1
-                    IF (PRESENT(printp)) THEN
-                        write(6000+printp,*) xp(1:ppm_dim,Npart+add_part)
-                    ENDIF
-#endif
-                ENDDO
             ENDIF
-        ENDDO add_particles2d
-    ELSE ! if ppm_dim .eq. 3
-        add_particles3d: DO ip=1,Npart
 
-            IF (nvlist(ip) .LT. nvlist_theoretical) THEN
-                !FOR LEVEL SETS ONLY
-                IF (Particles%level_set) THEN
-                    IF (PRESENT(wp_fun)) THEN
-                        lev = level_fun(xp(1:ppm_dim,ip))
-                        IF (ABS(lev) .GE. opts%nb_width*&
-                            nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
-                            CYCLE add_particles3d
-                    ENDIF
-                ENDIF
+            new_part_list: DO i=1,abs(nvlist(ip))
+                add_part = add_part + 1
 
-                DO i=1,nb_new_part
-                    add_part = add_part + 1
-
-#ifdef __USE_RANDOMNUMBERS
-                    randnb_i = randnb_i + 1
-#endif
-
-#ifdef __USE_RANDOMNUMBERS
-                    theta1 = ACOS(1._MK - 2._MK*randnb(2*randnb_i))
-                    theta2 = 2._MK * PI * randnb(2*randnb_i-1)
-#else
-                    theta1 = ACOS(SIN(1000._MK*xp(1,ip)/D(ip)))
-                    theta2 = PI * (1._MK+COS(1000._MK*xp(2,ip)/D(ip)))
-#endif
+                if(nvlist(ip) .gt.0) then
+                    iq = Particles%vlist(i,ip)
+                    if (iq.gt.ip) then
+                        add_part = add_part -1
+                        cycle new_part_list
+                    endif
+                    if (iq .le. Npart) then
+                        dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
+                        xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
+                            D(ip)/dist * &
+                            (xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)) !mirror image of q
+                    else
+                        dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
+                        xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
+                            D(ip)/dist * &
+                            (xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)) !mirror image of q
+                    endif
+                else
                     xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                        !random 3D points on a sphere
-                    0.7_MK*D(ip)&       !radius
-                        * (/COS(theta1), &
-                        &   SIN(theta1) * COS(theta2), &
-                        &   SIN(theta1) * SIN(theta2)  &
-                        &   /) 
-                    D(Npart + add_part)   = D(ip)
-                    rcp(Npart + add_part) = rcp(ip)
-#if debug_verbosity > 1
-                    IF (PRESENT(printp)) THEN
-                        write(6000+printp,*) xp(1:ppm_dim,Npart+add_part)
-                    ENDIF
-#endif
-                ENDDO
-            ENDIF
-        ENDDO add_particles3d
-    ENDIF
+                        D(ip) * default_stencil(1:ppm_dim,i)
+                endif
+
+
+                D(Npart + add_part)   = D(ip)
+                Dtilde(Npart + add_part)   = Dtilde(ip)
+                rcp(Npart + add_part) = rcp(ip)
+                fuse_part(Npart + add_part)   = fuse_part(ip)
+                nb_neigh(Npart + add_part)   = nb_neigh(ip)
+            ENDDO new_part_list
+        ENDIF
+    ENDDO add_particles
 
     IF (opts%level_set) THEN
         IF (.NOT. PRESENT(level_fun)) THEN
@@ -371,13 +393,18 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,&
 
     xp => Set_xp(Particles)
     D => Set_wps(Particles,Particles%D_id)
+    Dtilde => Set_wps(Particles,Particles%Dtilde_id)
     rcp => Set_wps(Particles,Particles%rcp_id)
+    fuse_part => Set_wpi(Particles,fuse_id)
+    nb_neigh => Set_wpi(Particles,nb_neigh_id)
     nvlist => NULL()
     Particles%Npart = Npart + add_part
 
     CALL particles_updated_nb_part(Particles,info,&
-        preserve_wps=(/Particles%D_id,Particles%rcp_id/),&
-        preserve_wpv=(/ INTEGER :: /))
+        preserve_wpi=(/nb_neigh_id,fuse_id/),&
+        preserve_wps=(/Particles%D_id,Particles%Dtilde_id,Particles%rcp_id/),&
+        preserve_wpv= (/ (i, i=1,0) /)) !F90-friendly way to init an empty array
+        !preserve_wpv=(/ INTEGER :: /)) !valid only in F2003
     IF (info .NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,   &
@@ -390,6 +417,7 @@ ENDIF !add_part .NE.0
 #if debug_verbosity > 1
 IF (PRESENT(printp)) THEN
     CLOSE(6000+printp)
+    CLOSE(7000+printp)
 ENDIF
 #endif
 
@@ -405,6 +433,9 @@ IF (ppm_rank .EQ.0) THEN
     CALL ppm_write(ppm_rank,caller,cbuf,info)
 ENDIF
 #endif
+IF (PRESENT(nb_part_added)) THEN
+    nb_part_added = add_part
+ENDIF
 
 #if debug_verbosity > 0
 CALL substop(caller,t0,info)
@@ -412,5 +443,267 @@ CALL substop(caller,t0,info)
 9999 CONTINUE ! jump here upon error
 
 END SUBROUTINE sop_spawn_particles
+
+SUBROUTINE check_quadrants(Particles,info)
+    IMPLICIT NONE
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    ! arguments
+    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    INTEGER,                              INTENT(  OUT)   :: info
+    !local variables
+
+    REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
+    INTEGER,DIMENSION(:),    POINTER                      :: nvlist=>NULL()
+    INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
+    INTEGER                                               :: ip,iq,ineigh
+    LOGICAL,DIMENSION(4)                                  :: needs_neigh_l
+    REAL(MK),DIMENSION(:), POINTER                        :: D=>NULL()
+    !REAL(MK),DIMENSION(:), POINTER                        :: Dtilde=>NULL()
+
+    info = 0
+    nvlist => Particles%nvlist
+    vlist => Particles%vlist
+
+    xp => Get_xp(Particles,with_ghosts=.TRUE.)
+
+    D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    !Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+
+
+    DO ip=1,Particles%Npart
+        ineigh = 1
+        !IF (D(ip)/Dtilde(ip) .LT. 1.5_mk) THEN
+            !needs_neigh_l = .FALSE.
+            !CYCLE
+        !ENDIF
+        needs_neigh_l = .TRUE.
+        IF (nvlist(ip).GT.0) THEN
+            DO WHILE(ANY(needs_neigh_l) .AND. ineigh.LE.nvlist(ip))
+                iq = vlist(ineigh,ip)
+                IF (xp(1,iq) .GT. xp(1,ip)) THEN
+                    IF (xp(2,iq) .GT. xp(2,ip)) THEN
+                        needs_neigh_l(1) = .FALSE.
+                    ELSE
+                        needs_neigh_l(4) = .FALSE.
+                    ENDIF
+                ELSE
+                    IF (xp(2,iq) .GT. xp(2,ip)) THEN
+                        needs_neigh_l(2) = .FALSE.
+                    ELSE
+                        needs_neigh_l(3) = .FALSE.
+                    ENDIF
+                ENDIF
+                ineigh = ineigh + 1
+            ENDDO
+        ENDIF
+
+        !IF (ANY(needs_neigh_l)) THEN
+        IF (COUNT(needs_neigh_l).ge.2) THEN
+            loop_quadrants: DO iq=1,4
+                IF(needs_neigh_l(iq)) THEN
+                    nvlist(ip) = iq
+                    EXIT loop_quadrants
+                ENDIF
+            ENDDO loop_quadrants
+        ELSE
+            nvlist(ip) = 0
+        ENDIF
+
+    ENDDO
+    xp => Set_xp(Particles,read_only=.TRUE.)
+    vlist => NULL()
+    nvlist => NULL()
+
+    D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+
+END SUBROUTINE check_quadrants
+
+
+SUBROUTINE check_duplicates(Particles)
+    IMPLICIT NONE
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    ! arguments
+    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    !local variables
+
+    REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
+    INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
+    INTEGER                                               :: ip,iq,ineigh
+    INTEGER                                               :: info
+    
+    info = 0
+
+    CALL particles_apply_bc(Particles,Particles%active_topoid,info)
+    CALL particles_mapping_partial(Particles,Particles%active_topoid,info)
+    CALL particles_mapping_ghosts(Particles,Particles%active_topoid,info)
+    CALL particles_neighlists(Particles,Particles%active_topoid,info)
+
+    vlist => Particles%vlist
+    xp => Get_xp(Particles,with_ghosts=.TRUE.)
+
+    DO ip=1,Particles%Npart
+        DO ineigh = 1,Particles%nvlist(ip)
+            iq = vlist(ineigh,ip)
+            IF (SUM((xp(1:ppm_dim,iq) - xp(1:ppm_dim,ip))**2).LT.1E-10) THEN
+                write(*,*) 'duplicate particles'
+                write(*,*) 'ip = ',ip,' iq = ',iq
+            stop
+            ENDIF
+        ENDDO
+    ENDDO
+    xp => Set_xp(Particles,read_only=.TRUE.)
+    vlist => NULL()
+
+END SUBROUTINE check_duplicates
+
+
+SUBROUTINE check_nn(Particles,opts,info)
+
+
+    IMPLICIT NONE
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    ! arguments
+    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
+    INTEGER,                              INTENT(  OUT)   :: info
+    !local variables
+
+    REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
+    INTEGER,DIMENSION(:),    POINTER                      :: nvlist=>NULL()
+    INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
+    INTEGER                                               :: ip,iq,ineigh
+    REAL(MK),DIMENSION(:), POINTER                        :: D=>NULL()
+    REAL(MK),DIMENSION(:), POINTER                        :: Dtilde=>NULL()
+    REAL(MK)                                              :: rr
+    REAL(MK)                                              :: nn,max_nn,avg_nn
+    INTEGER                                               :: close_neigh
+    INTEGER                                               :: very_close_neigh
+    CHARACTER(LEN=ppm_char)                               :: cbuf
+    CHARACTER(LEN=ppm_char)                          :: caller = 'sop_check_nn'
+    INTEGER,DIMENSION(:),POINTER           :: fuse_part => NULL()
+    INTEGER,DIMENSION(:),POINTER           :: nb_neigh => NULL()
+    INTEGER                                :: nb_close_theo, nb_fuse_neigh
+
+    info = 0
+    nvlist => Particles%nvlist
+    vlist => Particles%vlist
+    xp => Get_xp(Particles,with_ghosts=.TRUE.)
+    D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+
+    Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+
+    fuse_part => get_wpi(Particles,fuse_id,with_ghosts=.true.)
+    nb_neigh => Get_wpi(Particles,nb_neigh_id)
+
+    !max_nn = 0._mk
+    avg_nn = 0._mk
+    particle_loop: DO ip = 1,Particles%Npart
+        nn = HUGE(1._MK)
+        close_neigh = 0
+        nb_fuse_neigh = 0
+        very_close_neigh = 0
+
+        neighbour_loop: DO ineigh = 1,nvlist(ip)
+            iq = vlist(ineigh,ip)
+
+            rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
+                Dtilde(ip)
+                !MIN(Dtilde(ip),Dtilde(iq))
+                !MIN(D(ip),D(iq))
+
+            !compute nearest-neighbour distance for each particle
+            ! rescaled by the MIN of D(ip) and D(iq)
+            IF (rr .LT. nn) THEN
+                nn = rr
+            ENDIF
+            IF (rr .LT. 1.0_mk) THEN
+                close_neigh = close_neigh + 1
+                IF (fuse_part(iq).GT.0) nb_fuse_neigh=nb_fuse_neigh + 1
+            ENDIF
+            IF (rr*Dtilde(ip)/MIN(D(ip),D(iq)) .LT. opts%attractive_radius0) THEN
+                very_close_neigh = very_close_neigh + 1
+            ENDIF
+
+        ENDDO neighbour_loop
+
+        avg_nn = avg_nn + nn
+
+
+        fuse_part(ip) = very_close_neigh
+
+        !when the density is not too high, don't fuse particles
+        IF (close_neigh .le.6) fuse_part(ip) = 0
+
+        IF (ppm_dim.EQ.2) THEN
+            nb_close_theo = 4
+        ELSE
+            nb_close_theo = 12
+        ENDIF
+
+        IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
+
+        IF (close_neigh .LE. nb_close_theo) THEN
+            IF (close_neigh .LE. nb_close_theo-2) then
+                adaptation_ok = .false.
+            ENDIF
+            IF (nn .gt. opts%attractive_radius0 .and. opts%add_parts) THEN
+                close_neigh=0
+                DO ineigh=1,nvlist(ip)
+                    iq=vlist(ineigh,ip)
+
+                    rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
+                        Dtilde(ip)
+                    IF (rr .LT. 1.0_mk) THEN
+                        close_neigh=close_neigh+1
+                        vlist(close_neigh,ip) = iq 
+                    ENDIF
+                ENDDO
+                nvlist(ip) = 1 ! close_neigh ! min(close_neigh,6-close_neigh)
+                if (nvlist(ip) .eq. 0) then 
+                    nvlist(ip) = -6
+                endif
+            ELSE
+                nvlist(ip) = 0
+            ENDIF
+        ELSE
+            nvlist(ip) = 0
+        ENDIF
+        !max_nn = MAX(nn,max_nn)
+        if (fuse_part(ip).ge.1) nvlist(ip) = 0
+
+        nb_neigh(ip) = close_neigh
+
+
+    ENDDO particle_loop
+
+    avg_nn = avg_nn / Particles%Npart
+    write(cbuf,*) 'AVG nearest-neighbour dist ',avg_nn, 'nb fuse ',&
+        COUNT(fuse_part(1:Particles%Npart).GE.1)
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+
+    xp => Set_xp(Particles,read_only=.TRUE.)
+    D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
+    fuse_part => set_wpi(Particles,fuse_id)
+    nb_neigh => Set_wpi(Particles,nb_neigh_id)
+
+END SUBROUTINE check_nn
+
 
 #undef __KIND

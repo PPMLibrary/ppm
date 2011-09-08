@@ -11,8 +11,10 @@
                 in_line = .TRUE.
 
                 IF (WRAP(DTYPE)_args(j)%help_set) THEN
-                   WRITE (*,'(A,A)') ": ", &
-                        WRAP(DTYPE)_args(j)%help(1:LEN_TRIM(WRAP(DTYPE)_args(j)%help))
+                   WRITE (*,'(A)',advance='no') ": "
+                   CALL break_help(WRAP(DTYPE)_args(j)%help     &
+                        (1:LEN_TRIM(WRAP(DTYPE)_args(j)%help)), &
+                        50, "#                   ", 6)
                    in_line = .FALSE.
                 END IF
 

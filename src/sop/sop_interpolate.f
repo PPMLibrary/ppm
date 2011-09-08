@@ -1,16 +1,13 @@
 !!!----------------------------------------------------------------------------!
-!!! Interpolate the field variable from the old particles' positions 
-!!!      to the new ones 
-!!! Assumes that the operators have been computed by&
-!!!     correct_diff_operators_interp
-!!! 
+!!! Interpolate the field variables from the old particles' positions 
+!!! to the new ones 
 !!!----------------------------------------------------------------------------!
 SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
-    USE ppm_module_inl_xset_vlist
+    USE ppm_module_inl_xset_k_vlist
     USE ppm_module_dcops
     USE ppm_module_io_vtk
 
@@ -36,7 +33,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    INTEGER                         :: ip,iq,ineigh,i,prop_id
+    INTEGER                         :: ip,iq,ineigh,i,prop_id,eta_id
     REAL(KIND(1.d0))                :: t0
     CHARACTER(LEN=256)              :: filename,cbuf
     CHARACTER(LEN=256)              :: caller = 'sop_interpolate'
@@ -63,6 +60,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !should be removed once the argument lists for the inl routines
     !have been updated to inhomogeneous ghostlayers
     REAL(MK),DIMENSION(2*ppm_dim)              :: ghostlayer
+    INTEGER                                    :: memory_used
 
 
     !!-------------------------------------------------------------------------!
@@ -89,48 +87,55 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !!  on output, D_old may have been changed artificially to increase
     !! rcp_old. Do not use it anymore (except for computing rcp_old))
     !!-----------------------------------------------------------------!
-    D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
-    D_old = D_old * opts%rcp_over_D
-    ghostlayer=Particles%cutoff
-    CALL ppm_inl_xset_vlist(Particles%active_topoid,Particles%xp,Particles%Npart,&
-        Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-        Particles_old%Mpart,D_old,Particles%skin,&
-        ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
-    Particles%neighlists_cross = .TRUE.
+    !D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    !ghostlayer=Particles%cutoff
+    !CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
+        !Particles%Npart,Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
+        !Particles_old%Mpart,D_old,opts%nneigh_critical,&
+        !ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
+    !Particles%neighlists_cross = .TRUE.
+    !IF (info .NE. 0) THEN
+        !info = ppm_error_error
+        !CALL ppm_error(ppm_err_sub_failed,caller,&
+            !'ppm_inl_xset_k_vlist failed.',__LINE__,info)
+        !GOTO 9999
+    !ENDIF
+    !D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+
+    !Particles%nneighmin_cross = &
+        !MINVAL(Particles%nvlist_cross(1:Particles%Npart))
+    !Particles%nneighmax_cross = &
+        !MAXVAL(Particles%nvlist_cross(1:Particles%Npart))
+
+    !!write(cbuf,*) 'Nvlist_cross min/max = ',Particles%nneighmin_cross,&
+        !!Particles%nneighmax_cross
+    !!CALL ppm_write(ppm_rank,caller,cbuf,info)
+
+!#if debug_verbosity > 0
+    !IF (Particles%nneighmin_cross .LT. opts%nneigh_critical) THEN
+        !i=0
+        !call particles_allocate_wps(Particles,i,info,name='nvlist_cross')
+        !wp => get_wps(Particles,i)
+        !FORALL(ip=1:Particles%Npart) wp(ip) = DBLE(Particles%nvlist_cross(ip))
+        !wp => set_wps(Particles,i,read_only=.true.)
+        !call ppm_vtk_particle_cloud('P_old_dbg',Particles_old,info)
+        !call ppm_vtk_particle_cloud('P_new_dbg',Particles,info)
+
+        !info = ppm_error_error
+        !CALL ppm_error(ppm_err_argument,caller,&
+            !'Too few cross-neighbours, something wrong',__LINE__,info)
+        !GOTO 9999
+    !ENDIF
+!#endif
+
+    CALL particles_neighlists_xset(Particles,Particles_old,Particles%active_topoid,info,&
+        knn=opts%nneigh_critical)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,&
-            'ppm_inl_xset_vlist failed.',__LINE__,info)
+            'particles_neighlists_xset failed.',__LINE__,info)
         GOTO 9999
     ENDIF
-    D_old = D_old / opts%rcp_over_D
-    D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
-
-    Particles%nneighmin_cross = &
-        MINVAL(Particles%nvlist_cross(1:Particles%Npart))
-    Particles%nneighmax_cross = &
-        MAXVAL(Particles%nvlist_cross(1:Particles%Npart))
-
-    write(cbuf,*) 'Nvlist_cross min/max = ',Particles%nneighmin_cross,&
-        Particles%nneighmax_cross
-    CALL ppm_write(ppm_rank,caller,cbuf,info)
-
-#if debug_verbosity > 0
-    IF (Particles%nneighmin_cross .LT. opts%nneigh_critical) THEN
-        i=0
-        call particles_allocate_wps(Particles,i,info,name='nvlist_cross')
-        wp => get_wps(Particles,i)
-        FORALL(ip=1:Particles%Npart) wp(ip) = DBLE(Particles%nvlist_cross(ip))
-        wp => set_wps(Particles,i,read_only=.true.)
-        call ppm_vtk_particle_cloud('P_old_dbg',Particles_old,info)
-        call ppm_vtk_particle_cloud('P_new_dbg',Particles,info)
-
-        info = ppm_error_error
-        CALL ppm_error(999,caller,'Too few cross-neighbours, something wrong',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-#endif
 
     !!---------------------------------------------------------------------!
     !! Compute interpolation kernels
@@ -138,21 +143,22 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     IF (opts%order_approx .GE. 0) THEN
         ALLOCATE(order(1),degree(ppm_dim))
         order = opts%order_approx
-        degree = 0
-        CALL particles_dcop_define(Particles,Particles%eta_id,(/1._MK/),degree,&
+        degree = 0 !zeroth-order derivative => interpolation
+        eta_id = 0
+        CALL particles_dcop_define(Particles,eta_id,(/1._MK/),degree,&
             order,1,info,name="interp",interp=.TRUE.)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_define failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_define failed',__LINE__,info)
             GOTO 9999
         ENDIF
         DEALLOCATE(order,degree)
-        CALL particles_dcop_compute(Particles,Particles%eta_id,info,c=opts%c)
+        CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_compute failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_compute failed',__LINE__,info)
             GOTO 9999
         ENDIF
     ELSE
@@ -164,7 +170,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
 
     !!---------------------------------------------------------------------!
-    !! Interpolate fields onto new positions
+    !! Interpolate scalar fields onto new positions
     !! (reallocate arrays if number of particles has changed)
     !!---------------------------------------------------------------------!
     ! Loop through all properties i that are mapped
@@ -176,21 +182,22 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
             IF (i.EQ.Particles_old%D_id) CYCLE
             IF (i.EQ.Particles_old%rcp_id) CYCLE
             IF (i.EQ.Particles_old%Dtilde_id) CYCLE
+            IF (.NOT.Particles_old%wps(i)%map_parts) CYCLE
             prop_id = i
             CALL particles_allocate_wps(Particles,prop_id,info,&
                 name=Particles_old%wps(i)%name)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
-                    &  __LINE__,info)
+                CALL ppm_error(ppm_err_alloc,caller,&
+                    'particles_allocate_wps failed',__LINE__,info)
                 GOTO 9999
             ENDIF
 
-            CALL particles_dcop_apply(Particles,i,prop_id,Particles%eta_id,info)
+            CALL particles_dcop_apply(Particles,i,prop_id,eta_id,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_apply failed',&
-                    &  __LINE__,info)
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'particles_dcop_apply failed',__LINE__,info)
                 GOTO 9999
             ENDIF
 
@@ -200,21 +207,21 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
     IF (opts%level_set) THEN
         CALL particles_dcop_apply(Particles,Particles_old%level_id,&
-            Particles%level_id,Particles%eta_id,info)
+            Particles%level_id,eta_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_apply failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_apply failed',__LINE__,info)
             GOTO 9999
         ENDIF
 
         !MAJOR FIXME!!!
         ! do something better to compute the gradients of level
-        CALL particles_dcop_free(Particles,Particles%eta_id,info)
+        CALL particles_dcop_free(Particles,eta_id,info)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_dcop_free failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_free failed',__LINE__,info)
             GOTO 9999
         ENDIF
         ALLOCATE(order(ppm_dim),degree(ppm_dim**2))
@@ -223,20 +230,20 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         degree = 0
         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=2 !Laplacian
         coeffs = 1._MK
-        CALL particles_dcop_define(Particles,Particles%eta_id,coeffs,degree,&
+        CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
             order,ppm_dim,info,name="interp",interp=.TRUE.)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_dcop_define failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_define failed',__LINE__,info)
             GOTO 9999
         ENDIF
         DEALLOCATE(order,degree)
-        CALL particles_dcop_compute(Particles,Particles%eta_id,info,c=opts%c)
+        CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
         IF (info.NE.0) THEN
             info = ppm_error_error
-            CALL ppm_error(999,caller,'particles_dcop_compute failed',&
-                &  __LINE__,info)
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_dcop_compute failed',__LINE__,info)
             GOTO 9999
         ENDIF
         level          => Get_wps(Particles,Particles%level_id)
@@ -244,7 +251,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         level_old      => Get_wps(Particles_old,Particles_old%level_id)
         xp_old         => Get_xp(Particles_old)
         xp             => Get_xp(Particles)
-        eta            => Get_dcop(Particles,Particles%eta_id)
+        eta            => Get_dcop(Particles,eta_id)
         vlist_cross    => Particles%vlist_cross
         nvlist_cross   => Particles%nvlist_cross
             DO ip = 1,Particles%Npart 
@@ -262,7 +269,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         level_grad     => Set_wpv(Particles,Particles%level_grad_id)
         level_old      => Set_wps(Particles_old,Particles_old%level_id,&
             read_only=.TRUE.)
-        eta            => Set_dcop(Particles,Particles%eta_id)
+        eta            => Set_dcop(Particles,eta_id)
         xp_old         => Set_xp(Particles_old,read_only=.TRUE.)
         xp             => Set_xp(Particles,read_only=.TRUE.)
         nvlist_cross   => NULL()
@@ -286,10 +293,25 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         !ENDIF
     ENDIF
 
+    memory_used = 0
+    DO i=1,Particles%ops%max_opsid
+        IF (ASSOCIATED(Particles%ops%ker(i)%vec)) THEN
+            memory_used = memory_used + 8*SIZE(Particles%ops%ker(i)%vec)
+        ENDIF
+    ENDDO
+    !WRITE(cbuf,*) '      dc_ops: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
     !-------------------------------------------------------------------------!
     ! Free DC operator
     !-------------------------------------------------------------------------!
-    CALL particles_dcop_free(Particles,Particles%eta_id,info)
+    CALL particles_dcop_free(Particles,eta_id,info)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_free failed',&
+            &  __LINE__,info)
+        GOTO 9999
+    ENDIF
 
     !!-------------------------------------------------------------------------!
     !! Finalize

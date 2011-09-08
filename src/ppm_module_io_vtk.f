@@ -36,6 +36,7 @@
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_particles, ONLY: ppm_t_particles,  &
                                          get_xp, set_xp,   &
+                                         get_wpi, set_wpi, &
                                          get_wps, set_wps, &
                                          get_wpv, set_wpv
 
@@ -96,7 +97,7 @@
          !----------------------------------------------------------------------
 
          SUBROUTINE ppm_vtk_particle_cloud(filename, Particles, info, &
-              step, with_ghosts, wps_list, wpv_list, wpv_field_list)
+              step, with_ghosts, wpi_list, wps_list, wpv_list, wpv_field_list)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
@@ -105,6 +106,7 @@
            INTEGER,                         INTENT(  OUT) :: info
            INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
+           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpi_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wps_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_field_list
@@ -117,10 +119,12 @@
            REAL(ppm_kind_double)                :: t0
            INTEGER                              :: i, j, k, l, nd, N
            INTEGER                              :: nb_wps, nb_wpv, nb_wpv_field
-           INTEGER, DIMENSION(:),   ALLOCATABLE :: wps_l, wpv_l, wpv_field_l
+           INTEGER                              :: nb_wpi
+           INTEGER, DIMENSION(:),   ALLOCATABLE :: wpi_l, wps_l, wpv_l, wpv_field_l
            LOGICAL                              :: ghosts
            REAL(8), DIMENSION(:,:), POINTER     :: xp  => NULL()
            REAL(8), DIMENSION(:),   POINTER     :: wp  => NULL()
+           INTEGER, DIMENSION(:),   POINTER     :: wpi  => NULL()
            !--------------------------------------------------------------------
            !  Code
            !--------------------------------------------------------------------
@@ -141,6 +145,45 @@
            END IF
 
            ! create the list of properties to print
+           ! integer property
+           IF(PRESENT(wpi_list)) THEN
+              nb_wpi=SIZE(wpi_list)
+              ALLOCATE(wpi_l(nb_wpi),STAT=info)
+              wpi_l=wpi_list
+              DO i=1,nb_wpi
+                 IF (wpi_l(i).GT.Particles%max_wpiid) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,   &
+                         &  'integer property index exceeds size of property array',&
+                         &  __LINE__,info)
+                    GOTO 9999
+                 ENDIF
+                 IF (.NOT.Particles%wpi(wpi_l(i))%is_mapped) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(999,caller,   &
+                         &  'trying to printout a property that is not mapped &
+                         & to the particles',&
+                         &  __LINE__,info)
+                    GOTO 9999
+                 ENDIF
+              ENDDO
+           ELSE
+              !printout all properties i that are mapped
+              nb_wpi = 0
+              DO i=1,Particles%max_wpiid
+                 IF (Particles%wpi(i)%is_mapped) &
+                      nb_wpi = nb_wpi + 1
+              ENDDO
+              ALLOCATE(wpi_l(nb_wpi),STAT=info)
+              nb_wpi = 0
+              DO i=1,Particles%max_wpiid
+                 IF (Particles%wpi(i)%is_mapped) THEN
+                    nb_wpi = nb_wpi + 1
+                    wpi_l(nb_wpi) = i
+                 ENDIF
+              ENDDO
+           ENDIF
+
            ! scalar property
            IF(PRESENT(wps_list)) THEN
               nb_wps=SIZE(wps_list)
@@ -264,6 +307,12 @@
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
               WRITE(iUnit,'(A)') "    <PPointData>"
+              DO i=1,nb_wpi
+              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                   Particles%wpi(wpi_l(i))%name &
+                   (1:LEN_TRIM(Particles%wpi(wpi_l(i))%name)), &
+                   "' type='Float64' />"
+              END DO
               DO i=1,nb_wps
               WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                    Particles%wps(wps_l(i))%name &
@@ -330,11 +379,22 @@
 #include "vtk/print_header.f"
 
            ! print properties
-           IF (nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
+           IF (nb_wpi .GT. 0 .OR. nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
 
               ! print names
               WRITE(iUnit,'(A)',advance='no') "      <PointData" 
+              IF (nb_wpi .GT. 0) THEN
+                 WRITE(iUnit,'(A)',advance='no') " Integers='"
+                 DO i=1,nb_wpi
+                    WRITE(iUnit,'(A)',advance='no') &
+                         Particles%wpi(wpi_l(i))%name &
+                         (1:LEN_TRIM(Particles%wpi(wpi_l(i))%name))
+                    IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
+                 END DO
+              END IF
               IF (nb_wps .GT. 0) THEN
+                  IF (nb_wpi .GT. 0) &
+                      WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Scalars='"
                  DO i=1,nb_wps
                     WRITE(iUnit,'(A)',advance='no') &
@@ -344,7 +404,9 @@
                  END DO
               END IF
               IF (nb_wpv .GT. 0) THEN
-                 WRITE(iUnit,'(A)',advance='no') "' Vectors='"
+                  IF (nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
+                      WRITE(iUnit,'(A)',advance='no') "'"
+                 WRITE(iUnit,'(A)',advance='no') " Vectors='"
                  DO i=1,nb_wpv
                     WRITE(iUnit,'(A)',advance='no') &
                          Particles%wpv(wpv_l(i))%name &
@@ -363,6 +425,14 @@
               WRITE(iUnit,'(A)') "'>"
 
               ! property values
+              DO k=1,nb_wpi
+                 wpi => get_wpi(Particles,wpi_l(k),with_ghosts=ghosts)
+#define VTK_NAME Particles%wpi(wpi_l(k))%name
+#define VTK_TYPE "Float64"
+#define VTK_INTEGER wpi
+#include "vtk/print_data_array.f"
+                 wpi => set_wpi(Particles,wpi_l(k),read_only=.TRUE.)
+              END DO
               DO k=1,nb_wps
                  wp => get_wps(Particles,wps_l(k),with_ghosts=ghosts)
 #define VTK_NAME Particles%wps(wps_l(k))%name

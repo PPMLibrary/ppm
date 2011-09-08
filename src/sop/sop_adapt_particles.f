@@ -184,6 +184,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: wp_old => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: D_old => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: Dtilde_old => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: rcp_old => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: level_old => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad_old => NULL()
@@ -193,6 +194,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: rcp => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: D => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: Dtilde => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: wp => NULL()
     REAL(MK),     DIMENSION(:,:), POINTER      :: wp_grad => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: level => NULL()
@@ -205,6 +207,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     INTEGER                                    :: nneighmax_cross
     INTEGER                                    :: nneighmin_cross
     LOGICAL                                    :: need_derivatives
+    INTEGER                                    :: memory_used
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -214,6 +217,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     CALL substart(caller,t0,info)
 #endif
     adapt_wpgradid = 0
+    memory_used_total = 0
     !FIXME: make it possible to pass this id as an argument (to avoid
     ! reallocating it every time, and to enable re-using the values
     ! outside of the routine)
@@ -340,6 +344,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         IF (Particles%level_set .OR. opts%D_needs_gradients) & 
             need_derivatives=.TRUE.
     ENDIF
+
+    IF (PRESENT(stats)) stats%min_sv=HUGE(1._mk)
 
     ! Check that the scalar field on which particles are supposed to adapt
     ! has been defined or is provided by an analytical function
@@ -596,9 +602,9 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles%xp => xp
     !move DC operators from old to new particles
     ! (only move their definitions
-    Particles%ops => Particles_old%ops
-    Particles_old%ops => NULL()
-    IF (ASSOCIATED(Particles%ops)) THEN
+    IF (ASSOCIATED(Particles_old%ops)) THEN
+        Particles%ops => Particles_old%ops
+        Particles_old%ops => NULL()
         DO i=1,Particles%ops%max_opsid
             Particles%ops%desc(i)%is_computed = .FALSE.
         ENDDO
@@ -607,15 +613,14 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ! Set all arrays to unmapped
     Particles%wpi => NULL()
     Particles%wps => NULL()
-    IF (Particles%nwpv.GT.0) THEN
-        Particles%wpv => NULL()
-    ENDIF
+    Particles%wpv => NULL()
     Particles%nwpi = 0
     Particles%nwps = 0
     Particles%nwpv = 0
     Particles%max_wpiid = 0
     Particles%max_wpsid = 0
     Particles%max_wpvid = 0
+    ! /end/ remove all this...
 
     !transfer nvlist and vlist to Particles
     !Particles%neighlists = Particles_old%neighlists
@@ -636,7 +641,20 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-    Particles%wps(Particles%D_id)%name = Particles_old%wps(Particles_old%D_id)%name
+    Particles%wps(Particles%D_id)%name = &
+        Particles_old%wps(Particles_old%D_id)%name
+
+    CALL particles_allocate_wps(Particles,Particles%Dtilde_id,info,&
+        with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wps failed',&
+            &  __LINE__,info)
+        GOTO 9999
+    ENDIF
+    Particles%wps(Particles%Dtilde_id)%name = &
+        Particles_old%wps(Particles_old%Dtilde_id)%name
+
     CALL particles_allocate_wps(Particles,Particles%rcp_id,info,&
         with_ghosts=.TRUE.,iopt=ppm_param_alloc_fit)
     IF (info.NE.0) THEN
@@ -645,26 +663,33 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
             &  __LINE__,info)
         GOTO 9999
     ENDIF
-    Particles%wps(Particles%rcp_id)%name = Particles_old%wps(Particles_old%rcp_id)%name
-    Particles%nwps=2
+    Particles%wps(Particles%rcp_id)%name = &
+        Particles_old%wps(Particles_old%rcp_id)%name
+
+    Particles%nwps=3 !we have to do this manually here.
 
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
     D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     rcp => Get_wps(Particles,Particles%rcp_id,with_ghosts=.TRUE.)
     xp_old => Get_xp(Particles_old,with_ghosts=.TRUE.)
     D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
+    Dtilde_old => Get_wps(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
     rcp_old => Get_wps(Particles_old,Particles_old%rcp_id,with_ghosts=.TRUE.)
     DO ip=1,Particles%Mpart
         xp(1:ppm_dim,ip) = xp_old(1:ppm_dim,ip)
         D(ip) = D_old(ip)
+        Dtilde(ip) = Dtilde_old(ip)
         rcp(ip) = rcp_old(ip)
     ENDDO
 
     xp  => Set_xp(Particles,read_only=.TRUE.)
     D   => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    Dtilde   => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
     rcp => Set_wps(Particles,Particles%rcp_id)
     xp_old  => Set_xp(Particles_old,read_only=.TRUE.)
-    D_old   => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+    D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+    Dtilde_old   => Set_wps(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)
     rcp_old => Set_wps(Particles_old,Particles_old%rcp_id,read_only=.TRUE.)
 
     !If we use a level-set method with narrow band
@@ -777,11 +802,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF (PRESENT(stats)) &
         stats%nb_grad_desc_steps = stats%nb_grad_desc_steps + num_it
 
-#if debug_verbosity > 2
-    CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1004,info)
-    CALL sop_dump_debug(Particles%wps(Particles%D_id)%vec,Particles%Npart,1005,info)
-#endif
-
     !!-------------------------------------------------------------------------!
     !! Compute field values at new particle locations
     !!-------------------------------------------------------------------------!
@@ -814,12 +834,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
-#if debug_verbosity > 2
-    CALL sop_dump_debug(Particles%xp,ppm_dim,Particles%Npart,1100,info)
-    wp => Get_wps(Particles,Particles%adapt_wpid,with_ghosts=.FALSE.)
-    CALL sop_dump_debug(wp,Particles%Npart,1101,info)
-    wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-#endif
 
     !IF (ppm_rank .EQ. 0) THEN
         !WRITE(filename,'(A,A)') TRIM(debugdir),'Stats.dat'
@@ -839,15 +853,95 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-    !de-activate D_id (instead of de-allocating it)
-    !Particles%wps_m(Particles%D_id) = -1
+#if debug_verbosity > 2
+    !evaluate memory usage
 
-    !CALL particles_allocate_wps(Particles,D_id,info,iopt=ppm_param_dealloc)
-    !IF (info .NE. 0) THEN
-        !CALL ppm_write(ppm_rank,caller,'particles_allocate_wps (dealloc) failed',info)
-        !info = -1
-        !GOTO 9999
-    !ENDIF
+    WRITE(*,*) 'Memory used for Particles_old:'
+
+    memory_used = 8*SIZE(Particles_old%xp)
+    WRITE(*,*) '          xp: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 2*(SIZE(Particles_old%vlist)+SIZE(Particles_old%nvlist))
+    WRITE(*,*) '       vlist: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 2*(SIZE(Particles_old%vlist_cross)+SIZE(Particles_old%nvlist_cross))
+    WRITE(*,*) '      xvlist: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    DO i=1,Particles_old%max_wpiid
+        IF (ASSOCIATED(Particles_old%wpi(i)%vec)) THEN
+            memory_used = memory_used + 2*SIZE(Particles_old%wpi(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wpi: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 0
+    DO i=1,Particles_old%max_wpsid
+        IF (ASSOCIATED(Particles_old%wps(i)%vec)) THEN
+            memory_used = memory_used + 8*SIZE(Particles_old%wps(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wps: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+    
+    memory_used = 0
+    DO i=1,Particles_old%max_wpvid
+        IF (ASSOCIATED(Particles_old%wpv(i)%vec)) THEN
+            memory_used = memory_used + 8*SIZE(Particles_old%wpv(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wpv: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    WRITE(*,*) 'Memory used for Particles:'
+
+    memory_used = 8*SIZE(Particles%xp)
+    WRITE(*,*) '          xp: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 2*(SIZE(Particles%vlist)+SIZE(Particles%nvlist))
+    WRITE(*,*) '       vlist: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 2*(SIZE(Particles%vlist_cross)+SIZE(Particles%nvlist_cross))
+    WRITE(*,*) '      xvlist: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    DO i=1,Particles%max_wpiid
+        IF (ASSOCIATED(Particles%wpi(i)%vec)) THEN
+            memory_used = memory_used + 2*SIZE(Particles%wpi(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wpi: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    memory_used = 0
+    DO i=1,Particles%max_wpsid
+        IF (ASSOCIATED(Particles%wps(i)%vec)) THEN
+            memory_used = memory_used + 8*SIZE(Particles%wps(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wps: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+    
+    memory_used = 0
+    DO i=1,Particles%max_wpvid
+        IF (ASSOCIATED(Particles%wpv(i)%vec)) THEN
+            memory_used = memory_used + 8*SIZE(Particles%wpv(i)%vec)
+        ENDIF
+    ENDDO
+    WRITE(*,*) '         wpv: ', memory_used
+    memory_used_total = memory_used_total+memory_used
+
+    WRITE(*,*) ' Grand TOTAL: ', memory_used_total,' i.e.  ',&
+        REAL(memory_used_total,MK)/1E6,' MB'
+
+
+#endif
+
 
     Particles%Particles_cross => NULL()
 
