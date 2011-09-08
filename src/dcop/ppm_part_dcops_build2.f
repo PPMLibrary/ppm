@@ -384,7 +384,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
         b = b_0
         ! loop over their neighbors
         IF (adaptive) THEN
-            byh = 2._MK/rcp(ip)
+            ! haeckic changed this to 1.0
+            byh = 1._MK/rcp(ip)
         ENDIF
 
         neighbour_loop: DO ineigh = 1,nvlist(ip) 

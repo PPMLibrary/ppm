@@ -127,6 +127,7 @@
     wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
     eta => Set_dcop(Particles,eta_id)
     wp_grad => Set_wpv(Particles,wp_grad_id)
+    inv => set_wpv(Particles,Particles%G_id,read_only=.TRUE.)
 
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
