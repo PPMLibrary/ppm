@@ -129,7 +129,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     LOGICAL                             :: need_derivatives
     INTEGER                             :: topo_id
     LOGICAL                             :: adding_particles
-    INTEGER                             :: nb_spawn
+    INTEGER                             :: nb_spawn,nb_fuse
 
     !should be removed once the argument lists for the inl routines
     !have been updated to inhomogeneous ghostlayers
@@ -338,6 +338,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !! cases - TODO: check if it is at all needed...
 
         CALL particles_mapping_ghosts(Particles,topo_id,info)
+
         CALL particles_neighlists(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -348,42 +349,28 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
         !call check_duplicates(Particles)
 
-        !Delete (fuse) particles that are too close to each other
-        !(needs ghost particles to be up-to-date)
-
-        !CALL sop_fuse_particles(Particles,opts,info)
-        !IF (info .NE. 0) THEN
-            !info = ppm_error_error
-            !CALL ppm_error(ppm_err_sub_failed,caller,&
-                !'sop_fuse_particles failed',__LINE__,info)
-            !GOTO 9999
-        !ENDIF
-        !!we only removed particles, but they didnt move.
-        !Particles%areinside=.TRUE.
-        !Particles%ontopology=.TRUE.
-        !CALL particles_mapping_ghosts(Particles,topo_id,info)
-        !CALL particles_neighlists(Particles,topo_id,info)
-
-        !call check_duplicates(Particles)
-
         !Insert (spawn) new particles where needed
         adaptation_ok = .true.
-        !IF (opts%add_parts) THEN
-            CALL  sop_spawn_particles(Particles,opts,info,&
-                nb_part_added=nb_spawn,wp_fun=wp_fun)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'sop_spawn_particles failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+    if (lbfgs_continue .and. gradPsi_max.lt.1e-1) then 
 
-            adding_particles = (nb_spawn .GT. 0)
-        !ELSE 
-            !adding_particles = .FALSE.
-        !ENDIF
+        CALL  sop_spawn_particles(Particles,opts,info,&
+            nb_part_added=nb_spawn,wp_fun=wp_fun)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'sop_spawn_particles failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+
+    endif
+
+        adding_particles = (nb_spawn .GT. 0)
 
         !call check_duplicates(Particles)
+        
+#ifdef __USE_LBFGS
+        IF (adding_particles) lbfgs_continue = .FALSE.
+#endif
 
         CALL particles_updated_positions(Particles,info)
         IF (info .NE. 0) THEN
@@ -413,8 +400,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
-        ! FIXME 
-        !Is this one really needed???
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -427,8 +412,14 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !(needs ghost particles to be up-to-date)
 
         CALL particles_neighlists(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_neighlists failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
 
-        CALL sop_fuse_particles(Particles,opts,info)
+        CALL sop_fuse_particles(Particles,opts,info,nb_part_del=nb_fuse)
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -438,7 +429,19 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !we only removed particles, but they didnt move.
         Particles%areinside=.TRUE.
         Particles%ontopology=.TRUE.
+
+#ifdef __USE_LBFGS
+        IF (nb_fuse .GT. 0) lbfgs_continue = .FALSE.
+#endif
+
         CALL particles_mapping_ghosts(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_mapping_ghosts failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+
 
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
@@ -620,65 +623,58 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
-        CALL particles_allocate_wps(Particles,potential_after_id,info,&
-            iopt=ppm_param_alloc_fit,name='potential_after')
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-            info = -1
-            GOTO 9999
-        ENDIF
 #endif
 
 #ifdef __USE_LBFGS
         !L-BFGS
 
-        !info = 0
-        !lbfgs_continue = .TRUE.
-        !i=0
-        !bfgs_loop: DO WHILE(lbfgs_continue .and. i.lt.3)
-            !i=i+1
-            CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
-                Psi_max,opts,info,gradPsi_max=gradPsi_max) 
-            IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
-                info = -1
-                GOTO 9999
-            ENDIF
-            CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
-            IF (info .NE. 0) THEN
-                CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
-                info = -1
-                GOTO 9999
-            ENDIF
+        CALL sop_gradient_psi(Particles,topo_id,Gradient_Psi,Psi_global,&
+            Psi_max,opts,info,gradPsi_max=gradPsi_max) 
+        IF (info .NE. 0) THEN
+            CALL ppm_write(ppm_rank,caller,'sop_gradient_psi failed.',info)
+            info = -1
+            GOTO 9999
+        ENDIF
 
         IF ( lbfgs_continue ) THEN
             info = 1
         ELSE
             IF (ALLOCATED(Work)) DEALLOCATE(Work)
             IF (ALLOCATED(DIAG)) DEALLOCATE(DIAG)
-            ALLOCATE(Work(Particles%Mpart*(2*3+1)+2*3))
-            ALLOCATE(DIAG(Particles%Mpart))
+            ALLOCATE(Work(3*Particles%Mpart*(2*3+1)+2*3))
+            ALLOCATE(DIAG(3*Particles%Mpart))
             DIAG=1._MK
             info = 0
         ENDIF
 
+        IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
+            !adaptation_ok = .true.
+        ELSE
 
-            CALL LBFGS(Particles%Mpart,3,Particles%xp(1:ppm_dim,1:Particles%Mpart),&
-                Psi_global,Gradient_Psi,.FALSE.,DIAG,(/1,0/),1D-5,EPSILON(1._mk),&
+            CALL LBFGS(3*Particles%Npart,3,Particles%xp(1:ppm_dim,1:Particles%Npart),&
+                Psi_global,Gradient_Psi(1:ppm_dim,1:Particles%Npart),&
+                .FALSE.,DIAG,(/1,0/),1D-8,ppm_myepsd,&
                 Work,info)    
             IF (info.LT.0) THEN
-                write(*,*) 'IFLAG = ',info
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_dealloc,caller,&
+                CALL ppm_error(ppm_err_sub_failed,caller,&
                     'LBFGS failed', __LINE__,info)
                 GOTO 9999
             ELSE IF (info.GT.0) THEN
                 lbfgs_continue = .TRUE.
+                adaptation_ok = .false.
             ELSE
+                adaptation_ok = .true.
                 lbfgs_continue = .FALSE.
             ENDIF
-        !ENDDO bfgs_loop
-            
+        ENDIF
+
+        CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+        IF (info .NE. 0) THEN
+            CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
+            info = -1
+            GOTO 9999
+        ENDIF
 
 
 #elif defined __USE_SD
@@ -731,7 +727,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         linesearch_loop: DO WHILE (alpha1 .LT. 0._MK .OR. alpha2 .LT. 0._MK)
             xp => Get_xp(Particles,with_ghosts=.TRUE.)
             DO ip=1,Particles%Mpart
-                xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
+                xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) - &
                     (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
             ENDDO
             xp => Set_xp(Particles,ghosts_ok=.TRUE.)
@@ -787,21 +783,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !Move particles (including ghosts)
         xp => Get_xp(Particles)
         DO ip=1,Particles%Npart
-            xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + &
+            xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) - &
                 (step-step_previous) * Gradient_Psi(1:ppm_dim,ip)
         ENDDO
         xp => Set_xp(Particles)
-
-        !REMOVME
-#if debug_verbosity > 1
-        CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-#endif
-        !REMOVME
 
 
 #if debug_verbosity > 2
@@ -842,7 +827,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
                 'Np=',tmpvari1,' Mp=',tmpvari2,' step=',step
             CALL ppm_write(ppm_rank,caller,cbuf,info)
+#if debug_verbosity > 2
             CALL particles_print_stats(Particles,info)
+#endif
         ENDIF
 #endif
 #endif
@@ -897,13 +884,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #endif
 #if debug_verbosity > 1
         CALL particles_allocate_wps(Particles,potential_before_id,info,&
-            iopt=ppm_param_dealloc)
-        IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'deallocation failed',info)
-            info = -1
-            GOTO 9999
-        ENDIF
-        CALL particles_allocate_wps(Particles,potential_after_id,info,&
             iopt=ppm_param_dealloc)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,'deallocation failed',info)

@@ -364,8 +364,9 @@
          IFLAG = 1 
          RETURN 
       ENDIF 
-      IF (INFO.NE.1) GOTO 190 
+      IF (INFO.NE.1 .and. info.ne.5 .and. info.ne.6) GOTO 190 
       NFUN = NFUN + NFEV 
+
 !                                                                       
 !     COMPUTE THE NEW STEP AND GRADIENT CHANGE                          
 !     -----------------------------------------                         

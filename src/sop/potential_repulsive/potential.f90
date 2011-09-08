@@ -20,10 +20,10 @@ IF (rd .GT. attractive_radius .or. no_fusion) THEN
  Psi_part = Psi_part + meanD**2 * coeff *  &
      !(exp(-2._mk*rho*rd)-2._mk*exp(-rho*(rd+1._mk)))
      !(-exp(-rd)+rho*exp(-rd/0.8_mk))
-     (-(rho)**(-4._mk*rd)+0.8_mk*rho**(1._mk-5._mk*rd))
+     (-rho**(-4._mk*rd) + 0.8_mk*rho**(1._mk-5._mk*rd))
 ELSE
     Psi_part = Psi_part + meanD**2 * (-10._MK / sqrt(rd+0.1_mk)) &
-     + meanD**2 *(-(rho)**(-4._mk*attractive_radius)+&
+     + meanD**2 *(-rho**(-4._mk*attractive_radius)+&
      0.8_mk*rho**(1._mk-5._mk*attractive_radius) + &
      10._MK/sqrt(attractive_radius+0.1_mk))
 ENDIF

@@ -632,7 +632,7 @@ SUBROUTINE check_nn(Particles,opts,info)
             IF (rr .LT. nn) THEN
                 nn = rr
             ENDIF
-            IF (rr .LT. 1.2_mk) THEN
+            IF (rr .LT. 1.0_mk) THEN
                 close_neigh = close_neigh + 1
                 IF (fuse_part(iq).GT.0) nb_fuse_neigh=nb_fuse_neigh + 1
             ENDIF
@@ -647,8 +647,11 @@ SUBROUTINE check_nn(Particles,opts,info)
 
         fuse_part(ip) = very_close_neigh
 
+        !when the density is not too high, don't fuse particles
+        IF (close_neigh .le.6) fuse_part(ip) = 0
+
         IF (ppm_dim.EQ.2) THEN
-            nb_close_theo = 6
+            nb_close_theo = 4
         ELSE
             nb_close_theo = 12
         ENDIF
@@ -666,14 +669,14 @@ SUBROUTINE check_nn(Particles,opts,info)
 
                     rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
                         Dtilde(ip)
-                    IF (rr .LT. 1.2_mk) THEN
+                    IF (rr .LT. 1.0_mk) THEN
                         close_neigh=close_neigh+1
                         vlist(close_neigh,ip) = iq 
                     ENDIF
                 ENDDO
-                nvlist(ip) = close_neigh ! min(close_neigh,6-close_neigh)
+                nvlist(ip) = 1 ! close_neigh ! min(close_neigh,6-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
-                    nvlist(ip) = 0! -6
+                    nvlist(ip) = -6
                 endif
             ELSE
                 nvlist(ip) = 0

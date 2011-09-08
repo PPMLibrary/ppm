@@ -157,6 +157,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 coeff = 1._mk
             endif
 
+            coeff = 1._mk
+
 #include "potential/potential_gradient.f90"
 
         Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) + &

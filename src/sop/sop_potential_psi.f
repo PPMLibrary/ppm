@@ -49,10 +49,6 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     REAL(MK),PARAMETER                    :: param2_f_s= 1._MK
 #endif
 
-#if debug_verbosity > 1
-    REAL(MK),DIMENSION(:),  POINTER       :: Potential
-#endif
-    
     !!-------------------------------------------------------------------------!
     ! Initialize
     !!-------------------------------------------------------------------------!
@@ -81,9 +77,6 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     vlist => Particles%vlist
 
     fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
-#if debug_verbosity > 1
-    Potential => get_wps(Particles,potential_after_id)
-#endif
 
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
@@ -146,15 +139,8 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
         Psi_global = Psi_global + Psi_part
 
-#if debug_verbosity > 1
-        Potential(ip)=Psi_part
-#endif
-
     ENDDO particle_loop
 
-#if debug_verbosity > 1
-    Potential => set_wps(Particles,potential_after_id)
-#endif
     fuse  => set_wpi(Particles,fuse_id,read_only=.TRUE.)
 
     xp => Set_xp(Particles,read_only=.TRUE.)

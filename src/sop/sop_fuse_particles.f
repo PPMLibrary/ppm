@@ -11,7 +11,7 @@
 !!!
 !!!----------------------------------------------------------------------------!
 SUBROUTINE sop_fuse_particles(Particles,opts,info,&
-        level_fun,wp_fun,nb_fun,printp)
+        level_fun,wp_fun,nb_fun,printp,nb_part_del)
 
     USE ppm_module_alloc, ONLY: ppm_alloc
 
@@ -35,6 +35,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     OPTIONAL                                              :: level_fun
     !!! if level function is known analytically
     INTEGER, OPTIONAL                                     :: printp
+    INTEGER, OPTIONAL                                     :: nb_part_del
     !!! printout particles that are deleted into file fort.(5000+printp)
     ! argument-functions need an interface
     INTERFACE
@@ -273,15 +274,16 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-#if debug_verbosity > 1
 #ifdef __MPI
     CALL MPI_Allreduce(del_part,del_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
 #endif
+#if debug_verbosity > 1
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,I8,A)') 'Deleting ', del_part,' particles'
         CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif
+    IF(PRESENT(nb_part_del)) nb_part_del = del_part
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)

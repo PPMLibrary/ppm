@@ -105,7 +105,6 @@
      INTEGER            :: nb_neigh_id = 0
 
      INTEGER            :: potential_before_id = 0
-     INTEGER            :: potential_after_id = 0
      ! for debugging only
 
      INTEGER            :: memory_used_total
