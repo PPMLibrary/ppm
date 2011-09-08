@@ -389,6 +389,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF Compute_D
 
 
+        ! HAECKIC: check this branching?
         IF (.NOT. PRESENT(wp_fun)) THEN
             !------------------------------------------------------------------!
             ! Update D and cutoff radii
@@ -432,6 +433,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             D => Get_wpv(Particles,Particles%D_id)
             Dtilde_old => Get_wpv(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
             inv => Get_wpv(Particles,Particles%G_id)
+            
+            ! set the tensor
+            CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
             DO ip=1,Particles%Npart
             
                 ! get the minimum sized particle in xset neighborhood
@@ -440,8 +445,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ! 2. project all neighbors axis on longer one and take min(max(pro1,proj2))
 
                 new_scale = HUGE(1._MK)
-                DO ineigh=1,Particles%nvlist(ip)
-                      iq = Particles%vlist(ineigh,ip)
+                DO ineigh=1,nvlist_cross(ip)
+                      iq = vlist_cross(ineigh,ip)
                       !is iq's Dtilde old shorter
                       CALL particles_shorter_axis(Particles_old,iq,Particles_old%Dtilde_id,temp_scale,info)
                       IF (temp_scale.LT.new_scale) THEN
@@ -456,21 +461,22 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 ! 2. set the longer axis to the smallest projection of max of both axis projections
                 IF (ppm_dim.eq.2) THEN
  
-                      Matrix_A = D(1:4,ip)
+                      Matrix_A = D(1:Particles%tensor_length,ip)
+
                       CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
                       ! get the longer axis
                       wp_dir = (/Matrix_B(1),Matrix_B(3)/)
  
                       ! get min_q(max(proj h1 on dir,proj h2 on dir))
                       old_scale = HUGE(1._MK)
-                      DO ineigh=1,Particles%nvlist(ip)
+                      DO ineigh=1,nvlist_cross(ip)
  
-                            iq = Particles%vlist(ineigh,ip)
+                            iq = vlist_cross(ineigh,ip)
                             
                             ! get inverse to have axes
                             Matrix_A = Dtilde_old(1:Particles%tensor_length,iq)
                             CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
- 
+
                             ! |c| = a.b/|b|
                             ! proj h1 of iq on direction of longer axis of ip
                             proj = ABS(SUM((/Matrix_B(1),Matrix_B(3)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
@@ -487,9 +493,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
                       ! set the new length of longer axis
                       ! HAECKIC: THIS DOES NOT COMPILE?!?!?
-                      CALL particles_longer_axis(Particles,ip,Particles%D_id,new_scale,info)
-                      D(1,ip) = (new_scale/old_scale)*D(1,ip)
-                      D(2,ip) = (new_scale/old_scale)*D(2,ip)
+                      !CALL particles_longer_axis(Particles,ip,Particles%D_id,new_scale,info)
+                      !D(1,ip) = (new_scale/old_scale)*D(1,ip)
+                      !D(2,ip) = (new_scale/old_scale)*D(2,ip)
  
                 ELSE
                      ! HAECKIC: TODO 3D case
@@ -500,6 +506,11 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 inv(1:Particles%tensor_length,ip) = (1/opts%rcp_over_D)*D(1:Particles%tensor_length,ip)
  
             ENDDO
+            
+            
+            ! Dealloc matrix A and B
+            CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_dealloc,info)
+            CALL ppm_alloc(Matrix_B,(/ Particles%tensor_length /),ppm_param_dealloc,info)
 
             D => Set_wpv(Particles,Particles%D_id)
             Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)

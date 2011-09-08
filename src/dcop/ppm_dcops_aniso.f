@@ -21,7 +21,7 @@
     !!! source of wp
     INTEGER,                            INTENT(IN)      :: wp_grad_id
     !!! resulting gradients for all particles 
-    INTEGER,    DIMENSION(ppm_dim)   , INTENT(IN)        :: order
+    INTEGER,    DIMENSION(ppm_dim)   , INTENT(IN)       :: order
     !!! order of approximation in dcops
     LOGICAL, OPTIONAL                                   :: with_ghosts
     !!! do we need the gradients also for the ghosts
@@ -57,7 +57,7 @@
     ! 1. calculate the reference gradient
 
     !Compute gradients using PSE kernels
-    coeffs=1._MK; degree = 0
+    coeffs = 1._MK; degree = 0
     FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
     eta_id = 0
 
@@ -120,6 +120,9 @@
             wp_grad(3,ip) = SUM(inv_transpose(2*ppm_dim+1:3*ppm_dim)*wp_grad_temp)
          ENDIF
     ENDDO
+    
+    CALL ppm_alloc(inv_transpose,(/ Particles%tensor_length /),ppm_param_dealloc,info)
+    CALL particles_dcop_free(Particles,eta_id,info)
 
     wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
     eta => Set_dcop(Particles,eta_id)

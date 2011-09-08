@@ -146,7 +146,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_B => NULL()
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
-    REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,proj,temp_scale,max_g,max_w
+    REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,proj,temp_scale,max_g,max_w,max_ex 
     LOGICAL                                    :: need_derivatives
     REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
     INTEGER                                    :: topo_id,eta_id
@@ -370,6 +370,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
          new_scale = 0.0_mk
          max_g = 0.0_mk
          max_w = 0.0_mk
+         max_ex = 0.0_mk
          DO ip=1,Particles%Npart
             wp_grad_fun0 = f0_grad_fun(xp(1:ppm_dim,ip))
             old_scale = old_scale+SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
@@ -381,10 +382,14 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             IF (max_w .LT. (wp(ip)-dummy_wp)**2) THEN
                max_w = ((wp(ip)-dummy_wp)**2)
             ENDIF
+            IF (max_ex .LT. SUM(wp_grad_fun0**2)) THEN
+               max_ex = SUM(wp_grad_fun0**2)
+            ENDIF
+            !write(*,*) wp_grad_fun0, wp_grad(1:ppm_dim,ip)
          ENDDO
          write(*,*) '----Errors----'
          write(*,*) 'Squared Error per particle in gradient: ', old_scale/Particles%Npart
-         write(*,*) 'Max Error per particle in gradient: ', max_g
+         write(*,*) 'Max Error per particle in gradient: ', max_g/max_ex
          write(*,*) 'Squared Error per particle in field: ', new_scale/Particles%Npart
          write(*,*) 'Max Error per particle in field: ', max_w
          wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
@@ -628,7 +633,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDIF
 
     ! HAECKIC: completely different
-    ! todo: rescale it like discussed
     !------------------------------------------------------------------------------!
     ! D recomment
     !------------------------------------------------------------------------------!
@@ -669,7 +673,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                   iq = Particles%vlist(ineigh,ip)
                   
                   ! get inverse to have axes
-                  Matrix_A = Dtilde(1:Particles%tensor_length,iq)
+                  Matrix_A = Dtilde(1:4,iq)
                   CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
 
                   ! |c| = a.b/|b|
@@ -700,6 +704,10 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     D      => Set_wpv(Particles,Particles%D_id)
     Dtilde => Set_wpv(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
+
+    ! Dealloc matrix A and B
+    CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_dealloc,info)
+    CALL ppm_alloc(Matrix_B,(/ Particles%tensor_length /),ppm_param_dealloc,info)
 
 ! #if debug_verbosity > 0
 !     D => Get_wpv(Particles,Particles%D_id)

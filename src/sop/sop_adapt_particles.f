@@ -392,7 +392,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         GOTO 9999
     ENDIF
 
-write(*,*) 'neigh'
     CALL particles_neighlists(Particles,topo_id,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
