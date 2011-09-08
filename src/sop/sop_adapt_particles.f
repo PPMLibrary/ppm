@@ -1,53 +1,53 @@
-!!!----------------------------------------------------------------------------!
-!!! This is the core routine of the adaptive particle method
-!!!
-!!! It adapts the particles to the current field wp (or to an function provided
-!!! analytically) using particle-particle interpolation (except if wp_fun is)
-!!! provided and makes the corresponding changes to the 
-!!! properties carried by particles
-!!!
-!!! Requires:
-!!!      up-to-date cutoff radii
-!!!      up-to-date Verlet lists
-!!!      up-to-date field values (incl. ghosts)
-!!!
-!!! Returns:
-!!!      new particle positions
-!!!      updated field values (interpolated from old ones, only REAL particles)
-!!!      updated cutoff radii
-!!!      updated Verlet lists
-!!!      updated field derivatives (OPTIONAL)
-!!!
-!!! Optional arguments:
-!!!      wp_fun: a function that returns the value of wp at any given position
-!!!                   (if absent, the values are interpolated and 
-!!!                    stored in the array wp)
-!!!
-!!!      wp_grad_fun: a function that returns the gradient of wp.
-!!!                   (if absent, the gradients are approximated and 
-!!!                    stored in wp_grad)
-!!!                   (requires: wp_fun)
-!!!
-!!!      wp_lap: pointer to an array (not necessarily allocated on input)
-!!!              On output, contains laplacian of wp computed using data
-!!!              of wp_old
-!!!
-!!!
-!!! Do the gradient descent on xp, using interpolation from {xp_old} to
-!!! {xp} at each step (requires cross--neighbour-list)
-!!!
-!!! FIXME: optimize the number of (re)-allocation needed (D, D_old,
-!!! xp_old,etc..)
-!!! FIXME: optimize how many times the ghosts have to be reconstructed
-!!!----------------------------------------------------------------------------!
-
 SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
         wp_fun,wp_grad_fun,wplap_id,return_grad,level_fun,level_grad_fun,&
         smallest_sv,nb_fun,stats)
+      !-------------------------------------------------------------------------
+      !  Modules 
+      !-------------------------------------------------------------------------
+      !!!----------------------------------------------------------------------!
+      !!! This is the core routine of the adaptive particle method
+      !!!
+      !!! It adapts the particles using a monitor function D_fun that depends on
+      !!! the current field wp and/or its gradient wp_grad
+      !!! If wp and its gradient are not provided analytically, they are approximated  
+      !!! using particle-particle interpolation with DC operators. 
+      !!! After adaptation, the properties carried by particles are interpolated 
+      !!! on the new positions.
+      !!!
+      !!! Requires:
+      !!!      up-to-date cutoff radii
+      !!!      up-to-date Verlet lists
+      !!!      up-to-date field values (incl. ghosts)
+      !!!
+      !!! Returns:
+      !!!      new particle positions
+      !!!      updated field values (interpolated from old ones, only REAL particles)
+      !!!      updated cutoff radii
+      !!!      updated Verlet lists
+      !!!      updated field derivatives (OPTIONAL)
+      !!!
+      !!! Optional arguments:
+      !!!      wp_fun: a function that returns the value of wp at any given position
+      !!!                   (if absent, the values are interpolated and 
+      !!!                    stored in the array wp)
+      !!!
+      !!!      wp_grad_fun: a function that returns the gradient of wp.
+      !!!                   (if absent, the gradients are approximated and 
+      !!!                    stored in wp_grad)
+      !!!                   (requires: wp_fun)
+      !!!
+      !!!      wp_lap: pointer to an array (not necessarily allocated on input)
+      !!!              On output, contains laplacian of wp computed using data
+      !!!              of wp_old
+      !!!----------------------------------------------------------------------!
 
-    USE ppm_module_error
-    USE ppm_module_map_part
-    USE ppm_module_io_vtk
+
+      !-------------------------------------------------------------------------
+      !  Modules 
+      !-------------------------------------------------------------------------
+      USE ppm_module_error
+      USE ppm_module_map_part
+      USE ppm_module_io_vtk
 
     IMPLICIT NONE
 
@@ -522,15 +522,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ENDIF
     !REMOVME???
 
-    !removme
-    !CALL sop_compute_D(Particles,D_fun,opts,info,     &
-        !wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
-        !level_grad_fun=level_grad_fun,nb_fun=nb_fun)
-    !WRITE(filename,'(A,I0)') 'P_beforegraddescbis_',Particles%itime
-    !CALL ppm_vtk_particle_cloud(filename,Particles,info)
-    !stop
-    !removme
-
     !!-------------------------------------------------------------------------!
     !! Find the nearest neighbour for each real particle
     !! (used in the definition of the primitive functions, for
@@ -573,16 +564,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Copy particle positions, field values and D
     !-------------------------------------------------------------------------!
-    !IF (ASSOCIATED(Particles%ops)) THEN
-        !CALL particles_dcop_deallocate(Particles,info)
-        !IF (info .NE. 0) THEN
-            !info = ppm_error_error
-            !CALL ppm_error(ppm_err_dealloc,caller,   &
-                !&    'particles_dcop_deallocate failed',__LINE__,info)
-            !GOTO 9999
-        !ENDIF
-    !ENDIF
-
     Particles_old => Particles
     Particles => NULL()
 
@@ -620,10 +601,8 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     Particles%max_wpiid = 0
     Particles%max_wpsid = 0
     Particles%max_wpvid = 0
-    ! /end/ remove all this...
 
     !transfer nvlist and vlist to Particles
-    !Particles%neighlists = Particles_old%neighlists
     Particles%nvlist => Particles_old%nvlist
     Particles%vlist => Particles_old%vlist
     Particles_old%nvlist => NULL()
@@ -676,6 +655,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
     Dtilde_old => Get_wps(Particles_old,Particles_old%Dtilde_id,with_ghosts=.TRUE.)
     rcp_old => Get_wps(Particles_old,Particles_old%rcp_id,with_ghosts=.TRUE.)
+
     DO ip=1,Particles%Mpart
         xp(1:ppm_dim,ip) = xp_old(1:ppm_dim,ip)
         D(ip) = D_old(ip)
@@ -773,11 +753,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !! On output, vlist SHOULD be correct
     !!-------------------------------------------------------------------------!
 
-    ! The Intel compiler seems to accept the following call to 
-    ! a subroutine with optional arguments, but this might be an issue 
-    ! with some compilers (who knows...)
-    ! (e.g. wp_grad_fun below may or may not be present)
-
     IF (Particles%level_set) THEN
         CALL sop_gradient_descent_ls(Particles_old,Particles, &
             nvlist_cross,vlist_cross,                &
@@ -833,7 +808,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     WRITE(filename,'(A,I0)') 'P_afterinterpolate_',Particles%itime
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
-
 
     !IF (ppm_rank .EQ. 0) THEN
         !WRITE(filename,'(A,A)') TRIM(debugdir),'Stats.dat'
@@ -938,8 +912,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     WRITE(*,*) ' Grand TOTAL: ', memory_used_total,' i.e.  ',&
         REAL(memory_used_total,MK)/1E6,' MB'
-
-
 #endif
 
 

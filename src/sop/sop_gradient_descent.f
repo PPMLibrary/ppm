@@ -1,25 +1,25 @@
-!!!----------------------------------------------------------------------------!
-!!!
-!!! Do the gradient descent on xp, using interpolation from {xp_old} to
-!!! {xp} at each step (requires cross--neighbour-list)
-!!! All particle properties (D, rcp, etc...) are assumed to be referring
-!!! to xp
-!!! 
-!!! On input: vlist is up-to-date
-!!! On output: vlist and vlist_cross have enough elements to 
-!!!            allow for computing corrected kernels)
-!!! 
-!!!----------------------------------------------------------------------------!
-
 SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         nvlist_cross,vlist_cross,    &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,threshold,need_deriv,stats)
+       !!!---------------------------------------------------------------------!
+       !!!
+       !!! Do the gradient descent on xp, using interpolation from {xp_old} to
+       !!! {xp} at each step (requires cross--neighbour-list)
+       !!! All particle properties (D, rcp, etc...) are assumed to be referring
+       !!! to xp
+       !!! 
+       !!! On input: vlist is up-to-date
+       !!! On output: vlist and vlist_cross have enough elements to 
+       !!!            allow for computing corrected kernels)
+       !!! 
+       !!!---------------------------------------------------------------------!
 
-    USE ppm_module_inl_xset_vlist
-    USE ppm_module_io_vtk
+
+       USE ppm_module_inl_xset_vlist
+       USE ppm_module_io_vtk
 #ifdef __USE_LBFGS
-    USE ppm_module_lbfgs
+       USE ppm_module_lbfgs
 #endif
 
     IMPLICIT NONE
@@ -268,7 +268,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             'particles_allocate_wpi failed', __LINE__,info)
         GOTO 9999
     ENDIF
-
 
 
         !FIXME: in theory, we should do apply_bc+remap+get_ghosts here

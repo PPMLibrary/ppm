@@ -30,16 +30,16 @@
      MODULE ppm_module_sop
      !!! This module contains routines and functions used for Self-Organizing
      !!! Particles
+     !!!WARNING: this module needs DC operators. 
+     !!! PPM needs to be compiled with --enable-dcops
 
-!this module is compiled only if either the BLAS libraries or the MKL libraries
-!can be found. It is left empty otherwise
 #ifdef __DCOPS
 
 
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 2
+#define debug_verbosity 1
 #define __USE_RANDOMNUMBERS 1
 #define __USE_LBFGS 1
 
@@ -64,15 +64,6 @@
          MODULE PROCEDURE sop_dump_2d
          MODULE PROCEDURE sop_dump_2di
      END INTERFACE
-     !INTERFACE sop_check_debug
-     !MODULE PROCEDURE sop_check_1d
-     !MODULE PROCEDURE sop_check_1di
-     !MODULE PROCEDURE sop_check_2d
-     !END INTERFACE
-
-
-     !TODO: duplicate everything such that it works also
-     ! for single precision
 
     !----------------------------------------------------------------------
     ! Private variables for the module
@@ -89,10 +80,6 @@
      !====================================================================!
      ! Variable describing the 'state' of the system
      !====================================================================!
-     LOGICAL            :: Psi_saturates ! true when the forces have
-     !          to be truncated to prevent particles from flying across the domain
-     !                (happens only when 2 particles are very close to each other)
-
      REAL(prec)         :: Psi_global ! mean interaction 
      !                   potential of the particles
      REAL(prec)         :: Psi_global_old 
@@ -110,7 +97,6 @@
      INTEGER            :: memory_used_total
      ! Evaluation of the number of bytes occupied in memory
 
-     !testing...
      LOGICAL            :: adaptation_ok
 
      !====================================================================!
@@ -201,8 +187,6 @@
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_dump_debug.f"
 
-     !!#include "sop/sop_check_debug.f"
-
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_fuse_particles.f"
 
@@ -212,15 +196,11 @@
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_gradient_psi.f"
 
-!#define __KIND __DOUBLE_PRECISION
-!#include "sop/sop_interpolate_particles.f"
-
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_interpolate.f"
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_potential_psi.f"
-
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_spawn_particles.f"
