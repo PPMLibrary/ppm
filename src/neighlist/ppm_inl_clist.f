@@ -219,7 +219,7 @@
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
       !-------------------------------------------------------------------------
-      clist%max_depth = getMaxDepth(cutoff, clist, whole_domain)
+      clist%max_depth = MAX(getMaxDepth(cutoff, clist, whole_domain),1)
 
       !-------------------------------------------------------------------------
       !  Allocate rc_borders array, in order to store borders on rank
@@ -415,6 +415,23 @@
 #endif
 
 #if __KIND == __SINGLE_PRECISION
+      PURE FUNCTION child(idx) RESULT(child_idx)
+      !!! Given the index of child cell, returns the index of its first child.
+      !!! Works for nD.
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64), INTENT(IN) :: idx
+      !!! Input index
+      INTEGER(ppm_kind_int64)             :: child_idx
+      !!! Index of first child cell to be returned
+
+      child_idx = ISHFT(idx,ppm_dim) - (2**ppm_dim-2)
+      END FUNCTION child
+#endif
+
+#if __KIND == __SINGLE_PRECISION
 #ifdef __DEBUG
       FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
 #else
@@ -544,7 +561,9 @@
       ! Rank of the child
       REAL(MK)                                        :: t0
 
-      CALL substart('GetCellCoor_Depth',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substart('GetCellCoor_Depth',t0,info)
+      ENDIF
 
 
       ! Set minimum and maximum physical extent of first cell,
@@ -606,7 +625,9 @@
           END DO
       END DO
 
-      CALL substop('GetCellCoor_Depth',t0,info)
+      IF (ppm_debug .GE. 3) THEN
+          CALL substop('GetCellCoor_Depth',t0,info)
+      ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getCellCoor_Depth_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -795,7 +816,9 @@
       INTEGER                         :: j
       REAL(MK)                        :: t0
 
-      CALL substart('setSubregions',t0,info)
+      IF(ppm_debug.GE.3)THEN
+          CALL substart('setSubregions',t0,info)
+      ENDIF
       
       ! Initialize minimum and maximum physical extents to be
       ! assigned to subregions.
@@ -818,7 +841,9 @@
           END DO
       END DO
 
-      CALL substop('setSubregions',t0,info)
+      IF(ppm_debug.GE.3)THEN
+          CALL substop('setSubregions',t0,info)
+      ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE setSubregions_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -1479,7 +1504,7 @@
 
       rc_min = cutoff(clist%rank(size(clist%rank)))
       minSideLength = getMinimumSideLength(domain)
-      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2.0))
+      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2._MK))
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMaxDepth_s
 #elif __KIND == __DOUBLE_PRECISION
