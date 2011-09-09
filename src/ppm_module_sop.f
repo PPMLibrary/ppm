@@ -30,6 +30,7 @@
      MODULE ppm_module_sop
      !!! This module contains routines and functions used for Self-Organizing
      !!! Particles
+     !!!
      !!!WARNING: this module needs DC operators. 
      !!! PPM needs to be compiled with --enable-dcops
 
@@ -80,8 +81,8 @@
      !====================================================================!
      ! Variable describing the 'state' of the system
      !====================================================================!
-     REAL(prec)         :: Psi_global ! mean interaction 
-     !                   potential of the particles
+     REAL(prec)         :: Psi_global 
+     ! totol interaction potential of the particles
      REAL(prec)         :: Psi_global_old 
      REAL(prec)         :: Psi_max  
      INTEGER            :: adapt_wpgradid

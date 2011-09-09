@@ -1,8 +1,8 @@
-!!!----------------------------------------------------------------------------!
-!!! Interpolate the field variables from the old particles' positions 
-!!! to the new ones 
-!!!----------------------------------------------------------------------------!
 SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
+    !!!------------------------------------------------------------------------!
+    !!! Interpolate the field variables from the old particles' positions 
+    !!! to the new ones 
+    !!!------------------------------------------------------------------------!
 
     !-------------------------------------------------------------------------
     !  Modules
@@ -77,59 +77,14 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     ! Since particles have moved during gradient descent, 
     !we need to recompute the cross neigbour lists
     !------------------------------------------------------------------
-    !!---------------------------------------------------------------------!
-    !! FIXME: We need to ensure cross-neighbour lists are large enough 
-    !! to compute the interpolation kernels
-    !!---------------------------------------------------------------------!
-    !!-----------------------------------------------------------------!
-    !! Construct cross-set neighbour lists
-    !! (note: D_old is used as rcp_old=rcp_over_D*D_old
-    !!  on output, D_old may have been changed artificially to increase
-    !! rcp_old. Do not use it anymore (except for computing rcp_old))
-    !!-----------------------------------------------------------------!
-    !D_old => Get_wps(Particles_old,Particles_old%D_id,with_ghosts=.TRUE.)
-    !ghostlayer=Particles%cutoff
-    !CALL ppm_inl_xset_k_vlist(Particles%active_topoid,Particles%xp,&
-        !Particles%Npart,Particles%Mpart,Particles_old%xp,Particles_old%Npart,&
-        !Particles_old%Mpart,D_old,opts%nneigh_critical,&
-        !ghostlayer,info,Particles%vlist_cross,Particles%nvlist_cross)
-    !Particles%neighlists_cross = .TRUE.
-    !IF (info .NE. 0) THEN
-        !info = ppm_error_error
-        !CALL ppm_error(ppm_err_sub_failed,caller,&
-            !'ppm_inl_xset_k_vlist failed.',__LINE__,info)
-        !GOTO 9999
-    !ENDIF
-    !D_old => Set_wps(Particles_old,Particles_old%D_id,read_only=.TRUE.)
+    !---------------------------------------------------------------------!
+    ! We need to ensure cross-neighbour lists are large enough 
+    ! to compute the interpolation kernels
+    !   We use kd-trees to do that.
+    !---------------------------------------------------------------------!
 
-    !Particles%nneighmin_cross = &
-        !MINVAL(Particles%nvlist_cross(1:Particles%Npart))
-    !Particles%nneighmax_cross = &
-        !MAXVAL(Particles%nvlist_cross(1:Particles%Npart))
-
-    !!write(cbuf,*) 'Nvlist_cross min/max = ',Particles%nneighmin_cross,&
-        !!Particles%nneighmax_cross
-    !!CALL ppm_write(ppm_rank,caller,cbuf,info)
-
-!#if debug_verbosity > 0
-    !IF (Particles%nneighmin_cross .LT. opts%nneigh_critical) THEN
-        !i=0
-        !call particles_allocate_wps(Particles,i,info,name='nvlist_cross')
-        !wp => get_wps(Particles,i)
-        !FORALL(ip=1:Particles%Npart) wp(ip) = DBLE(Particles%nvlist_cross(ip))
-        !wp => set_wps(Particles,i,read_only=.true.)
-        !call ppm_vtk_particle_cloud('P_old_dbg',Particles_old,info)
-        !call ppm_vtk_particle_cloud('P_new_dbg',Particles,info)
-
-        !info = ppm_error_error
-        !CALL ppm_error(ppm_err_argument,caller,&
-            !'Too few cross-neighbours, something wrong',__LINE__,info)
-        !GOTO 9999
-    !ENDIF
-!#endif
-
-    CALL particles_neighlists_xset(Particles,Particles_old,Particles%active_topoid,info,&
-        knn=opts%nneigh_critical)
+    CALL particles_neighlists_xset(Particles,Particles_old,&
+        Particles%active_topoid,info,knn=opts%nneigh_critical)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -168,11 +123,10 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         GOTO 9999
     ENDIF
 
-
-    !!---------------------------------------------------------------------!
-    !! Interpolate scalar fields onto new positions
-    !! (reallocate arrays if number of particles has changed)
-    !!---------------------------------------------------------------------!
+    !---------------------------------------------------------------------!
+    ! Interpolate scalar fields onto new positions
+    ! (reallocate arrays if number of particles has changed)
+    !---------------------------------------------------------------------!
     ! Loop through all properties i that are mapped
     DO i=1,Particles_old%max_wpsid
         IF (Particles_old%wps(i)%is_mapped) THEN
@@ -274,23 +228,6 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
         xp             => Set_xp(Particles,read_only=.TRUE.)
         nvlist_cross   => NULL()
         vlist_cross    => NULL()
-
-        !level          => Get_wps(Particles,Particles%level_id)
-        !level_grad     => Get_wpv(Particles,Particles%level_grad_id)
-        !level_old      => Get_wps(Particles_old,Particles_old%level_id)
-        !CALL sop_interpolate_particles(&
-            !Particles_old%xp,level_old,&
-            !Particles%xp,Particles%Npart,nvlist_cross,&
-            !vlist_cross,eta,eta_interp,opts,info,wp=level,wp_grad=level_grad)
-        !level          => Set_wps(Particles,Particles%level_id)
-        !level_grad     => Set_wpv(Particles,Particles%level_grad_id)
-        !level_old      => Set_wps(Particles_old,Particles_old%level_id,&
-            !read_only=.TRUE.)
-        !IF (info .NE. 0) THEN
-            !CALL ppm_write(ppm_rank,caller,'sop_interp_particles failed.',info)
-            !info = -1
-            !GOTO 9999
-        !ENDIF
     ENDIF
 
     memory_used = 0

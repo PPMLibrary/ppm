@@ -832,8 +832,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 #endif
 #endif
+#ifdef __MPI
         CALL MPI_Allreduce(adding_particles,adding_particles,1,&
             MPI_LOGICAL,MPI_LOR,ppm_comm,info)
+#endif
 
         !------------------------------------------------------------------
         ! Since particles have moved, we need to remap them
