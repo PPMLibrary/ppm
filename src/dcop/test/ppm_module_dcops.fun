@@ -21,7 +21,7 @@ integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
 integer                         :: np_global = 1000   ! 11000 (for 3d), 4000 (for 2d)
 integer                         :: npart_g
-real(mk),parameter              :: cutoff = 0.15_mk
+real(mk),parameter              :: cutoff = 0.25_mk !0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
 real(mk),dimension(:  ),pointer :: len_phys=>NULL()
@@ -122,6 +122,82 @@ real(mk),dimension(8)          :: c_array
         call ppm_alloc_particles(Particles,np_global,ppm_param_dealloc,info)
 
     end teardown
+
+    test operator_incl_ghosts
+        ! test if we can compute the dc operators on the ghosts
+
+        call particles_initialize(Particles,np_global,info,&
+            ppm_param_part_init_cartesian,topoid)
+        allocate(disp(ndim,Particles%Npart))
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles,disp,info)
+        call particles_apply_bc(Particles,topoid,info)
+        Particles%cutoff = Particles%h_avg * 2.2_mk
+        call particles_mapping_global(Particles,topoid,info)
+        wp_id=0
+        call particles_allocate_wps(Particles,wp_id,info,name='wp')
+        wp => Get_wps(Particles,wp_id)
+        xp => Get_xp(Particles)
+        FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
+        wp => Set_wps(Particles,wp_id)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+        call particles_mapping_ghosts(Particles,topoid,info,ghostsize=3._mk*Particles%cutoff)
+        call particles_neighlists(Particles,topoid,info,incl_ghosts=.TRUE.)
+        dwp_id=0
+        call particles_allocate_wps(Particles,dwp_id,info,name='dwp',with_ghosts=.TRUE.)
+
+!check Laplacian
+        nterms=ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/2,0,   0,2/)
+        else 
+               degree =  (/2,0,0, 0,2,0, 0,0,2/)
+        endif
+        coeffs = 1.0_mk
+        order =  2
+
+        eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,&
+            nterms,info,name="laplacian",with_ghosts=.TRUE.)
+        Assert_Equal(info,0)
+
+        call particles_dcop_compute(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+        call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+        Assert_Equal(info,0)
+
+        wp => Get_wps(Particles,wp_id,with_ghosts=.TRUE.)
+        dwp => Get_wps(Particles,dwp_id,with_ghosts=.TRUE.)
+        xp => Get_xp(Particles,with_ghosts=.TRUE.)
+        err = 0._mk
+        linf = 0._mk
+        DO ip=1,Particles%Mpart
+            exact = 0._mk
+            DO i=1,nterms
+                coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+            ENDDO
+            write(102,'(6(E20.10,2X),I0)') xp(1:ndim,ip),wp(ip),exact,dwp(ip),&
+                abs(dwp(ip) - exact), Particles%nvlist(ip)
+            IF (ip.LE.Particles%Npart) THEN
+                err = MAX(err,abs(dwp(ip) - exact))
+                linf = MAX(linf,abs(exact))
+            ENDIF
+        ENDDO
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+write(*,*) 'error is ', err/linf
+        Assert_True(err/linf.LT.0.1)
+        deallocate(degree,coeffs,order)
+        call particles_dcop_free(Particles,eta_id,info)
+        Assert_Equal(info,0)
+
+    end test
 
     test allocate_operator
         ! test data structure (mostly define and free)
@@ -642,7 +718,7 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
         call particles_allocate_wps(Particles,Particles%nn_sq_id,info,name='nn_sq')
         wp => Get_wps(Particles,Particles%nn_sq_id)
         xp => Get_xp(Particles,with_ghosts=.true.)
-         forall(ip=1:Particles%Npart)  wp(ip) = huge(1._mk)
+        forall(ip=1:Particles%Npart)  wp(ip) = huge(1._mk)
         do ip=1,Particles%Npart
             do ineigh=1,Particles%nvlist(ip)
                 iq=Particles%vlist(ineigh,ip)
@@ -710,6 +786,7 @@ write(*,*) 'error is ', err/linf
         call particles_updated_cutoff(Particles2,info,Particles2%h_avg*3.1_mk)
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_mapping_ghosts(Particles2,topoid,info)
+        Particles2%neighlists_cross = .FALSE.
         call particles_neighlists_xset(Particles2,Particles,topoid,info)
         nterms=2
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
@@ -850,6 +927,7 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf, linf
         Assert_Equal(info,0)
 
     end test
+
 
 !-------------------------------------------------------------
 ! test function
