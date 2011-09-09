@@ -40,8 +40,11 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 1
+#define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
+     !method for minimisation of the interaction potential
+     ! __USE_LBFGS  for L-BFGS
+     ! __USE_SD     for steepest descent using a line search
 #define __USE_LBFGS 1
 
      USE ppm_module_data

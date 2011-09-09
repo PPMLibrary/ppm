@@ -187,6 +187,10 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
             OPEN(7000+printp)
         ENDIF
 #endif
+
+    !Keep a copy of the ghosts
+    xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = Particles%xp(1:ppm_dim,Npart+1:Particles%Mpart)
+
     !!-------------------------------------------------------------------------!
     !! Re-allocate (grow) arrays if necessary
     !!-------------------------------------------------------------------------!
@@ -288,16 +292,16 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     !! positions. This is a quick hack to ensure exact consistency between
     !! simulations run an different number of processors)
     !!-------------------------------------------------------------------------!
-    add_part = 0
 
-    xp => Particles%xp !Cannot use get_xp, because we need access to elements
+    xp => Particles%xp(1:ppm_dim,1:Npart+add_part) 
+    !Cannot use get_xp, because we need access to elements
     ! of the array xp that are beyond Particles%Npart
-    D => Particles%wps(Particles%D_id)%vec      !same reason
-    Dtilde => Particles%wps(Particles%Dtilde_id)%vec      !same reason
-    rcp => Particles%wps(Particles%rcp_id)%vec  !same reason
+    D => Particles%wps(Particles%D_id)%vec(1:Npart+add_part)      !same reason
+    Dtilde => Particles%wps(Particles%Dtilde_id)%vec(1:Npart+add_part)      !same reason
+    rcp => Particles%wps(Particles%rcp_id)%vec(1:Npart+add_part)  !same reason
     nvlist => Particles%nvlist(1:Npart)
-    fuse_part => Particles%wpi(fuse_id)%vec      !same reason
-    nb_neigh => Particles%wpi(nb_neigh_id)%vec      !same reason
+    fuse_part => Particles%wpi(fuse_id)%vec(1:Npart+add_part)      !same reason
+    nb_neigh => Particles%wpi(nb_neigh_id)%vec(1:Npart+add_part)      !same reason
     IF (opts%level_set) THEN
         IF (.NOT. PRESENT(level_fun)) THEN
             level => Get_wps(Particles,Particles%level_id)
@@ -328,8 +332,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     ENDDO
 
 
-    xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = xp(1:ppm_dim,Npart+1:Particles%Mpart)
-
+    add_part = 0
     add_particles: DO ip=1,Npart
 
         IF (nvlist(ip).NE.0) THEN

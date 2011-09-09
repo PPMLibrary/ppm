@@ -12,7 +12,7 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
@@ -116,13 +116,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         use ppm_module_typedef
         use ppm_module_topo_check
 
-!start with slightly perturbed cartesian particles
+        !start with slightly perturbed cartesian particles
         call particles_initialize(Particles,np_global,info,&
                 ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
-        disp = 0.0001_mk * disp
+        disp = Particles%h_avg * 0.2_mk * disp
         call particles_move(Particles,disp,info)
         deallocate(disp)
         call particles_apply_bc(Particles,topoid,info)
@@ -130,78 +130,101 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_partial(Particles,topoid,info)
         Assert_Equal(info,0)
 
-!initialise cutoff radii and one property (not used, it will just be carried around)
+        !initialise cutoff radii and one property (not used, it will just be carried around)
+        ! cutoff
         call particles_allocate_wps(Particles,Particles%rcp_id,info,&
-            with_ghosts=.true.,name='rcp')
+            with_ghosts=.false.,name='rcp')
         Assert_Equal(info,0)
         wp1_id=0
+        ! property
         call particles_allocate_wps(Particles,wp1_id,info,&
-            with_ghosts=.true.,name='wp_test1')
+            with_ghosts=.false.,name='wp_test1')
         Assert_Equal(info,0)
+        ! initialisation
         rcp => get_wps(Particles,Particles%rcp_id)
         wp => get_wps(Particles,wp1_id)
         xp => get_xp(Particles)
         FORALL(ip=1:Particles%Npart) 
-            rcp(ip) = MIN(1.9_mk*Particles%h_avg,cutoff)
-            wp(ip) = 7._mk * f0_fun(xp(1:ndim,ip)) 
+            rcp(ip) = MIN(1.9_mk*Particles%h_avg,cutoff) !uniform cutoffs
+            wp(ip) = 7._mk * f0_fun(xp(1:ndim,ip))
         END FORALL
         rcp => set_wps(Particles,Particles%rcp_id)
         wp => set_wps(Particles,wp1_id)
         xp => set_xp(Particles,read_only=.true.)
 
+        ! call this routine when the cutoffs have been modified manually
+        ! (it will check whether the ghosts have to be re-computed)
         call particles_updated_cutoff(Particles,info)
         Assert_Equal(info,0)
+
+        !compute ghosts and neighbour lists
         call particles_mapping_ghosts(Particles,topoid,info)
         Assert_True(info.eq.0)
         call particles_neighlists(Particles,topoid,info)
         Assert_True(info.eq.0)
 
-        write(dirname,*) './'
-!        call particles_io_xyz(Particles,0,dirname,info)
+        ! printout 
         call ppm_vtk_particle_cloud('before_adapt0',Particles,info)
         Assert_Equal(info,0)
 
-!setup options for sop
+        ! Now, we will adapt the particles positions such that their
+        ! resolution matches the monitor function (D_fun). D_fun
+        ! is a function of the fields gradient. When these are
+        ! known analytically, they are passed as the optional
+        ! argument wp_grad_fun (and the field itself is passed as
+        ! the optional argument wp_grad).
+
+        ! We first adapt the particles in the case where the field and
+        ! its gradient are known analytically. Then when they are not.
+
+        !setup options for sop
+
+        ! init data structure for options
         call sop_init_opts(opts,info)
         Assert_Equal(info,0)
+
+        ! set parameters
         opts%D_needs_gradients = .true.
+        opts%add_parts = .true.
+        opts%add_parts = .true.
+        opts%param_morse = 2.5_mk
+        opts%rcp_over_D = 2.5_mk
+        opts%attractive_radius0 = 0.5_mk !0.4_mk
+        opts%adaptivity_criterion = 6._mk
+
         if (ndim .eq. 2) then
             opts%scale_D = 0.05_mk
-            !opts%minimum_D = 0.001_mk ! -> 60k particles
             opts%minimum_D = 0.01_mk
             opts%maximum_D = 0.07_mk
-            opts%adaptivity_criterion = 6._mk
             opts%fuse_radius = 0.2_mk
-            opts%attractive_radius0 = 0.3_mk !0.4_mk
-            opts%rcp_over_D = 2.4_mk
         else
             opts%scale_D = 0.05_mk
             opts%minimum_D = 0.01_mk
             opts%maximum_D = 0.07_mk
-            opts%adaptivity_criterion = 6._mk
             opts%fuse_radius = 0.2_mk
-            opts%attractive_radius0 = 0.3_mk !0.4_mk
-            opts%rcp_over_D = 2.4_mk
         endif
 
         Particles%itime = 0
-        opts%scale_D = 1.00_mk
-        opts%minimum_D = 0.05_mk
-        opts%rcp_over_D = 2.0_mk
+
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
-            opts%minimum_D = 0.01_mk
 
-!printout
+        !printout
         call ppm_vtk_particle_cloud('after_adapt0',Particles,info)
-        Assert_Equal(info,0)
 
-!define a property, which will be used for adaptation
+        ! Now we adapt the particles in the case where the field and
+        ! its gradient are NOT known analytically.
+
+        !Define a property, which will be used for adaptation
+        ! SOP expects this property to be the field on which it has
+        ! to adapt the particles positions. It will evaluate its gradients
+        ! numerically using DC operators.
         call particles_allocate_wps(Particles,Particles%adapt_wpid,&
-            info,name='wp_test')
+            info,name='wp_adapt')
         wp_id = Particles%adapt_wpid
         Assert_Equal(info,0)
+
         xp => get_xp(Particles)
         wp => get_wps(Particles,wp_id)
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip)) 
@@ -210,38 +233,25 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_ghosts(Particles,topoid,info)
 
 
-!        Particles%itime = 1
-!        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
-!            wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
-!wpv_id=0
-!call particles_allocate_wpv(Particles,wpv_id,ndim,info,name='gradwp_anlytical')
-!disp=>get_wpv(Particles,wpv_id)
-!xp=>get_xp(Particles)
-!DO ip=1,Particles%Npart
-!disp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip))
-!ENDDO
-!
-!xp=>set_xp(Particles,read_only=.TRUE.)
-!disp=>set_wpv(Particles,wpv_id)
-
-!adapt particles without using analytical expressions
-        Particles%itime = 3
+        Particles%itime = 1
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
-!printout
-!        call particles_io_xyz(Particles,3,dirname,info)
-        call ppm_vtk_particle_cloud('after_adapt3',Particles,info)
-        Assert_Equal(info,0)
+        !printout
+        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
 
-!do nothing and adapt again
+        !do nothing and adapt again
         call particles_mapping_ghosts(Particles,topoid,info)
         Assert_Equal(info,0)
-        Particles%itime = 4
+
+        Particles%itime = 2
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
-!move particles and adapt again
+        !printout
+        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
+
+        !move particles and adapt one more time
         allocate(disp(ndim,Particles%Npart),stat=info)
         xp => get_xp(Particles)
         dt = Particles%h_min
@@ -272,11 +282,13 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
         call particles_neighlists(Particles,topoid,info)
         Assert_Equal(info,0)
-        Particles%itime = 5
+
+        Particles%itime = 3
+
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
-        call ppm_vtk_particle_cloud('after_adapt5',Particles,info)
-        Assert_Equal(info,0)
+
+        call ppm_vtk_particle_cloud('after_adapt3',Particles,info)
 
     end test
 
@@ -308,7 +320,7 @@ pure function f0_grad_fun(pos)
     centre = 0.5_mk
     centre(2) = 0.75_mk
     radius=0.15_mk
-    eps = 0.01_mk
+    eps = 0.02_mk
 
     d = sqrt(sum((pos(1:ppm_dim)-centre)**2))
     f0 = tanh((d - radius)/eps)

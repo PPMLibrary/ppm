@@ -2101,12 +2101,12 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
     IF (cutoff .GT. 0._MK) THEN
         IF (Particles%has_ghosts) THEN
-            IF (verbose) THEN
+            IF (verbose.or.dbg) THEN
                 write(*,*) 'ghosts have already been updated'
             ENDIF
 
             IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
-                IF (verbose) THEN
+                IF (verbose.or.dbg) THEN
                     write(*,*) 'we skip the ghost_get and go straight to'
                     write(*,*) 'push/send/pop'
                 ENDIF
@@ -2119,6 +2119,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 #ifdef __MPI
             t1 = MPI_WTIME(info)
 #endif
+            IF(dbg) &
+                write(*,*) 'ghost-get '
             CALL ppm_map_part_ghost_get(topoid,Particles%xp,ppm_dim,&
                 Particles%Npart,Particles%isymm,cutoff,info)
             IF (info .NE. 0) THEN
@@ -2332,6 +2334,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             ENDDO
 
             IF (.NOT.skip_ghost_get) THEN
+                IF(dbg) &
+                    write(*,*) 'popping-xp '
                 CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
                     Particles%Mpart,info)
                 IF (info .NE. 0) THEN
@@ -2924,8 +2928,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !-----------------------------------------------------------------------
         Particles%neighlists = .TRUE.
 
-        ! TODO: maybe the MPI_Allreduce is not really needed for production runs
-        ! This is mainly used for debugging/warnings
 #ifdef __MPI
         nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
         nneighmax = MAXVAL(Particles%nvlist(1:np_target))
@@ -3193,6 +3195,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
     !Update state
     Particles_1%neighlists_cross = .TRUE.
+    Particles_1%Particles_cross => Particles_2
     !
     ! TODO:
     !WARNING: does not work with several processors!
@@ -3203,7 +3206,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         MINVAL(Particles_1%nvlist_cross(1:Particles_1%Npart))
     Particles_1%nneighmax_cross = &
         MAXVAL(Particles_1%nvlist_cross(1:Particles_1%Npart))
-    Particles_1%Particles_cross => Particles_2
+
     ! DC operators that use a xset neighbour list (i.e. interpolation),
     ! if they exist, are no longer valid 
     IF (ASSOCIATED(Particles_1%ops)) THEN
@@ -4790,14 +4793,14 @@ SUBROUTINE particles_dcop_apply(Particles,from_id,to_id,eta_id,&
     IF (.NOT.(Particles%ops%desc(eta_id)%is_defined)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
-            & 'Cannot apply DC operator. Call particles_dcops_define first.',&
+            & 'Cannot apply DC operator. Call particles_dcop_define first.',&
             __LINE__,info)
         GOTO 9999
     ENDIF
     IF (.NOT.(Particles%ops%desc(eta_id)%is_computed)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
-            & 'Cannot apply DC operator. Call particles_dcops_compute first.',&
+            & 'Cannot apply DC operator. Call particles_dcop_compute first.',&
             __LINE__,info)
         GOTO 9999
     ENDIF
@@ -5253,6 +5256,144 @@ SUBROUTINE particles_print_stats(Particles,info)
 
 
 END SUBROUTINE particles_print_stats
+
+SUBROUTINE particles_check_arrays(Particles,info)
+    !!!------------------------------------------------------------------------!
+    !!! Check if the sizes of the arrays containing the different variables
+    !!! are consistent with the data provided by the Particles data structure
+    !!! Useful for debugging...
+    !!!------------------------------------------------------------------------!
+    USE ppm_module_data, ONLY: ppm_rank
+    USE ppm_module_write
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: cbuf,filename
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_check_arrays'
+    REAL(KIND(1.D0))                           :: t0
+    REAL(MK)                                   :: size_theo
+    LOGICAL                                    :: ok
+    INTEGER                                    :: i
+
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+
+    ok=.FALSE.
+    IF (Particles%has_ghosts) THEN
+        IF (Particles%Mpart .LT. Particles%Npart) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'Mpart < Npart',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        size_theo=ppm_dim*Particles%Mpart
+    ELSE
+        size_theo=ppm_dim*Particles%Npart
+    ENDIF
+    ok = (SIZE(Particles%xp).GE.(size_theo))
+    IF (.NOT.ok) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,'xp too small',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    DO i=1,Particles%max_wpiid
+        IF (Particles%wpi(i)%is_mapped) THEN
+            IF (Particles%wpi(i)%has_ghosts) THEN
+                size_theo=Particles%Mpart
+            ELSE
+                size_theo=Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wpi(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wpi too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+    DO i=1,Particles%max_wpsid
+        IF (Particles%wps(i)%is_mapped) THEN
+            IF (Particles%wps(i)%has_ghosts) THEN
+                size_theo=Particles%Mpart
+            ELSE
+                size_theo=Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wps(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wps too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+    DO i=1,Particles%max_wpvid
+        IF (Particles%wpv(i)%is_mapped) THEN
+            IF (Particles%wpv(i)%has_ghosts) THEN
+                size_theo=Particles%wpv(i)%lda * Particles%Mpart
+            ELSE
+                size_theo=Particles%wpv(i)%lda * Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wpv(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wpv too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+
+    IF (Particles%neighlists) THEN
+        size_theo=Particles%Npart
+        ok = (SIZE(Particles%nvlist).GE.(size_theo))
+        IF (.NOT.ok) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'nvlist too small',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        ok = (SIZE(Particles%vlist,2).GE.(size_theo))
+        IF (.NOT.ok) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'vlist too small',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+
+
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_check_arrays
 
 END MODULE ppm_module_particles
 

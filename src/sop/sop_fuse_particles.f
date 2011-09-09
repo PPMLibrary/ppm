@@ -169,15 +169,15 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
             iq=vlist(ineigh,ip)
             dist=SQRT(SUM((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2)) / &
                 MIN(D(ip),D(iq))
-            IF (dist .LT. 1D-12) THEN
-                WRITE(*,*) 'dist = ',dist, ' 2 particles very close'
-                WRITE(*,*) xp(1:ppm_dim,ip)
-                WRITE(*,*) xp(1:ppm_dim,iq)
-                WRITE(*,*) D(ip),D(iq)
-                WRITE(*,*) 'something is probably wrong...'
-                !info = -1
-                !GOTO 9999
-            ENDIF
+            !IF (dist .LT. 1D-12) THEN
+                !WRITE(*,*) 'dist = ',dist, ' 2 particles very close'
+                !WRITE(*,*) xp(1:ppm_dim,ip)
+                !WRITE(*,*) xp(1:ppm_dim,iq)
+                !WRITE(*,*) D(ip),D(iq)
+                !WRITE(*,*) 'something is probably wrong...'
+                !!info = -1
+                !!GOTO 9999
+            !ENDIF
             IF (dist .LT. threshold) THEN
                 ! Delete the particle that has the larger D
                 IF (D(ip).GT.D(iq)) THEN
