@@ -27,7 +27,12 @@
          !  copy periodic ghosts in the x-direction
          !-------------------------------------------------------------------
          xminf = min_phys(1)
+#if    __MODE == __HOM
          xmini = min_phys(1) + ghostsize
+#elif  __MODE == __INHOM
+         xmini = min_phys(1) + ghostsize(1)
+#endif 
+         
 
          k     = nghostplus
          DO i=1,nghostplus
@@ -52,7 +57,12 @@
             !  then the east bc, but only if we are not using symmetry
             !----------------------------------------------------------------
             xmaxf = max_phys(1)
+#if    __MODE == __HOM
             xmaxi = max_phys(1) - ghostsize
+#elif  __MODE == __INHOM
+            xmaxi = max_phys(1) - ghostsize(1)
+#endif 
+            
             
             DO i=1,nghostplus
                IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN

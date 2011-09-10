@@ -41,8 +41,13 @@
   ! No '=' in the inequality checking.
   !----------------------------------------------------------
   
-  yminf = min_phys(2) 
+  yminf = min_phys(2)
+#if    __MODE == __HOM
   ymini = min_phys(2) + ghostsize
+#elif  __MODE == __INHOM
+  ymini = min_phys(2) + ghostsize(2)
+#endif 
+  
   
   DO i = 1, nghostplus
      IF ( xt(2,i) > yminf .AND. xt(2,i) < ymini ) THEN

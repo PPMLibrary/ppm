@@ -41,8 +41,12 @@
   ! No '=' in the inequality checking.
   !----------------------------------------------------------
   
-  zminf = min_phys(3) 
+  zminf = min_phys(3)
+#if    __MODE == __HOM 
   zmini = min_phys(3) + ghostsize
+#elif  __MODE == __INHOM 
+  zmini = min_phys(3) + ghostsize(3)
+#endif
   
   DO i = 1, nghostplus
      

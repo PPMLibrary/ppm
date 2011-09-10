@@ -34,8 +34,12 @@
   ! No '=' in the inequality checking.
   !----------------------------------------------------------
   
-  xmaxf = max_phys(1) 
+  xmaxf = max_phys(1)
+#if    __MODE == __HOM 
   xmaxi = max_phys(1) - ghostsize
+#elif  __MODE == __INHOM 
+  xmaxi = max_phys(1) - ghostsize(1)
+#endif
   
   
   DO i = 1, nghostplus

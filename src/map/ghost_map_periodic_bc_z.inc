@@ -34,7 +34,12 @@
             !  copy periodic ghosts in the z-direction
             !----------------------------------------------------------------
             zminf = min_phys(3)
+#if    __MODE == __HOM
             zmini = min_phys(3) + ghostsize
+#elif  __MODE == __INHOM
+            zmini = min_phys(3) + ghostsize(3)
+#endif 
+            
             
             k     = nghostplus 
             DO i=1,nghostplus
@@ -58,7 +63,11 @@
                !  then the north bc, but only if we are not using symmetry
                !-------------------------------------------------------------
                zmaxf = max_phys(3)
+#if    __MODE == __HOM
                zmaxi = max_phys(3) - ghostsize
+#elif  __MODE == __INHOM
+               zmaxi = max_phys(3) - ghostsize(2)
+#endif 
                
                DO i=1,nghostplus
                   IF  (xt(3,i).GT.zmaxi.AND.xt(3,i).LT.zmaxf) THEN

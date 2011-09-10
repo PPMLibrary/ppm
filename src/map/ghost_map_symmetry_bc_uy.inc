@@ -43,7 +43,11 @@
   !----------------------------------------------------------
   
   ymaxf = max_phys(2)
+#if    __MODE == __HOM 
   ymaxi = max_phys(2) - ghostsize
+#elif  __MODE == __INHOM 
+  ymaxi = max_phys(2) - ghostsize(2)
+#endif
   
   DO i = 1, nghostplus
      IF ( xt(2,i) > ymaxi .AND. xt(2,i) < ymaxf ) THEN

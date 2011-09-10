@@ -34,7 +34,12 @@
          !  copy periodic ghosts in the y-direction
          !-------------------------------------------------------------------
          yminf = min_phys(2)
+#if    __MODE == __HOM
          ymini = min_phys(2) + ghostsize
+#elif  __MODE == __INHOM
+         ymini = min_phys(2) + ghostsize(2)
+#endif 
+         
          
          k     = nghostplus
          DO i=1,nghostplus
@@ -59,7 +64,12 @@
             !  then the north bc, but only if we are not using symmetry
             !----------------------------------------------------------------
             ymaxf = max_phys(2)
+#if    __MODE == __HOM
             ymaxi = max_phys(2) - ghostsize
+#elif  __MODE == __INHOM
+            ymaxi = max_phys(2) - ghostsize(2)
+#endif 
+            
             
             DO i=1,nghostplus
                IF  (xt(2,i).GT.ymaxi.AND.xt(2,i).LT.ymaxf) THEN
