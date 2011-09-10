@@ -142,7 +142,13 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! First index is 1-6 (each of the faces)
+      !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ighostsize
       !!! Size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
@@ -189,15 +195,15 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,ul,iopt,j,treetype,nbox
+      INTEGER                           :: i,iopt,treetype,nbox
       INTEGER                           :: isub,minbox
       INTEGER, DIMENSION(1)             :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      INTEGER , DIMENSION(:,:), POINTER :: istart
-      INTEGER , DIMENSION(:,:), POINTER :: ndata
+      INTEGER, DIMENSION(:,:), POINTER  :: istart  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: ndata   => NULL()
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec,meshdx
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
@@ -211,7 +217,6 @@
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER                           :: nsubs
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
-      TYPE(ppm_t_topo)       , POINTER  :: topo     => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

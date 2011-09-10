@@ -35,6 +35,11 @@
       SUBROUTINE inl_vlist_d(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
      & ghostlayer, info, vlist, nvlist, lstore)
 #endif
+      
+      !-------------------------------------------------------------------------
+      !  Modules
+      !-------------------------------------------------------------------------
+      USE ppm_module_check_id
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -90,8 +95,8 @@
       INTEGER                                    :: n_part
       TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
       LOGICAL                                    :: lst
-      INTEGER                                    :: i
       INTEGER                                    :: isub
+      INTEGER                                    :: i
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
 
@@ -102,8 +107,15 @@
       INTEGER, DIMENSION(2)                 :: lda
 
       CALL substart('ppm_inl_vlist',t0,info)
+      
+      !-------------------------------------------------------------------------
+      !  Check Arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+        CALL check
+        IF (info .NE. 0) GOTO 9999
+      ENDIF
 
-      ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
       !---------------------------------------------------------------------
       ! In symmetric verlet lists, we need to allocate nvlist for all
@@ -215,7 +227,42 @@
               ENDDO
           END IF
       ENDDO
+9999  CONTINUE
       CALL substop('ppm_inl_vlist',t0,info)
+      RETURN
+      CONTAINS
+      SUBROUTINE check
+          LOGICAL :: valid
+
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_vlist',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (skin .LT. 0.0_MK) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'skin must be >= 0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &            'Geometric topology required',__LINE__,info)
+                  GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+              CALL ppm_check_topoid(topoid,valid,info)
+              IF (.NOT. valid) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_neighlist_vlist',  &
+     &                 'topoid out of range',__LINE__,info)
+                  GOTO 8888
+              ENDIF
+          ENDIF
+ 8888     CONTINUE
+      END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE inl_vlist_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -521,7 +568,6 @@
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          INTEGER                               :: i
           INTEGER                               :: p_idx
 
           REAL(MK)                              :: t0
@@ -578,13 +624,13 @@
       !-------------------------------------------------------------------------
           IF(lsymm .EQV. .TRUE.)   THEN ! If lists are symmetric
               DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,       &
-                  & actual_domain, xp, cutoff, skin, vlist, nvlist)
+                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,&
+                  & actual_domain, xp, cutoff, skin, nvlist)
               END DO
           ELSE                          ! If lists are not symmetric
               DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, xp, cutoff,    &
-                  & skin, vlist, nvlist)
+                  CALL count_neigh(clist%rank(p_idx), clist, whole_domain, &
+                  & xp, cutoff, skin, nvlist)
               END DO
           END IF
 
@@ -651,6 +697,7 @@
 
 9999      CONTINUE
           CALL substop('getVerletLists',t0,info)
+          RETURN
 
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getVerletLists_s

@@ -24,6 +24,7 @@ module Funit
       File.delete(suite_name+"_fun.f") if File.exists?(suite_name+"_fun.f")
       super(suite_name+"_fun.f","w")
       @init, @finalize, @tests, @setup, @teardown = [], [], [], [], []
+      @arglists = {}
       header
       @wrap_with_module = wrap_with_module
       module_wrapper if @wrap_with_module
@@ -70,12 +71,14 @@ module #{@suite_name}_fun
  integer :: numAsserts        = 0
  integer :: numAssertsTested  = 0
  integer :: numFailures       = 0
+ integer :: funit_rank
+ integer :: funit_comm
+ integer :: funit_info
 
       TOP
     end
 
     def expand
-      $stderr.print "expanding test suite: #{@suite_name}..."
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
 
@@ -101,8 +104,13 @@ module #{@suite_name}_fun
           add_to_teardown funit_contents
         when /^\s*Xtest\s+(\w+)/i
           ignore_test($1,funit_contents)
-        when /^\s*test\s+(\w+)/i
-          a_test($1,funit_contents)
+        when /^\s*test\s+(\w+)(.*)/i
+          @tname    = $1
+          @leftover = $2
+          if (@leftover =~ /\(/ ) then
+            @leftover += funit_contents.shift while (@leftover !~ /\)/)
+          end
+          a_test(@tname,funit_contents,@leftover)
         when /^\s*test/i
           syntax_error "no name given for test", @suite_name
         when /^\s*end\s+(setup|teardown|test)/i
@@ -113,7 +121,6 @@ module #{@suite_name}_fun
           puts line
         end
       end
-      $stderr.puts "done."
     end
 
     def add_to_init funit_contents
@@ -145,10 +152,16 @@ module #{@suite_name}_fun
       line = funit_contents.shift while line !~ /end\s+test/i
     end
 
-    def a_test test_name, funit_contents
+    def a_test test_name, funit_contents, argument_list
       @test_name = test_name
       @tests.push test_name
       syntax_error("test name #@test_name not unique",@suite_name) if (@tests.uniq!)
+
+      if (!argument_list.empty?) then
+        argument_list =~ /\(\{(.*)\}\)/
+        argsets = $1.split(/\}\s*,\s*\{/)
+        @arglists[@test_name] = argsets
+      end
 
       puts " subroutine #{test_name}\n\n"
 
@@ -201,30 +214,76 @@ module #{@suite_name}_fun
 
       puts <<-NEXTONE
 
- subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh )
+ subroutine test_#{@suite_name}( nTests, nAsserts, nAssertsTested, nFailures, lfh, rank, comm )
 
   integer :: nTests
   integer :: nAsserts
   integer :: nAssertsTested
   integer :: nFailures
   integer :: lfh
+  integer :: rank
+  integer :: comm
 
   continue
 
-  log = lfh  
+  log = lfh
+  funit_rank = rank
+  funit_comm = comm
 
   call funit_init
 
       NEXTONE
 
       @tests.each do |test_name|
-        puts "\n  write(log,*) 'setting up...'"
-        puts "  call funit_setup"
-        puts "  write(log,*) 'Entering #{test_name}...'\n"
-        puts "  call #{test_name}"
-        puts "  write(log,*) 'Leaving #{test_name}...'\n"
-        puts "  call funit_teardown"
-        puts "  write(log,*) 'cleaned up...'"
+        if @arglists.has_key? test_name then
+          puts "\n  write(log,*) 'starting a test with an arglist...'"
+          @arglists[test_name].each do |args|
+            final_list = [{}]
+            args.split(/(?!\[[^\]]*),(?![^\[]*\])/i).each do |arg|
+              arg =~ /(.*):(.*)/
+              name = $1
+              name.strip!
+              value = $2
+              value.strip!
+              if value =~ /\[(.*)\]/ then
+                new_final = []
+                $1.split(',').each do |val|
+                  val.strip!
+                  final_list.each do |set|
+                    new_set = set.clone
+                    new_set[name] = val
+                    new_final.push(new_set)
+                  end
+                end
+                final_list = new_final
+              else
+                final_list.each do |set|
+                  set[name] = value
+                end
+              end
+            end
+            final_list.each do |arl|
+              puts "\n  write(log,*) 'setting up...'"
+              puts "  call funit_setup"
+              puts "  write(log,*) 'Entering #{test_name}, arglist #{arl}'\n"
+              arl.each do |var,val|
+                puts "  #{var} = #{val}"
+              end
+              puts "  call #{test_name}"
+              puts "  write(log,*) 'Leaving #{test_name}, arglist #{arl}'\n"
+              puts "  call funit_teardown"
+              puts "  write(log,*) 'cleaned up...'"
+            end
+          end
+        else
+          puts "\n  write(log,*) 'setting up...'"
+          puts "  call funit_setup"
+          puts "  write(log,*) 'Entering #{test_name}...'\n"
+          puts "  call #{test_name}"
+          puts "  write(log,*) 'Leaving #{test_name}...'\n"
+          puts "  call funit_teardown"
+          puts "  write(log,*) 'cleaned up...'"
+        end
       end
 
       puts <<-LASTONE

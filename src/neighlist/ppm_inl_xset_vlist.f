@@ -680,7 +680,7 @@
               p_idx = red_clist%rank(i)
               CALL count_xset_neigh(p_idx, red_clist, blue_clist, &
  &                 whole_domain, &
- &                 red, rcred, blue, rcblue, skin, vlist, nvlist)
+ &                 red, rcred, blue, rcblue, skin, nvlist)
           END DO
 
       !-------------------------------------------------------------------------

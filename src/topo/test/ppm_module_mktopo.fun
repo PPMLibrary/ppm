@@ -111,7 +111,6 @@ real(mk)                         :: t0,t1,t2,t3
         !----------------
         ! create particles
         !----------------
-
         call random_number(xp)
 
         !----------------
@@ -125,8 +124,32 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               cutoff,cost,info)
-        
+
         Assert_Equal(info,0)
+
+    end test
+
+    test xp_null_cuboid
+      ! ppm trac ticket #93 (https://ppm.inf.ethz.ch/trac/ticket/93)
+      use ppm_module_util_dbg
+
+      integer :: meshid = -1
+
+      deallocate(xp)
+      xp => null()
+
+      nm = 32 * nproc
+
+      call ppm_mktopo(topoid, meshid,     &
+                      xp, 0,              &
+                      decomp, assig,      &
+                      min_phys, max_phys, &
+                      bcdef, ghostsize,  &
+                      cost, Nm, info)
+
+      Assert_Equal(info, 0)
+
+!       call ppm_dbg_print(topoid,0.0_mk,1,1,info)
 
     end test
 

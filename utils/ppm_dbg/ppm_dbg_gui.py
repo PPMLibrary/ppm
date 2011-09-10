@@ -25,6 +25,14 @@ cmap = {-1: 'k',\
         4 : 'y',\
         5 : 'c',\
         6 : 'm'}
+    
+def isreal(el):
+    if el[-1] == -1: return False
+    else: return True
+
+def isghost(el):
+    if el[-1] == -1: return True
+    else: return False
 
 
 class SubDomain(object):
@@ -298,6 +306,47 @@ class AppForm(QMainWindow):
     def on_pick(self):
         """ pick event handler for mpl canvas."""
         pass
+    
+    def on_wheel(self,event):
+        zoom_factor = 0.8
+        if event.step > 0:
+            zoom = zoom_factor/event.step
+        else:
+            zoom = (-1*event.step)/zoom_factor
+        xlim = self.axes.get_xlim()
+        ylim = self.axes.get_ylim()
+        xdist = xlim[1]-xlim[0]
+        ydist = ylim[1]-ylim[0]
+        zoom_xdist = (xdist*zoom)/2.0
+        zoom_ydist = (ydist*zoom)/2.0
+
+        if self.dim == 2:
+            zoom_center = (event.xdata,event.ydata)
+            new_xlim = (zoom_center[0] - zoom_xdist, \
+                        zoom_center[0] + zoom_xdist)
+            new_ylim = (zoom_center[1] - zoom_ydist, \
+                        zoom_center[1] + zoom_ydist)
+        elif self.dim == 3:
+            zlim = self.axes.get_zlim3d()
+            zdist = (zlim[1]-zlim[0])*zoom
+            zoom_zdist = (zdist*zoom)/2.0
+            zoom_center = [xlim[0]+xdist/2.0, \
+                           ylim[0]+ydist/2.0, \
+                           zlim[0]+zdist/2.0]
+            new_xlim = (zoom_center[0] - zoom_xdist, \
+                        zoom_center[0] + zoom_xdist)
+            new_ylim = (zoom_center[1] - zoom_ydist, \
+                        zoom_center[1] + zoom_ydist)
+            new_zlim = (zoom_center[1] - zoom_zdist, \
+                        zoom_center[1] + zoom_zdist)
+            self.axes.set_zlim3d(new_zlim)
+        
+        self.axes.set_xlim(new_xlim)
+        self.axes.set_ylim(new_ylim)
+        
+        self.canvas.draw()
+        if self.dim == 3:
+            self.axes.mouse_init()
 
     def on_draw(self):
         """ Redraws the figure."""
@@ -326,6 +375,8 @@ class AppForm(QMainWindow):
             self.axes.set_zlabel('z')
         
         self.canvas.draw()
+        if self.dim == 3:
+            self.axes.mouse_init()
 
 
     def open_data(self):
@@ -401,6 +452,7 @@ class AppForm(QMainWindow):
         # Bind the 'pick' event for clicking on one of the bars
         #
         self.canvas.mpl_connect('pick_event', self.on_pick)
+        self.canvas.mpl_connect('scroll_event', self.on_wheel)
         
         # Create the navigation toolbar, tied to the canvas
         #
@@ -482,7 +534,7 @@ class AppForm(QMainWindow):
         for i in range(6):
             try:
                 self.axes.plot_surface(f[i][0],f[i][1],f[i][2],alpha=0.05,\
-                        color=cmap[cpu%(nc+1)+1]) 
+                        color=cmap[cpu%(nc-1)+1]) 
             except KeyError:
                 print "invalid color tag"
     
@@ -496,7 +548,7 @@ class AppForm(QMainWindow):
         """Plot a 2D subdomain."""
         nc = len(cmap.keys())
         try:
-            p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc+1)+1],linewidth=0)
+            p = Polygon(f,alpha=0.05,color=cmap[cpu%(nc-1)+1],linewidth=0)
         except KeyError:
             print "invalid color tag"
         self.axes.add_patch(p)
@@ -509,21 +561,44 @@ class AppForm(QMainWindow):
         self.axes.add_patch(p)
         p = Polygon(gl,fill=False,linewidth=0.4,linestyle='dashed',ec='k')
         self.axes.add_patch(p)
+   
     
     def plotdat2(self,x,y,tag):
         """Plot 2D particle positions."""
+        nc = len(cmap.keys())
         try:
-            self.axes.scatter(x,y,s=5,c=[cmap[t] for t in tag],linewidths=0)
+            rx,ry,rtag = zip(*filter(isreal,zip(x,y,tag)))
+            self.axes.scatter(rx,ry,s=5,c=[cmap[t%(nc-1)+1] for t in \
+                rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"
+        try:
+            gx,gy,gtag = zip(*filter(isghost,zip(x,y,tag)))
+            self.axes.scatter(gx,gy,s=5,c=[cmap[t] for t in \
+                gtag],linewidths=0,alpha=0.6,zorder=10)
+        except KeyError:
+            print "invalid color tag"
+        except ValueError:
+            print "no ghosts"
 
     
     def plotdat3(self,x,y,z,tag):
         """Plot 3D particle positions."""
+        nc = len(cmap.keys())
         try:
-            self.axes.scatter(x,y,z,s=10,c=[cmap[t] for t in tag],linewidths=0)
+            rx,ry,rz,rtag = zip(*filter(isreal,zip(x,y,z,tag)))
+            self.axes.scatter(rx,ry,rz,s=10,c=[cmap[t%(nc-1)+1] for t in \
+                rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"
+        try:
+            gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
+            self.axes.scatter(gx,gy,gz,s=10,c=[cmap[t] for t in \
+                gtag],linewidths=0,alpha=0.6)
+        except KeyError:
+            print "invalid color tag"
+        except ValueError:
+            print "no ghosts"
 
 
 def main():
