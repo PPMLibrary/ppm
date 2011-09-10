@@ -54,8 +54,8 @@
          !  Define interfaces to ppm_map_part_ghost_get
          !----------------------------------------------------------------------
          INTERFACE ppm_map_part_ghost_get
-            MODULE PROCEDURE ppm_map_part_ghost_get_d
-            MODULE PROCEDURE ppm_map_part_ghost_get_s
+            MODULE PROCEDURE ppm_map_part_ghost_get_d_inhom
+            MODULE PROCEDURE ppm_map_part_ghost_get_s_inhom
          END INTERFACE
 
          !----------------------------------------------------------------------

@@ -28,9 +28,9 @@
       !-------------------------------------------------------------------------
       !<<<< haeckic begin >>>>!
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,info)
+      SUBROUTINE ppm_map_part_ghost_get_s_inhom(topoid,xp,lda,Npart,isymm,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,info)
+      SUBROUTINE ppm_map_part_ghost_get_d_inhom(topoid,xp,lda,Npart,isymm,info)
 #endif
 
       !<<<< haeckic end >>>>!
@@ -2092,7 +2092,7 @@
  8888     CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_part_ghost_get_s
+      END SUBROUTINE ppm_map_part_ghost_get_s_inhom
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_part_ghost_get_d
+      END SUBROUTINE ppm_map_part_ghost_get_d_inhom
 #endif
