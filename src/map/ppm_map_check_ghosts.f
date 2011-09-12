@@ -35,7 +35,7 @@
       !!! Checks if all ghosts are present that we need
       !!! For all particles find particles to interact with, which are on other proc
       !!! Check if this particle we have as ghost
-! TODO: symmetry and 3d
+! TODO: symmetry
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------

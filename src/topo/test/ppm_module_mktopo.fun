@@ -4,9 +4,9 @@ USE ppm_module_typedef
 USE ppm_module_topo
 USE ppm_module_map
 USE ppm_module_util_dbg
+USE ppm_module_data
         
  !------------------------------------------------------------
- ! 
  ! This test suite tests the topology creation in 2D
  ! All possible decompositions in 2D are tested with the 
  ! following set of particles:

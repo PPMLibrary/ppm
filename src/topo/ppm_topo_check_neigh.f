@@ -35,6 +35,7 @@
       !!! Checks if all neighbors are correct
       !!! For all particles find particles to interact with
       !!! Check if this box is neighbor or itself
+! TODO: symmetry
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -189,6 +190,7 @@
       
       ! We have all particles now in allxp with maxindex allnp (dim,index,proc)
       topo_ok = .TRUE.
+
 
       IF (ppm_rank.eq.0) THEN
 
