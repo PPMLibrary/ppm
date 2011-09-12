@@ -45,7 +45,14 @@
 #if    __MODE == __HOM
   ymini = min_phys(2) + ghostsize
 #elif  __MODE == __INHOM
-  ymini = min_phys(2) + ghostsize(2)
+   !----------------------------------------------------------------
+   !  For inhomogenous ghostlayers, we use the entire max
+   !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION  
+  ymini = min_phys(2) + topo%ghostsizes(2)
+#else  
+  ymini = min_phys(2) + topo%ghostsized(2)
+#endif
 #endif 
   
   

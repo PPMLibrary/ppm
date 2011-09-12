@@ -44,8 +44,15 @@
   zminf = min_phys(3)
 #if    __MODE == __HOM 
   zmini = min_phys(3) + ghostsize
-#elif  __MODE == __INHOM 
-  zmini = min_phys(3) + ghostsize(3)
+#elif  __MODE == __INHOM
+   !----------------------------------------------------------------
+   !  For inhomogenous ghostlayers, we use the entire max
+   !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION  
+  zmini = min_phys(3) + topo%ghostsizes(3)
+#else
+  zmini = min_phys(3) + topo%ghostsized(3)
+#endif
 #endif
   
   DO i = 1, nghostplus

@@ -912,7 +912,7 @@
             !-------------------------------------------------------------------
 
             !-------------------------------------------------------------------
-            !  Get the ghostsizes for the sub in inhomogenous case
+            !  haeckic: Get the ghostsizes for the sub in inhomogenous case
             !-------------------------------------------------------------------
 
 #if __KIND == __SINGLE_PRECISION

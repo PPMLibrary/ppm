@@ -37,8 +37,15 @@
   xmaxf = max_phys(1)
 #if    __MODE == __HOM 
   xmaxi = max_phys(1) - ghostsize
-#elif  __MODE == __INHOM 
-  xmaxi = max_phys(1) - ghostsize(1)
+#elif  __MODE == __INHOM
+   !----------------------------------------------------------------
+   !  For inhomogenous ghostlayers, we use the entire max
+   !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION  
+  xmaxi = max_phys(1) - topo%ghostsizes(1)
+#else
+  xmaxi = max_phys(1) - topo%ghostsized(1)
+#endif
 #endif
   
   

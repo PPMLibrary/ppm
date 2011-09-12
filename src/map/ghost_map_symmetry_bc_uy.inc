@@ -45,8 +45,15 @@
   ymaxf = max_phys(2)
 #if    __MODE == __HOM 
   ymaxi = max_phys(2) - ghostsize
-#elif  __MODE == __INHOM 
-  ymaxi = max_phys(2) - ghostsize(2)
+#elif  __MODE == __INHOM
+   !----------------------------------------------------------------
+   !  For inhomogenous ghostlayers, we use the entire max
+   !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION  
+  ymaxi = max_phys(2) - topo%ghostsizes(2)
+#else
+  ymaxi = max_phys(2) - topo%ghostsized(2)
+#endif
 #endif
   
   DO i = 1, nghostplus

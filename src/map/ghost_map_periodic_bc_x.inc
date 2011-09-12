@@ -30,9 +30,16 @@
 #if    __MODE == __HOM
          xmini = min_phys(1) + ghostsize
 #elif  __MODE == __INHOM
-         xmini = min_phys(1) + ghostsize(1)
+            !----------------------------------------------------------------
+            !  For inhomogenous ghostlayers, we use the entire max
+            !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION
+            xmini = min_phys(1) + topo%ghostsizes(1)
+#else
+            xmini = min_phys(1) + topo%ghostsized(1)
+#endif            
 #endif 
-         
+
 
          k     = nghostplus
          DO i=1,nghostplus
@@ -60,9 +67,16 @@
 #if    __MODE == __HOM
             xmaxi = max_phys(1) - ghostsize
 #elif  __MODE == __INHOM
-            xmaxi = max_phys(1) - ghostsize(1)
-#endif 
+            !----------------------------------------------------------------
+            !  For inhomogenous ghostlayers, we use the entire max
+            !----------------------------------------------------------------
+#if    __KIND == __SINGLE_PRECISION
+            xmaxi = max_phys(1) - topo%ghostsizes(1)
+#else
+            xmaxi = max_phys(1) - topo%ghostsized(1)
+#endif
             
+#endif 
             
             DO i=1,nghostplus
                IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN

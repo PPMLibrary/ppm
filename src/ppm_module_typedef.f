@@ -250,18 +250,12 @@
             !!! max ghostsize width used when creating this topology (single)
             REAL(ppm_kind_double),DIMENSION(:  ), POINTER  :: ghostsized => NULL()
             !!! max ghostsize width used when creating this topology (double)
-
-            !<<<< haeckic begin >>>>!
             REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: minboxsizes_s => NULL()
             !!! Required ghostsizes of subs (single) in each dimension
             !!! Note: 1st index: x,y,(z), 2nd: subID
             REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: minboxsizes_d => NULL()
             !!! Required ghostsizes of subs (double) in each dimension
             !!! Note: 1st index: x,y,(z), 2nd: subID
-
-            !<<<< haeckic end >>>>!
-
-
          END TYPE ppm_t_topo
 
          !----------------------------------------------------------------------

@@ -183,41 +183,43 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
 
     test decomp_pruned_cell_random
         
-
-
         ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
         
         min_phys(1:ndim) = 0.0_mk
@@ -282,34 +284,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
 
@@ -381,34 +387,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
 
@@ -480,34 +490,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
 
@@ -579,34 +593,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
 
@@ -678,34 +696,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
         ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
     
@@ -777,34 +799,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
     
@@ -876,34 +902,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
     
@@ -975,34 +1005,38 @@ real(mk), dimension(3)          :: offset
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
     end test
     
@@ -1257,34 +1291,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -1540,34 +1578,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -1823,34 +1865,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -2106,34 +2152,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -2389,34 +2439,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -2672,34 +2726,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -2955,34 +3013,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -3238,34 +3300,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -3521,34 +3587,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -3805,34 +3875,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -4088,34 +4162,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -4371,34 +4449,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -4654,34 +4736,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -4937,34 +5023,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -5220,34 +5310,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -5503,34 +5597,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -5786,34 +5884,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -6069,34 +6171,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -6353,34 +6459,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          DEALLOCATE(randnb)
 
@@ -6636,34 +6746,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -6919,34 +7033,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -7202,34 +7320,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -7485,34 +7607,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -7768,34 +7894,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -8051,34 +8181,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -8334,34 +8468,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -8617,34 +8755,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         DEALLOCATE(randnb)
 
@@ -8902,34 +9044,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -9190,34 +9336,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
          IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -9473,34 +9623,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -9757,34 +9911,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -10043,34 +10201,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -10327,34 +10489,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)
@@ -10613,34 +10779,38 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
 
         ! 1. Are all particle this proc have in its subs
         CALL ppm_topo_check(topoid,xp,newnp,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check failed'
         ENDIF
+        Assert_True(ok)
         ! 2. check if all particles to interact with are in neighboring box
         !         for each particle determine interacting particles and
         !         check if they are in own box or neighbors
         CALL ppm_topo_check_neigh(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_neigh failed'
         ENDIF
+        Assert_True(ok)
          ! 3. minboxsizes inside, requires all neighbors correct
         !         check for each box if it fulfills ghost req of each particle inside
         !         this function also checks for has_one way case
         CALL ppm_topo_check_minbox(topoid,xp,ghost_req,newnp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_minbox failed'
         ENDIF
+        Assert_True(ok)
         ! 4. check if we have all ghost particles
         !         check for all particles on this proc if it has the ghost particles
         !         it needs. collect all particles from other procs and check
         CALL ppm_map_check_ghosts(topoid,xp,ghost_req,newnp,mp,has_one_way,ok,info)
-        Assert_True(ok)
+        
         IF (.NOT. ok) THEN
            write(*,*) '[',rank,'] topo_check_ghosts failed'
         ENDIF
+        Assert_True(ok)
 
         IF (rank .eq. 0) THEN
             DEALLOCATE(randnb,so_sum)

@@ -35,7 +35,8 @@
       !!! Checks if all ghosts are present that we need
       !!! For all particles find particles to interact with, which are on other proc
       !!! Check if this particle we have as ghost
-! TODO: symmetry
+      !!! This only works for non symmetric case
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -236,8 +237,6 @@
          ENDDO
 
          ENDIF
-
-!       print *, ppm_rank, maxnp, mp, mp-Npart
 
       ! We have all particles now in allxp with maxindex allnp (dim,index,proc)
       map_ok = .TRUE.
@@ -707,8 +706,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error ', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error ', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -754,8 +753,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -800,8 +799,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error x', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -849,8 +848,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -891,8 +890,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error y', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -939,8 +938,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -981,8 +980,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error z', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1031,8 +1030,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1074,8 +1073,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xyz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1119,8 +1118,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1163,8 +1162,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1208,8 +1207,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1252,8 +1251,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                              print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-                                       &      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                               print *, ' error xy', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!                                        &      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1296,8 +1295,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1340,8 +1339,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1384,8 +1383,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1428,8 +1427,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error xz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1473,8 +1472,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1561,8 +1560,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF
@@ -1605,8 +1604,8 @@
                                     ENDIF
                                     IF (in .EQ. mp) THEN
                                        !We have not found any until the last one -> error
-                                       print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
-         &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
+!                                        print *, ' error yz', ppm_rank, allxp(1,ip2,iproc2), allxp(2,ip2,iproc2), &
+!          &                                      allxp(1,ip,iproc),allxp(2,ip,iproc)
                                         map_ok = .FALSE.
                                        GOTO 9999
                                     ENDIF

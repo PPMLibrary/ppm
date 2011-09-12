@@ -35,7 +35,8 @@
       !!! Checks if all neighbors are correct
       !!! For all particles find particles to interact with
       !!! Check if this box is neighbor or itself
-! TODO: symmetry
+      !!! This works only for non symmetric case
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -337,10 +338,10 @@
                                     ELSEIF (in .EQ. topo%nneigh(box1)) THEN
                                        ! no neighbor found until end of list
                                        ! found a particle that violates the topology
-               print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
-
-               print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
-               print *,' ', box2, topo%min_subd(1,box2),topo%min_subd(2,box2),topo%max_subd(1,box2),topo%max_subd(2,box2)
+!                print *, box1, box2, allxp(1,ip,iproc), allxp(2,ip,iproc), allxp(1,ip2,iproc2), allxp(2,ip2,iproc2)
+! 
+!                print *,' ', box1, topo%min_subd(1,box1),topo%min_subd(2,box1),topo%max_subd(1,box1),topo%max_subd(2,box1)
+!                print *,' ', box2, topo%min_subd(1,box2),topo%min_subd(2,box2),topo%max_subd(1,box2),topo%max_subd(2,box2)
 
                                        topo_ok = .FALSE.
                                        ! no need to search any further

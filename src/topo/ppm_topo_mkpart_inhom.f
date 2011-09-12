@@ -350,6 +350,7 @@
          !-------------------------------------------------------------------
          !  a tree data structure; use a default maxvariance of 10 pct
          !-------------------------------------------------------------------
+
          IF (PRESENT(pcost)) THEN
              CALL ppm_decomp_tree(xp,Npart,min_phys,max_phys,ghost_req, &
      &                        0.1_MK,min_sub,max_sub,minboxsizes_out,bcdef,has_one_way,nsubs,info,pcost)
@@ -587,7 +588,8 @@
 !       DO i=1,nsubs
 !             
 !             IF(ppm_rank .EQ. 0)THEN
-!                print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i), minboxsizes(1,i), minboxsizes(2,i)
+!                print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i),&
+!                &  minboxsizes_out(1,i), minboxsizes_out(2,i)
 !             ENDIF
 ! 
 !       ENDDO
@@ -701,9 +703,11 @@
      &                    nneigh,ineigh,info)
       ELSE
 
-         IF (decomp.EQ.ppm_param_decomp_tree) THEN
-            minboxsizes_out => minboxsizes
-         ENDIF
+!          IF (decomp.EQ.ppm_param_decomp_tree) THEN
+!             
+!             write(*,*)'minboxsizes_out'
+!             minboxsizes_out => minboxsizes
+!          ENDIF
 
          CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
      &                    sub2proc,nsubs,bcdef,minboxsizes_out,isublist,nsublist,    &
