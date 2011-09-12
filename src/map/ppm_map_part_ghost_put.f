@@ -28,6 +28,31 @@
       !-------------------------------------------------------------------------
 
       SUBROUTINE ppm_map_part_ghost_put(topoid,info)
+      !!! This routine puts back ghost particle values/properties to the
+      !!! corresponding real particles. This is very useful in the case of
+      !!! symmetric interactions as there the ghost particles are also updated.
+      !!!
+      !!! [IMPORTANT] 
+      !!! This routine can only be called after ghost particles have been
+      !!! created using the `ppm_map_part_ghost_get` (+push/send/pop sequence)
+      !!! routine.
+      !!!
+      !!! [WARNING]
+      !!! It is an error to call `ppm_map_part_pop` in the
+      !!! push-send-pop sequence of a `map_part_ghost_put` call. Instead, you 
+      !!! *must* call `ppm_map_part_ghost_pop` for popping the
+      !!! properties pushed onto the put buffers.
+      !!!
+      !!! [TIP] 
+      !!! If you need to do alternating ghost-get and ghost-put sequences
+      !!! you may want to use `ppm_map_part_store` and `ppm_map_part_load` to
+      !!! store and load the internal buffers for ghost_get and spare yourself
+      !!! the (costly) call to `ppm_map_part_ghost_get`. Positions can be pushed
+      !!! using the `ppm_map_part_ghost_push` routine.
+      !!! 
+      !!! [NOTE]
+      !!! .Implementation Notes
+      !!! ======================================================================
       !!! This routine swaps the send and receive lists of the
       !!! mapping routine to allow sending back the value/data
       !!! computed on the ghost particles. The routine must be
@@ -35,12 +60,12 @@
       !!! by a `ppm_map_part_push`, `ppm_map_part_send` and `ppm_map_part_pop` 
       !!! to get.
       !!!
-      !!! [NOTE]
       !!! This implementation only allows *one* ghost put at a
       !!! time; To allow multiple ghosts we have to pass
       !!! the ppm_user_hack to the ghost_pop OR to copy the
       !!! userpassed array to the internally stored ppm_ghosthack
       !!! used (and *not* passed) by the ghost_pop()
+      !!! ======================================================================
       !-------------------------------------------------------------------------
       !  Modules 
       !-------------------------------------------------------------------------

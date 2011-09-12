@@ -121,7 +121,13 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! first index is 1-6 (each of the faces)
+      !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       REAL(MK)                , INTENT(IN   ) :: ghostsize
       !!! The size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
@@ -153,7 +159,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,j,treetype,nbox,isub
+      INTEGER                           :: i,treetype,nbox,isub
       INTEGER                           :: iopt
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()

@@ -11,7 +11,8 @@ test_suite ppm_module_interp_p2m
 #ifdef __MPI
     integer, parameter              :: comm = mpi_comm_world
 #endif
-    integer                         :: ndim,nspec
+    integer                         :: ndim
+    integer                         :: nspec
     integer                         :: rank
     integer                         :: nproc
     integer                         :: decomp
@@ -20,19 +21,23 @@ test_suite ppm_module_interp_p2m
     real(mk)                        :: tol
     integer                         :: info
     integer                         :: topoid,meshid
-    real(mk),dimension(:,:),pointer :: xp,wp
-    real(mk),dimension(:  ),pointer :: min_phys,max_phys,h
-    integer, dimension(:  ),pointer :: ghostsize
+    real(mk),dimension(:,:),pointer :: xp => NULL()
+    real(mk),dimension(:,:),pointer :: wp => NULL()
+    real(mk),dimension(:  ),pointer :: min_phys => NULL()
+    real(mk),dimension(:  ),pointer :: max_phys => NULL()
+    real(mk),dimension(:  ),pointer :: h => NULL()
+    integer, dimension(:  ),pointer :: ghostsize => NULL()
     integer                         :: i,j,k,p_i,ai,aj,it,isub
-    integer, dimension(6)           :: bcdef
-    real(mk),dimension(:  ),pointer :: cost
-    integer, dimension(:,:),pointer :: istart,ndata
-    integer, dimension(:  ),pointer :: nm
+    integer, dimension(:  ),pointer :: bcdef => NULL()
+    real(mk),dimension(:  ),pointer :: cost => NULL()
+    integer, dimension(:,:),pointer :: istart => NULL()
+    integer, dimension(:,:),pointer :: ndata => NULL()
+    integer, dimension(:  ),pointer :: nm => NULL()
     integer                         :: np,mp
     integer                         :: kernel
-    real(mk),dimension(:,:,:,:  ), pointer :: field_wp2 ! field_wp(ldn,i,j,isub)
-    real(mk),dimension(:,:,:,:,:), pointer :: field_wp3 ! field_wp(ldn,i,j,k,isub)
-    real(mk),dimension(:  ),pointer :: field_x
+    real(mk),dimension(:,:,:,:  ), pointer :: field_wp2 => NULL()! field_wp(ldn,i,j,isub)
+    real(mk),dimension(:,:,:,:,:), pointer :: field_wp3 => NULL()! field_wp(ldn,i,j,k,isub)
+    real(mk),dimension(:  ),pointer :: field_x => NULL()
     real(mk)                        :: maxm3
     integer                         :: seedsize
     integer,  dimension(:),allocatable :: seed
@@ -56,7 +61,6 @@ test_suite ppm_module_interp_p2m
 
         tol = 100.0_mk*epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
-        bcdef(1:6) = ppm_param_bcdef_freespace
 
         allocate(min_phys(3),max_phys(3),ghostsize(3),&
         &         nm(3),h(3),field_x(3),stat=info)
@@ -117,6 +121,7 @@ test_suite ppm_module_interp_p2m
         deallocate(field_wp2,field_wp3,stat=info)
         deallocate(seed)
         deallocate(cost)
+        deallocate(bcdef)
 
     end teardown
 !------------------------------------------------------------------------------
@@ -134,11 +139,13 @@ test_suite ppm_module_interp_p2m
         use ppm_module_map
 
         implicit none
-        integer, dimension(2)           :: maxndata
-        INTEGER, DIMENSION(:  ), POINTER:: isublist 
-        integer                         :: nsublist
+        integer, dimension(2)            :: maxndata
+        integer, dimension(:  ), pointer :: isublist => NULL()
+        integer                          :: nsublist
         ndim = 2
         nspec = 1
+        allocate(bcdef(2*ndim))
+        bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
             min_phys(i) = 0.0_mk
@@ -166,7 +173,7 @@ test_suite ppm_module_interp_p2m
 
         allocate(nm(ndim),stat=info)
         do i=1,ndim
-            nm(i) = 32*nproc
+            nm(i) = 16*nproc
         enddo
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
@@ -262,12 +269,14 @@ test_suite ppm_module_interp_p2m
         use ppm_module_map
 
         implicit none
-        integer, dimension(3)           :: maxndata
-        INTEGER, DIMENSION(:  ), POINTER:: isublist 
-        integer                         :: nsublist
+        integer, dimension(3)            :: maxndata
+        integer, dimension(:  ), pointer :: isublist => NULL()
+        integer                          :: nsublist
         
         ndim = 3
         nspec = 1
+        allocate(bcdef(2*ndim))
+        bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
             min_phys(i) = 0.0_mk
@@ -295,7 +304,7 @@ test_suite ppm_module_interp_p2m
 
         allocate(nm(ndim),stat=info)
         do i=1,ndim
-            nm(i) = 32*nproc
+            nm(i) = 16*nproc
         enddo
 
         call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &

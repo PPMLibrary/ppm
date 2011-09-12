@@ -20,54 +20,104 @@ module Funit
       <% end -%>
 
       integer, dimension(<%=test_suites.size%>) :: numTests, numAsserts, numAssertsTested, numFailures
-      character(len=*), parameter               :: log_file_name = 'test_runner.log'
+      character(len=100)                        :: log_file_name
       integer                                   :: log = 20
+      integer                                   :: comm
+      integer                                   :: rank
+      integer                                   :: size
+      integer                                   :: i
 
       <% if use_mpi -%>
       integer :: mpiinfo
-
       call mpi_init(mpiinfo)
       <% end -%>
 
+      rank = 0
+      size = 1
+      comm = 0
+
+      <% if use_mpi -%>
+      call mpi_comm_rank(MPI_COMM_WORLD, rank, mpiinfo)
+      call mpi_comm_size(MPI_COMM_WORLD, size, mpiinfo)
+      comm = MPI_COMM_WORLD
+      <% end -%>
+
+      write(log_file_name,'(A,I0,A)') 'test_runner.', rank, '.log'
       OPEN(log, FILE=log_file_name, ACTION='WRITE')
       write(log,*) "Starting new test run..."
 
       <% test_suites.each_with_index do |test_suite,i| -%>
-      write(*,*)
-      write(*,*) "<%= File.basename(test_suite) %> test suite:"
+      if (rank .eq. 0) then
+         write(*,*)
+         write(*,*) "<%= File.basename(test_suite) %> test suite:"
+      end if
       write(log,*)
       write(log,*) "<%= File.basename(test_suite) %> test suite:"
 
       call test_<%= File.basename(test_suite) %> &
-        ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), numFailures(<%= i+1 %>), log)
-      write(*,1) numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
+        ( numTests(<%= i+1 %>), numAsserts(<%= i+1 %>), numAssertsTested(<%= i+1 %>), &
+          numFailures(<%= i+1 %>), log, rank, comm)
+
+      write(*,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
+         numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
+      write(log,1) rank, numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
         numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
-   <%= i+1 %> format('Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
-      write(log,1) numAssertsTested(<%= i+1 %>), numAsserts(<%= i+1 %>), &
-        numTests(<%= i+1 %>)-numFailures(<%= i+1 %>), numTests(<%= i+1 %>)
+
+      <%= i+1 %> format('[',i0,'] Passed ',i0,' of ',i0,' possible asserts comprising ',i0,' of ',i0,' tests.')
+
+      <% if use_mpi -%>
+      call mpi_barrier(MPI_COMM_WORLD, mpiinfo)
+      <% end -%>
+
       <% end -%>
 
       <% if use_mpi -%>
       call mpi_finalize(mpiinfo)
       <% end -%>
-      
-      write(*,*)
-      write(*,'(a)') "==========[ SUMMARY ]=========="
+
+      if (rank .eq. 0) then
+         write(*,*)
+         write(*,'(a/)') "==================================[ SUMMARY ]==================================="
+      end if
       write(log,*)
-      write(log,'(a)') "==========[ SUMMARY ]=========="
+      write(log,'(a/)') "==================================[ SUMMARY ]==================================="
       <% max_length = test_suites.empty? ? 0 : test_suites.max.length -%>
       <% test_suites.each_with_index do |test_suite,i| -%>
-      write(*,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
-      write(log,'(a<%=max_length+2%>)',advance="no") " <%= File.basename(test_suite) %>:"
+
+      if (rank .eq. 0) then
+        do i=1,<%= OUTPUT_INDENT %>
+          write(*,'(A)',advance='no') " "
+        end do
+        write(*,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+        do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+          write(*,'(A)',advance='no') " "
+        end do
+      end if
+
+      do i=1,<%= OUTPUT_INDENT %>
+        write(log,'(A)',advance='no') " "
+      end do
+      write(log,'(A)',advance='no') "<%= File.basename(test_suite) %>"
+      do i=1,<%= OUTPUT_WIDTH - 2 * OUTPUT_INDENT - File.basename(test_suite).length - 7 %>
+        write(log,'(A)',advance='no') " "
+      end do
+
       if ( numFailures(<%= i+1 %>) == 0 ) then
-        write(*,*) " passed"
-        write(log,*) " passed"
+         if (rank .eq. 0) then
+            write(*,*) " passed"
+         end if
+         write(log,*) " passed"
       else
-        write(*,*) " failed   <<<<<"
-        write(log,*) " failed   <<<<<"
+         if (rank .eq. 0) then
+            write(*,*) " failed <<<<<<"
+         end if
+         write(log,*) " failed <<<<<<"
       end if
       <% end -%>
-      write(*,*)
+ 
+      if (rank .eq. 0) then
+         write(*,*)
+      end if
       write(log,*)
 
       if ( sum(numFailures) /= 0 ) stop 1
@@ -142,7 +192,9 @@ module Funit
   end
 
   def compile_tests(test_suites,prog_source_dirs=['.'])
-    puts "computing dependencies"
+    print_sub("compile")
+
+    print_started("computing dependencies")
 
     sourceflag = ''
     if ENV['FSFLAG'] then
@@ -150,19 +202,78 @@ module Funit
     end
     dependencies = Fortran::Dependencies.new(:search_paths=>prog_source_dirs)
 
-    puts "locating associated source files and sorting for compilation"
+    print_done
+
+    print_started("locating sources")
+
     dependencies.source_file_dependencies('TestRunner.f')
     file_dependencies = dependencies.file_dependencies
     required_objects = file_dependencies.values.flatten.uniq.map{|s|s.sub(/\.f/i,'.o')}
     required_objects << 'TestRunner.o'
 
-    File.open("makeTestRunner", "w") {|file| file.puts MAKEFILE.result(binding)}
+    print_done
 
-    print "compiling..."
+    print_started("writing makefile")
+    File.open("makeTestRunner", "w") {|file| file.puts MAKEFILE.result(binding)}
+    print_done
+
+    print_started("compiling")
     compile = "make -f makeTestRunner > test_compile.log"
     raise "Compile failed." unless system compile
     system "rm test_compile.log"
-    puts " done!"
+    print_done
+  end
+
+# pretty printing
+
+  OUTPUT_WIDTH = 80
+  OUTPUT_INDENT = 8
+
+  def print_heading(text, line)
+    left = OUTPUT_WIDTH - (text.length + 4)
+    if (left % 2 == 0) then
+      left = left / 2
+      right = left
+    else
+      left = (left - 1) / 2
+      right = left + 1
+    end
+    left.times { print line }
+    print "[ " + text + " ]"
+    right.times { print line }
+    print "\n"
+  end
+
+  def print_title(text)
+    print "\n\n"
+    print_heading(text, '=')
+    print "\n"
+  end
+
+  def print_sub(text)
+    print "\n"
+    print_heading(text, '-')
+    print "\n"
+  end
+
+  @current_position = 0
+
+  def print_started(text)
+    OUTPUT_INDENT.times { print " " }
+    print text
+    @current_position = OUTPUT_INDENT + text.length
+  end
+
+  def print_done(text="done!")
+    space = (OUTPUT_WIDTH - @current_position) - text.length - OUTPUT_INDENT
+    if (space < 1) then
+      space = 1
+    end
+    space.times { print " " }
+
+    puts text
+
+    @current_position = 0
   end
 
 end

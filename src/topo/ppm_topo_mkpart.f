@@ -112,6 +112,10 @@
       !!! Number of particles
       REAL(MK)                , INTENT(IN   ) :: ghostsize
       !!! Size (width) of the ghost layer.
+      !!!
+      !!! TIP: If the particles are moving and you intend to use the ppm
+      !!! neighbor lists,  this argument must be equal the particle interaction
+      !!! radius plus the skin parameter
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Estimated cost associated with subdomains. Either user-defined on
       !!! input or decomposition result on output.
@@ -119,6 +123,12 @@
       !!! Boundary conditions for the topology
       !!!
       !!! NOTE: first index is 1-6 (each of the faces)
+      !!! - west  : 1
+      !!! - east  : 2
+      !!! - south : 3
+      !!! - north : 4
+      !!! - bottom: 5
+      !!! - top   : 6
       INTEGER                 , INTENT(IN   ) :: assig
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
@@ -207,8 +217,8 @@
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
-      INTEGER                           :: i,j,k,Ntot,iopt,treetype
-      INTEGER                           :: istat,nbox,isub
+      INTEGER                           :: i,Ntot,iopt,treetype
+      INTEGER                           :: nbox,isub
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
       INTEGER, DIMENSION(ppm_dim)       :: Nm
       CHARACTER(ppm_char)               :: mesg
@@ -578,7 +588,7 @@
      &           'Assigning subs to processors failed',__LINE__,info)
             GOTO 9999
          ENDIF
-	  ELSEIF (assig .EQ. ppm_param_assign_nodal_cut .OR.      &
+         ELSEIF (assig .EQ. ppm_param_assign_nodal_cut .OR.      &
      &       assig .EQ. ppm_param_assign_nodal_comm .OR.     &
      &       assig .EQ. ppm_param_assign_dual_cut .OR.       &
      &       assig .EQ. ppm_param_assign_dual_comm) THEN

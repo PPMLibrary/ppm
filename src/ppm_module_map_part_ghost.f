@@ -36,6 +36,8 @@
 #define __LOGICAL                  4
 #define __SINGLE_PRECISION_COMPLEX 5
 #define __DOUBLE_PRECISION_COMPLEX 6
+#define __HOM 7
+#define __INHOM 8
 
       MODULE ppm_module_map_part_ghost
       !!! This module provides the particle ghost mapping routines and holds the
@@ -56,6 +58,8 @@
          INTERFACE ppm_map_part_ghost_get
             MODULE PROCEDURE ppm_map_part_ghost_get_d
             MODULE PROCEDURE ppm_map_part_ghost_get_s
+            MODULE PROCEDURE ppm_map_part_ghost_get_d_inhom
+            MODULE PROCEDURE ppm_map_part_ghost_get_s_inhom
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -91,13 +95,24 @@
          !----------------------------------------------------------------------
          CONTAINS
 
+! haeckic: homogenous and inhomogenous ghost get
+#define __MODE __HOM
 #define __KIND __SINGLE_PRECISION
 #include "map/ppm_map_part_ghost_get.f"
 #undef __KIND
-
 #define __KIND __DOUBLE_PRECISION
 #include "map/ppm_map_part_ghost_get.f"
 #undef __KIND
+#undef __MODE
+
+#define __MODE __INHOM
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_ghost_get.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_ghost_get.f"
+#undef __KIND
+#undef __MODE
 
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION

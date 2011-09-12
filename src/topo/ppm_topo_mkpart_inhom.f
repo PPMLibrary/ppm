@@ -701,6 +701,10 @@
      &                    nneigh,ineigh,info)
       ELSE
 
+         IF (decomp.EQ.ppm_param_decomp_tree) THEN
+            minboxsizes_out => minboxsizes
+         ENDIF
+
          CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
      &                    sub2proc,nsubs,bcdef,minboxsizes_out,isublist,nsublist,    &
      &                    nneigh,ineigh,info)

@@ -12,12 +12,14 @@ include Funit
 
 prog_source_dirs = ['.']
 use_mpi = false
+procs = "1"
   
 opts = GetoptLong.new(
  ['--help',    '-h', GetoptLong::NO_ARGUMENT],
  ['--clean',   '-c', GetoptLong::NO_ARGUMENT],
  ['--with-mpi','-p', GetoptLong::NO_ARGUMENT],
  ['--version', '-V', GetoptLong::NO_ARGUMENT],
+ ['--procs',   '-P', GetoptLong::REQUIRED_ARGUMENT],
  ['--source',  '-s', GetoptLong::REQUIRED_ARGUMENT]
 )
 
@@ -26,6 +28,8 @@ opts.each do |opt,arg|
     case opt
       when '--with-mpi'
         use_mpi = true
+      when '--procs'
+        procs = arg
       when '--help'
         Funit::print_help
         exit
@@ -62,7 +66,7 @@ but for some such as Sun's f95 compiler you will need: -M
   end
 end
 
-Funit::run_tests(prog_source_dirs,use_mpi)
+Funit::run_tests(prog_source_dirs,use_mpi,procs)
 #--
 # Copyright 2006-2007 United States Government as represented by
 # NASA Langley Research Center. No copyright is claimed in

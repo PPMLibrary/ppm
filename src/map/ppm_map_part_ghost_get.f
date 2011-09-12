@@ -26,14 +26,23 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-      !<<<< haeckic begin >>>>!
-#if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,info)
-#elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,info)
-#endif
 
-      !<<<< haeckic end >>>>!
+#if    __MODE == __HOM
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,   &
+     &                                    ghostsize,info)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,   &
+     &                                    ghostsize,info)
+#endif 
+#elif  __MODE == __INHOM
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_ghost_get_s_inhom(topoid,xp,lda,Npart,isymm,info)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_ghost_get_d_inhom(topoid,xp,lda,Npart,isymm,info)
+#endif 
+#endif 
+
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine 
       !!! (`ppm_map_part_partial`) in the sense that the ghost particles are
@@ -122,6 +131,10 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The position of the particles
+#if    __MODE == __HOM
+      REAL(MK)                , INTENT(IN   ) :: ghostsize
+      !!! The size of the ghost layer     
+#endif 
       INTEGER                 , INTENT(IN   ) :: lda
       !!! Leading dimension of xp
       INTEGER                 , INTENT(IN   ) :: Npart
@@ -149,19 +162,25 @@
       REAL(MK)                      :: xmaxf,ymaxf,zmaxf ! full domain
       REAL(MK)                      :: xmini,ymini,zmini ! inner domain
       REAL(MK)                      :: xmaxi,ymaxi,zmaxi ! inner domain
-      REAL(MK), DIMENSION(ppm_dim)  :: len_phys,ghostsize
+      REAL(MK), DIMENSION(ppm_dim)  :: min_phys
+      REAL(MK), DIMENSION(ppm_dim)  :: max_phys
+      REAL(MK), DIMENSION(ppm_dim)  :: len_phys
+#if    __MODE == __INHOM
+      REAL(MK), DIMENSION(ppm_dim)  :: ghostsize
+#endif 
       REAL(MK)                      :: t0
-      INTEGER                       :: iperiodic
+      INTEGER                       :: nbc,npbc,nsbc
+      LOGICAL, DIMENSION(2*ppm_dim) :: lextra
+      INTEGER, DIMENSION(2*ppm_dim) :: ibc
       LOGICAL                       :: valid
       CHARACTER(ppm_char)              :: mesg
       ! number of periodic directions: between 0 and ppm_dim
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
+      REAL(MK)                      :: eps
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-
-      ! HERE WE HAVE A PROBLEM: we need to find potential ghosts, consider boundary
-
+      
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
@@ -171,50 +190,50 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
-     &            'This routine needs a topology defined topo',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (topoid .NE. ppm_param_topo_undefined) THEN
-            CALL ppm_check_topoid(topoid,valid,info)
-            IF (.NOT. valid) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &               'topoid out of range',__LINE__,info)
-                GOTO 9999
-            ENDIF
-        ENDIF
-        IF (lda .LT. 1) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'lda must be >0',__LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-     &          'Npart must be >=0',__LINE__,info)
-            GOTO 9999
-        ENDIF
-   ! haeckic: check
-!         IF (ghostsize .LT. 0.0_MK) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
-!      &          'ghostsize must be >=0.0',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
+        CALL check
+        IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
+#if __KIND == __DOUBLE_PRECISION
+      eps = ppm_myepsd
+#else
+      eps = ppm_myepss
+#endif
 
+      !-------------------------------------------------------------------------
+      !  Count Boundary conditions
+      !-------------------------------------------------------------------------
+      npbc = 0
+      nsbc = 0
+      nbc = 0
+      ibc(:) = 0
+      lextra(:) = .FALSE.
+      
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_periodic)
+              npbc = npbc + 1
+              ibc(i) = ppm_param_bcdef_periodic
+          CASE (ppm_param_bcdef_symmetry)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_antisymmetry)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_neumann)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_dirichlet)
+              nsbc = nsbc + 1
+              lextra(i) = .TRUE.
+              ibc(i) = ppm_param_bcdef_symmetry
+          END SELECT
+      ENDDO
+      nbc = npbc + nsbc
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
@@ -259,10 +278,13 @@
       !  Compute the size of the computational box on this topology
       !-------------------------------------------------------------------------
 #if __KIND == __DOUBLE_PRECISION
-      len_phys(:) = topo%max_physd(:) - topo%min_physd(:)
+      min_phys(:) = topo%min_physd(:)
+      max_phys(:) = topo%max_physd(:)
 #else
-      len_phys(:) = topo%max_physs(:) - topo%min_physs(:)
+      min_phys(:) = topo%min_physs(:)
+      max_phys(:) = topo%max_physs(:)
 #endif
+      len_phys(:) = max_phys(:) - min_phys(:)
 
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls 
@@ -330,12 +352,13 @@
       !  Fill the list with particles that are within the reach of the ghost
       !  regions of other subs. We do that by looping over the subs belonging
       !  to this processor and checking if the particles are well within the
-      !  sub. If this is the case, the particle will never be a ghost
+      !  sub. If this is the case, the particle will never be a ghost 
       !-------------------------------------------------------------------------
       DO k=1,topo%nsublist
-
-         ! haeckic: to get the potential ghost we need to consider the ghostlayers of neighbors
-         !          get the maximum neighbor ghostsize and use it, its only the potential ones
+         !----------------------------------------------------------------------
+         !  haeckic: to get the potential ghost we need to consider the ghostlayers 
+         !  of the neighbors and get the maximum neighbor ghostsize and use it
+         !----------------------------------------------------------------------
 
          !----------------------------------------------------------------------
          !  Initialize the second list counter to zero
@@ -357,15 +380,22 @@
          yminf = topo%min_subd(2,isub)
          ymaxf = topo%max_subd(2,isub)
 
+
+#if __MODE == __INHOM
          ghostsize(1) = 0.0_mk
          ghostsize(2) = 0.0_mk
-
+#endif 
+         
          IF (ppm_dim.EQ.3) THEN
             zminf = topo%min_subd(3,isub)
             zmaxf = topo%max_subd(3,isub)
-            ghostsize(3) = 0.0_mk
             
-            !Iterate through the neighbors and get the maximum ghostsize 
+#if __MODE == __INHOM
+            ghostsize(3) = 0.0_mk
+
+            !----------------------------------------------------------------------
+            !  Iterate throuhg neighbors and get maximum ghostsize in each dimension
+            !----------------------------------------------------------------------
             DO j=1,topo%nneigh(isub)
                jsub = topo%ineigh(j,isub)
                IF (topo%minboxsizes_d(1,jsub) .GT. ghostsize(1)) THEN
@@ -381,15 +411,12 @@
             ENDDO
 
          ELSE
-            !Iterate through the neighbors and get the maximum ghostsize 
+            !----------------------------------------------------------------------
+            !  Iterate throuhg neighbors and get maximum ghostsize in each dimension
+            !----------------------------------------------------------------------
             DO j=1,topo%nneigh(isub)
-
                
                jsub = topo%ineigh(j,isub)
-
-!                   print *, ppm_rank, isub, topo%minboxsizes_d(1,isub), topo%minboxsizes_d(2,isub),&
-!                   & topo%nneigh(isub), 'has', jsub, ghostsize(1),ghostsize(2)
-
                IF (topo%minboxsizes_d(1,jsub) .GT. ghostsize(1)) THEN
                   ghostsize(1) = topo%minboxsizes_d(1,jsub)
                ENDIF
@@ -398,11 +425,8 @@
                ENDIF
 
             ENDDO
+#endif 
          ENDIF
-
-
-
-
 
 #else
          xminf = topo%min_subs(1,isub)
@@ -410,17 +434,22 @@
 
          yminf = topo%min_subs(2,isub)
          ymaxf = topo%max_subs(2,isub)
-
+         
+#if __MODE == __INHOM
          ghostsize(1) = 0.0_mk
          ghostsize(2) = 0.0_mk
+#endif 
 
          IF (ppm_dim.EQ.3) THEN
             zminf = topo%min_subs(3,isub)
             zmaxf = topo%max_subs(3,isub)
-            
+
+#if __MODE == __INHOM
             ghostsize(3) = 0.0_mk
             
-            !Iterate through the neighbors and get the maximum ghostsize 
+            !----------------------------------------------------------------------
+            !  Iterate throuhg neighbors and get maximum ghostsize in each dimension
+            !----------------------------------------------------------------------
             DO j=1,topo%nneigh(isub)
                jsub = topo%ineigh(j,isub)
                IF (topo%minboxsizes_s(1,jsub) .GT. ghostsize(1)) THEN
@@ -437,7 +466,9 @@
             
             
          ELSE
-            !Iterate through the neighbors and get the maximum ghostsize 
+            !----------------------------------------------------------------------
+            !  Iterate throuhg neighbors and get maximum ghostsize in each dimension
+            !----------------------------------------------------------------------
             DO j=1,topo%nneigh(isub)
                jsub = topo%ineigh(j,isub)
                IF (topo%minboxsizes_s(1,jsub) .GT. ghostsize(1)) THEN
@@ -448,13 +479,14 @@
                ENDIF
 
             ENDDO
+#endif 
          ENDIF
+
 #endif
 
          !----------------------------------------------------------------------
          !  Compute the size of the inner region
          !----------------------------------------------------------------------
-
          IF (isymm.GT.0) THEN
             !-------------------------------------------------------------------
             !  if we use symmetry the upper/right part of our sub will have 
@@ -462,21 +494,72 @@
             !  sub cannot be ghosts on other processors. Thus the ghosts must 
             !  be found at the lower/left of the sub
             !-------------------------------------------------------------------
-            xmini = xminf + ghostsize(1)
-            xmaxi = xmaxf
+#if    __MODE == __HOM
+            xmini = xminf + ghostsize
+            IF ((ABS(xmaxf - max_phys(1)).LT. eps).AND.lextra(2)) THEN
+                xmaxi = xmaxf - ghostsize
+            ELSE
+                xmaxi = xmaxf
+            ENDIF
+
+            ymini = yminf + ghostsize
+            IF ((ABS(ymaxf - max_phys(2)).LT. eps).AND.lextra(4)) THEN
+                ymaxi = ymaxf - ghostsize
+            ELSE
+                ymaxi = ymaxf
+            ENDIF
+ 
+            IF (ppm_dim.EQ.3) THEN
+               zmini = zminf + ghostsize
+               IF ((ABS(zmaxf - max_phys(3)).LT. eps).AND.lextra(6)) THEN
+                   zmaxi = zmaxf - ghostsize
+               ELSE
+                   zmaxi = zmaxf
+               ENDIF
+            ENDIF 
+#elif  __MODE == __INHOM
+             xmini = xminf + ghostsize(1)
+            IF ((ABS(xmaxf - max_phys(1)).LT. eps).AND.lextra(2)) THEN
+                xmaxi = xmaxf - ghostsize(1)
+            ELSE
+                xmaxi = xmaxf
+            ENDIF
 
             ymini = yminf + ghostsize(2)
-            ymaxi = ymaxf
+            IF ((ABS(ymaxf - max_phys(2)).LT. eps).AND.lextra(4)) THEN
+                ymaxi = ymaxf - ghostsize(2)
+            ELSE
+                ymaxi = ymaxf
+            ENDIF
  
             IF (ppm_dim.EQ.3) THEN
                zmini = zminf + ghostsize(3)
-               zmaxi = zmaxf
+               IF ((ABS(zmaxf - max_phys(3)).LT. eps).AND.lextra(6)) THEN
+                   zmaxi = zmaxf - ghostsize(3)
+               ELSE
+                   zmaxi = zmaxf
+               ENDIF
             ENDIF 
+#endif 
+
          ELSE
             !-------------------------------------------------------------------
             !  if we do not use symmetry, the particles along the entire 
             !  boundary of the sub will be ghosts on other processors
             !-------------------------------------------------------------------
+
+#if    __MODE == __HOM
+            xmini = xminf + ghostsize
+            xmaxi = xmaxf - ghostsize
+
+            ymini = yminf + ghostsize
+            ymaxi = ymaxf - ghostsize
+
+            IF (ppm_dim.EQ.3) THEN
+               zmini = zminf + ghostsize
+               zmaxi = zmaxf - ghostsize
+            ENDIF 
+#elif  __MODE == __INHOM
             xmini = xminf + ghostsize(1)
             xmaxi = xmaxf - ghostsize(1)
 
@@ -487,6 +570,8 @@
                zmini = zminf + ghostsize(3)
                zmaxi = zmaxf - ghostsize(3)
             ENDIF 
+#endif 
+
          ENDIF 
 
          !----------------------------------------------------------------------
@@ -579,7 +664,6 @@
       ENDDO ! end of subs on local processor
 
 
-
       !-------------------------------------------------------------------------
       !  At the end the nlist2 should be zero
       !-------------------------------------------------------------------------
@@ -591,7 +675,8 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Initialize the total number of ghosts incl. those due to periodicity
+      !  Initialize the total number of ghosts incl. those due to boundary
+      !  conditions
       !-------------------------------------------------------------------------
       nghostplus = nghost
 
@@ -599,288 +684,56 @@
       !  Ok, we now have a list of potential ghosts. From these we extract/add
       !  their periodic images (if any). So, first we check for periodicity
       !-------------------------------------------------------------------------
-      iperiodic = 0
-      DO k=1,ppm_dim
-         IF (topo%bcdef(2*k-1).EQ.ppm_param_bcdef_periodic) THEN
-            iperiodic = iperiodic + 1
-         ENDIF 
-      ENDDO
+!      iperiodic = 0
+!      DO k=1,ppm_dim
+!         IF (topo%bcdef(2*k-1).EQ.ppm_param_bcdef_periodic) THEN
+!            iperiodic = iperiodic + 1
+!         ENDIF 
+!      ENDDO
 
-      !-------------------------------------------------------------------------
-      !  If we have periodicity, create the periodic ghosts
-      !-------------------------------------------------------------------------
-      IF (iperiodic.GT.0) THEN
-         !----------------------------------------------------------------------
-         !  handle periodicity in x
-         !----------------------------------------------------------------------
-         IF (topo%bcdef(1).EQ.ppm_param_bcdef_periodic) THEN
-            !-------------------------------------------------------------------
-            !  (Re)allocate memory for the periodic ghosts
-            !-------------------------------------------------------------------
-            iopt   = ppm_param_alloc_grow_preserve
-            ldu(1) = ppm_dim
-            ldu(2) = 2*nghostplus
-            CALL ppm_alloc(xt,ldu,iopt,info) 
-            CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-               info = ppm_error_fatal
-               CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &             'xt',__LINE__,info)
-               GOTO 9999
-            ENDIF
+      ! find out whether we have any non-freespace BCs
+      !----------------------------------------------------------------------
+      !  handle boundary conditions in x
+      !----------------------------------------------------------------------
+      IF (ibc(1).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_x.inc"
+      ELSEIF (ibc(1).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_lx.inc"
+      ENDIF  
+      
+      IF (ibc(2).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_ux.inc"
+      ENDIF 
+      !----------------------------------------------------------------------
+      !  handle boundary conditions in y
+      !----------------------------------------------------------------------
+      IF (ibc(3).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_y.inc"
+      ELSEIF (ibc(3).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_ly.inc"
+      ENDIF
+      IF (ibc(4).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_uy.inc"
+      ENDIF
+      !----------------------------------------------------------------------
+      !  handle periodicity in z (if 3D)
+      !----------------------------------------------------------------------
+      IF (ppm_dim.EQ.3) THEN
+         !-------------------------------------------------------------------
+         !  yes, we split the if in two, since we do not know in what order
+         !  the compiler will check and ppm_bcdef will only be allocated to
+         !  four (4) in 2D
+         !-------------------------------------------------------------------
+         IF (ibc(5).EQ.ppm_param_bcdef_periodic) THEN
+#include "ghost_map_periodic_bc_z.inc"
+         ELSEIF (ibc(5).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_lz.inc"
+         ENDIF
+         IF (ibc(6).EQ.ppm_param_bcdef_symmetry) THEN
+#include "ghost_map_symmetry_bc_uz.inc"
+         ENDIF
 
-            ldu(1) = ldu(2)
-            CALL ppm_alloc(ighost,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &              'ighost',__LINE__,info)
-                GOTO 9999
-            ENDIF
-
-            ! haeckic: again the potential ghost over periodic boundaries depend 
-            !          on neighboring subs, just take the entire max...
-
-            !-------------------------------------------------------------------
-            !  copy periodic ghosts in the x-direction
-            !-------------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-            xminf = topo%min_physs(1)
-            xmini = topo%min_physs(1) + topo%ghostsizes(1)
-#else
-            xminf = topo%min_physd(1)
-            xmini = topo%min_physd(1) + topo%ghostsized(1)
-#endif
-            k     = nghostplus
-            DO i=1,nghostplus
-               !----------------------------------------------------------------
-               !  first those at the west boundary 
-               !----------------------------------------------------------------
-               IF (xt(1,i).GE.xminf.AND.xt(1,i).LT.xmini) THEN
-                  k         = k + 1
-                  ighost(k) = ighost(i)
-                  xt(1,k)   = xt(1,i) + len_phys(1)
-                  xt(2,k)   = xt(2,i)
-                  xt_offset(1,k) = len_phys(1)
-                  xt_offset(2,k) = 0.0_MK
-                  IF (ppm_dim.EQ.3) THEN
-                     xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
-                  ENDIF 
-               ENDIF
-            ENDDO
-            IF (isymm.EQ.0) THEN
-               !----------------------------------------------------------------
-               !  then the east bc, but only if we are not using symmetry
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               xmaxf = topo%max_physs(1)
-               xmaxi = topo%max_physs(1) - topo%ghostsizes(1)
-#else
-               xmaxf = topo%max_physd(1)
-               xmaxi = topo%max_physd(1) - topo%ghostsized(1)
-#endif
-               DO i=1,nghostplus
-                  IF  (xt(1,i).GT.xmaxi.AND.xt(1,i).LT.xmaxf) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i) - len_phys(1)
-                     xt(2,k)   = xt(2,i)
-                     xt_offset(1,k) = -len_phys(1)
-                     xt_offset(2,k) = 0.0_MK
-                     IF (ppm_dim.EQ.3) THEN
-                        xt(3,k)   = xt(3,i)
-                        xt_offset(3,k) = 0.0_MK
-                     ENDIF 
-                  ENDIF
-               ENDDO
-            ENDIF 
-
-            !-------------------------------------------------------------------
-            !  update the ghost counter
-            !-------------------------------------------------------------------
-            nghostplus = k
-         ENDIF ! of periodicity in x 
-
-         !----------------------------------------------------------------------
-         !  handle periodicity in y
-         !----------------------------------------------------------------------
-         IF (topo%bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
-            !-------------------------------------------------------------------
-            !  (Re)allocate memory for the periodic ghosts
-            !-------------------------------------------------------------------
-            iopt   = ppm_param_alloc_grow_preserve
-            ldu(1) = ppm_dim
-            ldu(2) = 2*nghostplus
-            CALL ppm_alloc(xt,ldu,iopt,info) 
-            CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-               info = ppm_error_fatal
-               CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &             'xt',__LINE__,info)
-               GOTO 9999
-            ENDIF
-
-            ldu(1) = ldu(2)
-            CALL ppm_alloc(ighost,ldu,iopt,info) 
-            IF (info.NE.0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &              'ighost',__LINE__,info)
-                GOTO 9999
-            ENDIF
-
-            !-------------------------------------------------------------------
-            !  copy periodic ghosts in the y-direction
-            !-------------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-            yminf = topo%min_physs(2)
-            ymini = topo%min_physs(2) + topo%ghostsizes(2)
-#else
-            yminf = topo%min_physd(2)
-            ymini = topo%min_physd(2) + topo%ghostsized(2)
-#endif
-            k     = nghostplus
-            DO i=1,nghostplus
-               !----------------------------------------------------------------
-               !  first those at the south boundary 
-               !----------------------------------------------------------------
-               IF (xt(2,i).GE.yminf.AND.xt(2,i).LT.ymini) THEN
-                  k         = k + 1
-                  ighost(k) = ighost(i)
-                  xt(1,k)   = xt(1,i) 
-                  xt(2,k)   = xt(2,i) + len_phys(2)
-                  xt_offset(1,k) = 0.0_MK
-                  xt_offset(2,k) = len_phys(2)
-                  IF (ppm_dim.EQ.3) THEN
-                     xt(3,k)   = xt(3,i)
-                     xt_offset(3,k) = 0.0_MK
-                  ENDIF 
-               ENDIF
-            ENDDO
-            IF (isymm.EQ.0) THEN
-               !----------------------------------------------------------------
-               !  then the north bc, but only if we are not using symmetry
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               ymaxf = topo%max_physs(2)
-               ymaxi = topo%max_physs(2) - topo%ghostsizes(2)
-#else
-               ymaxf = topo%max_physd(2)
-               ymaxi = topo%max_physd(2) - topo%ghostsized(2)
-#endif
-               DO i=1,nghostplus
-                  IF  (xt(2,i).GT.ymaxi.AND.xt(2,i).LT.ymaxf) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i)
-                     xt(2,k)   = xt(2,i) - len_phys(2)
-                     xt_offset(1,k) = 0.0_MK
-                     xt_offset(2,k) = -len_phys(2)
-                     IF (ppm_dim.EQ.3) THEN
-                        xt(3,k)   = xt(3,i)
-                        xt_offset(3,k) = 0.0_MK
-                     ENDIF 
-                  ENDIF
-               ENDDO
-            ENDIF 
-
-            !-------------------------------------------------------------------
-            !  update the ghost counter
-            !-------------------------------------------------------------------
-            nghostplus = k
-         ENDIF ! of periodicity in y 
-
-         !----------------------------------------------------------------------
-         !  handle periodicity in z (if 3D)
-         !----------------------------------------------------------------------
-         IF (ppm_dim.EQ.3) THEN
-            !-------------------------------------------------------------------
-            !  yes, we split the if in two, since we do not know in what order
-            !  the compiler will check and ppm_bcdef will only be allocated to
-            !  four (4) in 2D
-            !-------------------------------------------------------------------
-            IF (topo%bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
-               !----------------------------------------------------------------
-               !  (Re)allocate memory for the periodic ghosts
-               !----------------------------------------------------------------
-               iopt   = ppm_param_alloc_grow_preserve
-               ldu(1) = ppm_dim
-               ldu(2) = 2*nghostplus
-               CALL ppm_alloc(xt,ldu,iopt,info) 
-               CALL ppm_alloc(xt_offset,ldu,iopt,info) 
-               IF (info.NE.0) THEN
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &                'xt',__LINE__,info)
-                  GOTO 9999
-               ENDIF
-
-               ldu(1) = ldu(2)
-               CALL ppm_alloc(ighost,ldu,iopt,info) 
-               IF (info.NE.0) THEN
-                   info = ppm_error_fatal
-                   CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &                 'ighost',__LINE__,info)
-                   GOTO 9999
-               ENDIF
-
-               !----------------------------------------------------------------
-               !  copy periodic ghosts in the z-direction
-               !----------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-               zminf = topo%min_physs(3)
-               zmini = topo%min_physs(3) + topo%ghostsizes(3)
-#else
-               zminf = topo%min_physd(3)
-               zmini = topo%min_physd(3) + topo%ghostsized(3)
-#endif
-               k     = nghostplus 
-               DO i=1,nghostplus
-                  !-------------------------------------------------------------
-                  !  first those at the south boundary 
-                  !-------------------------------------------------------------
-                  IF (xt(3,i).GE.zminf.AND.xt(3,i).LT.zmini) THEN
-                     k         = k + 1
-                     ighost(k) = ighost(i)
-                     xt(1,k)   = xt(1,i) 
-                     xt(2,k)   = xt(2,i)
-                     xt(3,k)   = xt(3,i) + len_phys(3)
-
-                     xt_offset(1,k) = 0.0_MK
-                     xt_offset(2,k) = 0.0_MK
-                     xt_offset(3,k) = len_phys(3)
-                  ENDIF
-               ENDDO
-               IF (isymm.EQ.0) THEN
-                  !-------------------------------------------------------------
-                  !  then the north bc, but only if we are not using symmetry
-                  !-------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-                  zmaxf = topo%max_physs(3)
-                  zmaxi = topo%max_physs(3) - topo%ghostsizes(3)
-#else
-                  zmaxf = topo%max_physd(3)
-                  zmaxi = topo%max_physd(3) - topo%ghostsized(3)
-#endif
-                  DO i=1,nghostplus
-                     IF  (xt(3,i).GT.zmaxi.AND.xt(3,i).LT.zmaxf) THEN
-                        k         = k + 1
-                        ighost(k) = ighost(i)
-                        xt(1,k)   = xt(1,i)
-                        xt(2,k)   = xt(2,i) 
-                        xt(3,k)   = xt(3,i) - len_phys(3)
-                     ENDIF
-                  ENDDO
-               ENDIF 
-
-               !----------------------------------------------------------------
-               !  update the ghost counter
-               !----------------------------------------------------------------
-               nghostplus = k
-            ENDIF ! of periodicity in z 
-         ENDIF ! of 3D
-      ENDIF ! of periodicity at all/any direction
+      ENDIF ! of 3D
 
       !-------------------------------------------------------------------------
       !  Ok, now we have a shorter list of potential ghosts to search 
@@ -1002,9 +855,9 @@
       !  most ppm_nsublist(topoid)*(nghostplus - nghost)*ppm_dim. The arrays
       !  are resized further below during step 2 and 3.
       !-------------------------------------------------------------------------
-      IF (iperiodic.GT.0) THEN
+      IF (nbc.GT.0) THEN
          !----------------------------------------------------------------------
-         !  Well we can grow or fit the arrays - a matter of taste 
+         !  We can grow or fit the arrays - a matter of taste 
          !----------------------------------------------------------------------
          iopt   = ppm_param_alloc_grow
          ldu(1) = ppm_dim*(nghostplus - nghost)*topo%nsublist
@@ -1058,90 +911,142 @@
             !  Define the extended resize of this sub 
             !-------------------------------------------------------------------
 
-! haeckic: here it is important, define ghostsize for this sub
+            !-------------------------------------------------------------------
+            !  Get the ghostsizes for the sub in inhomogenous case
+            !-------------------------------------------------------------------
 
+#if __KIND == __SINGLE_PRECISION
 
+#if __MODE == __INHOM
+               ghostsize(1) = topo%minboxsizes_s(1,isub)
+               ghostsize(2) = topo%minboxsizes_s(2,isub)
+#endif 
+               
+               xminf = topo%min_subs(1,isub)
+               xmaxf = topo%max_subs(1,isub)
+   
+               yminf = topo%min_subs(2,isub)
+               ymaxf = topo%max_subs(2,isub)
+   
+               IF (ppm_dim.EQ.3) THEN
+#if __MODE == __INHOM
+                  ghostsize(3) = topo%minboxsizes_s(3,isub)
+#endif 
+                  zminf = topo%min_subs(3,isub)
+                  zmaxf = topo%max_subs(3,isub)
+               ENDIF 
+#else
+#if __MODE == __INHOM
+               ghostsize(1) = topo%minboxsizes_d(1,isub)
+               ghostsize(2) = topo%minboxsizes_d(2,isub)
+#endif 
+               
 
+               xminf = topo%min_subd(1,isub)
+               xmaxf = topo%max_subd(1,isub)
+   
+               yminf = topo%min_subd(2,isub)
+               ymaxf = topo%max_subd(2,isub)
+   
+               IF (ppm_dim.EQ.3) THEN
+#if __MODE == __INHOM
+                  ghostsize(3) = topo%minboxsizes_d(3,isub)
+#endif   
+                  zminf = topo%min_subd(3,isub)
+                  zmaxf = topo%max_subd(3,isub)
+               ENDIF 
+#endif
             IF (isymm.GT.0) THEN
                !----------------------------------------------------------------
                !  if we use symmetry ghosts will only be present at the
                !  upper/right part of the sub
                !----------------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
 
-               ghostsize(1) = topo%minboxsizes_s(1,isub)
-               ghostsize(2) = topo%minboxsizes_s(2,isub)
-
-               xmini = topo%min_subs(1,isub)
-               xmaxi = topo%max_subs(1,isub) + ghostsize(1)
+#if    __MODE == __HOM
+               xmini = xminf  
+               xmaxi = xmaxf + ghostsize
    
-               ymini = topo%min_subs(2,isub)
-               ymaxi = topo%max_subs(2,isub) + ghostsize(2)
+               ymini = yminf 
+               ymaxi = ymaxf + ghostsize
    
                IF (ppm_dim.EQ.3) THEN
+                  zmini = zminf
+                  zmaxi = zmaxf + ghostsize
+               ENDIF
                
-                  ghostsize(3) = topo%minboxsizes_s(3,isub)
-                  
-                  zmini = topo%min_subs(3,isub)
-                  zmaxi = topo%max_subs(3,isub) + ghostsize(3)
+               !----------------------------------------------------------------
+               ! If this subdomain is at the physical boundary, then we need an
+               ! extra ghostlayer for handling the boundary conditions
+               !----------------------------------------------------------------
+               IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
+                   xmini = xmini - ghostsize
+               ENDIF
+               IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
+                   ymini = ymini - ghostsize
+               ENDIF
+               IF (ppm_dim.EQ.3) THEN
+                   IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
+                       zmini = zmini - ghostsize
+                   ENDIF
                ENDIF 
-#else
-               ghostsize(1) = topo%minboxsizes_d(1,isub)
-               ghostsize(2) = topo%minboxsizes_d(2,isub)
-
-               xmini = topo%min_subd(1,isub)
-               xmaxi = topo%max_subd(1,isub) + ghostsize(1)
+#elif  __MODE == __INHOM
+               xmini = xminf  
+               xmaxi = xmaxf + ghostsize(1)
    
-               ymini = topo%min_subd(2,isub)
-               ymaxi = topo%max_subd(2,isub) + ghostsize(2)
+               ymini = yminf 
+               ymaxi = ymaxf + ghostsize(2)
    
                IF (ppm_dim.EQ.3) THEN
-
-                  ghostsize(3) = topo%minboxsizes_d(3,isub)
-
-                  zmini = topo%min_subd(3,isub)
-                  zmaxi = topo%max_subd(3,isub) + ghostsize(3)
+                  zmini = zminf
+                  zmaxi = zmaxf + ghostsize(3)
+               ENDIF
+               
+               !----------------------------------------------------------------
+               ! If this subdomain is at the physical boundary, then we need an
+               ! extra ghostlayer for handling the boundary conditions
+               !----------------------------------------------------------------
+               IF (ABS(xmini - min_phys(1)).LT. eps .AND. lextra(1)) THEN
+                   xmini = xmini - ghostsize(1)
+               ENDIF
+               IF (ABS(ymini - min_phys(2)).LT. eps .AND. lextra(3)) THEN
+                   ymini = ymini - ghostsize(2)
+               ENDIF
+               IF (ppm_dim.EQ.3) THEN
+                   IF (ABS(zmini - min_phys(3)).LT. eps .AND. lextra(5)) THEN
+                       zmini = zmini - ghostsize(3)
+                   ENDIF
                ENDIF 
-#endif
+#endif 
+
             ELSE
                !----------------------------------------------------------------
                !  if we do not use symmetry, we have ghost all around
                !----------------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-               ghostsize(1) = topo%minboxsizes_s(1,isub)
-               ghostsize(2) = topo%minboxsizes_s(2,isub)
+#if    __MODE == __HOM
+               xmini = xminf - ghostsize
+               xmaxi = xmaxf + ghostsize
 
-               xmini = topo%min_subs(1,isub) - ghostsize(1)
-               xmaxi = topo%max_subs(1,isub) + ghostsize(1)
-   
-               ymini = topo%min_subs(2,isub) - ghostsize(2)
-               ymaxi = topo%max_subs(2,isub) + ghostsize(2)
-   
+               ymini = yminf - ghostsize
+               ymaxi = ymaxf + ghostsize
+
                IF (ppm_dim.EQ.3) THEN
+                  zmini = zminf - ghostsize
+                  zmaxi = zmaxf + ghostsize
+               ENDIF 
+#elif  __MODE == __INHOM
+               xmini = xminf - ghostsize(1)
+               xmaxi = xmaxf + ghostsize(1)
+
+               ymini = yminf - ghostsize(2)
+               ymaxi = ymaxf + ghostsize(2)
+
+               IF (ppm_dim.EQ.3) THEN
+                  zmini = zminf - ghostsize(3)
+                  zmaxi = zmaxf + ghostsize(3)
+               ENDIF 
+     
+#endif 
                
-                  ghostsize(3) = topo%minboxsizes_s(3,isub)
-
-                  zmini = topo%min_subs(3,isub) - ghostsize(3)
-                  zmaxi = topo%max_subs(3,isub) + ghostsize(3)
-               ENDIF 
-#else
-               ghostsize(1) = topo%minboxsizes_d(1,isub)
-               ghostsize(2) = topo%minboxsizes_d(2,isub)
-
-               xmini = topo%min_subd(1,isub) - ghostsize(1)
-               xmaxi = topo%max_subd(1,isub) + ghostsize(1)
-   
-               ymini = topo%min_subd(2,isub) - ghostsize(2)
-               ymaxi = topo%max_subd(2,isub) + ghostsize(2)
-   
-               IF (ppm_dim.EQ.3) THEN
-
-                  ghostsize(3) = topo%minboxsizes_d(3,isub)
-
-                  zmini = topo%min_subd(3,isub) - ghostsize(3)
-                  zmaxi = topo%max_subd(3,isub) + ghostsize(3)
-               ENDIF 
-#endif
             ENDIF 
 
             !-------------------------------------------------------------------
@@ -1369,7 +1274,7 @@
             ENDIF ! 2/3 dimension 
            
          ENDDO ! end of loop over subs on local processor
-      ENDIF ! of periodic ghosts
+      ENDIF ! of BC ghosts
 
       !-------------------------------------------------------------------------
       !  Update the buffer pointer (ie the current iset ... or the number of
@@ -1410,7 +1315,7 @@
          ppm_irecvlist(ppm_nrecvlist) = recvrank
 
          !----------------------------------------------------------------------
-         !  only consider positive sendranks
+         !  only consider non-negative sendranks
          !----------------------------------------------------------------------
          IF (sendrank.GE.0) THEN
             !-------------------------------------------------------------------
@@ -1427,88 +1332,132 @@
                   !-------------------------------------------------------------
                   !  Define the extended resize of this sub 
                   !-------------------------------------------------------------
+#if __KIND == __SINGLE_PRECISION
+#if    __MODE == __INHOM
+                  ghostsize(1) = topo%minboxsizes_s(1,j)
+                  ghostsize(2) = topo%minboxsizes_s(2,j)
+#endif
+                  xminf = topo%min_subs(1,j)
+                  xmaxf = topo%max_subs(1,j)
 
-! haeckic: consider sub depending ghostsizes
+                  yminf = topo%min_subs(2,j)
+                  ymaxf = topo%max_subs(2,j)
 
+                  IF (ppm_dim.EQ.3) THEN
+#if    __MODE == __INHOM
+                     ghostsize(3) = topo%minboxsizes_s(3,j)
+#endif
+                     zminf = topo%min_subs(3,j)
+                     zmaxf = topo%max_subs(3,j)
+                  ENDIF 
+#else
+#if    __MODE == __INHOM
+                  ghostsize(1) = topo%minboxsizes_d(1,j)
+                  ghostsize(2) = topo%minboxsizes_d(2,j)
+#endif
+                  xminf = topo%min_subd(1,j)
+                  xmaxf = topo%max_subd(1,j)
+
+                  yminf = topo%min_subd(2,j)
+                  ymaxf = topo%max_subd(2,j)
+ 
+                  IF (ppm_dim.EQ.3) THEN
+#if    __MODE == __INHOM
+                     ghostsize(3) = topo%minboxsizes_d(3,j)
+#endif
+                     zminf = topo%min_subd(3,j)
+                     zmaxf = topo%max_subd(3,j)
+                  ENDIF 
+#endif
                   IF (isymm.GT.0) THEN
                      !----------------------------------------------------------
                      !  if we use symmetry ghosts will only be present at the
                      !  upper/right part of the sub
                      !----------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-                     ghostsize(1) = topo%minboxsizes_s(1,j)
-                     ghostsize(2) = topo%minboxsizes_s(2,j)
 
-                     xmini = topo%min_subs(1,j)
-                     xmaxi = topo%max_subs(1,j) + ghostsize(1)
+#if    __MODE == __HOM
+                     xmini = xminf
+                     xmaxi = xmaxf + ghostsize
 
-                     ymini = topo%min_subs(2,j)
-                     ymaxi = topo%max_subs(2,j) + ghostsize(2)
+                     ymini = yminf 
+                     ymaxi = ymaxf + ghostsize
 
                      IF (ppm_dim.EQ.3) THEN
-
-                        ghostsize(3) = topo%minboxsizes_s(3,j)
-
-                        zmini = topo%min_subs(3,j)
-                        zmaxi = topo%max_subs(3,j) + ghostsize(3)
+                        zmini = zminf 
+                        zmaxi = zmaxf + ghostsize
                      ENDIF 
-#else
-                     ghostsize(1) = topo%minboxsizes_d(1,j)
-                     ghostsize(2) = topo%minboxsizes_d(2,j)
-
-                     xmini = topo%min_subd(1,j)
-                     xmaxi = topo%max_subd(1,j) + ghostsize(1)
-
-                     ymini = topo%min_subd(2,j)
-                     ymaxi = topo%max_subd(2,j) + ghostsize(2)
- 
+                     !----------------------------------------------------------
+                     ! If we are at the border of the physical domain we have
+                     ! to have ghostlayers either way
+                     !----------------------------------------------------------
+                     IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
+                         xmini = xmini - ghostsize
+                     ENDIF
+                     IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
+                         ymini = ymini - ghostsize
+                     ENDIF
                      IF (ppm_dim.EQ.3) THEN
-                     
-                        ghostsize(3) = topo%minboxsizes_d(3,j)
-                     
-                        zmini = topo%min_subd(3,j)
-                        zmaxi = topo%max_subd(3,j) + ghostsize(3)
+                       IF (ABS(zmini - min_phys(3)).LT.eps.AND.lextra(5)) THEN
+                          zmini = zmini - ghostsize
+                       ENDIF
+                     ENDIF
+#elif  __MODE == __INHOM
+                     xmini = xminf
+                     xmaxi = xmaxf + ghostsize(1)
+
+                     ymini = yminf 
+                     ymaxi = ymaxf + ghostsize(2)
+
+                     IF (ppm_dim.EQ.3) THEN
+                        zmini = zminf 
+                        zmaxi = zmaxf + ghostsize(3)
                      ENDIF 
-#endif
+                     !----------------------------------------------------------
+                     ! If we are at the border of the physical domain we have
+                     ! to have ghostlayers either way
+                     !----------------------------------------------------------
+                     IF (ABS(xmini - min_phys(1)).LT.eps.AND.lextra(1)) THEN
+                         xmini = xmini - ghostsize(1)
+                     ENDIF
+                     IF (ABS(ymini - min_phys(2)).LT.eps.AND.lextra(3)) THEN
+                         ymini = ymini - ghostsize(2)
+                     ENDIF
+                     IF (ppm_dim.EQ.3) THEN
+                       IF (ABS(zmini - min_phys(3)).LT.eps.AND.lextra(5)) THEN
+                          zmini = zmini - ghostsize(3)
+                       ENDIF
+                     ENDIF
+#endif 
+                     
+
                   ELSE
                      !----------------------------------------------------------
                      !  if we do not use symmetry, we have ghost all around
                      !----------------------------------------------------------
-#if __KIND == __SINGLE_PRECISION
-                     ghostsize(1) = topo%minboxsizes_s(1,j)
-                     ghostsize(2) = topo%minboxsizes_s(2,j)
+#if    __MODE == __HOM
+                     xmini = xminf - ghostsize
+                     xmaxi = xmaxf + ghostsize
 
-                     xmini = topo%min_subs(1,j) - ghostsize(1)
-                     xmaxi = topo%max_subs(1,j) + ghostsize(1)
-
-                     ymini = topo%min_subs(2,j) - ghostsize(2)
-                     ymaxi = topo%max_subs(2,j) + ghostsize(2)
+                     ymini = yminf - ghostsize
+                     ymaxi = ymaxf + ghostsize
 
                      IF (ppm_dim.EQ.3) THEN
-                     
-                        ghostsize(3) = topo%minboxsizes_s(3,j)
-
-                        zmini = topo%min_subs(3,j) - ghostsize(3)
-                        zmaxi = topo%max_subs(3,j) + ghostsize(3)
+                        zmini = zminf - ghostsize
+                        zmaxi = zmaxf + ghostsize
                      ENDIF 
-#else
-                     ghostsize(1) = topo%minboxsizes_d(1,j)
-                     ghostsize(2) = topo%minboxsizes_d(2,j)
-                     
-                     xmini = topo%min_subd(1,j) - ghostsize(1)
-                     xmaxi = topo%max_subd(1,j) + ghostsize(1)
+#elif  __MODE == __INHOM
+                     xmini = xminf - ghostsize(1)
+                     xmaxi = xmaxf + ghostsize(1)
 
-                     ymini = topo%min_subd(2,j) - ghostsize(2)
-                     ymaxi = topo%max_subd(2,j) + ghostsize(2)
+                     ymini = yminf - ghostsize(2)
+                     ymaxi = ymaxf + ghostsize(2)
 
                      IF (ppm_dim.EQ.3) THEN
-                        
-                        ghostsize(3) = topo%minboxsizes_d(3,j)
-                        
-                        zmini = topo%min_subd(3,j) - ghostsize(3)
-                        zmaxi = topo%max_subd(3,j) + ghostsize(3)
-                     ENDIF 
-#endif
+                        zmini = zminf - ghostsize(3)
+                        zmaxi = zmaxf + ghostsize(3)
+                     ENDIF
+#endif 
+                    
                   ENDIF 
 
                   !-------------------------------------------------------------
@@ -1570,7 +1519,7 @@
                            !----------------------------------------------------
                            !  found one - increment the buffer counter
                            !----------------------------------------------------
-                           iset                  = iset + 1
+                           iset = iset + 1
 
                            !----------------------------------------------------
                            !  store the ID of the particles
@@ -1791,8 +1740,63 @@
  9999 CONTINUE
       CALL substop('ppm_map_part_ghost_get',t0,info)
       RETURN
+      CONTAINS
+      SUBROUTINE check
+          IF (.NOT. ppm_initialized) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
+     &            'Please call ppm_init first!',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .EQ. ppm_param_topo_undefined) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
+     &            'This routine needs a topology defined topo',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (topoid .NE. ppm_param_topo_undefined) THEN
+            CALL ppm_check_topoid(topoid,valid,info)
+            IF (.NOT. valid) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &               'topoid out of range',__LINE__,info)
+                GOTO 8888
+            ENDIF
+        ENDIF
+        IF (lda .LT. 1) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'lda must be >0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+        IF (Npart .LT. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'Npart must be >=0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+#if    __MODE == __HOM
+        IF (ghostsize .LT. 0.0_MK) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+     &          'ghostsize must be >=0.0',__LINE__,info)
+            GOTO 8888
+        ENDIF
+#endif 
+        
+ 8888     CONTINUE
+      END SUBROUTINE check
+
+#if    __MODE == __HOM
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_ghost_get_s
 #elif  __KIND == __DOUBLE_PRECISION
       END SUBROUTINE ppm_map_part_ghost_get_d
 #endif
+#elif  __MODE == __INHOM
+#if    __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_map_part_ghost_get_s_inhom
+#elif  __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_map_part_ghost_get_d_inhom
+#endif     
+#endif 

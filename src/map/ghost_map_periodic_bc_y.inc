@@ -1,0 +1,93 @@
+
+         !-------------------------------------------------------------------
+         !  (Re)allocate memory for the periodic ghosts
+         !-------------------------------------------------------------------
+         iopt   = ppm_param_alloc_grow_preserve
+         ldu(1) = ppm_dim
+         ldu(2) = 2*nghostplus
+         CALL ppm_alloc(xt,ldu,iopt,info) 
+         CALL ppm_alloc(xt_offset,ldu,iopt,info) 
+         IF (info.NE.0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+  &             'xt',__LINE__,info)
+            GOTO 9999
+         ENDIF
+
+         ldu(1) = ldu(2)
+         CALL ppm_alloc(ighost,ldu,iopt,info) 
+         IF (info.NE.0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+  &              'ighost',__LINE__,info)
+             GOTO 9999
+         ENDIF
+
+         !-------------------------------------------------------------------
+         !  clear out the new segment of xt_offset to be able to copy the
+         !  correct values from the previous loop through xt_offset
+         !-------------------------------------------------------------------
+         FORALL(i=1:ppm_dim,j=nghostplus+1:2*nghostplus) &
+         &      xt_offset(i,j) = 0.0_MK
+
+         !-------------------------------------------------------------------
+         !  copy periodic ghosts in the y-direction
+         !-------------------------------------------------------------------
+         yminf = min_phys(2)
+#if    __MODE == __HOM
+         ymini = min_phys(2) + ghostsize
+#elif  __MODE == __INHOM
+         ymini = min_phys(2) + ghostsize(2)
+#endif 
+         
+         
+         k     = nghostplus
+         DO i=1,nghostplus
+            !----------------------------------------------------------------
+            !  first those at the south boundary 
+            !----------------------------------------------------------------
+            IF (xt(2,i).GE.yminf.AND.xt(2,i).LT.ymini) THEN
+               k         = k + 1
+               ighost(k) = ighost(i)
+               xt(1,k)   = xt(1,i) 
+               xt(2,k)   = xt(2,i) + len_phys(2)
+               xt_offset(1,k) = xt_offset(1,i)
+               xt_offset(2,k) = len_phys(2)
+               IF (ppm_dim.EQ.3) THEN
+                  xt(3,k)   = xt(3,i)
+                  xt_offset(3,k) = xt_offset(3,i)
+               ENDIF 
+            ENDIF
+         ENDDO
+         IF (isymm.EQ.0) THEN
+            !----------------------------------------------------------------
+            !  then the north bc, but only if we are not using symmetry
+            !----------------------------------------------------------------
+            ymaxf = max_phys(2)
+#if    __MODE == __HOM
+            ymaxi = max_phys(2) - ghostsize
+#elif  __MODE == __INHOM
+            ymaxi = max_phys(2) - ghostsize(2)
+#endif 
+            
+            
+            DO i=1,nghostplus
+               IF  (xt(2,i).GT.ymaxi.AND.xt(2,i).LT.ymaxf) THEN
+                  k         = k + 1
+                  ighost(k) = ighost(i)
+                  xt(1,k)   = xt(1,i)
+                  xt(2,k)   = xt(2,i) - len_phys(2)
+                  xt_offset(1,k) = xt_offset(1,i)
+                  xt_offset(2,k) = -len_phys(2)
+                  IF (ppm_dim.EQ.3) THEN
+                     xt(3,k)   = xt(3,i)
+                     xt_offset(3,k) = xt_offset(3,i)
+                  ENDIF 
+               ENDIF
+            ENDDO
+         ENDIF 
+
+         !-------------------------------------------------------------------
+         !  update the ghost counter
+         !-------------------------------------------------------------------
+         nghostplus = k

@@ -1,6 +1,8 @@
 test_suite ppm_module_ctrl
 
-#
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
 
   integer            :: idefault, iflag,  ilong_flag
   integer(8)         :: gdefault, gflag,  glong_flag
@@ -141,6 +143,19 @@ test_suite ppm_module_ctrl
     ! parse args
     CALL parse_args(info)
     Assert_Equal(info, 0)
+  end test
+
+  test multiplied({idefault: 1, iflag: 2},
+                  {idefault: [2,3,4], iflag: [1,3,5]})
+    IF (idefault .EQ. 1) THEN
+       Assert_Equal(iflag,2)
+    END IF
+    IF (idefault .EQ. 2) THEN
+       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+    END IF
+    IF (idefault .EQ. 3) THEN
+       Assert_True(iflag .eq. 1 .or. iflag .eq. 3 .or. iflag .eq. 5)
+    END IF
   end test
 
   test arg_manipulation
@@ -502,6 +517,10 @@ test_suite ppm_module_ctrl
   end test
 
   test ctrl_file
+    INTEGER :: rank
+#ifdef __MPI
+    CALL MPI_Comm_Rank(MPI_COMM_WORLD, rank, info)
+#endif
     ! auto enables ctrl_file
     CALL reset
     ! define
@@ -524,28 +543,30 @@ test_suite ppm_module_ctrl
     CALL arg(xarray,   '  xarray', ctrl_name = 'xarray')
     ! open file for writing
     scf = 123
-    OPEN(scf, FILE='__test_ctrl__84103784983274__', IOSTAT=ios, ACTION='WRITE')
-    Assert_Equal(ios, 0)
-    WRITE(scf,'(A)') 'idefault = 42'
-    WRITE(scf,'(A)') 'iflag    = 42'
-    WRITE(scf,'(A)') 'gdefault = 42'
-    WRITE(scf,'(A)') 'rdefault = 0.1337'
-    WRITE(scf,'(A)') 'ddefault = 0.1337'
-    WRITE(scf,'(A)') 'cdefault = hrkljus'
-    WRITE(scf,'(A)') 'ldefault = T'
-    WRITE(scf,'(A)') 'pdefault = (0,1)'
-    WRITE(scf,'(A)') 'xdefault = (0,1)'
-    WRITE(scf,'(A)') 'iarray   = 1,   2,   3'
-    WRITE(scf,'(A)') 'garray   = 1,   2,   3'
-    WRITE(scf,'(A)') 'rarray   = 1.1, 2.2, 3.3'
-    WRITE(scf,'(A)') 'darray   = 1.1, 2.2, 3.3'
-    WRITE(scf,'(A)') 'carray   = foo, bar, baz'
-    WRITE(scf,'(A)') 'larray   = T,   F,   T'
-    WRITE(scf,'(A)') 'parray   = (1,0), (0,1), (-1,0)'
-    WRITE(scf,'(A)') 'xarray   = (1,0), (0,1), (-1,0)'
-    CLOSE(scf)
+    IF (rank .EQ. 0) THEN
+       OPEN(scf, FILE='src/ctrl/test/__test_ctrl', IOSTAT=ios, ACTION='WRITE')
+       Assert_Equal(ios, 0)
+       WRITE(scf,'(A)') 'idefault = 42'
+       WRITE(scf,'(A)') 'iflag    = 42'
+       WRITE(scf,'(A)') 'gdefault = 42'
+       WRITE(scf,'(A)') 'rdefault = 0.1337'
+       WRITE(scf,'(A)') 'ddefault = 0.1337'
+       WRITE(scf,'(A)') 'cdefault = hrkljus'
+       WRITE(scf,'(A)') 'ldefault = T'
+       WRITE(scf,'(A)') 'pdefault = (0,1)'
+       WRITE(scf,'(A)') 'xdefault = (0,1)'
+       WRITE(scf,'(A)') 'iarray   = 1,   2,   3'
+       WRITE(scf,'(A)') 'garray   = 1,   2,   3'
+       WRITE(scf,'(A)') 'rarray   = 1.1, 2.2, 3.3'
+       WRITE(scf,'(A)') 'darray   = 1.1, 2.2, 3.3'
+       WRITE(scf,'(A)') 'carray   = foo, bar, baz'
+       WRITE(scf,'(A)') 'larray   = T,   F,   T'
+       WRITE(scf,'(A)') 'parray   = (1,0), (0,1), (-1,0)'
+       WRITE(scf,'(A)') 'xarray   = (1,0), (0,1), (-1,0)'
+       CLOSE(scf)
+    END IF
     ! supply arg
-    CALL add_cmd('__test_ctrl__84103784983274__')
+    CALL add_cmd('src/ctrl/test/__test_ctrl')
     CALL add_cmd('-f', '1337')
     ! parse
     CALL parse_args(info)
@@ -568,7 +589,9 @@ test_suite ppm_module_ctrl
     Assert_Array_Equal(parray, (/(1,0), (0,1), (-1,0)/))
     Assert_Array_Equal(xarray, (/(1_8,0_8), (0_8,1_8), (-1_8,0_8)/))
     ! cleanup
-    CALL SYSTEM('/bin/rm __test_ctrl__84103784983274__')
+    IF (rank .EQ. 0) THEN
+       CALL SYSTEM('/bin/rm src/ctrl/test/__test_ctrl')
+    END IF
   end test
 
   test default_funcs

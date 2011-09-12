@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :              ppm_module_data_neighlist
+      !  Module       :            ppm_module_test
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -27,21 +27,35 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
      
-      MODULE ppm_module_data_neighlist
-      !!! This module provides data used by the neighbor search routines.
-      !!!
-      !!! [NOTE]
-      !!! The variables declared in this module should not be accessed by the
-      !!! PPM client developer. They are managed internally by the library.
-         !----------------------------------------------------------------------
-         !  Define data TYPEs
-         !----------------------------------------------------------------------
-         ! Pointer to cell list (needed to make lists of cell lists)
-         TYPE ppm_type_ptr_to_clist
-             ! particle index list
-             INTEGER, DIMENSION(:), POINTER    :: lpdx => NULL()
-             ! first particle in each cell
-             INTEGER, DIMENSION(:), POINTER    :: lhbx => NULL()
-         END TYPE
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION         1
+#define __DOUBLE_PRECISION         2
 
-      END MODULE ppm_module_data_neighlist
+      MODULE ppm_module_test
+      !!! This module provides useful routines for ppm unit test cases
+
+         INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
+         INTEGER, PARAMETER :: ppm_param_part_init_random    = 2
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to part_init
+         !----------------------------------------------------------------------
+         INTERFACE part_init
+            MODULE PROCEDURE part_inits
+            MODULE PROCEDURE part_initd
+         END INTERFACE
+
+
+         CONTAINS
+
+#define __KIND __SINGLE_PRECISION
+#include "test/part_init.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "test/part_init.f"
+#undef __KIND
+
+
+      END MODULE ppm_module_test

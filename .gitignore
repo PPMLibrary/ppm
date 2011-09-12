@@ -17,6 +17,7 @@ src/ppm_define.h
 *.o
 *.mod
 fort.*
+*.log
 
 # src/interpolate/test/
 src/interpolate/test/ppm_test_interp_m2p
