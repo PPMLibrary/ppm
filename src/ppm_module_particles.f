@@ -5318,6 +5318,12 @@ SUBROUTINE particles_check_arrays(Particles,info)
         CALL ppm_error(999,caller,'xp too small',__LINE__,info)
         GOTO 9999
     ENDIF
+    ok = (.NOT.ANY(ISNAN(Particles%xp)))
+    IF (.NOT.ok) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,'NaN in xp',__LINE__,info)
+        GOTO 9999
+    ENDIF
 
     DO i=1,Particles%max_wpiid
         IF (Particles%wpi(i)%is_mapped) THEN
@@ -5349,6 +5355,13 @@ SUBROUTINE particles_check_arrays(Particles,info)
                     __LINE__,info)
                 GOTO 9999
             ENDIF
+            ok = (.NOT. ANY(ISNAN(Particles%wps(i)%vec)))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'NaN in wps',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
         ENDIF
     ENDDO
     DO i=1,Particles%max_wpvid
@@ -5362,6 +5375,13 @@ SUBROUTINE particles_check_arrays(Particles,info)
             IF (.NOT.ok) THEN
                 info = ppm_error_error
                 CALL ppm_error(999,caller,'wpv too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+            ok = (.NOT. ANY(ISNAN(Particles%wpv(i)%vec)))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'NaN in wpv',&
                     __LINE__,info)
                 GOTO 9999
             ENDIF

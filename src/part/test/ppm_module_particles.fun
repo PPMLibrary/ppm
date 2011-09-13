@@ -10,13 +10,14 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
 integer                         :: np_global = 100000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
+real(mk)                        :: cutoff_input
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
@@ -34,7 +35,9 @@ character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
-type(ppm_t_particles),pointer   :: Particles
+type(ppm_t_particles),pointer   :: Particles => NULL()
+type(ppm_t_particles),pointer   :: Particles2 => NULL()
+type(ppm_t_particles),pointer   :: Particles_cross => NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -497,6 +500,71 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
             CALL SYSTEM('/bin/rm testP07r_r_r_AA_0071779.xyz')
         endif
     end test
+ 
+    test inhomogeneous_neighlists
+        ! very preliminary for the time being. Just checking that it doesnt crash
+ 
+        call particles_initialize(Particles,np_global,info,ppm_param_part_init_cartesian,topoid)
+        call particles_initialize(Particles2,np_global,info,ppm_param_part_init_cartesian,topoid)
+        allocate(disp(ndim,Particles%Npart))
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles,disp,info)
+        call random_number(disp)
+        disp=0.15_mk*Particles%h_avg*disp
+        call particles_move(Particles2,disp,info)
+        call particles_apply_bc(Particles,topoid,info)
+        call particles_apply_bc(Particles2,topoid,info)
+        call particles_update_cutoff(Particles,Particles%h_avg*2.1_mk,info)
+ 
+        call particles_update_cutoff(Particles2,Particles%h_avg*2.1_mk,info)
+        call particles_mapping_global(Particles,topoid,info)
+        call particles_mapping_global(Particles2,topoid,info)
+        call particles_mapping_ghosts(Particles,topoid,info)
+        call particles_mapping_ghosts(Particles2,topoid,info)
+ 
+        call particles_neighlists(Particles,topoid,info)
+        Assert_Equal(info,0)
+        call particles_neighlists(Particles2,topoid,info)
+        Assert_Equal(info,0)
+ 
+ 
+        Assert_False(associated(Particles2%Particles_cross))
+        Assert_False(associated(Particles%Particles_cross))
+        call particles_neighlists_xset(Particles2,Particles,topoid,info)
+        Assert_Equal(info,0)
+        Assert_True(associated(Particles2%Particles_cross))
+        Particles%D_id = 129
+        Assert_Equal(Particles2%Particles_cross%D_id,129)
+ 
+    end test
 
+    test MilanClient
 
+        use ppm_module_mktopo
+
+    np_global = 100*100
+    cutoff_input = 2.2_mk * 1._mk/100._mk
+    call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff_input,cost,info)
+
+    call particles_initialize(Particles, np_global, info, &
+        ppm_param_part_init_cartesian, topoid, cutoff=cutoff_input)
+
+    allocate(disp(ndim, Particles%Npart), STAT=info)
+    call random_number(disp)
+    disp= (disp+ 1.5) * 1._mk/100._mk * 0.25
+    call particles_move(Particles, disp, info)
+    call particles_apply_bc(Particles, topoid, info)
+
+    call particles_mapping_global(Particles, topoid, info)
+
+    call particles_mapping_ghosts(Particles, topoid, info)
+
+    call particles_neighlists(Particles, topoid, info)
+
+    write(*,*) Particles%neighlists, MINVAL(Particles%nvlist), MAXVAL(Particles%nvlist)
+    write(*,*) REAL(SUM(Particles%nvlist(1:Particles%Npart)),MK)/Particles%Npart
+
+    end test  
+ 
 end test_suite
