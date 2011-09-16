@@ -33,7 +33,7 @@ integer                         :: err_x_id,err_y_id,err_z_id
 real(mk),dimension(:  ),pointer :: err_x=>NULL(),err_y=>NULL(),err_z=>NULL()
 real(mk)                        :: coeff,err,exact,linf,rsum1,rsum2,rsum3
 real(mk),dimension(:),allocatable:: exact_vec,err_vec
-integer                         :: nterms
+integer                         :: nterms,order_loop
 real(mk),dimension(:),pointer   :: delta=>NULL()
 integer,dimension(3)            :: ldc
 integer,dimension(ndim)         :: dg
@@ -730,11 +730,63 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_mapping_ghosts(Particles2,topoid,info)
         call particles_neighlists(Particles2,topoid,info)
+
+        !first check interpolation of one set onto itself
+        call particles_neighlists_xset(Particles,Particles,topoid,info)
+        dwp_id=0
+        call particles_allocate_wps(Particles,dwp_id,info,name='dwp')
+        nterms=1
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/0,0/)
+        else 
+               degree =  (/0,0,0/)
+        endif
+        coeffs = 1.0_mk
+        DO order_loop = 1,4
+            order =  order_loop
+
+            eta_id = 0
+            call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
+                    info,name="interpolation",interp=.true.)
+            Assert_Equal(info,0)
+            call particles_dcop_compute(Particles,eta_id,info)
+            Assert_Equal(info,0)
+
+            call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
+            Assert_Equal(info,0)
+
+            wp => Get_wps(Particles,wp_id)
+            dwp => Get_wps(Particles,dwp_id)
+            xp => Get_xp(Particles)
+            err = 0._mk
+            linf = 0._mk
+            DO ip=1,Particles%Npart
+                exact = 0._mk
+                DO i=1,nterms
+                    coeff = Particles%ops%desc(eta_id)%coeffs(i)
+                    dg = Particles%ops%desc(eta_id)%degree(1+(i-1)*ndim:i*ndim)
+                    exact = exact + coeff*df0_fun(xp(1:ndim,ip),dg,ndim)
+                ENDDO
+                err = MAX(err,abs(dwp(ip) - exact))
+                linf = MAX(linf,abs(exact))
+            ENDDO
+            wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+            dwp => Set_wps(Particles,dwp_id,read_only=.TRUE.)
+            xp => Set_xp(Particles,read_only=.TRUE.)
+            Assert_Equal_Within(err/linf,0,10*EPSILON(1._MK))
+            call particles_dcop_free(Particles,eta_id,info)
+            Assert_Equal(info,0)
+        ENDDO
+        deallocate(degree,coeffs,order)
+        call particles_allocate_wps(Particles,dwp_id,info,iopt=ppm_param_dealloc)
+        Assert_Equal(info,0)
+
+        !now check interpolation between 2 different sets of particles
         call particles_neighlists_xset(Particles2,Particles,topoid,info)
 
         dwp_id=0
         call particles_allocate_wps(Particles2,dwp_id,info,name='dwp')
-
 !check data interpolation
         nterms=1
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
@@ -747,6 +799,7 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
         order =  2
 
         eta_id = 0
+
         call particles_dcop_define(Particles2,eta_id,coeffs,degree,order,nterms,&
                 info,name="interpolation",interp=.true.)
         Assert_Equal(info,0)
