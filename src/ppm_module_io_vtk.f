@@ -97,7 +97,7 @@
          !----------------------------------------------------------------------
 
          SUBROUTINE ppm_vtk_particle_cloud(filename, Particles, info, &
-              step, with_ghosts, wpi_list, wps_list, wpv_list, wpv_field_list)
+              step, with_ghosts, with_nvlist, wpi_list, wps_list, wpv_list, wpv_field_list)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
@@ -106,6 +106,7 @@
            INTEGER,                         INTENT(  OUT) :: info
            INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
+           LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_nvlist
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpi_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wps_list
            INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_list
@@ -122,6 +123,7 @@
            INTEGER                              :: nb_wpi
            INTEGER, DIMENSION(:),   ALLOCATABLE :: wpi_l, wps_l, wpv_l, wpv_field_l
            LOGICAL                              :: ghosts
+           LOGICAL                              :: nvlist
            REAL(8), DIMENSION(:,:), POINTER     :: xp  => NULL()
            REAL(8), DIMENSION(:),   POINTER     :: wp  => NULL()
            INTEGER, DIMENSION(:),   POINTER     :: wpi  => NULL()
@@ -143,6 +145,22 @@
            ELSE
               ghosts = .FALSE.
            END IF
+
+           ! print nvlists?
+           IF (PRESENT(with_nvlist)) THEN
+              nvlist = with_nvlist
+           ELSE
+              nvlist = .FALSE.
+           END IF
+
+
+           IF (nvlist .AND. ghosts) THEN
+               info = ppm_error_error
+               CALL ppm_error(ppm_err_argument,caller,   &
+                   &  'printout of nvlist for ghosts not supported (yet)',&
+                   &  __LINE__,info)
+               GOTO 9999
+           ENDIF
 
            ! create the list of properties to print
            ! integer property
@@ -307,6 +325,9 @@
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
               WRITE(iUnit,'(A)') "    <PPointData>"
+              IF (nvlist) THEN
+              WRITE(iUnit,'(3A)') "      <PDataArray Name='nvlist' type='Float64' />"
+              END IF
               DO i=1,nb_wpi
               WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                    Particles%wpi(wpi_l(i))%name &
@@ -379,12 +400,18 @@
 #include "vtk/print_header.f"
 
            ! print properties
-           IF (nb_wpi .GT. 0 .OR. nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
+           IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
 
               ! print names
               WRITE(iUnit,'(A)',advance='no') "      <PointData" 
-              IF (nb_wpi .GT. 0) THEN
+              IF (nvlist .OR. nb_wpi .GT. 0) THEN
                  WRITE(iUnit,'(A)',advance='no') " Integers='"
+              ENDIF
+              IF (nvlist) THEN
+                 WRITE(iUnit,'(A)',advance='no') "nvlist"
+                 IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',advance='no') " "
+              END IF
+              IF (nb_wpi .GT. 0) THEN
                  DO i=1,nb_wpi
                     WRITE(iUnit,'(A)',advance='no') &
                          Particles%wpi(wpi_l(i))%name &
@@ -393,7 +420,7 @@
                  END DO
               END IF
               IF (nb_wps .GT. 0) THEN
-                  IF (nb_wpi .GT. 0) &
+                 IF (nvlist .OR. nb_wpi .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Scalars='"
                  DO i=1,nb_wps
@@ -404,7 +431,7 @@
                  END DO
               END IF
               IF (nb_wpv .GT. 0) THEN
-                  IF (nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
+                 IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Vectors='"
                  DO i=1,nb_wpv
@@ -425,6 +452,14 @@
               WRITE(iUnit,'(A)') "'>"
 
               ! property values
+              IF (nvlist) THEN
+                 wpi => Particles%nvlist
+#define VTK_NAME "nvlist"
+#define VTK_TYPE "Float64"
+#define VTK_INTEGER wpi
+#include "vtk/print_data_array.f"
+                 wpi => NULL()
+              END IF
               DO k=1,nb_wpi
                  wpi => get_wpi(Particles,wpi_l(k),with_ghosts=ghosts)
 #define VTK_NAME Particles%wpi(wpi_l(k))%name
