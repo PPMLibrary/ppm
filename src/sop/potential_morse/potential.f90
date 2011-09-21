@@ -1,7 +1,6 @@
 !------------------------------------------------------------------------------!
 !Morse potential, with parameters
 !such that it is h-stable
-rho = opts%param_morse
 !
 !confining potential
  !Psi_part = Psi_part + meanD**2 * &
@@ -12,7 +11,8 @@ rho = opts%param_morse
 IF (rd .GT. attractive_radius .or. no_fusion) THEN
 
  Psi_part = Psi_part + meanD**2 * coeff *  &
-     (-rho**(-4._mk*rd) + 0.8_mk*rho**(1._mk-5._mk*rd))
+     (-rho**(-4._mk*rd) + 0.8_mk*rho**(1._mk-5._mk*rd) &
+      -Psi_at_cutoff)
 ELSE
     Psi_part = Psi_part + meanD**2 * (-10._MK / sqrt(rd+0.1_mk)) &
      + meanD**2 *(-rho**(-4._mk*attractive_radius)+&

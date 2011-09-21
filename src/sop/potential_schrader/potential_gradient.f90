@@ -4,10 +4,10 @@
 ! gradPsi = -2*gamma*(1._MK - meanD/rr)*(meanD/rr)**3
 
 IF (rd .GT. attractive_radius) THEN
-    Psi_part = Psi_part + param_a * meanD**2 * &
+    Psi_part = Psi_part + meanD**2 * &
         ((1._MK / rd - 1._MK ) **2 - 0.00_MK*rd **2)
-    gradPsi = 2._MK * param_a * meanD*&
-        ((1._MK - rd) / rd**3 + 0.0_MK * rd)
+    gradPsi = 2._MK * meanD*&
+        (-(1._MK - rd) / rd**3 + 0.0_MK * rd)
 ELSE
     Psi_part = Psi_part + meanD**2 * (-5._MK + rd)
     gradPsi = -1._MK * meanD

@@ -12,8 +12,8 @@ IF (rd .GT. attractive_radius) THEN
     !Psi_part = Psi_part + 0.5_MK / rd**2 + 1._MK/6._MK /rd**6
     !gradPsi = 1._MK / (meanD * rd**3) + 1._MK / (meanD * rd**7)
     Psi_part = Psi_part + meanD**2* &
-        (0.5_MK / rd**2 + 1._MK/6._MK /rd**6   + 0.0_mk * rc**6)
-    gradPsi = (meanD / rd**3) + (meanD / rd**7) - meanD*0.0_mk*rc**5
+        (0.5_MK / rd**2 + 1._MK/6._MK /rd**6)
+    gradPsi = -(meanD / rd**3) - (meanD / rd**7)
 ELSE
     !Psi_part = Psi_part + meanD**2 * (-50._MK + 0.1_MK * rd)
     Psi_part = Psi_part + meanD**2 * (-100._MK / rd)
