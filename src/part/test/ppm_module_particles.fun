@@ -538,33 +538,5 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(Particles2%Particles_cross%D_id,129)
  
     end test
-
-    test MilanClient
-
-        use ppm_module_mktopo
-
-    np_global = 100*100
-    cutoff_input = 2.2_mk * 1._mk/100._mk
-    call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff_input,cost,info)
-
-    call particles_initialize(Particles, np_global, info, &
-        ppm_param_part_init_cartesian, topoid, cutoff=cutoff_input)
-
-    allocate(disp(ndim, Particles%Npart), STAT=info)
-    call random_number(disp)
-    disp= (disp+ 1.5) * 1._mk/100._mk * 0.25
-    call particles_move(Particles, disp, info)
-    call particles_apply_bc(Particles, topoid, info)
-
-    call particles_mapping_global(Particles, topoid, info)
-
-    call particles_mapping_ghosts(Particles, topoid, info)
-
-    call particles_neighlists(Particles, topoid, info)
-
-    write(*,*) Particles%neighlists, MINVAL(Particles%nvlist), MAXVAL(Particles%nvlist)
-    write(*,*) REAL(SUM(Particles%nvlist(1:Particles%Npart)),MK)/Particles%Npart
-
-    end test  
  
 end test_suite
