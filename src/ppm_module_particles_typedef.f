@@ -156,6 +156,13 @@ TYPE particles_stats
     !!! time spent for partial mappings
     REAL(prec)                                       :: t_ghost_push = 0._prec
     !!! time spent for partial mappings
+
+    INTEGER                                          :: nb_ls = 0
+    REAL(prec)                                       :: t_ls = 0._prec
+    REAL(prec)                                       :: t_add = 0._prec
+    REAL(prec)                                       :: t_del = 0._prec
+    REAL(prec)                                       :: t_compD = 0._prec
+
 END TYPE particles_stats
 
 TYPE ppm_t_particles

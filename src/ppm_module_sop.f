@@ -40,12 +40,13 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 2
+#define debug_verbosity 0
 #define __USE_RANDOMNUMBERS 1
      !method for minimisation of the interaction potential
      ! __USE_LBFGS  for L-BFGS
      ! __USE_SD     for steepest descent using a line search
-#define __USE_LBFGS 1
+#define __USE_SD 1
+#undef __USE_LBFGS 
 
      USE ppm_module_data
      USE ppm_module_typedef
@@ -75,10 +76,10 @@
 
      PRIVATE
 
-     INTEGER, PARAMETER :: prec = ppm_kind_double
+     INTEGER, PARAMETER      :: prec = ppm_kind_double
 
 
-     INTEGER , PRIVATE, DIMENSION(3)    :: ldc
+     INTEGER , DIMENSION(3)  :: ldc
      !!! Number of elements in all dimensions for allocation
 
      !====================================================================!
@@ -184,6 +185,9 @@
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_adapt_particles.f"
+
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_close_neighbours.f"
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_compute_D.f"

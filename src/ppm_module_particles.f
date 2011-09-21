@@ -4,6 +4,7 @@ MODULE ppm_module_particles
 #define __DOUBLE_PRECISION 2
 
 #define __KIND __DOUBLE_PRECISION
+#define __crash_on_null_pointers 1
 
 USE ppm_module_particles_typedef
 USE ppm_module_typedef
@@ -115,10 +116,17 @@ FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
                     IF (Particles%wpi(wpi_id)%has_ghosts) THEN
                         get_wpi => Particles%wpi(wpi_id)%vec(1:Particles%Mpart)
                     ELSE
-                        write(*,*) 'ERROR: tried to get wpi with ghosts &
-                            & when ghosts are not up-to-date. Returning NULL pointer'
+                        write(*,*) 'ERROR: tried to get wpi (name = ',&
+                            & TRIM(ADJUSTL(Particles%wpi(wpi_id)%name)),&
+                            & ') with ghosts when ghosts are not up-to-date. ',&
+                            & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wpi => NULL()
+#ifdef __crash_on_null_pointers
+                        !segfault the program. Compile with appropriate compiler
+                        !options to check for array bounds and provide traceback
+                        write(*,*) get_wpi(1)
+#endif
                     ENDIF
                     RETURN
                 ENDIF
@@ -127,10 +135,17 @@ FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
-    write(*,*) 'ERROR: tried to get wpi when mapping&
-        & is not up-to-date. Returning NULL pointer'
+    write(*,*) 'ERROR: tried to get wpi (name = ',&
+        & TRIM(ADJUSTL(Particles%wpi(wpi_id)%name)),&
+        & ') when mapping is not up-to-date. ',&
+        & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
     get_wpi => NULL()
+#ifdef __crash_on_null_pointers
+    !segfault the program. Compile with appropriate compiler
+    !options to check for array bounds and provide traceback
+    write(*,*) get_wpi(1)
+#endif
 
 END FUNCTION get_wpi
 
@@ -186,10 +201,15 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
                     ELSE
                         write(*,*) 'ERROR: tried to get wps (name = ',&
                             & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
-                            & ') with ghosts when ghosts are not up-to-date. ',&
+                            & ') with ghosts with ghosts when ghosts are not up-to-date. ',&
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wps => NULL()
+#ifdef __crash_on_null_pointers
+                        !segfault the program. Compile with appropriate compiler
+                        !options to check for array bounds and provide traceback
+                        write(*,*) get_wps(1)
+#endif
                     ENDIF
                     RETURN
                 ENDIF
@@ -204,6 +224,11 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
     get_wps => NULL()
+#ifdef __crash_on_null_pointers
+    !segfault the program. Compile with appropriate compiler
+    !options to check for array bounds and provide traceback
+    write(*,*) get_wps(1)
+#endif
 
 END FUNCTION get_wps
 
@@ -268,6 +293,11 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
                         get_wpv => NULL()
+#ifdef __crash_on_null_pointers
+                        !segfault the program. Compile with appropriate compiler
+                        !options to check for array bounds and provide traceback
+                        write(*,*) get_wpv(1,1)
+#endif
                     ENDIF
                     RETURN
                 ENDIF
@@ -282,6 +312,11 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
     get_wpv => NULL()
+#ifdef __crash_on_null_pointers
+    !segfault the program. Compile with appropriate compiler
+    !options to check for array bounds and provide traceback
+    write(*,*) get_wpv(1,1)
+#endif
 
 END FUNCTION get_wpv
 
@@ -1718,6 +1753,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%Mpart = Particles%Npart
         ! particles have been re-indexed and neighbour lists not updated
         Particles%neighlists = .FALSE.
+        Particles%neighlists_cross = .FALSE.
 
 #ifdef __MPI
     t2 = MPI_WTIME(info)
@@ -1959,6 +1995,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%Mpart = Particles%Npart
         ! particles have been re-indexed and neighbour lists not updated
         Particles%neighlists = .FALSE.
+        Particles%neighlists_cross = .FALSE.
 
     ENDIF
 
@@ -2769,12 +2806,13 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ensure_knn = .FALSE.
     ENDIF
 
-    IF (Particles%neighlists) THEN
+    do_something: IF (Particles%neighlists) THEN
         !neighbor lists are already up-to-date, nothing to do
         info = ppm_error_notice
         CALL ppm_error(999,caller,   &
             &  'neighlists are supposedly already up-to-date, NOTHING to do',&
             &  __LINE__,info)
+        info = 0
     ELSE
         !hack to build (potentially incomplete) neighbour lists even 
         !for ghost particles
@@ -2957,7 +2995,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         IF (verbose) &
             write(*,*) 'computed neighlists'
 
-    ENDIF
+        !WRITE(*,*) 'Computed neighbour lists, Min-Max nb = ',Particles%nneighmin, Particles%nneighmax
+
+    ENDIF do_something
     !-----------------------------------------------------------------------
     ! Finalize
     !-----------------------------------------------------------------------
@@ -3296,6 +3336,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ! and we have to throw away the neighbour lists (we dont destroy
     ! the pointers, but we flag the lists as being outdated)
     Particles%neighlists = .FALSE.
+    Particles%neighlists_cross = .FALSE.
     ! ghosts values for properties are also wrong
     DO prop_id = 1,Particles%max_wpiid
         Particles%wpi(prop_id)%has_ghosts = .FALSE.
@@ -3399,7 +3440,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
     ELSE
         Particles%neighlists = .FALSE.
     ENDIF
-    Particles%neighlists = .FALSE.
+    Particles%neighlists_cross = .FALSE.
     ! Mappings for some properties are now wrong
     ! (all those that are not in the preserve_lists)
     ! First we check that the properties in the list are indeed already mapped,
@@ -3929,7 +3970,7 @@ SUBROUTINE particles_io_xyz(Particles,itnum,writedir,info,&
     !!! Data structure containing the particles
     INTEGER,                            INTENT(IN   )   :: itnum
     !!! iteration number
-    CHARACTER(LEN=ppm_char),            INTENT(IN   )   :: writedir
+    CHARACTER(LEN=*),                   INTENT(IN   )   :: writedir
     !!! directory name
     INTEGER,                            INTENT(  OUT)   :: info
     !!! Return status, on success 0.

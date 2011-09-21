@@ -69,7 +69,7 @@
          !!! order of approximation for the interpolation kernels
          TYPE(sop_t_diff_eq),POINTER :: diff_eq
          !!! RHS of the differential equation that needs to be computed
-         !!! at the interpolation step
+         !!! at the interpolation step !TODO (would be convenient...)
 
          LOGICAL           :: write_pdb    ! writeout pdb files
          LOGICAL           :: write_xyz    ! writeout xyz files
@@ -77,6 +77,10 @@
 
          LOGICAL                               :: add_parts
          !!! add new particles when needed. Default is .true.
+         LOGICAL                               :: remove_large_parts
+         !!! delete particles that have a cutoff equal to the maximum cutoff
+         !!! This is useful in simulations where not some regions of space
+         !!! should be left empty (like in level-sets).  Default is .false.
          LOGICAL                               :: D_needs_gradients
          !!! The monitor function depends on the fields gradient
          REAL(prec)                            :: scale_D        ! resolution scale
