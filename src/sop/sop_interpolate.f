@@ -84,7 +84,7 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
     !---------------------------------------------------------------------!
 
     CALL particles_neighlists_xset(Particles,Particles_old,&
-        Particles%active_topoid,info,knn=opts%nneigh_critical)
+        Particles%active_topoid,info)!,knn=opts%nneigh_critical)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,&

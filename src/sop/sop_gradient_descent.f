@@ -94,6 +94,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
+
     END INTERFACE
 
     ! local variables
@@ -143,6 +144,14 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     LOGICAL                             :: lbfgs_continue
     REAL(MK),DIMENSION(:),ALLOCATABLE   :: Work
     REAL(MK),DIMENSION(:),ALLOCATABLE   :: DIAG
+    REAL(MK),DIMENSION(:),ALLOCATABLE   :: xp_lbfgs,grad_lbfgs
+#endif
+#ifdef __MPI
+    REAL(KIND(1.D0))                    :: t1,t2
+    REAL(KIND(1.D0))                    :: ls_t1,ls_t2
+    REAL(KIND(1.D0))                    :: add_t1,add_t2
+    REAL(KIND(1.D0))                    :: del_t1,del_t2
+    REAL(KIND(1.D0))                    :: compD_t1,compD_t2
 #endif
 
 
@@ -301,6 +310,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !&          it_adapt .LT. it_adapt_max .AND. &
             !&     ((Psi_max .GT. Psi_thresh)) .OR. adding_particles .OR.&
             !&       gradPsi_max .GT. gradPsi_thresh)
+
     it_adapt_loop: DO WHILE (.NOT.adaptation_ok .OR. Psi_max .GT. Psi_thresh)
 
         it_adapt = it_adapt + 1
@@ -329,95 +339,20 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !DO ip=1,Particles%Npart
             !rcp(ip) = rcp(ip) * &
                 !MIN(1._MK, 1.2_MK/opts%rcp_over_D * Dtilde(ip)/D(ip))
-            !!write(*,*) ip, rcp(ip), D(ip),Dtilde(ip)
         !ENDDO
-        !write(*,*) SIZE(rcp),Particles%Npart,Particles%Mpart, Particles%rcp_id
-        !write(*,*) MINVAL(rcp), MAXVAL(rcp)
-        !write(*,*) MINVAL(D), MAXVAL(D)
-        !write(*,*) MINVAL(Dtilde), MAXVAL(Dtilde)
         !rcp => Set_wps(Particles,Particles%rcp_id)
         !D      => Set_wps(Particles,Particles%D_id,read_only=.true.)
         !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
         !CALL particles_updated_cutoff(Particles,info)
-
-        !write(*,*) Particles%cutoff
-
-        !xp => Get_xp(Particles)
-        !write(*,*) MINVAL(xp), MAXVAL(xp)
-        !xp => Set_xp(Particles,read_only=.true.)
+        !IF (info .NE. 0) THEN
+            !info = ppm_error_error
+            !CALL ppm_error(ppm_err_sub_failed,caller,&
+                !'particles_updated_cutoff failed',__LINE__,info)
+            !GOTO 9999
+        !ENDIF
 
         !! TODO: check if the above hack is really useful
 
-
-        CALL particles_mapping_ghosts(Particles,topo_id,info)
-
-        !if(it_adapt.eq.3) stop
-
-        CALL particles_neighlists(Particles,topo_id,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_neighlists failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        !call check_duplicates(Particles)
-
-
-        !Insert (spawn) new particles where needed
-        adaptation_ok = .true.
-    if (lbfgs_continue .and. gradPsi_max.lt.1e-1 .or. &
-       &  Particles%nneighmin.lt.opts%nneigh_critical) then 
-
-        CALL  sop_spawn_particles(Particles,opts,info,&
-            nb_part_added=nb_spawn,wp_fun=wp_fun)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'sop_spawn_particles failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        adding_particles = (nb_spawn .GT. 0)
-    else
-        adding_particles = .false.
-    endif
-
-
-
-        !call check_duplicates(Particles)
-        
-#ifdef __USE_LBFGS
-        IF (adding_particles) lbfgs_continue = .FALSE.
-#endif
-
-        CALL particles_updated_positions(Particles,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_updated_positions failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        !!---------------------------------------------------------------------!
-        !! Ensure that particles satisfy the boundary conditions
-        !! (Here because partial remapping fails otherwise).
-        !!---------------------------------------------------------------------!
-        CALL particles_apply_bc(Particles,topo_id,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_apply_bc failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        CALL particles_mapping_partial(Particles,topo_id,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'particles_mapping_partial failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
 
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
@@ -435,9 +370,113 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        !call check_duplicates(Particles)
+
+#ifdef __MPI
+        add_t1 = MPI_WTIME(info)
+#endif
+        !count neighbours at a distance < D and decide
+        ! whether we need to add new particles
+        adaptation_ok = .true.
+        CALL sop_close_neighbours(Particles,opts,info)
+
+        !Insert (spawn) new particles where needed
+
+        !if (lbfgs_continue .and. gradPsi_max.lt.1e-1 .or. &
+            !&  Particles%nneighmin.lt.opts%nneigh_critical) then 
+
+        if (.not.adaptation_ok) then
+            CALL  sop_spawn_particles(Particles,opts,info,&
+                nb_part_added=nb_spawn,wp_fun=wp_fun)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'sop_spawn_particles failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+
+            adding_particles = (nb_spawn .GT. 0)
+            Particles%neighlists=.FALSE.
+#ifdef __USE_LBFGS
+            lbfgs_continue = .FALSE.
+#endif
+        else
+            adding_particles = .false.
+        endif
+        !call check_duplicates(Particles)
+        
+#ifdef __USE_LBFGS
+        IF (adding_particles) lbfgs_continue = .FALSE.
+#endif
+
+        IF (adding_particles) THEN
+            CALL particles_updated_positions(Particles,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'particles_updated_positions failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+
+            !---------------------------------------------------------------------!
+            ! Ensure that particles satisfy the boundary conditions
+            ! (Here because partial remapping fails otherwise).
+            !---------------------------------------------------------------------!
+            CALL particles_apply_bc(Particles,topo_id,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'particles_apply_bc failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+
+            CALL particles_mapping_partial(Particles,topo_id,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'particles_mapping_partial failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+
+        ENDIF
+
+        CALL particles_mapping_ghosts(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_mapping_ghosts failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (adding_particles) THEN
+            CALL particles_neighlists(Particles,topo_id,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_sub_failed,caller,&
+                    'particles_neighlists failed',__LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+
+#ifdef __MPI
+        add_t2 = MPI_WTIME(info)
+        Particles%stats%t_add = Particles%stats%t_add + (add_t2-add_t1)
+#endif
+
+
+#if debug_verbosity > 2
+        WRITE(filename,'(A,I0,A,I0)') 'P_SOP_afterSpawn_',&
+            Particles%itime,'_',it_adapt
+        CALL ppm_vtk_particle_cloud(filename,Particles,info,&
+            wpi_list=(/nb_neigh_id,fuse_id/),&
+            wps_list=(/(i,i=1,0)/),wpv_list=(/(i,i=1,0)/))
+#endif
+
         !Delete (fuse) particles that are too close to each other
         !(needs ghost particles to be up-to-date)
 
+#ifdef __MPI
+        del_t1 = MPI_WTIME(info)
+#endif
         CALL sop_fuse_particles(Particles,opts,info,nb_part_del=nb_fuse)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -445,9 +484,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'sop_fuse_particles failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        !we only removed particles, but they didnt move.
+        !we only removed particles - they didnt move.
         Particles%areinside=.TRUE.
         Particles%ontopology=.TRUE.
+#ifdef __MPI
+        del_t2 = MPI_WTIME(info)
+        Particles%stats%t_del = Particles%stats%t_del + (del_t2-del_t1)
+#endif
 
 #ifdef __USE_LBFGS
         IF (nb_fuse .GT. 0) lbfgs_continue = .FALSE.
@@ -462,6 +505,9 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 
 
+#ifdef __MPI
+        compD_t1 = MPI_WTIME(info)
+#endif
         Compute_D: IF (PRESENT(wp_grad_fun).OR. &
             (.NOT.need_derivatives.AND.PRESENT(wp_fun))) THEN
             !!-----------------------------------------------------------------!
@@ -479,6 +525,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ! do not update D
 
         ENDIF Compute_D
+#ifdef __MPI
+        compD_t2 = MPI_WTIME(info)
+        Particles%stats%t_compD = Particles%stats%t_compD + (compD_t2-compD_t1)
+#endif
 
         IF (.NOT. PRESENT(wp_fun)) THEN
             !------------------------------------------------------------------!
@@ -492,7 +542,15 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ! Roughly, it means that a particle can have a small D only
             ! if it has neighbours from the older generation (D_old) that
             ! also have a small D.
-            D_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
+#ifdef __MPI
+        t1 = MPI_WTIME(info)
+#endif
+        !WRITE(filename,'(A,I0,A,I0)') 'debug_old_',Particles%itime,'_',it_adapt
+        !CALL ppm_vtk_particle_cloud(filename,Particles_old,info)
+        !WRITE(filename,'(A,I0,A,I0)') 'debug_new_',Particles%itime,'_',it_adapt
+        !CALL ppm_vtk_particle_cloud(filename,Particles,info)
+
+            D_old => Get_wps(Particles_old,Particles_old%D_id)
             D_old = D_old * opts%rcp_over_D
             ghostlayer=Particles%cutoff
             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
@@ -500,7 +558,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 Particles_old%Npart,D_old,Particles%skin,&
                 ghostlayer,info,vlist_cross,nvlist_cross)
             D_old = D_old / opts%rcp_over_D
-            D_old => Set_wps(Particles_old,Particles_old%Dtilde_id,&
+            D_old => Set_wps(Particles_old,Particles_old%D_id,&
                 read_only=.TRUE.)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,&
@@ -508,6 +566,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 info = -1
                 GOTO 9999
             ENDIF
+            !write(*,*) 'MIN MAX XSET INL : ', MINVAL(nvlist_cross(1:Particles%Npart)), &
+                !MAXVAL(nvlist_cross(1:Particles%Npart))
 
 #if debug_verbosity > 0
             IF (it_adapt.eq.1 .and. MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
@@ -518,7 +578,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ENDIF
 #endif
 
-
             Dtilde  => Get_wps(Particles,Particles%Dtilde_id)
             D     => Get_wps(Particles,    Particles%D_id)
             Dtilde_old => Get_wps(Particles_old,Particles_old%Dtilde_id)
@@ -527,8 +586,16 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             xp => Get_xp(Particles)
             xp_old => Get_xp(Particles_old,with_ghosts=.true.)
 
+#ifdef __MPI
+        t2 = MPI_WTIME(info)
+        Particles%stats%t_xset_inl = Particles%stats%t_xset_inl + (t2-t1)
+        Particles%stats%nb_xset_inl = Particles%stats%nb_xset_inl+1
+#endif
+
             DO ip=1,Particles%Npart
                 if (nvlist_cross(ip).eq.0) then
+                    Dtilde(ip) = opts%maximum_D
+                    D(ip) = opts%maximum_D
                 else
                     minDold=HUGE(1._MK)
                     tmpvar1=HUGE(1._MK)
@@ -544,7 +611,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                         iq=vlist_cross(ineigh,ip)
 
                         weight = SUM(((xp(1:ppm_dim,ip)-&
-                            xp_old(1:ppm_dim,iq))/D(ip))**2) ** 2
+                            xp_old(1:ppm_dim,iq))/D(ip))**2)! ** 2
+                            !xp_old(1:ppm_dim,iq))/Dtilde_old(iq))**2)! ** 2
                         IF (weight .LT. almostzero) THEN
                             Dtilde(ip) = Dtilde_old(iq)
                             weight_sum = 1._mk
@@ -557,13 +625,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                     ENDDO n_loop
 
                     Dtilde(ip) = Dtilde(ip) / weight_sum
-
                     !D(ip) = MAX(D(ip),minDold)
-                    !when Dtilde/D is large, increase rcp
-                    rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
                     D(ip) = minDold
-                    rcp(ip) = opts%rcp_over_D * D(ip)
                 endif
+
+                !when Dtilde/D is large, increase rcp
+                !rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
+                rcp(ip) = opts%rcp_over_D * D(ip)
             ENDDO
             D     => Set_wps(Particles,    Particles%D_id)
             D_old => Set_wps(Particles_old,Particles_old%D_id,&
@@ -582,13 +650,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             Dtilde => Get_wps(Particles,Particles%Dtilde_id)
             rcp => Get_wps(Particles,Particles%rcp_id)
             DO ip=1,Particles%Npart
-                rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
+                !rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
+                rcp(ip) = opts%rcp_over_D * D(ip)
             ENDDO
             Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
             D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
             rcp => Set_wps(Particles,Particles%rcp_id)
         ENDIF
-
 
         CALL particles_updated_cutoff(Particles,info)
         IF (info .NE. 0) THEN
@@ -620,6 +688,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !!---------------------------------------------------------------------!
         !! /begin Line search **
         !!---------------------------------------------------------------------!
+        Particles%stats%nb_ls = Particles%stats%nb_ls + 1
+#ifdef __MPI
+        ls_t1 = MPI_WTIME(info)
+#endif
 
         !!---------------------------------------------------------------------!
         !! Reallocate arrays whose sizes have changed
@@ -655,16 +727,19 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+        !call particles_check_arrays(Particles,info)
+        !IF (info .NE. 0) THEN
+            !CALL ppm_write(ppm_rank,caller,'particles_check_arrays failed.',info)
+            !info = -1
+            !GOTO 9999
+        !ENDIF
+        !call check_duplicates(Particles)
         call particles_check_arrays(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_check_arrays failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_check_arrays before failed.',info)
             info = -1
             GOTO 9999
         ENDIF
-
-        lbfgs_continue = .false.
-
-        call check_duplicates(Particles)
 
         IF ( lbfgs_continue ) THEN
             info = 1
@@ -673,44 +748,69 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             IF (ALLOCATED(DIAG)) DEALLOCATE(DIAG)
             ALLOCATE(Work(3*Particles%Mpart*(2*3+1)+2*3))
             ALLOCATE(DIAG(3*Particles%Mpart))
+            Work=0._MK
             DIAG=1._MK
             info = 0
         ENDIF
+        rcp => Get_wps(Particles,potential_before_id)
+        Dtilde => Get_wps(Particles,Particles%Dtilde_id)
+        DO ip = 1,Particles%Npart
+            rcp(ip) = SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2))/Dtilde(ip)
+        ENDDO
+        rcp => Set_wps(Particles,potential_before_id)
+        Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
 
-        !write(*,*) 'MAX gradient: ', MAXVAL(Gradient_Psi(1:ppm_dim,1:Particles%Npart))
-        !write(*,*) 'ISNANs : ', ANY(ISNAN((Gradient_Psi(1:ppm_dim,1:Particles%Npart)))),&
-            !ANY(ISNAN((Particles%xp(1:ppm_dim,1:Particles%Npart))))
-        !write(*,*) 'MIN nvlist: ', MINVAL(Particles%nvlist(1:Particles%Npart))
 
         IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
-            !adaptation_ok = .true.
+            adaptation_ok = .true.
         ELSE
 
-            CALL LBFGS(3*Particles%Npart,3,Particles%xp(1:ppm_dim,1:Particles%Npart),&
+            write(*,*) 'before LBFGS: info = ',info, Particles%Npart
+            Dtilde=>Get_wps(Particles,Particles%Dtilde_id)
+            CALL LBFGS(ppm_dim*Particles%Npart,3,Particles%xp(1:ppm_dim,1:Particles%Npart),&
                 Psi_global,Gradient_Psi(1:ppm_dim,1:Particles%Npart),&
-                .FALSE.,DIAG,(/1,0/),1D-8,ppm_myepsd,&
-                Work,info)    
+                .FALSE.,DIAG,(/1,0/),1D-3,ppm_myepsd,Work,info,scaling=Dtilde)    
+            Dtilde=>Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
+            write(*,*) 'after LBFGS: info = ',info
             IF (info.LT.0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'LBFGS failed', __LINE__,info)
-                GOTO 9999
+                lbfgs_continue = .false.
+
+                adaptation_ok = .true.
+                CALL sop_close_neighbours(Particles,opts,info)
+
+                IF (adaptation_ok) THEN
+                    CALL ppm_write(ppm_rank,caller,'LBFGS failed, but adaptation is ok',info)
+                ELSE
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'LBFGS failed', __LINE__,info)
+                    GOTO 9999
+                ENDIF
             ELSE IF (info.GT.0) THEN
                 lbfgs_continue = .TRUE.
                 adaptation_ok = .false.
             ELSE
-                adaptation_ok = .true.
-                lbfgs_continue = .FALSE.
+                IF (lbfgs_continue) THEN
+                    write(*,*) 'found suitable minimum in LBFGS'
+                    adaptation_ok = .true.
+                ENDIF
             ENDIF
         ENDIF
 
-
-        CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+        call particles_check_arrays(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
+            CALL ppm_write(ppm_rank,caller,'particles_check_arrays after failed.',info)
             info = -1
             GOTO 9999
         ENDIF
+
+
+        !CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+        !IF (info .NE. 0) THEN
+            !CALL ppm_write(ppm_rank,caller,'sop_potential_psi failed.',info)
+            !info = -1
+            !GOTO 9999
+        !ENDIF
 
 
 #elif defined __USE_SD
@@ -847,6 +947,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         GOTO 9999
 #endif
 !end ifdef between LBFGS and  SD  algorithms
+#ifdef __MPI
+        ls_t2 = MPI_WTIME(info)
+        Particles%stats%t_ls = Particles%stats%t_ls + (ls_t2-ls_t1)
+#endif
 
 
 #if debug_verbosity > 0
@@ -857,9 +961,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,&
             MPI_INTEGER,MPI_SUM,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
-            WRITE(cbuf,'(A,I3,2(A,E11.4),A,I4,1X,I4,1X,A,I6,A,I6,A,E7.2)') &
+            WRITE(cbuf,'(A,I0,A,E19.10,A,E11.4,A,I4,1X,I4,1X,A,I6,A,I6,A,E7.2)') &
                 'it_adapt= ',it_adapt,&
-                ' Psi_mean= ',Psi_global/REAL(tmpvari1,MK),' Psi_max= ',tmpvar2, &
+                ' V= ',Psi_global, & !/REAL(tmpvari1,MK),
+                ' Psi_max= ',tmpvar2, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
                 'Np=',tmpvari1,' Mp=',tmpvari2,' step=',step
             CALL ppm_write(ppm_rank,caller,cbuf,info)
@@ -884,6 +989,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
+
         CALL particles_mapping_partial(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,&
@@ -893,7 +999,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         ENDIF
 
 #if debug_verbosity > 1
-        WRITE(filename,'(A,I0,A,I0)') 'P_duringgraddesc_',&
+        WRITE(filename,'(A,I0,A,I0)') 'P_SOP_It_',&
             Particles%itime,'_',it_adapt
         CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif

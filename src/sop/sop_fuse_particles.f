@@ -99,6 +99,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
 
     INTEGER,DIMENSION(:),POINTER           :: fuse_part
     INTEGER,DIMENSION(:),POINTER           :: nb_neigh
+    LOGICAL                                :: readonly
 
     !!-------------------------------------------------------------------------!
     !! Initialize
@@ -148,6 +149,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
     !! Mark particles for deletion (by changing nvlist to 999)
     !!-------------------------------------------------------------------------!
     particle_loop: DO ip=1,Npart
+
         IF (opts%level_set) THEN
             !kill particles that are too far away from the interface
             IF(PRESENT(level_fun)) THEN
@@ -163,6 +165,12 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                     nvlist(ip)=999
                     CYCLE particle_loop
                 ENDIF
+            ENDIF
+        ENDIF
+        IF (opts%remove_large_parts) THEN
+            IF (D(ip).GE.opts%maximum_D) THEN
+                nvlist(ip)=999
+                CYCLE particle_loop
             ENDIF
         ENDIF
         neighbour_loop: DO ineigh=1,nvlist(ip)
@@ -200,7 +208,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
                         ELSE IF (xp(di,ip) .GT. xp(di,iq)) THEN
                             ! do nothing, this particle is going to stay
                             !  and its neighbour is going to be deleted
-                             CYCLE neighbour_loop
+                             !CYCLE neighbour_loop
                         ENDIF
                     ENDDO
                 ENDIF
@@ -257,26 +265,31 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,&
 #endif
     !New number of particles, after deleting some
 
+    
     Particles%Npart = Npart - del_part
-    xp => Set_xp(Particles)
-    D  => Set_wps(Particles,Particles%D_id)
-    Dtilde  => Set_wps(Particles,Particles%Dtilde_id)
-    fuse_part => Set_wpi(Particles,fuse_id)
-    nb_neigh  => Set_wpi(Particles,nb_neigh_id)
-    rcp=> Set_wps(Particles,Particles%rcp_id)
+
+#ifdef __MPI
+    CALL MPI_Allreduce(del_part,del_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+#endif
+
+    readonly = (del_part.EQ.0) 
+
+    xp => Set_xp(Particles,read_only=readonly)
+    D  => Set_wps(Particles,Particles%D_id,read_only=readonly)
+    Dtilde  => Set_wps(Particles,Particles%Dtilde_id,read_only=readonly)
+    fuse_part => Set_wpi(Particles,fuse_id,read_only=readonly)
+    nb_neigh  => Set_wpi(Particles,nb_neigh_id,read_only=readonly)
+    rcp=> Set_wps(Particles,Particles%rcp_id,read_only=readonly)
     IF (opts%level_set) THEN
         IF(.NOT.PRESENT(level_fun)) &
-            level=> Set_wps(Particles,Particles%level_id)
+            level=> Set_wps(Particles,Particles%level_id,read_only=readonly)
         IF(.NOT.PRESENT(wp_fun)) &
-            wp => Set_wps(Particles,Particles%adapt_wpid)
+            wp => Set_wps(Particles,Particles%adapt_wpid,read_only=readonly)
     ENDIF
 
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-#ifdef __MPI
-    CALL MPI_Allreduce(del_part,del_part,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-#endif
 #if debug_verbosity > 1
     IF (ppm_rank .EQ.0) THEN
         WRITE(cbuf,'(A,I8,A)') 'Deleting ', del_part,' particles'

@@ -156,6 +156,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     INTEGER,      DIMENSION(ppm_dim)           :: order
     INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
     REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0
+    REAL(MK)                                   :: alpha
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -399,8 +400,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                 'need neighbour lists to be uptodate', __LINE__,info)
             GOTO 9999
         ENDIF
-        ! Compute gradients using PSE kernels
-        coeffs=1._MK; order=4; degree = 0
+        ! Compute gradients using DC operators
+        coeffs=1._MK; order=3; degree = 0
         FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
         eta_id = 0
         CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
@@ -590,7 +591,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     rcp => Get_wps(Particles,Particles%rcp_id)
     Dtilde => Get_wps(Particles,Particles%Dtilde_id)
     DO ip=1,Particles%Npart
-        rcp(ip) = opts%rcp_over_D * Dtilde(ip)
+        !rcp(ip) = opts%rcp_over_D * Dtilde(ip)
         !TESTING THIS:
         rcp(ip) = Dtilde(ip)
     ENDDO
@@ -641,18 +642,32 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !---------------------------------------------------------------------!
     D      => Get_wps(Particles,Particles%D_id)
     Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
+    xp => get_xp(Particles,with_ghosts=.true.)
     DO ip=1,Particles%Npart
         D(ip)=Dtilde(ip)
         DO ineigh=1,Particles%nvlist(ip)
             iq=Particles%vlist(ineigh,ip)
-            IF (Dtilde(iq).LT.D(ip)) &
-                D(ip)=Dtilde(iq)
+
+        !either this ....
+            IF (Dtilde(iq).GE.Dtilde(ip)) CYCLE
+            alpha = (sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/Dtilde(iq)-1._mk) / &
+                (opts%rcp_over_D-1._mk)
+            if(alpha.le.0) then
+                D(ip)=MIN(D(ip),Dtilde(iq))
+            else
+                D(ip)=MIN(D(ip),sqrt(alpha)*Dtilde(ip)+(1._mk-sqrt(alpha))*Dtilde(iq))
+            endif
+
+        !.... or this:
+            !IF (Dtilde(iq).LT.D(ip)) &
+                !D(ip)=Dtilde(iq)
         ENDDO
     ENDDO
+    xp => set_xp(Particles,read_only=.true.)
     D      => Set_wps(Particles,Particles%D_id)
     Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
-#if debug_verbosity > 0
+#if debug_verbosity > 1
     D => Get_wps(Particles,Particles%D_id)
 #ifdef __MPI
     CALL MPI_Allreduce(MINVAL(D(1:Particles%Npart)),min_D,1,&

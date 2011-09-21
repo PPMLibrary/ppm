@@ -40,14 +40,9 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
-    REAL(MK)                              :: rho,coeff
+    REAL(MK)                              :: rho,coeff,Psi_at_cutoff
     LOGICAL                               :: no_fusion
     INTEGER,DIMENSION(:),POINTER          :: fuse
-
-#ifdef finnis_sinclair
-    REAL(MK)                              :: rho_part
-    REAL(MK),PARAMETER                    :: param2_f_s= 1._MK
-#endif
 
     !!-------------------------------------------------------------------------!
     ! Initialize
@@ -77,6 +72,12 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
     vlist => Particles%vlist
 
     fuse  => Get_wpi(Particles,fuse_id,with_ghosts=.TRUE.)
+
+    !offset potential so that it is zero at r=r_cutoff
+    rho = opts%param_morse
+    Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
+        0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
+    coeff = 1._mk
 
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
@@ -111,12 +112,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             ENDIF
 #endif
 
-            !meanD = 0.5_MK*(D(ip) + D(iq))
             meanD = MIN(D(ip) , D(iq))
-            !meanD = MAX(D(ip) , D(iq))
-
-            ! Do not interact with particles which are too far away
-            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             rd = rr / meanD
 
@@ -126,13 +122,15 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
                 no_fusion = .true.
             endif
 
-            if (fuse(ip)+fuse(iq).GE.1) then 
-                coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
-            else 
-                coeff = 1._mk
-            endif
-            no_fusion = .false.
+            !if (fuse(ip)+fuse(iq).GE.1) then 
+                !coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+            !else 
+                !coeff = 1._mk
+            !endif
 
+            !------------------------------------------------------------------!
+            ! here we can choose between different interaction potentials
+            !------------------------------------------------------------------!
 #include "potential/potential.f90"
 
         ENDDO neighbour_loop
@@ -190,7 +188,7 @@ SUBROUTINE sop_plot_potential(opts,filename,info)
     CHARACTER(LEN=*),                    INTENT(IN   )   :: filename
     INTEGER,                             INTENT(OUT  )   :: info
 
-    REAL(MK)   :: rd,rho,meanD,coeff
+    REAL(MK)   :: rd,rho,meanD,coeff,Psi_at_cutoff
     REAL(MK)   :: Psi_part,attractive_radius
     INTEGER    :: i
     LOGICAL    :: no_fusion
@@ -201,6 +199,9 @@ SUBROUTINE sop_plot_potential(opts,filename,info)
     attractive_radius = opts%attractive_radius0
     meanD = 1._mk
     coeff = 1._mk
+    rho = opts%param_morse
+    Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
+        0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
 
     OPEN(UNIT=271,FILE=TRIM(ADJUSTL(filename)),IOSTAT=info)
     DO i=1,1000

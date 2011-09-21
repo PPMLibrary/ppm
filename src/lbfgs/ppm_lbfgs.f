@@ -6,13 +6,16 @@
 !     ****************                                                  
 !                                                                       
       SUBROUTINE LBFGS (N, M, X, F, G, DIAGCO, DIAG, IPRINT, EPS, XTOL, &
-      W, IFLAG)                                                         
+      W, IFLAG,scaling)
 !                                                                       
-      INTEGER N, M, IPRINT (2), IFLAG 
-      REAL(8) X (N), G (N), DIAG (N), W (N * (2 * M + 1)        &
+      INTEGER , INTENT(IN   ) :: N
+      REAL(8),  INTENT(INOUT) ::  X (N), G (N), DIAG (N), W (N * (2 * M + 1)        &
       + 2 * M)                                                          
-      REAL(8) F, EPS, XTOL 
-      LOGICAL DIAGCO 
+
+      INTEGER :: M, IPRINT (2), IFLAG 
+      REAL(8) :: F, EPS, XTOL 
+      LOGICAL :: DIAGCO 
+      REAL(8),  INTENT(IN   ), OPTIONAL :: scaling(N)
 !                                                                       
 !        LIMITED MEMORY BFGS METHOD FOR LARGE SCALE OPTIMIZATION        
 !                          JORGE NOCEDAL                                
@@ -116,6 +119,8 @@
 !             is to be found. The subroutine terminates when            
 !                                                                       
 !                         ||G|| < EPS max(1,||X||),                     
+!  if scaling is present, this condition becomes
+!                         MAX (G/scaling) < EPS 
 !                                                                       
 !             where ||.|| denotes the Euclidean norm.                   
 !                                                                       
@@ -179,7 +184,6 @@
 !     The subroutine contains one common area, which the user may wish t
 !    reference:                                                         
 !                                                                       
-      COMMON / LB3 / MP, LP, GTOL, STPMIN, STPMAX 
 !                                                                       
 !    MP  is an INTEGER variable with default value 6. It is used as the 
 !        unit number for the printing of the monitoring information     
@@ -221,15 +225,37 @@
 !                                                                       
 !     - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - 
 !                                                                       
-      REAL(8) GTOL, ONE, ZERO, GNORM, DDOT, STP1, FTOL, STPMIN, &
-      STPMAX, STP, YS, YY, SQ, YR, BETA, XNORM                          
-      INTEGER MP, LP, ITER, NFUN, POINT, ISPT, IYPT, MAXFEV, INFO,      &
+      REAL(8) :: ONE, ZERO, GNORM, DDOT, STP1, FTOL, &
+      STP, YS, YY, SQ, YR, BETA, XNORM                          
+      INTEGER :: ITER, NFUN, POINT, ISPT, IYPT, MAXFEV, INFO,      &
       BOUND, NPT, CP, I, NFEV, INMC, IYCN, ISCN                         
-      LOGICAL FINISH 
+      LOGICAL :: FINISH 
 !                                                                       
       SAVE 
       DATA ONE, ZERO / 1.0D+0, 0.0D+0 / 
 !                                                                       
+
+!    REMOVME
+IF (ANY(ISNAN(X))) THEN
+    WRITE(*,*) 'NAN in X inside LBFGS'
+    STOP
+ENDIF
+IF (ANY(ISNAN(DIAG))) THEN
+    WRITE(*,*) 'NAN in DIAG inside LBFGS'
+    STOP
+ENDIF
+IF (ANY(ISNAN(G))) THEN
+    WRITE(*,*) 'NAN in G inside LBFGS'
+    STOP
+ENDIF
+IF (IFLAG.NE.0) THEN
+    IF (ANY(ISNAN(W))) THEN
+        WRITE(*,*) 'NAN in W inside LBFGS'
+        STOP
+    ENDIF
+ENDIF
+!    REMOVME
+
 !     INITIALIZE                                                        
 !     ----------                                                        
 !                                                                       
@@ -238,8 +264,7 @@
    10 ITER = 0 
       IF (N.LE.0.OR.M.LE.0) GOTO 196 
       IF (GTOL.LE.1.D-04) THEN 
-         IF (LP.GT.0) WRITE (LP, 245) 
-         GTOL = 9.D-01 
+          GOTO 197
       ENDIF 
       NFUN = 1 
       POINT = 0 
@@ -272,12 +297,14 @@
       DO 50 I = 1, N 
    50 W (ISPT + I) = - G (I) * DIAG (I) 
       GNORM = DSQRT (DDOT (N, G, 1, G, 1) ) 
-      STP1 = ONE / GNORM 
+
+      !STP1 = ONE / GNORM 
+      STP1 = ONE !/ GNORM 
 !                                                                       
 !     PARAMETERS FOR LINE SEARCH ROUTINE                                
 !                                                                       
       FTOL = 1.0D-4 
-      MAXFEV = 20 
+      MAXFEV = 50 
 !                                                                       
       IF (IPRINT (1) .GE.0) CALL LB1 (IPRINT, ITER, NFUN, GNORM, N, M,  &
       X, F, G, STP, FINISH)                                             
@@ -365,6 +392,7 @@
          RETURN 
       ENDIF 
       IF (INFO.NE.1 .and. info.ne.5 .and. info.ne.6) GOTO 190 
+      !IF (INFO.NE.1) GOTO 190 
       NFUN = NFUN + NFEV 
 
 !                                                                       
@@ -381,10 +409,15 @@
 !     TERMINATION TEST                                                  
 !     ----------------                                                  
 !                                                                       
-      GNORM = DSQRT (DDOT (N, G, 1, G, 1) ) 
-      XNORM = DSQRT (DDOT (N, X, 1, X, 1) ) 
-      XNORM = DMAX1 (1.0D0, XNORM) 
-      IF (GNORM / XNORM.LE.EPS) FINISH = .TRUE. 
+      IF (PRESENT(scaling)) THEN
+          IF (MAXVAl(G / scaling) .LE.EPS) FINISH = .TRUE. 
+          write(*,*) 'G/scaling = ',MAXVAl(G / scaling) 
+      ELSE
+          GNORM = DSQRT (DDOT (N, G, 1, G, 1) ) 
+          XNORM = DSQRT (DDOT (N, X, 1, X, 1) ) 
+          XNORM = DMAX1 (1.0D0, XNORM) 
+          IF (GNORM / XNORM.LE.EPS) FINISH = .TRUE. 
+      ENDIF
 !                                                                       
       IF (IPRINT (1) .GE.0) CALL LB1 (IPRINT, ITER, NFUN, GNORM, N, M,  &
       X, F, G, STP, FINISH)                                             
@@ -406,6 +439,9 @@
       RETURN 
   196 IFLAG = - 3 
       IF (LP.GT.0) WRITE (LP, 240) 
+      RETURN 
+  197 IFLAG = - 3 
+      IF (LP.GT.0) WRITE (LP, 245) 
 !                                                                       
 !     FORMATS                                                           
 !     -------                                                           
@@ -419,8 +455,8 @@
      &       ' INVERSE HESSIAN APPROXIMATION IS NOT POSITIVE')          
   240 FORMAT(/' IFLAG= -3',/' IMPROPER INPUT PARAMETERS (N OR M',       &
      &       ' ARE NOT POSITIVE)')                                      
-  245 FORMAT(/'  GTOL IS LESS THAN OR EQUAL TO 1.D-04',                 &
-     &       / ' IT HAS BEEN RESET TO 9.D-01')                          
+ 245 FORMAT(/' IFLAG= -3',/' IMPROPER PARAMTERS, GTOL IS LESS THAN OR ' &
+     &       '  EQUAL TO 1.D-04 SUGGESTED VALUE IS 9.D-01')                          
       RETURN 
       END SUBROUTINE LBFGS                          
 !                                                                       
@@ -434,10 +470,10 @@
 !     AMOUNT OF OUTPUT ARE CONTROLLED BY IPRINT.                        
 !     -------------------------------------------------------------     
 !                                                                       
-      INTEGER IPRINT (2), ITER, NFUN, LP, MP, N, M 
-      REAL(8) X (N), G (N), F, GNORM, STP, GTOL, STPMIN, STPMAX 
+      INTEGER IPRINT (2), ITER, NFUN, N, M 
+      REAL(8) X (N), G (N), F, GNORM, STP
       LOGICAL FINISH 
-      COMMON / LB3 / MP, LP, GTOL, STPMIN, STPMAX 
+      INTEGER :: I
 !                                                                       
       IF (ITER.EQ.0) THEN 
          WRITE (MP, 10) 
@@ -609,9 +645,8 @@
       SUBROUTINE MCSRCH (N, X, F, G, S, STP, FTOL, XTOL, MAXFEV, INFO,  &
       NFEV, WA)                                                         
       INTEGER N, MAXFEV, INFO, NFEV 
-      REAL(8) F, STP, FTOL, GTOL, XTOL, STPMIN, STPMAX 
+      REAL(8) F, STP, FTOL, XTOL
       REAL(8) X (N), G (N), S (N), WA (N) 
-      COMMON / LB3 / MP, LP, GTOL, STPMIN, STPMAX 
       SAVE 
 !                                                                       
 !                     SUBROUTINE MCSRCH                                 
@@ -834,6 +869,7 @@
          DG = DG + G (J) * S (J) 
    50 END DO 
       FTEST1 = FINIT + STP * DGTEST 
+      write(*,*) 'removme in lbfgs, STP= ',STP, 'F0= ',FINIT, 'F1-F0= ',FTEST1-FINIT
 !                                                                       
 !        TEST FOR CONVERGENCE.                                          
 !                                                                       
@@ -910,11 +946,11 @@
 !     LAST LINE OF SUBROUTINE MCSRCH.                                   
 !                                                                       
       END SUBROUTINE MCSRCH                         
+
       SUBROUTINE MCSTEP (STX, FX, DX, STY, FY, DY, STP, FP, DP, BRACKT, &
-      STPMIN, STPMAX, INFO)                                             
+      STMIN, STMAX, INFO)                                             
       INTEGER INFO 
-      REAL(8) STX, FX, DX, STY, FY, DY, STP, FP, DP, STPMIN,    &
-      STPMAX                                                            
+      REAL(8) STX, FX, DX, STY, FY, DY, STP, FP, DP, STMIN, STMAX
       LOGICAL BRACKT, BOUND 
 !                                                                       
 !     SUBROUTINE MCSTEP                                                 

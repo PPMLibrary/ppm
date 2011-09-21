@@ -491,7 +491,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 
 #if debug_verbosity > 1
-    WRITE(filename,'(A,I0)') 'P_beforegraddesc_',Particles%itime
+    WRITE(filename,'(A,I0)') 'P_SOP_Init_',Particles%itime
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
@@ -781,11 +781,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     !! Compute field values at new particle locations
     !!-------------------------------------------------------------------------!
 
-#if debug_verbosity > 1
-    WRITE(filename,'(A,I0)') 'P_aftergraddesc_',Particles%itime
-    CALL ppm_vtk_particle_cloud(filename,Particles,info)
-#endif
-
     IF (PRESENT(wp_fun)) THEN
         !!---------------------------------------------------------------------!
         !! If the field is known as a function, do nothing
@@ -805,7 +800,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ENDIF
 
 #if debug_verbosity > 1
-    WRITE(filename,'(A,I0)') 'P_afterinterpolate_',Particles%itime
+    WRITE(filename,'(A,I0)') 'P_SOP_Done_',Particles%itime
     CALL ppm_vtk_particle_cloud(filename,Particles,info)
 #endif
 
@@ -940,6 +935,13 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     IF(ASSOCIATED(level_grad))CALL ppm_write(ppm_rank,caller,'forgot to Set level_grad',info)
     IF(ASSOCIATED(level_grad_old)) &
         CALL ppm_write(ppm_rank,caller,'forgot to Set level_grad_old',info)
+
+#if debug_verbosity > 1
+    IF (ppm_rank.EQ.0) THEN
+        WRITE(cbuf,'(A)') ' Finished SOP without errors '
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
+    ENDIF
+#endif
 
 #if debug_verbosity > 0
     CALL substop(caller,t0,info)

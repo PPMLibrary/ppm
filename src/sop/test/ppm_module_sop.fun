@@ -1,7 +1,9 @@
 test_suite ppm_module_sop
 use ppm_module_particles
 use ppm_module_sop_typedef
+use ppm_module_dcops
 use ppm_module_io_vtk
+use ppm_module_data, ONLY: ppm_mpi_kind
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -16,14 +18,19 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 1000
+integer                         :: np_global = 600
 integer                         :: npart_g
-real(mk),parameter              :: cutoff = 0.15_mk
+real(mk),parameter              :: cutoff = 0.45_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
+real(mk),dimension(:,:),pointer :: grad_wp=>NULL()
+real(mk),dimension(:),pointer   :: err_x=>NULL(),err_y=>NULL(),err_z=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys
 real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
-integer                         :: i,j,k,isum1,isum2,ip,wp_id,wp1_id,wpv_id
+integer                         :: i,j,k,isum1,isum2,ip,ineigh,iq
+integer                         :: wp_id,wp1_id,wpv_id,eta_id
+integer                         :: grad_wp_id,grad_exact_id
+integer                         :: err_x_id,err_y_id,err_z_id
 real(mk)                        :: rsum1,rsum2,dt
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
@@ -36,10 +43,16 @@ logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
 type(ppm_t_particles),pointer   :: Particles=>NULL()
 type(sop_t_opts),pointer        :: opts=>NULL()
+type(sop_t_stats),pointer       :: sop_stats=>NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
+integer,dimension(:),allocatable:: degree,order
+real(mk),dimension(:),allocatable:: coeffs
+integer                         :: nterms
+real(mk)                        :: linf,min_sv
+real(mk),dimension(:),allocatable :: exact_vec,err_vec
 
 
     init
@@ -122,7 +135,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         call particles_mapping_global(Particles,topoid,info)
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
-        disp = Particles%h_avg * 0.2_mk * disp
+        disp = Particles%h_avg * 1.5_mk * disp
         call particles_move(Particles,disp,info)
         deallocate(disp)
         call particles_apply_bc(Particles,topoid,info)
@@ -181,6 +194,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         ! init data structure for options
         call sop_init_opts(opts,info)
+        call sop_init_stats(sop_stats,info)
         Assert_Equal(info,0)
 
         ! set parameters
@@ -188,23 +202,27 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         opts%add_parts = .true.
         opts%add_parts = .true.
         opts%param_morse = 2.5_mk
-        opts%rcp_over_D = 2.5_mk
+        opts%rcp_over_D = 3.0_mk
         opts%attractive_radius0 = 0.5_mk !0.4_mk
-        opts%adaptivity_criterion = 6._mk
+        opts%adaptivity_criterion = 9.5_mk
+        opts%fuse_radius = 0.05_mk
+        opts%c = 1.4_mk
+        opts%nneigh_critical = 15
 
         if (ndim .eq. 2) then
             opts%scale_D = 0.05_mk
-            opts%minimum_D = 0.01_mk
-            opts%maximum_D = 0.07_mk
-            opts%fuse_radius = 0.2_mk
+            opts%minimum_D = 0.00001_mk
+            opts%maximum_D = 0.10_mk
         else
             opts%scale_D = 0.05_mk
             opts%minimum_D = 0.01_mk
-            opts%maximum_D = 0.07_mk
-            opts%fuse_radius = 0.2_mk
+            opts%maximum_D = 0.10_mk
         endif
 
         Particles%itime = 0
+
+        !one can print-to-file the interaction potential that will be used
+        !call sop_plot_potential(opts,'potential.dat',info)
 
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
@@ -230,11 +248,112 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip)) 
         xp => set_xp(Particles,read_only=.true.)
         wp => set_wps(Particles,wp_id)
+
         call particles_mapping_ghosts(Particles,topoid,info)
+        !call particles_neighlists(Particles,topoid,info,knn=opts%nneigh_critical+15)
+        call particles_neighlists(Particles,topoid,info)
+
+        !check that Derivatives can be computed accurately
+        nterms=ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/1,0,   0,1/)
+        else 
+               degree =  (/1,0,0, 0,1,0, 0,0,1/)
+        endif
+        coeffs = 1.0_mk; order =  4; eta_id = 0
+        call particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
+                info,name="gradient",vector=.true.)
+        deallocate(degree,coeffs,order)
+
+        min_sv = HUGE(1._MK)
+        call particles_dcop_compute(Particles,eta_id,info,&
+                        c=opts%c,min_sv=min_sv)
+        Assert_Equal(info,0)
+        WRITE(*,*) 'Smallest singular value for TEST gradient was ',min_sv
+
+        grad_wp_id=0
+        call particles_allocate_wpv(Particles,grad_wp_id,ppm_dim,info,name="grad_wp")
+        call particles_dcop_apply(Particles,wp_id,grad_wp_id,eta_id,info)
+        Assert_Equal(info,0)
+        grad_exact_id=0
+        call particles_allocate_wpv(Particles,grad_exact_id,ppm_dim,info,name="grad_exact")
+
+        grad_wp => Get_wpv(Particles,grad_exact_id)
+        xp => Get_xp(Particles)
+        FORALL(ip=1:Particles%Npart) grad_wp(1:ndim,ip) = f0_grad_fun(xp(1:ndim,ip)) 
+        grad_wp => Set_wpv(Particles,grad_exact_id)
+        xp => Set_xp(Particles,read_only=.true.)
+
+
+        wp => Get_wps(Particles,wp_id)
+        grad_wp => Get_wpv(Particles,grad_wp_id)
+        xp => Get_xp(Particles)
+        linf = 0._mk
+        allocate(exact_vec(nterms),err_vec(nterms))
+        err_vec = 0._mk
+
+        err_x_id=0
+        call particles_allocate_wps(Particles,err_x_id,info,name="error_grad_x")
+        err_y_id=0
+        call particles_allocate_wps(Particles,err_y_id,info,name="error_grad_y")
+        !err_z_id=0
+        !call particles_allocate_wps(Particles,err_z_id,info,name="error_grad_z")
+        err_x => Get_wps(Particles,err_x_id)
+        err_y => Get_wps(Particles,err_y_id)
+        !err_z => Get_wps(Particles,err_z_id)
+        DO ip=1,Particles%Npart
+            exact_vec = f0_grad_fun(xp(1:ndim,ip))
+            DO i=1,nterms 
+                err_vec(i) = MAX(err_vec(i),abs(grad_wp(i,ip) - exact_vec(i)))
+            ENDDO
+            err_x(ip) = abs(grad_wp(1,ip) - exact_vec(1))
+            err_y(ip) = abs(grad_wp(2,ip) - exact_vec(2))
+            !err_z(ip) = abs(grad_wp(3,ip) - exact_vec(3))
+            linf = MAX(linf,MAXVAL(abs(exact_vec)))
+        ENDDO
+
+        !removme
+        !visualize stencil that gave rise to the biggest error
+        !wp(1:Particles%Npart) = 0._mk
+        !ip = MAXLOC(err_x,1)
+        !wp(ip) = 2._mk
+        !DO ineigh=1,Particles%nvlist(ip)
+        !    iq=Particles%vlist(ineigh,ip)
+        !    wp(iq) = 1._mk
+        !ENDDO
+        !removme
+
+        err_x => Set_wps(Particles,err_x_id)
+        err_y => Set_wps(Particles,err_y_id)
+        !err_z => Set_wps(Particles,err_z_id)
+#ifdef __MPI
+        call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,comm,info)
+#endif
+        wp => Set_wps(Particles,wp_id,read_only=.TRUE.)
+        grad_wp => Set_wpv(Particles,grad_wp_id,read_only=.TRUE.)
+        xp => Set_xp(Particles,read_only=.TRUE.)
+        call ppm_vtk_particle_cloud('grad',Particles,info)
+
+        Assert_Equal(info,0)
+        write(*,*) 'L-infinity error is ', MAXVAL(err_vec)/linf
+        !Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
+        deallocate(exact_vec,err_vec)
+        call particles_dcop_free(Particles,eta_id,info)
+        call particles_allocate_wps(Particles,err_x_id,info,&
+            iopt=ppm_param_dealloc)
+        call particles_allocate_wps(Particles,err_y_id,info,&
+            iopt=ppm_param_dealloc)
+        call particles_allocate_wpv(Particles,grad_wp_id,ndim,info,&
+            iopt=ppm_param_dealloc)
+        call particles_allocate_wpv(Particles,grad_exact_id,ndim,info,&
+            iopt=ppm_param_dealloc)
+
 
 
         Particles%itime = 1
-        call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
+        opts%check_dcops=.true.
+        call sop_adapt_particles(topoid,Particles,D_fun,opts,info,stats=sop_stats)
         Assert_Equal(info,0)
 
         !printout
@@ -242,7 +361,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 
         !do nothing and adapt again
         call particles_mapping_ghosts(Particles,topoid,info)
-        Assert_Equal(info,0)
+        call particles_neighlists(Particles,topoid,info)!,knn=opts%nneigh_critical+5)
 
         Particles%itime = 2
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
@@ -280,7 +399,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
         Assert_Equal(info,0)
         call particles_mapping_ghosts(Particles,topoid,info)
         Assert_Equal(info,0)
-        call particles_neighlists(Particles,topoid,info)
+        call particles_neighlists(Particles,topoid,info)!,knn=opts%nneigh_critical+5)
         Assert_Equal(info,0)
 
         Particles%itime = 3
@@ -301,11 +420,13 @@ pure function f0_fun(pos)
     real(mk)                                 :: radius,eps
 
     centre = 0.5_mk
-    centre(2) = 0.75_mk
+    centre(2) = 0.5_mk
     radius=0.15_mk
     eps = 0.01_mk
 
     f0_fun = tanh((sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius)/eps)
+
+    !f0_fun = 1._mk
 
 end function f0_fun
 
@@ -318,13 +439,15 @@ pure function f0_grad_fun(pos)
     real(mk)                                 :: radius,eps,f0,d
 
     centre = 0.5_mk
-    centre(2) = 0.75_mk
+    centre(2) = 0.5_mk
     radius=0.15_mk
-    eps = 0.02_mk
+    eps = 0.01_mk
 
     d = sqrt(sum((pos(1:ppm_dim)-centre)**2))
     f0 = tanh((d - radius)/eps)
     f0_grad_fun = (1._mk - f0**2) * (pos(1:ppm_dim)-centre)/(eps*d)
+
+    !f0_grad_fun = 0._mk
 
 end function f0_grad_fun
 
@@ -337,7 +460,7 @@ pure function level0_fun(pos)
     real(mk)                              :: radius
 
     centre = 0.5_mk
-    centre(2) = 0.75_mk
+    centre(2) = 0.5_mk
     radius=0.15_mk
 
     level0_fun = sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius
@@ -353,7 +476,7 @@ pure function D_fun(wp,wp_grad,opts,level)
     real(mk), optional,         intent(in) :: level
     real(mk)                               :: lengthscale
 
-    D_fun =  opts%scale_d / sqrt(1._mk + SUM(wp_grad**2))
+    D_fun =  opts%scale_d / sqrt(0.01_mk + sqrt(SUM(wp_grad**2)))
 
 end function D_fun
 

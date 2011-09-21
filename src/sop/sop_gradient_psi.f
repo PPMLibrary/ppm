@@ -45,7 +45,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
     INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
-    REAL(MK)                              :: rho,coeff
+    REAL(MK)                              :: rho,coeff,Psi_at_cutoff
     LOGICAL                               :: no_fusion
     INTEGER,DIMENSION(:),POINTER          :: fuse
 
@@ -88,6 +88,13 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     Potential => get_wps(Particles,potential_before_id)
 #endif
 
+    !offset potential so that it is zero at r=r_cutoff
+    rho = opts%param_morse
+    Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
+        0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
+
+    coeff = 1._mk
+
     !!-------------------------------------------------------------------------!
     !! Compute interaction potential and its gradient
     !!-------------------------------------------------------------------------!
@@ -95,9 +102,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
         nn = HUGE(1._MK)
-#ifdef finnis_sinclair
-        rho_part = 0._MK
-#endif
 
         !Particles with few neighbours are a bit more reluctant to fuse
         !(not really necessary, but makes insertion/deletion a bit faster
@@ -128,41 +132,34 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 nn = rr
             ENDIF
 
-            !meanD = 0.5_MK*(D(ip) + D(iq))
-            !meanD = MAX(D(ip) , D(iq))
             meanD = MIN(D(ip) , D(iq))
-
-            ! Do not interact with particles which are too far away
-            IF (meanD .GT. opts%rcp_over_D * opts%maximum_D) CYCLE
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
             !------------------------------------------------------------------!
-            !------------------------------------------------------------------!
-            ! here we can choose between different interaction potentials
-            !------------------------------------------------------------------!
             rd = rr / meanD
 
-            !if (fuse(ip)*fuse(iq).GE.1) then 
-            if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+            !if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+            if (max(fuse(ip),fuse(iq)).ge.4 ) then 
                 no_fusion = .false.
             else
-                !if (fuse(iq).eq.1) cycle neighbour_loop
                 no_fusion = .true.
             endif
 
-            if (fuse(ip)+fuse(iq).GE.1 ) then 
-                coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
-            else 
-                coeff = 1._mk
-            endif
+            !if (fuse(ip)+fuse(iq).GE.1 ) then 
+                !coeff = 1._mk / REAL(MAX(fuse(ip),fuse(iq)),MK)
+            !else 
+                !coeff = 1._mk
+            !endif
 
-            coeff = 1._mk
 
+            !------------------------------------------------------------------!
+            ! here we can choose between different interaction potentials
+            !------------------------------------------------------------------!
 #include "potential/potential_gradient.f90"
 
-        Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) + &
-            dist/rr * gradPsi
+            Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) + &
+                dist/rr * gradPsi
 
         ENDDO neighbour_loop
 
@@ -251,8 +248,8 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     ENDIF
 #endif
 
-    IF (PRESENT(gradPsi_max)) &
-        write(*,*) 'in gradient_psi, Max Gradient = ',gradPsi_max
+    !IF (PRESENT(gradPsi_max)) &
+        !write(*,*) 'in gradient_psi, Max Gradient = ',gradPsi_max
 
     !!-------------------------------------------------------------------------!
     !! Get ghosts for gradient_psi (then, during the linesearch, 
