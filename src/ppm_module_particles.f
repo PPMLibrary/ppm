@@ -2911,16 +2911,20 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 #ifdef __MPI
                     t1 = MPI_WTIME(info)
 #endif
-                    CALL ppm_cinl_vlist(topoid,Particles%xp,np_target,&
-                        Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
-                        Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
-                        Particles%nvlist)
+                    !HUGLY HACK
+                    CALL ppm_cinl_vlist(Particles%xp,&
+                        Particles%wps(Particles%rcp_id)%vec,&
+                        Particles%Npart,Particles%Mpart,&
+                        ppm_topo(topoid)%t%min_subd(:,1)-Particles%cutoff,&
+                        ppm_topo(topoid)%t%max_subd(:,1)+Particles%cutoff,&
+                        Particles%nvlist,Particles%vlist,ppm_dim,info)
                     IF (info .NE. 0) THEN
                         info = ppm_error_error
                         CALL ppm_error(ppm_err_sub_failed,caller,&
-                            'ppm_inl_vlist failed',__LINE__,info)
+                            'ppm_cinl_vlist failed',__LINE__,info)
                         GOTO 9999
                     ENDIF
+                    !end HUGLY HACK
 #ifdef __MPI
                     t2 = MPI_WTIME(info)
                     Particles%stats%t_cinl = Particles%stats%t_cinl + (t2 - t1)
