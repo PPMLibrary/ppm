@@ -116,6 +116,8 @@ TYPE particles_stats
     !!! number of neighbour lists constructions
     INTEGER                                          :: nb_inl = 0
     !!! number of inhomogeneous neighbour lists constructions
+    INTEGER                                          :: nb_cinl = 0
+    !!! number of conventional (old and depreciated) inl constructions
     INTEGER                                          :: nb_xset_inl = 0
     !!! number of xset inhomogeneous neighbour lists constructions
     INTEGER                                          :: nb_xset_nl = 0
@@ -138,6 +140,8 @@ TYPE particles_stats
     !!! time spent for neighbour lists constructions
     REAL(prec)                                       :: t_inl = 0._prec
     !!! time spent for inhomogeneous neighbour lists constructions
+    REAL(prec)                                       :: t_cinl = 0._prec
+    !!! time spent for conventional (old and depreciated) inl constructions
     REAL(prec)                                       :: t_xset_inl = 0._prec
     !!! time spent for xset inhomogeneous neighbour lists constructions
     REAL(prec)                                       :: t_xset_nl = 0._prec
@@ -233,6 +237,9 @@ TYPE ppm_t_particles
     !!! smallest number of neighbors
     INTEGER                                         :: nneighmax
     !!! highest number of neighbors
+    LOGICAL                                         :: conventionalinl
+    !!! true if the inl are computed with the old slow routine (default is
+    !!! false)
 
     
     ! xset Neighbor lists

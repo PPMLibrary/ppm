@@ -569,6 +569,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         Particles%ontopology = .FALSE.
         ! Neighbour lists are not yet computed
         Particles%neighlists = .FALSE.
+        Particles%conventionalinl = .FALSE.
         Particles%nneighmin = 0
         Particles%neighlists_cross = .FALSE.
         Particles%nneighmin_cross = 0
@@ -2904,25 +2905,47 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     !GOTO 9999
                 !ENDIF
             ELSE
-                Particles%stats%nb_inl = Particles%stats%nb_inl+1
+                conventionalinl: IF (Particles%conventionalinl) THEN
+                    Particles%stats%nb_cinl = Particles%stats%nb_cinl+1
 
 #ifdef __MPI
-                t1 = MPI_WTIME(info)
+                    t1 = MPI_WTIME(info)
 #endif
-                CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
-                    Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
-                    Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
-                    Particles%nvlist)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_sub_failed,caller,&
-                        'ppm_inl_vlist failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
+                    CALL ppm_cinl_vlist(topoid,Particles%xp,np_target,&
+                        Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
+                        Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
+                        Particles%nvlist)
+                    IF (info .NE. 0) THEN
+                        info = ppm_error_error
+                        CALL ppm_error(ppm_err_sub_failed,caller,&
+                            'ppm_inl_vlist failed',__LINE__,info)
+                        GOTO 9999
+                    ENDIF
 #ifdef __MPI
-                t2 = MPI_WTIME(info)
-                Particles%stats%t_inl = Particles%stats%t_inl + (t2 - t1)
+                    t2 = MPI_WTIME(info)
+                    Particles%stats%t_cinl = Particles%stats%t_cinl + (t2 - t1)
 #endif
+                ELSE
+                    Particles%stats%nb_inl = Particles%stats%nb_inl+1
+
+#ifdef __MPI
+                    t1 = MPI_WTIME(info)
+#endif
+                    CALL ppm_inl_vlist(topoid,Particles%xp,np_target,&
+                        Particles%Mpart,Particles%wps(Particles%rcp_id)%vec,&
+                        Particles%skin,symmetry,ghostlayer,info,Particles%vlist,&
+                        Particles%nvlist)
+                    IF (info .NE. 0) THEN
+                        info = ppm_error_error
+                        CALL ppm_error(ppm_err_sub_failed,caller,&
+                            'ppm_inl_vlist failed',__LINE__,info)
+                        GOTO 9999
+                    ENDIF
+#ifdef __MPI
+                    t2 = MPI_WTIME(info)
+                    Particles%stats%t_inl = Particles%stats%t_inl + (t2 - t1)
+#endif
+                ENDIF conventionalinl
             ENDIF
         ELSE
             Particles%stats%nb_nl = Particles%stats%nb_nl+1
