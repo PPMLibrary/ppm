@@ -14,6 +14,7 @@ USE ppm_module_substop
 USE ppm_module_error
 USE ppm_module_write
 USE ppm_module_data, ONLY: ppm_dim
+USE ppm_module_cnl
 
 IMPLICIT NONE
 
@@ -2912,7 +2913,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                     t1 = MPI_WTIME(info)
 #endif
                     !HUGLY HACK
-                    CALL ppm_cinl_vlist(Particles%xp,&
+                    CALL cnl_vlist(Particles%xp,&
                         Particles%wps(Particles%rcp_id)%vec,&
                         Particles%Npart,Particles%Mpart,&
                         ppm_topo(topoid)%t%min_subd(:,1)-Particles%cutoff,&
@@ -5295,14 +5296,14 @@ SUBROUTINE particles_print_stats(Particles,info)
 
 
     stats=>Particles%stats
-    write(cbuf,'(A)') 'Number of:  Vlist |     INL | Xset INL|Xset list|  kdtree'
+    write(cbuf,'(A)') 'Number of:  Vlist |     INL |     CNL | Xset INL|Xset list|  kdtree'
     CALL ppm_write(ppm_rank,caller,cbuf,info)
-    write(cbuf,'(5(A,I8,1X))') 'Iter     ',stats%nb_nl,'|',&
-        stats%nb_inl,'|',stats%nb_xset_inl,&
+    write(cbuf,'(6(A,I8,1X))') 'Iter     ',stats%nb_nl,'|',&
+        stats%nb_inl,'|',stats%nb_cinl,'|',stats%nb_xset_inl,&
        '|',stats%nb_xset_nl,'|',stats%nb_kdtree
     CALL ppm_write(ppm_rank,caller,cbuf,info)
-    write(cbuf,'(5(A,F8.2,1X))') 'Time(s)  ',stats%t_nl,'|',stats%t_inl,'|',&
-        stats%t_xset_inl,'|',stats%t_xset_nl,'|',stats%t_kdtree
+    write(cbuf,'(6(A,F8.2,1X))') 'Time(s)  ',stats%t_nl,'|',stats%t_inl,'|',&
+        stats%t_cinl,'|',stats%t_xset_inl,'|',stats%t_xset_nl,'|',stats%t_kdtree
     CALL ppm_write(ppm_rank,caller,cbuf,info)
     write(cbuf,'(A)') 'Number of:  Glob map | Part map | GhostGet | GhostPush| DC comp | DC apply'
     CALL ppm_write(ppm_rank,caller,cbuf,info)
