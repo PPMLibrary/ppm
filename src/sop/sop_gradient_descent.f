@@ -408,7 +408,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ghostlayer=Particles%cutoff
             CALL ppm_inl_xset_vlist(topo_id,Particles%xp,Particles%Npart,&
                 Particles%Npart,Particles_old%xp,Particles_old%Npart,&
-                Particles_old%Mpart,Dtilde_old,Particles%skin,& !haeckic: ERROR Mpart?
+                Particles_old%Mpart,Dtilde_old,Particles%skin,&
                 ghostlayer,info,vlist_cross,nvlist_cross)
             Dtilde_old = Dtilde_old * opts%rcp_over_D
             Dtilde_old => Set_wpv(Particles_old,Particles_old%G_id,&

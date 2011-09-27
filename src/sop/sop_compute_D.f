@@ -8,36 +8,6 @@
 !!! 
 !!!----------------------------------------------------------------------------!
 
-    !todo: drop this
-    pure function f0_grad_fun(pos)
-
-        use ppm_module_data, ONLY: ppm_dim
-    integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-    real(mk),parameter              :: pi = 3.1415926535897931_mk
-        real(mk), dimension(ppm_dim)             :: f0_grad_fun
-        real(mk), dimension(ppm_dim), intent(in) :: pos
-        real(mk)                                 :: beta
-
-        beta = 500.0_mk
-        f0_grad_fun(1) = -beta*2*(pos(1)-0.5)*exp(-beta*((pos(1)-0.5)**2))
-        f0_grad_fun(2) = 0
-
-    end function f0_grad_fun
-
-pure function f0_fun(pos)
-
-        use ppm_module_data, ONLY: ppm_dim
-    integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-    real(mk),parameter              :: pi = 3.1415926535897931_mk
-        real(mk)                                 :: f0_fun
-        real(mk), dimension(ppm_dim), intent(in) :: pos
-        real(mk)                                 :: beta
-         
-        beta = 500.0_mk
-        f0_fun = exp(-beta*((pos(1)-0.5)**2))
-
-    end function f0_fun
-
 SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                             wp_fun,wp_grad_fun,stats)
 
@@ -359,43 +329,6 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                   'get_grad_aniso failed', __LINE__,info)
             GOTO 9999
          ENDIF
-
-         
-         ! HAECKIC: this is a temporary test for plane example -----------
-         ! todo: drop this
-         wp_grad => Get_wpv(Particles,adapt_wpgradid)
-         wp => Get_wps(Particles,Particles%adapt_wpid)
-         xp => Get_xp(Particles)
-         old_scale = 0.0_mk
-         new_scale = 0.0_mk
-         max_g = 0.0_mk
-         max_w = 0.0_mk
-         max_ex = 0.0_mk
-         DO ip=1,Particles%Npart
-            wp_grad_fun0 = f0_grad_fun(xp(1:ppm_dim,ip))
-            old_scale = old_scale+SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
-            dummy_wp = f0_fun(xp(1:ppm_dim,ip))
-            new_scale = new_scale+((wp(ip)-dummy_wp)**2)
-            IF (max_g .LT. SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)) THEN
-               max_g = SUM((wp_grad(1:ppm_dim,ip)-wp_grad_fun0)**2)
-            ENDIF
-            IF (max_w .LT. (wp(ip)-dummy_wp)**2) THEN
-               max_w = ((wp(ip)-dummy_wp)**2)
-            ENDIF
-            IF (max_ex .LT. SUM(wp_grad_fun0**2)) THEN
-               max_ex = SUM(wp_grad_fun0**2)
-            ENDIF
-            !write(*,*) wp_grad_fun0, wp_grad(1:ppm_dim,ip)
-         ENDDO
-         write(*,*) '----Errors----'
-         write(*,*) 'Squared Error per particle in gradient: ', old_scale/Particles%Npart
-         write(*,*) 'Max Error per particle in gradient: ', max_g/max_ex
-         write(*,*) 'Squared Error per particle in field: ', new_scale/Particles%Npart
-         write(*,*) 'Max Error per particle in field: ', max_w
-         wp_grad => Set_wpv(Particles,adapt_wpgradid,read_only=.TRUE.)
-         wp => Set_wps(Particles,Particles%adapt_wpid,read_only=.TRUE.)
-         xp => Set_xp(Particles,read_only=.TRUE.)
-         ! ------------------------------------------------------------------
 
     ENDIF if_needs_derivatives
 

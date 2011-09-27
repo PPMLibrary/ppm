@@ -544,7 +544,8 @@ SUBROUTINE ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
             GOTO 9999
         ENDIF
 
-         ! haeckic
+         ! haeckic: todo: this has to be changed to the determinat of jacobian of G!!
+         ! but then we already have derivatives scaled for anisotropic domain!?!?
         IF (anisotropic) THEN
             byh0powerbeta = 1.0_mk
         ELSE

@@ -47,7 +47,6 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
 
     ! HAECKIC: level sets are everywhere dropped
 
-
     USE ppm_module_error
     USE ppm_module_map_part
     USE ppm_module_io_vtk
