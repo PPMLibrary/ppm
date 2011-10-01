@@ -204,7 +204,7 @@
       !  If variance of costs is below threshold, decomposition is OK
       !-------------------------------------------------------------------------
       IF (varcost .LT. maxvariance) THEN
-         lcontinue = .FALSE.
+!          lcontinue = .FALSE.
          IF (nsubs .LT. minboxes) THEN
               info = ppm_error_error
 
@@ -218,7 +218,7 @@
       !  If all boxes are below the maxcost we are done.
       !-------------------------------------------------------------------------
       IF (maxcost .LT. maxboxcost) THEN
-         lcontinue = .FALSE.
+!          lcontinue = .FALSE.
          IF (nsubs .LT. minboxes) THEN
               info = ppm_error_error
 

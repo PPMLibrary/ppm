@@ -580,7 +580,7 @@
          GOTO 9999
       ENDIF
 
-!       ! print for all boxes their neighbors
+       ! print for all boxes their neighbors
 !       IF(ppm_rank .EQ. 0)THEN
 !          print *, 'following the neighbors'
 !       ENDIF      
@@ -589,7 +589,7 @@
 !             
 !             IF(ppm_rank .EQ. 0)THEN
 !                print *, i, nneigh(i), min_sub(1,i), min_sub(2,i), max_sub(1,i), max_sub(2,i),&
-!                &  minboxsizes_out(1,i), minboxsizes_out(2,i)
+!                &  minboxsizes_out(1,i), minboxsizes_out(2,i),minboxsizes_out(3,i)
 !             ENDIF
 ! 
 !       ENDDO

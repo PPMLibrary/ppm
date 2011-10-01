@@ -704,7 +704,7 @@
             !  the mean number of particles, then stop 
             !-------------------------------------------------------------------
             IF (var_npbx.LT.tolerance*mean_npbx) THEN
-               lcontinue = .FALSE.
+               !lcontinue = .FALSE.
             ENDIF 
          ENDIF 
 
@@ -863,16 +863,19 @@
                   ENDIF
                ENDDO
             ENDDO
+
+
 #ifdef __MPI
             ! Needs to collect max from all processors
             CALL MPI_Allreduce(max_ghost(1),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
-            CALL MPI_Allreduce(max_ghost(2),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
-            CALL MPI_Allreduce(max_ghost(3),minboxsizes(1,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(2),minboxsizes(2,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
+            CALL MPI_Allreduce(max_ghost(3),minboxsizes(3,nsubs),1,MPTYPE,MPI_MAX,ppm_comm,info)
 #else
             minboxsizes(1,nsubs) = max_ghost(1)
             minboxsizes(2,nsubs) = max_ghost(2)
             minboxsizes(3,nsubs) = max_ghost(3)
 #endif
+
          ENDDO
       ENDIF
 

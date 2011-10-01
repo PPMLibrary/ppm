@@ -477,7 +477,6 @@
 #endif
       IF (info .NE. ppm_param_success) GOTO 9999
 
-
       !-------------------------------------------------------------------------
       !  Allocate memory for box cut
       !-------------------------------------------------------------------------
@@ -511,7 +510,7 @@
      &        'list of number of neighboring constraints',__LINE__,info)
           GOTO 9999
       ENDIF
-      ldc(3) = 1000 !THIS IS A GUESS, NOT MORE THAN 1000 neighbors!!!! TEST THIS
+      ldc(3) = 1000 !THIS IS A GUESS, NOT MORE THAN 1000 neighbors!!!!
       ldc(4) = 2
       CALL ppm_alloc(neigh_ghost_ranges,ldc,iopt,info)
       IF (info.NE.0) THEN
@@ -814,6 +813,7 @@
                   inext = j
               ENDIF
           ENDDO
+
           IF (ppm_dim .GT. 2) THEN
               mins(1)   = min_box(1,inext)
               mins(2)   = min_box(2,inext)
@@ -1001,14 +1001,15 @@
                   iopt = ppm_param_alloc_grow_preserve
 #if   __TYPE == __TREE
                   IF (nbox .GT. nboxalloc .OR. nlevel .GT. nlevelalloc) THEN
-                      IF(nbox.GT.nboxalloc) nboxalloc=nboxalloc+   &
-     &                    (nbpd**(nlevel-1))
+                     ! This was changed for inhomogenous cases, because otherwise very big arrayss
+                      IF(nbox.GT.nboxalloc) nboxalloc=nboxalloc+1000
                       IF(nlevel.GT.nlevelalloc) nlevelalloc=nlevelalloc+1
                       IF (ppm_debug .GT. 0) THEN
                           WRITE(mesg,'(A,I3,A,I6,A)') 'Reallocating to ',   &
      &                        nlevelalloc,' levels and ',nboxalloc,' boxes.'
                           CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
                       ENDIF
+
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,  &
      &                    min_box,max_box,minboxsizes,max_ghost_in_box,boxcost,parent,nchld,child,&
      &                    blevel,nbpl,info)
@@ -1038,7 +1039,8 @@
                   ENDIF
 #elif __TYPE == __DECOMP
                   IF (nbox .GT. nboxalloc) THEN
-                      nboxalloc = nboxalloc + (nbpd**(nlevel-1))
+                     ! This was changed for inhomogenous cases, because otherwise very big arrayss
+                      nboxalloc = nboxalloc + 1000
                       IF (ppm_debug .GT. 0) THEN
                           WRITE(mesg,'(A,I3,A)') 'Reallocating to ',   &
      &                        nboxalloc,' boxes.'
@@ -1046,9 +1048,6 @@
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box,&
      &                    minboxsizes,max_ghost_in_box,boxcost,nchld,blevel,info)
-!       IF(ppm_rank .EQ. 0)THEN
-!             print *, 'hello neih', nboxalloc
-!          ENDIF
                           ldc(1) = nboxalloc
                           ldc(2) = ppm_dim
                           ! New data structure also needs to be enlarged
@@ -1086,12 +1085,14 @@
                   !  Store the new boxes
                   !-------------------------------------------------------------
                   IF (ppm_dim .GT. 2) THEN
+
                       min_box(1,nbox)   = minc(1,i)
                       min_box(2,nbox)   = minc(2,i)
                       min_box(3,nbox)   = minc(3,i)
                       max_box(1,nbox)   = maxc(1,i)
                       max_box(2,nbox)   = maxc(2,i)
                       max_box(3,nbox)   = maxc(3,i)
+
                       IF (have_mesh) THEN
                           Nm_box(1,nbox)= Nmc(1,i)
                           Nm_box(2,nbox)= Nmc(2,i)
@@ -1284,7 +1285,6 @@
           
           ENDIF
 
-
           ! CHECK THE CUTTING
 
 
@@ -1442,7 +1442,6 @@
    !                   print *, '   '
    !                ENDIF
           ENDDO
-             
 
 
           ! Add a subroutine doing the following: parameter this data
@@ -1583,6 +1582,7 @@
           !---------------------------------------------------------------------
 
           ! If has one way it can happen that we still have divisible boxes
+          ! This test should be done above when updating the minboxsizes
           IF(has_one_way .AND. nboxlist .LT. 1) THEN
             !print *, 'case', nbox
             ! Go through all childless boxes and check them
@@ -1592,7 +1592,7 @@
                   
                   !Check if this box is divisible
                   ! CALL the new function get array
-   
+
                   CALL ppm_tree_divcheck(min_box(1:ppm_dim,i:i),    &
      &                  max_box(1:ppm_dim,i:i),1,minboxsizes(1:ppm_dim,i:i),fixed, &
      &                  boxcost(i:i),neigh_ghost_ranges(i:i,1:ppm_dim,:,:),numb_neigh_const(i:i,1:ppm_dim),ndiv,info)
