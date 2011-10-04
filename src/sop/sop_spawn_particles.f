@@ -1,5 +1,5 @@
 SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
-        nneigh_threshold,level_fun,wp_fun,nb_fun,printp)
+        nneigh_threshold,level_fun,wp_fun,nb_fun)
     !!!----------------------------------------------------------------------------!
     !!!
     !!! Insert particles around those with too few neighbours
@@ -33,9 +33,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     OPTIONAL                                              :: nb_fun
     OPTIONAL                                              :: level_fun
     !!! if level function is known analytically
-    INTEGER, OPTIONAL                                     :: printp
-    !!! printout particles that are created into file fort.(6000+printp)
-    ! argument-functions need an interface
     INTERFACE
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
@@ -181,13 +178,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     ENDIF
 
     nvlist => NULL()
-
-#if debug_verbosity > 1
-        IF (PRESENT(printp)) THEN
-            OPEN(6000+printp)
-            OPEN(7000+printp)
-        ENDIF
-#endif
 
     !!-------------------------------------------------------------------------!
     !! Re-allocate (grow) arrays if necessary
@@ -365,14 +355,14 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                         if (iq .le. Npart) then
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                D(ip) * &
+                                0.1_MK*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))/dist + & !mirror image of q
                                 default_stencil(1:ppm_dim,1))
 
                         else
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                D(ip) * &
+                                0.1_MK*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq))/dist + & !mirror image of q
                                 default_stencil(1:ppm_dim,1))
                         endif
@@ -664,7 +654,7 @@ SUBROUTINE check_nn(Particles,opts,info)
         IF (ppm_dim.EQ.2) THEN
             nb_close_theo = 6
         ELSE
-            nb_close_theo = 12
+            nb_close_theo = 6
         ENDIF
 
         IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
@@ -686,7 +676,7 @@ SUBROUTINE check_nn(Particles,opts,info)
                         vlist(close_neigh,ip) = iq 
                     ENDIF
                 ENDDO
-                nvlist(ip) = close_neigh ! min(close_neigh,6-close_neigh)
+                nvlist(ip) = min(1,close_neigh) !close_neigh ! min(close_neigh,6-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
                     nvlist(ip) = -6
                 endif

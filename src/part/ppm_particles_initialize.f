@@ -99,6 +99,13 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
         GOTO 9999
     ENDIF
     len_phys=max_phys-min_phys
+    IF (MINVAL(len_phys(1:ppm_dim)).LE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,&
+            'Domain length is <= 0 along one dimension. Check input parameters'&
+            ,__LINE__,info)
+        GOTO 9999
+    ENDIF
 
 
     h = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))

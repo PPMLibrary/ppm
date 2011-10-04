@@ -447,14 +447,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
-        IF (adding_particles) THEN
-            CALL particles_neighlists(Particles,topo_id,info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'particles_neighlists failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+        CALL particles_neighlists(Particles,topo_id,info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,caller,&
+                'particles_neighlists failed',__LINE__,info)
+            GOTO 9999
         ENDIF
 
 #ifdef __MPI
@@ -845,6 +843,20 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         !ENDIF
 
         Psi_global_old = Psi_global
+#if debug_verbosity > 1
+        CALL sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+        IF (Psi_global .NE. Psi_global_old) THEN
+            write(*,*) 'global potential different in ', &
+                'sop_gradient_psi and sop_potential_psi'
+            write(*,*) 'Psi_global(sop_potential) = ',Psi_global
+            write(*,*) 'Psi_global(sop_gradient) = ',Psi_global_old
+            write(*,*) 'difference = ', Psi_global_old - Psi_global
+            info = -1
+            GOTO 9999
+        ENDIF
+#endif
+
+
         Psi_1 = HUGE(1._MK)
         alpha1 = -1._MK
         alpha2 = -1._MK
@@ -856,6 +868,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !step_max = 1.5_mk
         !endif
         step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_mk), 10000._mk)
+        !step_max = MIN(0.3_mk / MIN(gradPsi_max,3.0_mk), 0.5_mk)
 
         !!---------------------------------------------------------------------!
         !! Evaluate potential after different step sizes
@@ -1385,7 +1398,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
         !Insert (spawn) new particles where needed
         CALL  sop_spawn_particles(Particles,opts,info,wp_fun=wp_fun,&
-            level_fun=level_fun,nb_fun=nb_fun,printp=it_adapt)
+            level_fun=level_fun,nb_fun=nb_fun)
         IF (info .NE. 0) THEN
             CALL ppm_write(ppm_rank,caller,'sop_spawn_particles failed.',info)
             info = -1

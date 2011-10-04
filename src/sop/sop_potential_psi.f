@@ -29,8 +29,7 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
-    REAL(MK)                              :: dist2,rr,meanD,rd,rc
-    REAL(MK),DIMENSION(ppm_dim)           :: dist
+    REAL(MK)                              :: rr,meanD,rd,rc
     REAL(KIND(1.D0))                      :: t0
     CHARACTER (LEN=256)                   :: caller='sop_potential_psi'
     CHARACTER (LEN=256)                   :: filename,cbuf
@@ -79,22 +78,15 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
         0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
     coeff = 1._mk
 
+
+    attractive_radius = opts%attractive_radius0
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
 
-            !IF (nvlist(ip).GT.30) THEN
-        attractive_radius = opts%attractive_radius0
-            !ELSE
-                !attractive_radius = 0._MK
-            !ENDIF
-
-         
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
 
-            dist = xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)
-            dist2 = SUM(dist**2)
-            rr = SQRT(dist2)
+            rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2))
 
 #if debug_verbosity > 0
             IF (rr .LE. 1e-12) THEN
@@ -112,11 +104,12 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
             ENDIF
 #endif
 
-            meanD = MIN(D(ip) , D(iq))
+            meanD = MIN(D(ip),D(iq))
 
             rd = rr / meanD
 
-            if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+            !if (fuse(ip)*fuse(iq).GE.1 .and. max(fuse(ip),fuse(iq)).ge.4 ) then 
+            if (max(fuse(ip),fuse(iq)).ge.4 ) then 
                 no_fusion = .false.
             else
                 no_fusion = .true.

@@ -43,7 +43,7 @@ SUBROUTINE sop_close_neighbours(Particles,opts,info)
     IF (ppm_dim.EQ.2) THEN
         nb_close_theo = 6
     ELSE
-        nb_close_theo = 12
+        nb_close_theo = 6
     ENDIF
 
     particle_loop: DO ip = 1,Particles%Npart

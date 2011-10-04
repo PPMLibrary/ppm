@@ -92,25 +92,16 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
     rho = opts%param_morse
     Psi_at_cutoff = (-rho**(-4._mk*opts%rcp_over_D) + &
         0.8_mk*rho**(1._mk-5._mk*opts%rcp_over_D))
-
     coeff = 1._mk
 
     !!-------------------------------------------------------------------------!
     !! Compute interaction potential and its gradient
     !!-------------------------------------------------------------------------!
     IF(PRESENT(gradPsi_max)) gradPsi_max = 0._mk
+    attractive_radius = opts%attractive_radius0
     particle_loop: DO ip = 1,Particles%Npart
         Psi_part = 0._MK
         nn = HUGE(1._MK)
-
-        !Particles with few neighbours are a bit more reluctant to fuse
-        !(not really necessary, but makes insertion/deletion a bit faster
-        !in some cases)
-            !IF (nvlist(ip).GT.30) THEN
-        attractive_radius = opts%attractive_radius0
-            !ELSE
-                !attractive_radius = 0._MK
-            !ENDIF
 
         neighbour_loop: DO ineigh = 1,nvlist(ip)
             iq = vlist(ineigh,ip)
@@ -132,7 +123,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                 nn = rr
             ENDIF
 
-            meanD = MIN(D(ip) , D(iq))
+            meanD = MIN(D(ip),D(iq))
 
             !------------------------------------------------------------------!
             !Compute the gradients with respect to rpq
@@ -199,6 +190,12 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         !----------------------------------------------------------------------!
         Particles%h_min = MIN(Particles%h_min,nn)
 
+        !IF (fuse(ip) .GE. 4) THEN
+            !WRITE(*,'(A,I0,A,3(E10.3,1X),A,E10.3)') &
+                !'particle ',ip,' in fusing mode, gradPsi = ',Gradient_Psi(1:ppm_dim,ip),&
+                !' | ', SQRT(SUM(Gradient_Psi(1:ppm_dim,ip)**2)) / D(ip)
+        !ENDIF
+
 #if debug_verbosity > 1
         IF (ISNAN(Psi_part)) THEN
             WRITE(*,*) 'Psi_part = ',Psi_part, ip, gradPsi, D(ip), nn
@@ -247,9 +244,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
         GOTO 9999
     ENDIF
 #endif
-
-    !IF (PRESENT(gradPsi_max)) &
-        !write(*,*) 'in gradient_psi, Max Gradient = ',gradPsi_max
 
     !!-------------------------------------------------------------------------!
     !! Get ghosts for gradient_psi (then, during the linesearch, 
