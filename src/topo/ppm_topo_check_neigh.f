@@ -37,6 +37,9 @@
       !!! Check if this box is neighbor or itself
       !!! This works only for non symmetric case
 
+      ! TODO: Output information about the error
+      !       Nicer programming using functions
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------

@@ -5,6 +5,7 @@ USE ppm_module_topo
 USE ppm_module_map
 USE ppm_module_util_dbg
 USE ppm_module_data
+USE ppm_module_topo_alloc
 
  !------------------------------------------------------------
  ! This test suite tests the topology creation in 3D
@@ -46,7 +47,7 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: skin = 0._mk
 integer,parameter               :: ndim = 3
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: cutoff,min_ghost_req=0.25_mk, max_ghost_req=1.40_mk,so_far,total
+real(mk)                        :: cutoff,min_ghost_req=0.50_mk, max_ghost_req=3.00_mk,so_far,total
 integer                         :: info,comm,rank,nproc, topoid
 integer                         :: np,mp,newnp,seedsize
 real(mk),dimension(:,:),pointer :: xp
@@ -63,6 +64,7 @@ integer, dimension(3)           :: now
 integer,  dimension(:),allocatable :: seed
 real(mk), dimension(:),allocatable :: randnb
 real(mk), dimension(3)          :: offset
+type(ppm_t_topo), pointer       :: topo => NULL()
 
     init
 
@@ -103,7 +105,8 @@ real(mk), dimension(3)          :: offset
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
         do i=1,seedsize
-           seed(i)=now(1)+10+i*i*(rank+1)*now(3)
+           ! one could add random seed here depending on time
+           seed(i)=10+i*i*(rank+1)
         enddo
         call random_seed(put=seed)
 
@@ -111,6 +114,8 @@ real(mk), dimension(3)          :: offset
         
 
     teardown
+        topo => ppm_topo(topoid)%t
+        CALL ppm_topo_dealloc(topo,info)
         DEALLOCATE(xp,ghost_req,stat=info)
         DEALLOCATE(min_phys,max_phys,len_phys)
         DEALLOCATE(seed)
@@ -130,10 +135,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -231,10 +236,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -334,10 +339,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.25_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -437,10 +442,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -540,10 +545,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -643,10 +648,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -746,10 +751,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -849,10 +854,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -952,10 +957,10 @@ real(mk), dimension(3)          :: offset
         ! create particles
         !----------------------
 
-        np = 1000
+        np = CEILING(1000.0/nproc)
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
 
-        cutoff = 0.05_mk
+        cutoff = 0.15_mk
         has_one_way = .FALSE.
         CALL random_number(xp)
 
@@ -1055,7 +1060,7 @@ real(mk), dimension(3)          :: offset
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -1342,7 +1347,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -1629,7 +1634,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -3639,7 +3644,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -3926,7 +3931,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -4213,7 +4218,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -4500,7 +4505,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -4787,7 +4792,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -5074,7 +5079,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -5361,7 +5366,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -5648,7 +5653,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -5935,7 +5940,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -6223,7 +6228,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -6510,7 +6515,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -6797,7 +6802,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -7084,7 +7089,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -7371,7 +7376,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -7658,7 +7663,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -7945,7 +7950,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -8232,7 +8237,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)
@@ -8519,7 +8524,7 @@ ghost_req(3,(ix-1)*np_sqrt*np_sqrt + (iy-1)*np_sqrt + iz + np_temp + np_temp + n
         !----------------------
         ! create particles
         !----------------------
-        np_sqrt = 8
+        np_sqrt = CEILING(8*sqrt(1.0/nproc))
         np_temp = np_sqrt*np_sqrt*np_sqrt
         np = 8*np_temp
         ALLOCATE(xp(ndim,np),ghost_req(ndim,np),stat=info)

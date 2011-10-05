@@ -35,6 +35,10 @@
       !!! Checks if all boxes fulfill minimum sizes for all particle inside this box
       !!! Assumes neighbors are correct
       !!! (on the local processor)
+
+      ! TODO: Output information about the error
+      !       Nicer programming using functions
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
