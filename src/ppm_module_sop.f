@@ -40,13 +40,16 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define debug_verbosity 0
+#define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
      !method for minimisation of the interaction potential
      ! __USE_LBFGS  for L-BFGS
      ! __USE_SD     for steepest descent using a line search
 #define __USE_SD 1
 #undef __USE_LBFGS 
+!#undef __USE_SD 
+!#define __USE_LBFGS 1
+#define __USE_DEL_METHOD2 1
 
      USE ppm_module_data
      USE ppm_module_typedef
@@ -199,6 +202,9 @@
 #include "sop/sop_fuse_particles.f"
 
 #define __KIND __DOUBLE_PRECISION
+#include "sop/sop_fuse2_particles.f"
+
+#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_gradient_descent.f"
 
 #define __KIND __DOUBLE_PRECISION
@@ -212,6 +218,9 @@
 
 #define __KIND __DOUBLE_PRECISION
 #include "sop/sop_spawn_particles.f"
+
+#define __KIND __DOUBLE_PRECISION
+#include "sop/sop_spawn2_particles.f"
 
 #define __KIND __DOUBLE_PRECISION
 #define __LDA 1
