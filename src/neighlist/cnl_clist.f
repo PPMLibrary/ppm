@@ -126,20 +126,20 @@
       !  Rank the particles in this extended sub
       !---------------------------------------------------------------------
       IF (ndim .EQ. 2) THEN
-          CALL util_rank2d(xp,Np,xmin(1:2),xmax(1:2),clist(1)%Nm(1:2),&
+          CALL cnl_rank2d(xp,Np,xmin(1:2),xmax(1:2),clist(1)%Nm(1:2),&
  &                Ngl(1:4),clist(1)%lpdx,clist(1)%lhbx,info)
           !-----------------------------------------------------------------
           !  We have to increase Nm by the ghost layers to provide the same
-          !  behaviour as before the change of interface of ppm_util_rank
+          !  behaviour as before the change of interface of ppm_cnl_rank
           !-----------------------------------------------------------------
           clist(1)%Nm(1) = clist(1)%Nm(1) + Ngl(1) + Ngl(3)
           clist(1)%Nm(2) = clist(1)%Nm(2) + Ngl(2) + Ngl(4)
       ELSEIF (ndim .EQ. 3) THEN
-          CALL util_rank3d(xp,Np,xmin(1:3),xmax(1:3),clist(1)%Nm(1:3),&
+          CALL cnl_rank3d(xp,Np,xmin(1:3),xmax(1:3),clist(1)%Nm(1:3),&
  &                Ngl(1:6),clist(1)%lpdx,clist(1)%lhbx,info)
           !-----------------------------------------------------------------
           !  We have to increase Nm by the ghost layers to provide the same
-          !  behaviour as before the change of interface of ppm_util_rank
+          !  behaviour as before the change of interface of ppm_cnl_rank
           !-----------------------------------------------------------------
           clist(1)%Nm(1) = clist(1)%Nm(1) + Ngl(1) + Ngl(4)
           clist(1)%Nm(2) = clist(1)%Nm(2) + Ngl(2) + Ngl(5)

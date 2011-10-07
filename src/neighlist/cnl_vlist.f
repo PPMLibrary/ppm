@@ -21,7 +21,7 @@
 !!!----------------------------------------------------------------------------!
 
     SUBROUTINE cnl_vlist(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,ndim,&
- &                             info,clt,vlt,tott)
+ &                             info)
 
 
     USE ppm_module_typedef
@@ -41,7 +41,6 @@
     INTEGER,  DIMENSION(:,:),POINTER, INTENT(INOUT)   :: vlist
     INTEGER,                          INTENT(  OUT)   :: info
     INTEGER,                          INTENT(IN   )   :: ndim
-    REAL(MK),   INTENT(OUT), OPTIONAL                  :: clt,vlt,tott
 
 
     ! local variable
@@ -81,7 +80,6 @@
     !! Initialize
     !!-------------------------------------------------------------------------!
     info = 0
-    call gettimenow(ts)
     NULLIFY(ind)
     NULLIFY(jnd)
     NULLIFY(cutoff_incr)
@@ -93,10 +91,8 @@
     first_loop=.TRUE.
     cutoff = maxval(rcp)
     cellsize = cutoff*verlet_skin
-    call gettimenow(tcs)
     CALL cnl_clist(xp,Mpart,xmin,xmax,cellsize,&
         .FALSE.,clist,ndim,info)
-    call gettimenow(tce)
     IF (info .NE. 0) THEN
         print *, 'cnl_clist failed'
         info = -1
@@ -106,7 +102,6 @@
     !!-------------------------------------------------------------------------!
     !! Create the index list of cell-cell interactons
     !!-------------------------------------------------------------------------!
-    call gettimenow(tvs)
     CALL cnl_MkNeighIdx(.FALSE.,ind,jnd,nnd,ndim,info)
     IF (info .NE. 0) THEN
         print *, 'cnl_MkNeighIdx failed'
@@ -463,11 +458,7 @@
     !!-------------------------------------------------------------------------!
     !! Finalize
     !!-------------------------------------------------------------------------!
-    call gettimenow(tve)
-    call gettimenow(te)
-    tott = te-ts
-    clt = tce-tcs
-    vlt = tve-tvs
+    DEALLOCATE(clist(1)%Nm)
 
     9999 CONTINUE ! jump here upon error
 
