@@ -155,6 +155,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #endif
 
 
+#ifdef __USE_DEL_METHOD2
+    opts%attractive_radius0 = 0.0_MK
+    opts%fuse_radius = 0.02_MK
+#endif
     !!-------------------------------------------------------------------------!
     !! Initialize
     !!-------------------------------------------------------------------------!
@@ -386,8 +390,13 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             !&  Particles%nneighmin.lt.opts%nneigh_critical) then 
 
         if (.not.adaptation_ok) then
+#ifdef __USE_DEL_METHOD2
+            CALL  sop_spawn2_particles(Particles,opts,info,&
+                nb_part_added=nb_spawn,wp_fun=wp_fun)
+#else
             CALL  sop_spawn_particles(Particles,opts,info,&
                 nb_part_added=nb_spawn,wp_fun=wp_fun)
+#endif
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -475,7 +484,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #ifdef __MPI
         del_t1 = MPI_WTIME(info)
 #endif
+
+#ifdef __USE_DEL_METHOD2 
+        CALL sop_fuse2_particles(Particles,opts,info,nb_part_del=nb_fuse)
+#else
         CALL sop_fuse_particles(Particles,opts,info,nb_part_del=nb_fuse)
+#endif
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -501,7 +515,6 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 'particles_mapping_ghosts failed',__LINE__,info)
             GOTO 9999
         ENDIF
-
 
 #ifdef __MPI
         compD_t1 = MPI_WTIME(info)
@@ -683,6 +696,10 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             GOTO 9999
         ENDIF
 
+#if debug_verbosity>1
+        call check_duplicates(Particles)
+#endif
+
         !!---------------------------------------------------------------------!
         !! /begin Line search **
         !!---------------------------------------------------------------------!
@@ -759,7 +776,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
 
 
-        IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
+        !IF (lbfgs_continue .and. gradPsi_max .LE. 5E-2) THEN
+        IF (lbfgs_continue .and. gradPsi_max .LE. 5E-12) THEN
             adaptation_ok = .true.
         ELSE
 

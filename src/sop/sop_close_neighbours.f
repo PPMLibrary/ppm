@@ -61,6 +61,12 @@ SUBROUTINE sop_close_neighbours(Particles,opts,info)
             ! rescaled by the MIN of D(ip) and D(iq)
             IF (rr .LT. 1.0_mk) THEN
                 close_neigh = close_neigh + 1
+
+                !sort vlist (only for the close neighbours, and only
+                ! needed by fuse2_particles
+                vlist(ineigh,ip) = vlist(close_neigh,ip)
+                vlist(close_neigh,ip) = iq 
+
             ENDIF
 
         ENDDO neighbour_loop
@@ -73,6 +79,7 @@ SUBROUTINE sop_close_neighbours(Particles,opts,info)
         !ENDIF
 
         nb_neigh(ip) = close_neigh
+
 
     ENDDO particle_loop
 
