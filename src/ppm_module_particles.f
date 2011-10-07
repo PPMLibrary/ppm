@@ -37,12 +37,13 @@ INTEGER, PARAMETER,PRIVATE :: prec = ppm_kind_double
     ! Private variables for the module
     !----------------------------------------------------------------------
     !for debugging
-    LOGICAL,PRIVATE           :: verbose = .FALSE.
+    LOGICAL,PRIVATE        :: verbose = .FALSE.
 
+    CHARACTER(LEN=32)      :: line_of_stars='********************************'
     INTEGER , PRIVATE, DIMENSION(3)    :: ldc
     !!! Number of elements in all dimensions for allocation
-    !FIXME
-    REAL(prec),DIMENSION(:),POINTER    :: tmp_cutoff
+
+    !REAL(prec),DIMENSION(:),POINTER    :: tmp_cutoff
 
 CONTAINS
 
@@ -116,11 +117,13 @@ FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
                     IF (Particles%wpi(wpi_id)%has_ghosts) THEN
                         get_wpi => Particles%wpi(wpi_id)%vec(1:Particles%Mpart)
                     ELSE
+                        write(*,*) line_of_stars
                         write(*,*) 'ERROR: tried to get wpi (name = ',&
                             & TRIM(ADJUSTL(Particles%wpi(wpi_id)%name)),&
                             & ') with ghosts when ghosts are not up-to-date. ',&
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
+                        write(*,*) line_of_stars
                         get_wpi => NULL()
 #ifdef __crash_on_null_pointers
                         !segfault the program. Compile with appropriate compiler
@@ -135,11 +138,13 @@ FUNCTION get_wpi(Particles,wpi_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
+    write(*,*) line_of_stars
     write(*,*) 'ERROR: tried to get wpi (name = ',&
         & TRIM(ADJUSTL(Particles%wpi(wpi_id)%name)),&
         & ') when mapping is not up-to-date. ',&
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
+    write(*,*) line_of_stars
     get_wpi => NULL()
 #ifdef __crash_on_null_pointers
     !segfault the program. Compile with appropriate compiler
@@ -199,11 +204,13 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
                     IF (Particles%wps(wps_id)%has_ghosts) THEN
                         get_wps => Particles%wps(wps_id)%vec(1:Particles%Mpart)
                     ELSE
+                        write(*,*) line_of_stars
                         write(*,*) 'ERROR: tried to get wps (name = ',&
                             & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
-                            & ') with ghosts with ghosts when ghosts are not up-to-date. ',&
+                            & ') with ghosts when ghosts are not up-to-date. ',&
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
+                        write(*,*) line_of_stars
                         get_wps => NULL()
 #ifdef __crash_on_null_pointers
                         !segfault the program. Compile with appropriate compiler
@@ -218,11 +225,13 @@ FUNCTION get_wps(Particles,wps_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
+    write(*,*) line_of_stars
     write(*,*) 'ERROR: tried to get wps (name = ',&
         & TRIM(ADJUSTL(Particles%wps(wps_id)%name)),&
         & ') when mapping is not up-to-date. ',&
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
+    write(*,*) line_of_stars
     get_wps => NULL()
 #ifdef __crash_on_null_pointers
     !segfault the program. Compile with appropriate compiler
@@ -287,11 +296,13 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
                         get_wpv => &
                             Particles%wpv(wpv_id)%vec(1:lda,1:Particles%Mpart)
                     ELSE
+                        write(*,*) line_of_stars
                         write(*,*) 'ERROR: tried to get wpv (name = ',&
                             & TRIM(ADJUSTL(Particles%wpv(wpv_id)%name)),&
                             & ') with ghosts when ghosts are not up-to-date. ',&
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
+                        write(*,*) line_of_stars
                         get_wpv => NULL()
 #ifdef __crash_on_null_pointers
                         !segfault the program. Compile with appropriate compiler
@@ -306,11 +317,13 @@ FUNCTION get_wpv(Particles,wpv_id,with_ghosts)
             RETURN
         ENDIF
     ENDIF
+    write(*,*) line_of_stars
     write(*,*) 'ERROR: tried to get wpv (name = ',&
         & TRIM(ADJUSTL(Particles%wpv(wpv_id)%name)),&
         & ') when mapping is not up-to-date. ',&
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
+    write(*,*) line_of_stars
     get_wpv => NULL()
 #ifdef __crash_on_null_pointers
     !segfault the program. Compile with appropriate compiler
