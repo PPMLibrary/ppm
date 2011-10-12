@@ -349,21 +349,18 @@
                   whole_domain(2*i)   = actual_domain(2*i) + ghostlayer(i)
                   max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
               END DO
-              DO i = 1, ppm_dim
-                  whole_domain(2*i)   = whole_domain(2*i-1) + max_size
-              END DO
           ELSE
               DO i = 1, ppm_dim
                   whole_domain(2*i-1) = actual_domain(2*i-1) - ghostlayer(i)
                   whole_domain(2*i)   = actual_domain(2*i)   + ghostlayer(i)
                   max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
               END DO
-              DO i = 1, ppm_dim
-                 size_diff = max_size - (whole_domain(2*i) - whole_domain(2*i-1))/2.0_mk
-                 whole_domain(2*i-1) = whole_domain(2*i-1) - size_diff
-                 whole_domain(2*i)   = whole_domain(2*i)   + size_diff
-              END DO
           END IF
+          DO i = 1, ppm_dim
+              IF ((whole_domain(2*i) - whole_domain(2*i-1)) .LE. max_size/2.0_MK) THEN
+                whole_domain(2*i)   = whole_domain(2*i-1) + max_size
+              END IF
+          END DO
 
           clist%n_real_p = Np !Set number of real particles
 
