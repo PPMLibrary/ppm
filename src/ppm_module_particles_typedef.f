@@ -234,9 +234,9 @@ TYPE ppm_t_particles
     LOGICAL                                         :: neighlists
     !!! true if the neighbor lists have been computed
     INTEGER                                         :: nneighmin
-    !!! smallest number of neighbors
+    !!! smallest number of neighbors on this processor
     INTEGER                                         :: nneighmax
-    !!! highest number of neighbors
+    !!! highest number of neighbors on this processor
     LOGICAL                                         :: conventionalinl
     !!! true if the inl are computed with the old slow routine (default is
     !!! false)

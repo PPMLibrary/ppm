@@ -174,7 +174,7 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
             ENDIF
         ENDIF
         IF (opts%remove_large_parts) THEN
-            IF (D(ip).GE.opts%maximum_D) THEN
+            IF (D(ip).GE.MIN(opts%maximum_D,opts%scale_D)) THEN
                 nvlist(ip)=999
                 CYCLE particle_loop
             ENDIF
@@ -330,7 +330,8 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
     !!-------------------------------------------------------------------------!
 #if debug_verbosity > 1
     IF (ppm_rank .EQ.0) THEN
-        WRITE(cbuf,'(A,I8,A)') 'Deleting ', del_part,' particles'
+        WRITE(cbuf,'(A,I0,A,I0)') 'Deleting ', del_part,&
+            ' particles - Np: ',Particles%Npart
         CALL ppm_write(ppm_rank,caller,cbuf,info)
     ENDIF
 #endif

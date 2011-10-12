@@ -552,7 +552,7 @@ SUBROUTINE check_nn2(Particles,opts,info)
                         vlist(close_neigh,ip) = iq 
                     ENDIF
                 ENDDO
-                nvlist(ip) = 1 !min(close_neigh,nb_close_theo-close_neigh)
+                nvlist(ip) = min(close_neigh,1) !min(close_neigh,nb_close_theo-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
                     nvlist(ip) = -6
                 endif

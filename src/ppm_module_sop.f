@@ -119,7 +119,7 @@
 
 
      PUBLIC sop_adapt_particles, sop_init_opts, sop_init_stats,&
-         &  sop_plot_potential
+         &  sop_plot_potential, sop_compute_D, sop_fuse2_particles
 
 
      CONTAINS

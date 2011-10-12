@@ -3,7 +3,8 @@
 !!!----------------------------------------------------------------------------!
 
 SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
-        wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun,stats)
+        wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun,&
+        only_D_tilde,stats)
 
     USE ppm_module_error
     USE ppm_module_dcops
@@ -36,6 +37,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!! if level gradients are known analytically
     OPTIONAL                                              :: nb_fun
     !!! if narrow-band function is known analytically
+    LOGICAL, OPTIONAL                                     :: only_D_tilde
+    !!! only compute D_tilde, then exits (no ghosts, no neighlists, no D)
     TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
     !!! statistics on output
 
@@ -556,6 +559,9 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     Dtilde => Set_wps(Particles,Particles%Dtilde_id,&
         read_only=.FALSE.,ghosts_ok=.TRUE.)
 
+    IF (PRESENT(only_D_tilde)) THEN
+        IF (only_D_tilde) GOTO 8000
+    ENDIF
     !---------------------------------------------------------------------!
     ! Increase the desired resolution where it is needed
     ! D^(n+1) = Min(D^(n),D_tilde^(n+1))
@@ -681,6 +687,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ENDIF
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
 #endif
+
+    8000 CONTINUE
 
 
 #if debug_verbosity > 0

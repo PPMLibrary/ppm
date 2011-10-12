@@ -2186,6 +2186,9 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             Particles%stats%t_ghost_get = Particles%stats%t_ghost_get + (t2-t1)
 #endif
             skip_send = .FALSE.
+        ELSE
+            IF(dbg) &
+                write(*,*) 'skipping ghost-get '
         ENDIF
 
         !Update the ghost for the properties if
@@ -2398,6 +2401,32 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
                 ENDIF
             ENDIF
         ENDIF !.NOT.skip_send
+    ELSE ! if cutoff .le. 0
+        IF(dbg) THEN
+            write(*,*) 'cutoff = 0, nothing to do'
+            write(*,*) 'setting all %has_ghost properties to true'
+        ENDIF
+        DO prop_id = Particles%max_wpvid,1,-1
+            IF(Particles%wpv(prop_id)%map_ghosts) THEN
+                IF(Particles%wpv(prop_id)%is_mapped) THEN
+                    Particles%wpv(prop_id)%has_ghosts = .TRUE.
+                ENDIF
+            ENDIF
+        ENDDO
+        DO prop_id = Particles%max_wpsid,1,-1
+            IF(Particles%wps(prop_id)%map_ghosts) THEN
+                IF(Particles%wps(prop_id)%is_mapped) THEN
+                    Particles%wps(prop_id)%has_ghosts = .TRUE.
+                ENDIF
+            ENDIF
+        ENDDO
+        DO prop_id = Particles%max_wpiid,1,-1
+            IF(Particles%wpi(prop_id)%map_ghosts) THEN
+                IF(Particles%wpi(prop_id)%is_mapped) THEN
+                    Particles%wpi(prop_id)%has_ghosts = .TRUE.
+                ENDIF
+            ENDIF
+        ENDDO
     ENDIF
 
 
@@ -2821,13 +2850,19 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         ensure_knn = .FALSE.
     ENDIF
 
-    do_something: IF (Particles%neighlists) THEN
-        !neighbor lists are already up-to-date, nothing to do
-        info = ppm_error_notice
-        CALL ppm_error(999,caller,   &
-            &  'neighlists are supposedly already up-to-date, NOTHING to do',&
-            &  __LINE__,info)
-        info = 0
+    do_something: IF (Particles%neighlists .OR. Particles%Npart.EQ.0) THEN
+        !neighbor lists are already up-to-date, or no particles on this proc
+        !nothing to do
+        IF (Particles%neighlists) THEN
+            info = ppm_error_notice
+            CALL ppm_error(999,caller,   &
+                &  'neighlists are supposedly already up-to-date, NOTHING to do',&
+                &  __LINE__,info)
+            info = 0
+        ELSE
+            Particles%nneighmin = 0
+            Particles%nneighmax = 0
+        ENDIF
     ELSE
         !hack to build (potentially incomplete) neighbour lists even 
         !for ghost particles
@@ -3007,22 +3042,8 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
         !-----------------------------------------------------------------------
         Particles%neighlists = .TRUE.
 
-#ifdef __MPI
-        nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
-        nneighmax = MAXVAL(Particles%nvlist(1:np_target))
-        CALL MPI_Allreduce(nneighmin,Particles%nneighmin,1,&
-            MPI_INTEGER,MPI_MIN,ppm_comm,info)
-        CALL MPI_Allreduce(nneighmax,Particles%nneighmax,1,&
-            MPI_INTEGER,MPI_MAX,ppm_comm,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_mpi_fail,caller,'MPI_Allreduce failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-#else
         Particles%nneighmin = MINVAL(Particles%nvlist(1:Particles%Npart))
         Particles%nneighmax = MAXVAL(Particles%nvlist(1:np_target))
-#endif
         ! DC operators that do not use a xset neighbour list, if they exist, 
         ! are no longer valid (they depend on the neighbour lists)
         IF (ASSOCIATED(Particles%ops)) THEN
@@ -3035,8 +3056,6 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
 
         IF (verbose) &
             write(*,*) 'computed neighlists'
-
-        !WRITE(*,*) 'Computed neighbour lists, Min-Max nb = ',Particles%nneighmin, Particles%nneighmax
 
     ENDIF do_something
     !-----------------------------------------------------------------------
