@@ -530,6 +530,7 @@ SUBROUTINE sop_adapt_particles(topo_id,Particles,D_fun,opts,info,     &
     ENDIF
     Particles%wpv(Particles%G_id)%name = Particles_old%wpv(Particles_old%G_id)%name
     Particles%nwpv=2
+    Particles%Dtilde_id=0
 
     ! copy xp and Dtilde
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
