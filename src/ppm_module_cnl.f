@@ -47,6 +47,11 @@
 
 #include "neighlist/cnl_MkNeighIdx.f"
 
+#define __DIM 2
+#include "neighlist/cnl_vlist_build.f"
+#define __DIM 3
+#include "neighlist/cnl_vlist_build.f"
+
 #include "neighlist/cnl_vlist.f"
 
       end module ppm_module_cnl
