@@ -85,6 +85,9 @@
       INTEGER                                       :: level
       ! Depth level.
 
+      REAL(MK)                                      :: max_size
+      REAL(MK)                                      :: size_diff
+
       !---------------------------------------------------------------------
       !  Parameters for ppm_alloc
       !---------------------------------------------------------------------
@@ -103,18 +106,25 @@
 
       CALL substart('ppm_create_inl_clist',t0,info)
 
+      max_size = 0.0_mk
       IF(lsymm) THEN
           DO i = 1, ppm_dim
               whole_domain(2*i-1) = actual_domain(2*i-1)
               whole_domain(2*i)   = actual_domain(2*i) + ghost_extend(i)
+              max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
           END DO
       ELSE
           DO i = 1, ppm_dim
               whole_domain(2*i-1) = actual_domain(2*i-1) - ghost_extend(i)
               whole_domain(2*i)   = actual_domain(2*i)   + ghost_extend(i)
+              max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
           END DO
-      END IF
-      
+      END IF 
+      DO i = 1, ppm_dim
+          IF ((whole_domain(2*i) - whole_domain(2*i-1)) .LE. max_size/2.0_MK) THEN
+              whole_domain(2*i)   = whole_domain(2*i-1) + max_size
+          END IF
+      END DO
 
       clist%n_real_p = Np
       clist%n_all_p = Mp

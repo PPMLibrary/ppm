@@ -59,9 +59,9 @@
       !!! Topology ID
       INTEGER                         , INTENT(IN   ) :: meshid
       !!! Mesh ID
-      INTEGER, DIMENSION(:  ), POINTER, INTENT(  OUT) :: nm
+      INTEGER, DIMENSION(:  ), POINTER                :: nm
       !!! global number of mesh points in computational domain
-      INTEGER, DIMENSION(:,:), POINTER, INTENT(  OUT) :: istart
+      INTEGER, DIMENSION(:,:), POINTER                :: istart
       !!! Start indices (i,j[,k]) (first index) of sub mesh isub (second
       !!! index) in *global* mesh.
       !!!
@@ -70,7 +70,7 @@
       !!! subdomains in the *whole* physical domain (i.e. all processors).
       !!! Use `topo%isublist` to find the indeces for the grids on the
       !!! processor
-      INTEGER, DIMENSION(:,:), POINTER, INTENT(  OUT) :: ndata
+      INTEGER, DIMENSION(:,:), POINTER                :: ndata
       !!! Returns number of grid POINTS in x,y[,z] (first index) of sub mesh
       !!! isub (second index). Includes the points ON the sub boundaries.
       !!!
@@ -81,7 +81,7 @@
       !!! processor
       INTEGER, DIMENSION(ppm_dim)      , INTENT(  OUT) :: maxndata 
       !!! Returns maximum number of grid points over all subdomains
-      INTEGER, DIMENSION(:  ), POINTER,  INTENT(  OUT) :: isublist
+      INTEGER, DIMENSION(:  ), POINTER                 :: isublist
       !!! list of subs of the current processor. 
       !!! 1st index: local sub number.
       INTEGER                         ,  INTENT(  OUT) :: nsublist
