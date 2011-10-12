@@ -933,11 +933,11 @@ ghost layers (e.g. see figure \ref{fig:slab_domain_decomp}).
 
 \chapter{Data structure for particles}
 
-In the {}``dcops'' branch of PPM, there is a derived type for particles
-(ppm\_t\_particles) and a collection of routines that perform some
-standard/basic operations on these particles. The aim is to make it
-easier to write clients for the library, without having to compromise
-on flexibility nor on computational efficiency.
+In the {}``experimental'' \emph{dcops} branch of PPM, there is
+a derived type for particles (ppm\_t\_particles) and a collection
+of routines that perform some standard/basic operations on these particles.
+The aim is to make it easier to write clients for the library, without
+having to compromise on flexibility nor on computational efficiency.
 
 The different fields of the data structure are presented below. Note
 that most of these fields can remain empty (nullified pointers) such
@@ -946,7 +946,7 @@ can be used with this data structure are explained briefly. The main
 idea is that they check a bunch of pre-conditions and exit with an
 error message if any of these conditions is not fulfilled. Otherwise,
 it performs a task (usually passing data pointers to one or several
-low-level PPM subroutines), updates some book keeping variables in
+low-level PPM subroutines), updates some book-keeping variables in
 the data structure (post-conditions) and exits.
 
 
@@ -975,7 +975,7 @@ the data structure (post-conditions) and exits.
 The pointers in wpi, wps and wpv point to derived types that hold
 one property that is being carried by the particles. These derived
 types (ideally, there should be one for each data type that PPM supports....)
-contain
+contain:
 \begin{itemize}
 \item vec: array that contains the actual data (it is 1d for scalar properties
 and 2d for vector ones)
@@ -1078,8 +1078,13 @@ particles_mapping_ghosts(Particles,topoid,info)
 
 \begin{itemize}
 \item Needs particles to be mapped onto the topology
-\item Update ghosts for the properties with the flag {}``map\_ghosts''
+\item Update ghosts only for properties with the flag {}``map\_ghosts''
 set to true (default)
+\item Skip the ghost\_get if the positions and the cutoffs of the particles
+haven't changed (i.e. if Particles\%has\_ghosts is true)
+\item Skip the ghost\_push / ghost\_pop for properties that already have
+their ghost up-to-date (e.g. if Particles\%wps(prop\_id)\%has\_ghosts
+is true)
 \end{itemize}
 
 \subsection{Create a new property}
@@ -1118,15 +1123,24 @@ but that will not be difficult.
 To access the arrays where the data is stored, use
 
 \begin{lstlisting}
+wp => get_wpi(Particles, prop_id)
+\end{lstlisting}
+ for integers (wp needs to be an INTEGER, DIMENSION(:), POINTER)
+
+\begin{lstlisting}
 wp => get_wps(Particles, prop_id)
 \end{lstlisting}
+for scalars (wp is a REAL(8), DIMENSION(:), POINTER)
 
+\begin{lstlisting}
+wp => get_wpv(Particles, prop_id)
+\end{lstlisting}
+for vector properties (wp is then a REAL(8), DIMENSION(:,:), POINTER).
 
-where wp is a DIMENSION(:), POINTER (for a scalar property).
-
-If this property is mapped onto the particles, this will return a
-1D array of size (1:Npart). Else, it will print out an error and return
-the NULL pointer. If the ghost values are also needed, use
+If this property is mapped onto the particles, this will return an
+array of length Particles\%Npart. Else, it will print out an error
+message and return the NULL pointer. If the ghost values are also
+needed, use
 
 \begin{lstlisting}
 wp => get_wps(Particles, prop_id,with_ghosts=.TRUE.)
@@ -1134,12 +1148,13 @@ wp => get_wps(Particles, prop_id,with_ghosts=.TRUE.)
 
 
 If the ghost values for this property are available, this will return
-a 1D array of size (1:Mpart), else it will print out an error and
-return the NULL pointer (which will probably crash the code a moment
-later)
+an array of length Mpart, else it will print out an error message
+and return the NULL pointer (which will probably crash the code a
+moment later)
 
 Once these arrays are no longer needed, it is strongly advised to
-use the set\_wps functions (which do a bookkeeping job).
+use the set\_wpi/set\_wps/set\_wpv functions (which do a bookkeeping
+job).
 
 If the values have been changed:
 
@@ -1164,8 +1179,7 @@ wp => set_wps(Particles, prop_id,read_only=.TRUE.)
 \end{lstlisting}
 
 
-There are corresponding functions for integer and vector properties
-(get\_wpi, get\_wpv, ...) as well as for particles' positions:
+There are corresponding functions for particles' positions:
 
 \begin{lstlisting}
 xp => get_xp(Particles)
@@ -1191,6 +1205,19 @@ xp => set_xp(Particles,read_only=.TRUE.)
 \end{lstlisting}
 instead.
 
+Note that all this data can still be accessed directly:
+
+\begin{lstlisting}
+Particles%xp(ip)
+Particles%wps(prop_id)%Vec(ip)
+Particles%wpv(prop_id)%Vec(3,ip)
+\end{lstlisting}
+
+
+or passed to an existing PPM subroutine. Since in that case, no checks
+are performed, this should be considered as a hacked and used with
+caution.
+
 
 \subsection{Manual override}
 
@@ -1202,6 +1229,13 @@ one can call
 updated\_cutoff, updated\_positions or updated\_nb\_part.
 
 The internal variables will then be updated accordingly.
+
+
+\subsection{Discretization-Corrected operators}
+
+The use of DC operators to approximate derivatives on scattered collocation
+points is made very easy through this data structure (see example
+below)
 
 
 \section{Usage examples}

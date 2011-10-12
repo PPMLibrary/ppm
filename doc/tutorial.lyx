@@ -2662,8 +2662,18 @@ In the
 \begin_inset Quotes eld
 \end_inset
 
-dcops
+experimental
 \begin_inset Quotes erd
+\end_inset
+
+ 
+\begin_inset Flex Emph
+status collapsed
+
+\begin_layout Plain Layout
+dcops
+\end_layout
+
 \end_inset
 
  branch of PPM, there is a derived type for particles (ppm_t_particles)
@@ -2682,7 +2692,7 @@ The different fields of the data structure are presented below.
  The main idea is that they check a bunch of pre-conditions and exit with
  an error message if any of these conditions is not fulfilled.
  Otherwise, it performs a task (usually passing data pointers to one or
- several low-level PPM subroutines), updates some book keeping variables
+ several low-level PPM subroutines), updates some book-keeping variables
  in the data structure (post-conditions) and exits.
 \end_layout
 
@@ -2750,7 +2760,7 @@ Properties
 The pointers in wpi, wps and wpv point to derived types that hold one property
  that is being carried by the particles.
  These derived types (ideally, there should be one for each data type that
- PPM supports....) contain
+ PPM supports....) contain:
 \end_layout
 
 \begin_layout Itemize
@@ -2988,7 +2998,7 @@ Needs particles to be mapped onto the topology
 \end_layout
 
 \begin_layout Itemize
-Update ghosts for the properties with the flag 
+Update ghosts only for properties with the flag 
 \begin_inset Quotes eld
 \end_inset
 
@@ -2997,6 +3007,18 @@ map_ghosts
 \end_inset
 
  set to true (default)
+\end_layout
+
+\begin_layout Itemize
+Skip the ghost_get if the positions and the cutoffs of the particles haven't
+ changed (i.e.
+ if Particles%has_ghosts is true)
+\end_layout
+
+\begin_layout Itemize
+Skip the ghost_push / ghost_pop for properties that already have their ghost
+ up-to-date (e.g.
+ if Particles%wps(prop_id)%has_ghosts is true)
 \end_layout
 
 \begin_layout Subsection
@@ -3085,22 +3107,48 @@ status open
 
 \begin_layout Plain Layout
 
+wp => get_wpi(Particles, prop_id)
+\end_layout
+
+\end_inset
+
+ for integers (wp needs to be an INTEGER, DIMENSION(:), POINTER)
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
 wp => get_wps(Particles, prop_id)
 \end_layout
 
 \end_inset
 
-
+for scalars (wp is a REAL(8), DIMENSION(:), POINTER)
 \end_layout
 
 \begin_layout Standard
-where wp is a DIMENSION(:), POINTER (for a scalar property).
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+wp => get_wpv(Particles, prop_id)
+\end_layout
+
+\end_inset
+
+for vector properties (wp is then a REAL(8), DIMENSION(:,:), POINTER).
 \end_layout
 
 \begin_layout Standard
-If this property is mapped onto the particles, this will return a 1D array
- of size (1:Npart).
- Else, it will print out an error and return the NULL pointer.
+If this property is mapped onto the particles, this will return an array
+ of length Particles%Npart.
+ Else, it will print out an error message and return the NULL pointer.
  If the ghost values are also needed, use
 \end_layout
 
@@ -3120,14 +3168,14 @@ wp => get_wps(Particles, prop_id,with_ghosts=.TRUE.)
 \end_layout
 
 \begin_layout Standard
-If the ghost values for this property are available, this will return a
- 1D array of size (1:Mpart), else it will print out an error and return
+If the ghost values for this property are available, this will return an
+ array of length Mpart, else it will print out an error message and return
  the NULL pointer (which will probably crash the code a moment later)
 \end_layout
 
 \begin_layout Standard
 Once these arrays are no longer needed, it is strongly advised to use the
- set_wps functions (which do a bookkeeping job).
+ set_wpi/set_wps/set_wpv functions (which do a bookkeeping job).
 \end_layout
 
 \begin_layout Standard
@@ -3190,8 +3238,7 @@ wp => set_wps(Particles, prop_id,read_only=.TRUE.)
 \end_layout
 
 \begin_layout Standard
-There are corresponding functions for integer and vector properties (get_wpi,
- get_wpv, ...) as well as for particles' positions:
+There are corresponding functions for particles' positions:
 \end_layout
 
 \begin_layout Standard
@@ -3252,6 +3299,41 @@ xp => set_xp(Particles,read_only=.TRUE.)
 instead.
 \end_layout
 
+\begin_layout Standard
+Note that all this data can still be accessed directly:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+Particles%xp(ip)
+\end_layout
+
+\begin_layout Plain Layout
+
+Particles%wps(prop_id)%Vec(ip)
+\end_layout
+
+\begin_layout Plain Layout
+
+Particles%wpv(prop_id)%Vec(3,ip)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+or passed to an existing PPM subroutine.
+ Since in that case, no checks are performed, this should be considered
+ as a hacked and used with caution.
+\end_layout
+
 \begin_layout Subsection
 Manual override
 \end_layout
@@ -3269,6 +3351,15 @@ updated_cutoff, updated_positions or updated_nb_part.
 
 \begin_layout Standard
 The internal variables will then be updated accordingly.
+\end_layout
+
+\begin_layout Subsection
+Discretization-Corrected operators
+\end_layout
+
+\begin_layout Standard
+The use of DC operators to approximate derivatives on scattered collocation
+ points is made very easy through this data structure (see example below)
 \end_layout
 
 \begin_layout Section
