@@ -493,9 +493,12 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
                       ! set the new length of longer axis
                       ! HAECKIC: THIS DOES NOT COMPILE?!?!?
+                      Matrix_A = D(1:Particles%tensor_length,ip)
+                      CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+                      new_scale = sqrt(Matrix_B(1)**2 + Matrix_B(3)**2)
                       !CALL particles_longer_axis(Particles,ip,Particles%D_id,new_scale,info)
-                      !D(1,ip) = (new_scale/old_scale)*D(1,ip)
-                      !D(2,ip) = (new_scale/old_scale)*D(2,ip)
+                      D(1,ip) = (new_scale/old_scale)*D(1,ip)
+                      D(2,ip) = (new_scale/old_scale)*D(2,ip)
  
                 ELSE
                      ! HAECKIC: TODO 3D case

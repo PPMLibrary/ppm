@@ -225,7 +225,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                     add_part = add_part + 1
 
                     ! get the isotropic -> anisotropic transofmration matrix
-                    CALL particles_inverse_matrix(D(:,ip),Matrix_A,info)
+                    CALL particles_inverse_matrix(inv(:,ip),Matrix_A,info)
 
                     angle = 0._MK
 #ifdef __USE_RANDOMNUMBERS

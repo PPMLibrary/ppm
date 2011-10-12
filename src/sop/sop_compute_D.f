@@ -565,6 +565,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ENDIF
     ENDIF
 
+
     ! HAECKIC: completely different
     !------------------------------------------------------------------------------!
     ! D recomment
@@ -576,6 +577,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         ! 1. Get minimum axes in neighborhood and set ip's to it
         CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,old_scale,info)
         CALL particles_shorter_axis(Particles,ip,Particles%Dtilde_id,new_scale,info)
+        k = ip
         DO ineigh=1,Particles%nvlist(ip)
             iq = Particles%vlist(ineigh,ip)
             CALL particles_shorter_axis(Particles,iq,Particles%Dtilde_id,temp_scale,info) 

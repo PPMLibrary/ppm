@@ -132,7 +132,7 @@ SUBROUTINE sop_fuse_particles(Particles,opts,info,wp_fun,printp)
                     ! HAECKIC: TODO make this comparison relative
                                         
                     ! Delete the particle that have the larger D
-                    IF (dist1.GT.dist2) THEN
+                    IF (dist1.LT.dist2) THEN
                         nvlist(ip)=999
                         CYCLE particle_loop
                     ELSE IF(dist1.EQ.dist2) THEN
