@@ -114,6 +114,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_A => NULL()
     REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_B => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: Matrix_C => NULL()
+
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
     REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,proj,temp_scale,max_g,max_w,max_ex 
@@ -419,9 +421,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
 
             IF (ppm_dim .EQ. 2) THEN
-            
-               !todo: rewrite nicely
-            
+
                Matrix_A(1) = -orth_len*wp_grad_fun0(2)
                Matrix_A(3) =  orth_len*wp_grad_fun0(1)
                Matrix_A(2) = new_scale*wp_grad_fun0(1)
@@ -451,6 +451,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
                   Matrix_A(2) = opts%maximum_D*Matrix_A(2)/SQRT(SUM(vec**2))
                   Matrix_A(4) = opts%maximum_D*Matrix_A(4)/SQRT(SUM(vec**2))
+               ENDIF
+
+               IF (SUM((/Matrix_A(2) , Matrix_A(4)/)**2) .GT. SUM((/Matrix_A(1) , Matrix_A(3)/)**2)) THEN
+                  !switch vectors if shorter axis is acutally longer
+                  vec = (/Matrix_A(2) , Matrix_A(4)/)
+                  Matrix_A(2) = Matrix_A(1)
+                  Matrix_A(4) = Matrix_A(3)
+                  Matrix_A(1) = vec(1)
+                  Matrix_A(3) = vec(2)                           
                ENDIF
 
                CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
@@ -574,8 +583,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     Dtilde => Get_wpv(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
     DO ip=1,Particles%Npart
     
-        ! 1. Get minimum axes in neighborhood and set ip's to it
-        CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,old_scale,info)
+        ! 1. Get the length of the smallest axes
         CALL particles_shorter_axis(Particles,ip,Particles%Dtilde_id,new_scale,info)
         k = ip
         DO ineigh=1,Particles%nvlist(ip)
@@ -587,18 +595,34 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             ENDIF
         ENDDO
 
-        D(1:Particles%tensor_length,ip) = Dtilde(1:Particles%tensor_length,k)
-        CALL particles_longer_axis(Particles,k,Particles%Dtilde_id,new_scale,info)
+        !todo: discuss this version to be dropped
+        ! 2a. set D to be equal to k and keep length of longer axis
+!         D(1:Particles%tensor_length,ip) = Dtilde(1:Particles%tensor_length,k)
+!         CALL particles_longer_axis(Particles,k,Particles%Dtilde_id,new_scale,info)
+!         CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,old_scale,info)
+!         IF (ppm_dim.eq.2) THEN
+!             D(1,ip) = (new_scale/old_scale)*D(1,ip)
+!             D(2,ip) = (new_scale/old_scale)*D(2,ip)
+!         ELSE
+!            !todo: 3d case
+!         ENDIF
 
-        ! 2. init longer axes with scale of old one
-        !    scale it with min_q(max(project_h1 on longer dir, project_h2 on longer dir))
+        ! 2b. set D to be equal to ip but with length of smallest axes in neighborhood
+        Matrix_A = Dtilde(1:Particles%tensor_length,ip)
+        CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+        IF (ppm_dim.eq.2) THEN
+            old_scale = sqrt(Matrix_B(2)**2 + Matrix_B(4)**2)
+            Matrix_B(2) = (new_scale/old_scale)*Matrix_B(2)
+            Matrix_B(4) = (new_scale/old_scale)*Matrix_B(4)
+            old_scale = sqrt(Matrix_B(1)**2 + Matrix_B(3)**2)
+        ELSE
+           !todo: 3d case
+        ENDIF
+
+        ! 2. scale longer with min_q(max(project_h1 on longer dir, project_h2 on longer dir))
         !    init longer axis with old length
         IF (ppm_dim.eq.2) THEN
-            D(1,ip) = (new_scale/old_scale)*D(1,ip)
-            D(2,ip) = (new_scale/old_scale)*D(2,ip)
 
-            Matrix_A = D(1:4,ip)
-            CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
             ! get the longer axis
             wp_dir = (/Matrix_B(1),Matrix_B(3)/)
 
@@ -609,14 +633,14 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                   
                   ! get inverse to have axes
                   Matrix_A = Dtilde(1:4,iq)
-                  CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+                  CALL particles_inverse_matrix(Matrix_A,Matrix_C,info)
 
                   ! |c| = a.b/|b|
                   ! proj h1 of iq on direction of longer axis of ip
-                  proj = ABS(SUM((/Matrix_B(1),Matrix_B(3)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
+                  proj = ABS(SUM((/Matrix_C(1),Matrix_C(3)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
                   
                   ! proj h2 of iq on direction of longer axis of ip
-                  proj = MAX(proj,ABS(SUM((/Matrix_B(2),Matrix_B(4)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+                  proj = MAX(proj,ABS(SUM((/Matrix_C(2),Matrix_C(4)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
 
                   IF(old_scale .GT. proj) THEN
                      ! we found a smaller projection on longer axis
@@ -625,10 +649,25 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
             ENDDO
 
-            ! set the new length of longer axis
-            CALL particles_longer_axis(Particles,ip,Particles%Dtilde_id,new_scale,info)
-            D(1,ip) = (new_scale/old_scale)*D(1,ip)
-            D(2,ip) = (new_scale/old_scale)*D(2,ip)
+            ! set the new length (here: old_scale) of longer axis
+            new_scale = sqrt(Matrix_B(1)**2 + Matrix_B(3)**2)
+            Matrix_B(1) = (old_scale/new_scale)*Matrix_B(1)
+            Matrix_B(3) = (old_scale/new_scale)*Matrix_B(3)
+
+            !check the order of the vectors!
+            IF (SUM((/Matrix_B(2) , Matrix_B(4)/)**2) .GT. SUM((/Matrix_B(1) , Matrix_B(3)/)**2)) THEN
+               !switch vectors if shorter axis is acutally longer
+               vec = (/Matrix_B(2) , Matrix_B(4)/)
+               Matrix_B(2) = Matrix_B(1)
+               Matrix_B(4) = Matrix_B(3)
+               Matrix_B(1) = vec(1)
+               Matrix_B(3) = vec(2)                           
+            ENDIF
+
+            CALL particles_inverse_matrix(Matrix_B,Matrix_A,info)
+            ! set the new inverse tensor D
+            D(1:Particles%tensor_length,ip) = Matrix_A(1:Particles%tensor_length)
+
 
         ELSE
             ! HAECKIC: TODO 3D case

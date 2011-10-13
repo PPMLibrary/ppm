@@ -138,8 +138,6 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
             CALL particles_shorter_axis(Particles,ip,Particles%G_id,scaling_ip,info)
             scaling_ip = scaling_ip**2
-            CALL particles_shorter_axis(Particles,iq,Particles%G_id,scaling_iq,info)
-            scaling_iq = scaling_iq**2
 
             
             ! HAECKIC: The variables
@@ -177,7 +175,7 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
             Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) &
                   + scaling_ip/rr * grad_vec * gradPsi
             Gradient_Psi(1:ppm_dim,iq)=Gradient_Psi(1:ppm_dim,iq) &
-                  - scaling_iq/rr * grad_vec * gradPsi
+                  - scaling_ip/rr * grad_vec * gradPsi
 
         ENDDO neighbour_loop
 
