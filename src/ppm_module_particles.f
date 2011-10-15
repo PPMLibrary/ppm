@@ -3590,6 +3590,7 @@ INTEGER, PARAMETER :: MK = ppm_kind_double
             inv => get_wpv(Particles,Particles%G_id)
             DO i = 1,Particles%Npart
                !calc length of longer axes
+               !todo: check here for inhomogenous
                CALL particles_longer_axis(Particles,i,Particles%G_id,cutoff_temp,info)
                IF (cutoff_new .LT. cutoff_temp) THEN
                   cutoff_new = cutoff_temp

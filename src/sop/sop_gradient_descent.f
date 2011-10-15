@@ -104,8 +104,8 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     REAL(MK)                            :: step_min,step_max,step_stall
     INTEGER                             :: it_adapt_max
     REAL(MK)                            :: Psi_max,Psi_global,Psi_global_old
-    REAL(MK)                            :: Psi_1,Psi_2,Psi_thresh
-    REAL(MK),DIMENSION(ppm_dim)         :: dist,dist2,dummy_grad,wp_dir,vec
+    REAL(MK)                            :: Psi_1,Psi_2,Psi_thresh,l1,l2,l3
+    REAL(MK),DIMENSION(ppm_dim)         :: dist,dist2,dummy_grad,wp_dir,wp_dir2,vec,vec2,vec3
     REAL(MK),DIMENSION(:,:),POINTER     :: Gradient_Psi => NULL()
     INTEGER                             :: nneigh_adapt
 
@@ -120,7 +120,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     REAL(MK)                            :: tmpvar1,tmpvar2,minDold, dist1s, dist2s, dists, min_dist
     REAL(MK)                            :: weight,weight_sum, new_scale,new_scale_long, distance, old_distance, p_scale
-    REAL(MK)                            :: almostzero, old_scale, old_scale_long, proj, temp_scale,temp_dist
+    REAL(MK)                            :: almostzero, old_scale, old_scale2, old_scale_long, proj, temp_scale,temp_dist
     INTEGER                             :: tmpvari1,tmpvari2
     LOGICAL                             :: need_derivatives
     INTEGER                             :: topo_id
@@ -441,27 +441,31 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             DO ip=1,Particles%Npart
             
                 new_scale = HUGE(1._MK)
-                min_dist = HUGE(1._MK)
+!                 min_dist = HUGE(1._MK)
                 DO ineigh=1,nvlist_cross(ip)
                       iq = vlist_cross(ineigh,ip)
                       !is iq's Dtilde old shorter than existing
                       !is iq's distance shorter than existing
                       CALL particles_shorter_axis(Particles_old,iq,Particles_old%Dtilde_id,temp_scale,info)
-                      CALL particles_sep_anisotropic_distance(Particles_old,Particles,iq,ip, &
-                      &                Particles_old%Dtilde_id,temp_dist,info)
+                      ! use D as distance comparison
+!                       CALL particles_sep_anisotropic_distance(Particles_old,Particles,iq,ip, &
+!                       &                Particles_old%D_id,temp_dist,info)
                       IF (temp_scale.LT.new_scale) THEN
                          new_scale = temp_scale
                          k = iq
                       ENDIF
-                      IF (temp_dist.LT.min_dist) THEN
-                         min_dist = temp_dist
-                         di = iq
-                      ENDIF
+!                       IF (temp_dist.LT.min_dist) THEN
+!                          min_dist = temp_dist
+!                          di = iq
+!                       ENDIF
                 ENDDO
             
                 ! 1a. get the minimum sized particle in xset neighborhood
                 Matrix_A = Dtilde_old(1:Particles%tensor_length,k)
+                
+                ! todo discuss to be dropped
                 ! 1b. get the direction by taking the closest particle's dtilde and scale with min
+                ! not working well?
 !                 Matrix_A = Dtilde_old(1:Particles%tensor_length,di)
 
                 CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
@@ -470,6 +474,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
                 IF (ppm_dim.eq.2) THEN
          
                       !scale the shorter one
+                      !only relevant in case b
                       temp_scale = sqrt(Matrix_B(2)**2 + Matrix_B(4)**2)
                       Matrix_B(2) = (new_scale/temp_scale)*Matrix_B(2)
                       Matrix_B(4) = (new_scale/temp_scale)*Matrix_B(4)
@@ -522,9 +527,195 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
          
 
                 ELSE
-                     ! HAECKIC: TODO 3D case
 
-                ENDIF
+                     !scale the shorter one
+                     !only relevant in case b
+                     temp_scale = sqrt(Matrix_B(3)**2 + Matrix_B(6)**2 + Matrix_B(9)**2)
+                     Matrix_B(3) = (new_scale/temp_scale)*Matrix_B(3)
+                     Matrix_B(6) = (new_scale/temp_scale)*Matrix_B(6)
+                     Matrix_B(9) = (new_scale/temp_scale)*Matrix_B(9)
+
+
+                     wp_dir = (/Matrix_B(1),Matrix_B(4),Matrix_B(7)/)
+                     wp_dir2 = (/Matrix_B(2),Matrix_B(5),Matrix_B(8)/)
+
+                     ! get min_q(max(proj h1 on dir,proj h2 on dir))
+                     old_scale = HUGE(1.0_mk)
+                     old_scale2 = HUGE(1.0_mk)
+                     DO ineigh=1,Particles%nvlist(ip)
+
+                           iq = Particles%vlist(ineigh,ip)
+                           
+                           ! get inverse to have axes
+                           Matrix_A = Dtilde_old(1:9,iq)
+                           CALL particles_inverse_matrix(Matrix_A,Matrix_C,info)
+
+                           ! 1st vector
+                           ! |c| = a.b/|b|
+                           ! proj h1 of iq on direction of longer axis of ip
+                           proj = ABS(SUM((/Matrix_C(1),Matrix_C(4),Matrix_C(7)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
+                           
+                           ! proj h2 of iq on direction of longer axis of ip
+                           proj = MAX(proj,ABS(SUM((/Matrix_C(2),Matrix_C(5),Matrix_C(8)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+                           
+                           ! proj h2 of iq on direction of longer axis of ip
+                           proj = MAX(proj,ABS(SUM((/Matrix_C(3),Matrix_C(6),Matrix_C(9)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+
+                           IF(old_scale .GT. proj) THEN
+                              ! we found a smaller projection on longer axis
+                              old_scale = proj
+                           ENDIF
+                           
+                           ! 2nd vector
+                           ! |c| = a.b/|b|
+                           ! proj h1 of iq on direction of longer axis of ip
+                           proj = ABS(SUM((/Matrix_C(1),Matrix_C(4),Matrix_C(7)/)*wp_dir2)/SQRT(SUM(wp_dir2**2)))
+                           
+                           ! proj h2 of iq on direction of longer axis of ip
+                           proj = MAX(proj,ABS(SUM((/Matrix_C(2),Matrix_C(5),Matrix_C(8)/)*wp_dir2)/SQRT(SUM(wp_dir2**2))))
+                           
+                           ! proj h2 of iq on direction of longer axis of ip
+                           proj = MAX(proj,ABS(SUM((/Matrix_C(3),Matrix_C(6),Matrix_C(9)/)*wp_dir2)/SQRT(SUM(wp_dir2**2))))
+
+                           IF(old_scale2 .GT. proj) THEN
+                              ! we found a smaller projection on longer axis
+                              old_scale2 = proj
+                           ENDIF
+
+                     ENDDO
+
+                     ! set the new length (here: old_scale) of longer axis 1
+                     new_scale = sqrt(Matrix_B(1)**2 + Matrix_B(4)**2 + Matrix_B(7)**2)
+                     Matrix_B(1) = (old_scale/new_scale)*Matrix_B(1)
+                     Matrix_B(4) = (old_scale/new_scale)*Matrix_B(4)
+                     Matrix_B(7) = (old_scale/new_scale)*Matrix_B(7)
+                     
+                     ! set the new length (here: old_scale) of longer axis 2
+                     new_scale = sqrt(Matrix_B(2)**2 + Matrix_B(5)**2 + Matrix_B(8)**2)
+                     Matrix_B(2) = (old_scale2/new_scale)*Matrix_B(2)
+                     Matrix_B(5) = (old_scale2/new_scale)*Matrix_B(5)
+                     Matrix_B(8) = (old_scale2/new_scale)*Matrix_B(8)
+
+                     ! Check for right order of vectors
+                     ! 1. if shortest is larger than middle
+                     vec =  (/Matrix_B(1) , Matrix_B(4), Matrix_B(7)/)
+                     vec2 = (/Matrix_B(2) , Matrix_B(5), Matrix_B(8)/)
+                     vec3 = (/Matrix_B(3) , Matrix_B(6), Matrix_B(9)/)
+
+                     l1 = SUM(vec**2)
+                     l2 = SUM(vec2**2)
+                     l3 = SUM(vec3**2)
+
+                     ! todo: drop check for correctness the length of the vectors
+                     
+                     IF (sqrt(l1)-0.0001 .GT. opts%maximum_D) THEN
+                        write(*,*) 'EEEERRRR1', sqrt(l1)
+                     ENDIF
+                     IF (sqrt(l2)-0.0001 .GT. opts%maximum_D) THEN
+                        write(*,*) 'EEEERRRR2', sqrt(l2)
+                     ENDIF
+                     IF (sqrt(l3)-0.0001 .GT. opts%maximum_D) THEN
+                        write(*,*) 'EEEERRRR3', sqrt(l3)
+                     ENDIF
+
+                     ! a simple sort of 3 reals
+                     IF (l3.GT.l2) THEN
+                        IF (l3.GT.l1) THEN
+                           IF (l2.GT.l1) THEN
+                              Matrix_B(1) = vec3(1)
+                              Matrix_B(4) = vec3(2)
+                              Matrix_B(7) = vec3(3)
+
+                              Matrix_B(2) = vec2(1)
+                              Matrix_B(5) = vec2(2)
+                              Matrix_B(8) = vec2(3)
+                           
+                              Matrix_B(3) = vec(1)
+                              Matrix_B(6) = vec(2)
+                              Matrix_B(9) = vec(3)
+                           ELSE
+                              Matrix_B(1) = vec3(1)
+                              Matrix_B(4) = vec3(2)
+                              Matrix_B(7) = vec3(3)
+
+                              Matrix_B(2) = vec(1)
+                              Matrix_B(5) = vec(2)
+                              Matrix_B(8) = vec(3)
+                           
+                              Matrix_B(3) = vec2(1)
+                              Matrix_B(6) = vec2(2)
+                              Matrix_B(9) = vec2(3)
+
+                           ENDIF
+                        ELSE
+                           IF (l2.GT.l1) THEN
+                              ! not possible
+                           ELSE
+                              Matrix_B(1) = vec(1)
+                              Matrix_B(4) = vec(2)
+                              Matrix_B(7) = vec(3)
+
+                              Matrix_B(2) = vec3(1)
+                              Matrix_B(5) = vec3(2)
+                              Matrix_B(8) = vec3(3)
+                           
+                              Matrix_B(3) = vec2(1)
+                              Matrix_B(6) = vec2(2)
+                              Matrix_B(9) = vec2(3)
+
+                           ENDIF
+                        ENDIF
+                     ELSE
+                        IF (l3.GT.l1) THEN
+                           IF (l2.GT.l1) THEN
+                              Matrix_B(1) = vec2(1)
+                              Matrix_B(4) = vec2(2)
+                              Matrix_B(7) = vec2(3)
+
+                              Matrix_B(2) = vec3(1)
+                              Matrix_B(5) = vec3(2)
+                              Matrix_B(8) = vec3(3)
+                           
+                              Matrix_B(3) = vec(1)
+                              Matrix_B(6) = vec(2)
+                              Matrix_B(9) = vec(3)
+
+                           ELSE
+                              !not possible
+
+                           ENDIF
+                        ELSE
+                           IF (l2.GT.l1) THEN
+                              Matrix_B(1) = vec(1)
+                              Matrix_B(4) = vec(2)
+                              Matrix_B(7) = vec(3)
+
+                              Matrix_B(2) = vec2(1)
+                              Matrix_B(5) = vec2(2)
+                              Matrix_B(8) = vec2(3)
+                           
+                              Matrix_B(3) = vec3(1)
+                              Matrix_B(6) = vec3(2)
+                              Matrix_B(9) = vec3(3)
+
+                           ELSE
+                              Matrix_B(1) = vec(1)
+                              Matrix_B(4) = vec(2)
+                              Matrix_B(7) = vec(3)
+
+                              Matrix_B(2) = vec3(1)
+                              Matrix_B(5) = vec3(2)
+                              Matrix_B(8) = vec3(3)
+                           
+                              Matrix_B(3) = vec2(1)
+                              Matrix_B(6) = vec2(2)
+                              Matrix_B(9) = vec2(3)
+
+                           ENDIF
+                        ENDIF
+                     ENDIF
+
+                  ENDIF
                 
                 ! Finally set the inverse tensor scaled with rcp over D
                 inv(1:Particles%tensor_length,ip) = (1/opts%rcp_over_D)*D(1:Particles%tensor_length,ip)
@@ -535,6 +726,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             ! Dealloc matrix A and B
             CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_dealloc,info)
             CALL ppm_alloc(Matrix_B,(/ Particles%tensor_length /),ppm_param_dealloc,info)
+            CALL ppm_alloc(Matrix_C,(/ Particles%tensor_length /),ppm_param_dealloc,info)
 
             D => Set_wpv(Particles,Particles%D_id)
             Dtilde_old => Set_wpv(Particles_old,Particles_old%Dtilde_id,read_only=.TRUE.)

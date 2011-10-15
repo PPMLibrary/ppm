@@ -118,15 +118,15 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
 
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
-    REAL(MK)                                   :: min_D,orth_len,old_scale,new_scale,proj,temp_scale,max_g,max_w,max_ex 
+    REAL(MK)                                   :: min_D,new_scale,proj,temp_scale,max_g,max_w,max_ex 
     LOGICAL                                    :: need_derivatives
-    REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
+    REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad, wp_dir, wp_dir2, wp_dir_temp,vec,vec2,vec3
     INTEGER                                    :: topo_id,eta_id
     REAL(MK),     DIMENSION(ppm_dim)           :: coeffs
     INTEGER,      DIMENSION(ppm_dim)           :: order
     INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
-    REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0,wp_grad_fun_proj,wp_dir, wp_dir_temp, vec
-    REAL(MK)                                   :: dummy_wp
+    REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0,wp_grad_fun_proj,wp_grad_fun_proj2
+    REAL(MK)                                   :: dummy_wp, orth_len, orth_len2,old_scale, old_scale2,l1,l2,l3
 
     !-------------------------------------------------------------------------!
     ! Initialize
@@ -365,7 +365,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             ! gradient
             IF (PRESENT(wp_grad_fun)) THEN
                   wp_grad_fun0 = wp_grad_fun(xp(1:ppm_dim,ip))
-                  old_scale = SQRT(SUM(wp_grad_fun0**2))
+                  old_scale = SQRT(SUM(wp_grad_fun0**2))            
                   new_scale = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun0,opts)/old_scale
             ELSE
                   IF (PRESENT(wp_fun)) THEN
@@ -387,95 +387,357 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                GOTO 9999
             ENDIF
             
-            ! use a dummy wp
-            ! get the maximum gradient towards orthogonal direction
-            wp_grad_fun_proj = (/0.0_mk,0.0_mk/)
-            wp_dir = (/-wp_grad_fun0(2),wp_grad_fun0(1)/)
-            DO ineigh=1,Particles%nvlist(ip)
-                  iq = Particles%vlist(ineigh,ip)
-                  ! projection: dir * (grad . dir / dir . dir )
-                  IF (PRESENT(wp_grad_fun)) THEN
-                     wp_dir_temp = wp_dir*SUM(wp_grad_fun(xp(1:ppm_dim,iq))*wp_dir)/SUM(wp_dir**2)
-                  ELSE
-                     wp_dir_temp = wp_dir*SUM(wp_grad(1:ppm_dim,iq)*wp_dir)/SUM(wp_dir**2)
-                  ENDIF
-                  IF (SQRT(SUM(wp_grad_fun_proj**2)) .GT. SQRT(SUM(wp_dir_temp**2))) THEN
-                     wp_grad_fun_proj = wp_dir_temp
-                  ENDIF
-            ENDDO
-      
-            IF (PRESENT(wp_grad_fun)) THEN
-                  orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
-            ELSE
-                  IF (PRESENT(wp_fun)) THEN
-                     orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
-                  ELSE
-                     ! todo: we need to check if d_fun depends on wp
-                     ! if yes we can not use a dummy, but wp directly
-                     ! or we assume wp and just use iẗ́!?
-                     orth_len = D_fun(dummy_wp,wp_grad_fun_proj,opts)/old_scale
-                  ENDIF
-            ENDIF
-           
-            ! set the tensor
-            CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
-
             IF (ppm_dim .EQ. 2) THEN
 
-               Matrix_A(1) = -orth_len*wp_grad_fun0(2)
-               Matrix_A(3) =  orth_len*wp_grad_fun0(1)
-               Matrix_A(2) = new_scale*wp_grad_fun0(1)
-               Matrix_A(4) = new_scale*wp_grad_fun0(2)
+               ! Haeckic: todo make a better check when gradient is almost zero
+               ! for now we just use the unit vectors scale with max D
+               IF (old_scale .LT. 1e-6) THEN
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+                  Matrix_A(1) = opts%maximum_D
+                  Matrix_A(3) = 0.0_mk
+                  Matrix_A(2) = 0.0_mk
+                  Matrix_A(4) = opts%maximum_D
+               ELSE
+                  ! use a dummy wp
+                  ! get the maximum gradient towards orthogonal direction
+                  wp_grad_fun_proj = (/0.0_mk,0.0_mk/)
+                  wp_dir = (/-wp_grad_fun0(2),wp_grad_fun0(1)/)
+                  DO ineigh=1,Particles%nvlist(ip)
+                        iq = Particles%vlist(ineigh,ip)
+                        ! projection: dir * (grad . dir / dir . dir )
+                        IF (PRESENT(wp_grad_fun)) THEN
+                           wp_dir_temp = wp_dir*SUM(wp_grad_fun(xp(1:ppm_dim,iq))*wp_dir)/SUM(wp_dir**2)
+                        ELSE
+                           wp_dir_temp = wp_dir*SUM(wp_grad(1:ppm_dim,iq)*wp_dir)/SUM(wp_dir**2)
+                        ENDIF
+                        IF (SQRT(SUM(wp_grad_fun_proj**2)) .GT. SQRT(SUM(wp_dir_temp**2))) THEN
+                           wp_grad_fun_proj = wp_dir_temp
+                        ENDIF
+                  ENDDO
+            
+                  IF (PRESENT(wp_grad_fun)) THEN
+                        orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                  ELSE
+                        IF (PRESENT(wp_fun)) THEN
+                           orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                        ELSE
+                           ! todo: we need to check if d_fun depends on wp
+                           ! if yes we can not use a dummy, but wp directly
+                           ! or we assume wp and just use iẗ́!?
+                           orth_len = D_fun(dummy_wp,wp_grad_fun_proj,opts)/old_scale
+                        ENDIF
+                  ENDIF
+               
+                  ! set the tensor
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
 
-               ! Check minimum length of axes
-               vec = (/Matrix_A(1) , Matrix_A(3)/)
-               IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
-                  Matrix_A(1) = opts%minimum_D*Matrix_A(1)/SQRT(SUM(vec**2))
-                  Matrix_A(3) = opts%minimum_D*Matrix_A(3)/SQRT(SUM(vec**2))
-               ENDIF
-               
-               vec = (/Matrix_A(2) , Matrix_A(4)/)
-               IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
-                  Matrix_A(2) = opts%minimum_D*Matrix_A(2)/SQRT(SUM(vec**2))
-                  Matrix_A(4) = opts%minimum_D*Matrix_A(4)/SQRT(SUM(vec**2))
-               ENDIF
-               
-               ! Check maximum length of axes
-               vec = (/Matrix_A(1) , Matrix_A(3)/)
-               IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
-                  Matrix_A(1) = opts%maximum_D*Matrix_A(1)/SQRT(SUM(vec**2))
-                  Matrix_A(3) = opts%maximum_D*Matrix_A(3)/SQRT(SUM(vec**2))
-               ENDIF
-               
-               vec = (/Matrix_A(2) , Matrix_A(4)/)
-               IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
-                  Matrix_A(2) = opts%maximum_D*Matrix_A(2)/SQRT(SUM(vec**2))
-                  Matrix_A(4) = opts%maximum_D*Matrix_A(4)/SQRT(SUM(vec**2))
-               ENDIF
+                  Matrix_A(1) = -orth_len*wp_grad_fun0(2)
+                  Matrix_A(3) =  orth_len*wp_grad_fun0(1)
+                  Matrix_A(2) = new_scale*wp_grad_fun0(1)
+                  Matrix_A(4) = new_scale*wp_grad_fun0(2)
 
-               IF (SUM((/Matrix_A(2) , Matrix_A(4)/)**2) .GT. SUM((/Matrix_A(1) , Matrix_A(3)/)**2)) THEN
-                  !switch vectors if shorter axis is acutally longer
+                  ! Check minimum length of axes
+                  vec = (/Matrix_A(1) , Matrix_A(3)/)
+                  IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
+                     Matrix_A(1) = opts%minimum_D*Matrix_A(1)/SQRT(SUM(vec**2))
+                     Matrix_A(3) = opts%minimum_D*Matrix_A(3)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
                   vec = (/Matrix_A(2) , Matrix_A(4)/)
-                  Matrix_A(2) = Matrix_A(1)
-                  Matrix_A(4) = Matrix_A(3)
-                  Matrix_A(1) = vec(1)
-                  Matrix_A(3) = vec(2)                           
+                  IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
+                     Matrix_A(2) = opts%minimum_D*Matrix_A(2)/SQRT(SUM(vec**2))
+                     Matrix_A(4) = opts%minimum_D*Matrix_A(4)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  ! Check maximum length of axes
+                  vec = (/Matrix_A(1) , Matrix_A(3)/)
+                  IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
+                     Matrix_A(1) = opts%maximum_D*Matrix_A(1)/SQRT(SUM(vec**2))
+                     Matrix_A(3) = opts%maximum_D*Matrix_A(3)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  vec = (/Matrix_A(2) , Matrix_A(4)/)
+                  IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
+                     Matrix_A(2) = opts%maximum_D*Matrix_A(2)/SQRT(SUM(vec**2))
+                     Matrix_A(4) = opts%maximum_D*Matrix_A(4)/SQRT(SUM(vec**2))
+                  ENDIF
+
+                  IF (SUM((/Matrix_A(2) , Matrix_A(4)/)**2) .GT. SUM((/Matrix_A(1) , Matrix_A(3)/)**2)) THEN
+                     !switch vectors if shorter axis is acutally longer
+                     vec = (/Matrix_A(2) , Matrix_A(4)/)
+                     Matrix_A(2) = Matrix_A(1)
+                     Matrix_A(4) = Matrix_A(3)
+                     Matrix_A(1) = vec(1)
+                     Matrix_A(3) = vec(2)                           
+                  ENDIF
                ENDIF
-
-               CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
-
-               Dtilde(1,ip) = Matrix_B(1)
-               Dtilde(2,ip) = Matrix_B(2)
-               Dtilde(3,ip) = Matrix_B(3)
-               Dtilde(4,ip) = Matrix_B(4)
-
             ELSE
                
-               ! HAECKIC: TODO: 3D Dtilde computation
-               ! Take any direction in plane and use projection to scale them
-   
-            ENDIF
+               ! Haeckic: todo: make a better check when gradient is almost zero
+               ! for now we just use the unit vectors scale with max D
+               IF (old_scale .LT. 1e-6) THEN
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
+                  Matrix_A(1) = opts%maximum_D
+                  Matrix_A(4) = 0.0_mk
+                  Matrix_A(7) = 0.0_mk
+
+                  Matrix_A(2) = 0.0_mk
+                  Matrix_A(5) = opts%maximum_D
+                  Matrix_A(8) = 0.0_mk
+
+                  Matrix_A(3) = 0.0_mk
+                  Matrix_A(6) = 0.0_mk
+                  Matrix_A(9) = opts%maximum_D
+               ELSE
                
+                  ! Take any direction in plane and use projection to scale them
+                  ! use a dummy wp
+                  ! get the maximum gradient towards orthogonal directions
+                  ! 1st direction
+                  wp_grad_fun_proj = (/0.0_mk,0.0_mk,0.0_mk/)
+                  wp_dir = (/-wp_grad_fun0(2),wp_grad_fun0(1),0.0_mk/)
+                  old_scale = SQRT(SUM(wp_dir**2))
+                  DO ineigh=1,Particles%nvlist(ip)
+                        iq = Particles%vlist(ineigh,ip)
+                        ! projection: dir * (grad . dir / dir . dir )
+                        IF (PRESENT(wp_grad_fun)) THEN
+                           wp_dir_temp = wp_dir*SUM(wp_grad_fun(xp(1:ppm_dim,iq))*wp_dir)/SUM(wp_dir**2)
+                        ELSE
+                           wp_dir_temp = wp_dir*SUM(wp_grad(1:ppm_dim,iq)*wp_dir)/SUM(wp_dir**2)
+                        ENDIF
+                        IF (SQRT(SUM(wp_grad_fun_proj**2)) .LT. SQRT(SUM(wp_dir_temp**2))) THEN
+                           wp_grad_fun_proj = wp_dir_temp
+                        ENDIF
+                  ENDDO
+            
+                  ! get the length of the orthogonal vectors
+                  IF (PRESENT(wp_grad_fun)) THEN
+                        orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                  ELSE
+                        IF (PRESENT(wp_fun)) THEN
+                           orth_len = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                        ELSE
+                           ! todo: we need to check if d_fun depends on wp
+                           ! if yes we can not use a dummy, but wp directly
+                           ! or we assume wp and just use iẗ́!?
+                           orth_len = D_fun(dummy_wp,wp_grad_fun_proj,opts)/old_scale
+                        ENDIF
+                  ENDIF
+               
+                  !2nd direction
+                  wp_grad_fun_proj = (/0.0_mk,0.0_mk,0.0_mk/)
+                  wp_dir2 = (/-wp_grad_fun0(1)*wp_grad_fun0(3),-wp_grad_fun0(2)*wp_grad_fun0(3), &
+                  &           wp_grad_fun0(1)*wp_grad_fun0(1) + wp_grad_fun0(2)*wp_grad_fun0(2)/)
+                  old_scale = SQRT(SUM(wp_dir2**2))
+                  DO ineigh=1,Particles%nvlist(ip)
+                        iq = Particles%vlist(ineigh,ip)
+                        ! projection: dir * (grad . dir / dir . dir )
+                        IF (PRESENT(wp_grad_fun)) THEN
+                           wp_dir_temp = wp_dir2*SUM(wp_grad_fun(xp(1:ppm_dim,iq))*wp_dir2)/SUM(wp_dir2**2)
+                        ELSE
+                           wp_dir_temp = wp_dir2*SUM(wp_grad(1:ppm_dim,iq)*wp_dir2)/SUM(wp_dir2**2)
+                        ENDIF
+                        IF (SQRT(SUM(wp_grad_fun_proj**2)) .LT. SQRT(SUM(wp_dir_temp**2))) THEN
+                           wp_grad_fun_proj = wp_dir_temp
+                        ENDIF
+                  ENDDO
+            
+                  ! get the length of the orthogonal vectors
+                  IF (PRESENT(wp_grad_fun)) THEN
+                        orth_len2 = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                  ELSE
+                        IF (PRESENT(wp_fun)) THEN
+                           orth_len2 = D_fun(wp_fun(xp(1:ppm_dim,ip)),wp_grad_fun_proj,opts)/old_scale
+                        ELSE
+                           ! todo: we need to check if d_fun depends on wp
+                           ! if yes we can not use a dummy, but wp directly
+                           ! or we assume wp and just use iẗ́!?
+                           orth_len2 = D_fun(dummy_wp,wp_grad_fun_proj,opts)/old_scale
+                        ENDIF
+                  ENDIF
+      
+                  ! set the tensor
+                  CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_alloc_fit,info)
+
+
+                  Matrix_A(1) = orth_len*wp_dir(1)
+                  Matrix_A(4) = orth_len*wp_dir(2)
+                  Matrix_A(7) = orth_len*wp_dir(3)
+
+                  Matrix_A(2) = orth_len2*wp_dir2(1)
+                  Matrix_A(5) = orth_len2*wp_dir2(2)
+                  Matrix_A(8) = orth_len2*wp_dir2(3)
+
+                  Matrix_A(3) = new_scale*wp_grad_fun0(1)
+                  Matrix_A(6) = new_scale*wp_grad_fun0(2)
+                  Matrix_A(9) = new_scale*wp_grad_fun0(3)
+
+
+                  ! Check minimum length of axes
+                  vec = (/Matrix_A(1) , Matrix_A(4), Matrix_A(7)/)
+                  IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
+                     Matrix_A(1) = opts%minimum_D*Matrix_A(1)/SQRT(SUM(vec**2))
+                     Matrix_A(4) = opts%minimum_D*Matrix_A(4)/SQRT(SUM(vec**2))
+                     Matrix_A(7) = opts%minimum_D*Matrix_A(7)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  vec = (/Matrix_A(2) , Matrix_A(5), Matrix_A(8)/)
+                  IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
+                     Matrix_A(2) = opts%minimum_D*Matrix_A(2)/SQRT(SUM(vec**2))
+                     Matrix_A(5) = opts%minimum_D*Matrix_A(5)/SQRT(SUM(vec**2))
+                     Matrix_A(8) = opts%minimum_D*Matrix_A(8)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  vec = (/Matrix_A(3) , Matrix_A(6), Matrix_A(9)/)
+                  IF (SQRT(SUM(vec**2)) .LT. opts%minimum_D) THEN
+                     Matrix_A(3) = opts%minimum_D*Matrix_A(3)/SQRT(SUM(vec**2))
+                     Matrix_A(6) = opts%minimum_D*Matrix_A(6)/SQRT(SUM(vec**2))
+                     Matrix_A(9) = opts%minimum_D*Matrix_A(9)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  ! Check maximum length of axes
+                  vec = (/Matrix_A(1) , Matrix_A(4), Matrix_A(7)/)
+                  IF (SQRT(SUM(vec**2)) .GT. opts%maximum_D) THEN
+                     Matrix_A(1) = opts%maximum_D*Matrix_A(1)/SQRT(SUM(vec**2))
+                     Matrix_A(4) = opts%maximum_D*Matrix_A(4)/SQRT(SUM(vec**2))
+                     Matrix_A(7) = opts%maximum_D*Matrix_A(7)/SQRT(SUM(vec**2))
+                  ENDIF
+                  
+                  vec2 = (/Matrix_A(2) , Matrix_A(5), Matrix_A(8)/)
+                  IF (SQRT(SUM(vec2**2)) .GT. opts%maximum_D) THEN
+                     Matrix_A(2) = opts%maximum_D*Matrix_A(2)/SQRT(SUM(vec2**2))
+                     Matrix_A(5) = opts%maximum_D*Matrix_A(5)/SQRT(SUM(vec2**2))
+                     Matrix_A(8) = opts%maximum_D*Matrix_A(8)/SQRT(SUM(vec2**2))
+                  ENDIF
+                  
+                  vec3 = (/Matrix_A(3) , Matrix_A(6), Matrix_A(9)/)
+                  IF (SQRT(SUM(vec3**2)) .GT. opts%maximum_D) THEN
+                     Matrix_A(3) = opts%maximum_D*Matrix_A(3)/SQRT(SUM(vec3**2))
+                     Matrix_A(6) = opts%maximum_D*Matrix_A(6)/SQRT(SUM(vec3**2))
+                     Matrix_A(9) = opts%maximum_D*Matrix_A(9)/SQRT(SUM(vec3**2))
+                  ENDIF
+
+                  ! Check for right order of vectors
+                  ! 1. if shortest is larger than middle
+                  l1 = SUM(vec**2)
+                  l2 = SUM(vec2**2)
+                  l3 = SUM(vec3**2)
+               
+               IF (sqrt(l1)-0.0001 .GT. opts%maximum_D) THEN
+                  write(*,*) '1 EEEERRRR1', sqrt(l1)
+               ENDIF
+               IF (sqrt(l2)-0.0001 .GT. opts%maximum_D) THEN
+                  write(*,*) '1 EEEERRRR2', sqrt(l2)
+               ENDIF
+               IF (sqrt(l3)-0.0001 .GT. opts%maximum_D) THEN
+                  write(*,*) '1 EEEERRRR3', sqrt(l3)
+               ENDIF
+
+
+                  ! a simple sort of 3 reals
+                  IF (l3.GT.l2) THEN
+                     IF (l3.GT.l1) THEN
+                        IF (l2.GT.l1) THEN
+                           Matrix_A(1) = vec3(1)
+                           Matrix_A(4) = vec3(2)
+                           Matrix_A(7) = vec3(3)
+
+                           Matrix_A(2) = vec2(1)
+                           Matrix_A(5) = vec2(2)
+                           Matrix_A(8) = vec2(3)
+                        
+                           Matrix_A(3) = vec(1)
+                           Matrix_A(6) = vec(2)
+                           Matrix_A(9) = vec(3)
+                        ELSE
+                           Matrix_A(1) = vec3(1)
+                           Matrix_A(4) = vec3(2)
+                           Matrix_A(7) = vec3(3)
+
+                           Matrix_A(2) = vec(1)
+                           Matrix_A(5) = vec(2)
+                           Matrix_A(8) = vec(3)
+                        
+                           Matrix_A(3) = vec2(1)
+                           Matrix_A(6) = vec2(2)
+                           Matrix_A(9) = vec2(3)
+
+                        ENDIF
+                     ELSE
+                        IF (l2.GT.l1) THEN
+                           ! not possible
+                        ELSE
+                           Matrix_A(1) = vec(1)
+                           Matrix_A(4) = vec(2)
+                           Matrix_A(7) = vec(3)
+
+                           Matrix_A(2) = vec3(1)
+                           Matrix_A(5) = vec3(2)
+                           Matrix_A(8) = vec3(3)
+                        
+                           Matrix_A(3) = vec2(1)
+                           Matrix_A(6) = vec2(2)
+                           Matrix_A(9) = vec2(3)
+
+                        ENDIF
+                     ENDIF
+                  ELSE
+                     IF (l3.GT.l1) THEN
+                        IF (l2.GT.l1) THEN
+                           Matrix_A(1) = vec2(1)
+                           Matrix_A(4) = vec2(2)
+                           Matrix_A(7) = vec2(3)
+
+                           Matrix_A(2) = vec3(1)
+                           Matrix_A(5) = vec3(2)
+                           Matrix_A(8) = vec3(3)
+                        
+                           Matrix_A(3) = vec(1)
+                           Matrix_A(6) = vec(2)
+                           Matrix_A(9) = vec(3)
+
+                        ELSE
+                           !not possible
+
+                        ENDIF
+                     ELSE
+                        IF (l2.GT.l1) THEN
+                           Matrix_A(1) = vec(1)
+                           Matrix_A(4) = vec(2)
+                           Matrix_A(7) = vec(3)
+
+                           Matrix_A(2) = vec2(1)
+                           Matrix_A(5) = vec2(2)
+                           Matrix_A(8) = vec2(3)
+                        
+                           Matrix_A(3) = vec3(1)
+                           Matrix_A(6) = vec3(2)
+                           Matrix_A(9) = vec3(3)
+
+                        ELSE
+                           Matrix_A(1) = vec(1)
+                           Matrix_A(4) = vec(2)
+                           Matrix_A(7) = vec(3)
+
+                           Matrix_A(2) = vec3(1)
+                           Matrix_A(5) = vec3(2)
+                           Matrix_A(8) = vec3(3)
+                        
+                           Matrix_A(3) = vec2(1)
+                           Matrix_A(6) = vec2(2)
+                           Matrix_A(9) = vec2(3)
+
+                        ENDIF
+                     ENDIF
+                  ENDIF
+
+               ENDIF
+            ENDIF
+
+            CALL particles_inverse_matrix(Matrix_A,Matrix_B,info)
+            Dtilde(1:Particles%tensor_length,ip) = Matrix_B(1:Particles%tensor_length)
+
         ENDDO
         
         IF (PRESENT(wp_grad_fun)) THEN
@@ -616,7 +878,12 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             Matrix_B(4) = (new_scale/old_scale)*Matrix_B(4)
             old_scale = sqrt(Matrix_B(1)**2 + Matrix_B(3)**2)
         ELSE
-           !todo: 3d case
+            old_scale = sqrt(Matrix_B(3)**2 + Matrix_B(6)**2 + Matrix_B(9)**2)
+            Matrix_B(3) = (new_scale/old_scale)*Matrix_B(3)
+            Matrix_B(6) = (new_scale/old_scale)*Matrix_B(6)
+            Matrix_B(9) = (new_scale/old_scale)*Matrix_B(9)
+            old_scale = sqrt(Matrix_B(1)**2 + Matrix_B(4)**2 + Matrix_B(7)**2)
+            old_scale2 = sqrt(Matrix_B(2)**2 + Matrix_B(5)**2 + Matrix_B(8)**2)
         ENDIF
 
         ! 2. scale longer with min_q(max(project_h1 on longer dir, project_h2 on longer dir))
@@ -654,6 +921,8 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             Matrix_B(1) = (old_scale/new_scale)*Matrix_B(1)
             Matrix_B(3) = (old_scale/new_scale)*Matrix_B(3)
 
+            ! todo: check for correctness the length of the vectors
+
             !check the order of the vectors!
             IF (SUM((/Matrix_B(2) , Matrix_B(4)/)**2) .GT. SUM((/Matrix_B(1) , Matrix_B(3)/)**2)) THEN
                !switch vectors if shorter axis is acutally longer
@@ -664,15 +933,190 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
                Matrix_B(3) = vec(2)                           
             ENDIF
 
-            CALL particles_inverse_matrix(Matrix_B,Matrix_A,info)
-            ! set the new inverse tensor D
-            D(1:Particles%tensor_length,ip) = Matrix_A(1:Particles%tensor_length)
-
-
         ELSE
-            ! HAECKIC: TODO 3D case
+             ! get the longer axis
+            wp_dir = (/Matrix_B(1),Matrix_B(4),Matrix_B(7)/)
+            wp_dir2 = (/Matrix_B(2),Matrix_B(5),Matrix_B(8)/)
+
+            ! get min_q(max(proj h1 on dir,proj h2 on dir))
+            DO ineigh=1,Particles%nvlist(ip)
+
+                  iq = Particles%vlist(ineigh,ip)
+                  
+                  ! get inverse to have axes
+                  Matrix_A = Dtilde(1:9,iq)
+                  CALL particles_inverse_matrix(Matrix_A,Matrix_C,info)
+
+                  ! 1st vector
+                  ! |c| = a.b/|b|
+                  ! proj h1 of iq on direction of longer axis of ip
+                  proj = ABS(SUM((/Matrix_C(1),Matrix_C(4),Matrix_C(7)/)*wp_dir)/SQRT(SUM(wp_dir**2)))
+                  
+                  ! proj h2 of iq on direction of longer axis of ip
+                  proj = MAX(proj,ABS(SUM((/Matrix_C(2),Matrix_C(5),Matrix_C(8)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+                  
+                  ! proj h2 of iq on direction of longer axis of ip
+                  proj = MAX(proj,ABS(SUM((/Matrix_C(3),Matrix_C(6),Matrix_C(9)/)*wp_dir)/SQRT(SUM(wp_dir**2))))
+
+                  IF(old_scale .GT. proj) THEN
+                     ! we found a smaller projection on longer axis
+                     old_scale = proj
+                  ENDIF
+                  
+                  ! 2nd vector
+                  ! |c| = a.b/|b|
+                  ! proj h1 of iq on direction of longer axis of ip
+                  proj = ABS(SUM((/Matrix_C(1),Matrix_C(4),Matrix_C(7)/)*wp_dir2)/SQRT(SUM(wp_dir2**2)))
+                  
+                  ! proj h2 of iq on direction of longer axis of ip
+                  proj = MAX(proj,ABS(SUM((/Matrix_C(2),Matrix_C(5),Matrix_C(8)/)*wp_dir2)/SQRT(SUM(wp_dir2**2))))
+                  
+                  ! proj h2 of iq on direction of longer axis of ip
+                  proj = MAX(proj,ABS(SUM((/Matrix_C(3),Matrix_C(6),Matrix_C(9)/)*wp_dir2)/SQRT(SUM(wp_dir2**2))))
+
+                  IF(old_scale2 .GT. proj) THEN
+                     ! we found a smaller projection on longer axis
+                     old_scale2 = proj
+                  ENDIF
+
+            ENDDO
+
+            ! set the new length (here: old_scale) of longer axis 1
+            new_scale = sqrt(Matrix_B(1)**2 + Matrix_B(4)**2 + Matrix_B(7)**2)
+            Matrix_B(1) = (old_scale/new_scale)*Matrix_B(1)
+            Matrix_B(4) = (old_scale/new_scale)*Matrix_B(4)
+            Matrix_B(7) = (old_scale/new_scale)*Matrix_B(7)
+            
+            ! set the new length (here: old_scale) of longer axis 2
+            new_scale = sqrt(Matrix_B(2)**2 + Matrix_B(5)**2 + Matrix_B(8)**2)
+            Matrix_B(2) = (old_scale2/new_scale)*Matrix_B(2)
+            Matrix_B(5) = (old_scale2/new_scale)*Matrix_B(5)
+            Matrix_B(8) = (old_scale2/new_scale)*Matrix_B(8)
+
+            ! Check for right order of vectors
+            ! 1. if shortest is larger than middle
+            vec =  (/Matrix_B(1) , Matrix_B(4), Matrix_B(7)/)
+            vec2 = (/Matrix_B(2) , Matrix_B(5), Matrix_B(8)/)
+            vec3 = (/Matrix_B(3) , Matrix_B(6), Matrix_B(9)/)
+
+            l1 = SUM(vec**2)
+            l2 = SUM(vec2**2)
+            l3 = SUM(vec3**2)
+
+            ! todo: drop check for correctness the length of the vectors
+            
+            IF (sqrt(l1)-0.0001 .GT. opts%maximum_D) THEN
+               write(*,*) 'EEEERRRR1', sqrt(l1)
+            ENDIF
+            IF (sqrt(l2)-0.0001 .GT. opts%maximum_D) THEN
+               write(*,*) 'EEEERRRR2', sqrt(l2)
+            ENDIF
+            IF (sqrt(l3)-0.0001 .GT. opts%maximum_D) THEN
+               write(*,*) 'EEEERRRR3', sqrt(l3)
+            ENDIF
+
+            ! a simple sort of 3 reals
+            IF (l3.GT.l2) THEN
+               IF (l3.GT.l1) THEN
+                  IF (l2.GT.l1) THEN
+                     Matrix_B(1) = vec3(1)
+                     Matrix_B(4) = vec3(2)
+                     Matrix_B(7) = vec3(3)
+
+                     Matrix_B(2) = vec2(1)
+                     Matrix_B(5) = vec2(2)
+                     Matrix_B(8) = vec2(3)
+                  
+                     Matrix_B(3) = vec(1)
+                     Matrix_B(6) = vec(2)
+                     Matrix_B(9) = vec(3)
+                  ELSE
+                     Matrix_B(1) = vec3(1)
+                     Matrix_B(4) = vec3(2)
+                     Matrix_B(7) = vec3(3)
+
+                     Matrix_B(2) = vec(1)
+                     Matrix_B(5) = vec(2)
+                     Matrix_B(8) = vec(3)
+                  
+                     Matrix_B(3) = vec2(1)
+                     Matrix_B(6) = vec2(2)
+                     Matrix_B(9) = vec2(3)
+
+                  ENDIF
+               ELSE
+                  IF (l2.GT.l1) THEN
+                     ! not possible
+                  ELSE
+                     Matrix_B(1) = vec(1)
+                     Matrix_B(4) = vec(2)
+                     Matrix_B(7) = vec(3)
+
+                     Matrix_B(2) = vec3(1)
+                     Matrix_B(5) = vec3(2)
+                     Matrix_B(8) = vec3(3)
+                  
+                     Matrix_B(3) = vec2(1)
+                     Matrix_B(6) = vec2(2)
+                     Matrix_B(9) = vec2(3)
+
+                  ENDIF
+               ENDIF
+            ELSE
+               IF (l3.GT.l1) THEN
+                  IF (l2.GT.l1) THEN
+                     Matrix_B(1) = vec2(1)
+                     Matrix_B(4) = vec2(2)
+                     Matrix_B(7) = vec2(3)
+
+                     Matrix_B(2) = vec3(1)
+                     Matrix_B(5) = vec3(2)
+                     Matrix_B(8) = vec3(3)
+                  
+                     Matrix_B(3) = vec(1)
+                     Matrix_B(6) = vec(2)
+                     Matrix_B(9) = vec(3)
+
+                  ELSE
+                     !not possible
+
+                  ENDIF
+               ELSE
+                  IF (l2.GT.l1) THEN
+                     Matrix_B(1) = vec(1)
+                     Matrix_B(4) = vec(2)
+                     Matrix_B(7) = vec(3)
+
+                     Matrix_B(2) = vec2(1)
+                     Matrix_B(5) = vec2(2)
+                     Matrix_B(8) = vec2(3)
+                  
+                     Matrix_B(3) = vec3(1)
+                     Matrix_B(6) = vec3(2)
+                     Matrix_B(9) = vec3(3)
+
+                  ELSE
+                     Matrix_B(1) = vec(1)
+                     Matrix_B(4) = vec(2)
+                     Matrix_B(7) = vec(3)
+
+                     Matrix_B(2) = vec3(1)
+                     Matrix_B(5) = vec3(2)
+                     Matrix_B(8) = vec3(3)
+                  
+                     Matrix_B(3) = vec2(1)
+                     Matrix_B(6) = vec2(2)
+                     Matrix_B(9) = vec2(3)
+
+                  ENDIF
+               ENDIF
+            ENDIF
 
         ENDIF
+                 
+         ! set the new inverse tensor D
+         CALL particles_inverse_matrix(Matrix_B,Matrix_A,info)
+         D(1:Particles%tensor_length,ip) = Matrix_A(1:Particles%tensor_length)
 
     ENDDO
     D      => Set_wpv(Particles,Particles%D_id)
@@ -682,6 +1126,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     ! Dealloc matrix A and B
     CALL ppm_alloc(Matrix_A,(/ Particles%tensor_length /),ppm_param_dealloc,info)
     CALL ppm_alloc(Matrix_B,(/ Particles%tensor_length /),ppm_param_dealloc,info)
+    CALL ppm_alloc(Matrix_C,(/ Particles%tensor_length /),ppm_param_dealloc,info)
 
 ! #if debug_verbosity > 0
 !     D => Get_wpv(Particles,Particles%D_id)

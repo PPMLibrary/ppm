@@ -458,7 +458,31 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 #endif
 
                     ! HAECKIC: TODO 3D sampling for anisotropic case
+                   ! get the isotropic -> anisotropic transofmration matrix
+                    ! todo: error not D but G
+                    CALL particles_inverse_matrix(inv(:,ip),Matrix_A,info)
+ 
+                    displace = (/COS(theta1),SIN(theta1),COS(theta2)/)
+                    !normalize
+                    displace = 0.749_mk*displace/(sqrt(SUM(displace**2)))
+                    displace = (/Matrix_A(1)*displace(1) + Matrix_A(2)*displace(2) + Matrix_A(3)*displace(3),&
+                     &           Matrix_A(4)*displace(1) + Matrix_A(5)*displace(2) + Matrix_A(6)*displace(3),&
+                     &           Matrix_A(7)*displace(1) + Matrix_A(8)*displace(2) + Matrix_A(9)*displace(3)/)
+                    xp(1:ppm_dim,Mpart + add_part) = xp(1:ppm_dim,ip) + displace
 
+!                     write(*,*) ' From sample: ',  xp(1:ppm_dim,ip)
+!                     write(*,*) ' angle: ', angle 
+!                     write(*,*) ' axes: (', Matrix_A(1), ',',Matrix_A(3),') (',Matrix_A(2), ',',Matrix_A(4),')'
+!                      write(*,*) 'A new sample: ', xp(1:ppm_dim,Npart + add_part)
+!                      write(*,*) ' '
+
+!                         0.723_MK*D(ip)&       !radius
+!                         * (/COS(angle),SIN(angle)/) !direction 
+                    DO j=1,Particles%tensor_length
+                        ! why D? we update it anyway...
+                        D(j,Mpart + add_part)   = D(j,ip)
+                        inv(j,Mpart + add_part) = inv(j,ip)
+                    ENDDO
 !                     xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
 !                         !random 3D points on a sphere
 !                     0.7_MK*D(ip)&       !radius

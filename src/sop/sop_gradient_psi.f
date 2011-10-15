@@ -133,7 +133,15 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
                grad_vec(2) = - inv(2,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2)) &
                &             - inv(4,ip)*(inv(3,ip)*dist(1) + inv(4,ip)*dist(2))
             ELSE
-               ! HAECKIC: TODO 3D case
+               grad_vec(1) = - inv(1,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2) + inv(3,ip)*dist(3)) &
+               &             - inv(4,ip)*(inv(4,ip)*dist(1) + inv(5,ip)*dist(2) + inv(6,ip)*dist(3)) &
+               &             - inv(7,ip)*(inv(7,ip)*dist(1) + inv(8,ip)*dist(2) + inv(9,ip)*dist(3)) 
+               grad_vec(2) = - inv(2,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2) + inv(3,ip)*dist(3)) &
+               &             - inv(5,ip)*(inv(4,ip)*dist(1) + inv(5,ip)*dist(2) + inv(6,ip)*dist(3)) &
+               &             - inv(8,ip)*(inv(7,ip)*dist(1) + inv(8,ip)*dist(2) + inv(9,ip)*dist(3))
+               grad_vec(3) = - inv(3,ip)*(inv(1,ip)*dist(1) + inv(2,ip)*dist(2) + inv(3,ip)*dist(3)) &
+               &             - inv(6,ip)*(inv(4,ip)*dist(1) + inv(5,ip)*dist(2) + inv(6,ip)*dist(3)) &
+               &             - inv(9,ip)*(inv(7,ip)*dist(1) + inv(8,ip)*dist(2) + inv(9,ip)*dist(3))
             ENDIF
 
             CALL particles_shorter_axis(Particles,ip,Particles%G_id,scaling_ip,info)
