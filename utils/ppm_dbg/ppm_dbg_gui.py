@@ -251,6 +251,8 @@ class AppForm(QMainWindow):
         self.dim = 2
         self.decomp = None 
         self.particles = None
+        self.datfpath = None
+        self.subfpath = None
     
         QMainWindow.__init__(self, parent)
         self.setWindowTitle('PPM Debug Utility')
@@ -297,7 +299,9 @@ class AppForm(QMainWindow):
             elif self.dim == 3:
                 for l in datf:
                     r = l.strip().split()
-                    xp = [float(r[0]),float(r[1]),float(r[2])]
+                    try:
+                        xp = [float(r[0]),float(r[1]),float(r[2])]
+                    except: continue
                     c = int(r[3])
                     self.particles.add(xp,c)
   
@@ -348,56 +352,88 @@ class AppForm(QMainWindow):
 
     def on_draw(self):
         """ Redraws the figure."""
+        if self.dim == 3:
+            elev = self.axes.elev
+            azim = self.axes.azim
         self.axes.clear()
         if self.dim == 2:
             for el in self.decomp.getGhostFaces():
                 self.plotgl2(el)
             for el,cpu in self.decomp.getFaces():
                 self.plotsub2(el,cpu)
-            self.plotdat2(self.particles.x(),\
-                    self.particles.y(),\
-                    self.particles.c)
+            if len(self.particles.x()) > 0:
+                self.plotdat2(self.particles.x(),\
+                        self.particles.y(),\
+                        self.particles.c)
         elif self.dim == 3:
             for el in self.decomp.getGhostFaces():
                 self.plotgl3(el)
             for el,cpu in self.decomp.getFaces():
                 self.plotsub3(el,cpu)
-            self.plotdat3(self.particles.x(),\
-                    self.particles.y(),\
-                    self.particles.z(),\
-                    self.particles.c)
+            if len(self.particles.x()) > 0:
+                self.plotdat3(self.particles.x(),\
+                        self.particles.y(),\
+                        self.particles.z(),\
+                        self.particles.c)
         else: pass
         self.axes.set_xlabel('x')
         self.axes.set_ylabel('y')
         if self.dim == 3:
             self.axes.set_zlabel('z')
+            self.axes.elev = elev
+            self.axes.azim = azim
         
         self.canvas.draw()
         if self.dim == 3:
             self.axes.mouse_init()
+    
+    def on_pressDraw(self):
+        subf = None
+        datf = None
 
+        try:
+            subf = open(self.subfpath,'r')
+        except: pass
+        try:
+            datf = open(self.datfpath,'r')
+        except: pass
+        if subf is None and datf is None:
+            self.statusBar().showMessage('No file chosen', 2000)
+            return
+        
+        self.statusBar().showMessage('Reloading %s' % self.subfpath, 2000)
+        self.load_data(subf,datf)
+        subf.close()
+        try:
+            datf.close()
+        except: pass
+        if self.dim == 2:
+            self.axes = self.fig.add_subplot(111)
+        else:
+            self.axes = Axes3D(self.fig)
+        self.on_draw()
 
     def open_data(self):
         """Open subdomain and data files chosen by the user."""
         file_choices = "*.sub"
         
-        subfpath = unicode(QFileDialog.getOpenFileName(self, 
+        self.subfpath = unicode(QFileDialog.getOpenFileName(self, 
                         'Open file', '', 
                         file_choices))
-        if not subfpath:
+        if not self.subfpath:
             return
-        datfpath = subfpath[:-4]+'.dat'
+        self.datfpath = self.subfpath[:-4]+'.dat'
 
-        self.statusBar().showMessage('Opening %s' % subfpath, 2000)
+        self.statusBar().showMessage('Opening %s' % self.subfpath, 2000)
         
         subf = None
         datf = None
 
         try:
-            subf = open(subfpath,'r')
+            subf = open(self.subfpath,'r')
         except: pass
         try:
-            datf = open(datfpath,'r')
+            datf = open(self.datfpath,'r')
         except: pass
         self.load_data(subf,datf)
         subf.close()
@@ -460,7 +496,7 @@ class AppForm(QMainWindow):
         # Other GUI controls
         # 
         self.draw_button = QPushButton("&Draw")
-        self.connect(self.draw_button, SIGNAL('clicked()'), self.on_draw)
+        self.connect(self.draw_button, SIGNAL('clicked()'), self.on_pressDraw)
         
         #
         # Layout with box sizers
@@ -469,10 +505,10 @@ class AppForm(QMainWindow):
         
         for w in [  self.draw_button]:
             hbox.addWidget(w)
-            hbox.setAlignment(w, Qt.AlignVCenter)
-        
+            hbox.setAlignment(w, Qt.AlignBottom)
+       
         vbox = QVBoxLayout()
-        vbox.addWidget(self.canvas)
+        vbox.addWidget(self.canvas,stretch=1)
         vbox.addWidget(self.mpl_toolbar)
         vbox.addLayout(hbox)
         
@@ -570,15 +606,17 @@ class AppForm(QMainWindow):
             self.axes.scatter(rx,ry,s=5,c=[cmap[t%(nc-1)+1] for t in \
                 rtag],linewidths=0)
         except KeyError:
-            print "invalid color tag"
+            self.statusBar().showMessage('Invalid color tag', 2000)
+        except ValueError:
+            self.statusBar().showMessage('No real particles', 2000)
         try:
             gx,gy,gtag = zip(*filter(isghost,zip(x,y,tag)))
             self.axes.scatter(gx,gy,s=5,c=[cmap[t] for t in \
                 gtag],linewidths=0,alpha=0.6,zorder=10)
         except KeyError:
-            print "invalid color tag"
+            self.statusBar().showMessage('Invalid color tag', 2000)
         except ValueError:
-            print "no ghosts"
+            self.statusBar().showMessage('No ghosts', 2000)
 
     
     def plotdat3(self,x,y,z,tag):
@@ -589,17 +627,17 @@ class AppForm(QMainWindow):
             self.axes.scatter(rx,ry,rz,s=10,c=[cmap[t%(nc-1)+1] for t in \
                 rtag],linewidths=0)
         except KeyError:
-            print "invalid color tag"
+            self.statusBar().showMessage('Invalid color tag', 2000)
         except ValueError:
-            print "no particles"
+            self.statusBar().showMessage('No real particles', 2000)
         try:
             gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
             self.axes.scatter(gx,gy,gz,s=10,c=[cmap[t] for t in \
                 gtag],linewidths=0,alpha=0.6)
         except KeyError:
-            print "invalid color tag"
+            self.statusBar().showMessage('Invalid color tag', 2000)
         except ValueError:
-            print "no ghosts"
+            self.statusBar().showMessage('No ghosts', 2000)
 
 
 def main():
