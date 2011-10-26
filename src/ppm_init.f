@@ -264,7 +264,7 @@
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-          WRITE(mesg,'(A,E15.10)') 'Floating point tolerance set to ',  &
+          WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',  &
      &        ppm_myepsd
       ELSE
           IF     (tolexp.LT.-12.OR.tolexp.GT.-3) THEN
@@ -281,7 +281,7 @@
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-          WRITE(mesg,'(A,E15.10)') 'Floating point tolerance set to ',   &
+          WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',   &
      &        ppm_myepss
       ENDIF
       CALL ppm_log('ppm_init',mesg,info)
