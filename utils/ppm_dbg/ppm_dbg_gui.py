@@ -286,8 +286,8 @@ class AppForm(QMainWindow):
                         int(r[10]),int(r[11]),int(r[12])]
                 self.decomp.addSub(min_sub,max_sub,proc,bc,self.halo)
         
+        self.particles = Particles(self.dim)
         if datf:
-            self.particles = Particles(self.dim)
             if self.dim == 2:
                 for l in datf:
                     r = l.strip().split()
@@ -300,8 +300,6 @@ class AppForm(QMainWindow):
                     xp = [float(r[0]),float(r[1]),float(r[2])]
                     c = int(r[3])
                     self.particles.add(xp,c)
-        else:
-            self.particles = None
   
     def on_pick(self):
         """ pick event handler for mpl canvas."""
@@ -403,7 +401,8 @@ class AppForm(QMainWindow):
         except: pass
         self.load_data(subf,datf)
         subf.close()
-        datf.close()
+        if datf != None:
+            datf.close()
         if self.dim == 2:
             self.axes = self.fig.add_subplot(111)
         else:
@@ -591,6 +590,8 @@ class AppForm(QMainWindow):
                 rtag],linewidths=0)
         except KeyError:
             print "invalid color tag"
+        except ValueError:
+            print "no particles"
         try:
             gx,gy,gz,gtag = zip(*filter(isghost,zip(x,y,z,tag)))
             self.axes.scatter(gx,gy,gz,s=10,c=[cmap[t] for t in \
