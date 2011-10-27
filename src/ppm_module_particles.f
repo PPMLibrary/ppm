@@ -4529,6 +4529,12 @@ SUBROUTINE particles_dcop_define(Particles,eta_id,coeffs,degree,order,nterms,&
     info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
 
+    IF (.NOT. ASSOCIATED(Particles)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            &            'Particle data structure is not allocated',__LINE__,info)
+        GOTO 9999
+    ENDIF
     IF (.NOT. ASSOCIATED(Particles%ops)) THEN
     !allocate operators data structure
         ALLOCATE(Particles%ops,STAT=info)
