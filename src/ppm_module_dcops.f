@@ -311,6 +311,23 @@ SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
                 __LINE__,info)
             GOTO 9999
         ENDIF
+        IF (Particles%Particles_cross%nn_sq_id.EQ.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to call particles_nearest_neighbors first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT.Particles%Particles_cross%wps(&
+            Particles%Particles_cross%nn_sq_id)%is_mapped &
+                .OR. .NOT.Particles%Particles_cross%wps(&
+                Particles%Particles_cross%nn_sq_id)%has_ghosts) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+        'Need to call particles_nearest_neighbors first (nn_sq_id not uptodate)',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
     ELSE
         IF (.NOT. Particles%neighlists) THEN
             info = ppm_error_error
