@@ -355,14 +355,14 @@ SUBROUTINE sop_spawn2_particles(Particles,opts,info,nb_part_added,&
                         if (iq .le. Npart) then
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                0.1_MK*D(ip) * &
+                                opts%spawn_radius*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))/dist + & !mirror image of q
                                 default_stencil(1:ppm_dim,1))
 
                         else
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                                0.1_MK*D(ip) * &
+                                opts%spawn_radius*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq))/dist + & !mirror image of q
                                 default_stencil(1:ppm_dim,1))
                         endif
@@ -578,7 +578,7 @@ SUBROUTINE check_nn2(Particles,opts,info)
         IF (nvlist(ip) .GT. 0) THEN !if ip is going to add some new particles
             DO ineigh=1,nb_neigh(ip) ! loop through all its close neighb
                 iq = vlist(ineigh,ip)
-                IF (iq .GE. Particles%Npart) THEN !if its a real particle
+                IF (iq .LE. Particles%Npart) THEN !if its a real particle
                     !reduce the number of particles that this guy should
                     ! add itself
                     IF (nvlist(iq).GT.0) nvlist(iq)=nvlist(iq)-1

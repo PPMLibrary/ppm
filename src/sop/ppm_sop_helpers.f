@@ -45,6 +45,7 @@ SUBROUTINE sop_init_opts(opts,info)
     opts%add_parts = .TRUE.
     opts%remove_large_parts = .FALSE.
     opts%param_morse = 2.5_MK
+    opts%spawn_radius = 0.5_MK
 
     9999 CONTINUE
 

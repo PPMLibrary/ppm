@@ -100,6 +100,8 @@
          REAL(prec)                            :: param_d0, param_d1,param_p0 
          REAL(prec)                            :: param_morse ! rho in the Morse
          !potential
+         !new particles are generated at distance equal to spawn_radius * D(ip)
+         REAL(prec)                            :: spawn_radius
 
          REAL(prec)                            :: attractive_radius0 
          !distance below which particles attract each other
