@@ -81,7 +81,7 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ), POINTER :: xp
+      REAL(MK), DIMENSION(:,:),                POINTER :: xp
       !!! particle co-ordinates
       INTEGER                 , INTENT(IN   ) :: np
       !!! number of particles.

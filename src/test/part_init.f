@@ -24,7 +24,7 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    REAL(MK),DIMENSION(:,:), POINTER,     INTENT(INOUT)    :: xp
+    REAL(MK),DIMENSION(:,:), POINTER                       :: xp
     !!! Data structure containing the particles
     REAL(MK),DIMENSION(ppm_dim),         INTENT(IN   )     :: min_phys
     !!! extent of the physical domain.
