@@ -458,7 +458,7 @@
               CALL ppm_write(ppm_rank,'ppm_map_field_pop_2d',   &
      &            'There is no data to be received',info)
           ENDIF
-          GOTO 9999
+          GOTO 8888
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -3223,6 +3223,7 @@
          ENDDO                ! ppm_nrecvlist
       ENDIF                   ! ppm_kind
 
+ 8888 CONTINUE
       !-------------------------------------------------------------------------
       !  Decrement the set counter
       !-------------------------------------------------------------------------
@@ -3269,40 +3270,40 @@
               info = ppm_error_notice
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'buffer is empty. Cannot pop.',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
           IF (.NOT. ldo) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'destination meshid out of range',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
 #if   __DIM == __VFIELD
           IF (lda .LT. 1) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'lda must be >0 for vector data',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
 #elif __DIM == __SFIELD
           IF (lda .NE. 1) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
 #endif
           IF (SIZE(ghostsize,1) .LT. 2) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'ghostsize must be given for all dimensions',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
           IF ((ghostsize(1) .LT. 0) .OR. (ghostsize(2) .LT. 0)) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &            'ghostsize must be >=0 in all dimensions',__LINE__,info)
-              GOTO 8888
+              GOTO 7777
           ENDIF
           IF (PRESENT(poptype)) THEN
               IF ((poptype .NE. ppm_param_pop_replace) .AND.     &
@@ -3310,10 +3311,10 @@
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &                'Unknown pop type specified',__LINE__,info)
-                  GOTO 8888
+                  GOTO 7777
               ENDIF
           ENDIF
- 8888     CONTINUE
+ 7777     CONTINUE
       END SUBROUTINE check
       SUBROUTINE check_two
           IF (PRESENT(mask)) THEN
@@ -3332,22 +3333,22 @@
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &                'x dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 7777
+                  GOTO 6666
               ENDIF
               IF (SIZE(mask,2) .LT. yhi) THEN
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &                'y dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 7777
+                  GOTO 6666
               ENDIF
               IF (SIZE(mask,3) .LT. target_topo%nsublist) THEN
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_argument,'ppm_map_field_pop_2d',  &
      &                'mask data for some subs is missing',__LINE__,info)
-                  GOTO 7777
+                  GOTO 6666
               ENDIF
           ENDIF
- 7777     CONTINUE
+ 6666     CONTINUE
      END SUBROUTINE check_two
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
