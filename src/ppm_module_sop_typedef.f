@@ -77,6 +77,8 @@
 
          LOGICAL                               :: add_parts
          !!! add new particles when needed. Default is .true.
+         LOGICAL                               :: del_parts
+         !!! delete particles when too many neighbours. Default is .true.
          LOGICAL                               :: remove_large_parts
          !!! delete particles that have a cutoff equal to the maximum cutoff
          !!! This is useful in simulations where not some regions of space

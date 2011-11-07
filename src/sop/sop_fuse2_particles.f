@@ -105,12 +105,16 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
     !! Initialize
     !!-------------------------------------------------------------------------!
     info = 0
-    IF (ppm_dim .eq. 2) THEN
-        nb_neigh_max_thresh = 10
+    IF (opts%del_parts) THEN
+        IF (ppm_dim .eq. 2) THEN
+            nb_neigh_max_thresh = 10
+        ELSE
+            nb_neigh_max_thresh = 15
+        ENDIF
     ELSE
-        nb_neigh_max_thresh = 15
+        nb_neigh_max_thresh = HUGE(1)
     ENDIF
-    
+
 #if debug_verbosity > 0
     CALL substart(caller,t0,info)
 #endif
