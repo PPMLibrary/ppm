@@ -157,7 +157,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
 #ifdef __USE_DEL_METHOD2
     opts%attractive_radius0 = 0.0_MK
-    opts%fuse_radius = 0.02_MK
+    opts%fuse_radius = 0.00_MK
 #endif
     !!-------------------------------------------------------------------------!
     !! Initialize
