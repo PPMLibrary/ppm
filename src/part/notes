@@ -1,0 +1,22 @@
+ppm_psendbuffer contains indeces to the first particle of the k-th communication
+partner to send to.
+ppm_precvbuffer contains indeces to the first particle of the k-th communication
+partner to receive from.
+ppm_buffer2part stores the original indeces of the particles
+ppm_ghost_offsets, ppm_ghost_offsetd store the offsets of ghost particles to
+allow for boundary condition particles
+
+ppm_ghosthack ?
+
+how to send back new local ghosts to their "native" sub without getting them
+back later and causing duplications:
+- do the modify_send in 2 rounds
+- first do a "put"
+  - send the new ghosts to the sub where they are real
+  - when receiving them, the psend_buffer and buffer2part have to be updated
+  - while updating those arrays, we maintain an additional array storing the
+    offset of the new particles within buffer2part (sendbuffers?).
+    psend_put_offset
+- then we do a "get"
+  - we now send all particles from psend_new_offset to psend_put_offset.
+

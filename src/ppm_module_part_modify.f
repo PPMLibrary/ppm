@@ -55,6 +55,7 @@
              INTEGER                            :: Ngnew
              INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
              INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
+             INTEGER, DIMENSION(:), POINTER     :: psend_new_offset => NULL()
          END TYPE
 
          !----------------------------------------------------------------------
