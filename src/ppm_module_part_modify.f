@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :              ppm_module_map_part_pop
+      !  Module       :              ppm_module_part_modify
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -37,85 +37,31 @@
 #define __SINGLE_PRECISION_COMPLEX 5
 #define __DOUBLE_PRECISION_COMPLEX 6
 
-      MODULE ppm_module_map_part
+      MODULE ppm_module_part_modify
       !!! This module provides the basic mapping routines for particles, namely
       !!! the push, sned and pop routine.
       !!!
       !!! The module also holds the needed work arrays for these routines.
          
-         USE ppm_module_map_part_util
-         USE ppm_module_map_part_ghost
-         USE ppm_module_map_part_global
-         USE ppm_module_map_part_partial
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------
-         !  Work lists
+         !  types
          !----------------------------------------------------------------------
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
-         INTEGER                          :: old_nsendlist = 0
-         INTEGER                          :: old_buffer_set = 0
 
-         PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
-         PRIVATE :: old_nsendlist,old_buffer_set
+         TYPE ppm_t_part_modify
+             INTEGER                            :: Nrnew
+             INTEGER                            :: Ngnew
+             INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
+             INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
+         END TYPE
 
          !----------------------------------------------------------------------
-         !  Define interfaces to ppm_map_part_pop
+         !  data
          !----------------------------------------------------------------------
-         INTERFACE ppm_map_part_pop
-            ! scalar (1d) particle data
-            MODULE PROCEDURE ppm_map_part_pop_1dd
-            MODULE PROCEDURE ppm_map_part_pop_1ds
-            MODULE PROCEDURE ppm_map_part_pop_1di
-            MODULE PROCEDURE ppm_map_part_pop_1dl
-            MODULE PROCEDURE ppm_map_part_pop_1ddc
-            MODULE PROCEDURE ppm_map_part_pop_1dsc
 
-            ! vector (2d) particle data
-            MODULE PROCEDURE ppm_map_part_pop_2dd
-            MODULE PROCEDURE ppm_map_part_pop_2ds
-            MODULE PROCEDURE ppm_map_part_pop_2di
-            MODULE PROCEDURE ppm_map_part_pop_2dl
-            MODULE PROCEDURE ppm_map_part_pop_2ddc
-            MODULE PROCEDURE ppm_map_part_pop_2dsc
-         END INTERFACE
-
-         !----------------------------------------------------------------------
-         !  Define interfaces to ppm_map_part_push
-         !----------------------------------------------------------------------
-         INTERFACE ppm_map_part_push
-            ! scalar (1d) particle data
-            MODULE PROCEDURE ppm_map_part_push_1dd
-            MODULE PROCEDURE ppm_map_part_push_1ds
-            MODULE PROCEDURE ppm_map_part_push_1di
-            MODULE PROCEDURE ppm_map_part_push_1dl
-            MODULE PROCEDURE ppm_map_part_push_1ddc
-            MODULE PROCEDURE ppm_map_part_push_1dsc
-
-            ! vector (2d) particle data
-            MODULE PROCEDURE ppm_map_part_push_2dd
-            MODULE PROCEDURE ppm_map_part_push_2ds
-            MODULE PROCEDURE ppm_map_part_push_2di
-            MODULE PROCEDURE ppm_map_part_push_2dl
-            MODULE PROCEDURE ppm_map_part_push_2ddc
-            MODULE PROCEDURE ppm_map_part_push_2dsc
-         END INTERFACE
-         !----------------------------------------------------------------------
-         !  Define interfaces to ppm_map_part_send
-         !----------------------------------------------------------------------
-         INTERFACE ppm_map_part_send
-            MODULE PROCEDURE ppm_map_part_send
-         END INTERFACE
+         TYPE(ppm_t_part_modify)                :: modify
 
          !----------------------------------------------------------------------
          !  include the source 
@@ -124,88 +70,88 @@
 
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __INTEGER
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __LOGICAL
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __SINGLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #undef __DIM
 
 #define __DIM 2
 #define __KIND __SINGLE_PRECISION
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __INTEGER
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __LOGICAL
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __SINGLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_pop.f"
+#include "part/ppm_part_modify_pop.f"
 #undef __KIND
 #undef __DIM
 
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __INTEGER
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __LOGICAL
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __SINGLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #undef __DIM
 
 #define __DIM 2
 #define __KIND __SINGLE_PRECISION
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __INTEGER
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __LOGICAL
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __SINGLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "map/ppm_map_part_push.f"
+#include "part/ppm_part_modify_push.f"
 #undef __KIND
 #undef __DIM
 
-#include "map/ppm_map_part_send.f"
+#include "part/ppm_part_modify_send.f"
 
-      END MODULE ppm_module_map_part
+      END MODULE ppm_module_part_modify
