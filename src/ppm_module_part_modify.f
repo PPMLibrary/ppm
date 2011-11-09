@@ -52,9 +52,17 @@
 
          TYPE ppm_t_part_modify
              INTEGER                            :: Nrnew
+             !number of new real particles 
              INTEGER                            :: Ngnew
+             !number of new ghost particles 
+             INTEGER                            :: Ngsendnew
+             !number of new real particles that are ghosts for other procs
              INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
+             !indeces of new real particles 
              INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
+             !indeces of new ghost particles 
+             INTEGER, DIMENSION(:), POINTER     :: idx_ghost_send_new => NULL()
+             !indeces of new real particles that are ghosts for other procs
              INTEGER, DIMENSION(:), POINTER     :: psend_new_offset => NULL()
          END TYPE
 
@@ -154,5 +162,53 @@
 #undef __DIM
 
 #include "part/ppm_part_modify_send.f"
+
+#define __KIND __SINGLE_PRECISION
+#include "part/ppm_part_split_compute.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "part/ppm_part_split_compute.f"
+
+#define __DIM 1
+#define __KIND __SINGLE_PRECISION
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#undef __DIM
+
+#define __DIM 2
+#define __KIND __SINGLE_PRECISION
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "part/ppm_part_split_apply.f"
+#undef __KIND
+#undef __DIM
 
       END MODULE ppm_module_part_modify

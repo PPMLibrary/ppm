@@ -34,7 +34,8 @@
       SUBROUTINE ppm_part_modify_add_d(topoid,xp,Npart,Mpart,xpn,Npnew,&
               isymm,ghostsize,info)
 #endif 
-      !!! This routine maps/adds the ghost particles on the current topology.
+      !!! This routine adds new particles to xp and updates the ghost mappings
+      !!! and the corresponding buffers.
       !!! This routine is similar to the partial mapping routine 
       !!! (`ppm_map_part_partial`) in the sense that the ghost particles are
       !!! assumed to be located on neighbouring processors only, and thus only
@@ -44,14 +45,13 @@
       !!! It is an error to specify a topology ID to which the particles are not
       !!! currently mapped
       !!!
-      !!! [NOTE]
-      !!! ==============================================================
-      !!! This routine SHOULD be efficient - since it will be
-      !!! called frequently. One way of improving (?) the
-      !!! performance is to use the cell lists to find the
-      !!! potential ghosts.
       !!!
-      !!! This routine should be split in several routines!
+      !!! 1. determine which new particles are ghost particles,
+      !!!    and which are real particles.
+      !!! 2. insert new real particles between xp(:,Np) and xp(:,Np+1)
+      !!! 3. append new ghost particles at the end of xp
+      !!! 4. get potential ghosts within the new real particles
+      !!! 5. update mappings and fill buffers
       !!!
       !!! The ghosts are found in three steps:
       !!!
@@ -145,7 +145,7 @@
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,isub
       INTEGER               :: nlist1,nlist2,nghost,nghostplus
-      INTEGER               :: ipart,sendrank,recvrank
+      INTEGER               :: ipart,sendrank !,recvrank
       INTEGER               :: iopt,iset,ibuffer
       REAL(MK), DIMENSION(:,:), POINTER :: xt  => NULL()
       ! position of potential ghosts
@@ -163,11 +163,25 @@
       LOGICAL, DIMENSION(2*ppm_dim) :: lextra
       INTEGER, DIMENSION(2*ppm_dim) :: ibc
       LOGICAL                       :: valid
-      CHARACTER(ppm_char)              :: mesg
-      ! number of periodic directions: between 0 and ppm_dim
+      CHARACTER(ppm_char)           :: mesg
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
       REAL(MK)                      :: eps
-      LOGICAL                       :: second_pass
+      INTEGER, DIMENSION(:), POINTER :: idx_xpnr
+      !!! indices of the new real particles to be added (the list of potential
+      !!! ghosts to be sent will be extracted from this index set).
+
+         INTEGER             ,DIMENSION(:),POINTER :: ppm_psendbuffer_add => NULL()
+         INTEGER                                        ::  ppm_nsendbuffer_add
+         INTEGER                                        ::  ppm_nrecvbuffer_add
+         INTEGER                                        ::  ppm_sendbufsize_add
+         INTEGER                                        ::  ppm_recvbufsize_add
+         INTEGER                                        ::  ppm_buffer_set_add
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer2part_add => NULL()
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_type_add => NULL()
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_dim_add => NULL()
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offsets_add => NULL()
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd_add => NULL()
+
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -175,7 +189,7 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_ghost_get',t0,info)
+      CALL substart('ppm_part_modify_add',t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -191,6 +205,24 @@
 #else
       eps = ppm_myepss
 #endif
+
+      !-------------------------------------------------------------------------
+      !  Split new particles into real and ghosts
+      !  The split is stored as 2 index arrays (real and ghosts) in modify%
+      !-------------------------------------------------------------------------
+      CALL ppm_part_split_compute(topoid,xpn,Npnew,info)
+      IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
+            &          'ppm_part_split_compute failed',__LINE__,info)
+      ENDIF
+
+      CALL ppm_part_split_apply(topoid,xp,ppm_dim,Npart,Mpart,xpn,Npnew,info)
+      IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
+            &          'ppm_part_split_apply failed',__LINE__,info)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Count Boundary conditions
@@ -229,7 +261,7 @@
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
         info = ppm_error_warning
-        CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_ghost_get',  &
+        CALL ppm_error(ppm_err_map_incomp,'ppm_part_modify_add',  &
      &       'Buffer was not empty. Possible loss of data!',__LINE__,info)
       ENDIF
 
@@ -244,11 +276,11 @@
         IF (ppm_debug .GT. 1) THEN
             DO i=1,topo%nneighproc
                 WRITE(mesg,'(A,I4)') 'have neighbor: ', topo%ineighproc(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_get',mesg,info)
+                CALL ppm_write(ppm_rank,'ppm_part_modify_add',mesg,info)
             ENDDO
             DO i=1,topo%ncommseq
                 WRITE(mesg,'(A,I4)') 'communicate: ', topo%icommseq(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_get',mesg,info)
+                CALL ppm_write(ppm_rank,'ppm_part_modify_add',mesg,info)
             ENDDO
         ENDIF
       ENDIF
@@ -257,12 +289,12 @@
       ! TODO: kepp this consistant throughout simulation
       ppm_sendbufsize = 0
       IF (ppm_kind.EQ.ppm_kind_double) THEN
-         IF (ASSOCIATED(ppm_sendbufferd)) THEN
-            ppm_sendbufsize = SIZE(ppm_sendbufferd)
+         IF (ASSOCIATED(ppm_sendbufferd_add)) THEN
+            ppm_sendbufsize = SIZE(ppm_sendbufferd_add)
          ENDIF
       ELSE
-         IF (ASSOCIATED(ppm_sendbuffers)) THEN
-            ppm_sendbufsize = SIZE(ppm_sendbuffers)
+         IF (ASSOCIATED(ppm_sendbuffers_add)) THEN
+            ppm_sendbufsize = SIZE(ppm_sendbuffers_add)
          ENDIF
       ENDIF
       !-------------------------------------------------------------------------
@@ -293,21 +325,21 @@
       CALL ppm_alloc(ilist1,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'list1',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ilist2,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'list2',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ighost,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'ighost',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -317,42 +349,41 @@
       !  Allocate memory for their positions
       !-------------------------------------------------------------------------
       ldu(1) = ppm_dim
-      ldu(2) = Nnew
+      ldu(2) = modify%Nrnew
       CALL ppm_alloc(xt,ldu,iopt,info)
-      CALL ppm_alloc(xt_offset,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'xt',__LINE__,info)
           GOTO 9999
       ENDIF
-      !-------------------------------------------------------------------------
-      !  Allocate memory for the index arrays
-      !-------------------------------------------------------------------------
-      CALL ppm_alloc(modify%idx_real_new,ldu,iopt,info)
+      CALL ppm_alloc(xt_offset,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &        'modify%idx_real_new',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &        'xt',__LINE__,info)
           GOTO 9999
       ENDIF
-      CALL ppm_alloc(modify%idx_ghost_new,ldu,iopt,info)
+      ldu(1) = modify%Nrnew
+      CALL ppm_alloc(modify%idx_ghost_send_new,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &        'modify%idx_ghost_new',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &        'modify%idx_ghost_send_new',__LINE__,info)
           GOTO 9999
       ENDIF
+      idx_xpnr => modify%idx_ghost_send_new
+
 
       !-------------------------------------------------------------------------
       !  List ilist1() holds the particles we are currently considering 
       !  List ilist2() holds the particles that have not yet been associated 
       !  with a sub, and ghost() holds the ghosts
       !-------------------------------------------------------------------------
-      DO i=1,Nnew
-         ilist1(i) = i
+      nlist1  = Nrnew
+      DO i=1,nlist1
+         ilist1(i) = modify%idx_real_new(i)
       ENDDO
-      nlist1  = Nnew
       nlist2  = 0
       nghost  = 0
 
@@ -478,10 +509,7 @@
                      xt(2,nghost)   = xpn(2,ipart)
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
-                     modify%Ngnew = modify%Ngnew+1
-                     IF (second_pass) THEN
-                         modify%idx_ghost_new(nghost)=ipart
-                     ENDIF
+                     modify%idx_ghost_send_new(nghost)=ipart
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -521,10 +549,7 @@
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
                      xt_offset(3,nghost) = 0.0_MK
-                     modify%Ngnew = modify%Ngnew+1
-                     IF (second_pass) THEN
-                         modify%idx_ghost_new(nghost)=ipart
-                     ENDIF
+                     modify%idx_ghost_send_new(nghost)=ipart
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -552,7 +577,7 @@
       !-------------------------------------------------------------------------
       IF (nlist2.NE.0) THEN
          info = ppm_error_fatal
-         CALL ppm_error(ppm_err_part_unass,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_part_unass,'ppm_part_modify_add',     &
      &       'nlist2 > 0',__LINE__,info)
          GOTO 9999
       ENDIF
@@ -561,42 +586,33 @@
       !  Initialize the total number of ghosts incl. those due to boundary
       !  conditions
       !-------------------------------------------------------------------------
+      modify%Ngsendnew = nghost
       nghostplus = nghost
 
       !-------------------------------------------------------------------------
-      !  Ok, we now have a list of potential ghosts. From these we extract/add
-      !  their periodic images (if any). So, first we check for periodicity
-      !-------------------------------------------------------------------------
-!      iperiodic = 0
-!      DO k=1,ppm_dim
-!         IF (topo%bcdef(2*k-1).EQ.ppm_param_bcdef_periodic) THEN
-!            iperiodic = iperiodic + 1
-!         ENDIF 
-!      ENDDO
-
       ! find out whether we have any non-freespace BCs
       !----------------------------------------------------------------------
       !  handle boundary conditions in x
       !----------------------------------------------------------------------
       IF (ibc(1).EQ.ppm_param_bcdef_periodic) THEN
-#include "ghost_map_periodic_bc_x.inc"
+#include "../map/ghost_map_periodic_bc_x.inc"
       ELSEIF (ibc(1).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_lx.inc"
+#include "../map/ghost_map_symmetry_bc_lx.inc"
       ENDIF  
       
       IF (ibc(2).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_ux.inc"
+#include "../map/ghost_map_symmetry_bc_ux.inc"
       ENDIF 
       !----------------------------------------------------------------------
       !  handle boundary conditions in y
       !----------------------------------------------------------------------
       IF (ibc(3).EQ.ppm_param_bcdef_periodic) THEN
-#include "ghost_map_periodic_bc_y.inc"
+#include "../map/ghost_map_periodic_bc_y.inc"
       ELSEIF (ibc(3).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_ly.inc"
+#include "../map/ghost_map_symmetry_bc_ly.inc"
       ENDIF
       IF (ibc(4).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_uy.inc"
+#include "../map/ghost_map_symmetry_bc_uy.inc"
       ENDIF
       !----------------------------------------------------------------------
       !  handle periodicity in z (if 3D)
@@ -608,12 +624,12 @@
          !  four (4) in 2D
          !-------------------------------------------------------------------
          IF (ibc(5).EQ.ppm_param_bcdef_periodic) THEN
-#include "ghost_map_periodic_bc_z.inc"
+#include "../map/ghost_map_periodic_bc_z.inc"
          ELSEIF (ibc(5).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_lz.inc"
+#include "../map/ghost_map_symmetry_bc_lz.inc"
          ENDIF
          IF (ibc(6).EQ.ppm_param_bcdef_symmetry) THEN
-#include "ghost_map_symmetry_bc_uz.inc"
+#include "../map/ghost_map_symmetry_bc_uz.inc"
          ENDIF
 
       ENDIF ! of 3D
@@ -627,29 +643,29 @@
       CALL ppm_alloc(lghost,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'logical list: lghost',__LINE__,info)
           GOTO 9999
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Allocate memory for the global send/recv lists
-      !-------------------------------------------------------------------------
-      ldu(1) = topo%ncommseq
-      CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &        'global send rank list PPM_ISENDLIST',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &        'global recv rank list PPM_IRECVLIST',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      !!-------------------------------------------------------------------------
+      !!  Allocate memory for the global send/recv lists
+      !!-------------------------------------------------------------------------
+      !ldu(1) = topo%ncommseq
+      !CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
+      !IF (info .NE. 0) THEN
+          !info = ppm_error_fatal
+          !CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     !&        'global send rank list PPM_ISENDLIST',__LINE__,info)
+          !GOTO 9999
+      !ENDIF
+      !CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
+      !IF (info .NE. 0) THEN
+          !info = ppm_error_fatal
+          !CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     !&        'global recv rank list PPM_IRECVLIST',__LINE__,info)
+          !GOTO 9999
+      !ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the pointers to the particles that will be send
@@ -658,11 +674,11 @@
       !  ppm_map_part_send().
       !-------------------------------------------------------------------------
       ldu(1) = topo%ncommseq + 1
-      CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
+      CALL ppm_alloc(ppm_psendbuffer_add,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &        'global send buffer pointer PPM_PSENDBUFFER',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &        'global send buffer pointer ppm_psendbuffer_add',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -671,9 +687,9 @@
       !  Step 1:
       !  First we find the ghosts due to periodicity on the local processor
       !-------------------------------------------------------------------------
-      ppm_psendbuffer(1) = 1
-      ppm_nsendlist      = 0
-      ppm_nrecvlist      = 0
+      ppm_psendbuffer_add(1) = 1
+      !ppm_nsendlist      = 0
+      !ppm_nrecvlist      = 0
       iset               = 0
       ibuffer            = 0
       k                  = 1
@@ -682,19 +698,19 @@
       !  Get the rank of the processor
       !-------------------------------------------------------------------------
       sendrank = topo%icommseq(k) ! should be ppm_rank !
-      recvrank = sendrank
+      !recvrank = sendrank
 
       !-------------------------------------------------------------------------
       !  Store the processor to which we will send to
       !-------------------------------------------------------------------------
-      ppm_nsendlist                = ppm_nsendlist + 1
-      ppm_isendlist(ppm_nsendlist) = sendrank
+      !ppm_nsendlist                = ppm_nsendlist + 1
+      !ppm_isendlist(ppm_nsendlist) = sendrank
 
       !-------------------------------------------------------------------------
       !  Store the processor to which we will recv from
       !-------------------------------------------------------------------------
-      ppm_nrecvlist                = ppm_nrecvlist + 1
-      ppm_irecvlist(ppm_nrecvlist) = recvrank
+      !ppm_nrecvlist                = ppm_nrecvlist + 1
+      !ppm_irecvlist(ppm_nrecvlist) = recvrank
 
       !-------------------------------------------------------------------------
       !  Store the number of buffer entries (this is the first)
@@ -710,14 +726,14 @@
       CALL ppm_alloc(ppm_buffer_dim ,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -750,15 +766,15 @@
          !  First allocate the sendbuffer
          !----------------------------------------------------------------------
          IF (ppm_kind.EQ.ppm_kind_double) THEN
-            CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-            CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+            CALL ppm_alloc(ppm_sendbufferd_add,ldu,iopt,info)
+            CALL ppm_alloc(ppm_ghost_offsetd_add,ldu,iopt,info)
          ELSE
-            CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-            CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+            CALL ppm_alloc(ppm_sendbuffers_add,ldu,iopt,info)
+            CALL ppm_alloc(ppm_ghost_offsets_add,ldu,iopt,info)
          ENDIF
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+             CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &           'global send buffer PPM_SENDBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -767,11 +783,11 @@
          !  then allocate the index list: buffer2part
          !----------------------------------------------------------------------
          ldu(1) = (nghostplus - nghost)*topo%nsublist
-         CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+         CALL ppm_alloc(ppm_buffer2part_add,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &           'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
+             CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &           'buffer-to-particles map ppm_buffer2part_add',__LINE__,info)
              GOTO 9999
          ENDIF
 
@@ -865,7 +881,7 @@
             ENDIF 
 
             !-------------------------------------------------------------------
-            !  Reallocate the arrays: ppm_sendbuffers/d and ppm_buffer2part. 
+            !  Reallocate the arrays: ppm_sendbuffers_add/d and ppm_buffer2part_add. 
             !  The required size is the current size minus the current use plus 
             !  the maximum increment (nghostplus-nghost).
             !  We perform a grow_preserve to preserve the contents but only to 
@@ -873,42 +889,42 @@
             !-------------------------------------------------------------------
             iopt   = ppm_param_alloc_grow_preserve
             IF (ppm_kind.EQ.ppm_kind_double) THEN
-               IF (ASSOCIATED(ppm_sendbufferd)) THEN
+               IF (ASSOCIATED(ppm_sendbufferd_add)) THEN
                   ldu(1) = ppm_sendbufsize + &
      &                     (nghostplus - nghost - ibuffer)*ppm_dim
                ELSE
                   ldu(1) = (nghostplus - ibuffer)*ppm_dim
                ENDIF
-               CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-               CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+               CALL ppm_alloc(ppm_sendbufferd_add,ldu,iopt,info)
+               CALL ppm_alloc(ppm_ghost_offsetd_add,ldu,iopt,info)
             ELSE
-               IF (ASSOCIATED(ppm_sendbuffers)) THEN
+               IF (ASSOCIATED(ppm_sendbuffers_add)) THEN
                   ldu(1) = ppm_sendbufsize + &
      &                     (nghostplus - nghost - ibuffer)*ppm_dim
                ELSE
                   ldu(1) = (nghostplus - nghost - ibuffer)*ppm_dim 
                ENDIF 
-               CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-               CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+               CALL ppm_alloc(ppm_sendbuffers_add,ldu,iopt,info)
+               CALL ppm_alloc(ppm_ghost_offsets_add,ldu,iopt,info)
             ENDIF
             ppm_sendbufsize = ldu(1) 
             IF (info .NE. 0) THEN
                 info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+                CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
      &              'global send buffer PPM_SENDBUFFER',__LINE__,info)
                 GOTO 9999
             ENDIF
 
-            IF (ASSOCIATED(ppm_buffer2part)) THEN
-               ldu(1) = SIZE(ppm_buffer2part) + nghostplus - nghost - iset
+            IF (ASSOCIATED(ppm_buffer2part_add)) THEN
+               ldu(1) = SIZE(ppm_buffer2part_add) + nghostplus - nghost - iset
             ELSE
                ldu(1) = nghostplus - nghost - iset
             ENDIF 
-            CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+            CALL ppm_alloc(ppm_buffer2part_add,ldu,iopt,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
-     &              'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
+                CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &              'buffer-to-particles map ppm_buffer2part_add',__LINE__,info)
                 GOTO 9999
             ENDIF
 
@@ -938,7 +954,7 @@
                      !----------------------------------------------------------
                      !  store the ID of the particles
                      !----------------------------------------------------------
-                     ppm_buffer2part(iset) = ighost(i)
+                     ppm_buffer2part_add(iset) = ighost(i)
    
                      !----------------------------------------------------------
                      !  store the particle
@@ -946,45 +962,45 @@
                      IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = REAL(xt(1,i),        &
+                         ppm_sendbufferd_add(ibuffer)   = REAL(xt(1,i),        &
      &                       ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
+                         ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(1,i), &
      &                       ppm_kind_double)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
+                         ppm_sendbufferd_add(ibuffer)   = REAL(xt(2,i),        &
      &                       ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+                         ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(2,i), &
      &                       ppm_kind_double)
 #else
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = xt(1,i)
-                         ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                         ppm_sendbufferd_add(ibuffer)   = xt(1,i)
+                         ppm_ghost_offsetd_add(ibuffer) = xt_offset(1,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = xt(2,i)
-                         ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                         ppm_sendbufferd_add(ibuffer)   = xt(2,i)
+                         ppm_ghost_offsetd_add(ibuffer) = xt_offset(2,i)
 #endif
                      ELSE
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = xt(1,i)
-                         ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                         ppm_sendbuffers_add(ibuffer)   = xt(1,i)
+                         ppm_ghost_offsets_add(ibuffer) = xt_offset(1,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = xt(2,i)
-                         ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                         ppm_sendbuffers_add(ibuffer)   = xt(2,i)
+                         ppm_ghost_offsets_add(ibuffer) = xt_offset(2,i)
 #else
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
+                         ppm_sendbuffers_add(ibuffer)   = REAL(xt(1,i),        &
      &                       ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
+                         ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(1,i), &
      &                       ppm_kind_single)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),        &
+                         ppm_sendbuffers_add(ibuffer)   = REAL(xt(2,i),        &
      &                       ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+                         ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(2,i), &
      &                       ppm_kind_single)
 #endif
                      ENDIF
@@ -1014,7 +1030,7 @@
                      !----------------------------------------------------------
                      !  store the ID of the particles
                      !----------------------------------------------------------
-                     ppm_buffer2part(iset) = ighost(i)
+                     ppm_buffer2part_add(iset) = ighost(i)
 
                      !----------------------------------------------------------
                      !  store the particle
@@ -1022,65 +1038,65 @@
                      IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = REAL(xt(1,i),        &
+                         ppm_sendbufferd_add(ibuffer)   = REAL(xt(1,i),        &
      &                      ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
-     &                      ppm_kind_double)
-
-                         ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
-     &                      ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+                         ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(1,i), &
      &                      ppm_kind_double)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = REAL(xt(3,i),        &
+                         ppm_sendbufferd_add(ibuffer)   = REAL(xt(2,i),        &
      &                      ppm_kind_double)
-                         ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(3,i), &
+                         ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(2,i), &
+     &                      ppm_kind_double)
+
+                         ibuffer = ibuffer + 1 
+                         ppm_sendbufferd_add(ibuffer)   = REAL(xt(3,i),        &
+     &                      ppm_kind_double)
+                         ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(3,i), &
      &                      ppm_kind_double)
 #else
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = xt(1,i)
-                         ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                         ppm_sendbufferd_add(ibuffer)   = xt(1,i)
+                         ppm_ghost_offsetd_add(ibuffer) = xt_offset(1,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = xt(2,i)
-                         ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                         ppm_sendbufferd_add(ibuffer)   = xt(2,i)
+                         ppm_ghost_offsetd_add(ibuffer) = xt_offset(2,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbufferd(ibuffer)   = xt(3,i)
-                         ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
+                         ppm_sendbufferd_add(ibuffer)   = xt(3,i)
+                         ppm_ghost_offsetd_add(ibuffer) = xt_offset(3,i)
 #endif
                      ELSE
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = xt(1,i)
-                         ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                         ppm_sendbuffers_add(ibuffer)   = xt(1,i)
+                         ppm_ghost_offsets_add(ibuffer) = xt_offset(1,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = xt(2,i)
-                         ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                         ppm_sendbuffers_add(ibuffer)   = xt(2,i)
+                         ppm_ghost_offsets_add(ibuffer) = xt_offset(2,i)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = xt(3,i)
-                         ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
+                         ppm_sendbuffers_add(ibuffer)   = xt(3,i)
+                         ppm_ghost_offsets_add(ibuffer) = xt_offset(3,i)
 #else
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
+                         ppm_sendbuffers_add(ibuffer)   = REAL(xt(1,i),        &
      &                      ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
-     &                      ppm_kind_single)
-
-                         ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),        &
-     &                      ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+                         ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(1,i), &
      &                      ppm_kind_single)
 
                          ibuffer = ibuffer + 1 
-                         ppm_sendbuffers(ibuffer)   = REAL(xt(3,i),        &
+                         ppm_sendbuffers_add(ibuffer)   = REAL(xt(2,i),        &
      &                      ppm_kind_single)
-                         ppm_ghost_offsets(ibuffer) = REAL(xt_offset(3,i), &
+                         ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(2,i), &
+     &                      ppm_kind_single)
+
+                         ibuffer = ibuffer + 1 
+                         ppm_sendbuffers_add(ibuffer)   = REAL(xt(3,i),        &
+     &                      ppm_kind_single)
+                         ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(3,i), &
      &                      ppm_kind_single)
 #endif
                      ENDIF
@@ -1095,7 +1111,7 @@
       !  Update the buffer pointer (ie the current iset ... or the number of
       !  particle we will send to the k-th entry in the icommseq list
       !-------------------------------------------------------------------------
-      ppm_psendbuffer(k+1) = iset + 1
+      ppm_psendbuffer_add(k+1) = iset + 1
 
       !-------------------------------------------------------------------------
       !  Step 2 and 3:
@@ -1115,19 +1131,19 @@
          !  Get the rank of the processor
          !----------------------------------------------------------------------
          sendrank = topo%icommseq(k)
-         recvrank = sendrank
+         !recvrank = sendrank
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will send to
          !----------------------------------------------------------------------
-         ppm_nsendlist                = ppm_nsendlist + 1
-         ppm_isendlist(ppm_nsendlist) = sendrank
+         !ppm_nsendlist                = ppm_nsendlist + 1
+         !ppm_isendlist(ppm_nsendlist) = sendrank
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will recv from
          !----------------------------------------------------------------------
-         ppm_nrecvlist                = ppm_nrecvlist + 1
-         ppm_irecvlist(ppm_nrecvlist) = recvrank
+         !ppm_nrecvlist                = ppm_nrecvlist + 1
+         !ppm_irecvlist(ppm_nrecvlist) = recvrank
 
          !----------------------------------------------------------------------
          !  only consider non-negative sendranks
@@ -1219,38 +1235,38 @@
 
                   !-------------------------------------------------------------
                   !  Reallocate to make sure we have enough memory in the
-                  !  ppm_buffer2part and ppm_sendbuffers/d 
+                  !  ppm_buffer2part_add and ppm_sendbuffers_add/d 
                   !-------------------------------------------------------------
                   iopt   = ppm_param_alloc_grow_preserve
                   ldu(1) = ibuffer + nghostplus*ppm_dim*10 ! test 20061109
                   IF (ppm_kind.EQ.ppm_kind_double) THEN
                      IF ((ibuffer + nghostplus*ppm_dim).GT.ppm_sendbufsize) THEN
-                        CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-                        CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_sendbufferd_add,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_ghost_offsetd_add,ldu,iopt,info)
                         ppm_sendbufsize = ldu(1)
                      ENDIF
                   ELSE
                      IF ((ibuffer + nghostplus*ppm_dim).GT.ppm_sendbufsize) THEN
-                        CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-                        CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_sendbuffers_add,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_ghost_offsets_add,ldu,iopt,info)
                         ppm_sendbufsize = ldu(1)
                      ENDIF
                   ENDIF
                   IF (info .NE. 0) THEN
                       info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',   &
+                      CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',   &
      &                    'global send buffer PPM_SENDBUFFER',__LINE__,info)
                       GOTO 9999
                   ENDIF
 
                   ldu(1) = iset + nghostplus*10 ! test 20061109
-                  IF ((iset + nghostplus).GT.SIZE(ppm_buffer2part)) THEN
-                     CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+                  IF ((iset + nghostplus).GT.SIZE(ppm_buffer2part_add)) THEN
+                     CALL ppm_alloc(ppm_buffer2part_add,ldu,iopt,info)
                   ENDIF
                   IF (info .NE. 0) THEN
                       info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',   &
-     &                   'buffer2particles map PPM_BUFFER2PART',__LINE__,info)
+                      CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',   &
+     &                   'buffer2particles map ppm_buffer2part_add',__LINE__,info)
                       GOTO 9999
                   ENDIF
 
@@ -1281,7 +1297,7 @@
                            !----------------------------------------------------
                            !  store the ID of the particles
                            !----------------------------------------------------
-                           ppm_buffer2part(iset) = ighost(i)
+                           ppm_buffer2part_add(iset) = ighost(i)
 
                            !----------------------------------------------------
                            !  store the particle
@@ -1289,45 +1305,45 @@
                            IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = REAL(xt(1,i),        &
+                               ppm_sendbufferd_add(ibuffer)   = REAL(xt(1,i),        &
      &                            ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
+                               ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_double)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
+                               ppm_sendbufferd_add(ibuffer)   = REAL(xt(2,i),        &
      &                            ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+                               ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(2,i), &
      &                            ppm_kind_double)
 #else
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = xt(1,i)
-                               ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                               ppm_sendbufferd_add(ibuffer)   = xt(1,i)
+                               ppm_ghost_offsetd_add(ibuffer) = xt_offset(1,i)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = xt(2,i)
-                               ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                               ppm_sendbufferd_add(ibuffer)   = xt(2,i)
+                               ppm_ghost_offsetd_add(ibuffer) = xt_offset(2,i)
 #endif
                            ELSE
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = xt(1,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                               ppm_sendbuffers_add(ibuffer)   = xt(1,i)
+                               ppm_ghost_offsets_add(ibuffer) = xt_offset(1,i)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = xt(2,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                               ppm_sendbuffers_add(ibuffer)   = xt(2,i)
+                               ppm_ghost_offsets_add(ibuffer) = xt_offset(2,i)
 #else
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
+                               ppm_sendbuffers_add(ibuffer)   = REAL(xt(1,i),        &
      &                            ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
+                               ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_single)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),   &
+                               ppm_sendbuffers_add(ibuffer)   = REAL(xt(2,i),   &
      &                            ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+                               ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(2,i), &
      &                            ppm_kind_single)
 #endif
                            ENDIF 
@@ -1359,7 +1375,7 @@
                            !----------------------------------------------------
                            !  store the ID of the particles
                            !----------------------------------------------------
-                           ppm_buffer2part(iset) = ighost(i)
+                           ppm_buffer2part_add(iset) = ighost(i)
 
                            !----------------------------------------------------
                            !  store the particle
@@ -1367,61 +1383,61 @@
                            IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = REAL(xt(1,i),          &
+                               ppm_sendbufferd_add(ibuffer)   = REAL(xt(1,i),          &
      &                            ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
-     &                            ppm_kind_double)
-
-                               ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer) = REAL(xt(2,i),          &
-     &                            ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+                               ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_double)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = REAL(xt(3,i),        &
+                               ppm_sendbufferd_add(ibuffer) = REAL(xt(2,i),          &
      &                            ppm_kind_double)
-                               ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(3,i), &
+                               ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(2,i), &
+     &                            ppm_kind_double)
+
+                               ibuffer = ibuffer + 1 
+                               ppm_sendbufferd_add(ibuffer)   = REAL(xt(3,i),        &
+     &                            ppm_kind_double)
+                               ppm_ghost_offsetd_add(ibuffer) = REAL(xt_offset(3,i), &
      &                            ppm_kind_double)
 #else
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = xt(1,i)
-                               ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                               ppm_sendbufferd_add(ibuffer)   = xt(1,i)
+                               ppm_ghost_offsetd_add(ibuffer) = xt_offset(1,i)
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = xt(2,i)
-                               ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                               ppm_sendbufferd_add(ibuffer)   = xt(2,i)
+                               ppm_ghost_offsetd_add(ibuffer) = xt_offset(2,i)
                                ibuffer = ibuffer + 1 
-                               ppm_sendbufferd(ibuffer)   = xt(3,i)
-                               ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
+                               ppm_sendbufferd_add(ibuffer)   = xt(3,i)
+                               ppm_ghost_offsetd_add(ibuffer) = xt_offset(3,i)
 #endif
                            ELSE
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = xt(1,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                               ppm_sendbuffers_add(ibuffer)   = xt(1,i)
+                               ppm_ghost_offsets_add(ibuffer) = xt_offset(1,i)
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = xt(2,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                               ppm_sendbuffers_add(ibuffer)   = xt(2,i)
+                               ppm_ghost_offsets_add(ibuffer) = xt_offset(2,i)
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = xt(3,i)
-                               ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
+                               ppm_sendbuffers_add(ibuffer)   = xt(3,i)
+                               ppm_ghost_offsets_add(ibuffer) = xt_offset(3,i)
 #else
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),   &
+                               ppm_sendbuffers_add(ibuffer)   = REAL(xt(1,i),   &
      &                            ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
-     &                            ppm_kind_single)
-
-                               ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),   &
-     &                            ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+                               ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_single)
 
                                ibuffer = ibuffer + 1 
-                               ppm_sendbuffers(ibuffer)   = REAL(xt(3,i),   &
+                               ppm_sendbuffers_add(ibuffer)   = REAL(xt(2,i),   &
      &                            ppm_kind_single)
-                               ppm_ghost_offsets(ibuffer) = REAL(xt_offset(3,i), &
+                               ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(2,i), &
+     &                            ppm_kind_single)
+
+                               ibuffer = ibuffer + 1 
+                               ppm_sendbuffers_add(ibuffer)   = REAL(xt(3,i),   &
+     &                            ppm_kind_single)
+                               ppm_ghost_offsets_add(ibuffer) = REAL(xt_offset(3,i), &
      &                            ppm_kind_single)
 #endif
                            ENDIF 
@@ -1435,7 +1451,16 @@
          !  Update the buffer pointer (ie the current iset ... or the number of
          !  particle we will send to the k-th entry in the icommseq list
          !----------------------------------------------------------------------
-         ppm_psendbuffer(k+1) = iset + 1
+         ppm_psendbuffer_add(k+1) = iset + 1
+
+      ENDDO ! loop over all processors in commseq
+
+      !-------------------------------------------------------------------------
+      !  Fuse the actual ghost mappings with the ones we have just computed
+      !  (and which map the newly added ghost particles to the corresponding
+      !   real particles on the neighbouring processors)
+      !-------------------------------------------------------------------------
+      DO k=1,topo%ncommseq 
 
       ENDDO ! loop over all processors in commseq
 
@@ -1447,26 +1472,28 @@
       !-------------------------------------------------------------------------
       !  Deallocate the memory for the lists
       !-------------------------------------------------------------------------
+      idx_xpnr => NULL()
+
       iopt = ppm_param_dealloc
 
       CALL ppm_alloc(    xt,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,'ppm_part_modify_add',     &
      &       'xt',__LINE__,info)
       ENDIF
 
       CALL ppm_alloc(xt_offset,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,'ppm_part_modify_add',     &
      &       'xt',__LINE__,info)
       ENDIF
 
       CALL ppm_alloc(lghost,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,'ppm_part_modify_add',     &
      &       'lghost',__LINE__,info)
       ENDIF
 
@@ -1475,19 +1502,19 @@
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_map_part_ghost_get',t0,info)
+      CALL substop('ppm_part_modify_add',t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
+              CALL ppm_error(ppm_err_ppm_noinit,'ppm_part_modify_add',  &
      &            'Please call ppm_init first!',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
+              CALL ppm_error(ppm_err_no_topo,'ppm_part_modify_add',  &
      &            'This routine needs a topology defined topo',__LINE__,info)
               GOTO 8888
           ENDIF
@@ -1495,33 +1522,33 @@
             CALL ppm_check_topoid(topoid,valid,info)
             IF (.NOT. valid) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+                CALL ppm_error(ppm_err_argument,'ppm_part_modify_add',  &
      &               'topoid out of range',__LINE__,info)
                 GOTO 8888
             ENDIF
         ENDIF
         IF (lda .LT. 1) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,'ppm_part_modify_add',  &
      &          'lda must be >0',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (Nnew .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,'ppm_part_modify_add',  &
      &          'Nnew must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (ghostsize .LT. 0.0_MK) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,'ppm_part_modify_add',  &
      &          'ghostsize must be >=0.0',__LINE__,info)
             GOTO 8888
         ENDIF
  8888     CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_part_ghost_get_s
+      END SUBROUTINE ppm_part_modify_add_s
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_part_ghost_get_d
+      END SUBROUTINE ppm_part_modify_add_d
 #endif
