@@ -117,9 +117,9 @@
       !!! The leading dimension of the pdata.
 #endif
 
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER                 , INTENT(INOUT) :: Npart
       !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(IN   ) :: Mpart
+      INTEGER                 , INTENT(INOUT) :: Mpart
       !!! The number of particles (including ghosts)
 #if   __DIM == 1
 #if   __KIND == __INTEGER
@@ -223,6 +223,9 @@
           pdata(1:lda,Mpart+Nrnew+i)=pnew(1:lda,modify%idx_ghost_new(i))
 #endif
       ENDDO
+
+      Npart = Npart + Nrnew
+      Mpart = Mpart + Ngnew
 
 
       !-------------------------------------------------------------------------

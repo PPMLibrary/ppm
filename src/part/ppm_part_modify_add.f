@@ -122,9 +122,9 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! The position of the particles
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER                 , INTENT(INOUT) :: Npart
       !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(IN   ) :: Mpart
+      INTEGER                 , INTENT(INOUT) :: Mpart
       !!! The number of particles (including ghosts)
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xpn
       !!! The position of the new particles to be added

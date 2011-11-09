@@ -155,14 +155,14 @@
       CALL ppm_alloc(ppm_buffer_dim ,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_push',     &
      &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_push',     &
      &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
           GOTO 9999
       ENDIF
