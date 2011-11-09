@@ -20,3 +20,9 @@ back later and causing duplications:
 - then we do a "get"
   - we now send all particles from psend_new_offset to psend_put_offset.
 
+
+
+%SR:
+in ppm_map_part_ghost_get.f:
+   the variable prev_allocsize does not seem to be initialized before it is used (nor after...)
+   Check if that could be a small bug.... 

@@ -73,9 +73,26 @@
          TYPE(ppm_t_part_modify)                :: modify
 
          !----------------------------------------------------------------------
+         !  Work lists
+         !----------------------------------------------------------------------
+         INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
+         INTEGER, DIMENSION(:), POINTER :: ighost => NULL()
+         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
+         PRIVATE :: ilist1,ilist2,ighost,lghost
+
+
+         !----------------------------------------------------------------------
          !  include the source 
          !----------------------------------------------------------------------
          CONTAINS
+
+#define __KIND __SINGLE_PRECISION
+#include "part/ppm_part_modify_add.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "part/ppm_part_modify_add.f"
+#undef __KIND
 
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION

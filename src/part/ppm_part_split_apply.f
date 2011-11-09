@@ -29,31 +29,31 @@
 
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1ds(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1ds(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1dd(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1dd(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1dsc(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1dsc(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1ddc(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1ddc(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_1di(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1di(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_1dl(topoid,pdata,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_1dl(topoid,pdata,Npart,Mpart,pnew,Nnew,info)
 #endif
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2ds(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2ds(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2dd(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2dd(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2dsc(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2dsc(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2ddc(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2ddc(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_2di(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2di(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_2dl(topoid,pdata,lda,Npart,Mpart,pnew,Npnew,info)
+      SUBROUTINE ppm_part_split_apply_2dl(topoid,pdata,lda,Npart,Mpart,pnew,Nnew,info)
 #endif
 #endif
       !!! This routine inserts new data into a data array following the 
@@ -90,25 +90,25 @@
       !!! ID of current topology
 #if   __DIM == 1
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:  ), INTENT(INOUT)    :: pdata
+      INTEGER , DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:  ), INTENT(INOUT)    :: pdata
+      LOGICAL , DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:  ), INTENT(INOUT) :: pdata
+      COMPLEX(MK), DIMENSION(:  ), INTENT(INOUT),POINTER :: pdata
 #else
-      REAL(MK), DIMENSION(:  ), INTENT(INOUT)    :: pdata
+      REAL(MK), DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #endif
 
 #elif __DIM == 2
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:), INTENT(INOUT)    :: pdata
+      INTEGER , DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:), INTENT(INOUT)    :: pdata
+      LOGICAL , DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | \
       __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), INTENT(INOUT) :: pdata
+      COMPLEX(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: pdata
 #else
-      REAL(MK), DIMENSION(:,:), INTENT(INOUT)    :: pdata
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #endif
 #endif
       !!! The old existing data
@@ -136,7 +136,7 @@
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pnew
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pnepnew
+      LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pnew
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | \
       __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ) :: pnew
@@ -145,15 +145,8 @@
 #endif
 #endif
       !!! The new data to be added
-      INTEGER                 , INTENT(IN   ) :: Npnew
+      INTEGER                 , INTENT(IN   ) :: Nnew
       !!! The number of new particles (on the local processor)
-      REAL(MK)                , INTENT(IN   ) :: ghostsize
-      !!! The size of the ghost layer
-      INTEGER                 , INTENT(IN   ) :: isymm
-      !!! Indicator for the use of symmetry
-      !!!
-      !!! * isymm > 0 use symmetry
-      !!! * isymm = 0 do not use symmetry
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
@@ -163,6 +156,7 @@
       INTEGER               :: i,Nrnew,Ngnew
       INTEGER               :: ipart,iopt
       REAL(MK)              :: t0
+      LOGICAL               :: valid
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -189,7 +183,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow_preserve
 #if   __DIM == 1
-      ldu(2) = Mpart+Nnew
+      ldu(1) = Mpart+Nnew
 #elif __DIM ==2
       ldu(1) = lda
       ldu(2) = Mpart+Nnew
@@ -224,7 +218,7 @@
       ! append new ghost data
       DO i=1,Ngnew
 #if   __DIM == 1
-          pdata(Mpart+Nrnew+i)=pnew(idx_ghost_new(i))
+          pdata(Mpart+Nrnew+i)=pnew(modify%idx_ghost_new(i))
 #elif __DIM ==2
           pdata(1:lda,Mpart+Nrnew+i)=pnew(1:lda,modify%idx_ghost_new(i))
 #endif
@@ -334,30 +328,30 @@
       END SUBROUTINE check
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1ds
+      END SUBROUTINE ppm_part_split_apply_1ds
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1dd
+      END SUBROUTINE ppm_part_split_apply_1dd
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1dsc
+      END SUBROUTINE ppm_part_split_apply_1dsc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1ddc
+      END SUBROUTINE ppm_part_split_apply_1ddc
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_1di
+      END SUBROUTINE ppm_part_split_apply_1di
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_1dl
+      END SUBROUTINE ppm_part_split_apply_1dl
 #endif
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2ds
+      END SUBROUTINE ppm_part_split_apply_2ds
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2dd
+      END SUBROUTINE ppm_part_split_apply_2dd
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2dsc
+      END SUBROUTINE ppm_part_split_apply_2dsc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2ddc
+      END SUBROUTINE ppm_part_split_apply_2ddc
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_2di
+      END SUBROUTINE ppm_part_split_apply_2di
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_2dl
+      END SUBROUTINE ppm_part_split_apply_2dl
 #endif
 #endif

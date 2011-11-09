@@ -28,9 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_compute_s(topoid,xpn,Npnew,info)
+      SUBROUTINE ppm_part_split_compute_s(topoid,xpn,Nnew,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_compute_d(topoid,xpn,Npnew,info)
+      SUBROUTINE ppm_part_split_compute_d(topoid,xpn,Nnew,info)
 #endif 
       !!! This routine determines how to split a set of new particles into 
       !!! real particles and ghost particles.
@@ -64,7 +64,7 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xpn
       !!! The position of the new particles to be added
-      INTEGER                 , INTENT(IN   ) :: Npnew
+      INTEGER                 , INTENT(IN   ) :: Nnew
       !!! The number of new particles (on the local processor)
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
@@ -131,8 +131,6 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
       ldu(1) = Nnew
-      IF ((Nnew.NE.prev_allocsize) .OR. &
-          (.NOT.ASSOCIATED(ilist1))) THEN
       CALL ppm_alloc(ilist1,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
@@ -152,21 +150,6 @@
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_part_split_compute',     &
      &        'ighost',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Allocate memory for their positions
-      !-------------------------------------------------------------------------
-      ldu(1) = ppm_dim
-      ldu(2) = Nnew
-      CALL ppm_alloc(xt,ldu,iopt,info)
-      CALL ppm_alloc(xt_offset,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_split_compute',     &
-     &        'xt',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -236,8 +219,8 @@
                   !-------------------------------------------------------------
                   !  if yes, add this particle to the list of real particles
                   !-------------------------------------------------------------
-                  Nrnew         = Nrnew + 1
-                  modify%idx_real_new(Nrnew) = ipart
+                  modify%Nrnew         = modify%Nrnew + 1
+                  modify%idx_real_new(modify%Nrnew) = ipart
                ELSE    
                   !-------------------------------------------------------------
                   !  If not on this sub we need to consider it further
@@ -262,8 +245,8 @@
                   !-------------------------------------------------------------
                   !  if yes, add this particle to the list of real particles
                   !-------------------------------------------------------------
-                  Nrnew         = Nrnew + 1
-                  modify%idx_real_new(Nrnew) = ipart
+                  modify%Nrnew         = modify%Nrnew + 1
+                  modify%idx_real_new(modify%Nrnew) = ipart
                ELSE    
                   !-------------------------------------------------------------
                   !  If not on this sub we need to consider it further
@@ -292,7 +275,7 @@
       DO j=1,nlist2
           modify%idx_ghost_new(j) = ilist2(j)
       ENDDO
-      Ngnew = nlist2
+      modify%Ngnew = nlist2
 
 
       !-------------------------------------------------------------------------
