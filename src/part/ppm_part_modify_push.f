@@ -188,6 +188,218 @@
 #elif __KIND == __LOGICAL
       ppm_buffer_type(ppm_buffer_set) = ppm_logical
 #endif
+
+      !-------------------------------------------------------------------------
+      !  loop over the processors in the ppm_isendlist() 
+      !-------------------------------------------------------------------------
+      ibuffer = ppm_nsendbuffer
+
+      !-------------------------------------------------------------------------
+      !  DOUBLE PRECISION BUFFER
+      !-------------------------------------------------------------------------
+      IF (ppm_kind.EQ.ppm_kind_double) THEN
+         !----------------------------------------------------------------------
+         !  (Re)allocate memory for the buffer 
+         !----------------------------------------------------------------------
+         incr = 0 
+         DO i=1,ppm_nsendlist
+            incr = incr + (ppm_psendbuffer_add(i+1)-ppm_psendbuffer_add(i))*ldb
+         ENDDO
+         ldu(1) = ppm_nsendbuffer + incr
+         iopt   = ppm_param_alloc_grow_preserve
+         CALL ppm_alloc(ppm_sendbufferd_add,ldu,iopt,info)
+         IF (info .NE. 0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+     &           'global send buffer ppm_sendbufferd_add',__LINE__,info)
+             GOTO 9999
+         ENDIF
+
+         DO i=1,ppm_nsendlist
+            !-------------------------------------------------------------------
+            !  access the particles belonging to the i-th processor in the 
+            !  sendlist
+            !-------------------------------------------------------------------
+            !-------------------------------------------------------------------
+            !  Store the particle data in the buffer
+            !-------------------------------------------------------------------
+#if   __DIM == 2
+            DO j=ppm_psendbuffer_add(i),ppm_psendbuffer_add(i+1)-1
+                !-------------------------------------------------------------
+                !  Get the particle id 
+                !-------------------------------------------------------------
+                ipart = ppm_buffer2part_add(j)
+                DO k=1,lda
+                    ibuffer = ibuffer + 1
+#if    __KIND == __SINGLE_PRECISION
+                    ppm_sendbufferd_add(ibuffer) = REAL(pdata(k,ipart),   &
+                        &                   ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+                    ppm_sendbufferd_add(ibuffer) = pdata(k,ipart)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                    ppm_sendbufferd_add(ibuffer) =         &
+                        &                          REAL(pdata(k,ipart),ppm_kind_double)
+                    ibuffer = ibuffer + 1
+                    ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
+                        &                   ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                    ppm_sendbufferd_add(ibuffer) =     &
+                        &                          REAL(pdata(k,ipart),ppm_kind_double)
+                    ibuffer = ibuffer + 1
+                    ppm_sendbufferd_add(ibuffer) = AIMAG(pdata(k,ipart))
+#elif  __KIND == __INTEGER
+                    ppm_sendbufferd_add(ibuffer) = REAL(pdata(k,ipart),    &
+                        &                   ppm_kind_double)
+#elif  __KIND == __LOGICAL
+                    IF (pdata(k,ipart)) THEN
+                        ppm_sendbufferd_add(ibuffer) = 1.0_ppm_kind_double
+                    ELSE
+                        ppm_sendbufferd_add(ibuffer) = 0.0_ppm_kind_double
+                    ENDIF
+#endif
+                ENDDO
+            ENDDO
+#elif  __DIM == 1
+            !-------------------------------------------------------------------
+            !  Scalar version
+            !-------------------------------------------------------------------
+            DO j=ppm_psendbuffer_add(i),ppm_psendbuffer_add(i+1)-1
+               !----------------------------------------------------------------
+               !  Get the particle id 
+               !----------------------------------------------------------------
+               ipart = ppm_buffer2part_add(j)
+               ibuffer = ibuffer + 1
+#if    __KIND == __SINGLE_PRECISION
+               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+               ppm_sendbufferd_add(ibuffer) = pdata(ipart)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ibuffer = ibuffer + 1
+               ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
+     &             ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ibuffer = ibuffer + 1
+               ppm_sendbufferd_add(ibuffer) = AIMAG(pdata(ipart))
+#elif  __KIND == __INTEGER
+               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+#elif  __KIND == __LOGICAL
+               IF (pdata(ipart)) THEN
+                  ppm_sendbufferd_add(ibuffer) = 1.0_ppm_kind_double
+               ELSE
+                  ppm_sendbufferd_add(ibuffer) = 0.0_ppm_kind_double
+               ENDIF
+#endif
+            ENDDO
+#endif
+         ENDDO                ! i=1,ppm_nsendlist
+      !-------------------------------------------------------------------------
+      !  SINGLE PRECISION BUFFER
+      !-------------------------------------------------------------------------
+      ELSE
+         !----------------------------------------------------------------------
+         !  (Re)allocate memory for the buffer 
+         !----------------------------------------------------------------------
+         incr = 0 
+         DO i=1,ppm_nsendlist
+            incr = incr + (ppm_psendbuffer_add(i+1)-ppm_psendbuffer_add(i))*ldb
+         ENDDO
+         ldu(1) = ppm_nsendbuffer + incr
+         iopt   = ppm_param_alloc_grow_preserve
+         CALL ppm_alloc(ppm_sendbuffers_add,ldu,iopt,info)
+         IF (info .NE. 0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+     &           'global send buffer ppm_sendbuffers_add',__LINE__,info)
+             GOTO 9999
+         ENDIF
+
+         DO i=1,ppm_nsendlist
+            !-------------------------------------------------------------------
+            !  access the particles belonging to the i-th processor in the 
+            !  sendlist
+            !-------------------------------------------------------------------
+            !-------------------------------------------------------------------
+            !  Store the particle data in the buffer
+            !-------------------------------------------------------------------
+#if   __DIM == 2
+            DO j=ppm_psendbuffer_add(i),ppm_psendbuffer_add(i+1)-1
+                !-------------------------------------------------------------
+                !  Get the particle id 
+                !-------------------------------------------------------------
+                ipart = ppm_buffer2part_add(j)
+                DO k=1,lda
+                    ibuffer = ibuffer + 1
+#if    __KIND == __DOUBLE_PRECISION
+                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                        &                   ppm_kind_single)
+#elif  __KIND == __SINGLE_PRECISION
+                    ppm_sendbuffers_add(ibuffer) = pdata(k,ipart)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                        &                   ppm_kind_single)
+                    ibuffer = ibuffer + 1
+                    ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
+                        &                   ppm_kind_single)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                        &                   ppm_kind_single)
+                    ibuffer = ibuffer + 1
+                    ppm_sendbuffers_add(ibuffer) = AIMAG(pdata(k,ipart))
+#elif  __KIND == __INTEGER
+                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                        &                   ppm_kind_single)
+#elif  __KIND == __LOGICAL
+                    IF (pdata(k,ipart)) THEN
+                        ppm_sendbuffers_add(ibuffer) = 1.0_ppm_kind_single
+                    ELSE
+                        ppm_sendbuffers_add(ibuffer) = 0.0_ppm_kind_single
+                    ENDIF
+#endif
+                ENDDO
+            ENDDO
+#elif  __DIM == 1
+            !-------------------------------------------------------------------
+            !  Scalar version
+            !-------------------------------------------------------------------
+            DO j=ppm_psendbuffer_add(i),ppm_psendbuffer_add(i+1)-1
+               !----------------------------------------------------------------
+               !  Get the particle id 
+               !----------------------------------------------------------------
+               ipart = ppm_buffer2part_add(j)
+               ibuffer = ibuffer + 1
+#if    __KIND == __DOUBLE_PRECISION
+               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+#elif  __KIND == __SINGLE_PRECISION
+               ppm_sendbuffers_add(ibuffer) = pdata(ipart)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ibuffer = ibuffer + 1
+               ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
+     &             ppm_kind_single)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ibuffer = ibuffer + 1
+               ppm_sendbuffers_add(ibuffer) = AIMAG(pdata(ipart))
+#elif  __KIND == __INTEGER
+               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+#elif  __KIND == __LOGICAL
+               IF (pdata(ipart)) THEN
+                  ppm_sendbuffers_add(ibuffer) = 1.0_ppm_kind_single
+               ELSE
+                  ppm_sendbuffers_add(ibuffer) = 0.0_ppm_kind_single
+               ENDIF
+#endif
+            ENDDO
+#endif
+         ENDDO         ! i=1,ppm_nsendlist
+      ENDIF         ! ppm_kind
+
+      !-------------------------------------------------------------------------
+      !  Update the particle buffer count
+      !-------------------------------------------------------------------------
+      ppm_nsendbuffer = ibuffer
       
       !-------------------------------------------------------------------------
       !  Return 

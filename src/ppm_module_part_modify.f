@@ -73,7 +73,7 @@
          TYPE(ppm_t_part_modify)                :: modify
 
          !----------------------------------------------------------------------
-         !  Work lists
+         !  Work lists (copied from ppm_module_map_part_ghost)
          !----------------------------------------------------------------------
          INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
          INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
@@ -81,6 +81,41 @@
          LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
          PRIVATE :: ilist1,ilist2,ighost,lghost
 
+         !----------------------------------------------------------------------
+         !  Work lists (copied from ppm_module_map_part)
+         !----------------------------------------------------------------------
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
+         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
+         INTEGER                          :: old_nsendlist = 0
+         INTEGER                          :: old_buffer_set = 0
+
+         PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
+         PRIVATE :: old_nsendlist,old_buffer_set
+
+         !----------------------------------------------------------------------
+         !  Buffers
+         !----------------------------------------------------------------------
+         INTEGER             ,DIMENSION(:),POINTER :: ppm_psendbuffer_add => NULL()
+         INTEGER                                        ::  ppm_nsendbuffer_add
+         INTEGER                                        ::  ppm_nrecvbuffer_add
+         INTEGER                                        ::  ppm_sendbufsize_add
+         INTEGER                                        ::  ppm_recvbufsize_add
+         INTEGER                                        ::  ppm_buffer_set_add
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer2part_add => NULL()
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_type_add => NULL()
+         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_dim_add => NULL()
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offsets_add => NULL()
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd_add => NULL()
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_sendbuffers_add => NULL()
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_sendbufferd_add => NULL()
 
          !----------------------------------------------------------------------
          !  include the source 
@@ -185,6 +220,7 @@
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "part/ppm_part_split_compute.f"
+#undef __KIND
 
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION

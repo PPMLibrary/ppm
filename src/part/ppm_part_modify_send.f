@@ -171,7 +171,6 @@
 
       !-------------------------------------------------------------------------
       !  Initialize the counter for the total set of new particles 
-      !JHW 20060928     IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get.OR. &
           ppm_map_type.EQ.ppm_param_map_ghost_put) THEN

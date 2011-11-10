@@ -94,6 +94,8 @@
       !!! nghostplus the total number of ghosts. During the loop
       !!! over the processor itself we therefore only need to
       !!! loop from nghost+1,nghostplus.
+      !!!
+      !!! FIXME: do we need to use ppm_ghost_offset and xt_offset?
       !!! ==============================================================
 
 
@@ -169,20 +171,6 @@
       INTEGER, DIMENSION(:), POINTER :: idx_xpnr
       !!! indices of the new real particles to be added (the list of potential
       !!! ghosts to be sent will be extracted from this index set).
-
-         INTEGER             ,DIMENSION(:),POINTER :: ppm_psendbuffer_add => NULL()
-         INTEGER                                        ::  ppm_nsendbuffer_add
-         INTEGER                                        ::  ppm_nrecvbuffer_add
-         INTEGER                                        ::  ppm_sendbufsize_add
-         INTEGER                                        ::  ppm_recvbufsize_add
-         INTEGER                                        ::  ppm_buffer_set_add
-         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer2part_add => NULL()
-         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_type_add => NULL()
-         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_dim_add => NULL()
-         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offsets_add => NULL()
-         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd_add => NULL()
-         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_sendbuffers_add => NULL()
-         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_sendbufferd_add => NULL()
 
       !-------------------------------------------------------------------------
       !  Externals 
@@ -1478,21 +1466,22 @@
           ppm_buffer2part(i+iadd-1:jadd+iadd-1) = & 
               ppm_buffer2part_add(iadd:jadd)
               
+          !FIXME: this should only be done if we want to send the whole buffer
+          ! (i.e. if the already existing ghosts havent been communicated
+          ! already. In that case, the calling sequence would look like
+          ! ppm_map_part_ghost_get
+          ! ppm_part_modify_add
+          ! ppm_map_part_send
+          ! Otherwise, it is not necessary to update ppm_sendbuffer and we
+          ! should just send ppm_sendbuffer_add by calling
+          ! ppm_part_modify_send)
           lda=ppm_dim
           IF (ppm_kind.EQ.ppm_kind_double) THEN
-              ppm_ghost_offsetd(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  ppm_ghost_offsetd(1+lda*(i-1):1+lda*(j-1))
-              ppm_ghost_offsetd(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  ppm_ghost_offsetd_add(1+lda*(iadd-1):1+lda*(jadd-1))
               ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
                   ppm_sendbufferd(1+lda*(i-1):1+lda*(j-1))
               ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
                   ppm_sendbufferd_add(1+lda*(iadd-1):1+lda*(jadd-1))
           ELSE
-              ppm_ghost_offsets(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  ppm_ghost_offsets(1+lda*(i-1):1+lda*(j-1))
-              ppm_ghost_offsets(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  ppm_ghost_offsets_add(1+lda*(iadd-1):1+lda*(jadd-1))
               ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
                   ppm_sendbuffers(1+lda*(i-1):1+lda*(j-1))
               ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
