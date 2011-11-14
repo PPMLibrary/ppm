@@ -44,6 +44,7 @@
       !!! The module also holds the needed work arrays for these routines.
          
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
+         USE ppm_module_map_part
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------
@@ -70,7 +71,7 @@
          !  data
          !----------------------------------------------------------------------
 
-         TYPE(ppm_t_part_modify)                :: modify
+         TYPE(ppm_t_part_modify), SAVE           :: modify
 
          !----------------------------------------------------------------------
          !  Work lists (copied from ppm_module_map_part_ghost)
@@ -81,24 +82,12 @@
          LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
          PRIVATE :: ilist1,ilist2,ighost,lghost
 
-         !----------------------------------------------------------------------
-         !  Work lists (copied from ppm_module_map_part)
-         !----------------------------------------------------------------------
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
-         INTEGER                          :: old_nsendlist = 0
-         INTEGER                          :: old_buffer_set = 0
+         INTEGER, DIMENSION(:), POINTER   :: precv_add => NULL()
 
-         PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
-         PRIVATE :: old_nsendlist,old_buffer_set
+         PRIVATE :: precv_add
+
+         INTEGER             ,DIMENSION(:),POINTER :: ppm_precv_addbuffer => NULL()
+         !!! pointer to particles within the recv buffer
 
          !----------------------------------------------------------------------
          !  Buffers
@@ -116,6 +105,91 @@
          REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd_add => NULL()
          REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_sendbuffers_add => NULL()
          REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_sendbufferd_add => NULL()
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_modify_pop
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_add
+            MODULE PROCEDURE ppm_part_modify_add_s
+            MODULE PROCEDURE ppm_part_modify_add_d
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_split_compute
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_split_compute
+            MODULE PROCEDURE ppm_part_split_compute_s
+            MODULE PROCEDURE ppm_part_split_compute_d
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_split_apply
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_split_apply
+            ! scalar (1d) particle data
+            MODULE PROCEDURE ppm_part_split_apply_1dd
+            MODULE PROCEDURE ppm_part_split_apply_1ds
+            MODULE PROCEDURE ppm_part_split_apply_1di
+            MODULE PROCEDURE ppm_part_split_apply_1dl
+            MODULE PROCEDURE ppm_part_split_apply_1ddc
+            MODULE PROCEDURE ppm_part_split_apply_1dsc
+
+            ! vector (2d) particle data
+            MODULE PROCEDURE ppm_part_split_apply_2dd
+            MODULE PROCEDURE ppm_part_split_apply_2ds
+            MODULE PROCEDURE ppm_part_split_apply_2di
+            MODULE PROCEDURE ppm_part_split_apply_2dl
+            MODULE PROCEDURE ppm_part_split_apply_2ddc
+            MODULE PROCEDURE ppm_part_split_apply_2dsc
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_modify_pop
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_pop
+            ! scalar (1d) particle data
+            MODULE PROCEDURE ppm_part_modify_pop_1dd
+            MODULE PROCEDURE ppm_part_modify_pop_1ds
+            MODULE PROCEDURE ppm_part_modify_pop_1di
+            MODULE PROCEDURE ppm_part_modify_pop_1dl
+            MODULE PROCEDURE ppm_part_modify_pop_1ddc
+            MODULE PROCEDURE ppm_part_modify_pop_1dsc
+
+            ! vector (2d) particle data
+            MODULE PROCEDURE ppm_part_modify_pop_2dd
+            MODULE PROCEDURE ppm_part_modify_pop_2ds
+            MODULE PROCEDURE ppm_part_modify_pop_2di
+            MODULE PROCEDURE ppm_part_modify_pop_2dl
+            MODULE PROCEDURE ppm_part_modify_pop_2ddc
+            MODULE PROCEDURE ppm_part_modify_pop_2dsc
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_modify_push
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_push
+            ! scalar (1d) particle data
+            MODULE PROCEDURE ppm_part_modify_push_1dd
+            MODULE PROCEDURE ppm_part_modify_push_1ds
+            MODULE PROCEDURE ppm_part_modify_push_1di
+            MODULE PROCEDURE ppm_part_modify_push_1dl
+            MODULE PROCEDURE ppm_part_modify_push_1ddc
+            MODULE PROCEDURE ppm_part_modify_push_1dsc
+
+            ! vector (2d) particle data
+            MODULE PROCEDURE ppm_part_modify_push_2dd
+            MODULE PROCEDURE ppm_part_modify_push_2ds
+            MODULE PROCEDURE ppm_part_modify_push_2di
+            MODULE PROCEDURE ppm_part_modify_push_2dl
+            MODULE PROCEDURE ppm_part_modify_push_2ddc
+            MODULE PROCEDURE ppm_part_modify_push_2dsc
+         END INTERFACE
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_modify_send
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_send
+            MODULE PROCEDURE ppm_part_modify_send
+         END INTERFACE
 
          !----------------------------------------------------------------------
          !  include the source 

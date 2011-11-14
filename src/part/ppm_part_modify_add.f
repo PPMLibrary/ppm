@@ -122,13 +122,13 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! ID of current topology
-      REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: xp
       !!! The position of the particles
       INTEGER                 , INTENT(INOUT) :: Npart
       !!! The number of particles (on the local processor)
       INTEGER                 , INTENT(INOUT) :: Mpart
       !!! The number of particles (including ghosts)
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xpn
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: xpn
       !!! The position of the new particles to be added
       INTEGER                 , INTENT(IN   ) :: Nnew
       !!! The number of new particles (on the local processor)
@@ -207,12 +207,12 @@
             &          'ppm_part_split_compute failed',__LINE__,info)
       ENDIF
 
-      CALL ppm_part_split_apply(topoid,xp,ppm_dim,Npart,Mpart,xpn,Nnew,info)
-      IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
-            &          'ppm_part_split_apply failed',__LINE__,info)
-      ENDIF
+      !CALL ppm_part_split_apply(topoid,xp,ppm_dim,Npart,Mpart,xpn,Nnew,info)
+      !IF (info .NE. 0) THEN
+        !info = ppm_error_error
+        !CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
+            !&          'ppm_part_split_apply failed',__LINE__,info)
+      !ENDIF
 
       !-------------------------------------------------------------------------
       !  Count Boundary conditions

@@ -66,8 +66,8 @@
          INTEGER                          :: old_nsendlist = 0
          INTEGER                          :: old_buffer_set = 0
 
-         PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
-         PRIVATE :: old_nsendlist,old_buffer_set
+         !PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
+         !PRIVATE :: old_nsendlist,old_buffer_set
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_pop

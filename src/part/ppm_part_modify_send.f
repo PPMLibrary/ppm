@@ -132,11 +132,11 @@
      &        'particle send counter PSEND',__LINE__,info)
               GOTO 9999
           ENDIF
-          CALL ppm_alloc(precv,ldu,iopt,info)
+          CALL ppm_alloc(precv_add,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
-     &        'particle receive counter PRECV',__LINE__,info)
+     &        'particle receive counter precv_add',__LINE__,info)
               GOTO 9999
           ENDIF
           ldu(2) = ppm_buffer_set 
@@ -186,7 +186,7 @@
       nsend(1)        = ibuffer
       nrecv(1)        = ibuffer
       psend(1)        = qpart
-      precv(1)        = qpart
+      precv_add(1)        = qpart
       mrecv           = -1
       msend           = -1
 
@@ -224,22 +224,22 @@
                  CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
              ENDIF
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
-     &                         precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
+     &                         precv_add(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
      &                         ppm_comm,status,info)
      
-             ! Compute nrecv(k) from precv(k)
-             nrecv(k) = sbdim*precv(k)
+             ! Compute nrecv(k) from precv_add(k)
+             nrecv(k) = sbdim*precv_add(k)
 
              IF (ppm_debug .GT. 1) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
-     &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
+     &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv_add=',precv_add(k)
                  CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
              ENDIF
          ELSE
              ! skip this round, i.e. neither send nor receive any
              ! particles.
              nrecv(k) = 0
-             precv(k) = 0
+             precv_add(k) = 0
          ENDIF
 #endif
 
@@ -263,7 +263,7 @@
       !  Increment the total number of particle to receive
       !----------------------------------------------------------------------
       DO k=2,ppm_nsendlist
-         Mpart           = Mpart           + precv(k)
+         Mpart           = Mpart           + precv_add(k)
       ENDDO
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
@@ -372,7 +372,7 @@
       !-------------------------------------------------------------------------
       npart_recv = 0
       DO j=1,ppm_nsendlist
-         npart_recv = npart_recv + precv(j)
+         npart_recv = npart_recv + precv_add(j)
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -387,11 +387,11 @@
          ENDIF
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nsendlist
-            pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
+            pp(j,k) = pp(j-1,k) + precv_add(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
                 WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
                 CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
-                WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',precv(j-1),', bdim=',bdim
+                WRITE(mesg,'(A,I9,A,I4)') 'precv_add(j-1)=',precv_add(j-1),', bdim=',bdim
                 CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
             ENDIF
          ENDDO
@@ -470,7 +470,7 @@
             ibuffer = 0
             DO j=1,ppm_buffer_set
                jbuffer = pp(k,j) - 1
-               DO i=1,precv(k)*ppm_buffer_dim(j)
+               DO i=1,precv_add(k)*ppm_buffer_dim(j)
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbufferd(jbuffer) = recvd(ibuffer)
@@ -522,7 +522,7 @@
             ibuffer = 0
             DO j=1,ppm_buffer_set
                jbuffer = pp(k,j) - 1
-               DO i=1,precv(k)*ppm_buffer_dim(j)
+               DO i=1,precv_add(k)*ppm_buffer_dim(j)
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbuffers(jbuffer) = recvs(ibuffer)
@@ -532,23 +532,23 @@
       ENDIF 
 
       !-------------------------------------------------------------------------
-      !  before we through away the precv() data let us store it for later use:
+      !  before we through away the precv_add() data let us store it for later use:
       !  when sending ghosts back (ppm_map_part_ghost_put())
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
          ldu(1) = ppm_nsendlist + 1
          iopt   = ppm_param_alloc_grow
-         CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
+         CALL ppm_alloc(ppm_precv_addbuffer,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
-     &           'global recv buffer pointer PPM_PRECVBUFFER',__LINE__,info)
+     &           'global recv buffer pointer PPM_precv_addBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
 !print*,'in ppm_part_modify_send'
-         ppm_precvbuffer(1) = Npart + 1
+         ppm_precv_addbuffer(1) = Npart + 1
          DO k=1,ppm_nsendlist
-            ppm_precvbuffer(k+1) = ppm_precvbuffer(k) + precv(k)
+            ppm_precv_addbuffer(k+1) = ppm_precv_addbuffer(k) + precv_add(k)
          ENDDO
 
       ENDIF

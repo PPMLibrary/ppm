@@ -78,7 +78,7 @@
       USE ppm_module_check_id
       USE ppm_module_util_commopt
       IMPLICIT NONE
-#if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
+#if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #else
       INTEGER, PARAMETER :: MK = ppm_kind_double
@@ -123,25 +123,25 @@
       !!! The number of particles (including ghosts)
 #if   __DIM == 1
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:  ), INTENT(IN   )    :: pnew
+      INTEGER , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:  ), INTENT(IN   )    :: pnew
+      LOGICAL , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ) :: pnew
+      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ),POINTER :: pnew
 #else
-      REAL(MK), DIMENSION(:  ), INTENT(IN   )    :: pnew
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
 #endif
 
 #elif __DIM == 2
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pnew
+      INTEGER , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pnew
+      LOGICAL , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | \
       __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ) :: pnew
+      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: pnew
 #else
-      REAL(MK), DIMENSION(:,:), INTENT(IN   )    :: pnew
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
 #endif
 #endif
       !!! The new data to be added
