@@ -30,32 +30,32 @@
 
 #if    __DIM ==1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_pop_1ds(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1ds(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_pop_1dd(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1dd(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_pop_1dsc(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1dsc(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_pop_1ddc(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1ddc(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_modify_pop_1di(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1di(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_modify_pop_1dl(pdata,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_1dl(pdata,Npart,Mpart,Npart_new,Mpart_new,info)
 #endif 
 
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_pop_2ds(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2ds(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_pop_2dd(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2dd(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_pop_2dsc(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2dsc(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_pop_2ddc(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2ddc(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_modify_pop_2di(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2di(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_modify_pop_2dl(pdata,lda,Npart,newNpart,info)
+      SUBROUTINE ppm_part_modify_pop_2dl(pdata,lda,Npart,Mpart,Npart_new,Mpart_new,info)
 #endif
 #endif
       !!! This routine pops the contents of the receive buffer.
@@ -126,22 +126,27 @@
 #endif
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles (on the processor)
-      INTEGER                 , INTENT(IN   ) :: newNpart
+      INTEGER                 , INTENT(IN   ) :: Mpart
+      !!! The old number of particles (on the processor, incl. ghosts)
+      INTEGER                 , INTENT(  OUT) :: Npart_new
       !!! The new number of particles (on the processor)
+      INTEGER                 , INTENT(  OUT) :: Mpart_new
+      !!! The new number of particles (on the processor, incl. ghosts)
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(2) :: ldu
-      INTEGER               :: i,j,iadd,jadd
+      INTEGER               :: i,j
       INTEGER               :: k,ipart,bdim,ibuffer,btype
+      INTEGER               :: ipart_add, npart_added
       INTEGER               :: iopt,edim,istart
 #if   __DIM == 1
       INTEGER, PARAMETER    :: lda = 1
 #endif
       CHARACTER(ppm_char)   :: mesg
-      REAL(MK)              :: t0
+      REAL(ppm_kind_double) :: t0
 #if   __DIM == 1
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:  ), POINTER    :: pdata_add => NULL()
@@ -275,12 +280,15 @@
       !-------------------------------------------------------------------------
       !  (Re)allocate the particle data (if necessary)
       !-------------------------------------------------------------------------
+      npart_added = modify%Ngrecvnew
+      Mpart_new = Mpart + modify%Nrnew + npart_added
+      Npart_new = Npart + modify%Nrnew
       iopt   = ppm_param_alloc_grow_preserve
 #if   __DIM == 2 
       ldu(1) = edim
-      ldu(2) = newNpart
+      ldu(2) = Mpart_new
 #elif __DIM == 1
-      ldu(1) = newNpart
+      ldu(1) = Mpart_new
 #endif
       CALL ppm_alloc(pdata,ldu,iopt,info)
       IF (info .NE. 0) THEN
@@ -289,6 +297,13 @@
      &        'particle data PDATA',__LINE__,info)
           GOTO 9999
       ENDIF
+
+#if   __DIM == 2 
+      ldu(1) = edim
+      ldu(2) = npart_added
+#elif __DIM == 1
+      ldu(1) = npart_added
+#endif
       CALL ppm_alloc(pdata_add,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
@@ -302,13 +317,13 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        'newNpart*bdim = ',newNpart*bdim
+     &        'Mpart_new*bdim = ',Mpart_new*bdim
           CALL ppm_write(ppm_rank,'ppm_part_modify_pop',mesg,info)
       ENDIF
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
-         ppm_nrecvbuffer = ppm_nrecvbuffer - (newNpart - Npart)*bdim 
+         ppm_nrecvbuffer = ppm_nrecvbuffer - npart_added*bdim 
       ELSE
-         ppm_nrecvbuffer = ppm_nrecvbuffer - newNpart*bdim 
+         ppm_nrecvbuffer = ppm_nrecvbuffer - Mpart_new*bdim 
       ENDIF 
 
       !-------------------------------------------------------------------------
@@ -316,7 +331,7 @@
       !  multiple sequential push-send-pop cycles.
       !-------------------------------------------------------------------------
       ppm_nsendbuffer = ppm_nsendbuffer - ppm_buffer_dim(ppm_buffer_set)*  &
-     &    (ppm_psendbuffer(ppm_nsendlist+1)-1)
+     &    (ppm_psendbuffer_add(ppm_nsendlist+1)-1)
 
       ibuffer = ppm_nrecvbuffer 
 
@@ -331,7 +346,7 @@
       !  the current particle list
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
-         istart = Npart + 1
+         istart = Mpart + modify%Nrnew + 1
       ELSE
          istart = 1
       ENDIF 
@@ -344,7 +359,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __DIM == 2
-          DO ipart=istart,newNpart
+          DO ipart=1,npart_added
               DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
                   __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -353,24 +368,24 @@
                   ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-                  pdata(k,ipart) = REAL(ppm_recvbufferd(ibuffer),       &
+                  pdata_add(k,ipart) = REAL(ppm_recvbufferd(ibuffer),       &
                       &                ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
-                  pdata(k,ipart) = ppm_recvbufferd(ibuffer)
+                  pdata_add(k,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                  pdata_add(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
                       &                ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                  pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                  pdata_add(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
                       &                ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                  pdata(k,ipart) = INT(ppm_recvbufferd(ibuffer))
+                  pdata_add(k,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                   IF (ppm_recvbufferd(ibuffer) .GT.     &
                       &               (1.0_ppm_kind_double-ppm_myepsd)) THEN
-                  pdata(k,ipart) = .TRUE.
+                  pdata_add(k,ipart) = .TRUE.
               ELSE
-                  pdata(k,ipart) = .FALSE.
+                  pdata_add(k,ipart) = .FALSE.
               ENDIF 
 #endif
           ENDDO
@@ -379,7 +394,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=1,npart_added
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -387,23 +402,23 @@
             ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-            pdata(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
+            pdata_add(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
-            pdata(ipart) = ppm_recvbufferd(ibuffer)
+            pdata_add(ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &          ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &          ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-            pdata(ipart) = INT(ppm_recvbufferd(ibuffer))
+            pdata_add(ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
             IF (ppm_recvbufferd(ibuffer) .GT.     &
      &         (1.0_ppm_kind_double-ppm_myepsd)) THEN
-               pdata(ipart) = .TRUE.
+               pdata_add(ipart) = .TRUE.
             ELSE
-               pdata(ipart) = .FALSE.
+               pdata_add(ipart) = .FALSE.
             ENDIF 
 #endif
          ENDDO
@@ -413,7 +428,7 @@
          !-------------------------------------------------------------------------
      ELSE
 #if    __DIM == 2
-         DO ipart=istart,newNpart
+         DO ipart=1,npart_added
              DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
                  __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -422,24 +437,24 @@
                  ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-                 pdata(k,ipart) = ppm_recvbuffers(ibuffer)
+                 pdata_add(k,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
-                 pdata(k,ipart) = REAL(ppm_recvbuffers(ibuffer),       &
+                 pdata_add(k,ipart) = REAL(ppm_recvbuffers(ibuffer),       &
                      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                 pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                 pdata_add(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
                      &                ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                 pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                 pdata_add(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
                      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                 pdata(k,ipart) = INT(ppm_recvbuffers(ibuffer))
+                 pdata_add(k,ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                  IF (ppm_recvbuffers(ibuffer) .GT.      &
                      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
-                 pdata(k,ipart) = .TRUE.
+                 pdata_add(k,ipart) = .TRUE.
              ELSE
-                 pdata(k,ipart) = .FALSE.
+                 pdata_add(k,ipart) = .FALSE.
              ENDIF 
 #endif
          ENDDO
@@ -448,7 +463,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=1,npart_added
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -456,23 +471,23 @@
             ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-            pdata(ipart) = ppm_recvbuffers(ibuffer)
+            pdata_add(ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
-            pdata(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
+            pdata_add(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &          ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &          ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-            pdata(ipart) = INT(ppm_recvbuffers(ibuffer))
+            pdata_add(ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
             IF (ppm_recvbuffers(ibuffer) .GT.      &
      &         (1.0_ppm_kind_single-ppm_myepss)) THEN
-               pdata(ipart) = .TRUE.
+               pdata_add(ipart) = .TRUE.
             ELSE
-               pdata(ipart) = .FALSE.
+               pdata_add(ipart) = .FALSE.
             ENDIF 
 #endif
          ENDDO
@@ -486,7 +501,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __DIM == 2
-        DO ipart=istart,newNpart
+        DO ipart=1,npart_added
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -495,24 +510,24 @@
                 ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-                pdata(k,ipart) = REAL(ppm_recvbufferd(ibuffer),       &
+                pdata_add(k,ipart) = REAL(ppm_recvbufferd(ibuffer),       &
      &                ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
-                pdata(k,ipart) = ppm_recvbufferd(ibuffer)
+                pdata_add(k,ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                pdata_add(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &                ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+                pdata_add(k,ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &                ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-                pdata(k,ipart) = INT(ppm_recvbufferd(ibuffer))
+                pdata_add(k,ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
                 IF (ppm_recvbufferd(ibuffer) .GT.     &
      &               (1.0_ppm_kind_double-ppm_myepsd)) THEN
-                    pdata(k,ipart) = .TRUE.
+                    pdata_add(k,ipart) = .TRUE.
                 ELSE
-                    pdata(k,ipart) = .FALSE.
+                    pdata_add(k,ipart) = .FALSE.
                 ENDIF 
 #endif
                ENDDO
@@ -521,7 +536,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=1,npart_added
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -529,23 +544,23 @@
             ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-            pdata(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
+            pdata_add(ipart) = REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION
-            pdata(ipart) = ppm_recvbufferd(ibuffer)
+            pdata_add(ipart) = ppm_recvbufferd(ibuffer)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &          ppm_recvbufferd(ibuffer),ppm_kind_single)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbufferd(ibuffer-1),    &
      &          ppm_recvbufferd(ibuffer),ppm_kind_double)
 #elif  __KIND == __INTEGER
-            pdata(ipart) = INT(ppm_recvbufferd(ibuffer))
+            pdata_add(ipart) = INT(ppm_recvbufferd(ibuffer))
 #elif  __KIND == __LOGICAL
             IF (ppm_recvbufferd(ibuffer) .GT.     &
      &         (1.0_ppm_kind_double-ppm_myepsd)) THEN
-               pdata(ipart) = .TRUE.
+               pdata_add(ipart) = .TRUE.
             ELSE
-               pdata(ipart) = .FALSE.
+               pdata_add(ipart) = .FALSE.
             ENDIF 
 #endif
          ENDDO
@@ -555,7 +570,7 @@
       !-------------------------------------------------------------------------
       ELSE
 #if    __DIM == 2
-        DO ipart=istart,newNpart
+         DO ipart=1,npart_added
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -564,24 +579,24 @@
                 ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-                pdata(k,ipart) = ppm_recvbuffers(ibuffer)
+                pdata_add(k,ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
-                pdata(k,ipart) = REAL(ppm_recvbuffers(ibuffer),       &
+                pdata_add(k,ipart) = REAL(ppm_recvbuffers(ibuffer),       &
      &                ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                pdata_add(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                pdata(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+                pdata_add(k,ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &                ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-                pdata(k,ipart) = INT(ppm_recvbuffers(ibuffer))
+                pdata_add(k,ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
                 IF (ppm_recvbuffers(ibuffer) .GT.      &
      &               (1.0_ppm_kind_single-ppm_myepss)) THEN
-                     pdata(k,ipart) = .TRUE.
+                     pdata_add(k,ipart) = .TRUE.
                 ELSE
-                     pdata(k,ipart) = .FALSE.
+                     pdata_add(k,ipart) = .FALSE.
                 ENDIF 
 #endif
             ENDDO
@@ -590,7 +605,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=1,npart_added
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -598,23 +613,23 @@
             ibuffer = ibuffer + 1
 #endif
 #if    __KIND == __SINGLE_PRECISION
-            pdata(ipart) = ppm_recvbuffers(ibuffer)
+            pdata_add(ipart) = ppm_recvbuffers(ibuffer)
 #elif  __KIND == __DOUBLE_PRECISION
-            pdata(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
+            pdata_add(ipart) = REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &          ppm_recvbuffers(ibuffer),ppm_kind_double)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-            pdata(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
+            pdata_add(ipart) = CMPLX(ppm_recvbuffers(ibuffer-1),    &
      &          ppm_recvbuffers(ibuffer),ppm_kind_single)
 #elif  __KIND == __INTEGER
-            pdata(ipart) = INT(ppm_recvbuffers(ibuffer))
+            pdata_add(ipart) = INT(ppm_recvbuffers(ibuffer))
 #elif  __KIND == __LOGICAL
             IF (ppm_recvbuffers(ibuffer) .GT.      &
      &         (1.0_ppm_kind_single-ppm_myepss)) THEN
-               pdata(ipart) = .TRUE.
+               pdata_add(ipart) = .TRUE.
             ELSE
-               pdata(ipart) = .FALSE.
+               pdata_add(ipart) = .FALSE.
             ENDIF 
 #endif
          ENDDO
@@ -625,23 +640,29 @@
       ! finish non-MPI
 #endif 
 
-      write(*,*) 'in pop: weaving new data into current arrays'
       !-------------------------------------------------------------------------
       !  Weave the received data inside the existing one (so that the indexing 
       !  is preserved)
       !-------------------------------------------------------------------------
+
+      ipart = Mpart+modify%Nrnew
+      ipart_add = npart_added
       DO k=ppm_nsendlist,1,-1
 
           i=precv(k)
-          iadd=precv_add(k)
+          j=precv_add(k)
 
 #if    __DIM == 1
-          pdata(i+iadd-1:j+iadd-1) = pdata(i:j)
-          pdata(i+iadd-1:j+jadd-1) = pdata_add(iadd:jadd)
+          pdata(ipart+ipart_add-i-j+1:ipart+ipart_add-j) = pdata(ipart-i+1:ipart)
+          pdata(ipart+ipart_add-j+1:ipart+ipart_add) = pdata_add(ipart_add-j+1:ipart_add)
 #elif  __DIM == 2
-          pdata(1:lda,i+iadd-1:j+iadd-1) = pdata(1:lda,i:j)
-          pdata(1:lda,i+iadd-1:j+jadd-1) = pdata_add(1:lda,iadd:jadd)
+          pdata(1:lda,ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
+              pdata(1:lda,ipart-i+1:ipart)
+          pdata(1:lda,ipart+ipart_add-j+1:ipart+ipart_add) = &
+              pdata_add(1:lda,ipart_add-j+1:ipart_add)
 #endif
+          ipart = ipart - i
+          ipart_add = ipart_add - j
       ENDDO ! loop over all processors in commseq
       !-------------------------------------------------------------------------
       !  Decrement the set counter
@@ -679,10 +700,10 @@
      &            'Npart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
-          IF (newNpart .LT. 0) THEN
+          IF (Mpart_new .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,'ppm_part_modify_pop',  &
-     &            'newNpart must be >=0',__LINE__,info)
+     &            'Mpart_new must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
 #if   __DIM == 2

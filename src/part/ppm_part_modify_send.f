@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_part_modify_send(Npart,Mpart,info)
+      SUBROUTINE ppm_part_modify_send(info)
       !!! This routine performs the actual send/recv of the particles and all
       !!! pushed data.
       !!!
@@ -58,10 +58,6 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: Npart
-      !!! The old number of particles on the processor
-      INTEGER                 , INTENT(  OUT) :: Mpart
-      !!! The new number of particles on processor after the send/recv
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
@@ -107,6 +103,20 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_grow
       ldu(1) = MAX(ppm_nsendlist,1)
+      CALL ppm_alloc(psend_add,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
+              &        'particle send counter PSEND_ADD',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      CALL ppm_alloc(precv_add,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
+              &        'particle receive counter precv_add',__LINE__,info)
+          GOTO 9999
+      ENDIF
       IF ((ppm_nsendlist.NE.old_nsendlist) .OR.  &
      &    (ppm_buffer_set.NE.old_buffer_set)) THEN
           old_nsendlist = ppm_nsendlist
@@ -123,20 +133,6 @@
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
      &        'receive counter NRECV',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          CALL ppm_alloc(psend,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
-     &        'particle send counter PSEND',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          CALL ppm_alloc(precv_add,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_part_modify_send',     &
-     &        'particle receive counter precv_add',__LINE__,info)
               GOTO 9999
           ENDIF
           ldu(2) = ppm_buffer_set 
@@ -166,18 +162,18 @@
       !-------------------------------------------------------------------------
       !  Count the size of the buffer that will NOT be sent
       !-------------------------------------------------------------------------
-      qpart   = (ppm_psendbuffer(2) - ppm_psendbuffer(1))
+      qpart   = (ppm_psendbuffer_add(2) - ppm_psendbuffer_add(1))
       ibuffer = sbdim*qpart
 
-      !-------------------------------------------------------------------------
-      !  Initialize the counter for the total set of new particles 
-      !-------------------------------------------------------------------------
-      IF (ppm_map_type.EQ.ppm_param_map_ghost_get.OR. &
-          ppm_map_type.EQ.ppm_param_map_ghost_put) THEN
-         Mpart = qpart + Npart
-      ELSE
-         Mpart = qpart
-      ENDIF
+      !!-------------------------------------------------------------------------
+      !!  Initialize the counter for the total set of new particles 
+      !!-------------------------------------------------------------------------
+      !IF (ppm_map_type.EQ.ppm_param_map_ghost_get.OR. &
+          !ppm_map_type.EQ.ppm_param_map_ghost_put) THEN
+         !Mpart_new = qpart + Mpart
+      !ELSE
+         !Mpart_new = qpart
+      !ENDIF
 
       !-------------------------------------------------------------------------
       !  Count the size of the buffer that WILL be sent
@@ -185,7 +181,7 @@
       ppm_nrecvbuffer = ibuffer
       nsend(1)        = ibuffer
       nrecv(1)        = ibuffer
-      psend(1)        = qpart
+      psend_add(1)        = qpart
       precv_add(1)        = qpart
       mrecv           = -1
       msend           = -1
@@ -196,12 +192,12 @@
          !  The number of particles send off to the k-th processor in the 
          !  sendlist
          !----------------------------------------------------------------------
-         qpart    = (ppm_psendbuffer(k+1) - ppm_psendbuffer(k))
+         qpart    = (ppm_psendbuffer_add(k+1) - ppm_psendbuffer_add(k))
 
          !----------------------------------------------------------------------
          !  Store the number of particles to send
          !----------------------------------------------------------------------
-         psend(k) = qpart ! store the number of particles to send 
+         psend_add(k) = qpart ! store the number of particles to send 
 
          !----------------------------------------------------------------------
          !  Store the size of the data to be send
@@ -220,10 +216,10 @@
              tag1 = 100
              IF (ppm_debug .GT. 1) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'sending to ',   &
-     &               ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend(k)
+     &               ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend_add(k)
                  CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
              ENDIF
-             CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
+             CALL MPI_SendRecv(psend_add(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
      &                         precv_add(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
      &                         ppm_comm,status,info)
      
@@ -259,20 +255,20 @@
       DO k=2,ppm_nsendlist
          ppm_nrecvbuffer = ppm_nrecvbuffer + nrecv(k)
       ENDDO
-      !----------------------------------------------------------------------
-      !  Increment the total number of particle to receive
-      !----------------------------------------------------------------------
-      DO k=2,ppm_nsendlist
-         Mpart           = Mpart           + precv_add(k)
-      ENDDO
-      IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
-          CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
-          WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',ppm_nrecvbuffer
-          CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
-          WRITE(mesg,'(A,I9)') 'Mpart=',Mpart
-          CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
-      ENDIF
+      !!----------------------------------------------------------------------
+      !!  Increment the total number of particle to receive
+      !!----------------------------------------------------------------------
+      !DO k=2,ppm_nsendlist
+         !Mpart_new           = Mpart_new           + precv_add(k)
+      !ENDDO
+      !IF (ppm_debug .GT. 1) THEN
+          !WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
+          !CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
+          !WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',ppm_nrecvbuffer
+          !CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
+          !WRITE(mesg,'(A,I9)') 'Mpart_new=',Mpart_new
+          !CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
+      !ENDIF
 
 
       !-------------------------------------------------------------------------
@@ -338,11 +334,11 @@
 
       !-------------------------------------------------------------------------
       !  Compute the total number of particles to send 
-      !  As it is now, this should be equal to Npart
+      !  As it is now, this should be equal to modify%Ngsendnew
       !-------------------------------------------------------------------------
       npart_send = 0
       DO j=1,ppm_nsendlist
-         npart_send = npart_send + psend(j)
+         npart_send = npart_send + psend_add(j)
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -357,7 +353,7 @@
          ENDIF
          bdim    = ppm_buffer_dim(k)
          DO j=2,ppm_nsendlist
-            qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+            qq(j,k) = qq(j-1,k) + psend_add(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
                 WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
                 CALL ppm_write(ppm_rank,'ppm_part_modify_send',mesg,info)
@@ -368,12 +364,12 @@
 
       !-------------------------------------------------------------------------
       !  Compute the total number of particles to receive
-      !  As it is now, this should be equal to Mpart
       !-------------------------------------------------------------------------
       npart_recv = 0
       DO j=1,ppm_nsendlist
          npart_recv = npart_recv + precv_add(j)
       ENDDO
+      modify%Ngrecvnew = npart_recv
 
       !-------------------------------------------------------------------------
       !  Compute the pointer to the position of the data in the main receive 
@@ -404,20 +400,20 @@
          DO k=1,ppm_buffer_set
             ibuffer = pp(1,k) - 1
             jbuffer = qq(1,k) - 1
-            DO j=1,psend(1)*ppm_buffer_dim(k)
+            DO j=1,psend_add(1)*ppm_buffer_dim(k)
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
-               ppm_recvbufferd(ibuffer) = ppm_sendbufferd(jbuffer)
+               ppm_recvbufferd(ibuffer) = ppm_sendbufferd_add(jbuffer)
             ENDDO 
          ENDDO 
       ELSE
          DO k=1,ppm_buffer_set
             ibuffer = pp(1,k) - 1
             jbuffer = qq(1,k) - 1
-            DO j=1,psend(1)*ppm_buffer_dim(k)
+            DO j=1,psend_add(1)*ppm_buffer_dim(k)
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
-               ppm_recvbuffers(ibuffer) = ppm_sendbuffers(jbuffer)
+               ppm_recvbuffers(ibuffer) = ppm_sendbuffers_add(jbuffer)
             ENDDO 
          ENDDO 
       ENDIF 
@@ -440,10 +436,10 @@
                !----------------------------------------------------------------
                !  Collect the data into the send buffer
                !----------------------------------------------------------------
-               DO i=1,psend(k)*ppm_buffer_dim(j)
+               DO i=1,psend_add(k)*ppm_buffer_dim(j)
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
-                  sendd(ibuffer) = ppm_sendbufferd(jbuffer)
+                  sendd(ibuffer) = ppm_sendbufferd_add(jbuffer)
                ENDDO 
             ENDDO 
 
@@ -491,10 +487,10 @@
                !----------------------------------------------------------------
                !  Collect the data into the send buffer
                !----------------------------------------------------------------
-               DO i=1,psend(k)*ppm_buffer_dim(j)
+               DO i=1,psend_add(k)*ppm_buffer_dim(j)
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
-                  sends(ibuffer) = ppm_sendbuffers(jbuffer)
+                  sends(ibuffer) = ppm_sendbuffers_add(jbuffer)
                ENDDO 
             ENDDO 
 
@@ -532,7 +528,7 @@
       ENDIF 
 
       !-------------------------------------------------------------------------
-      !  before we through away the precv_add() data let us store it for later use:
+      !  before we throw away the precv_add() data let us store it for later use:
       !  when sending ghosts back (ppm_map_part_ghost_put())
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
@@ -545,8 +541,7 @@
      &           'global recv buffer pointer PPM_precv_addBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
-!print*,'in ppm_part_modify_send'
-         ppm_precv_addbuffer(1) = Npart + 1
+         ppm_precv_addbuffer(1) = 1 !Npart + 1
          DO k=1,ppm_nsendlist
             ppm_precv_addbuffer(k+1) = ppm_precv_addbuffer(k) + precv_add(k)
          ENDDO
@@ -554,23 +549,13 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  low level debugging
-      !-------------------------------------------------------------------------
-!write(mesg,'(a,i4.4)') 'recvbuf',ppm_rank
-!open(10,file=mesg)
-!do i=1,ppm_nrecvbuffer,2
-!   write(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
-!enddo
-!close(10)
-
-      !-------------------------------------------------------------------------
       !  Deallocate the send buffer to save memory
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       IF (ppm_kind .EQ. ppm_kind_single) THEN
-          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
+          CALL ppm_alloc(ppm_sendbuffers_add,ldu,iopt,info)
       ELSE
-          CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
+          CALL ppm_alloc(ppm_sendbufferd_add,ldu,iopt,info)
       ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_error
@@ -615,12 +600,6 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-        IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_modify_send',  &
-     &          'Npart must be >=0',__LINE__,info)
-            GOTO 8888
-        ENDIF
  8888   CONTINUE
       END SUBROUTINE check
       END SUBROUTINE ppm_part_modify_send

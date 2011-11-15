@@ -93,11 +93,19 @@
       topo => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
+      !  Re-initialize _modify_ data structure
+      !-------------------------------------------------------------------------
+      modify%Nrnew = 0
+      modify%Ngnew = 0
+      modify%Ngsendnew = 0
+      modify%Ngrecvnew = 0
+
+
+      !-------------------------------------------------------------------------
       !  Allocate memory for the index arrays
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_dim
-      ldu(2) = Nnew
+      ldu(1) = Nnew
       CALL ppm_alloc(modify%idx_real_new,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal

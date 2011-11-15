@@ -29,31 +29,31 @@
 
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_push_1ds(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1ds(pdata,Npart,Mpart,pnew,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_push_1dd(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1dd(pdata,Npart,Mpart,pnew,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_push_1dsc(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1dsc(pdata,Npart,Mpart,pnew,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_push_1ddc(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1ddc(pdata,Npart,Mpart,pnew,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_modify_push_1di(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1di(pdata,Npart,Mpart,pnew,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_modify_push_1dl(pdata,Npart,info)
+      SUBROUTINE ppm_part_modify_push_1dl(pdata,Npart,Mpart,pnew,info)
 #endif
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_push_2ds(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2ds(pdata,lda,Npart,Mpart,pnew,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_push_2dd(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2dd(pdata,lda,Npart,Mpart,pnew,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_push_2dsc(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2dsc(pdata,lda,Npart,Mpart,pnew,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_modify_push_2ddc(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2ddc(pdata,lda,Npart,Mpart,pnew,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_modify_push_2di(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2di(pdata,lda,Npart,Mpart,pnew,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_modify_push_2dl(pdata,lda,Npart,info)
+      SUBROUTINE ppm_part_modify_push_2dl(pdata,lda,Npart,Mpart,pnew,info)
 #endif
 #endif
       !!! This routine pushes particle data onto modification buffer.
@@ -84,25 +84,25 @@
       !-------------------------------------------------------------------------
 #if   __DIM == 1
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:  ), INTENT(IN   )    :: pdata
+      INTEGER , DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:  ), INTENT(IN   )    :: pdata
+      LOGICAL , DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ) :: pdata
+      COMPLEX(MK), DIMENSION(:  ), INTENT(INOUT),POINTER :: pdata
 #else
-      REAL(MK), DIMENSION(:  ), INTENT(IN   )    :: pdata
+      REAL(MK), DIMENSION(:  ), INTENT(INOUT),POINTER    :: pdata
 #endif
 
 #elif __DIM == 2
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pdata
+      INTEGER , DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pdata
+      LOGICAL , DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | \
       __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ) :: pdata
+      COMPLEX(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: pdata
 #else
-      REAL(MK), DIMENSION(:,:), INTENT(IN   )    :: pdata
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER    :: pdata
 #endif
 #endif
       !!! Particle data.
@@ -113,6 +113,32 @@
 #endif
       INTEGER                 , INTENT(IN   )    :: Npart
       !!! Number of particles
+      INTEGER                 , INTENT(IN   )    :: Mpart
+      !!! Number of particles, incl. ghosts
+#if   __DIM == 1
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ),POINTER :: pnew
+#else
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+#endif
+
+#elif __DIM == 2
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:,:), INTENT(IN   ),POINTER   :: pnew
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | \
+      __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: pnew
+#else
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
+#endif
+#endif
+      !!! Particle data.
       INTEGER                 , INTENT(  OUT)    :: info
       !!! Returns 0 upon success
       !-------------------------------------------------------------------------
@@ -120,8 +146,8 @@
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart,ibuffer,icount
-      INTEGER               :: iopt,ldb,incr
-      REAL(MK)              :: t0
+      INTEGER               :: iopt,ldb,incr,Ndummy
+      REAL(ppm_kind_double) :: t0
 #if   __DIM == 1
       INTEGER, PARAMETER    :: lda = 1
 #endif
@@ -142,6 +168,19 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
       
+      !-------------------------------------------------------------------------
+      !  Add new particles into the array
+      !-------------------------------------------------------------------------
+#if   __DIM == 1
+      CALL ppm_part_split_apply(pdata,Npart,Mpart,pnew,Ndummy,Ndummy,info)
+#elif __DIM == 2
+      CALL ppm_part_split_apply(pdata,lda,Npart,Mpart,pnew,Ndummy,Ndummy,info)
+#endif
+      IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
+            &          'ppm_part_split_apply failed',__LINE__,info)
+      ENDIF
       !-------------------------------------------------------------------------
       !  Increment the buffer set 
       !-------------------------------------------------------------------------
@@ -232,26 +271,26 @@
                 DO k=1,lda
                     ibuffer = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
-                    ppm_sendbufferd_add(ibuffer) = REAL(pdata(k,ipart),   &
+                    ppm_sendbufferd_add(ibuffer) = REAL(pnew(k,ipart),   &
                         &                   ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-                    ppm_sendbufferd_add(ibuffer) = pdata(k,ipart)
+                    ppm_sendbufferd_add(ibuffer) = pnew(k,ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
                     ppm_sendbufferd_add(ibuffer) =         &
-                        &                          REAL(pdata(k,ipart),ppm_kind_double)
+                        &                          REAL(pnew(k,ipart),ppm_kind_double)
                     ibuffer = ibuffer + 1
-                    ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
+                    ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pnew(k,ipart)),  &
                         &                   ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
                     ppm_sendbufferd_add(ibuffer) =     &
-                        &                          REAL(pdata(k,ipart),ppm_kind_double)
+                        &                          REAL(pnew(k,ipart),ppm_kind_double)
                     ibuffer = ibuffer + 1
-                    ppm_sendbufferd_add(ibuffer) = AIMAG(pdata(k,ipart))
+                    ppm_sendbufferd_add(ibuffer) = AIMAG(pnew(k,ipart))
 #elif  __KIND == __INTEGER
-                    ppm_sendbufferd_add(ibuffer) = REAL(pdata(k,ipart),    &
+                    ppm_sendbufferd_add(ibuffer) = REAL(pnew(k,ipart),    &
                         &                   ppm_kind_double)
 #elif  __KIND == __LOGICAL
-                    IF (pdata(k,ipart)) THEN
+                    IF (pnew(k,ipart)) THEN
                         ppm_sendbufferd_add(ibuffer) = 1.0_ppm_kind_double
                     ELSE
                         ppm_sendbufferd_add(ibuffer) = 0.0_ppm_kind_double
@@ -270,22 +309,22 @@
                ipart = ppm_buffer2part_add(j)
                ibuffer = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
-               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ppm_sendbufferd_add(ibuffer) = REAL(pnew(ipart),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-               ppm_sendbufferd_add(ibuffer) = pdata(ipart)
+               ppm_sendbufferd_add(ibuffer) = pnew(ipart)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ppm_sendbufferd_add(ibuffer) = REAL(pnew(ipart),ppm_kind_double)
                ibuffer = ibuffer + 1
-               ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
+               ppm_sendbufferd_add(ibuffer) = REAL(AIMAG(pnew(ipart)),  &
      &             ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ppm_sendbufferd_add(ibuffer) = REAL(pnew(ipart),ppm_kind_double)
                ibuffer = ibuffer + 1
-               ppm_sendbufferd_add(ibuffer) = AIMAG(pdata(ipart))
+               ppm_sendbufferd_add(ibuffer) = AIMAG(pnew(ipart))
 #elif  __KIND == __INTEGER
-               ppm_sendbufferd_add(ibuffer) = REAL(pdata(ipart),ppm_kind_double)
+               ppm_sendbufferd_add(ibuffer) = REAL(pnew(ipart),ppm_kind_double)
 #elif  __KIND == __LOGICAL
-               IF (pdata(ipart)) THEN
+               IF (pnew(ipart)) THEN
                   ppm_sendbufferd_add(ibuffer) = 1.0_ppm_kind_double
                ELSE
                   ppm_sendbufferd_add(ibuffer) = 0.0_ppm_kind_double
@@ -332,26 +371,26 @@
                 DO k=1,lda
                     ibuffer = ibuffer + 1
 #if    __KIND == __DOUBLE_PRECISION
-                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                    ppm_sendbuffers_add(ibuffer) = REAL(pnew(k,ipart),   &
                         &                   ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-                    ppm_sendbuffers_add(ibuffer) = pdata(k,ipart)
+                    ppm_sendbuffers_add(ibuffer) = pnew(k,ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                    ppm_sendbuffers_add(ibuffer) = REAL(pnew(k,ipart),   &
                         &                   ppm_kind_single)
                     ibuffer = ibuffer + 1
-                    ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pdata(k,ipart)),  &
+                    ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pnew(k,ipart)),  &
                         &                   ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                    ppm_sendbuffers_add(ibuffer) = REAL(pnew(k,ipart),   &
                         &                   ppm_kind_single)
                     ibuffer = ibuffer + 1
-                    ppm_sendbuffers_add(ibuffer) = AIMAG(pdata(k,ipart))
+                    ppm_sendbuffers_add(ibuffer) = AIMAG(pnew(k,ipart))
 #elif  __KIND == __INTEGER
-                    ppm_sendbuffers_add(ibuffer) = REAL(pdata(k,ipart),   &
+                    ppm_sendbuffers_add(ibuffer) = REAL(pnew(k,ipart),   &
                         &                   ppm_kind_single)
 #elif  __KIND == __LOGICAL
-                    IF (pdata(k,ipart)) THEN
+                    IF (pnew(k,ipart)) THEN
                         ppm_sendbuffers_add(ibuffer) = 1.0_ppm_kind_single
                     ELSE
                         ppm_sendbuffers_add(ibuffer) = 0.0_ppm_kind_single
@@ -370,22 +409,22 @@
                ipart = ppm_buffer2part_add(j)
                ibuffer = ibuffer + 1
 #if    __KIND == __DOUBLE_PRECISION
-               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ppm_sendbuffers_add(ibuffer) = REAL(pnew(ipart),ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION
-               ppm_sendbuffers_add(ibuffer) = pdata(ipart)
+               ppm_sendbuffers_add(ibuffer) = pnew(ipart)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ppm_sendbuffers_add(ibuffer) = REAL(pnew(ipart),ppm_kind_single)
                ibuffer = ibuffer + 1
-               ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pdata(ipart)),  &
+               ppm_sendbuffers_add(ibuffer) = REAL(AIMAG(pnew(ipart)),  &
      &             ppm_kind_single)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ppm_sendbuffers_add(ibuffer) = REAL(pnew(ipart),ppm_kind_single)
                ibuffer = ibuffer + 1
-               ppm_sendbuffers_add(ibuffer) = AIMAG(pdata(ipart))
+               ppm_sendbuffers_add(ibuffer) = AIMAG(pnew(ipart))
 #elif  __KIND == __INTEGER
-               ppm_sendbuffers_add(ibuffer) = REAL(pdata(ipart),ppm_kind_single)
+               ppm_sendbuffers_add(ibuffer) = REAL(pnew(ipart),ppm_kind_single)
 #elif  __KIND == __LOGICAL
-               IF (pdata(ipart)) THEN
+               IF (pnew(ipart)) THEN
                   ppm_sendbuffers_add(ibuffer) = 1.0_ppm_kind_single
                ELSE
                   ppm_sendbuffers_add(ibuffer) = 0.0_ppm_kind_single

@@ -53,11 +53,13 @@
 
          TYPE ppm_t_part_modify
              INTEGER                            :: Nrnew
-             !number of new real particles 
+             !number of new real particles added by the user
              INTEGER                            :: Ngnew
-             !number of new ghost particles 
+             !number of new ghost particles added by the user
              INTEGER                            :: Ngsendnew
              !number of new real particles that are ghosts for other procs
+             INTEGER                            :: Ngrecvnew
+             !number of new ghost particles that are received from other procs
              INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
              !indeces of new real particles 
              INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
@@ -82,9 +84,10 @@
          LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
          PRIVATE :: ilist1,ilist2,ighost,lghost
 
-         INTEGER, DIMENSION(:), POINTER   :: precv_add => NULL()
+         INTEGER, DIMENSION(:), POINTER :: precv_add => NULL()
+         INTEGER, DIMENSION(:), POINTER :: psend_add => NULL()
 
-         PRIVATE :: precv_add
+         PRIVATE :: precv_add,psend_add
 
          INTEGER             ,DIMENSION(:),POINTER :: ppm_precv_addbuffer => NULL()
          !!! pointer to particles within the recv buffer
@@ -93,18 +96,11 @@
          !  Buffers
          !----------------------------------------------------------------------
          INTEGER             ,DIMENSION(:),POINTER :: ppm_psendbuffer_add => NULL()
-         INTEGER                                        ::  ppm_nsendbuffer_add
-         INTEGER                                        ::  ppm_nrecvbuffer_add
-         INTEGER                                        ::  ppm_sendbufsize_add
-         INTEGER                                        ::  ppm_recvbufsize_add
-         INTEGER                                        ::  ppm_buffer_set_add
          INTEGER            , DIMENSION(:),POINTER :: ppm_buffer2part_add => NULL()
-         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_type_add => NULL()
-         INTEGER            , DIMENSION(:),POINTER :: ppm_buffer_dim_add => NULL()
-         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offsets_add => NULL()
-         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd_add => NULL()
-         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_sendbuffers_add => NULL()
-         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_sendbufferd_add => NULL()
+         REAL(ppm_kind_single),DIMENSION(:),POINTER:: ppm_ghost_offsets_add => NULL()
+         REAL(ppm_kind_double),DIMENSION(:),POINTER:: ppm_ghost_offsetd_add => NULL()
+         REAL(ppm_kind_single),DIMENSION(:),POINTER:: ppm_sendbuffers_add => NULL()
+         REAL(ppm_kind_double),DIMENSION(:),POINTER:: ppm_sendbufferd_add => NULL()
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_part_modify_pop

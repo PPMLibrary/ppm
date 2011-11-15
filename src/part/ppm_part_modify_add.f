@@ -29,10 +29,10 @@
 
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_part_modify_add_s(topoid,xp,Npart,Mpart,xpn,Nnew,&
-              isymm,ghostsize,info)
+              Npart_new,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_part_modify_add_d(topoid,xp,Npart,Mpart,xpn,Nnew,&
-              isymm,ghostsize,info)
+              Npart_new,isymm,ghostsize,info)
 #endif 
       !!! This routine adds new particles to xp and updates the ghost mappings
       !!! and the corresponding buffers.
@@ -124,14 +124,16 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: xp
       !!! The position of the particles
-      INTEGER                 , INTENT(INOUT) :: Npart
+      INTEGER                 , INTENT(IN   ) :: Npart
       !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(INOUT) :: Mpart
+      INTEGER                 , INTENT(IN   ) :: Mpart
       !!! The number of particles (including ghosts)
       REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: xpn
       !!! The position of the new particles to be added
       INTEGER                 , INTENT(IN   ) :: Nnew
-      !!! The number of new particles (on the local processor)
+      !!! The number of particles added to the local processor
+      INTEGER                 , INTENT(  OUT) :: Npart_new
+      !!! The new number of particles (on the local processor)
       REAL(MK)                , INTENT(IN   ) :: ghostsize
       !!! The size of the ghost layer
       INTEGER                 , INTENT(IN   ) :: isymm
@@ -160,7 +162,7 @@
       REAL(MK), DIMENSION(ppm_dim)  :: min_phys
       REAL(MK), DIMENSION(ppm_dim)  :: max_phys
       REAL(MK), DIMENSION(ppm_dim)  :: len_phys
-      REAL(MK)                      :: t0
+      REAL(ppm_kind_double)         :: t0
       INTEGER                       :: nbc,npbc,nsbc
       LOGICAL, DIMENSION(2*ppm_dim) :: lextra
       INTEGER, DIMENSION(2*ppm_dim) :: ibc
@@ -169,6 +171,8 @@
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
       REAL(MK)                      :: eps
       INTEGER, DIMENSION(:), POINTER :: idx_xpnr
+      INTEGER                       :: ppm_nsendbuffer_old
+      INTEGER                       :: Mpart_new_dummy
       !!! indices of the new real particles to be added (the list of potential
       !!! ghosts to be sent will be extracted from this index set).
 
@@ -196,6 +200,8 @@
       eps = ppm_myepss
 #endif
 
+      ppm_nsendbuffer_old =  ppm_nsendbuffer
+
       !-------------------------------------------------------------------------
       !  Split new particles into real and ghosts
       !  The split is stored as 2 index arrays (real and ghosts) in modify%
@@ -207,12 +213,13 @@
             &          'ppm_part_split_compute failed',__LINE__,info)
       ENDIF
 
-      !CALL ppm_part_split_apply(topoid,xp,ppm_dim,Npart,Mpart,xpn,Nnew,info)
-      !IF (info .NE. 0) THEN
-        !info = ppm_error_error
-        !CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
-            !&          'ppm_part_split_apply failed',__LINE__,info)
-      !ENDIF
+      CALL ppm_part_split_apply(xp,ppm_dim,Npart,Mpart,xpn,&
+          Npart_new,Mpart_new_dummy,info)
+      IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,'ppm_part_modify_add',  &
+            &          'ppm_part_split_apply failed',__LINE__,info)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Count Boundary conditions
@@ -1452,44 +1459,55 @@
       !  (and which map the newly added ghost particles to the corresponding
       !   real particles on the neighbouring processors)
       !-------------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      !  first reallocate the index list: buffer2part
+      !----------------------------------------------------------------------
+      iopt = ppm_param_alloc_grow_preserve
+      ldu(1) = ppm_nsendbuffer + ppm_nsendbuffer_old
+      CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+              &   'buffer-to-particles map ppm_buffer2part_add',__LINE__,info)
+          GOTO 9999
+      ENDIF
       iset = 0
+
       DO k=topo%ncommseq,1,-1
 
           i=ppm_psendbuffer(k)
-          j=ppm_psendbuffer(k+1)
+          j=ppm_psendbuffer(k+1)-1
           iadd=ppm_psendbuffer_add(k)
-          jadd=ppm_psendbuffer_add(k+1)
+          jadd=ppm_psendbuffer_add(k+1)-1
 
           !copy to buffers and move data within buffers
-          ppm_buffer2part(i+iadd-1:j+iadd-1) = & 
-              ppm_buffer2part(i:j)
-          ppm_buffer2part(i+iadd-1:jadd+iadd-1) = & 
-              ppm_buffer2part_add(iadd:jadd)
+          ppm_buffer2part(i+iadd-1:j+iadd-1) = ppm_buffer2part(i:j)
+          ppm_buffer2part(j+iadd:j+jadd)  = ppm_buffer2part_add(iadd:jadd) + Npart
               
-          !FIXME: this should only be done if we want to send the whole buffer
-          ! (i.e. if the already existing ghosts havent been communicated
-          ! already. In that case, the calling sequence would look like
-          ! ppm_map_part_ghost_get
-          ! ppm_part_modify_add
-          ! ppm_map_part_send
-          ! Otherwise, it is not necessary to update ppm_sendbuffer and we
-          ! should just send ppm_sendbuffer_add by calling
-          ! ppm_part_modify_send)
-          lda=ppm_dim
-          IF (ppm_kind.EQ.ppm_kind_double) THEN
-              ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  ppm_sendbufferd(1+lda*(i-1):1+lda*(j-1))
-              ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  ppm_sendbufferd_add(1+lda*(iadd-1):1+lda*(jadd-1))
-          ELSE
-              ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  ppm_sendbuffers(1+lda*(i-1):1+lda*(j-1))
-              ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  ppm_sendbuffers_add(1+lda*(iadd-1):1+lda*(jadd-1))
-          ENDIF
+          !!FIXME: this should only be done if we want to send the whole buffer
+          !! (i.e. if the already existing ghosts havent been communicated
+          !! already. In that case, the calling sequence would look like
+          !! ppm_map_part_ghost_get
+          !! ppm_part_modify_add
+          !! ppm_map_part_send
+          !! Otherwise, it is not necessary to update ppm_sendbuffer and we
+          !! should just send ppm_sendbuffer_add by calling
+          !! ppm_part_modify_send)
+          !lda=ppm_dim
+          !IF (ppm_kind.EQ.ppm_kind_double) THEN
+              !ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
+                  !ppm_sendbufferd(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbufferd(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
+                  !ppm_sendbufferd_add(1+lda*(iadd-1):1+lda*(jadd-1))
+          !ELSE
+              !ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
+                  !ppm_sendbuffers(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbuffers(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
+                  !ppm_sendbuffers_add(1+lda*(iadd-1):1+lda*(jadd-1))
+          !ENDIF
 
-         iset = iset + ppm_psendbuffer_add(k) !current offset
-         ppm_psendbuffer(k) = ppm_psendbuffer(k) + iset
+         !iset = iset + ppm_psendbuffer_add(k+1) !current offset
+         ppm_psendbuffer(k+1)=ppm_psendbuffer(k+1)+ppm_psendbuffer_add(k+1) - 1
       ENDDO ! loop over all processors in commseq
 
       !-------------------------------------------------------------------------
