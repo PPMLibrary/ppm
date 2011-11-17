@@ -149,7 +149,7 @@
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,isub,lda,iadd,jadd
       INTEGER               :: nlist1,nlist2,nghost,nghostplus
-      INTEGER               :: ipart,sendrank !,recvrank
+      INTEGER               :: ipart,sendrank,recvrank
       INTEGER               :: iopt,iset,ibuffer
       REAL(MK), DIMENSION(:,:), POINTER :: xt  => NULL()
       ! position of potential ghosts
@@ -503,7 +503,7 @@
                      xt(2,nghost)   = xpn(2,ipart)
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
-                     modify%idx_ghost_send_new(nghost)=ipart
+                     idx_xpnr(nghost)=ipart
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -543,7 +543,7 @@
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
                      xt_offset(3,nghost) = 0.0_MK
-                     modify%idx_ghost_send_new(nghost)=ipart
+                     idx_xpnr(nghost)=ipart
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -642,24 +642,24 @@
           GOTO 9999
       ENDIF
 
-      !!-------------------------------------------------------------------------
-      !!  Allocate memory for the global send/recv lists
-      !!-------------------------------------------------------------------------
-      !ldu(1) = topo%ncommseq
-      !CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      !IF (info .NE. 0) THEN
-          !info = ppm_error_fatal
-          !CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
-     !&        'global send rank list PPM_ISENDLIST',__LINE__,info)
-          !GOTO 9999
-      !ENDIF
-      !CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      !IF (info .NE. 0) THEN
-          !info = ppm_error_fatal
-          !CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
-     !&        'global recv rank list PPM_IRECVLIST',__LINE__,info)
-          !GOTO 9999
-      !ENDIF
+      !-------------------------------------------------------------------------
+      !  Allocate memory for the global send/recv lists
+      !-------------------------------------------------------------------------
+      ldu(1) = topo%ncommseq
+      CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &        'global send rank list PPM_ISENDLIST',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
+     &        'global recv rank list PPM_IRECVLIST',__LINE__,info)
+          GOTO 9999
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the pointers to the particles that will be send
@@ -682,8 +682,8 @@
       !  First we find the ghosts due to periodicity on the local processor
       !-------------------------------------------------------------------------
       ppm_psendbuffer_add(1) = 1
-      !ppm_nsendlist      = 0
-      !ppm_nrecvlist      = 0
+      ppm_nsendlist      = 0
+      ppm_nrecvlist      = 0
       iset               = 0
       ibuffer            = 0
       k                  = 1
@@ -692,19 +692,19 @@
       !  Get the rank of the processor
       !-------------------------------------------------------------------------
       sendrank = topo%icommseq(k) ! should be ppm_rank !
-      !recvrank = sendrank
+      recvrank = sendrank
 
       !-------------------------------------------------------------------------
       !  Store the processor to which we will send to
       !-------------------------------------------------------------------------
-      !ppm_nsendlist                = ppm_nsendlist + 1
-      !ppm_isendlist(ppm_nsendlist) = sendrank
+      ppm_nsendlist                = ppm_nsendlist + 1
+      ppm_isendlist(ppm_nsendlist) = sendrank
 
       !-------------------------------------------------------------------------
       !  Store the processor to which we will recv from
       !-------------------------------------------------------------------------
-      !ppm_nrecvlist                = ppm_nrecvlist + 1
-      !ppm_irecvlist(ppm_nrecvlist) = recvrank
+      ppm_nrecvlist                = ppm_nrecvlist + 1
+      ppm_irecvlist(ppm_nrecvlist) = recvrank
 
       !-------------------------------------------------------------------------
       !  Store the number of buffer entries (this is the first)
@@ -1125,19 +1125,19 @@
          !  Get the rank of the processor
          !----------------------------------------------------------------------
          sendrank = topo%icommseq(k)
-         !recvrank = sendrank
+         recvrank = sendrank
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will send to
          !----------------------------------------------------------------------
-         !ppm_nsendlist                = ppm_nsendlist + 1
-         !ppm_isendlist(ppm_nsendlist) = sendrank
+         ppm_nsendlist                = ppm_nsendlist + 1
+         ppm_isendlist(ppm_nsendlist) = sendrank
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will recv from
          !----------------------------------------------------------------------
-         !ppm_nrecvlist                = ppm_nrecvlist + 1
-         !ppm_irecvlist(ppm_nrecvlist) = recvrank
+         ppm_nrecvlist                = ppm_nrecvlist + 1
+         ppm_irecvlist(ppm_nrecvlist) = recvrank
 
          !----------------------------------------------------------------------
          !  only consider non-negative sendranks

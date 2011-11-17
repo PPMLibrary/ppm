@@ -27,6 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+#if    __VARIANT == __NORMAL
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_part_push_1ds(pdata,Npart,info,pushpp)
@@ -56,6 +57,37 @@
       SUBROUTINE ppm_map_part_push_2dl(pdata,lda,Npart,info,pushpp)
 #endif
 #endif
+#elif  __VARIANT == __ADD
+#if    __DIM == 1
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_push_add1ds(pdata,Npart,info,pushpp)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_push_add1dd(pdata,Npart,info,pushpp)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_push_add1dsc(pdata,Npart,info,pushpp)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_push_add1ddc(pdata,Npart,info,pushpp)
+#elif  __KIND == __INTEGER
+      SUBROUTINE ppm_map_part_push_add1di(pdata,Npart,info,pushpp)
+#elif  __KIND == __LOGICAL
+      SUBROUTINE ppm_map_part_push_add1dl(pdata,Npart,info,pushpp)
+#endif
+#elif  __DIM == 2
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_push_add2ds(pdata,lda,Npart,info,pushpp)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_push_add2dd(pdata,lda,Npart,info,pushpp)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_push_add2dsc(pdata,lda,Npart,info,pushpp)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_push_add2ddc(pdata,lda,Npart,info,pushpp)
+#elif  __KIND == __INTEGER
+      SUBROUTINE ppm_map_part_push_add2di(pdata,lda,Npart,info,pushpp)
+#elif  __KIND == __LOGICAL
+      SUBROUTINE ppm_map_part_push_add2dl(pdata,lda,Npart,info,pushpp)
+#endif
+#endif
+#endif
       !!! This routine pushes particle data onto the send buffer.
       !!!
       !!! [NOTE]
@@ -77,6 +109,11 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+#if    __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif  __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+#endif
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -133,6 +170,11 @@
 #if   __DIM == 1
       INTEGER, PARAMETER    :: lda = 1
 #endif
+#if   __VARIANT == __NORMAL
+      CHARACTER(ppm_char)   :: caller = 'ppm_map_part_push'
+#elif __VARIANT == __ADD
+      CHARACTER(ppm_char)   :: caller = 'ppm_part_modify_push'
+#endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -140,7 +182,7 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_push',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -172,14 +214,14 @@
       CALL ppm_alloc(ppm_buffer_dim ,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -229,7 +271,7 @@
          CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+             CALL ppm_error(ppm_err_alloc,caller,     &
      &           'global send buffer PPM_SENDBUFFERD',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -769,7 +811,7 @@
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_push',     &
+             CALL ppm_error(ppm_err_alloc,caller,     &
      &           'global send buffer PPM_SENDBUFFERS',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -1413,33 +1455,34 @@
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_map_part_push',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
 #if   __DIM == 2
           IF (lda .LT. 1) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_push',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'lda must be >0 for vector data',__LINE__,info)
               GOTO 8888
           ENDIF
 #elif __DIM == 1
           IF (lda .NE. 1) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_push',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'lda must be =1 for scalar data',__LINE__,info)
               GOTO 8888
           ENDIF
 #endif
           IF (Npart .LT. 0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_push',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'Npart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
  8888     CONTINUE
       END SUBROUTINE check
+#if    __VARIANT == __NORMAL
 #if   __DIM == 1
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_push_1ds
@@ -1468,5 +1511,37 @@
       END SUBROUTINE ppm_map_part_push_2di
 #elif __KIND == __LOGICAL
       END SUBROUTINE ppm_map_part_push_2dl
+#endif
+#endif
+#elif  __VARIANT == __ADD
+#if   __DIM == 1
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_map_part_push_add1ds
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_map_part_push_add1dd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_push_add1dsc
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_push_add1ddc
+#elif __KIND == __INTEGER
+      END SUBROUTINE ppm_map_part_push_add1di
+#elif __KIND == __LOGICAL
+      END SUBROUTINE ppm_map_part_push_add1dl
+#endif
+
+#elif __DIM == 2
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_map_part_push_add2ds
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_map_part_push_add2dd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_push_add2dsc
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_push_add2ddc
+#elif __KIND == __INTEGER
+      END SUBROUTINE ppm_map_part_push_add2di
+#elif __KIND == __LOGICAL
+      END SUBROUTINE ppm_map_part_push_add2dl
+#endif
 #endif
 #endif

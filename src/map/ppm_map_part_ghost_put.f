@@ -78,6 +78,11 @@
       USE ppm_module_write
       USE ppm_module_check_id
       USE ppm_module_util_commopt
+#if   __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+#endif
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  This routine is ALL integer, except the timing variable t0

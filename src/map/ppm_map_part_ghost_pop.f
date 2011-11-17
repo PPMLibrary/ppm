@@ -77,6 +77,11 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+#if   __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+#endif
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single

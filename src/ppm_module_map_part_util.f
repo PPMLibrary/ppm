@@ -41,6 +41,7 @@
       !!! This module provides various particle mapping utility and helper
       !!! routines and their work-arrays.
 
+         USE ppm_module_data_buffers
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------

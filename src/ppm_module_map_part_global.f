@@ -36,6 +36,7 @@
       MODULE ppm_module_map_part_global
       !!! This module provides the mapping routines for global particle
       !!! mapping
+         USE ppm_module_data_buffers
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------

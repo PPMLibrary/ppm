@@ -27,7 +27,11 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+#if   __VARIANT == __NORMAL
       SUBROUTINE ppm_map_part_send(Npart,Mpart,info)
+#elif __VARIANT == __ADD
+      SUBROUTINE ppm_map_part_send_add(Npart,Mpart,info)
+#endif
       !!! This routine performs the actual send/recv of the particles and all
       !!! pushed data.
       !!!
@@ -48,6 +52,11 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+#if    __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif  __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+#endif
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -72,10 +81,20 @@
       INTEGER               :: iopt,count,tag1,qpart,msend,mrecv
       INTEGER               :: npart_send,npart_recv
       CHARACTER(ppm_char)   :: mesg
+#if   __VARIANT == __NORMAL
+      CHARACTER(ppm_char)   :: caller = 'ppm_map_part_send'
+#elif __VARIANT == __ADD
+      CHARACTER(ppm_char)   :: caller = 'ppm_map_part_send_add'
+#endif
       REAL(ppm_kind_double) :: t0
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
+      TYPE(ppm_t_plists),    POINTER   :: plists
+      INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
+      INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
+      INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
+      INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -83,7 +102,13 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_send',t0,info)
+      CALL substart(caller,t0,info)
+
+#if   __VARIANT == __NORMAL
+      plists => plists_normal
+#elif __VARIANT == __ADD
+      plists => plists_add
+#endif
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -96,7 +121,7 @@
       IF (ppm_buffer_set .LT. 1) THEN
         info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
-            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_part_send',    &
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
      &          'Buffer is empty: skipping send!',__LINE__,info)
         ENDIF
         GOTO 9999
@@ -111,31 +136,31 @@
      &    (ppm_buffer_set.NE.old_buffer_set)) THEN
           old_nsendlist = ppm_nsendlist
           old_buffer_set = ppm_buffer_set
-          CALL ppm_alloc(nsend,ldu,iopt,info)
+          CALL ppm_alloc(plists%nsend,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &        'send counter NSEND',__LINE__,info)
               GOTO 9999
           ENDIF
-          CALL ppm_alloc(nrecv,ldu,iopt,info)
+          CALL ppm_alloc(plists%nrecv,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &        'receive counter NRECV',__LINE__,info)
               GOTO 9999
           ENDIF
-          CALL ppm_alloc(psend,ldu,iopt,info)
+          CALL ppm_alloc(plists%psend,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &        'particle send counter PSEND',__LINE__,info)
               GOTO 9999
           ENDIF
-          CALL ppm_alloc(precv,ldu,iopt,info)
+          CALL ppm_alloc(plists%precv,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &        'particle receive counter PRECV',__LINE__,info)
               GOTO 9999
           ENDIF
@@ -143,18 +168,27 @@
           CALL ppm_alloc(pp,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &            'work buffer PP',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(qq,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &            'work buffer QQ',__LINE__,info)
               GOTO 9999
           ENDIF
       ENDIF
+
+      !-------------------------------------------------------------------------
+      !  create local shortuct pointers, for simplicity
+      !-------------------------------------------------------------------------
+      nsend => plists%nsend
+      nrecv => plists%nrecv
+      psend => plists%psend
+      precv => plists%precv
+
       !-------------------------------------------------------------------------
       !  Count the total size of the buffer dimensions 
       !  It is handy... simplifies many summations, avoids loops, etc...
@@ -222,7 +256,7 @@
              IF (ppm_debug .GT. 1) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'sending to ',   &
      &               ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend(k)
-                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+                 CALL ppm_write(ppm_rank,caller,mesg,info)
              ENDIF
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
      &                         precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
@@ -234,7 +268,7 @@
              IF (ppm_debug .GT. 1) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
      &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
-                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+                 CALL ppm_write(ppm_rank,caller,mesg,info)
              ENDIF
          ELSE
              ! skip this round, i.e. neither send nor receive any
@@ -268,11 +302,11 @@
       ENDDO
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
-          CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
           WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',ppm_nrecvbuffer
-          CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
           WRITE(mesg,'(A,I9)') 'Mpart=',Mpart
-          CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
 
@@ -288,7 +322,7 @@
       ENDIF 
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'global receive buffer PPM_RECVBUFFER',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -310,7 +344,7 @@
           ENDIF 
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &            'local receive buffer RECV',__LINE__,info)
               GOTO 9999
           ENDIF
@@ -323,7 +357,7 @@
           ENDIF 
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &            'local send buffer SEND',__LINE__,info)
               GOTO 9999
           ENDIF
@@ -334,7 +368,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
-          CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -361,7 +395,7 @@
             qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
                 WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
-                CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+                CALL ppm_write(ppm_rank,caller,mesg,info)
             ENDIF
          ENDDO
       ENDDO
@@ -391,9 +425,9 @@
             pp(j,k) = pp(j-1,k) + precv(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
                 WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
-                CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+                CALL ppm_write(ppm_rank,caller,mesg,info)
                 WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',precv(j-1),', bdim=',bdim
-                CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+                CALL ppm_write(ppm_rank,caller,mesg,info)
             ENDIF
          ENDDO
       ENDDO
@@ -542,11 +576,11 @@
          CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+             CALL ppm_error(ppm_err_alloc,caller,     &
      &           'global recv buffer pointer PPM_PRECVBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
-!print*,'in ppm_map_part_send'
+!print*,caller
          ppm_precvbuffer(1) = Npart + 1
          DO k=1,ppm_nsendlist
             ppm_precvbuffer(k+1) = ppm_precvbuffer(k) + precv(k)
@@ -575,7 +609,7 @@
       ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'send buffer PPM_SENDBUFFER',__LINE__,info)
       ENDIF
     
@@ -586,78 +620,91 @@
 !      CALL ppm_alloc(nsend,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'send counter NSEND',__LINE__,info)
 !      ENDIF
 !      CALL ppm_alloc(nrecv,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'receive counter NRECV',__LINE__,info)
 !      ENDIF
 !      CALL ppm_alloc(psend,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'particle send counter PSEND',__LINE__,info)
 !      ENDIF
 !      CALL ppm_alloc(precv,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'particle receive counter PRECV',__LINE__,info)
 !      ENDIF
 !      CALL ppm_alloc(   pp,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'work array PP',__LINE__,info)
 !      ENDIF
 !      CALL ppm_alloc(   qq,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!          CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &        'work array QQ',__LINE__,info)
 !      ENDIF
       CALL ppm_alloc(recvd,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_dealloc,caller,     &
      &        'local receive buffer RECVD',__LINE__,info)
       ENDIF
       CALL ppm_alloc(recvs,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_dealloc,caller,     &
      &        'local receive buffer RECVS',__LINE__,info)
       ENDIF
       CALL ppm_alloc(sendd,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_dealloc,caller,     &
      &        'local send buffer SENDD',__LINE__,info)
       ENDIF
       CALL ppm_alloc(sends,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+          CALL ppm_error(ppm_err_dealloc,caller,     &
      &        'local send buffer SENDS',__LINE__,info)
       ENDIF
+
+      !-------------------------------------------------------------------------
+      !  Destroy shortcut pointers
+      !-------------------------------------------------------------------------
+      nsend => NULL()
+      nrecv => NULL()
+      psend => NULL()
+      precv => NULL()
+      plists => NULL()
 
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_map_part_send',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (Npart .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_send',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'Npart must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF
  8888   CONTINUE
       END SUBROUTINE check
+#if   __VARIANT == __NORMAL
       END SUBROUTINE ppm_map_part_send
+#elif __VARIANT == __ADD
+      END SUBROUTINE ppm_map_part_send_add
+#endif

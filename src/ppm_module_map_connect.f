@@ -32,6 +32,7 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
+
          INTEGER, DIMENSION(:)  , POINTER :: id_send => NULL()
          INTEGER, DIMENSION(:)  , POINTER :: id_temp => NULL()
          INTEGER, DIMENSION(:)  , POINTER :: id_inv  => NULL()

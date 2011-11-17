@@ -298,6 +298,7 @@
           GOTO 9999
       ENDIF
 
+      iopt   = ppm_param_alloc_grow
 #if   __DIM == 2 
       ldu(1) = edim
       ldu(2) = npart_added

@@ -29,6 +29,7 @@
      
       MODULE ppm_module_finalize
       !!! This module provides the finalization routine callable from outside
+         USE ppm_module_data_buffers
          !----------------------------------------------------------------------
          !  Define interface to ppm_finalize
          !----------------------------------------------------------------------

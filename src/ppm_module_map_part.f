@@ -36,6 +36,8 @@
 #define __LOGICAL                  4
 #define __SINGLE_PRECISION_COMPLEX 5
 #define __DOUBLE_PRECISION_COMPLEX 6
+#define __NORMAL                   7
+#define __ADD                      8
 
       MODULE ppm_module_map_part
       !!! This module provides the basic mapping routines for particles, namely
@@ -57,16 +59,22 @@
          REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
+
+         TYPE ppm_t_plists
+             INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
+             INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
+             INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
+             INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
+         END TYPE
+
+         TYPE(ppm_t_plists), TARGET, SAVE    :: plists_normal
+         TYPE(ppm_t_plists), TARGET, SAVE    :: plists_add
+
          INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
-         INTEGER                          :: old_nsendlist = 0
-         INTEGER                          :: old_buffer_set = 0
 
          !PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
+         PRIVATE :: sends,recvs,sendd,recvd,pp,qq,plists_normal,plists_add
          !PRIVATE :: old_nsendlist,old_buffer_set
 
          !----------------------------------------------------------------------
@@ -118,10 +126,59 @@
          END INTERFACE
 
          !----------------------------------------------------------------------
+         !  Define interfaces to ppm_map_part_pop_add
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_pop
+            ! scalar (1d) particle data
+            MODULE PROCEDURE ppm_map_part_pop_add1dd
+            MODULE PROCEDURE ppm_map_part_pop_add1ds
+            MODULE PROCEDURE ppm_map_part_pop_add1di
+            MODULE PROCEDURE ppm_map_part_pop_add1dl
+            MODULE PROCEDURE ppm_map_part_pop_add1ddc
+            MODULE PROCEDURE ppm_map_part_pop_add1dsc
+
+            ! vector (2d) particle data
+            MODULE PROCEDURE ppm_map_part_pop_add2dd
+            MODULE PROCEDURE ppm_map_part_pop_add2ds
+            MODULE PROCEDURE ppm_map_part_pop_add2di
+            MODULE PROCEDURE ppm_map_part_pop_add2dl
+            MODULE PROCEDURE ppm_map_part_pop_add2ddc
+            MODULE PROCEDURE ppm_map_part_pop_add2dsc
+         END INTERFACE
+
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_map_part_push
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_push
+            ! scalar (1d) particle data
+            MODULE PROCEDURE ppm_map_part_push_add1dd
+            MODULE PROCEDURE ppm_map_part_push_add1ds
+            MODULE PROCEDURE ppm_map_part_push_add1di
+            MODULE PROCEDURE ppm_map_part_push_add1dl
+            MODULE PROCEDURE ppm_map_part_push_add1ddc
+            MODULE PROCEDURE ppm_map_part_push_add1dsc
+
+            ! vector (2d) particle data
+            MODULE PROCEDURE ppm_map_part_push_add2dd
+            MODULE PROCEDURE ppm_map_part_push_add2ds
+            MODULE PROCEDURE ppm_map_part_push_add2di
+            MODULE PROCEDURE ppm_map_part_push_add2dl
+            MODULE PROCEDURE ppm_map_part_push_add2ddc
+            MODULE PROCEDURE ppm_map_part_push_add2dsc
+         END INTERFACE
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_map_part_send_add
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_modify_send
+            MODULE PROCEDURE ppm_map_part_send_add
+         END INTERFACE
+
+         !----------------------------------------------------------------------
          !  include the source 
          !----------------------------------------------------------------------
          CONTAINS
 
+#define __VARIANT __NORMAL
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION
 #include "map/ppm_map_part_pop.f"
@@ -207,5 +264,99 @@
 #undef __DIM
 
 #include "map/ppm_map_part_send.f"
+
+#undef __VARIANT
+
+
+#define __VARIANT __ADD
+#define __DIM 1
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#undef __DIM
+
+#define __DIM 2
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_pop.f"
+#undef __KIND
+#undef __DIM
+
+
+#define __DIM 1
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#undef __DIM
+
+#define __DIM 2
+#define __KIND __SINGLE_PRECISION
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __INTEGER
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __LOGICAL
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "map/ppm_map_part_push.f"
+#undef __KIND
+#undef __DIM
+
+
+#include "map/ppm_map_part_send.f"
+
+#undef __VARIANT
 
       END MODULE ppm_module_map_part

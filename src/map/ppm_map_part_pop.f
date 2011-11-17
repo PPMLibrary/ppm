@@ -28,6 +28,7 @@
       !-------------------------------------------------------------------------
 
 
+#if    __VARIANT == __NORMAL
 #if    __DIM ==1
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_part_pop_1ds(pdata,Npart,newNpart,info)
@@ -56,6 +57,50 @@
       SUBROUTINE ppm_map_part_pop_2di(pdata,lda,Npart,newNpart,info)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_part_pop_2dl(pdata,lda,Npart,newNpart,info)
+#endif
+#endif
+#elif  __VARIANT == __ADD
+#if    __DIM ==1
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_pop_add1ds(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_pop_add1dd(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_pop_add1dsc(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_pop_add1ddc(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __INTEGER
+      SUBROUTINE ppm_map_part_pop_add1di(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __LOGICAL
+      SUBROUTINE ppm_map_part_pop_add1dl(pdata_old,pdata_add,Npart,Mpart,&
+              newNpart,newMpart,info)
+#endif 
+
+#elif  __DIM == 2
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_map_part_pop_add2ds(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_map_part_pop_add2dd(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_pop_add2dsc(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      SUBROUTINE ppm_map_part_pop_add2ddc(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __INTEGER
+      SUBROUTINE ppm_map_part_pop_add2di(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#elif  __KIND == __LOGICAL
+      SUBROUTINE ppm_map_part_pop_add2dl(pdata_old,pdata_add,lda,Npart,Mpart,&
+              newNpart,newMpart,info)
+#endif
 #endif
 #endif
       !!! This routine pops the contents of the receive buffer.
@@ -87,6 +132,11 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_write
+#if    __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif  __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+#endif
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION | __KIND == __SINGLE_PRECISION_COMPLEX
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -96,6 +146,7 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
+#if   __VARIANT == __NORMAL
 #if   __DIM == 1
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:  ), POINTER    :: pdata
@@ -118,7 +169,40 @@
       REAL(MK), DIMENSION(:,:), POINTER    :: pdata
 #endif
 #endif
-      !!! Particle data to be popped.
+#elif __VARIANT == __ADD
+#if   __DIM == 1
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:  ), POINTER    :: pdata_old => NULL()
+      INTEGER , DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:  ), POINTER    :: pdata_old => NULL()
+      LOGICAL , DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:  ), POINTER :: pdata_old => NULL()
+      COMPLEX(MK), DIMENSION(:  ), POINTER,INTENT(IN) :: pdata_add => NULL()
+#else
+      REAL(MK), DIMENSION(:  ), POINTER    :: pdata_old => NULL()
+      REAL(MK), DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#endif
+
+#elif __DIM == 2
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:,:), POINTER    :: pdata_old => NULL()
+      INTEGER , DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:,:), POINTER    :: pdata_old => NULL()
+      LOGICAL , DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:,:), POINTER :: pdata_old => NULL()
+      COMPLEX(MK), DIMENSION(:,:), POINTER,INTENT(IN) :: pdata_add => NULL()
+#else
+      REAL(MK), DIMENSION(:,:), POINTER    :: pdata_old => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+#endif
+#endif
+#endif
+      
+      !!! Particle data to be popped and to be added, respectively. 
       !!! Can be either 1D or 2D array.
 #if   __DIM == 2
       INTEGER                 , INTENT(IN   ) :: lda
@@ -126,21 +210,64 @@
 #endif
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles (on the processor)
+#if   __VARIANT == __NORMAL
       INTEGER                 , INTENT(IN   ) :: newNpart
-      !!! The new number of particles (on the processor)
+      !!! The new number of particles (on the processor,incl ghosts)
+#elif __VARIANT == __ADD
+      INTEGER                 , INTENT(IN   ) :: Mpart
+      !!! The old number of particles (on the processor,incl ghosts)
+      INTEGER                 , INTENT(IN   ) :: newNpart
+      !!! The new number of real particles (on the processor,excl. ghosts)
+      INTEGER                 , INTENT(IN   ) :: newMpart
+      !!! The new number of particles (on the processor,incl ghosts)
+#endif
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(2) :: ldu
+      INTEGER               :: i,j,ipart_add
       INTEGER               :: k,ipart,bdim,ibuffer,btype
-      INTEGER               :: iopt,edim,istart
+      INTEGER               :: iopt,edim,istart,iend
 #if   __DIM == 1
       INTEGER, PARAMETER    :: lda = 1
 #endif
       CHARACTER(ppm_char)   :: mesg
+#if   __VARIANT == __NORMAL
+      CHARACTER(ppm_char)   :: caller = 'ppm_map_part_pop'
+#elif __VARIANT == __ADD
+      CHARACTER(ppm_char)   :: caller = 'ppm_part_modify_pop'
+#endif
       REAL(MK)              :: t0
+#if   __VARIANT == __ADD
+#if   __DIM == 1
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:  ), POINTER    :: pdata => NULL()
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:  ), POINTER    :: pdata => NULL()
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:  ), POINTER :: pdata => NULL()
+#else
+      REAL(MK), DIMENSION(:  ), POINTER    :: pdata => NULL()
+#endif
+
+#elif __DIM == 2
+#if   __KIND == __INTEGER
+      INTEGER , DIMENSION(:,:), POINTER    :: pdata => NULL()
+#elif __KIND == __LOGICAL
+      LOGICAL , DIMENSION(:,:), POINTER    :: pdata => NULL()
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
+      COMPLEX(MK), DIMENSION(:,:), POINTER :: pdata => NULL()
+#else
+      REAL(MK), DIMENSION(:,:), POINTER    :: pdata => NULL()
+#endif
+#endif
+#endif
+#if   __VARIANT == __ADD
+      INTEGER                              :: npart_added
+#endif
+      
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -148,7 +275,7 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_pop',t0,info)
+      CALL substart(caller,t0,info)
 
 
       !-------------------------------------------------------------------------
@@ -163,12 +290,15 @@
       IF (ppm_buffer_set .LT. 1) THEN
         info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
-            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_part_pop',    &
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
      &          'Buffer is empty: skipping pop!',__LINE__,info)
         ENDIF
         GOTO 9999
       ENDIF
 
+#if   __VARIANT == __ADD
+      npart_added = newMpart - Mpart - (newNpart - Npart) 
+#endif
 
       !-------------------------------------------------------------------------
       !  Check that the required dimension fits the dimension of the buffer
@@ -183,19 +313,19 @@
 #endif
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
-          CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 #if   __DIM == 2
       IF (edim.NE.lda) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_dim,caller,    &
      &       'leading dimension LDA is in error',__LINE__,info)
          GOTO 9999
       ENDIF 
 #elif __DIM == 1
       IF (edim.NE.1) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_dim,caller,    &
      &       'buffer does not contain 1d data!',__LINE__,info)
          GOTO 9999
       ENDIF 
@@ -208,21 +338,21 @@
 #if    __KIND == __SINGLE_PRECISION
       IF (btype.NE.ppm_kind_single) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-single into single ',__LINE__,info)
          GOTO 9999
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION
       IF (btype.NE.ppm_kind_double) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-double into double ',__LINE__,info)
          GOTO 9999
       ENDIF
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_single) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-single-complex into single-complex',  &
      &       __LINE__,info)
          GOTO 9999
@@ -230,7 +360,7 @@
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_double) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-double-complex into double-complex',  &
      &       __LINE__,info)
          GOTO 9999
@@ -238,20 +368,21 @@
 #elif  __KIND == __INTEGER
       IF (btype.NE.ppm_integer) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-integer into integer ',__LINE__,info)
          GOTO 9999
       ENDIF
 #elif  __KIND == __LOGICAL
       IF (btype.NE.ppm_logical) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,'ppm_map_part_pop',    &
+         CALL ppm_error(ppm_err_wrong_prec,caller,    &
      &       'trying to pop a non-logical into logical ',__LINE__,info)
       ENDIF
 #endif
       !-------------------------------------------------------------------------
       !  (Re)allocate the particle data (if necessary)
       !-------------------------------------------------------------------------
+#if   __VARIANT == __NORMAL
       iopt   = ppm_param_alloc_grow_preserve
 #if   __DIM == 2 
       ldu(1) = edim
@@ -262,24 +393,58 @@
       CALL ppm_alloc(pdata,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_pop',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'particle data PDATA',__LINE__,info)
           GOTO 9999
       ENDIF
+#elif __VARIANT == __ADD
+      iopt   = ppm_param_alloc_grow_preserve
+#if   __DIM == 2 
+      ldu(1) = edim
+      ldu(2) = newMpart
+#elif __DIM == 1
+      ldu(1) = newMpart
+#endif
+      CALL ppm_alloc(pdata_old,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,     &
+     &        'particle data PDATA_OLD',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      iopt   = ppm_param_alloc_grow
+#if   __DIM == 2 
+      ldu(1) = edim
+      ldu(2) = npart_added
+#elif __DIM == 1
+      ldu(1) = npart_added
+#endif
+      CALL ppm_alloc(pdata,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,     &
+     &        'particle data PDATA',__LINE__,info)
+          GOTO 9999
+      ENDIF
+#endif
 
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the receive buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        'newNpart*bdim = ',newNpart*bdim
-          CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
+     &        ' newNpart*bdim = ',newNpart*bdim
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
+#if   __VARIANT == __NORMAL
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
          ppm_nrecvbuffer = ppm_nrecvbuffer - (newNpart - Npart)*bdim 
       ELSE
          ppm_nrecvbuffer = ppm_nrecvbuffer - newNpart*bdim 
       ENDIF 
+#elif __VARIANT == __ADD
+      ppm_nrecvbuffer = ppm_nrecvbuffer - npart_added*bdim 
+#endif
 
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the send buffer to allow reuse by
@@ -292,7 +457,7 @@
 
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
-          CALL ppm_write(ppm_rank,'ppm_map_part_pop',mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -300,11 +465,17 @@
       !  them at the end of the current particle list, otherwise we overwrite  
       !  the current particle list
       !-------------------------------------------------------------------------
+#if   __VARIANT == __NORMAL
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
          istart = Npart + 1
       ELSE
          istart = 1
       ENDIF 
+      iend = newNpart
+#elif __VARIANT == __ADD
+         istart = 1
+         iend = npart_added !nb of particles in buffer
+#endif
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist() 
       !-------------------------------------------------------------------------
@@ -318,7 +489,7 @@
          !  Unrolled version of edim=1
          !----------------------------------------------------------------------
          IF (edim .EQ. 1) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -350,7 +521,7 @@
          !  Unrolled version of edim=2
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 2) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -401,7 +572,7 @@
          !  Unrolled version of edim=3
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 3) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -471,7 +642,7 @@
          !  Unrolled version of edim=4
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 4) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -560,7 +731,7 @@
          !  Unrolled version of edim=5
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 5) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -668,7 +839,7 @@
          !  For edim.GT.5 the vector length will be edim !!
          !----------------------------------------------------------------------
          ELSE
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -704,7 +875,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -742,7 +913,7 @@
          !  Unrolled verion for edim=1
          !----------------------------------------------------------------------
          IF (edim .EQ. 1) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -774,7 +945,7 @@
          !  Unrolled verion for edim=2
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 2) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -825,7 +996,7 @@
          !  Unrolled verion for edim=3
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 3) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -895,7 +1066,7 @@
          !  Unrolled verion for edim=4
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 4) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -984,7 +1155,7 @@
          !  Unrolled verion for edim=5
          !----------------------------------------------------------------------
          ELSEIF (edim .EQ. 5) THEN
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
@@ -1092,7 +1263,7 @@
          !  For edim.GT.5 the vector length will be edim !!
          !----------------------------------------------------------------------
          ELSE
-            DO ipart=istart,newNpart
+            DO ipart=istart,iend
                DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -1128,7 +1299,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -1166,7 +1337,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
 #if    __DIM == 2
-        DO ipart=istart,newNpart
+        DO ipart=istart,iend
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -1201,7 +1372,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -1235,7 +1406,7 @@
       !-------------------------------------------------------------------------
       ELSE
 #if    __DIM == 2
-        DO ipart=istart,newNpart
+        DO ipart=istart,iend
             DO k=1,edim
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
@@ -1270,7 +1441,7 @@
          !----------------------------------------------------------------------
          !  Scalar version
          !----------------------------------------------------------------------
-         DO ipart=istart,newNpart
+         DO ipart=istart,iend
 #if    __KIND == __SINGLE_PRECISION_COMPLEX | \
        __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
@@ -1305,6 +1476,53 @@
       ! finish non-MPI
 #endif 
 
+#if    __VARIANT == __ADD
+      !-------------------------------------------------------------------------
+      !  Weave the received data inside the existing one (so that the indexing 
+      !  is preserved)
+      !-------------------------------------------------------------------------
+
+      ipart = Mpart + (newNpart-Npart)
+      ipart_add = npart_added
+      DO k=ppm_nsendlist,1,-1
+
+          i=plists_normal%precv(k)
+          j=plists_add%precv(k)
+          !write(*,*) 'ipart = ', ipart
+          !write(*,*) 'ipart_add = ', ipart_add
+          !write(*,*) 'k = ', k
+          !write(*,*) 'i = ', i
+          !write(*,*) 'j = ', j
+          !write(*,*) 'Npart = ',Npart
+          !write(*,*) 'Mpart = ',Mpart
+          !write(*,*) 'newNpart = ',newNpart
+          !write(*,*) 'newMpart = ',newMpart
+
+#if    __DIM == 1
+          pdata_old(ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
+              pdata_old(ipart-i+1:ipart)
+          pdata_old(ipart+ipart_add-j+1:ipart+ipart_add) = &
+              pdata(ipart_add-j+1:ipart_add)
+#elif  __DIM == 2
+          pdata_old(1:lda,ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
+              pdata_old(1:lda,ipart-i+1:ipart)
+          pdata_old(1:lda,ipart+ipart_add-j+1:ipart+ipart_add) = &
+              pdata(1:lda,ipart_add-j+1:ipart_add)
+#endif
+          ipart = ipart - i
+          ipart_add = ipart_add - j
+      ENDDO ! loop over all processors in commseq
+#if    __DIM == 1
+      pdata_old(newNpart+1:newNpart+(newNpart-Npart)) = &
+          pdata_old(Npart+1:newNpart)
+      pdata_old(Npart+1:newNpart) = pdata_add(1:npart_added)
+#elif  __DIM == 2
+      pdata_old(1:lda,newNpart+1:newNpart+(newNpart-Npart)) = &
+          pdata_old(1:lda,Npart+1:newNpart)
+      pdata_old(1:lda,Npart+1:newNpart) = pdata_add(1:lda,1:npart_added)
+#endif
+#endif
+
       !-------------------------------------------------------------------------
       !  Decrement the set counter
       !-------------------------------------------------------------------------
@@ -1322,7 +1540,7 @@
           ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_pop',     &
+              CALL ppm_error(ppm_err_alloc,caller,     &
      &            'receive buffer PPM_RECVBUFFER',__LINE__,info)
           ENDIF
       ENDIF
@@ -1331,33 +1549,33 @@
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_map_part_pop',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (Npart .LT. 0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'Npart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (newNpart .LT. 0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'newNpart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
 #if   __DIM == 2
           IF (lda .LT. 1) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'lda must be >0 for vector data',__LINE__,info)
               GOTO 8888
           ENDIF
 #elif __DIM == 1
           IF (lda .NE. 1) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_map_part_pop',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'lda must be =1 for scalar data',__LINE__,info)
               GOTO 8888
           ENDIF
@@ -1365,6 +1583,7 @@
  8888     CONTINUE
       END SUBROUTINE check
 
+#if    __VARIANT == __NORMAL
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_pop_1ds
@@ -1393,5 +1612,37 @@
       END SUBROUTINE ppm_map_part_pop_2di
 #elif  __KIND == __LOGICAL
       END SUBROUTINE ppm_map_part_pop_2dl
+#endif
+#endif
+#elif  __VARIANT == __ADD
+#if    __DIM == 1
+#if    __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_map_part_pop_add1ds
+#elif  __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_map_part_pop_add1dd
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_pop_add1dsc
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_pop_add1ddc
+#elif  __KIND == __INTEGER
+      END SUBROUTINE ppm_map_part_pop_add1di
+#elif  __KIND == __LOGICAL
+      END SUBROUTINE ppm_map_part_pop_add1dl
+#endif
+
+#elif  __DIM == 2
+#if    __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_map_part_pop_add2ds
+#elif  __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_map_part_pop_add2dd
+#elif  __KIND == __SINGLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_pop_add2dsc
+#elif  __KIND == __DOUBLE_PRECISION_COMPLEX
+      END SUBROUTINE ppm_map_part_pop_add2ddc
+#elif  __KIND == __INTEGER
+      END SUBROUTINE ppm_map_part_pop_add2di
+#elif  __KIND == __LOGICAL
+      END SUBROUTINE ppm_map_part_pop_add2dl
+#endif
 #endif
 #endif

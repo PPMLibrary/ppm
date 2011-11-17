@@ -44,6 +44,8 @@
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_util_invert_list
+      USE ppm_module_data_buffers, ONLY: ppm_psendbuffer,ppm_buffer2part,&
+          &                              ppm_buffer_set
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------

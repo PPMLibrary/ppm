@@ -27,12 +27,22 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+#if    __VARIANT == __NORMAL
 #if    __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,   &
      &                                    ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,   &
      &                                    ghostsize,info)
+#endif 
+#elif  __VARIANT == __ADD
+#if    __KIND == __SINGLE_PRECISION
+      SUBROUTINE ppm_part_modify_add_s(topoid,xp,lda,Npart,are_real,isymm,   &
+     &                                    ghostsize,info)
+#elif  __KIND == __DOUBLE_PRECISION
+      SUBROUTINE ppm_part_modify_add_d(topoid,xp,lda,Npart,are_real,isymm,   &
+     &                                    ghostsize,info)
+#endif 
 #endif 
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine 
@@ -109,6 +119,15 @@
       USE ppm_module_write
       USE ppm_module_check_id
       USE ppm_module_util_commopt
+#if    __VARIANT == __NORMAL
+      USE ppm_module_data_buffers
+#elif  __VARIANT == __ADD
+      USE ppm_module_data_buffers_add
+      USE ppm_module_data_buffers, ONLY:  &
+          ppm_nsendbuffer_normal => ppm_nsendbuffer, &
+          ppm_buffer2part_normal => ppm_buffer2part, &
+          ppm_psendbuffer_normal => ppm_psendbuffer
+#endif
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -128,6 +147,14 @@
       !!! Leading dimension of xp
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The number of particles (on the local processor)
+#if  __VARIANT == __ADD
+      LOGICAL                 , INTENT(IN   ) :: are_real
+      !!! If true, then all particles to be added are real particles
+      !!! (i.e., they are inside one of the subdomains on this proc)
+      !!! IF false, it is assumed that all particles to be added are
+      !!! ghost particles (i.e., they are outside of all subdomains
+      !!! for this proc).
+#endif
       INTEGER                 , INTENT(IN   ) :: isymm
       !!! Indicator for the use of symmetry
       !!!
@@ -142,7 +169,7 @@
       INTEGER               :: i,j,k,isub
       INTEGER               :: nlist1,nlist2,nghost,nghostplus
       INTEGER               :: ipart,sendrank,recvrank
-      INTEGER               :: iopt,iset,ibuffer
+      INTEGER               :: iopt,iset,ibuffer,iadd,jadd
       REAL(MK), DIMENSION(:,:), POINTER :: xt  => NULL()
       ! position of potential ghosts
       REAL(MK), DIMENSION(:,:), POINTER :: xt_offset => NULL()
@@ -159,7 +186,12 @@
       LOGICAL, DIMENSION(2*ppm_dim) :: lextra
       INTEGER, DIMENSION(2*ppm_dim) :: ibc
       LOGICAL                       :: valid
-      CHARACTER(ppm_char)              :: mesg
+      CHARACTER(ppm_char)           :: mesg
+#if    __VARIANT == __NORMAL
+      CHARACTER(ppm_char)           :: caller = 'ppm_map_part_ghost_get'
+#elif  __VARIANT == __ADD
+      CHARACTER(ppm_char)           :: caller = 'ppm_part_modify_add'
+#endif
       ! number of periodic directions: between 0 and ppm_dim
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
       REAL(MK)                      :: eps
@@ -170,7 +202,7 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_ghost_get',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -224,7 +256,7 @@
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
         info = ppm_error_warning
-        CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_ghost_get',  &
+        CALL ppm_error(ppm_err_map_incomp,caller,  &
      &       'Buffer was not empty. Possible loss of data!',__LINE__,info)
       ENDIF
 
@@ -239,11 +271,11 @@
         IF (ppm_debug .GT. 1) THEN
             DO i=1,topo%nneighproc
                 WRITE(mesg,'(A,I4)') 'have neighbor: ', topo%ineighproc(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_get',mesg,info)
+                CALL ppm_write(ppm_rank,caller,mesg,info)
             ENDDO
             DO i=1,topo%ncommseq
                 WRITE(mesg,'(A,I4)') 'communicate: ', topo%icommseq(i)
-                CALL ppm_write(ppm_rank,'ppm_map_part_ghost_get',mesg,info)
+                CALL ppm_write(ppm_rank,caller,mesg,info)
             ENDDO
         ENDIF
       ENDIF
@@ -288,21 +320,21 @@
       CALL ppm_alloc(ilist1,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'list1',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ilist2,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'list2',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ighost,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'ighost',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -317,7 +349,7 @@
       CALL ppm_alloc(xt_offset,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'xt',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -522,7 +554,7 @@
       !-------------------------------------------------------------------------
       IF (nlist2.NE.0) THEN
          info = ppm_error_fatal
-         CALL ppm_error(ppm_err_part_unass,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_part_unass,caller,     &
      &       'nlist2 > 0',__LINE__,info)
          GOTO 9999
       ENDIF
@@ -597,7 +629,7 @@
       CALL ppm_alloc(lghost,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'logical list: lghost',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -609,14 +641,14 @@
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'global send rank list PPM_ISENDLIST',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'global recv rank list PPM_IRECVLIST',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -631,7 +663,7 @@
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'global send buffer pointer PPM_PSENDBUFFER',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -679,14 +711,14 @@
       CALL ppm_alloc(ppm_buffer_dim ,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+          CALL ppm_error(ppm_err_alloc,caller,     &
      &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
           GOTO 9999
       ENDIF
@@ -727,7 +759,7 @@
          ENDIF
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+             CALL ppm_error(ppm_err_alloc,caller,     &
      &           'global send buffer PPM_SENDBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -739,7 +771,7 @@
          CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+             CALL ppm_error(ppm_err_alloc,caller,     &
      &           'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -863,7 +895,7 @@
             ppm_sendbufsize = ldu(1) 
             IF (info .NE. 0) THEN
                 info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+                CALL ppm_error(ppm_err_alloc,caller,     &
      &              'global send buffer PPM_SENDBUFFER',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -876,7 +908,7 @@
             CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
             IF (info .NE. 0) THEN
                 info = ppm_error_fatal
-                CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
+                CALL ppm_error(ppm_err_alloc,caller,     &
      &              'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
                 GOTO 9999
             ENDIF
@@ -1207,7 +1239,7 @@
                   ENDIF
                   IF (info .NE. 0) THEN
                       info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',   &
+                      CALL ppm_error(ppm_err_alloc,caller,   &
      &                    'global send buffer PPM_SENDBUFFER',__LINE__,info)
                       GOTO 9999
                   ENDIF
@@ -1218,7 +1250,7 @@
                   ENDIF
                   IF (info .NE. 0) THEN
                       info = ppm_error_fatal
-                      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',   &
+                      CALL ppm_error(ppm_err_alloc,caller,   &
      &                   'buffer2particles map PPM_BUFFER2PART',__LINE__,info)
                       GOTO 9999
                   ENDIF
@@ -1413,6 +1445,67 @@
       !-------------------------------------------------------------------------
       ppm_nsendbuffer = ibuffer
 
+#if   __VARIANT == __ADD
+      !-------------------------------------------------------------------------
+      !  Fuse the actual ghost mappings with the ones we have just computed
+      !  (and which map the newly added ghost particles to the corresponding
+      !   real particles on the neighbouring processors)
+      !-------------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      !  first reallocate the index list: buffer2part
+      !----------------------------------------------------------------------
+      iopt = ppm_param_alloc_grow_preserve
+      ldu(1) = ppm_nsendbuffer_normal + ppm_nsendbuffer
+      CALL ppm_alloc(ppm_buffer2part_normal,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,     &
+              &   'buffer-to-particles map ppm_buffer2part_add',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      iset = 0
+
+      DO k=topo%ncommseq,1,-1
+
+          i=ppm_psendbuffer_normal(k)
+          j=ppm_psendbuffer_normal(k+1)-1
+          iadd=ppm_psendbuffer(k)
+          jadd=ppm_psendbuffer(k+1)-1
+
+          !copy to buffers and move data within buffers
+          ppm_buffer2part_normal(i+iadd-1:j+iadd-1) = &
+              ppm_buffer2part_normal(i:j)
+          ppm_buffer2part_normal(j+iadd:j+jadd)  = &
+              ppm_buffer2part(iadd:jadd) + Npart
+              
+          !!FIXME: this should only be done if we want to send the whole buffer
+          !! (i.e. if the already existing ghosts havent been communicated
+          !! already. In that case, the calling sequence would look like
+          !! ppm_map_part_ghost_get
+          !! ppm_part_modify_add
+          !! ppm_map_part_send
+          !! Otherwise, it is not necessary to update ppm_sendbuffer and we
+          !! should just send ppm_sendbuffer_add by calling
+          !! ppm_part_modify_send)
+          !lda=ppm_dim
+          !IF (ppm_kind.EQ.ppm_kind_double) THEN
+              !ppm_sendbufferd_normal(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
+                  !ppm_sendbufferd_normal(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbufferd_normal(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
+                  !ppm_sendbufferd(1+lda*(iadd-1):1+lda*(jadd-1))
+          !ELSE
+              !ppm_sendbuffers_normal(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
+                  !ppm_sendbuffers_normal(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbuffers_normal(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
+                  !ppm_sendbuffers(1+lda*(iadd-1):1+lda*(jadd-1))
+          !ENDIF
+
+         ppm_psendbuffer_normal(k+1)=&
+             ppm_psendbuffer_normal(k+1)+ppm_psendbuffer(k+1) - 1
+      ENDDO ! loop over all processors in commseq
+
+#endif
+
       !-------------------------------------------------------------------------
       !  Deallocate the memory for the lists
       !-------------------------------------------------------------------------
@@ -1420,42 +1513,42 @@
 !      CALL ppm_alloc(ilist1,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+!         CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &       'ilist1',__LINE__,info)
 !      ENDIF
 !
 !      CALL ppm_alloc(ilist2,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+!         CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &       'ilist2',__LINE__,info)
 !      ENDIF
 !
 !      CALL ppm_alloc(ighost,ldu,iopt,info)
 !      IF (info .NE. 0) THEN
 !         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+!         CALL ppm_error(ppm_err_dealloc,caller,     &
 !     &       'ighost',__LINE__,info)
 !      ENDIF
 
       CALL ppm_alloc(    xt,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,caller,     &
      &       'xt',__LINE__,info)
       ENDIF
 
       CALL ppm_alloc(xt_offset,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,caller,     &
      &       'xt',__LINE__,info)
       ENDIF
 
       CALL ppm_alloc(lghost,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+         CALL ppm_error(ppm_err_dealloc,caller,     &
      &       'lghost',__LINE__,info)
       ENDIF
 
@@ -1464,19 +1557,19 @@
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_map_part_ghost_get',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_map_part_ghost_get',  &
+              CALL ppm_error(ppm_err_ppm_noinit,caller,  &
      &            'Please call ppm_init first!',__LINE__,info)
               GOTO 8888
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_no_topo,'ppm_map_part_ghost_get',  &
+              CALL ppm_error(ppm_err_no_topo,caller,  &
      &            'This routine needs a topology defined topo',__LINE__,info)
               GOTO 8888
           ENDIF
@@ -1484,33 +1577,42 @@
             CALL ppm_check_topoid(topoid,valid,info)
             IF (.NOT. valid) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+                CALL ppm_error(ppm_err_argument,caller,  &
      &               'topoid out of range',__LINE__,info)
                 GOTO 8888
             ENDIF
         ENDIF
         IF (lda .LT. 1) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'lda must be >0',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (Npart .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'Npart must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (ghostsize .LT. 0.0_MK) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_ghost_get',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'ghostsize must be >=0.0',__LINE__,info)
             GOTO 8888
         ENDIF
  8888     CONTINUE
       END SUBROUTINE check
+#if  __VARIANT == __NORMAL
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_ghost_get_s
 #elif  __KIND == __DOUBLE_PRECISION
       END SUBROUTINE ppm_map_part_ghost_get_d
 #endif
+#elif  __VARIANT == __ADD
+#if    __KIND == __SINGLE_PRECISION
+      END SUBROUTINE ppm_part_modify_add_s
+#elif  __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE ppm_part_modify_add_d
+#endif 
+#endif 
+

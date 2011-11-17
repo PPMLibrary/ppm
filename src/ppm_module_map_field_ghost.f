@@ -37,6 +37,7 @@
       !!! (the data living on the meshes). Several fields can use the
       !!! same mesh. Meshes are defined as per-topology ppm-internal types,
       !!! whereas fields are user-provided arrays.
+         USE ppm_module_data_buffers
          !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
