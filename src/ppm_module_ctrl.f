@@ -389,6 +389,7 @@ CONTAINS
     CHARACTER(LEN=*), PARAMETER             :: caller='parse_args'
     CHARACTER(LEN=256)                      :: value
     LOGICAL                                 :: ok
+    LOGICAL                                 :: printing_ctrl = .FALSE.
     INTEGER                                 :: info2
     INTEGER                                 :: i
     INTEGER                                 :: rank = 0
@@ -440,6 +441,15 @@ CONTAINS
              CALL print_help
              info = exit_gracefully
              GOTO 100
+          END IF
+       END IF
+       !-------------------------------------------------------------------
+       !  Print Control file
+       !-------------------------------------------------------------------
+       IF (ctrl_enabled) THEN
+          CALL find_flag('--print-ctrl', ok)
+          IF (ok) THEN
+             printing_ctrl = .TRUE.
           END IF
        END IF
        !-------------------------------------------------------------------
@@ -502,13 +512,10 @@ CONTAINS
        !-------------------------------------------------------------------
        !  Print Control file
        !-------------------------------------------------------------------
-       IF (ctrl_enabled) THEN
-          CALL find_flag('--print-ctrl', ok)
-          IF (ok) THEN
-             CALL print_ctrl
-             info = exit_gracefully
-             GOTO 100
-          END IF
+       IF (printing_ctrl) THEN
+          CALL print_ctrl
+          info = exit_gracefully
+          GOTO 100
        END IF
        !-------------------------------------------------------------------
        !  DONE!
