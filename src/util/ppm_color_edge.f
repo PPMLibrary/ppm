@@ -344,9 +344,9 @@
           INTEGER :: i
 
           max_degree = 0
-          DO i = 1, nvertices
-              IF(size(edges_per_node(i)%adj_edge).GT.max_degree) THEN
-                  max_degree = size(edges_per_node(i)%adj_edge)
+          DO i = 1, nedges
+              IF(size(node(i)%list) .GT. max_degree) THEN
+                  max_degree = size(node(i)%list)
               ENDIF
           ENDDO
           max_degree = max_degree + 1
