@@ -45,45 +45,46 @@
          
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_map_part
+         USE ppm_module_data_buffers_add
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------
          !  types
          !----------------------------------------------------------------------
 
-         TYPE ppm_t_part_modify
-             INTEGER                            :: Nrnew
-             !number of new real particles added by the user
-             INTEGER                            :: Ngnew
-             !number of new ghost particles added by the user
-             INTEGER                            :: Ngsendnew
-             !number of new real particles that are ghosts for other procs
-             INTEGER                            :: Ngrecvnew
-             !number of new ghost particles that are received from other procs
-             INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
-             !indeces of new real particles 
-             INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
-             !indeces of new ghost particles 
-             INTEGER, DIMENSION(:), POINTER     :: idx_ghost_send_new => NULL()
-             !indeces of new real particles that are ghosts for other procs
-             ! FIXME: does not seem to be used
-             INTEGER, DIMENSION(:), POINTER     :: psend_new_offset => NULL()
-         END TYPE
+         !TYPE ppm_t_part_modify
+             !INTEGER                            :: Nrnew
+             !!number of new real particles added by the user
+             !INTEGER                            :: Ngnew
+             !!number of new ghost particles added by the user
+             !INTEGER                            :: Ngsendnew
+             !!number of new real particles that are ghosts for other procs
+             !INTEGER                            :: Ngrecvnew
+             !!number of new ghost particles that are received from other procs
+             !INTEGER, DIMENSION(:), POINTER     :: idx_real_new => NULL()
+             !!indeces of new real particles 
+             !INTEGER, DIMENSION(:), POINTER     :: idx_ghost_new => NULL()
+             !!indeces of new ghost particles 
+             !INTEGER, DIMENSION(:), POINTER     :: idx_ghost_send_new => NULL()
+             !!indeces of new real particles that are ghosts for other procs
+             !! FIXME: does not seem to be used
+             !INTEGER, DIMENSION(:), POINTER     :: psend_new_offset => NULL()
+         !END TYPE
 
-         !----------------------------------------------------------------------
-         !  data
-         !----------------------------------------------------------------------
+         !!----------------------------------------------------------------------
+         !!  data
+         !!----------------------------------------------------------------------
 
-         TYPE(ppm_t_part_modify), SAVE           :: modify
+         !TYPE(ppm_t_part_modify), SAVE           :: modify
 
-         !----------------------------------------------------------------------
-         !  Work lists (copied from ppm_module_map_part_ghost)
-         !----------------------------------------------------------------------
-         INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
-         INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
-         INTEGER, DIMENSION(:), POINTER :: ighost => NULL()
-         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
-         PRIVATE :: ilist1,ilist2,ighost,lghost
+         !!----------------------------------------------------------------------
+         !!  Work lists (copied from ppm_module_map_part_ghost)
+         !!----------------------------------------------------------------------
+         !INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
+         !INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
+         !INTEGER, DIMENSION(:), POINTER :: ighost => NULL()
+         !LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
+         !PRIVATE :: ilist1,ilist2,ighost,lghost
 
          !INTEGER, DIMENSION(:), POINTER :: precv_add => NULL()
          !INTEGER, DIMENSION(:), POINTER :: psend_add => NULL()
@@ -115,31 +116,31 @@
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_part_split_compute
          !----------------------------------------------------------------------
-         INTERFACE ppm_part_split_compute
-            MODULE PROCEDURE ppm_part_split_compute_s
-            MODULE PROCEDURE ppm_part_split_compute_d
-         END INTERFACE
+         !INTERFACE ppm_part_split_compute
+            !MODULE PROCEDURE ppm_part_split_compute_s
+            !MODULE PROCEDURE ppm_part_split_compute_d
+         !END INTERFACE
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_part_split_apply
          !----------------------------------------------------------------------
-         INTERFACE ppm_part_split_apply
-            ! scalar (1d) particle data
-            MODULE PROCEDURE ppm_part_split_apply_1dd
-            MODULE PROCEDURE ppm_part_split_apply_1ds
-            MODULE PROCEDURE ppm_part_split_apply_1di
-            MODULE PROCEDURE ppm_part_split_apply_1dl
-            MODULE PROCEDURE ppm_part_split_apply_1ddc
-            MODULE PROCEDURE ppm_part_split_apply_1dsc
+         !INTERFACE ppm_part_split_apply
+            !! scalar (1d) particle data
+            !MODULE PROCEDURE ppm_part_split_apply_1dd
+            !MODULE PROCEDURE ppm_part_split_apply_1ds
+            !MODULE PROCEDURE ppm_part_split_apply_1di
+            !MODULE PROCEDURE ppm_part_split_apply_1dl
+            !MODULE PROCEDURE ppm_part_split_apply_1ddc
+            !MODULE PROCEDURE ppm_part_split_apply_1dsc
 
-            ! vector (2d) particle data
-            MODULE PROCEDURE ppm_part_split_apply_2dd
-            MODULE PROCEDURE ppm_part_split_apply_2ds
-            MODULE PROCEDURE ppm_part_split_apply_2di
-            MODULE PROCEDURE ppm_part_split_apply_2dl
-            MODULE PROCEDURE ppm_part_split_apply_2ddc
-            MODULE PROCEDURE ppm_part_split_apply_2dsc
-         END INTERFACE
+            !! vector (2d) particle data
+            !MODULE PROCEDURE ppm_part_split_apply_2dd
+            !MODULE PROCEDURE ppm_part_split_apply_2ds
+            !MODULE PROCEDURE ppm_part_split_apply_2di
+            !MODULE PROCEDURE ppm_part_split_apply_2dl
+            !MODULE PROCEDURE ppm_part_split_apply_2ddc
+            !MODULE PROCEDURE ppm_part_split_apply_2dsc
+         !END INTERFACE
 
          !!----------------------------------------------------------------------
          !!  Define interfaces to ppm_part_modify_pop
@@ -294,53 +295,53 @@
 
 !#include "part/ppm_part_modify_send.f"
 
-#define __KIND __SINGLE_PRECISION
-#include "part/ppm_part_split_compute.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION
-#include "part/ppm_part_split_compute.f"
-#undef __KIND
+!#define __KIND __SINGLE_PRECISION
+!#include "part/ppm_part_split_compute.f"
+!#undef __KIND
+!#define __KIND __DOUBLE_PRECISION
+!#include "part/ppm_part_split_compute.f"
+!#undef __KIND
 
-#define __DIM 1
-#define __KIND __SINGLE_PRECISION
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __INTEGER
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __LOGICAL
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __SINGLE_PRECISION_COMPLEX
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#undef __DIM
+!#define __DIM 1
+!#define __KIND __SINGLE_PRECISION
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __DOUBLE_PRECISION
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __INTEGER
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __LOGICAL
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __SINGLE_PRECISION_COMPLEX
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __DOUBLE_PRECISION_COMPLEX
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#undef __DIM
 
-#define __DIM 2
-#define __KIND __SINGLE_PRECISION
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __INTEGER
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __LOGICAL
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __SINGLE_PRECISION_COMPLEX
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION_COMPLEX
-#include "part/ppm_part_split_apply.f"
-#undef __KIND
-#undef __dim
+!#define __DIM 2
+!#define __KIND __SINGLE_PRECISION
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __DOUBLE_PRECISION
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __INTEGER
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __LOGICAL
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __SINGLE_PRECISION_COMPLEX
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#define __KIND __DOUBLE_PRECISION_COMPLEX
+!#include "part/ppm_part_split_apply.f"
+!#undef __KIND
+!#undef __dim
 
       END MODULE ppm_module_part_modify

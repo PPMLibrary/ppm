@@ -173,31 +173,31 @@
 #if   __DIM == 1
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:  ), POINTER    :: pdata_old => NULL()
-      INTEGER , DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      INTEGER , DIMENSION(:  ), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #elif __KIND == __LOGICAL
       LOGICAL , DIMENSION(:  ), POINTER    :: pdata_old => NULL()
-      LOGICAL , DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      LOGICAL , DIMENSION(:  ), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:  ), POINTER :: pdata_old => NULL()
-      COMPLEX(MK), DIMENSION(:  ), POINTER,INTENT(IN) :: pdata_add => NULL()
+      COMPLEX(MK), DIMENSION(:  ), POINTER,INTENT(INOUT) :: pdata_add => NULL()
 #else
       REAL(MK), DIMENSION(:  ), POINTER    :: pdata_old => NULL()
-      REAL(MK), DIMENSION(:  ), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      REAL(MK), DIMENSION(:  ), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #endif
 
 #elif __DIM == 2
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:,:), POINTER    :: pdata_old => NULL()
-      INTEGER , DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      INTEGER , DIMENSION(:,:), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #elif __KIND == __LOGICAL
       LOGICAL , DIMENSION(:,:), POINTER    :: pdata_old => NULL()
-      LOGICAL , DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      LOGICAL , DIMENSION(:,:), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:), POINTER :: pdata_old => NULL()
-      COMPLEX(MK), DIMENSION(:,:), POINTER,INTENT(IN) :: pdata_add => NULL()
+      COMPLEX(MK), DIMENSION(:,:), POINTER,INTENT(INOUT) :: pdata_add => NULL()
 #else
       REAL(MK), DIMENSION(:,:), POINTER    :: pdata_old => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER,INTENT(IN)    :: pdata_add => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER,INTENT(INOUT)    :: pdata_add => NULL()
 #endif
 #endif
 #endif
@@ -297,7 +297,12 @@
       ENDIF
 
 #if   __VARIANT == __ADD
-      npart_added = newMpart - Mpart - (newNpart - Npart) 
+      !number of particles to receive from the buffer
+      IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
+          npart_added = newMpart - Mpart - (newNpart - Npart) 
+      ELSE
+          npart_added = newMpart - Mpart - (newNpart - Npart) 
+      ENDIF
 #endif
 
       !-------------------------------------------------------------------------
@@ -399,19 +404,37 @@
       ENDIF
 #elif __VARIANT == __ADD
       iopt   = ppm_param_alloc_grow_preserve
+      IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
+          write(*,*) 'reallocating pdata_add for add_ghost'
 #if   __DIM == 2 
-      ldu(1) = edim
-      ldu(2) = newMpart
+          ldu(1) = edim
+          ldu(2) = newMpart - Mpart
 #elif __DIM == 1
-      ldu(1) = newMpart
+          ldu(1) = newMpart - Mpart
 #endif
-      CALL ppm_alloc(pdata_old,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'particle data PDATA_OLD',__LINE__,info)
-          GOTO 9999
+          CALL ppm_alloc(pdata_add,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,caller,     &
+                  &        'particle data PDATA_ADD',__LINE__,info)
+              GOTO 9999
+          ENDIF
+      ELSE
+#if   __DIM == 2 
+          ldu(1) = edim
+          ldu(2) = newMpart
+#elif __DIM == 1
+          ldu(1) = newMpart
+#endif
+          CALL ppm_alloc(pdata_old,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,caller,     &
+                  &        'particle data PDATA_OLD',__LINE__,info)
+              GOTO 9999
+          ENDIF
       ENDIF
+
       iopt   = ppm_param_alloc_grow
 #if   __DIM == 2 
       ldu(1) = edim
@@ -457,6 +480,9 @@
 
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
+          CALL ppm_write(ppm_rank,caller,mesg,info)
+          !FIXME remove next 2 lines
+          WRITE(mesg,*) 'ppm_psendbuffer = ',ibuffer
           CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
@@ -1481,46 +1507,57 @@
       !  Weave the received data inside the existing one (so that the indexing 
       !  is preserved)
       !-------------------------------------------------------------------------
-
-      ipart = Mpart + (newNpart-Npart)
-      ipart_add = npart_added
-      DO k=ppm_nsendlist,1,-1
-
-          i=plists_normal%precv(k)
-          j=plists_add%precv(k)
-          !write(*,*) 'ipart = ', ipart
-          !write(*,*) 'ipart_add = ', ipart_add
-          !write(*,*) 'k = ', k
-          !write(*,*) 'i = ', i
-          !write(*,*) 'j = ', j
-          !write(*,*) 'Npart = ',Npart
-          !write(*,*) 'Mpart = ',Mpart
-          !write(*,*) 'newNpart = ',newNpart
-          !write(*,*) 'newMpart = ',newMpart
-
+      IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
+          !-------------------------------------------------------------------------
+          !  The new data are real values
+          !  we just have to append the data from the buffer at the end
+          !  of pdata_add 
+          !-------------------------------------------------------------------------
 #if    __DIM == 1
-          pdata_old(ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
-              pdata_old(ipart-i+1:ipart)
-          pdata_old(ipart+ipart_add-j+1:ipart+ipart_add) = &
-              pdata(ipart_add-j+1:ipart_add)
+          pdata_add(newNpart-Npart+1:newNpart-Npart+npart_added) = &
+              pdata(1:npart_added)
 #elif  __DIM == 2
-          pdata_old(1:lda,ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
-              pdata_old(1:lda,ipart-i+1:ipart)
-          pdata_old(1:lda,ipart+ipart_add-j+1:ipart+ipart_add) = &
-              pdata(1:lda,ipart_add-j+1:ipart_add)
+          pdata_add(1:lda,newNpart-Npart+1:newNpart-Npart+npart_added) = &
+              pdata(1:lda,1:npart_added)
 #endif
-          ipart = ipart - i
-          ipart_add = ipart_add - j
-      ENDDO ! loop over all processors in commseq
+      ELSE
+          !-------------------------------------------------------------------------
+          !  The new data are ghost values
+          !  The data from the buffer go between newNpart+1 and newMpart. 
+          !  This memory area consists of separate chuncks, each of which
+          !  corresponds to a given neighboring processor. The new data has to
+          !  be inserted so as to preserve this ordering.
+          !  The new real data is inserted between Npart+1 and newNpart.
+          !-------------------------------------------------------------------------
+          ipart = Mpart + (newNpart-Npart)
+          ipart_add = npart_added
+          DO k=ppm_nsendlist,1,-1
+              i=plists_normal%precv(k)
+              j=plists_add%precv(k)
 #if    __DIM == 1
-      pdata_old(newNpart+1:newNpart+(newNpart-Npart)) = &
-          pdata_old(Npart+1:newNpart)
-      pdata_old(Npart+1:newNpart) = pdata_add(1:npart_added)
+              pdata_old(ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
+                  pdata_old(ipart-i+1:ipart)
+              pdata_old(ipart+ipart_add-j+1:ipart+ipart_add) = &
+                  pdata(ipart_add-j+1:ipart_add)
 #elif  __DIM == 2
-      pdata_old(1:lda,newNpart+1:newNpart+(newNpart-Npart)) = &
-          pdata_old(1:lda,Npart+1:newNpart)
-      pdata_old(1:lda,Npart+1:newNpart) = pdata_add(1:lda,1:npart_added)
+              pdata_old(1:lda,ipart+ipart_add-i-j+1:ipart+ipart_add-j) = &
+                  pdata_old(1:lda,ipart-i+1:ipart)
+              pdata_old(1:lda,ipart+ipart_add-j+1:ipart+ipart_add) = &
+                  pdata(1:lda,ipart_add-j+1:ipart_add)
 #endif
+              ipart = ipart - i
+              ipart_add = ipart_add - j
+          ENDDO ! loop over all processors in commseq
+#if    __DIM == 1
+          pdata_old(newNpart+1:newNpart+(newNpart-Npart)) = &
+              pdata_old(Npart+1:newNpart)
+          pdata_old(Npart+1:newNpart) = pdata_add(1:newNpart-Npart)
+#elif  __DIM == 2
+          pdata_old(1:lda,newNpart+1:newNpart+(newNpart-Npart)) = &
+              pdata_old(1:lda,Npart+1:newNpart)
+          pdata_old(1:lda,Npart+1:newNpart) = pdata_add(1:lda,1:newNpart-Npart)
+#endif
+      ENDIF
 #endif
 
       !-------------------------------------------------------------------------

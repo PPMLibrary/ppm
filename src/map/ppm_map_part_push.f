@@ -133,7 +133,6 @@
 #else
       REAL(MK), DIMENSION(:  ), INTENT(IN   )    :: pdata
 #endif
-
 #elif __DIM == 2
 #if   __KIND == __INTEGER
       INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pdata

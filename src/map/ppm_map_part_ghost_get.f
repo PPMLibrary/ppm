@@ -37,11 +37,11 @@
 #endif 
 #elif  __VARIANT == __ADD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_add_s(topoid,xp,lda,Npart,are_real,isymm,   &
-     &                                    ghostsize,info)
+      SUBROUTINE ppm_part_modify_add_s(topoid,xp,lda,Npart_old,Npart,&
+              mode,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_add_d(topoid,xp,lda,Npart,are_real,isymm,   &
-     &                                    ghostsize,info)
+      SUBROUTINE ppm_part_modify_add_d(topoid,xp,lda,Npart_old,Npart,&
+              mode,isymm,ghostsize,info)
 #endif 
 #endif 
       !!! This routine maps/adds the ghost particles on the current topology.
@@ -141,17 +141,23 @@
       !!! ID of current topology
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The position of the particles
-      REAL(MK)                , INTENT(IN   ) :: ghostsize
-      !!! The size of the ghost layer
       INTEGER                 , INTENT(IN   ) :: lda
       !!! Leading dimension of xp
+#if   __VARIANT == __NORMAL
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The number of particles (on the local processor)
-#if  __VARIANT == __ADD
-      LOGICAL                 , INTENT(IN   ) :: are_real
-      !!! If true, then all particles to be added are real particles
+#elif __VARIANT == __ADD
+      INTEGER                 , INTENT(IN   ) :: Npart_old
+      !!! The number of real particles already present (on the local processor)
+      INTEGER                 , INTENT(IN   ) :: Npart
+      !!! The number of particles to be added (on the local processor)
+      INTEGER                 , INTENT(IN   ) :: mode
+      !!! One of:
+      !!!   1) ppm_param_add_real_particles
+      !!! all particles to be added are real particles
       !!! (i.e., they are inside one of the subdomains on this proc)
-      !!! IF false, it is assumed that all particles to be added are
+      !!!   2) ppm_param_add_ghost_particles
+      !!! all particles to be added are
       !!! ghost particles (i.e., they are outside of all subdomains
       !!! for this proc).
 #endif
@@ -160,6 +166,8 @@
       !!!
       !!! * isymm > 0 use symmetry
       !!! * isymm = 0 do not use symmetry
+      REAL(MK)                , INTENT(IN   ) :: ghostsize
+      !!! The size of the ghost layer
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
@@ -191,6 +199,9 @@
       CHARACTER(ppm_char)           :: caller = 'ppm_map_part_ghost_get'
 #elif  __VARIANT == __ADD
       CHARACTER(ppm_char)           :: caller = 'ppm_part_modify_add'
+      INTEGER,DIMENSION(:),POINTER  :: idx_add => NULL()
+      ! pointer to the index array of either real or ghost added particles
+      ! (depending on the value of _mode_)
 #endif
       ! number of periodic directions: between 0 and ppm_dim
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
@@ -219,6 +230,10 @@
       eps = ppm_myepss
 #endif
 
+#if   __VARIANT == __ADD
+      !update global variable stored in module_data_buffers_add
+      add_mode = mode
+#endif
       !-------------------------------------------------------------------------
       !  Count Boundary conditions
       !-------------------------------------------------------------------------
@@ -354,6 +369,7 @@
           GOTO 9999
       ENDIF
 
+#if   __VARIANT == __NORMAL
       !-------------------------------------------------------------------------
       !  List ilist1() holds the particles we are currently considering 
       !  List ilist2() holds the particles that have not yet been associated 
@@ -548,7 +564,6 @@
 
       ENDDO ! end of subs on local processor
 
-
       !-------------------------------------------------------------------------
       !  At the end the nlist2 should be zero
       !-------------------------------------------------------------------------
@@ -558,6 +573,28 @@
      &       'nlist2 > 0',__LINE__,info)
          GOTO 9999
       ENDIF
+
+#elif __VARIANT == __ADD
+      !-------------------------------------------------------------------------
+      !  Here we just copy the real (resp. ghost) particles the input array 
+      !  xp into xt if the mode is set to _real_ (resp. _ghost_)
+      !  There would be ways to avoid this copying, of course, but this avoids
+      !  code duplication.
+      !-------------------------------------------------------------------------
+      IF (mode .EQ. ppm_param_add_real_particles) THEN
+          nghost  = modify%Nrnew
+          idx_add => modify%idx_real_new
+      ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+          nghost  = modify%Ngnew
+          idx_add => modify%idx_ghost_new
+      ENDIF
+      DO j=1,nghost
+          xt(1:ppm_dim,j) = xp(1:ppm_dim,idx_add(j))
+          xt_offset(1:ppm_dim,j) = 0._MK
+          ighost(j) = idx_add(j)
+      ENDDO
+#endif
+
 
       !-------------------------------------------------------------------------
       !  Initialize the total number of ghosts incl. those due to boundary
@@ -1217,6 +1254,19 @@
                         zmaxi = zmaxf + ghostsize
                      ENDIF 
                   ENDIF 
+#if   __VARIANT == __ADD
+                  !If the particles we are adding are ghost particles,
+                  !we have to find which subdomain should contain them (as
+                  !real particles)
+                  IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+                      xmini = xminf
+                      ymini = yminf
+                      zmini = zminf
+                      xmaxi = xmaxf
+                      ymaxi = ymaxf
+                      zmaxi = zmaxf
+                  ENDIF
+#endif
 
                   !-------------------------------------------------------------
                   !  Reallocate to make sure we have enough memory in the
@@ -1445,64 +1495,72 @@
       !-------------------------------------------------------------------------
       ppm_nsendbuffer = ibuffer
 
-#if   __VARIANT == __ADD
-      !-------------------------------------------------------------------------
-      !  Fuse the actual ghost mappings with the ones we have just computed
-      !  (and which map the newly added ghost particles to the corresponding
-      !   real particles on the neighbouring processors)
-      !-------------------------------------------------------------------------
-      !----------------------------------------------------------------------
-      !  first reallocate the index list: buffer2part
-      !----------------------------------------------------------------------
-      iopt = ppm_param_alloc_grow_preserve
-      ldu(1) = ppm_nsendbuffer_normal + ppm_nsendbuffer
-      CALL ppm_alloc(ppm_buffer2part_normal,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-              &   'buffer-to-particles map ppm_buffer2part_add',__LINE__,info)
-          GOTO 9999
+      IF (ppm_debug .GT. 1) THEN
+          WRITE(mesg,'(1(A,I9))') 'ppm_nsendbuffer = ',ppm_nsendbuffer
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
-      iset = 0
 
-      DO k=topo%ncommseq,1,-1
+#if   __VARIANT == __ADD
 
-          i=ppm_psendbuffer_normal(k)
-          j=ppm_psendbuffer_normal(k+1)-1
-          iadd=ppm_psendbuffer(k)
-          jadd=ppm_psendbuffer(k+1)-1
+      IF (mode .EQ. ppm_param_add_real_particles) THEN
+          !---------------------------------------------------------------------
+          !  Fuse the actual ghost mappings with the ones we have just computed
+          !  (and which map the newly added ghost particles to the corresponding
+          !   real particles on the neighbouring processors)
+          !---------------------------------------------------------------------
+          !---------------------------------------------------------------------
+          !  first reallocate the index list: buffer2part
+          !---------------------------------------------------------------------
+          iopt = ppm_param_alloc_grow_preserve
+          ldu(1) = ppm_psendbuffer_normal(topo%ncommseq+1) + ppm_nsendbuffer
+          CALL ppm_alloc(ppm_buffer2part_normal,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,caller,     &
+                  &'buffer PPM_BUFFER2PART_NORMAL',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          iset = 0
+           
+          DO k=topo%ncommseq,1,-1
 
-          !copy to buffers and move data within buffers
-          ppm_buffer2part_normal(i+iadd-1:j+iadd-1) = &
-              ppm_buffer2part_normal(i:j)
-          ppm_buffer2part_normal(j+iadd:j+jadd)  = &
-              ppm_buffer2part(iadd:jadd) + Npart
-              
-          !!FIXME: this should only be done if we want to send the whole buffer
-          !! (i.e. if the already existing ghosts havent been communicated
-          !! already. In that case, the calling sequence would look like
-          !! ppm_map_part_ghost_get
-          !! ppm_part_modify_add
-          !! ppm_map_part_send
-          !! Otherwise, it is not necessary to update ppm_sendbuffer and we
-          !! should just send ppm_sendbuffer_add by calling
-          !! ppm_part_modify_send)
-          !lda=ppm_dim
-          !IF (ppm_kind.EQ.ppm_kind_double) THEN
+              i=ppm_psendbuffer_normal(k)
+              j=ppm_psendbuffer_normal(k+1)-1
+              iadd=ppm_psendbuffer(k)
+              jadd=ppm_psendbuffer(k+1)-1
+
+              !copy to buffers and move data within buffers
+              ppm_buffer2part_normal(i+iadd-1:j+iadd-1) = &
+                  ppm_buffer2part_normal(i:j)
+              ppm_buffer2part_normal(j+iadd:j+jadd)  = &
+                  ppm_buffer2part(iadd:jadd) + Npart_old
+
+              !!FIXME: this should only be done if we want to send the whole buffer
+              !! (i.e. if the already existing ghosts havent been communicated
+              !! already. In that case, the calling sequence would look like
+              !! ppm_map_part_ghost_get
+              !! ppm_part_modify_add
+              !! ppm_map_part_send
+              !! Otherwise, it is not necessary to update ppm_sendbuffer and we
+              !! should just send ppm_sendbuffer_add by calling
+              !! ppm_part_modify_send)
+              !lda=ppm_dim
+              !IF (ppm_kind.EQ.ppm_kind_double) THEN
               !ppm_sendbufferd_normal(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  !ppm_sendbufferd_normal(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbufferd_normal(1+lda*(i-1):1+lda*(j-1))
               !ppm_sendbufferd_normal(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  !ppm_sendbufferd(1+lda*(iadd-1):1+lda*(jadd-1))
-          !ELSE
+              !ppm_sendbufferd(1+lda*(iadd-1):1+lda*(jadd-1))
+              !ELSE
               !ppm_sendbuffers_normal(1+lda*(i+iadd-2):1+lda*(j+iadd-2)) = &
-                  !ppm_sendbuffers_normal(1+lda*(i-1):1+lda*(j-1))
+              !ppm_sendbuffers_normal(1+lda*(i-1):1+lda*(j-1))
               !ppm_sendbuffers_normal(1+lda*(i+iadd-2):1+lda*(j+jadd-2)) = &
-                  !ppm_sendbuffers(1+lda*(iadd-1):1+lda*(jadd-1))
-          !ENDIF
+              !ppm_sendbuffers(1+lda*(iadd-1):1+lda*(jadd-1))
+              !ENDIF
 
-         ppm_psendbuffer_normal(k+1)=&
-             ppm_psendbuffer_normal(k+1)+ppm_psendbuffer(k+1) - 1
-      ENDDO ! loop over all processors in commseq
+              ppm_psendbuffer_normal(k+1)=&
+                  ppm_psendbuffer_normal(k+1)+ppm_psendbuffer(k+1) - 1
+          ENDDO ! loop over all processors in commseq
+      ENDIF ! if ppm_param_add_real_particles
 
 #endif
 
@@ -1600,6 +1658,23 @@
      &          'ghostsize must be >=0.0',__LINE__,info)
             GOTO 8888
         ENDIF
+#if   __VARIANT == __ADD
+        IF (mode .EQ. ppm_param_add_real_particles) THEN
+            IF (modify%Nrnew .LT. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,  &
+                    &          'modify%Nrnew must be >=0.0',__LINE__,info)
+                GOTO 8888
+            ENDIF
+        ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+            IF (modify%Ngnew .LT. 0) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,  &
+                    &          'modify%Ngnew must be >=0.0',__LINE__,info)
+                GOTO 8888
+            ENDIF
+        ENDIF
+#endif
  8888     CONTINUE
       END SUBROUTINE check
 #if  __VARIANT == __NORMAL

@@ -16,7 +16,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 100000
+integer                         :: np = 3
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
@@ -120,6 +120,8 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: np_added=0,mp_added=0
         integer                         :: mp_new=0,np_new=0
         integer                         :: npart = 3,i
+        integer                         :: dummy = -HUGE(1)
+        integer                         :: Nr,Ng
 
         !----------------
         ! create particles
@@ -199,8 +201,14 @@ real(mk)                         :: t0,t1,t2,t3
         wpn(2,1)= 17._mk
         rcpn(1)= 0.33_mk
 
+        call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
+        assert_true(info.eq.0)
+        write(*,*) 'Nr = ',modify%Nrnew
+        write(*,*) 'Ng = ',modify%Ngnew
+
         !add one particle in the corner (it should generate 3 ghosts)
-        call ppm_part_modify_add(topoid,xpn,ndim,np_added,.true.,0,gl,info)
+        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
+            ppm_param_add_real_particles,0,gl,info)
         assert_true(info.eq.0)
         call ppm_part_modify_push(wpn,pdim,np_added,info)
         assert_true(info.eq.0)
@@ -227,10 +235,12 @@ real(mk)                         :: t0,t1,t2,t3
         do i=1,np_new
           write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
         enddo
-        write(*,*) '*********'
+        write(*,*) '---------'
         do i=np_new+1,mp_new
           write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
         enddo
+        write(*,*) '*********'
+        write(*,*) '*********'
 
         
         !modify properties
@@ -254,6 +264,16 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(info.eq.0)
         call ppm_map_part_pop(rcp,np_new,mp,info)
         assert_true(info.eq.0)
+
+        do i=1,np_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '---------'
+        do i=np_new+1,mp_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '*********'
+
         assert_true(rcp(np_new+1).eq.1.7_mk)
         assert_true(rcp(mp-2).eq.27._mk)
         assert_true(rcp(mp-1).eq.27._mk)
@@ -264,13 +284,23 @@ real(mk)                         :: t0,t1,t2,t3
         npart = np_new
 
         !lets add some more and do it again
-        np_added = 2011
+        np_added = 1
         allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
         call random_number(xpn)
+        xpn = (xpn-0.5_mk) * 1.02_mk + 0.5_mk 
         call random_number(wpn)
         call random_number(rcpn)
+        xpn(1:2,1) = (/1.03_MK,1.05_MK/)
+        rcpn = 11._MK
+        wpn(1:2,1) = (/0.31_MK,0.32_MK/)
 
-        call ppm_part_modify_add(topoid,xpn,ndim,np_added,.true.,0,gl,info)
+        call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
+        assert_true(info.eq.0)
+        write(*,*) 'Nr = ',modify%Nrnew
+        write(*,*) 'Ng = ',modify%Ngnew
+
+        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
+            ppm_param_add_ghost_particles,0,gl,info)
         assert_true(info.eq.0)
         call ppm_part_modify_push(wpn,pdim,np_added,info)
         assert_true(info.eq.0)
@@ -278,7 +308,50 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(info.eq.0)
         call ppm_part_modify_send(np_added,mp_added,info)
         assert_true(info.eq.0)
+
         np_new = npart + np_added
+        mp_new = mp + mp_added
+
+        call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_pop(xp,xpn,ndim,npart,mp,np_new,mp_new,info)
+        assert_true(info.eq.0)
+
+        write(*,*) 'np_added = ',np_added
+        write(*,*) 'mp_added = ',mp_added
+        write(*,*) 'np_new = ',np_new
+        write(*,*) 'mp_new = ',mp_new
+
+        do i=1,np_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '---------'
+        do i=np_new+1,mp_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '*********'
+        write(*,*) '*********'
+        write(*,*) '*XPN*'
+        do i=1,size(rcpn)
+          write(*,'(5(F10.3,1X))') xpn(:,i),wpn(:,i),rcpn(i)
+        enddo
+        write(*,*) '*********'
+        write(*,*) 'Nr = ',modify%Nrnew
+        write(*,*) 'Ng = ',modify%Ngnew
+
+        
+        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
+            ppm_param_add_real_particles,0,gl,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_push(wpn,pdim,np_added,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_push(rcpn,np_added,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_send(np_added,mp_added,info)
+        assert_true(info.eq.0)
+        !np_new = npart + np_added
         mp_new = mp    + mp_added
         call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
         assert_true(info.eq.0)
@@ -289,6 +362,15 @@ real(mk)                         :: t0,t1,t2,t3
 
         mp = mp_new
 
+        do i=1,np_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '---------'
+        do i=np_new+1,mp_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '*********'
+        write(*,*) '*********'
         !modify properties
         do i=1,np_new
           rcp(i) = 3.14_mk
@@ -311,113 +393,19 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(rcp(np_new+1).eq.3.14_mk)
         assert_true(rcp(mp).eq.3.14_mk)
 
+        do i=1,np_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '---------'
+        do i=np_new+1,mp_new
+          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        enddo
+        write(*,*) '*********'
+        write(*,*) '*********'
         deallocate(xpn,wpn,rcpn)
 
-        !!add one particle in the corner (it should generate 3 ghosts)
-        !call ppm_part_modify_add(topoid,xp,npart,mp,xpn,np_added,np_new,0,gl,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_push(wp,pdim,npart,mp,wpn,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_push(rcp,npart,mp,rcpn,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_send(info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(rcp,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(wp,pdim,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(xp,ndim,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-!
-        !mp = mp_new
-!
-        !do i=1,np_new
-          !write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        !enddo
-        !write(*,*) '*********'
-        !do i=np_new+1,mp_new
-          !write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        !enddo
-!
-       ! 
-        !!modify properties
-        !do i=1,np_new
-          !rcp(i) = 1._mk*i
-          !wp(1,i) = 1._mk*i
-          !wp(2,i) = 2._mk*i
-        !enddo
-        !rcp(1)=1.7_mk
-        !rcp(np_new)=27._mk
-!
-        !!update ghosts without calling ghost_get
-        !call ppm_map_part_push(rcp,np_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_push(wp,pdim,np_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_send(np_new,mp,info)
-        !assert_true(info.eq.0)
-        !assert_true(np_new.eq.npart+1)
-        !call ppm_map_part_pop(wp,pdim,np_new,mp,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_pop(rcp,np_new,mp,info)
-        !assert_true(info.eq.0)
-        !assert_true(rcp(np_new+1).eq.1.7_mk)
-        !assert_true(rcp(mp-2).eq.27._mk)
-        !assert_true(rcp(mp-1).eq.27._mk)
-        !assert_true(rcp(mp).eq.27._mk)
-!
-        !deallocate(xpn,wpn,rcpn)
-!
-        !npart = np_new
-!
-        !!lets add some more and do it again
-        !np_added = 2011
-        !allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
-        !call random_number(xpn)
-        !call random_number(wpn)
-        !call random_number(rcpn)
-!
-        !call ppm_part_modify_add(topoid,xp,npart,mp,xpn,np_added,np_new,0,gl,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_push(wp,pdim,npart,mp,wpn,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_push(rcp,npart,mp,rcpn,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_send(info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(rcp,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(wp,pdim,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_part_modify_pop(xp,ndim,npart,mp,np_new,mp_new,info)
-        !assert_true(info.eq.0)
-!
-        !mp = mp_new
-!
-        !!modify properties
-        !do i=1,np_new
-          !rcp(i) = 3.14_mk
-          !wp(1,i) = 7.14_mk
-          !wp(2,i) = 8.14_mk
-        !enddo
-!
-        !!update ghosts without calling ghost_get
-        !call ppm_map_part_push(rcp,np_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_push(wp,pdim,np_new,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_send(np_new,mp,info)
-        !assert_true(info.eq.0)
-        !assert_true(np_new.eq.npart+np_added)
-        !call ppm_map_part_pop(wp,pdim,np_new,mp,info)
-        !assert_true(info.eq.0)
-        !call ppm_map_part_pop(rcp,np_new,mp,info)
-        !assert_true(info.eq.0)
-        !assert_true(rcp(np_new+1).eq.3.14_mk)
-        !assert_true(rcp(mp).eq.3.14_mk)
-!
-        !deallocate(xpn,wpn,rcpn)
-!
+        !TODO: check what happens if either Nrnew or Ngnew are 0
+
     end test
 
 

@@ -29,43 +29,31 @@
 
 #if    __DIM == 1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1ds(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1ds(pdata,pdata_subset,mode,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_1dd(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1dd(pdata,pdata_subset,mode,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1dsc(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1dsc(pdata,pdata_subset,mode,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_1ddc(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1ddc(pdata,pdata_subset,mode,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_1di(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1di(pdata,pdata_subset,mode,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_1dl(pdata,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_1dl(pdata,pdata_subset,mode,info)
 #endif
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2ds(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2ds(pdata,lda,pdata_subset,mode,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_apply_2dd(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2dd(pdata,lda,pdata_subset,mode,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2dsc(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2dsc(pdata,lda,pdata_subset,mode,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_part_split_apply_2ddc(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2ddc(pdata,lda,pdata_subset,mode,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_part_split_apply_2di(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2di(pdata,lda,pdata_subset,mode,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_part_split_apply_2dl(pdata,lda,Npart_old,Mpart_old,&
-              pnew,Npart_new,Mpart_new,info)
+      SUBROUTINE ppm_part_split_apply_2dl(pdata,lda,pdata_subset,mode,info)
 #endif
 #endif
       !!! This routine inserts new data into a data array following the 
@@ -127,48 +115,43 @@
       !!! The leading dimension of the pdata.
 #endif
 
-      INTEGER                 , INTENT(IN   ) :: Npart_old
-      !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(IN   ) :: Mpart_old
-      !!! The number of particles (including ghosts)
 #if   __DIM == 1
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+      INTEGER , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pdata_subset
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+      LOGICAL , DIMENSION(:  ), INTENT(IN   ),POINTER    :: pdata_subset
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ),POINTER :: pnew
+      COMPLEX(MK), DIMENSION(:  ), INTENT(IN   ),POINTER :: pdata_subset
 #else
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ),POINTER    :: pnew
+      REAL(MK), DIMENSION(:  ), INTENT(IN   ),POINTER    :: pdata_subset
 #endif
 
 #elif __DIM == 2
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
+      INTEGER , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pdata_subset
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
+      LOGICAL , DIMENSION(:,:), INTENT(IN   ),POINTER    :: pdata_subset
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | \
       __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: pnew
+      COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: pdata_subset
 #else
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER    :: pnew
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER    :: pdata_subset
 #endif
 #endif
-      INTEGER                 , INTENT(  OUT) :: Npart_new
-      !!! The number of particles (on the local processor)
-      INTEGER                 , INTENT(  OUT) :: Mpart_new
-      !!! The number of particles (including ghosts)
-      !!! The new data to be added
+      INTEGER                 , INTENT(IN   ) :: mode
+      !!! One of:
+      !!! ppm_param_add_real_particles
+      !!! ppm_param_add_ghost_particles
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,Nrnew,Ngnew,Nnew
+      INTEGER               :: i
       INTEGER               :: ipart,iopt
       REAL(MK)              :: t0
-      LOGICAL               :: valid
+      CHARACTER(LEN=ppm_char):: caller='ppm_part_split_apply'
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -176,7 +159,7 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_part_split_apply',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -186,130 +169,114 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
-      Nrnew = modify%Nrnew
-      Ngnew = modify%Ngnew
-      Nnew  = Nrnew + Ngnew
-
-
       !-------------------------------------------------------------------------
       !  Grow pdata array
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_grow_preserve
+      iopt   = ppm_param_alloc_grow
 #if   __DIM == 1
-      ldu(1) = Mpart_old+Nnew
+      IF (mode .EQ. ppm_param_add_real_particles) THEN
+          ldu(1) = modify%Nrnew
+      ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+          ldu(1) = modify%Ngnew
+      ENDIF
 #elif __DIM ==2
       ldu(1) = lda
-      ldu(2) = Mpart_old+Nnew
+      IF (mode .EQ. ppm_param_add_real_particles) THEN
+          ldu(2) = modify%Nrnew
+      ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+          ldu(2) = modify%Ngnew
+      ENDIF
 #endif
-      CALL ppm_alloc(pdata,ldu,iopt,info)
+      CALL ppm_alloc(pdata_subset,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_split_apply',     &
-     &        'pdata',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,caller,     &
+     &        'pdata_subset',__LINE__,info)
           GOTO 9999
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Insert pnew into pdata according to split
-      !-------------------------------------------------------------------------
-      ! shift old ghost particle to leave space for new real ones.
-      DO i=Mpart_old,Npart_old+1,-1
+      IF (mode .EQ. ppm_param_add_real_particles) THEN
+          !---------------------------------------------------------------------
+          !  Extract real particles
+          !---------------------------------------------------------------------
+          DO i=1,modify%Nrnew
 #if   __DIM == 1
-          pdata(i+Nrnew)=pdata(i)
+              pdata_subset(i)=pdata(modify%idx_real_new(i))
 #elif __DIM ==2
-          pdata(1:lda,i+Nrnew)=pdata(1:lda,i)
+              pdata_subset(1:lda,i)=pdata(1:lda,modify%idx_real_new(i))
 #endif
-      ENDDO
-      ! insert new real data
-      DO i=1,Nrnew
-#if   __DIM == 1
-          pdata(Npart_old+i)=pnew(i)
-#elif __DIM ==2
-          pdata(1:lda,Npart_old+i)=pnew(1:lda,modify%idx_real_new(i))
-#endif
-      ENDDO
-      ! append new ghost data
-      DO i=1,Ngnew
-#if   __DIM == 1
-          pdata(Mpart_old+Nrnew+i)=pnew(modify%idx_ghost_new(i))
-#elif __DIM ==2
-          pdata(1:lda,Mpart_old+Nrnew+i)=pnew(1:lda,modify%idx_ghost_new(i))
-#endif
-      ENDDO
+          ENDDO
 
-      Npart_new = Npart_old + Nrnew
-      Mpart_new = Mpart_old + Nrnew + Ngnew
-
+      ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
+          !---------------------------------------------------------------------
+          !  Extract ghost particles
+          !---------------------------------------------------------------------
+          DO i=1,modify%Ngnew
+#if   __DIM == 1
+              pdata_subset(i)=pdata(modify%idx_ghost_new(i))
+#elif __DIM ==2
+              pdata_subset(1:lda,i)=pdata(1:lda,modify%idx_ghost_new(i))
+#endif
+          ENDDO
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_part_split_apply',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_part_split_apply',  &
+              CALL ppm_error(ppm_err_ppm_noinit,caller,  &
      &            'Please call ppm_init first!',__LINE__,info)
               GOTO 8888
           ENDIF
 #if __DIM ==2
         IF (lda .LT. 1) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'lda must be >0',__LINE__,info)
             GOTO 8888
         ENDIF
 #endif
-        IF (Npart_old .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
-     &          'Npart_old must be >=0',__LINE__,info)
-            GOTO 8888
-        ENDIF
-        IF (Mpart_old .LT. Npart_old) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
-     &          'Mpart must be >= Npart',__LINE__,info)
-            GOTO 8888
-        ENDIF
         IF (.NOT. ASSOCIATED(modify%idx_real_new)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'unassociated pointer. Call ppm_part_split_compute',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (.NOT. ASSOCIATED(modify%idx_ghost_new)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'unassociated pointer. Call ppm_part_split_compute',__LINE__,info)
             GOTO 8888
         ENDIF
         IF ((SIZE(modify%idx_real_new).LT.modify%Nrnew)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'Wrong size for idx_real_new. Call ppm_part_split_compute',&
      &            __LINE__,info)
             GOTO 8888
         ENDIF
         IF ((SIZE(modify%idx_ghost_new).LT.modify%Ngnew)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'Wrong size for idx_ghost_new. Call ppm_part_split_compute',&
      &            __LINE__,info)
             GOTO 8888
         ENDIF
         IF (modify%Nrnew .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'modify%Nrnew must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (modify%Ngnew .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_part_split_apply',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &          'modify%Ngnew must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF

@@ -97,27 +97,13 @@
             MODULE PROCEDURE ppm_part_modify_add_d
          END INTERFACE
 
-         !!----------------------------------------------------------------------
-         !!  Define interfaces to ppm_map_part_modify_ghost_pop
-         !!----------------------------------------------------------------------
-         !INTERFACE ppm_map_part_modify_ghost_pop
-            !! scalar (1d) particle data
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1dd
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1ds
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1di
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1dl
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1ddc
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_1dsc
-
-            !! vector (2d) particle data
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2dd
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2ds
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2di
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2dl
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2ddc
-            !MODULE PROCEDURE ppm_map_part_modify_ghost_pop_2dsc
-         !END INTERFACE
-
+         !----------------------------------------------------------------------
+         !  Define interfaces to ppm_part_split_compute
+         !----------------------------------------------------------------------
+         INTERFACE ppm_part_split_compute
+            MODULE PROCEDURE ppm_part_split_compute_s
+            MODULE PROCEDURE ppm_part_split_compute_d
+         END INTERFACE
 
          !----------------------------------------------------------------------
          !  include the source 
@@ -185,6 +171,14 @@
 #define __KIND __DOUBLE_PRECISION
 #include "map/ppm_map_part_ghost_get.f"
 #undef  __KIND
+
+#define __KIND __SINGLE_PRECISION
+#include "part/ppm_part_split_compute.f"
+#undef __KIND
+#define __KIND __DOUBLE_PRECISION
+#include "part/ppm_part_split_compute.f"
+#undef __KIND
+
 
 #undef  __VARIANT
 

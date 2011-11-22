@@ -28,14 +28,12 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_split_compute_s(topoid,xpn,Nnew,info)
+      SUBROUTINE ppm_part_split_compute_s(topoid,xp,Nall,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_split_compute_d(topoid,xpn,Nnew,info)
+      SUBROUTINE ppm_part_split_compute_d(topoid,xp,Nall,isymm,ghostsize,info)
 #endif 
-      !!! This routine determines how to split a set of new particles into 
+      !!! This routine splits a set of new particles into 
       !!! real particles and ghost particles.
-      !!! The index arrays of the split are stored into a ppm_t_part_modify 
-      !!! data structure.
       !!! ==============================================================
 
 
@@ -51,6 +49,7 @@
       USE ppm_module_write
       USE ppm_module_check_id
       USE ppm_module_util_commopt
+      USE ppm_module_data_buffers_add
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -62,10 +61,17 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! ID of current topology
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xpn
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: xp
       !!! The position of the new particles to be added
-      INTEGER                 , INTENT(IN   ) :: Nnew
+      INTEGER                 , INTENT(IN   ) :: Nall
       !!! The number of new particles (on the local processor)
+      INTEGER                 , INTENT(IN   ) :: isymm
+      !!! Indicator for the use of symmetry
+      !!!
+      !!! * isymm > 0 use symmetry
+      !!! * isymm = 0 do not use symmetry
+      REAL(MK)                , INTENT(IN   ) :: ghostsize
+      !!! The size of the ghost layer
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
@@ -76,11 +82,16 @@
       INTEGER                       :: nlist1,nlist2,ipart,iopt
       REAL(MK)                      :: xminf,yminf,zminf ! full domain
       REAL(MK)                      :: xmaxf,ymaxf,zmaxf ! full domain
+      REAL(MK)                      :: xmini,ymini,zmini ! inner domain
+      REAL(MK)                      :: xmaxi,ymaxi,zmaxi ! inner domain
       REAL(MK), DIMENSION(ppm_dim)  :: min_phys
       REAL(MK), DIMENSION(ppm_dim)  :: max_phys
       REAL(MK), DIMENSION(ppm_dim)  :: len_phys
       REAL(MK)                      :: t0
       TYPE(ppm_t_topo),POINTER      :: topo => NULL()
+      CHARACTER(LEN=ppm_char)       :: caller = 'ppm_part_split_compute'
+      INTEGER, DIMENSION(2*ppm_dim) :: ibc
+
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -88,38 +99,9 @@
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
-      CALL substart('ppm_part_split_compute',t0,info)
+      CALL substart(caller,t0,info)
 
       topo => ppm_topo(topoid)%t
-
-      !-------------------------------------------------------------------------
-      !  Re-initialize _modify_ data structure
-      !-------------------------------------------------------------------------
-      modify%Nrnew = 0
-      modify%Ngnew = 0
-      modify%Ngsendnew = 0
-      modify%Ngrecvnew = 0
-
-
-      !-------------------------------------------------------------------------
-      !  Allocate memory for the index arrays
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_grow
-      ldu(1) = Nnew
-      CALL ppm_alloc(modify%idx_real_new,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
-     &        'modify%idx_real_new',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      CALL ppm_alloc(modify%idx_ghost_new,ldu,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_modify_add',     &
-     &        'modify%idx_ghost_new',__LINE__,info)
-          GOTO 9999
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Compute the size of the computational box on this topology
@@ -138,39 +120,109 @@
       !  may be ghosts on other processors
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = Nnew
+      ldu(1) = Nall
       CALL ppm_alloc(ilist1,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_split_compute',     &
-     &        'list1',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,caller,'list1',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ilist2,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_split_compute',     &
-     &        'list2',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,caller,'list2',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ighost,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_part_split_compute',     &
-     &        'ighost',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,caller,'ighost',__LINE__,info)
           GOTO 9999
       ENDIF
+
+      ldu(1) = Nall
+      CALL ppm_alloc(modify%idx_real_new,ldu,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,'XPR',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      CALL ppm_alloc(modify%idx_ghost_new,ldu,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,'XPG',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      modify%Nrnew = 0
+      modify%Ngnew = 0
 
       !-------------------------------------------------------------------------
       !  List ilist1() holds the particles we are currently considering 
       !  List ilist2() holds the particles that have not yet been associated
       !  with a sub
       !-------------------------------------------------------------------------
-      DO i=1,Nnew
+      DO i=1,Nall
          ilist1(i) = i
       ENDDO
-      nlist1  = Nnew
+      nlist1  = Nall
       nlist2  = 0
+       
+      ibc(:) = 0
+      DO i=1,2*ppm_dim
+          SELECT CASE (topo%bcdef(i))
+          CASE (ppm_param_bcdef_periodic)
+              ibc(i) = ppm_param_bcdef_periodic
+          CASE (ppm_param_bcdef_symmetry)
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_antisymmetry)
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_neumann)
+              ibc(i) = ppm_param_bcdef_symmetry
+          CASE (ppm_param_bcdef_dirichlet)
+              ibc(i) = ppm_param_bcdef_symmetry
+          END SELECT
+      ENDDO
+
+      IF (ibc(1).EQ.ppm_param_bcdef_periodic) THEN
+#include "../map/ghost_map_periodic_bc_x_add.inc"
+      ELSEIF (ibc(1).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_lx_add.inc"
+      ENDIF  
+      
+      IF (ibc(2).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_ux_add.inc"
+      ENDIF 
+      !----------------------------------------------------------------------
+      !  handle boundary conditions in y
+      !----------------------------------------------------------------------
+      IF (ibc(3).EQ.ppm_param_bcdef_periodic) THEN
+#include "../map/ghost_map_periodic_bc_y_add.inc"
+      ELSEIF (ibc(3).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_ly_add.inc"
+      ENDIF
+      IF (ibc(4).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_uy_add.inc"
+      ENDIF
+      !----------------------------------------------------------------------
+      !  handle periodicity in z (if 3D)
+      !----------------------------------------------------------------------
+      IF (ppm_dim.EQ.3) THEN
+         !-------------------------------------------------------------------
+         !  yes, we split the if in two, since we do not know in what order
+         !  the compiler will check and ppm_bcdef will only be allocated to
+         !  four (4) in 2D
+         !-------------------------------------------------------------------
+         IF (ibc(5).EQ.ppm_param_bcdef_periodic) THEN
+#include "../map/ghost_map_periodic_bc_z_add.inc"
+         ELSEIF (ibc(5).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_lz_add.inc"
+         ENDIF
+         IF (ibc(6).EQ.ppm_param_bcdef_symmetry) THEN
+#include "../map/ghost_map_symmetry_bc_uz_add.inc"
+         ENDIF
+
+      ENDIF ! of 3D
+
 
       !-------------------------------------------------------------------------
       !  Loop over the subs belonging to this processor and check if 
@@ -222,12 +274,12 @@
                !----------------------------------------------------------------
                !  check if the particles belongs to this sub
                !----------------------------------------------------------------
-               IF (xpn(1,ipart).GE.xminf.AND.xpn(1,ipart).LT.xmaxf.AND. &
-     &             xpn(2,ipart).GE.yminf.AND.xpn(2,ipart).LT.ymaxf) THEN
+               IF (xp(1,ipart).GE.xminf.AND.xp(1,ipart).LT.xmaxf.AND. &
+     &             xp(2,ipart).GE.yminf.AND.xp(2,ipart).LT.ymaxf) THEN
                   !-------------------------------------------------------------
                   !  if yes, add this particle to the list of real particles
                   !-------------------------------------------------------------
-                  modify%Nrnew         = modify%Nrnew + 1
+                  modify%Nrnew     = modify%Nrnew + 1
                   modify%idx_real_new(modify%Nrnew) = ipart
                ELSE    
                   !-------------------------------------------------------------
@@ -247,13 +299,13 @@
                !----------------------------------------------------------------
                !  check if the particles belongs to this sub
                !----------------------------------------------------------------
-               IF (xpn(1,ipart).GE.xminf.AND.xpn(1,ipart).LT.xmaxf.AND. &
-     &             xpn(2,ipart).GE.yminf.AND.xpn(2,ipart).LT.ymaxf.AND. &
-     &             xpn(3,ipart).GE.zminf.AND.xpn(3,ipart).LT.zmaxf) THEN
+               IF (xp(1,ipart).GE.xminf.AND.xp(1,ipart).LT.xmaxf.AND. &
+     &             xp(2,ipart).GE.yminf.AND.xp(2,ipart).LT.ymaxf.AND. &
+     &             xp(3,ipart).GE.zminf.AND.xp(3,ipart).LT.zmaxf) THEN
                   !-------------------------------------------------------------
                   !  if yes, add this particle to the list of real particles
                   !-------------------------------------------------------------
-                  modify%Nrnew         = modify%Nrnew + 1
+                  modify%Nrnew     = modify%Nrnew + 1
                   modify%idx_real_new(modify%Nrnew) = ipart
                ELSE    
                   !-------------------------------------------------------------
@@ -283,14 +335,14 @@
       DO j=1,nlist2
           modify%idx_ghost_new(j) = ilist2(j)
       ENDDO
-      modify%Ngnew = nlist2
+      modify%Ngnew                = nlist2
 
 
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_part_split_compute',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_part_split_compute_s
