@@ -1261,10 +1261,12 @@
                   IF (mode .EQ. ppm_param_add_ghost_particles) THEN
                       xmini = xminf
                       ymini = yminf
-                      zmini = zminf
                       xmaxi = xmaxf
                       ymaxi = ymaxf
-                      zmaxi = zmaxf
+                      IF (ppm_dim.EQ.3) THEN
+                          zmini = zminf
+                          zmaxi = zmaxf
+                      ENDIF
                   ENDIF
 #endif
 

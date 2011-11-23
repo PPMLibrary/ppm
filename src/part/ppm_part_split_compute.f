@@ -61,7 +61,7 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! ID of current topology
-      REAL(MK), DIMENSION(:,:), INTENT(INOUT),POINTER :: xp
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ),POINTER :: xp
       !!! The position of the new particles to be added
       INTEGER                 , INTENT(IN   ) :: Nall
       !!! The number of new particles (on the local processor)
@@ -231,6 +231,11 @@
       !  Once all subs have been considered, the remaining particles are ghosts.
       !-------------------------------------------------------------------------
       DO k=1,topo%nsublist
+         !----------------------------------------------------------------------
+         !  Initialize the second list counter to zero
+         !----------------------------------------------------------------------
+         nlist2 = 0
+
          !----------------------------------------------------------------------
          !  Get the (global) id of the sub
          !----------------------------------------------------------------------

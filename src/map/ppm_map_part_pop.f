@@ -405,7 +405,6 @@
 #elif __VARIANT == __ADD
       iopt   = ppm_param_alloc_grow_preserve
       IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
-          write(*,*) 'reallocating pdata_add for add_ghost'
 #if   __DIM == 2 
           ldu(1) = edim
           ldu(2) = newMpart - Mpart
@@ -1548,6 +1547,8 @@
               ipart = ipart - i
               ipart_add = ipart_add - j
           ENDDO ! loop over all processors in commseq
+          write(*,*) 'for pdata_old: ',newNpart+1,2*newNpart-Npart,&
+              Npart+1,newNpart
 #if    __DIM == 1
           pdata_old(newNpart+1:newNpart+(newNpart-Npart)) = &
               pdata_old(Npart+1:newNpart)

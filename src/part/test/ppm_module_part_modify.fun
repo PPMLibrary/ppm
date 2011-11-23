@@ -16,7 +16,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 3
+integer                         :: np = 10
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
@@ -107,43 +107,39 @@ real(mk)                         :: t0,t1,t2,t3
 
     end teardown
 
-    test ghost_get_add
+    test ghost_get_add_generic
         ! test ghost get followed by adding particles
 
         use ppm_module_typedef
+        use ppm_module_data
         use ppm_module_mktopo
         use ppm_module_topo_check
         real(mk), parameter             :: gl = 0.1_mk
         real(mk),dimension(:,:),pointer :: xpn => NULL()
         real(mk),dimension(:,:),pointer :: wpn => NULL()
+        real(mk),dimension(:,:),pointer :: rand_num => NULL()
+        real(mk),dimension(ndim)        :: disp
         real(mk),dimension(:),pointer   :: rcpn => NULL()
         integer                         :: np_added=0,mp_added=0
         integer                         :: mp_new=0,np_new=0
-        integer                         :: npart = 3,i
+        integer                         :: i,j,k,ipart,npart
+        integer                         :: isub,iproc
+        integer                         :: nb_samp = 4
         integer                         :: dummy = -HUGE(1)
         integer                         :: Nr,Ng
+        type(ppm_t_topo),pointer        :: topo => NULL()
+        logical                         :: isreal,isghost,ok
 
         !----------------
         ! create particles
         !----------------
 
+        npart = np
         xp = 0.0_mk
         rcp = 0.0_mk
         min_rcp = 0.01_mk
         max_rcp = 0.2_mk 
 
-        !p_h = len_phys / real(npgrid,mk)
-        !do j=1,npgrid
-        !    do i=1,npgrid
-        !        p_i = i + (j-1)*npgrid
-        !        xp(1,p_i) = min_phys(1)+real(i-1,mk)*p_h(1)
-        !        xp(2,p_i) = min_phys(2)+real(j-1,mk)*p_h(2)
-        !        rcp(p_i) = min_rcp + (max_rcp-min_rcp)*randnb(p_i)
-        !        do k=1,pdim
-        !            wp(k,i) = rcp(i)*REAL(k,MK)
-        !        enddo
-        !    enddo
-        !enddo
         do i=1,npart
             do j=1,ndim
                 xp(j,i) = min_phys(j)+&
@@ -154,8 +150,6 @@ real(mk)                         :: t0,t1,t2,t3
                 wp(j,i) = rcp(i)*REAL(j,MK)
             enddo
         enddo
-        xp(1,1) = 0.02_mk
-        xp(2,1) = 0.2_mk
 
         !----------------
         ! make topology
@@ -168,6 +162,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_mktopo(topoid,xp,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               max_rcp,cost,info)
+        topo => ppm_topo(topoid)%t
 
         call ppm_map_part_global(topoid,xp,npart,info)
         call ppm_map_part_push(rcp,npart,info)
@@ -179,7 +174,6 @@ real(mk)                         :: t0,t1,t2,t3
         npart=newnp
 
         call ppm_topo_check(topoid,xp,npart,ok,info)
-
         assert_true(ok)
 
         call ppm_map_part_ghost_get(topoid,xp,ndim,npart,0,gl,info)
@@ -193,106 +187,69 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,xp,npart,ok,info)
         assert_true(ok)
 
-        np_added = 1
+        np_added = nb_samp*topo%nsublist
+
         allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
-        xpn(1,1)= 0.05_mk
-        xpn(2,1)= 0.05_mk
-        wpn(1,1)= 7._mk
-        wpn(2,1)= 17._mk
-        rcpn(1)= 0.33_mk
+        allocate(rand_num(ndim,nb_samp*topo%nsubs))
 
-        call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
-        assert_true(info.eq.0)
-        write(*,*) 'Nr = ',modify%Nrnew
-        write(*,*) 'Ng = ',modify%Ngnew
+        !set a displacement vector, smaller than the ghost layer size
+        disp(1) = gl*0.5_mk
+        disp(2) = gl*0.3_mk
+        if (ndim .eq. 3) disp(ndim) = gl*0.1_mk
+        call random_seed(put=seed)
+        call random_number(rand_num)
 
-        !add one particle in the corner (it should generate 3 ghosts)
-        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
-            ppm_param_add_real_particles,0,gl,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_push(wpn,pdim,np_added,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_push(rcpn,np_added,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_send(np_added,mp_added,info)
-        assert_true(info.eq.0)
-        np_new = npart + np_added
-        mp_new = mp    + mp_added
-        call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_pop(xp,xpn,ndim,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
-
-        mp = mp_new
-
-        write(*,*) 'np_added = ',np_added
-        write(*,*) 'mp_added = ',mp_added
-        write(*,*) 'np_new = ',np_new
-        write(*,*) 'mp_new = ',mp_new
-
-        do i=1,np_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+        do k=1,topo%nsublist !for each subdomain on that proc
+            isub = topo%isublist(k)
+            do j=1,nb_samp !generate a particle at each corner
+                ipart = nb_samp*(k-1)+j
+                do i=1,ndim
+                    xpn(i,ipart)= topo%min_subd(i,isub) 
+                enddo
+                SELECT CASE(j)
+                CASE (1)
+                CASE (2)
+                    xpn(1,ipart)= topo%max_subd(1,isub) 
+                CASE (3)
+                    xpn(2,ipart)= topo%max_subd(2,isub) 
+                CASE (4)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
+                CASE (5)
+                    xpn(1,ipart)= topo%max_subd(1,isub) 
+                    xpn(2,ipart)= topo%max_subd(2,isub) 
+                CASE (6)
+                    xpn(1,ipart)= topo%max_subd(1,isub) 
+                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
+                CASE (7)
+                    xpn(2,ipart)= topo%max_subd(2,isub) 
+                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
+                CASE (8)
+                    xpn(1,ipart)= topo%max_subd(1,isub) 
+                    xpn(2,ipart)= topo%max_subd(2,isub) 
+                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
+                CASE DEFAULT !random point inside the subdomain
+                    xpn(1:ndim,ipart) = rand_num(1:ndim,(isub-1)*nb_samp*+j)
+                    do i=1,ndim
+                        xpn(i,ipart) = &
+                        topo%min_subd(i,isub) + xpn(i,ipart) / &
+                        (topo%max_subd(i,isub) - topo%min_subd(i,isub))
+                    enddo
+                END SELECT
+                !move the particle in one direction
+                xpn(1,ipart) = xpn(1,ipart) + disp(1)
+                xpn(2,ipart) = xpn(2,ipart) + disp(2)
+                if (ndim.eq.3) xpn(ndim,ipart) = xpn(ndim,ipart) + gl*disp(ndim)
+                wpn(1,ipart)= real(j,mk)
+                wpn(2,ipart)= 7._mk*real(j,mk)
+                rcpn(ipart)= 0.33_mk + real(j,mk)
+            enddo
         enddo
-        write(*,*) '---------'
-        do i=np_new+1,mp_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
+
+        write(*,*) '[',rank,'] ','Adding ',np_added,' particles'
+        do i=1,np_added
+            write(100+rank,'(2(E14.7,2X))') xpn(1:2,i)
         enddo
-        write(*,*) '*********'
-        write(*,*) '*********'
 
-        
-        !modify properties
-        do i=1,np_new
-          rcp(i) = 1._mk*i
-          wp(1,i) = 1._mk*i
-          wp(2,i) = 2._mk*i
-        enddo
-        rcp(1)=1.7_mk
-        rcp(np_new)=27._mk
-
-        !update ghosts without calling ghost_get
-        call ppm_map_part_push(rcp,np_new,info)
-        assert_true(info.eq.0)
-        call ppm_map_part_push(wp,pdim,np_new,info)
-        assert_true(info.eq.0)
-        call ppm_map_part_send(np_new,mp,info)
-        assert_true(info.eq.0)
-        assert_true(np_new.eq.npart+1)
-        call ppm_map_part_pop(wp,pdim,np_new,mp,info)
-        assert_true(info.eq.0)
-        call ppm_map_part_pop(rcp,np_new,mp,info)
-        assert_true(info.eq.0)
-
-        do i=1,np_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '---------'
-        do i=np_new+1,mp_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '*********'
-
-        assert_true(rcp(np_new+1).eq.1.7_mk)
-        assert_true(rcp(mp-2).eq.27._mk)
-        assert_true(rcp(mp-1).eq.27._mk)
-        assert_true(rcp(mp).eq.27._mk)
-
-        deallocate(xpn,wpn,rcpn)
-
-        npart = np_new
-
-        !lets add some more and do it again
-        np_added = 1
-        allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
-        call random_number(xpn)
-        xpn = (xpn-0.5_mk) * 1.02_mk + 0.5_mk 
-        call random_number(wpn)
-        call random_number(rcpn)
-        xpn(1:2,1) = (/1.03_MK,1.05_MK/)
-        rcpn = 11._MK
-        wpn(1:2,1) = (/0.31_MK,0.32_MK/)
 
         call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
         assert_true(info.eq.0)
@@ -324,19 +281,6 @@ real(mk)                         :: t0,t1,t2,t3
         write(*,*) 'np_new = ',np_new
         write(*,*) 'mp_new = ',mp_new
 
-        do i=1,np_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '---------'
-        do i=np_new+1,mp_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '*********'
-        write(*,*) '*********'
-        write(*,*) '*XPN*'
-        do i=1,size(rcpn)
-          write(*,'(5(F10.3,1X))') xpn(:,i),wpn(:,i),rcpn(i)
-        enddo
         write(*,*) '*********'
         write(*,*) 'Nr = ',modify%Nrnew
         write(*,*) 'Ng = ',modify%Ngnew
@@ -351,8 +295,17 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(info.eq.0)
         call ppm_part_modify_send(np_added,mp_added,info)
         assert_true(info.eq.0)
-        !np_new = npart + np_added
+        np_new = npart + np_added
         mp_new = mp    + mp_added
+        write(*,*) 'npart = ',npart
+        write(*,*) 'np_added = ',np_added
+        write(*,*) 'mp_added = ',mp_added
+        write(*,*) 'np_new = ',np_new
+        write(*,*) 'mp_new = ',mp_new
+        write(*,*) 'AAAA = ',np_new,2*np_new-npart,npart+1,np_new
+        call MPI_BARRIER(comm,info)
+        write(*,*) 'ok, lets carry on'
+
         call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
         assert_true(info.eq.0)
         call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
@@ -362,15 +315,6 @@ real(mk)                         :: t0,t1,t2,t3
 
         mp = mp_new
 
-        do i=1,np_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '---------'
-        do i=np_new+1,mp_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '*********'
-        write(*,*) '*********'
         !modify properties
         do i=1,np_new
           rcp(i) = 3.14_mk
@@ -393,312 +337,233 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(rcp(np_new+1).eq.3.14_mk)
         assert_true(rcp(mp).eq.3.14_mk)
 
-        do i=1,np_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '---------'
-        do i=np_new+1,mp_new
-          write(*,'(5(F10.3,1X))') xp(:,i),wp(:,i),rcp(i)
-        enddo
-        write(*,*) '*********'
-        write(*,*) '*********'
         deallocate(xpn,wpn,rcpn)
 
-        !TODO: check what happens if either Nrnew or Ngnew are 0
+        !Run the check
 
-    end test
-
-
-
-    test pbc_and_map_load
-        ! test ghost get map load and periodic BC
-
-        use ppm_module_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 8
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk),dimension(:)  ,pointer :: w => NULL()
-        real(mk),dimension(2)           :: check
-        real(mk), parameter             :: gl = 0.1_mk
-    
-        allocate(p(ndim,npart),w(npart))
-        p(1,1) = 0.05_mk  ! left
-        p(2,1) = 0.5_mk
-        p(1,2) = 0.95_mk  ! right
-        p(2,2) = 0.5_mk
-        p(1,3) = 0.5_mk   ! bottom
-        p(2,3) = 0.05_mk
-        p(1,4) = 0.5_mk   ! top
-        p(2,4) = 0.95_mk
-        
-        p(1,5) = 0.05_mk  ! left-bottom
-        p(2,5) = 0.05_mk
-        p(1,6) = 0.05_mk  ! left-top
-        p(2,6) = 0.95_mk
-        p(1,7) = 0.95_mk  ! right-bottom
-        p(2,7) = 0.05_mk
-        p(1,8) = 0.95_mk  ! right-top
-        p(2,8) = 0.95_mk
-
-        w(:) = 1.0_mk
-
-        bcdef(1:6) = ppm_param_bcdef_periodic
-
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
-
-        topoid = 0
-
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
-
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(w,npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
-        call ppm_topo_check(topoid,p,npart,ok,info)
-
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
-
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(w,npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
-        
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
-        call ppm_map_part_store(info)
-
-        call ppm_map_part_ghost_put(topoid,info)
-        call ppm_map_part_push(w,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_ghost_pop(w,1,npart,mpart,info)
-
-        call ppm_map_part_load(info)
-        call ppm_map_part_push(p,ndim,npart,info,.TRUE.)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
-
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
-
-        assert_equal(mpart-npart,4+3*4) ! check number of ghosts
-
-        ! now go through all particles and try to find their ghosts  
-
-        check(1) = 1.05_mk  ! left
-        check(2) = 0.5_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        
-        check(1) = -0.05_mk  ! right
-        check(2) =  0.5_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) = 0.5_mk   ! bottom
-        check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) =  0.5_mk   ! top
-        check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-       
-
-        check(1) = 1.05_mk  ! left-bottom
-        check(2) = 0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = 0.05_mk
-        check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = 1.05_mk
-        check(2) = 1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) =  1.05_mk  ! left-top
-        check(2) =  0.95_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.05_mk
-        check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  1.05_mk
-        check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) = -0.05_mk  ! right-bottom
-        check(2) =  0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.95_mk
-        check(2) =  1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = -0.05_mk
-        check(2) =  1.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-        check(1) = -0.05_mk  ! right-top
-        check(2) =  0.95_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) =  0.95_mk
-        check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-        check(1) = -0.05_mk
-        check(2) = -0.05_mk
-        assert_true(found_ghost(p(:,npart+1:mpart),mpart-npart,check))
-
-
-
-        deallocate(w)
-
-
-    end test
-
-    function found_ghost(ghosts,n,cp)
-    real(mk),dimension(2,n),intent(in) :: ghosts
-    integer                ,intent(in) :: n
-    real(mk),dimension(2)  ,intent(in) :: cp
-    logical                 :: found_ghost
-
-    integer                 :: i
-    integer                 :: found
-
-    found_ghost = .false.
-
-    found = 0
-    do i=1,n
-        if((abs(ghosts(1,i) - cp(1)).lt.tol).and. &
-        &  (abs(ghosts(2,i) - cp(2)).lt.tol)) then
-            found = found + 1
+        ! create the same particles than the ones we added for the test
+        ! This time, we do it globally (for all subdomains, not only
+        ! those of the current processor).
+        np_added = 0
+        do iproc=1,topo%ncommseq
+        do k=1,topo%nsubs
+        if (topo%sub2proc(k).eq.topo%icommseq(iproc)) then
+            np_added = np_added + nb_samp
         endif
-    enddo
-    if (found.eq.1) then
-        found_ghost = .true.
-    endif
-
-    end function found_ghost
-
-    test getsymbc
-        ! tests symmetric boundary conditions and ghost get
-        use ppm_module_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 1
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
-    
-        allocate(p(ndim,npart))
-        p(1,1) = 0.05_mk
-        p(2,1) = 0.05_mk
-        bcdef(1:6) = ppm_param_bcdef_symmetry
-
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
-
-        topoid = 0
-
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
-
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
-
-        call ppm_topo_check(topoid,p,npart,ok,info)
-
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
-
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
-        
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
-
-
-    end test
-    
-    test get_mixed_bc
-        ! tests symmetric and periodic BC conditions and ghost get
-        use ppm_module_typedef
-        use ppm_module_mktopo
-        use ppm_module_topo_check
-        use ppm_module_util_dbg
-        integer                         :: npart = 256
-        integer                         :: snpart = 16
-        integer                         :: newnpart
-        integer                         :: mpart
-        real(mk),dimension(:,:),pointer :: p => NULL()
-        real(mk), parameter             :: gl = 0.1_mk
-        real(mk)                        :: h
-    
-        h = len_phys(1)/(snpart)
-        allocate(p(ndim,npart))
-        k = 0
-        do i=1,snpart
-            do j=1,snpart
-                k = k + 1
-                p(1,k) = h/2 + (i-1)*h
-                p(2,k) = h/2 + (j-1)*h
-            enddo
         enddo
-        npart = k
-        bcdef(1:2) = ppm_param_bcdef_periodic
-        bcdef(3:4) = ppm_param_bcdef_symmetry
-        bcdef(5:6) = ppm_param_bcdef_freespace
-        !bcdef(1:6) = ppm_param_bcdef_periodic
+        enddo
 
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
+        allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
+        allocate(rand_num(ndim,nb_samp*topo%nsubs))
 
-        topoid = 0
+        !set a displacement vector, smaller than the ghost layer size
+        disp(1) = gl*0.5_mk
+        disp(2) = gl*0.3_mk
+        if (ndim .eq. 3) disp(ndim) = gl*0.1_mk
+        call random_seed(put=seed)
+        call random_number(rand_num)
 
-        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        ipart = 0
+        do iproc=1,topo%ncommseq ! for each neighboring proc
+            do k=1,topo%nsubs
+               !loop through subdomains that belong to that proc
+               if (topo%sub2proc(k).eq.topo%icommseq(iproc)) then
+                ipart = ipart+1
+                do i=1,ndim
+                    xpn(i,ipart)= topo%min_subd(i,k) 
+                enddo
+                SELECT CASE(j)
+                CASE (1)
+                CASE (2)
+                    xpn(1,ipart)= topo%max_subd(1,k) 
+                CASE (3)
+                    xpn(2,ipart)= topo%max_subd(2,k) 
+                CASE (4)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,k) 
+                CASE (5)
+                    xpn(1,ipart)= topo%max_subd(1,k)
+                    xpn(2,ipart)= topo%max_subd(2,k)
+                CASE (6)
+                    xpn(1,ipart)= topo%max_subd(1,k)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,k)
+                CASE (7)
+                    xpn(2,ipart)= topo%max_subd(2,k)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,k)
+                CASE (8)
+                    xpn(1,ipart)= topo%max_subd(1,k)
+                    xpn(2,ipart)= topo%max_subd(2,k)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,k)
+                CASE DEFAULT !random point inside the subdomain
+                    xpn(1:ndim,ipart) = rand_num(1:ndim,(k-1)*nb_samp*+j)
+                    do i=1,ndim
+                        xpn(i,ipart) = &
+                        topo%min_subd(i,k) + xpn(i,ipart) / &
+                        (topo%max_subd(i,k) - topo%min_subd(i,k))
+                    enddo
+                END SELECT
+                !move the particle in one direction
+                xpn(1,ipart) = xpn(1,ipart) + disp(1)
+                xpn(2,ipart) = xpn(2,ipart) + disp(2)
+                if (ndim.eq.3) xpn(ndim,ipart) = xpn(ndim,ipart) + gl*disp(ndim)
+                wpn(1,ipart)= real(j,mk)
+                wpn(2,ipart)= 7._mk*real(j,mk)
+                rcpn(ipart)= 0.33_mk + real(j,mk)
+              endif
+            enddo
+          enddo
 
-        call ppm_map_part_global(topoid,p,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
-        npart=newnpart
+        do i=1,np_added
+            write(200+rank,'(2(E14.7,2X))') xpn(1:2,i)
+        enddo
+        do i=1,np_new
+            write(300+rank,'(2(E14.7,2X))') xp(1:2,i)
+        enddo
+        !Now loop through all these particles, and check whether they should be on
+        !that proc, either as ghost or as real particles.
+        !Check if that is the case. 
+        do ipart = 1,np_added
+            isreal = .false.; isghost = .false.
+            do k=1,topo%nsublist !for each subdomain on the current proc
+                isub = topo%isublist(k)
+                !find the real particles
+                if (is_inside_sub(xpn(1:ndim,ipart),isub,ndim,topo)) then
+                    isreal = .true.
+                endif
+            enddo
+            do k=1,topo%nsublist !for each subdomain on the current proc
+                isub = topo%isublist(k)
+                !find the ghosts
+                if (is_ghostof_sub(xpn(1:ndim,ipart),isub,ndim,0,gl,topo)) then
+                    if (.not. isreal) isghost = .true.
+                endif
+            enddo
+            if (isreal) then
+                !check that this particle is in xp(1:Np)
+                ok = belongs_to(xpn(1:ndim,ipart),xp(1:ndim,1:np_new),ndim,np_new)
+                assert_true(ok)
+            endif
+            if (isghost) then
+                !check that this particle is in xp(Np+1,Mp)
+                ok = belongs_to(xpn(1:ndim,ipart),&
+                    xp(1:ndim,np_new+1:mp_new),ndim,mp_new-np_new+1)
+                assert_true(ok)
+            endif
+        enddo
 
-        call ppm_topo_check(topoid,p,npart,ok,info)
-
-        assert_true(ok)
-
-        call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(p,ndim,npart,mpart,info)
-        assert_equal(mpart-npart,104)
-        call ppm_topo_check(topoid,p,npart,ok,info)
-        assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart,mpart)
-
+        deallocate(xpn,wpn,rcpn)
+        deallocate(rand_num)
 
     end test
 
+    function is_inside_sub(xp,isub,ndim,topo)
+
+        use ppm_module_typedef
+        use ppm_module_data
+
+        use ppm_module_mktopo
+        real(mk),dimension(ndim)        :: xp
+        integer                         :: isub
+        integer                         :: ndim
+        real(mk),dimension(ndim,2)      :: sub
+        type(ppm_t_topo),pointer        :: topo => NULL()
+        logical                         :: is_inside_sub
+
+        sub(1:ndim,1)=topo%min_subd(1:ndim,isub)
+        sub(1:ndim,2)=topo%max_subd(1:ndim,isub)
+
+        is_inside_sub = .false.
+        if (ndim.eq.2) then
+            if (xp(1).GE.sub(1,1) .AND. xp(1).LT.sub(1,2) .AND. &
+                xp(2).GE.sub(2,1) .AND. xp(2).LT.sub(2,2)) then
+                    is_inside_sub = .true.
+                    return
+            endif
+        endif
+        if (ndim.eq.3) then
+            if (xp(1).GE.sub(1,1) .AND. xp(1).LT.sub(1,2) .AND. &
+                xp(2).GE.sub(2,1) .AND. xp(2).LT.sub(2,2) .AND. &
+                xp(3).GE.sub(3,1) .AND. xp(3).LT.sub(3,2)) then
+                    is_inside_sub = .true.
+                    return
+            endif
+        endif
+
+    end function is_inside_sub
+
+    function is_ghostof_sub(xp,isub,ndim,isymm,gl,topo)
+
+        use ppm_module_typedef
+        use ppm_module_data
+
+        use ppm_module_mktopo
+        real(mk),dimension(ndim)        :: xp
+        integer                         :: isub
+        integer                         :: ndim
+        integer                         :: isymm
+        real(mk)                        :: gl
+        real(mk),dimension(ndim,2)      :: sub_gl
+        real(mk),dimension(ndim,2)      :: sub
+        type(ppm_t_topo),pointer        :: topo => NULL()
+        logical                         :: is_ghostof_sub
+
+        is_ghostof_sub = .false.
+        if (isymm .eq. 0 ) then
+            sub_gl(1:ndim,1)=topo%min_subd(1:ndim,isub)
+        else
+            sub_gl(1:ndim,1)=topo%min_subd(1:ndim,isub)-gl
+        endif
+        sub_gl(1:ndim,2)=topo%max_subd(1:ndim,isub)+gl
+
+        sub(1:ndim,1)=topo%min_subd(1:ndim,isub)
+        sub(1:ndim,2)=topo%max_subd(1:ndim,isub)
+
+        if (ndim.eq.2) then
+            if (xp(1).GE.sub_gl(1,1) .AND. xp(1).LT.sub_gl(1,2) .AND. &
+                xp(2).GE.sub_gl(2,1) .AND. xp(2).LT.sub_gl(2,2)) then
+                if (xp(1).LT.sub(1,1) .AND. xp(1).GE.sub(1,2) .AND. &
+                    xp(2).LT.sub(2,1) .AND. xp(2).GE.sub(2,2)) then
+                        is_ghostof_sub = .true.
+                        return
+                endif
+            endif
+        endif
+        if (ndim.eq.3) then
+            if (xp(1).GE.sub_gl(1,1) .AND. xp(1).LT.sub_gl(1,2) .AND. &
+                xp(2).GE.sub_gl(2,1) .AND. xp(2).LT.sub_gl(2,2) .AND. &
+                xp(3).GE.sub_gl(3,1) .AND. xp(3).LT.sub_gl(3,2)) then
+                if (xp(1).LT.sub(1,1) .AND. xp(1).GE.sub(1,2) .AND. &
+                    xp(2).LT.sub(2,1) .AND. xp(2).GE.sub(2,2) .AND. &
+                    xp(3).LT.sub(3,1) .AND. xp(3).GE.sub(3,2)) then
+                        is_ghostof_sub = .true.
+                        return
+                endif
+            endif
+        endif
+
+    end function is_ghostof_sub
+
+    function belongs_to(xp,xp_0,ndim,np)
+
+        use ppm_module_typedef
+        use ppm_module_data
+
+        use ppm_module_mktopo
+        real(mk),dimension(ndim)        :: xp
+        real(mk),dimension(ndim,np)     :: xp_0
+        integer                         :: ndim
+        integer                         :: np
+        logical                         :: belongs_to
+        integer                         :: ip
+
+        belongs_to = .false.
+        do ip = 1,np
+           if (maxval(abs(xp-xp_0(1:ndim,ip))) .lt. ppm_myepsd) then
+               belongs_to = .true.
+               return
+           endif
+        enddo
+
+    end function belongs_to
 
 end test_suite
+
