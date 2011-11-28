@@ -200,6 +200,7 @@
 #elif  __VARIANT == __ADD
       CHARACTER(ppm_char)           :: caller = 'ppm_part_modify_add'
       INTEGER,DIMENSION(:),POINTER  :: idx_add => NULL()
+      INTEGER,DIMENSION(:),POINTER  :: idx_revert => NULL()
       ! pointer to the index array of either real or ghost added particles
       ! (depending on the value of _mode_)
 #endif
@@ -324,6 +325,8 @@
       !-------------------------------------------------------------------------
       ppm_map_type = ppm_param_map_ghost_get
 
+
+#if   __VARIANT == __NORMAL
       !-------------------------------------------------------------------------
       !  Allocate memory for the list of particle on the local processor that
       !  may be ghosts on other processors
@@ -354,7 +357,6 @@
           GOTO 9999
       ENDIF
       ENDIF
-
       !-------------------------------------------------------------------------
       !  Allocate memory for their positions
       !-------------------------------------------------------------------------
@@ -369,7 +371,6 @@
           GOTO 9999
       ENDIF
 
-#if   __VARIANT == __NORMAL
       !-------------------------------------------------------------------------
       !  List ilist1() holds the particles we are currently considering 
       !  List ilist2() holds the particles that have not yet been associated 
@@ -587,11 +588,42 @@
       ELSE IF (mode .EQ. ppm_param_add_ghost_particles) THEN
           nghost  = modify%Ngnew
           idx_add => modify%idx_ghost_new
+          ibc(:) = 0
+          nbc = 0
+      ENDIF
+      !-------------------------------------------------------------------------
+      !  Allocate memory
+      !-------------------------------------------------------------------------
+      iopt = ppm_param_alloc_grow
+      ldu(1) = nghost
+      CALL ppm_alloc(ighost,ldu,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,     &
+     &        'ighost',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      ldu(1) = ppm_dim
+      ldu(2) = nghost
+      CALL ppm_alloc(xt,ldu,iopt,info)
+      CALL ppm_alloc(xt_offset,ldu,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,'xt',__LINE__,info)
+          GOTO 9999
+      ENDIF
+      ldu(1) = modify%Nrnew + modify%Ngnew
+      CALL ppm_alloc(idx_revert,ldu,iopt,info)
+      IF (info.NE.0) THEN
+          info = ppm_error_fatal
+          CALL ppm_error(ppm_err_alloc,caller,'idx_revert',__LINE__,info)
+          GOTO 9999
       ENDIF
       DO j=1,nghost
           xt(1:ppm_dim,j) = xp(1:ppm_dim,idx_add(j))
           xt_offset(1:ppm_dim,j) = 0._MK
           ighost(j) = idx_add(j)
+          idx_revert(ighost(j))=j
       ENDDO
 #endif
 
@@ -1514,7 +1546,9 @@
           !  first reallocate the index list: buffer2part
           !---------------------------------------------------------------------
           iopt = ppm_param_alloc_grow_preserve
-          ldu(1) = ppm_psendbuffer_normal(topo%ncommseq+1) + ppm_nsendbuffer
+          !ldu(1) = ppm_psendbuffer_normal(topo%ncommseq+1) + ppm_nsendbuffer
+          ldu(1) = ppm_psendbuffer_normal(topo%ncommseq+1) + &
+              ppm_psendbuffer(topo%ncommseq+1)-2
           CALL ppm_alloc(ppm_buffer2part_normal,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
@@ -1535,7 +1569,7 @@
               ppm_buffer2part_normal(i+iadd-1:j+iadd-1) = &
                   ppm_buffer2part_normal(i:j)
               ppm_buffer2part_normal(j+iadd:j+jadd)  = &
-                  ppm_buffer2part(iadd:jadd) + Npart_old
+                  idx_revert(ppm_buffer2part(iadd:jadd)) + Npart_old
 
               !!FIXME: this should only be done if we want to send the whole buffer
               !! (i.e. if the already existing ghosts havent been communicated
@@ -1564,32 +1598,20 @@
           ENDDO ! loop over all processors in commseq
       ENDIF ! if ppm_param_add_real_particles
 
+      iopt = ppm_param_dealloc
+      CALL ppm_alloc(idx_revert,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_error
+         CALL ppm_error(ppm_err_dealloc,caller,     &
+     &       'idx_revert',__LINE__,info)
+      ENDIF
+
 #endif
 
       !-------------------------------------------------------------------------
       !  Deallocate the memory for the lists
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
-!      CALL ppm_alloc(ilist1,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &       'ilist1',__LINE__,info)
-!      ENDIF
-!
-!      CALL ppm_alloc(ilist2,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &       'ilist2',__LINE__,info)
-!      ENDIF
-!
-!      CALL ppm_alloc(ighost,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!         info = ppm_error_error
-!         CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &       'ighost',__LINE__,info)
-!      ENDIF
 
       CALL ppm_alloc(    xt,ldu,iopt,info)
       IF (info .NE. 0) THEN

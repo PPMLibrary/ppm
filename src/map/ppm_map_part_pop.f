@@ -481,7 +481,7 @@
           WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
           CALL ppm_write(ppm_rank,caller,mesg,info)
           !FIXME remove next 2 lines
-          WRITE(mesg,*) 'ppm_psendbuffer = ',ibuffer
+          WRITE(mesg,*) 'ppm_psendbuffer = ',ppm_psendbuffer
           CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
@@ -498,8 +498,8 @@
       ENDIF 
       iend = newNpart
 #elif __VARIANT == __ADD
-         istart = 1
-         iend = npart_added !nb of particles in buffer
+     istart = 1
+     iend = npart_added !nb of particles in buffer
 #endif
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist() 
@@ -1547,17 +1547,13 @@
               ipart = ipart - i
               ipart_add = ipart_add - j
           ENDDO ! loop over all processors in commseq
-          write(*,*) 'for pdata_old: ',newNpart+1,2*newNpart-Npart,&
-              Npart+1,newNpart
+          DO i=1,newNpart-Npart
 #if    __DIM == 1
-          pdata_old(newNpart+1:newNpart+(newNpart-Npart)) = &
-              pdata_old(Npart+1:newNpart)
-          pdata_old(Npart+1:newNpart) = pdata_add(1:newNpart-Npart)
+          pdata_old(Npart+i) = pdata_add(modify%idx_real_new(i))
 #elif  __DIM == 2
-          pdata_old(1:lda,newNpart+1:newNpart+(newNpart-Npart)) = &
-              pdata_old(1:lda,Npart+1:newNpart)
-          pdata_old(1:lda,Npart+1:newNpart) = pdata_add(1:lda,1:newNpart-Npart)
+          pdata_old(1:lda,Npart+i) = pdata_add(1:lda,modify%idx_real_new(i))
 #endif
+          ENDDO
       ENDIF
 #endif
 

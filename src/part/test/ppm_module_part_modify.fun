@@ -16,7 +16,7 @@ integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 10
+integer                         :: np = 200
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
@@ -107,11 +107,12 @@ real(mk)                         :: t0,t1,t2,t3
 
     end teardown
 
-    test ghost_get_add_generic
+    test ghost_get_add
         ! test ghost get followed by adding particles
 
         use ppm_module_typedef
         use ppm_module_data
+        use ppm_module_data_buffers
         use ppm_module_mktopo
         use ppm_module_topo_check
         real(mk), parameter             :: gl = 0.1_mk
@@ -124,7 +125,7 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: mp_new=0,np_new=0
         integer                         :: i,j,k,ipart,npart
         integer                         :: isub,iproc
-        integer                         :: nb_samp = 4
+        integer                         :: nb_samp = 11
         integer                         :: dummy = -HUGE(1)
         integer                         :: Nr,Ng
         type(ppm_t_topo),pointer        :: topo => NULL()
@@ -145,11 +146,15 @@ real(mk)                         :: t0,t1,t2,t3
                 xp(j,i) = min_phys(j)+&
                 len_phys(j)*randnb((ndim+1)*i-(ndim-j))
             enddo
-            rcp(i) = min_rcp + (max_rcp-min_rcp)*randnb((ndim+1)*i-ndim)
+            rcp(i) = -1._mk
             do j=1,pdim
                 wp(j,i) = rcp(i)*REAL(j,MK)
             enddo
         enddo
+!        xp(1,1) = 0.25_mk
+!        xp(1,2) = 0.75_mk
+!        xp(2,1:2) = 0.25_mk + 0.5_mk*rank
+
 
         !----------------
         ! make topology
@@ -172,7 +177,6 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_map_part_pop(rcp,npart,newnp,info)
         call ppm_map_part_pop(xp,ndim,npart,newnp,info)
         npart=newnp
-
         call ppm_topo_check(topoid,xp,npart,ok,info)
         assert_true(ok)
 
@@ -187,13 +191,30 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,xp,npart,ok,info)
         assert_true(ok)
 
+        do i=1,npart
+            write(10+rank,'(2(E14.7,2X))') xp(1:2,i)
+        enddo
+        do i=npart+1,mp
+            write(20+rank,'(2(E14.7,2X))') xp(1:2,i)
+        enddo
+
         np_added = nb_samp*topo%nsublist
 
         allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
         allocate(rand_num(ndim,nb_samp*topo%nsubs))
 
+        if (rank .eq. 0 ) then
+            write(*,*) '[--------------]'
+            do k=1,topo%nsubs
+                write(*,*) ' subdomain ',k
+                write(*,'(F5.2,A,F5.2)') topo%min_subd(1,k), ' | ',topo%max_subd(1,k)
+                write(*,'(F5.2,A,F5.2)') topo%min_subd(2,k), ' | ',topo%max_subd(2,k)
+            enddo
+            write(*,*) '[--------------]'
+        endif
+
         !set a displacement vector, smaller than the ghost layer size
-        disp(1) = gl*0.5_mk
+        disp(1) = -gl*0.5_mk
         disp(2) = gl*0.3_mk
         if (ndim .eq. 3) disp(ndim) = gl*0.1_mk
         call random_seed(put=seed)
@@ -209,14 +230,16 @@ real(mk)                         :: t0,t1,t2,t3
                 SELECT CASE(j)
                 CASE (1)
                 CASE (2)
-                    xpn(1,ipart)= topo%max_subd(1,isub) 
+                    xpn(1,ipart)= topo%max_subd(1,isub)+gl
+                    xpn(2,ipart)= xpn(2,ipart)+0.5_mk*gl
+                    !xpn(1,ipart)= topo%max_subd(1,isub) 
                 CASE (3)
                     xpn(2,ipart)= topo%max_subd(2,isub) 
                 CASE (4)
-                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
-                CASE (5)
                     xpn(1,ipart)= topo%max_subd(1,isub) 
                     xpn(2,ipart)= topo%max_subd(2,isub) 
+                CASE (5)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
                 CASE (6)
                     xpn(1,ipart)= topo%max_subd(1,isub) 
                     xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
@@ -228,7 +251,7 @@ real(mk)                         :: t0,t1,t2,t3
                     xpn(2,ipart)= topo%max_subd(2,isub) 
                     xpn(ndim,ipart)= topo%max_subd(ndim,isub) 
                 CASE DEFAULT !random point inside the subdomain
-                    xpn(1:ndim,ipart) = rand_num(1:ndim,(isub-1)*nb_samp*+j)
+                    xpn(1:ndim,ipart) = rand_num(1:ndim,(isub-1)*nb_samp + j)
                     do i=1,ndim
                         xpn(i,ipart) = &
                         topo%min_subd(i,isub) + xpn(i,ipart) / &
@@ -236,16 +259,13 @@ real(mk)                         :: t0,t1,t2,t3
                     enddo
                 END SELECT
                 !move the particle in one direction
-                xpn(1,ipart) = xpn(1,ipart) + disp(1)
-                xpn(2,ipart) = xpn(2,ipart) + disp(2)
-                if (ndim.eq.3) xpn(ndim,ipart) = xpn(ndim,ipart) + gl*disp(ndim)
-                wpn(1,ipart)= real(j,mk)
+                xpn(1:ndim,ipart) = xpn(1:ndim,ipart) + disp(1:ndim)
+                wpn(1,ipart)=       real(j,mk)
                 wpn(2,ipart)= 7._mk*real(j,mk)
-                rcpn(ipart)= 0.33_mk + real(j,mk)
+                rcpn(ipart) = 2._mk*real(j,mk)
             enddo
         enddo
 
-        write(*,*) '[',rank,'] ','Adding ',np_added,' particles'
         do i=1,np_added
             write(100+rank,'(2(E14.7,2X))') xpn(1:2,i)
         enddo
@@ -253,8 +273,14 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
         assert_true(info.eq.0)
-        write(*,*) 'Nr = ',modify%Nrnew
-        write(*,*) 'Ng = ',modify%Ngnew
+        do i=1,modify%Nrnew
+            write(160+rank,'(2(E14.7,2X))') xpn(1:2,modify%idx_real_new(i))
+        enddo
+        do i=1,modify%Ngnew
+            write(170+rank,'(2(E14.7,2X))') xpn(1:2,modify%idx_ghost_new(i))
+        enddo
+        write(*,'(A,I0,A,I0,A,I0,1X,I0)') &
+            '[',rank,'] Adding ',np_added,' particles ',modify%Nrnew,modify%Ngnew
 
         call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
             ppm_param_add_ghost_particles,0,gl,info)
@@ -269,6 +295,9 @@ real(mk)                         :: t0,t1,t2,t3
         np_new = npart + np_added
         mp_new = mp + mp_added
 
+        write(*,*) '[',rank,'] ',mp_added-np_added,' parts in buffer'
+        call mpi_barrier(comm,info)
+
         call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
         assert_true(info.eq.0)
         call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
@@ -276,35 +305,23 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_part_modify_pop(xp,xpn,ndim,npart,mp,np_new,mp_new,info)
         assert_true(info.eq.0)
 
-        write(*,*) 'np_added = ',np_added
-        write(*,*) 'mp_added = ',mp_added
-        write(*,*) 'np_new = ',np_new
-        write(*,*) 'mp_new = ',mp_new
+        do i=1,modify%Nrnew
+            write(110+rank,'(2(E14.7,2X))') xpn(1:2,modify%idx_real_new(i))
+        enddo
 
-        write(*,*) '*********'
-        write(*,*) 'Nr = ',modify%Nrnew
-        write(*,*) 'Ng = ',modify%Ngnew
-
-        
         call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
             ppm_param_add_real_particles,0,gl,info)
         assert_true(info.eq.0)
+
         call ppm_part_modify_push(wpn,pdim,np_added,info)
         assert_true(info.eq.0)
         call ppm_part_modify_push(rcpn,np_added,info)
         assert_true(info.eq.0)
         call ppm_part_modify_send(np_added,mp_added,info)
         assert_true(info.eq.0)
-        np_new = npart + np_added
-        mp_new = mp    + mp_added
-        write(*,*) 'npart = ',npart
-        write(*,*) 'np_added = ',np_added
-        write(*,*) 'mp_added = ',mp_added
-        write(*,*) 'np_new = ',np_new
-        write(*,*) 'mp_new = ',mp_new
-        write(*,*) 'AAAA = ',np_new,2*np_new-npart,npart+1,np_new
-        call MPI_BARRIER(comm,info)
-        write(*,*) 'ok, lets carry on'
+
+        np_new = npart + modify%Nrnew
+        mp_new = mp    + mp_added - np_added + modify%Nrnew
 
         call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
         assert_true(info.eq.0)
@@ -315,11 +332,21 @@ real(mk)                         :: t0,t1,t2,t3
 
         mp = mp_new
 
-        !modify properties
         do i=1,np_new
-          rcp(i) = 3.14_mk
-          wp(1,i) = 7.14_mk
-          wp(2,i) = 8.14_mk
+            write(300+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+        enddo
+        do i=np_new+1,mp
+            write(400+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+        enddo
+
+
+        !modify properties
+        rcp = 0
+        wp = 0
+        do i=1,np_new
+          rcp(i)  =  3.14_MK
+          wp(1,i) = -4._mk
+          wp(2,i) = -8._mk
         enddo
 
         !update ghosts without calling ghost_get
@@ -329,11 +356,18 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(info.eq.0)
         call ppm_map_part_send(np_new,mp,info)
         assert_true(info.eq.0)
-        assert_true(np_new.eq.npart+np_added)
         call ppm_map_part_pop(wp,pdim,np_new,mp,info)
         assert_true(info.eq.0)
         call ppm_map_part_pop(rcp,np_new,mp,info)
         assert_true(info.eq.0)
+
+        do i=1,np_new
+            write(310+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+        enddo
+        do i=np_new+1,mp
+            write(410+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+        enddo
+
         assert_true(rcp(np_new+1).eq.3.14_mk)
         assert_true(rcp(mp).eq.3.14_mk)
 
@@ -356,33 +390,32 @@ real(mk)                         :: t0,t1,t2,t3
         allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
         allocate(rand_num(ndim,nb_samp*topo%nsubs))
 
-        !set a displacement vector, smaller than the ghost layer size
-        disp(1) = gl*0.5_mk
-        disp(2) = gl*0.3_mk
-        if (ndim .eq. 3) disp(ndim) = gl*0.1_mk
         call random_seed(put=seed)
         call random_number(rand_num)
 
         ipart = 0
         do iproc=1,topo%ncommseq ! for each neighboring proc
-            do k=1,topo%nsubs
-               !loop through subdomains that belong to that proc
-               if (topo%sub2proc(k).eq.topo%icommseq(iproc)) then
+        do k=1,topo%nsubs
+            !loop through subdomains that belong to that proc
+            if (topo%sub2proc(k).eq.topo%icommseq(iproc)) then
+                do j=1,nb_samp
                 ipart = ipart+1
                 do i=1,ndim
-                    xpn(i,ipart)= topo%min_subd(i,k) 
+                xpn(i,ipart)= topo%min_subd(i,k) 
                 enddo
                 SELECT CASE(j)
                 CASE (1)
                 CASE (2)
-                    xpn(1,ipart)= topo%max_subd(1,k) 
+                    xpn(1,ipart)= topo%max_subd(1,k)+gl
+                    xpn(2,ipart)= xpn(2,ipart)+0.5_mk*gl
+                    !xpn(1,ipart)= topo%max_subd(1,k) 
                 CASE (3)
                     xpn(2,ipart)= topo%max_subd(2,k) 
                 CASE (4)
-                    xpn(ndim,ipart)= topo%max_subd(ndim,k) 
-                CASE (5)
                     xpn(1,ipart)= topo%max_subd(1,k)
                     xpn(2,ipart)= topo%max_subd(2,k)
+                CASE (5)
+                    xpn(ndim,ipart)= topo%max_subd(ndim,k) 
                 CASE (6)
                     xpn(1,ipart)= topo%max_subd(1,k)
                     xpn(ndim,ipart)= topo%max_subd(ndim,k)
@@ -394,20 +427,19 @@ real(mk)                         :: t0,t1,t2,t3
                     xpn(2,ipart)= topo%max_subd(2,k)
                     xpn(ndim,ipart)= topo%max_subd(ndim,k)
                 CASE DEFAULT !random point inside the subdomain
-                    xpn(1:ndim,ipart) = rand_num(1:ndim,(k-1)*nb_samp*+j)
+                    xpn(1:ndim,ipart) = rand_num(1:ndim,(k-1)*nb_samp + j)
                     do i=1,ndim
-                        xpn(i,ipart) = &
+                    xpn(i,ipart) = &
                         topo%min_subd(i,k) + xpn(i,ipart) / &
                         (topo%max_subd(i,k) - topo%min_subd(i,k))
                     enddo
                 END SELECT
                 !move the particle in one direction
-                xpn(1,ipart) = xpn(1,ipart) + disp(1)
-                xpn(2,ipart) = xpn(2,ipart) + disp(2)
-                if (ndim.eq.3) xpn(ndim,ipart) = xpn(ndim,ipart) + gl*disp(ndim)
+                xpn(1:ndim,ipart) = xpn(1:ndim,ipart) + disp(1:ndim)
                 wpn(1,ipart)= real(j,mk)
                 wpn(2,ipart)= 7._mk*real(j,mk)
                 rcpn(ipart)= 0.33_mk + real(j,mk)
+                enddo
               endif
             enddo
           enddo
@@ -415,9 +447,7 @@ real(mk)                         :: t0,t1,t2,t3
         do i=1,np_added
             write(200+rank,'(2(E14.7,2X))') xpn(1:2,i)
         enddo
-        do i=1,np_new
-            write(300+rank,'(2(E14.7,2X))') xp(1:2,i)
-        enddo
+
         !Now loop through all these particles, and check whether they should be on
         !that proc, either as ghost or as real particles.
         !Check if that is the case. 
@@ -440,12 +470,14 @@ real(mk)                         :: t0,t1,t2,t3
             if (isreal) then
                 !check that this particle is in xp(1:Np)
                 ok = belongs_to(xpn(1:ndim,ipart),xp(1:ndim,1:np_new),ndim,np_new)
+                write(*,*) 'real particle ',ipart,' ok = ',ok
                 assert_true(ok)
             endif
             if (isghost) then
                 !check that this particle is in xp(Np+1,Mp)
                 ok = belongs_to(xpn(1:ndim,ipart),&
                     xp(1:ndim,np_new+1:mp_new),ndim,mp_new-np_new+1)
+                write(*,*) 'ghost particle ',ipart,' ok = ',ok
                 assert_true(ok)
             endif
         enddo
@@ -508,9 +540,9 @@ real(mk)                         :: t0,t1,t2,t3
 
         is_ghostof_sub = .false.
         if (isymm .eq. 0 ) then
-            sub_gl(1:ndim,1)=topo%min_subd(1:ndim,isub)
-        else
             sub_gl(1:ndim,1)=topo%min_subd(1:ndim,isub)-gl
+        else
+            sub_gl(1:ndim,1)=topo%min_subd(1:ndim,isub)
         endif
         sub_gl(1:ndim,2)=topo%max_subd(1:ndim,isub)+gl
 
@@ -520,8 +552,8 @@ real(mk)                         :: t0,t1,t2,t3
         if (ndim.eq.2) then
             if (xp(1).GE.sub_gl(1,1) .AND. xp(1).LT.sub_gl(1,2) .AND. &
                 xp(2).GE.sub_gl(2,1) .AND. xp(2).LT.sub_gl(2,2)) then
-                if (xp(1).LT.sub(1,1) .AND. xp(1).GE.sub(1,2) .AND. &
-                    xp(2).LT.sub(2,1) .AND. xp(2).GE.sub(2,2)) then
+                if (xp(1).LT.sub(1,1) .OR. xp(1).GE.sub(1,2) .AND. &
+                    xp(2).LT.sub(2,1) .OR. xp(2).GE.sub(2,2)) then
                         is_ghostof_sub = .true.
                         return
                 endif
@@ -531,9 +563,9 @@ real(mk)                         :: t0,t1,t2,t3
             if (xp(1).GE.sub_gl(1,1) .AND. xp(1).LT.sub_gl(1,2) .AND. &
                 xp(2).GE.sub_gl(2,1) .AND. xp(2).LT.sub_gl(2,2) .AND. &
                 xp(3).GE.sub_gl(3,1) .AND. xp(3).LT.sub_gl(3,2)) then
-                if (xp(1).LT.sub(1,1) .AND. xp(1).GE.sub(1,2) .AND. &
-                    xp(2).LT.sub(2,1) .AND. xp(2).GE.sub(2,2) .AND. &
-                    xp(3).LT.sub(3,1) .AND. xp(3).GE.sub(3,2)) then
+                if (xp(1).LT.sub(1,1) .OR. xp(1).GE.sub(1,2) .AND. &
+                    xp(2).LT.sub(2,1) .OR. xp(2).GE.sub(2,2) .AND. &
+                    xp(3).LT.sub(3,1) .OR. xp(3).GE.sub(3,2)) then
                         is_ghostof_sub = .true.
                         return
                 endif

@@ -566,6 +566,26 @@
          ENDDO
       ENDIF 
 
+#if __VARIANT == __ADD
+      IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
+          !The particles received in the buffer are real particles
+          !Update the counter and the idx array:
+          k = modify%Nrnew
+          modify%Nrnew = k + Mpart - Npart
+          iopt = ppm_param_alloc_grow_preserve
+          ldu = modify%Nrnew
+          CALL ppm_alloc(modify%idx_real_new,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,caller,     &
+     &        'send counter NSEND',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          DO j=1,Mpart-Npart
+              modify%idx_real_new(k+j)=Npart+j
+          ENDDO
+      ENDIF
+#endif
       !-------------------------------------------------------------------------
       !  before we through away the precv() data let us store it for later use:
       !  when sending ghosts back (ppm_map_part_ghost_put())
@@ -580,23 +600,12 @@
      &           'global recv buffer pointer PPM_PRECVBUFFER',__LINE__,info)
              GOTO 9999
          ENDIF
-!print*,caller
          ppm_precvbuffer(1) = Npart + 1
          DO k=1,ppm_nsendlist
             ppm_precvbuffer(k+1) = ppm_precvbuffer(k) + precv(k)
          ENDDO
 
       ENDIF
-
-      !-------------------------------------------------------------------------
-      !  low level debugging
-      !-------------------------------------------------------------------------
-!write(mesg,'(a,i4.4)') 'recvbuf',ppm_rank
-!open(10,file=mesg)
-!do i=1,ppm_nrecvbuffer,2
-!   write(10,*) ppm_recvbuffers(i),ppm_recvbuffers(i+1)
-!enddo
-!close(10)
 
       !-------------------------------------------------------------------------
       !  Deallocate the send buffer to save memory
