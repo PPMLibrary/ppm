@@ -689,6 +689,7 @@
 
       ENDIF ! of 3D
 
+
       !-------------------------------------------------------------------------
       !  Ok, now we have a shorter list of potential ghosts to search 
       !  allocate memory for the lghosts 
@@ -1291,13 +1292,13 @@
                   !we have to find which subdomain should contain them (as
                   !real particles)
                   IF (mode .EQ. ppm_param_add_ghost_particles) THEN
-                      xmini = xminf
-                      ymini = yminf
-                      xmaxi = xmaxf
-                      ymaxi = ymaxf
+                      xmini = xminf - eps
+                      ymini = yminf - eps
+                      xmaxi = xmaxf + eps
+                      ymaxi = ymaxf + eps
                       IF (ppm_dim.EQ.3) THEN
-                          zmini = zminf
-                          zmaxi = zmaxf
+                          zmini = zminf - eps
+                          zmaxi = zmaxf + eps
                       ENDIF
                   ENDIF
 #endif

@@ -1,7 +1,7 @@
          !-------------------------------------------------------------------
          !  copy periodic ghosts in the y-direction
          !-------------------------------------------------------------------
-         yminf = min_phys(2) + ghostsize
+         yminf = min_phys(2) - ghostsize
          ymini = min_phys(2)
          
          DO i=1,Nall
@@ -20,7 +20,7 @@
             ymaxi = max_phys(2)
             
             DO i=1,Nall
-               IF  (xp(2,i).GT.ymaxi.AND.xp(2,i).LT.ymaxf) THEN
+               IF  (xp(2,i).GE.ymaxi.AND.xp(2,i).LT.ymaxf) THEN
                   xp(2,i)   = xp(2,i) - len_phys(2)
                ENDIF
             ENDDO

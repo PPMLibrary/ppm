@@ -20,7 +20,7 @@
             xmaxi = max_phys(1) 
             
             DO i=1,Nall
-               IF  (xp(1,i).GT.xmaxi.AND.xp(1,i).LT.xmaxf) THEN
+               IF  (xp(1,i).GE.xmaxi.AND.xp(1,i).LT.xmaxf) THEN
                   xp(1,i)   = xp(1,i) - len_phys(1)
                ENDIF
             ENDDO
