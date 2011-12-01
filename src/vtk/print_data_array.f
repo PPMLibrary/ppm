@@ -36,7 +36,50 @@
                    WRITE(iUnit,'(A)',advance='no') " "
            END DO
 #else
-#ifdef VTK_SCALAR
+#ifdef VTK_MESH
+#ifndef VTK_MESH_ILBOUND
+#define VTK_MESH_ILBOUND 1
+#endif
+#ifndef VTK_MESH_IUBOUND
+#define VTK_MESH_IUBOUND UBOUND(VTK_MESH,2)
+#endif
+#ifndef VTK_MESH_JLBOUND
+#define VTK_MESH_JLBOUND 1
+#endif
+#ifndef VTK_MESH_JUBOUND
+#define VTK_MESH_JUBOUND UBOUND(VTK_MESH,3)
+#endif
+#if __DIM == __3D
+#ifndef VTK_MESH_KLBOUND
+#define VTK_MESH_KLBOUND 1
+#endif
+#ifndef VTK_MESH_KUBOUND
+#define VTK_MESH_KUBOUND UBOUND(VTK_MESH,4)
+#endif
+           DO k=VTK_MESH_KLBOUND,VTK_MESH_KUBOUND
+#endif
+               DO j=VTK_MESH_JLBOUND,VTK_MESH_JUBOUND
+                   DO i=VTK_MESH_ILBOUND,VTK_MESH_IUBOUND
+#if __DIM == __2D
+                       WRITE(scratch, *) VTK_MESH(i,j,VTK_MESH_SUB)
+#elif __DIM == __3D
+                       WRITE(scratch, *) VTK_MESH(i,j,k,VTK_MESH_SUB)
+#endif
+                       scratch = ADJUSTL(scratch)
+                       WRITE(iUnit, '(A)', advance='no') &
+                       scratch(1:LEN_TRIM(scratch))
+#if __DIM == __2D
+                       IF (i*j.LT.VTK_MESH_IUBOUND*VTK_MESH_JUBOUND) &
+#elif __DIM == __3D
+                       IF (i*j*k.LT.VTK_MESH_IUBOUND*VTK_MESH_JUBOUND*VTK_MESH_KUBOUND) &
+#endif
+                       WRITE(iUnit, '(A)', advance='no') " "
+                   END DO
+               END DO
+#if __DIM == __3D
+           END DO
+#endif
+#elif defined VTK_SCALAR
            DO i=LBOUND(VTK_SCALAR,1),UBOUND(VTK_SCALAR,1)
               WRITE(scratch, *) VTK_SCALAR(i)
               scratch = ADJUSTL(scratch)
@@ -89,3 +132,10 @@
 #undef VTK_INTEGER
 #undef VTK_VECTOR
 #undef APPEND_ZEROS
+#undef VTK_MESH
+#undef VTK_MESH_ILBOUND
+#undef VTK_MESH_IUBOUND
+#undef VTK_MESH_JLBOUND
+#undef VTK_MESH_JUBOUND
+#undef VTK_MESH_KLBOUND
+#undef VTK_MESH_KUBOUND

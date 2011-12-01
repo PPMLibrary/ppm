@@ -21,6 +21,12 @@
            END DO
            WRITE(iUnit, '(A)', advance='no') "'"
 #endif
+#ifdef VTK_GHOSTLEVEL
+           WRITE(scratch, *) VTK_GHOSTLEVEL
+           scratch = ADJUSTL(scratch)
+           WRITE(iUnit, '(3A)', advance='no') " GhostLevel='", &
+                scratch(1:LEN_TRIM(scratch)), "'"
+#endif
 #ifdef VTK_ORIGIN
            WRITE(iUnit, '(A)', advance='no') " Origin='"
            DO i=LBOUND(VTK_ORIGIN,1),UBOUND(VTK_ORIGIN,1)
@@ -96,6 +102,7 @@
 #undef VTK_VERSION
 #undef VTK_WHOLE_EXTENT
 #undef VTK_ORIGIN
+#undef VTK_GHOSTLEVEL
 #undef VTK_SPACING
 #undef VTK_EXTENT
 #undef VTK_NPOINTS
