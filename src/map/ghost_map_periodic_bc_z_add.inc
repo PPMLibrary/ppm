@@ -1,7 +1,7 @@
             !----------------------------------------------------------------
             !  copy periodic ghosts in the z-direction
             !----------------------------------------------------------------
-            zminf = min_phys(3) + ghostsize
+            zminf = min_phys(3) - ghostsize
             zmini = min_phys(3)
             
             DO i=1,Nall
@@ -20,7 +20,7 @@
                zmaxi = max_phys(3)
                
                DO i=1,Nall
-                  IF  (xp(3,i).GT.zmaxi.AND.xp(3,i).LT.zmaxf) THEN
+                  IF  (xp(3,i).GE.zmaxi.AND.xp(3,i).LT.zmaxf) THEN
                      xp(3,i)   = xp(3,i) - len_phys(3)
                   ENDIF
                ENDDO
