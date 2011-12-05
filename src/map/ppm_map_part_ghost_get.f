@@ -37,11 +37,11 @@
 #endif 
 #elif  __VARIANT == __ADD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_part_modify_add_s(topoid,xp,lda,Npart_old,Npart,&
-              mode,isymm,ghostsize,info)
+      SUBROUTINE ppm_part_modify_add_s(topoid,xp,lda,Npart_old,Mpart_old,&
+              Npart,mode,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_part_modify_add_d(topoid,xp,lda,Npart_old,Npart,&
-              mode,isymm,ghostsize,info)
+      SUBROUTINE ppm_part_modify_add_d(topoid,xp,lda,Npart_old,Mpart_old,&
+              Npart,mode,isymm,ghostsize,info)
 #endif 
 #endif 
       !!! This routine maps/adds the ghost particles on the current topology.
@@ -149,6 +149,8 @@
 #elif __VARIANT == __ADD
       INTEGER                 , INTENT(IN   ) :: Npart_old
       !!! The number of real particles already present (on the local processor)
+      INTEGER                 , INTENT(IN   ) :: Mpart_old
+      !!! The number of particles already present (on the local processor)
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The number of particles to be added (on the local processor)
       INTEGER                 , INTENT(IN   ) :: mode
@@ -234,6 +236,9 @@
 #if   __VARIANT == __ADD
       !update global variable stored in module_data_buffers_add
       add_mode = mode
+      modify%Npart = Npart_old
+      modify%Npart_add = Npart
+      modify%Mpart = Mpart_old
 #endif
       !-------------------------------------------------------------------------
       !  Count Boundary conditions

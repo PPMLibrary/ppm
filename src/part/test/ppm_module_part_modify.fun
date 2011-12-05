@@ -10,13 +10,13 @@ integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
 real(mk)                        :: tol,min_rcp,max_rcp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 200
+integer                         :: np = 10000
 integer                         :: mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
@@ -115,7 +115,9 @@ real(mk)                         :: t0,t1,t2,t3
         use ppm_module_data_buffers
         use ppm_module_mktopo
         use ppm_module_topo_check
-        real(mk), parameter             :: gl = 0.1_mk
+        use ppm_module_time
+        use ppm_module_util_time_stats
+        real(mk), parameter             :: gl = 0.051_mk
         real(mk),dimension(:,:),pointer :: xpn => NULL()
         real(mk),dimension(:,:),pointer :: wpn => NULL()
         real(mk),dimension(:,:),allocatable :: rand_num
@@ -124,11 +126,11 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: mp_new=0,np_new=0
         integer                         :: i,j,k,ipart,npart
         integer                         :: isub,iproc
-        integer                         :: nb_samp = 200
+        integer                         :: nb_samp = 15
         integer                         :: dummy = -HUGE(1)
         integer                         :: Nr,Ng
         type(ppm_t_topo),pointer        :: topo => NULL()
-        logical                         :: isreal,isghost,ok
+        logical                         :: isreal,isghost,ok,ok_all
 
         !----------------
         ! create particles
@@ -138,7 +140,7 @@ real(mk)                         :: t0,t1,t2,t3
         xp = 0.0_mk
         rcp = 0.0_mk
         min_rcp = 0.01_mk
-        max_rcp = 0.2_mk 
+        max_rcp = 0.13_mk 
 
         do i=1,npart
             do j=1,ndim
@@ -150,10 +152,6 @@ real(mk)                         :: t0,t1,t2,t3
                 wp(j,i) = rcp(i)*REAL(j,MK)
             enddo
         enddo
-!        xp(1,1) = 0.25_mk
-!        xp(1,2) = 0.75_mk
-!        xp(2,1:2) = 0.25_mk + 0.5_mk*rank
-
 
         !----------------
         ! make topology
@@ -164,10 +162,17 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
+        call ppm_util_tic(info)
         call ppm_mktopo(topoid,xp,npart,decomp,assig,min_phys,max_phys,bcdef, &
         &               max_rcp,cost,info)
+        assert_true(info.eq.0)
+        call ppm_util_toc('mktopo',t1,info)
         topo => ppm_topo(topoid)%t
+!        write(*,*) 'Created ',topo%nsubs,' subdomains'
 
+
+
+        call ppm_util_tic(info)
         call ppm_map_part_global(topoid,xp,npart,info)
         call ppm_map_part_push(rcp,npart,info)
         call ppm_map_part_push(wp,pdim,npart,info)
@@ -189,6 +194,7 @@ real(mk)                         :: t0,t1,t2,t3
         
         call ppm_topo_check(topoid,xp,npart,ok,info)
         assert_true(ok)
+        call ppm_util_toc('global and ghost mapping',t1,info)
 
 !        do i=1,npart
 !            write(10+rank,'(2(E14.7,2X))') xp(1:2,i)
@@ -204,12 +210,15 @@ real(mk)                         :: t0,t1,t2,t3
         allocate(rand_num(ndim,nb_samp*topo%nsubs),stat=info)
         assert_true(info.eq.0)
 
+        ! Print the subdomains
 !        if (rank .eq. 0 ) then
 !            write(*,*) '[--------------]'
 !            do k=1,topo%nsubs
-!                write(*,*) ' subdomain ',k
+!                write(*,'(2(A,I0))') ' subdomain ',k,' on proc ',topo%sub2proc(k)
 !                write(*,'(F7.4,A,F7.4)') topo%min_subd(1,k), ' | ',topo%max_subd(1,k)
 !                write(*,'(F7.4,A,F7.4)') topo%min_subd(2,k), ' | ',topo%max_subd(2,k)
+!                write(1000,'(4(F7.4,1X))') topo%min_subd(1,k),topo%min_subd(2,k),&
+!                    topo%max_subd(1,k),topo%max_subd(2,k)
 !            enddo
 !            write(*,*) '[--------------]'
 !        endif
@@ -217,6 +226,9 @@ real(mk)                         :: t0,t1,t2,t3
         call random_seed(put=seed)
         call random_number(rand_num)
 
+        !------------------------------------------
+        ! generate new particles, for each subomain
+        !------------------------------------------
         do k=1,topo%nsublist !for each subdomain on that proc
             isub = topo%isublist(k)
             do j=1,nb_samp !generate a particle at each corner
@@ -232,6 +244,11 @@ real(mk)                         :: t0,t1,t2,t3
 !            write(100+rank,'(2(E14.7,2X))') xpn(1:2,i)
 !        enddo
 
+        call ppm_util_tic(info)
+
+        !-----------------
+        ! find which of these particles are ghosts and which are real
+        !-----------------
         call ppm_part_split_compute(topoid,xpn,np_added,0,gl,info)
         assert_true(info.eq.0)
 !        do i=1,modify%Nrnew
@@ -243,33 +260,38 @@ real(mk)                         :: t0,t1,t2,t3
 !        write(*,'(A,I0,A,I0,A,I0,1X,I0)') &
 !            '[',rank,'] Adding ',np_added,' particles ',modify%Nrnew,modify%Ngnew
 
-        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
+        !------------------------
+        ! send the ghosts onto the corresponding processor
+        ! (in effect, this is a partial mapping)
+        !------------------------
+        call ppm_part_modify_add(topoid,xpn,ndim,npart,mp,np_added, &
             ppm_param_add_ghost_particles,0,gl,info)
         assert_true(info.eq.0)
         call ppm_part_modify_push(wpn,pdim,np_added,info)
         assert_true(info.eq.0)
         call ppm_part_modify_push(rcpn,np_added,info)
         assert_true(info.eq.0)
-        call ppm_part_modify_send(np_added,mp_added,info)
+        call ppm_part_modify_send(info)
         assert_true(info.eq.0)
-
-        np_new = npart + np_added
-        mp_new = mp + mp_added
-
-        call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
+        call ppm_part_modify_pop(rcp,rcpn,np_new,mp_new,info)
         assert_true(info.eq.0)
-        call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
+        call ppm_part_modify_pop(wp,wpn,pdim,np_new,mp_new,info)
         assert_true(info.eq.0)
-        call ppm_part_modify_pop(xp,xpn,ndim,npart,mp,np_new,mp_new,info)
+        call ppm_part_modify_pop(xp,xpn,ndim,np_new,mp_new,info)
         assert_true(info.eq.0)
 
 !        do i=1,modify%Nrnew
 !            write(110+rank,'(2(E14.7,2X))') xpn(1:2,modify%idx_real_new(i))
 !        enddo
 !        write(*,'(A,I0,A,I0,A,3(I0,1X))') &
-!            '[',rank,'] Np_a ',np_added,' Mp_a ',mp_added,modify%Nrnew,modify%Ngnew
+!            '[',rank,'] Np_a ',np_added,' Mp_a ',mp_added,np_new,mp_new
 
-        call ppm_part_modify_add(topoid,xpn,ndim,npart,np_added, &
+        !----------------------
+        ! now, for each of the new real particles, find the ghosts
+        ! and send them to the corresponding neighboring proc.
+        ! Update the ghost mappings.
+        !----------------------
+        call ppm_part_modify_add(topoid,xpn,ndim,npart,mp,np_added, &
             ppm_param_add_real_particles,0,gl,info)
         assert_true(info.eq.0)
 
@@ -277,23 +299,24 @@ real(mk)                         :: t0,t1,t2,t3
         assert_true(info.eq.0)
         call ppm_part_modify_push(rcpn,np_added,info)
         assert_true(info.eq.0)
-        call ppm_part_modify_send(np_added,mp_added,info)
+        call ppm_part_modify_send(info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_pop(rcp,rcpn,np_new,mp_new,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_pop(wp,wpn,pdim,np_new,mp_new,info)
+        assert_true(info.eq.0)
+        call ppm_part_modify_pop(xp,xpn,ndim,np_new,mp_new,info)
         assert_true(info.eq.0)
 
-        np_new = npart + modify%Nrnew
-        mp_new = mp    + mp_added - np_added + modify%Nrnew
+!        write(*,'(A,I0,A,I0,A,3(I0,1X))') &
+!            '[',rank,'] Np_a ',np_added,' Mp_a ',mp_added,np_new,mp_new
 
-        call ppm_part_modify_pop(rcp,rcpn,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_pop(wp,wpn,pdim,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
-        call ppm_part_modify_pop(xp,xpn,ndim,npart,mp,np_new,mp_new,info)
-        assert_true(info.eq.0)
+        call ppm_util_toc('add particles',t1,info)
 
         mp = mp_new
 
-!        do i=1,np_new
-!            write(300+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+!        do i=npart+1,np_new
+!           write(300+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
 !        enddo
 !        do i=np_new+1,mp
 !            write(400+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
@@ -309,23 +332,27 @@ real(mk)                         :: t0,t1,t2,t3
           wp(2,i) = -8._mk
         enddo
 
-        !update ghosts without calling ghost_get
+        !---------------------------
+        ! Check that the ghost mappings are ok by
+        ! updating ghosts without calling ghost_get
+        !----------------------------
         call ppm_map_part_push(rcp,np_new,info)
         assert_true(info.eq.0)
         call ppm_map_part_push(wp,pdim,np_new,info)
         assert_true(info.eq.0)
         call ppm_map_part_send(np_new,mp,info)
         assert_true(info.eq.0)
+        assert_true(mp.eq.mp_new)
         call ppm_map_part_pop(wp,pdim,np_new,mp,info)
         assert_true(info.eq.0)
         call ppm_map_part_pop(rcp,np_new,mp,info)
         assert_true(info.eq.0)
 
 !        do i=1,np_new
-!            write(310+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+!            write(320+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
 !        enddo
 !        do i=np_new+1,mp
-!            write(410+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
+!            write(420+rank,'(3(E14.7,2X))') xp(1:2,i),rcp(i)
 !        enddo
 
         assert_true(rcp(np_new+1).eq.3.14_mk)
@@ -334,10 +361,15 @@ real(mk)                         :: t0,t1,t2,t3
         deallocate(xpn,wpn,rcpn)
 
         !Run the check
+        call ppm_util_tic(info)
 
+        !--------------------------------
+        ! Check that the particles that were added are where they should
+        ! be, either as real particles or as ghost particles.
         ! create the same particles than the ones we added for the test
         ! This time, we do it globally (for all subdomains, not only
         ! those of the current processor).
+        !---------------------------------
         np_added = 0
         do iproc=1,topo%ncommseq
         do k=1,topo%nsubs
@@ -352,6 +384,7 @@ real(mk)                         :: t0,t1,t2,t3
         allocate(xpn(ndim,np_added),wpn(pdim,np_added),rcpn(np_added))
 
         ipart = 0
+        ok_all = .true.
         do iproc=1,topo%ncommseq ! for each neighboring proc
             do k=1,topo%nsubs
             !loop through subdomains that belong to that proc
@@ -360,7 +393,8 @@ real(mk)                         :: t0,t1,t2,t3
                     do j=1,nb_samp
                         ipart = ipart+1
 
-                        xpn(1:ndim,ipart)=sample_xp(ndim,topo,gl,k,j,rand_num,nb_samp)
+                        xpn(1:ndim,ipart)=&
+                            sample_xp(ndim,topo,gl,k,j,rand_num,nb_samp)
                         wpn(1,ipart)= real(j,mk)
                         wpn(2,ipart)= real(k,mk)
                         rcpn(ipart)= 0.33_mk + real(j,mk)
@@ -389,15 +423,15 @@ real(mk)                         :: t0,t1,t2,t3
                             ok = belongs_to(xpn(1:ndim,ipart),&
                                 xp(1:ndim,1:np_new),ndim,np_new)
                             if (.not.ok) then
-                                write(*,'(A,I0,A,I0,1X,I0,F7.4,1X,F7.4)') &
-                                    '[',rank,'] real particle ',j,ipart,&
-                                    xpn(1:ndim,ipart)
+                                write(*,'(A,I0,A,3(I0,1X),2(F7.4,1X))') &
+                                    '[',rank,'] real particle ',&
+                                    k,j,ipart,xpn(1:2,ipart)
                                 write(*,'(A,I0,A,F7.4,1X,F7.4)') &
                                     '[',rank,'] min_sudomain ', topo%min_subd(1:2,k)
                                 write(*,'(A,I0,A,F7.4,1X,F7.4)') &
                                     '[',rank,'] max_sudomain ', topo%max_subd(1:2,k)
                             endif
-                            assert_true(ok)
+                            ok_all = ok_all .AND. ok
                         endif
 
                         if (isghost) then
@@ -405,39 +439,44 @@ real(mk)                         :: t0,t1,t2,t3
                             ok = belongs_to(xpn(1:ndim,ipart),&
                                 xp(1:ndim,np_new+1:mp_new),ndim,mp_new-np_new+1)
                             if (.not.ok) then
-                                write(*,'(A,I0,A,I0,1X,I0,F7.4,1X,F7.4)') &
-                                    '[',rank,'] ghost particle ',j,ipart,xpn(1:2,ipart)
-                                write(*,'(A,I0,A,F7.4,1X,F7.4)') &
+                                write(*,'(A,I0,A,3(I0,1X),2(E24.17,1X))') &
+                                    '[',rank,'] ghost particle ',&
+                                    k,j,ipart,xpn(1:2,ipart)
+                                write(*,'(A,I0,A,F12.8,1X,F12.8)') &
                                     '[',rank,'] min_sudomain ', topo%min_subd(1:2,k)
-                                write(*,'(A,I0,A,F7.4,1X,F7.4)') &
+                                write(*,'(A,I0,A,E24.17,1X,E24.17)') &
                                     '[',rank,'] max_sudomain ', topo%max_subd(1:2,k)
+                                do i=np_new+1,mp_new
+                                    write(*,*) xp(1:ndim,i)
+                                enddo
                                 ok = belongs_to(xpn(1:ndim,ipart),&
                                     xp(1:ndim,1:np_new),ndim,np_new)
                                 if (ok) then
                                     write(*,*) &
-                                        'but this particle is found as a real particle'
+                                        'but this part. is found as a real part.'
                                 endif
                                 ok = .false.
                             endif
-                            assert_true(ok)
+                            ok_all = ok_all .AND. ok
                         endif
-                    enddo
+                    enddo !j
                 endif
-            enddo
-        enddo
+            enddo !k
+        enddo !iproc
+
+        call ppm_util_toc('check all particles',t1,info)
+        call ppm_util_printstats(info)
+
+
+        assert_true(ok_all)
 
 
 !        do i=1,np_added
 !            write(200+rank,'(2(E14.7,2X))') xpn(1:2,i)
 !        enddo
-!        call mpi_barrier(comm,info)
-
 
         deallocate(xpn,wpn,rcpn)
         deallocate(rand_num)
-
-!        write(*,*) 'stopping now'
-!        stop
 
     end test
 
@@ -542,7 +581,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         belongs_to = .false.
         do ip = 1,np
-           if (maxval(abs(xp-xp_0(1:ndim,ip))) .lt. ppm_myepsd) then
+           if (maxval(abs(xp-xp_0(1:ndim,ip))) .lt. 2._mk*ppm_myepsd) then
                belongs_to = .true.
                return
            endif
@@ -614,14 +653,16 @@ real(mk)                         :: t0,t1,t2,t3
           CASE(3)
             sample_xp(2) = sample_xp(2) + disp1
           CASE(4)
+            sample_xp(1) = sample_xp(1) - disp2
             sample_xp(2) = sample_xp(2) + disp1
             IF (ndim.eq.3) THEN
                 sample_xp(3) = sample_xp(3) + disp3
             ENDIF
           CASE(5)
-            sample_xp(1) = sample_xp(1) + disp1
             IF (ndim.eq.3) THEN
                 sample_xp(3) = sample_xp(3) + disp1
+            ELSE
+                sample_xp(1) = sample_xp(1) - disp2
             ENDIF
           END SELECT
         endif

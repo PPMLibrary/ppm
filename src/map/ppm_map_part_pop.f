@@ -62,43 +62,43 @@
 #elif  __VARIANT == __ADD
 #if    __DIM ==1
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_add1ds(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1ds(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_add1dd(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1dd(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_add1dsc(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1dsc(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_add1ddc(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1ddc(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_part_pop_add1di(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1di(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_part_pop_add1dl(pdata_old,pdata_add,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add1dl(pdata_old,pdata_add,&
               newNpart,newMpart,info)
 #endif 
 
 #elif  __DIM == 2
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_add2ds(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2ds(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_pop_add2dd(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2dd(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_add2dsc(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2dsc(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_part_pop_add2ddc(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2ddc(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_part_pop_add2di(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2di(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_part_pop_add2dl(pdata_old,pdata_add,lda,Npart,Mpart,&
+      SUBROUTINE ppm_map_part_pop_add2dl(pdata_old,pdata_add,lda,&
               newNpart,newMpart,info)
 #endif
 #endif
@@ -208,17 +208,15 @@
       INTEGER                 , INTENT(IN   ) :: lda
       !!! The leading dimension of pdata.
 #endif
+#if   __VARIANT == __NORMAL
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles (on the processor)
-#if   __VARIANT == __NORMAL
       INTEGER                 , INTENT(IN   ) :: newNpart
       !!! The new number of particles (on the processor,incl ghosts)
 #elif __VARIANT == __ADD
-      INTEGER                 , INTENT(IN   ) :: Mpart
-      !!! The old number of particles (on the processor,incl ghosts)
-      INTEGER                 , INTENT(IN   ) :: newNpart
+      INTEGER                 , INTENT(  OUT) :: newNpart
       !!! The new number of real particles (on the processor,excl. ghosts)
-      INTEGER                 , INTENT(IN   ) :: newMpart
+      INTEGER                 , INTENT(  OUT) :: newMpart
       !!! The new number of particles (on the processor,incl ghosts)
 #endif
       INTEGER                 , INTENT(  OUT) :: info
@@ -266,6 +264,7 @@
 #endif
 #if   __VARIANT == __ADD
       INTEGER                              :: npart_added
+      INTEGER                              :: npart_real_added
 #endif
       
       !-------------------------------------------------------------------------
@@ -297,11 +296,14 @@
       ENDIF
 
 #if   __VARIANT == __ADD
+      newNpart = modify%Npart_new
+      newMpart = modify%Mpart_new
+      npart_real_added = newNpart - modify%Npart
       !number of particles to receive from the buffer
       IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
-          npart_added = newMpart - Mpart - (newNpart - Npart) 
+          npart_added = newMpart - modify%Mpart - npart_real_added 
       ELSE
-          npart_added = newMpart - Mpart - (newNpart - Npart) 
+          npart_added = newMpart - modify%Mpart - npart_real_added 
       ENDIF
 #endif
 
@@ -407,9 +409,9 @@
       IF (add_mode .EQ. ppm_param_add_ghost_particles) THEN
 #if   __DIM == 2 
           ldu(1) = edim
-          ldu(2) = newMpart - Mpart
+          ldu(2) = newMpart - modify%Mpart
 #elif __DIM == 1
-          ldu(1) = newMpart - Mpart
+          ldu(1) = newMpart - modify%Mpart
 #endif
           CALL ppm_alloc(pdata_add,ldu,iopt,info)
           IF (info .NE. 0) THEN
@@ -1513,10 +1515,10 @@
           !  of pdata_add 
           !-------------------------------------------------------------------------
 #if    __DIM == 1
-          pdata_add(newNpart-Npart+1:newNpart-Npart+npart_added) = &
+          pdata_add(npart_real_added+1:npart_real_added+npart_added) = &
               pdata(1:npart_added)
 #elif  __DIM == 2
-          pdata_add(1:lda,newNpart-Npart+1:newNpart-Npart+npart_added) = &
+          pdata_add(1:lda,npart_real_added+1:npart_real_added+npart_added) = &
               pdata(1:lda,1:npart_added)
 #endif
       ELSE
@@ -1528,7 +1530,7 @@
           !  be inserted so as to preserve this ordering.
           !  The new real data is inserted between Npart+1 and newNpart.
           !-------------------------------------------------------------------------
-          ipart = Mpart + (newNpart-Npart)
+          ipart = modify%Mpart + npart_real_added
           ipart_add = npart_added
           DO k=ppm_nsendlist,1,-1
               i=plists_normal%precv(k)
@@ -1547,11 +1549,11 @@
               ipart = ipart - i
               ipart_add = ipart_add - j
           ENDDO ! loop over all processors in commseq
-          DO i=1,newNpart-Npart
+          DO i=1,npart_real_added
 #if    __DIM == 1
-          pdata_old(Npart+i) = pdata_add(modify%idx_real_new(i))
+          pdata_old(modify%Npart+i) = pdata_add(modify%idx_real_new(i))
 #elif  __DIM == 2
-          pdata_old(1:lda,Npart+i) = pdata_add(1:lda,modify%idx_real_new(i))
+          pdata_old(1:lda,modify%Npart+i) = pdata_add(1:lda,modify%idx_real_new(i))
 #endif
           ENDDO
       ENDIF
@@ -1587,12 +1589,14 @@
       RETURN
       CONTAINS
       SUBROUTINE check
+#if  __VARIANT == __NORMAL
           IF (Npart .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,caller,  &
      &            'Npart must be >=0',__LINE__,info)
               GOTO 8888
           ENDIF
+#endif
           IF (newNpart .LT. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,caller,  &

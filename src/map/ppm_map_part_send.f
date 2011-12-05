@@ -30,7 +30,7 @@
 #if   __VARIANT == __NORMAL
       SUBROUTINE ppm_map_part_send(Npart,Mpart,info)
 #elif __VARIANT == __ADD
-      SUBROUTINE ppm_map_part_send_add(Npart,Mpart,info)
+      SUBROUTINE ppm_map_part_send_add(info)
 #endif
       !!! This routine performs the actual send/recv of the particles and all
       !!! pushed data.
@@ -67,9 +67,11 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
+#if   __VARIANT == __NORMAL
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles on the processor
       INTEGER                 , INTENT(  OUT) :: Mpart
+#endif
       !!! The new number of particles on processor after the send/recv
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
@@ -95,6 +97,10 @@
       INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
       INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
       INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
+#if   __VARIANT == __ADD
+      INTEGER                          :: Npart
+      INTEGER                          :: Mpart
+#endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -108,6 +114,7 @@
       plists => plists_normal
 #elif __VARIANT == __ADD
       plists => plists_add
+      Npart = modify%Npart_add
 #endif
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -584,6 +591,11 @@
           DO j=1,Mpart-Npart
               modify%idx_real_new(k+j)=Npart+j
           ENDDO
+          modify%Npart_new = modify%Npart + Npart
+          modify%Mpart_new = modify%Mpart + Mpart
+      ELSE IF (add_mode .EQ. ppm_param_add_real_particles) THEN
+          modify%Npart_new = modify%Npart + modify%Nrnew
+          modify%Mpart_new = modify%Mpart + Mpart - Npart + modify%Nrnew
       ENDIF
 #endif
       !-------------------------------------------------------------------------
@@ -626,42 +638,6 @@
       !  Deallocate
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
-!      CALL ppm_alloc(nsend,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'send counter NSEND',__LINE__,info)
-!      ENDIF
-!      CALL ppm_alloc(nrecv,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'receive counter NRECV',__LINE__,info)
-!      ENDIF
-!      CALL ppm_alloc(psend,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'particle send counter PSEND',__LINE__,info)
-!      ENDIF
-!      CALL ppm_alloc(precv,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'particle receive counter PRECV',__LINE__,info)
-!      ENDIF
-!      CALL ppm_alloc(   pp,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'work array PP',__LINE__,info)
-!      ENDIF
-!      CALL ppm_alloc(   qq,ldu,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,caller,     &
-!     &        'work array QQ',__LINE__,info)
-!      ENDIF
       CALL ppm_alloc(recvd,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_error
@@ -704,12 +680,14 @@
       RETURN
       CONTAINS
       SUBROUTINE check
+#if __VARIANT == __NORMAL
         IF (Npart .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,caller,  &
      &          'Npart must be >=0',__LINE__,info)
             GOTO 8888
         ENDIF
+#endif
  8888   CONTINUE
       END SUBROUTINE check
 #if   __VARIANT == __NORMAL
