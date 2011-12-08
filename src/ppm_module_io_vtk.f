@@ -26,6 +26,14 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
+
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
+#define __2D               3
+#define __3D               4
+#define __VEC              5
+#define __SCA              6
+
       MODULE ppm_module_io_vtk
          USE ppm_module_typedef,   ONLY: ppm_char, ppm_error_fatal, &
                                          ppm_kind_single, ppm_kind_double
@@ -42,8 +50,9 @@
 
          IMPLICIT NONE
 
-         PUBLIC :: ppm_vtk_particle_cloud, ppm_vtk_grid_like, &
-              ppm_vtk_init, ppm_vtk_section, ppm_vtk_data, ppm_vtk_close
+         PUBLIC :: ppm_vtk_particle_cloud, ppm_vtk_fields, &
+              ppm_vtk_init, ppm_vtk_section, ppm_vtk_data, ppm_vtk_close, &
+              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
@@ -53,15 +62,40 @@
   INCLUDE 'mpif.h'
 #endif
          !----------------------------------------------------------------------
+         !  Types
+         !----------------------------------------------------------------------
+
+         TYPE ppm_t_field_2dd
+             REAL(ppm_kind_double), DIMENSION(:,:,:), POINTER :: fdata
+             CHARACTER(LEN=ppm_char)                          :: fname
+         END TYPE
+         TYPE ppm_t_field_3dd
+             REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: fdata
+             CHARACTER(LEN=ppm_char)                            :: fname
+         END TYPE
+         
+         TYPE ppm_t_field_2ds
+             REAL(ppm_kind_single), DIMENSION(:,:,:), POINTER :: fdata
+             CHARACTER(LEN=ppm_char)                          :: fname
+         END TYPE
+         TYPE ppm_t_field_3ds
+             REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata
+             CHARACTER(LEN=ppm_char)                            :: fname
+         END TYPE
+
+         !----------------------------------------------------------------------
          !  New Interface
          !----------------------------------------------------------------------
 !          INTERFACE ppm_vtk_particle_cloud
 !             MODULE PROCEDURE ppm_vtk_particle_cloud
 !          END INTERFACE
 
-!          INTERFACE ppm_vtk_grid_like
-!             MODULE PROCEDURE ppm_vtk_grid_like
-!          END INTERFACE
+          INTERFACE ppm_vtk_fields
+             MODULE PROCEDURE ppm_vtk_fields_2ds
+             MODULE PROCEDURE ppm_vtk_fields_2dd
+             MODULE PROCEDURE ppm_vtk_fields_3ds
+             MODULE PROCEDURE ppm_vtk_fields_3dd
+          END INTERFACE
 
          !----------------------------------------------------------------------
          !  Ugly Interface
@@ -541,9 +575,22 @@
            CALL substop(caller,t0,info)
          END SUBROUTINE ppm_vtk_particle_cloud
 
-         SUBROUTINE ppm_vtk_grid_like()
-         END SUBROUTINE ppm_vtk_grid_like
-
+#define __DIM __2D
+#define __KIND __DOUBLE_PRECISION
+#include "vtk/ppm_vtk_fields.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION
+#include "vtk/ppm_vtk_fields.f"
+#undef __KIND
+#undef __DIM
+#define __DIM __3D
+#define __KIND __DOUBLE_PRECISION
+#include "vtk/ppm_vtk_fields.f"
+#undef __KIND
+#define __KIND __SINGLE_PRECISION
+#include "vtk/ppm_vtk_fields.f"
+#undef __KIND
+#undef __DIM
          !----------------------------------------------------------------------
          !  Parallel VTK output
          !----------------------------------------------------------------------
