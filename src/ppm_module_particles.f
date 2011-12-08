@@ -5522,6 +5522,162 @@ SUBROUTINE particles_check_arrays(Particles,info)
 
 END SUBROUTINE particles_check_arrays
 
+SUBROUTINE particles_add(Particles1,Particles2,info)
+    !!!------------------------------------------------------------------------!
+    !!! This routines appends a small number of particles (together with their
+    !!! properties) to an existing set of particles.
+    !!! If the ghosts (resp. the neighbour lists) of the initial set of
+    !!! particles are up-to-date, they are updated "on the fly" without having
+    !!! to recompute everything from scratch.
+    !!! The ids of the properties of Particles2 must match those of Particles1
+    !!!     if some are missing (ie..
+    !!!------------------------------------------------------------------------!
+    USE ppm_module_data, ONLY: ppm_rank
+    USE ppm_module_write
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+#if   __KIND == __SINGLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+    INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)   :: Particles1
+    !!! Particles
+    TYPE(ppm_t_particles), POINTER,     INTENT(IN   )   :: Particles2
+    !!! Particles to be added to Particles1 (expected to be in small number)
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: cbuf,filename
+    CHARACTER(LEN = ppm_char)                  :: caller = 'particles_add'
+    REAL(KIND(1.D0))                           :: t0
+    REAL(MK)                                   :: size_theo
+    LOGICAL                                    :: ok
+    INTEGER                                    :: i
+
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+
+
+    !-------------------------------------------------------------------------
+    ! Check input parameters
+    !-------------------------------------------------------------------------
+    IF (.NOT. ASSOCIATED(Particles1) .OR. .NOT. ASSOCIATED(Particles2)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'one of the input Particles data structure is not allocated',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (.Particles1%has_ghosts) THEN
+    ENDIF
+
+
+    DO i=1,Particles%max_wpiid
+        IF (Particles%wpi(i)%is_mapped) THEN
+            IF (Particles%wpi(i)%has_ghosts) THEN
+                size_theo=Particles%Mpart
+            ELSE
+                size_theo=Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wpi(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wpi too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+    DO i=1,Particles%max_wpsid
+        IF (Particles%wps(i)%is_mapped) THEN
+            IF (Particles%wps(i)%has_ghosts) THEN
+                size_theo=Particles%Mpart
+            ELSE
+                size_theo=Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wps(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wps too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+            ok = (.NOT. ANY(ISNAN(Particles%wps(i)%vec)))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'NaN in wps',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+    DO i=1,Particles%max_wpvid
+        IF (Particles%wpv(i)%is_mapped) THEN
+            IF (Particles%wpv(i)%has_ghosts) THEN
+                size_theo=Particles%wpv(i)%lda * Particles%Mpart
+            ELSE
+                size_theo=Particles%wpv(i)%lda * Particles%Npart
+            ENDIF
+            ok = (SIZE(Particles%wpv(i)%vec).GE.(size_theo))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'wpv too small',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+            ok = (.NOT. ANY(ISNAN(Particles%wpv(i)%vec)))
+            IF (.NOT.ok) THEN
+                info = ppm_error_error
+                CALL ppm_error(999,caller,'NaN in wpv',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDDO
+
+    IF (Particles%neighlists) THEN
+        size_theo=Particles%Npart
+        ok = (SIZE(Particles%nvlist).GE.(size_theo))
+        IF (.NOT.ok) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'nvlist too small',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        ok = (SIZE(Particles%vlist,2).GE.(size_theo))
+        IF (.NOT.ok) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,'vlist too small',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+
+
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE particles_add
+
+
 END MODULE ppm_module_particles
 
 #undef __KIND
