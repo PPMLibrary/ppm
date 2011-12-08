@@ -141,8 +141,8 @@
           DO j=1,ppm_dim
               IF (MOD(Nm(j)-1,factor(j)) .NE. 0) THEN
                   info = ppm_error_error
-                  WRITE(mesg,'(A,I5,A,I1,A,I6,A,I3)') 'Global mesh ', &
-     &                'in dimension ',j,' has ',Nm(j)-1,        &
+                  WRITE(mesg,'(A,I1,A,I5,A,I6)') 'Global mesh in dimension', &
+     &                j,' has ',Nm(j)-1,        &
      &                ' mesh cells and is not divisible by ',factor(j)
                   CALL ppm_error(ppm_err_bad_meshop,'ppm_mesh_derive',  &
      &                mesg,__LINE__,info)
