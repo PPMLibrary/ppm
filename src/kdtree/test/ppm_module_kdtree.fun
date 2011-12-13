@@ -21,7 +21,7 @@ integer                         :: topoid
 integer                         :: np_global = 100000
 integer                         :: mp
 integer                         :: newnp
-type(ppm_t_particles),pointer   :: Particles
+type(ppm_t_particles_d),pointer   :: Particles
 real(mk),dimension(:,:),pointer :: xp => NULL()
 real(mk),dimension(:  ),pointer :: rcp => NULL()
 real(mk),dimension(:,:),pointer :: wp => NULL()
@@ -45,8 +45,8 @@ logical                          :: lsymm = .false.,ok
 real(mk)                         :: t0,t1,t2,t3
 real(mk)                         :: eps
 real(mk), dimension(ndim)        :: qv
-type(kdtree2), pointer           :: tree
-type(kdtree2_result), allocatable:: results(:)
+type(kdtree2_d), pointer           :: tree
+type(kdtree2_result_d), allocatable:: results(:)
 
     init
 
