@@ -15,24 +15,50 @@ MODULE ppm_module_kdtree
   ! whereas conventionally (C-style) it is data(1:N,1:D)
   ! as in the original kd_tree module. 
 
-#define interface_s_d(a) INTERFACE a ;\
-              MODULE PROCEDURE a/**/_s; \
-              MODULE PROCEDURE a/**/_d; \
-          END INTERFACE
-
-
-
-  interface_s_d(kdtree2_create)
-  interface_s_d(kdtree2_destroy)
-  interface_s_d(kdtree2_n_nearest)
-  interface_s_d(kdtree2_n_nearest_around_point)
-  interface_s_d(kdtree2_r_nearest)
-  interface_s_d(kdtree2_r_nearest_around_point)
-  interface_s_d(kdtree2_sort_results)
-  interface_s_d(kdtree2_r_count)
-  interface_s_d(kdtree2_r_count_around_point)
-  interface_s_d(kdtree2_n_nearest_brute_force)
-  interface_s_d(kdtree2_r_nearest_brute_force)
+  INTERFACE kdtree2_create
+      MODULE PROCEDURE kdtree2_create_s
+      MODULE PROCEDURE kdtree2_create_d
+  END INTERFACE
+  INTERFACE kdtree2_destroy
+      MODULE PROCEDURE kdtree2_destroy_s
+      MODULE PROCEDURE kdtree2_destroy_d
+  END INTERFACE
+  INTERFACE kdtree2_n_nearest
+      MODULE PROCEDURE kdtree2_n_nearest_s
+      MODULE PROCEDURE kdtree2_n_nearest_d
+  END INTERFACE
+  INTERFACE kdtree2_n_nearest_around_point
+      MODULE PROCEDURE kdtree2_n_nearest_around_point_s
+      MODULE PROCEDURE kdtree2_n_nearest_around_point_d
+  END INTERFACE
+  INTERFACE kdtree2_r_nearest
+      MODULE PROCEDURE kdtree2_r_nearest_s
+      MODULE PROCEDURE kdtree2_r_nearest_d
+  END INTERFACE
+  INTERFACE kdtree2_r_nearest_around_point
+      MODULE PROCEDURE kdtree2_r_nearest_around_point_s
+      MODULE PROCEDURE kdtree2_r_nearest_around_point_d
+  END INTERFACE
+  INTERFACE kdtree2_sort_results
+      MODULE PROCEDURE kdtree2_sort_results_s
+      MODULE PROCEDURE kdtree2_sort_results_d
+  END INTERFACE
+  INTERFACE kdtree2_r_count
+      MODULE PROCEDURE kdtree2_r_count_s
+      MODULE PROCEDURE kdtree2_r_count_d
+  END INTERFACE
+  INTERFACE kdtree2_r_count_around_point
+      MODULE PROCEDURE kdtree2_r_count_around_point_s
+      MODULE PROCEDURE kdtree2_r_count_around_point_d
+  END INTERFACE
+  INTERFACE kdtree2_n_nearest_brute_force
+      MODULE PROCEDURE kdtree2_n_nearest_brute_force_s
+      MODULE PROCEDURE kdtree2_n_nearest_brute_force_d
+  END INTERFACE
+  INTERFACE kdtree2_r_nearest_brute_force
+      MODULE PROCEDURE kdtree2_r_nearest_brute_force_s
+      MODULE PROCEDURE kdtree2_r_nearest_brute_force_d
+  END INTERFACE
 
   !----------------------------------------------------------------
   !
