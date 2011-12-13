@@ -1,59 +1,31 @@
 #if   __DIM  == 2
 #if   __MODE == __UNIFORM
-#if   __KIND == __SINGLE_PRECISION
-SUBROUTINE ppm_dcops_unif_2d_s(xp,h,Npart,Mpart,nvlist,vlist,&
+SUBROUTINE DTYPE(ppm_dcops_unif_2d)(xp,h,Npart,Mpart,nvlist,vlist,&
         eta,c,nneighmin,nneighmax,info,&
         order_deriv,order_approx,islaplacian,iscartesian)
-#elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_dcops_unif_2d_d(xp,h,Npart,Mpart,nvlist,vlist,&
-        eta,c,nneighmin,nneighmax,info,&
-        order_deriv,order_approx,islaplacian,iscartesian)
-#endif
 #elif __MODE == __ADAPTIVE
-#if __KIND   == __SINGLE_PRECISION
-SUBROUTINE ppm_dcops_adapt_2d_s(xp,rcp,Npart,Mpart,nvlist,vlist,&
+SUBROUTINE DTYPE(ppm_dcops_adapt_2d)(xp,rcp,Npart,Mpart,nvlist,vlist,&
         eta,c,nneighmin,nneighmax,info,&
         order_deriv,order_approx,islaplacian,iscartesian)
-#elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_dcops_adapt_2d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
-        eta,c,nneighmin,nneighmax,info,&
-        order_deriv,order_approx,islaplacian,iscartesian)
-#endif
 #endif
 
 #elif __DIM  == 3
 #if   __MODE == __UNIFORM
-#if   __KIND == __SINGLE_PRECISION
-SUBROUTINE ppm_dcops_unif_3d_s(xp,h,Npart,Mpart,nvlist,vlist,&
+SUBROUTINE DTYPE(ppm_dcops_unif_3d)(xp,h,Npart,Mpart,nvlist,vlist,&
         eta,c,nneighmin,nneighmax,info,&
         order_deriv,order_approx,islaplacian,iscartesian)
-#elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_dcops_unif_3d_d(xp,h,Npart,Mpart,nvlist,vlist,&
-        eta,c,nneighmin,nneighmax,info,&
-        order_deriv,order_approx,islaplacian,iscartesian)
-#endif
 #elif __MODE == __ADAPTIVE
-#if __KIND   == __SINGLE_PRECISION
-SUBROUTINE ppm_dcops_adapt_3d_s(xp,rcp,Npart,Mpart,nvlist,vlist,&
+SUBROUTINE DTYPE(ppm_dcops_adapt_3d)(xp,rcp,Npart,Mpart,nvlist,vlist,&
         eta,c,nneighmin,nneighmax,info,&
         order_deriv,order_approx,islaplacian,iscartesian)
-#elif __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
-        eta,c,nneighmin,nneighmax,info,&
-        order_deriv,order_approx,islaplacian,iscartesian)
-#endif
 #endif
 #endif
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank
     USE ppm_module_error
     IMPLICIT NONE
-#if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
-      INTEGER, PARAMETER :: MK = ppm_kind_single
-#else
-      INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     !---------------------------------------------------------
     ! arguments
     !---------------------------------------------------------
@@ -400,35 +372,18 @@ SUBROUTINE ppm_dcops_adapt_3d_d(xp,rcp,Npart,Mpart,nvlist,vlist,&
 
 #if   __DIM  == 2
 #if   __MODE == __UNIFORM
-#if   __KIND == __SINGLE_PRECISION
-END SUBROUTINE ppm_dcops_unif_2d_s
-#elif __KIND == __DOUBLE_PRECISION
-END SUBROUTINE ppm_dcops_unif_2d_d
-#endif
+END SUBROUTINE DTYPE(ppm_dcops_unif_2d)
 #elif __MODE == __ADAPTIVE
-#if __KIND   == __SINGLE_PRECISION
-END SUBROUTINE ppm_dcops_adapt_2d_s
-#elif __KIND == __DOUBLE_PRECISION
-END SUBROUTINE ppm_dcops_adapt_2d_d
-#endif
+END SUBROUTINE DTYPE(ppm_dcops_adapt_2d)
 #endif
 
 #elif __DIM  == 3
 #if   __MODE == __UNIFORM
-#if   __KIND == __SINGLE_PRECISION
-END SUBROUTINE ppm_dcops_unif_3d_s
-#elif __KIND == __DOUBLE_PRECISION
-END SUBROUTINE ppm_dcops_unif_3d_d
-#endif
+END SUBROUTINE DTYPE(ppm_dcops_unif_3d)
 #elif __MODE == __ADAPTIVE
-#if __KIND   == __SINGLE_PRECISION
-END SUBROUTINE ppm_dcops_adapt_3d_s
-#elif __KIND == __DOUBLE_PRECISION
-END SUBROUTINE ppm_dcops_adapt_3d_d
-#endif
+END SUBROUTINE DTYPE(ppm_dcops_adapt_3d)
 #endif
 #endif
 
-#undef __KIND
 #undef __MODE
 #undef __DIM

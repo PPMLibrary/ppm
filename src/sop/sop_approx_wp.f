@@ -18,25 +18,21 @@
 !!!----------------------------------------------------------------------------!
 
 #if   __LDA == 1
-SUBROUTINE sop_approx_wp_1d(xp_old,wp_old,scale_old,xp,wp,&
+SUBROUTINE DTYPE(sop_approx_wp_1d)(xp_old,wp_old,scale_old,xp,wp,&
         Npart,Mpart,nvlist_cross,vlist_cross,info)
 #elif __LDA == 2
-SUBROUTINE sop_approx_wp_2d(xp_old,wp_old,lda,scale_old,xp,wp,&
+SUBROUTINE DTYPE(sop_approx_wp_2d)(xp_old,wp_old,lda,scale_old,xp,wp,&
         Npart,Mpart,nvlist_cross,vlist_cross,info)
 #endif
 
     USE ppm_module_map_part
     IMPLICIT NONE
 
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
 
+    DEFINE_MK()
     ! arguments
     REAL(MK),     DIMENSION(:,:),         INTENT(IN   )   :: xp_old
     REAL(MK),     DIMENSION(:,:),POINTER, INTENT(IN   )   :: xp
@@ -191,12 +187,9 @@ SUBROUTINE sop_approx_wp_2d(xp_old,wp_old,lda,scale_old,xp,wp,&
         9999  CONTINUE ! jump here upon error
 
 #if   __LDA == 1
-    END SUBROUTINE sop_approx_wp_1d
+    END SUBROUTINE DTYPE(sop_approx_wp_1d)
 #elif __LDA == 2
-END SUBROUTINE sop_approx_wp_2d
+END SUBROUTINE DTYPE(sop_approx_wp_2d)
 #endif
 
 #undef __LDA
-#undef __KIND
-
-

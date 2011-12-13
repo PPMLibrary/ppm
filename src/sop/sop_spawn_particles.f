@@ -1,4 +1,4 @@
-SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
+SUBROUTINE DTYPE(sop_spawn_particles)(Particles,opts,info,nb_part_added,&
         nneigh_threshold,level_fun,wp_fun,nb_fun)
     !!!----------------------------------------------------------------------------!
     !!!
@@ -16,15 +16,11 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
-    TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(sop_t_opts)), POINTER,     INTENT(IN   )   :: opts
     INTEGER,                              INTENT(  OUT)   :: info
 
     INTEGER, OPTIONAL,                    INTENT(  OUT)   :: nb_part_added
@@ -37,11 +33,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
@@ -50,11 +42,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         FUNCTION level_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: level_fun
         END FUNCTION level_fun
@@ -62,11 +50,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
         !Function that returns the width of the narrow band
         FUNCTION nb_fun(kappa,scale_D)
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                             :: nb_fun
             REAL(MK),                INTENT(IN)  :: kappa
             REAL(MK),                INTENT(IN)  :: scale_D
@@ -96,9 +80,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
     INTEGER,        DIMENSION(1)           :: lda1
     INTEGER, PARAMETER                     :: nb_new_part = 1
     REAL(MK)                               :: angle
-#ifdef __USE_RANDOMNUMBERS
-    LOGICAL                                :: alloc_rand
-#endif
+    REAL(MK),PARAMETER                     :: PI = ACOS(-1._MK)
     !!! number of new particles that are generated locally
     INTEGER,DIMENSION(:),POINTER           :: fuse_part
     INTEGER,DIMENSION(:),POINTER           :: nb_neigh
@@ -172,7 +154,7 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                 !add_part = add_part + nb_new_part
         !ENDDO
         !CALL check_quadrants(Particles,info)
-        CALL check_nn(Particles,opts,info)
+        CALL DTYPE(check_nn)(Particles,opts,info)
         !add_part = COUNT(Particles%nvlist .GT. 0) * nb_new_part
         add_part = SUM(ABS(Particles%nvlist(1:Particles%Npart)))
     ENDIF
@@ -236,47 +218,6 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
                 &    'allocation of nb_neigh failed',__LINE__,info)
             GOTO 9999
         ENDIF
-
-#ifdef __USE_RANDOMNUMBERS
-    !!-------------------------------------------------------------------------!
-    !! Draw random numbers to add noise on positions of new particles
-    !!-------------------------------------------------------------------------!
-        !generate new random numbers if we are running out of them
-        alloc_rand = .FALSE.
-        IF (.NOT. ALLOCATED(randnb)) THEN
-            alloc_rand = .TRUE.
-        ELSE IF((ppm_dim-1)*randnb_i+nb_new_part*ppm_dim*(add_part+1) .GE. SIZE(randnb)) THEN
-            alloc_rand = .TRUE.
-            DEALLOCATE(randnb)
-        ENDIF
-        IF(alloc_rand) THEN
-            ALLOCATE(randnb(nb_new_part*ppm_dim*(Npart+add_part)),STAT=info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,   &
-                    &    'allocation of randnb failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
-            IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
-                CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
-                ldc(1) = ppm_particles_seedsize
-                CALL ppm_alloc(ppm_particles_seed,ldc(1:1),&
-                ppm_param_alloc_fit,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,   &
-                        &            'allocation failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
-                DO i=1,ppm_particles_seedsize
-                    ppm_particles_seed(i)=ppm_rank*i*i*i*i
-                ENDDO
-                CALL RANDOM_SEED(PUT=ppm_particles_seed)
-            ENDIF
-            CALL RANDOM_NUMBER(randnb)
-            randnb_i = 0
-        ENDIF
-#endif
 
         !!-------------------------------------------------------------------------!
         !! Add particles
@@ -443,18 +384,14 @@ SUBROUTINE sop_spawn_particles(Particles,opts,info,nb_part_added,&
 #endif
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_spawn_particles
+END SUBROUTINE DTYPE(sop_spawn_particles)
 
-SUBROUTINE check_quadrants(Particles,info)
+SUBROUTINE DTYPE(check_quadrants)(Particles,info)
     IMPLICIT NONE
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
     INTEGER,                              INTENT(  OUT)   :: info
     !local variables
 
@@ -523,19 +460,15 @@ SUBROUTINE check_quadrants(Particles,info)
     D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
     !Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
 
-END SUBROUTINE check_quadrants
+END SUBROUTINE DTYPE(check_quadrants)
 
 
-SUBROUTINE check_duplicates(Particles)
+SUBROUTINE DTYPE(check_duplicates)(Particles)
     IMPLICIT NONE
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
     !local variables
 
     REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
@@ -566,22 +499,18 @@ SUBROUTINE check_duplicates(Particles)
     xp => Set_xp(Particles,read_only=.TRUE.)
     vlist => NULL()
 
-END SUBROUTINE check_duplicates
+END SUBROUTINE DTYPE(check_duplicates)
 
 
-SUBROUTINE check_nn(Particles,opts,info)
+SUBROUTINE DTYPE(check_nn)(Particles,opts,info)
 
 
     IMPLICIT NONE
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
-    TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(sop_t_opts)), POINTER,     INTENT(IN   )   :: opts
     INTEGER,                              INTENT(  OUT)   :: info
     !local variables
 
@@ -707,7 +636,4 @@ SUBROUTINE check_nn(Particles,opts,info)
     fuse_part => set_wpi(Particles,fuse_id)
     nb_neigh => Set_wpi(Particles,nb_neigh_id)
 
-END SUBROUTINE check_nn
-
-
-#undef __KIND
+END SUBROUTINE DTYPE(check_nn)

@@ -45,8 +45,8 @@ character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
-type(ppm_t_particles),pointer   :: Particles=>NULL()
-type(ppm_t_particles),pointer   :: Particles2=>NULL()
+type(ppm_t_particles_d),pointer :: Particles=>NULL()
+type(ppm_t_particles_d),pointer :: Particles2=>NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -142,10 +142,12 @@ real(mk),dimension(8)          :: c_array
         FORALL(ip=1:Particles%Npart) wp(ip) = f0_fun(xp(1:ndim,ip),ndim)
         wp => Set_wps(Particles,wp_id)
         xp => Set_xp(Particles,read_only=.TRUE.)
-        call particles_mapping_ghosts(Particles,topoid,info,ghostsize=3._mk*Particles%cutoff)
+        call particles_mapping_ghosts(Particles,topoid,info,&
+            ghostsize=3._mk*Particles%cutoff)
         call particles_neighlists(Particles,topoid,info,incl_ghosts=.TRUE.)
         dwp_id=0
-        call particles_allocate_wps(Particles,dwp_id,info,name='dwp',with_ghosts=.TRUE.)
+        call particles_allocate_wps(Particles,dwp_id,info,&
+            name='dwp',with_ghosts=.TRUE.)
 
 !check Laplacian
         nterms=ndim
@@ -206,7 +208,8 @@ write(*,*) 'error is ', err/linf
             ppm_param_part_init_cartesian,topoid)
         call particles_mapping_global(Particles,topoid,info)
 
-        allocate(degree(3*ndim),coeffs(3),order(3),degree2(7*ndim),coeffs2(7),order2(7))
+        allocate(degree(3*ndim),coeffs(3),order(3),degree2(7*ndim),&
+            coeffs2(7),order2(7))
         if (ndim .eq. 2) then
                degree =  (/1,0,    1,1,     0,1  /)
                degree2=  (/1,8,   0,1,   3,3,   1,1,   0,7,   0,2,   3,3/)
@@ -216,7 +219,7 @@ write(*,*) 'error is ', err/linf
         endif
         coeffs = (/2.0_mk, 1.0_mk, -3.2_mk/)
         order =  (/2,       1,       1  /)
-        coeffs2 = (/0.1_mk, -1.0_mk, -3.8_mk, -3.3_mk, 0.001_mk, 10._mk, 4._mk/)
+        coeffs2 = (/0.1_mk,-1.0_mk,-3.8_mk,-3.3_mk,0.001_mk,10._mk,4._mk/)
         order2=  (/2,       2,       2,        2,      1,        2,      1/)
 
         call particles_dcop_deallocate(Particles,info) !this should do nothing
@@ -287,6 +290,7 @@ write(*,*) 'error is ', err/linf
         Assert_Equal(eta_id,3)
 
         deallocate(degree,coeffs,order,degree2,coeffs2,order2)
+
     end test
 
     test compute_operator
@@ -575,9 +579,13 @@ write(*,*) 'error is ', MAXVAL(err_vec)/linf
         c_array = (/0.3_mk, 0.5_mk, 0.7_mk, 0.9_mk, 1._mk, 1.2_mk, 1.4_mk, 1.5_mk/)
         DO ic = 1,8
             min_sv = HUGE(1._mk)
-            call particles_dcop_compute(Particles,eta_id,info,c=c_array(ic),min_sv=min_sv)
+            call particles_dcop_compute(Particles,eta_id,info,&
+                c=c_array(ic),min_sv=min_sv)
             Assert_Equal(info,0)
             Assert_True(min_sv.GT.0.001_mk)
+
+        
+
 
             call particles_dcop_apply(Particles,wp_id,dwp_id,eta_id,info)
             Assert_Equal(info,0)

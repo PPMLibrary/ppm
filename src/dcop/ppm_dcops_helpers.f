@@ -1,46 +1,191 @@
+SUBROUTINE DTYPE(particles_dcop_compute)(Particles,eta_id,info,c,min_sv)
+
+    USE ppm_module_data, ONLY: ppm_dim,ppm_rank
+    USE ppm_module_particles_typedef
+    USE ppm_module_write
+    IMPLICIT NONE
+#ifdef __MPI
+    INCLUDE 'mpif.h'
+#endif
+
+    DEFINE_MK()
+    !---------------------------------------------------------
+    ! arguments
+    !---------------------------------------------------------
+    TYPE(DTYPE(ppm_t_particles)),   POINTER,    INTENT(INOUT)   :: Particles
+    !!! particles
+    INTEGER,                             INTENT(IN   )   :: eta_id
+    !!! id of the operator kernel
+    INTEGER,                             INTENT(  OUT)   :: info
+    !!! non-zero on output if some error occurred
+    !---------------------------------------------------------
+    ! Optional arguments
+    !---------------------------------------------------------
+    REAL(MK),OPTIONAL                       :: c
+    !!! ratio h/epsilon (default is 1.0)
+    REAL(MK),OPTIONAL   ,  INTENT(  OUT)    :: min_sv
+    !!! smallest singular value
+    !---------------------------------------------------------
+    ! local variables
+    !---------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_compute'
+    CHARACTER(LEN = ppm_char)               :: cbuf
+    REAL(KIND(1.D0))                        :: t0,t1,t2
+    LOGICAL                                 :: interp
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
+
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
+    IF (.NOT. ASSOCIATED(Particles)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'Particles not defined',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT. ASSOCIATED(Particles%ops)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'No operator data structure found, use particles_dcop_define first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (eta_id.LE.0 .OR. eta_id.GT.Particles%ops%max_opsid) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'Invalid eta_id, use particles_dcop_define first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT. Particles%ops%desc(eta_id)%is_defined) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'Operator not found, use particles_dcop_define first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (Particles%ops%desc(eta_id)%is_computed) THEN
+        WRITE(cbuf,*) 'WARNING: The operator with id ',eta_id,&
+            & ' and name *',TRIM(ADJUSTL(Particles%ops%desc(eta_id)%name)),&
+            &'* seems to have already been computed. Unnecessary call to',&
+            &' particles_dcop_compute()'
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
+    ENDIF
+
+    interp = Particles%ops%desc(eta_id)%interp
+    IF (interp) THEN
+        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to specify which set of particles &
+                &   (particles_cross) should be used for interpolation',&
+                & __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT. (Particles%neighlists_cross)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please compute xset neighbor lists first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (Particles%Particles_cross%nn_sq_id.EQ.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Need to call particles_nearest_neighbors first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT.Particles%Particles_cross%wps(&
+            Particles%Particles_cross%nn_sq_id)%is_mapped &
+                .OR. .NOT.Particles%Particles_cross%wps(&
+                Particles%Particles_cross%nn_sq_id)%has_ghosts) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+        'Need to call particles_nearest_neighbors first (nn_sq_id not uptodate)',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+    ELSE
+        IF (.NOT. Particles%neighlists) THEN
+            info = ppm_error_error
+            CALL ppm_error(999,caller,   &
+                & 'Compute neighbor lists first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+
+    !-------------------------------------------------------------------------
+    ! Compute the DC operator
+    !-------------------------------------------------------------------------
+
+    Particles%stats%nb_dc_comp = Particles%stats%nb_dc_comp + 1
+
+    IF (ppm_dim .EQ. 2) THEN
+        CALL DTYPE(ppm_dcop_compute2d)(Particles,eta_id,info,interp,c,min_sv)
+    ELSE
+        CALL DTYPE(ppm_dcop_compute3d)(Particles,eta_id,info,interp,c,min_sv)
+    ENDIF
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'particles_dcop_compute failed',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    !-------------------------------------------------------------------------
+    ! Update states
+    !-------------------------------------------------------------------------
+    Particles%ops%desc(eta_id)%is_computed = .TRUE.
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Particles%stats%t_dc_comp = Particles%stats%t_dc_comp + (t2-t1)
+#endif
+
+    !-------------------------------------------------------------------------
+    ! Finalize
+    !-------------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE DTYPE(particles_dcop_compute)
+
+
+
 
 !-------------------------------------------------------------
 ! Primitive function as defined in Chen et al., 
 !             Int. J. Numer. Meth. Engng 2003; 56:935–960.
 ! (here, the quartic spline)
 !-------------------------------------------------------------
-#if    __KIND == __SINGLE_PRECISION
-FUNCTION primitive_s(x)
+FUNCTION DTYPE(primitive)(x)
 
     IMPLICIT NONE
-    INTEGER, PARAMETER :: MK = ppm_kind_single
+    DEFINE_MK()
     !arguments
     REAL(MK), INTENT(IN) :: x
-    REAL(MK)             :: primitive_s
+    REAL(MK)             :: DTYPE(primitive)
     IF(x.GT.1._MK) THEN 
-        primitive_s = 0._MK 
+        DTYPE(primitive) = 0._MK 
     ELSE
-        primitive_s = 1._MK + x**2 * (-6._MK + x * (8._MK -3._MK * x))
+        DTYPE(primitive) = 1._MK + x**2 * (-6._MK + x * (8._MK -3._MK * x))
     ENDIF
 
-#elif  __KIND == __DOUBLE_PRECISION
-FUNCTION primitive_d(x)
-
-    IMPLICIT NONE
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-    !arguments
-    REAL(MK), INTENT(IN) :: x
-    REAL(MK)             :: primitive_d
-    IF(x.GT.1._MK) THEN 
-        primitive_d = 0._MK 
-    ELSE
-        primitive_d = 1._MK + x**2 * (-6._MK + x * (8._MK -3._MK * x))
-    ENDIF
-
-#endif
 END FUNCTION
 
-
-#if    __KIND == __SINGLE_PRECISION
-SUBROUTINE solveLSEs(A,x_or_b,info)
-#elif  __KIND == __DOUBLE_PRECISION
-SUBROUTINE solveLSEd(A,x_or_b,info)
-#endif
+SUBROUTINE DTYPE(solveLSE)(A,x_or_b,info)
 
     !=======================================================================!
     ! solves the LSE A*x=b
@@ -56,12 +201,8 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
     USE mkl95_blas
 #endif
     IMPLICIT NONE
-#if    __KIND == __SINGLE_PRECISION 
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif  __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   ) :: A 
     REAL(MK), DIMENSION (:)  , POINTER,INTENT(INOUT) :: x_or_b
@@ -133,7 +274,11 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+    CALL sgetrf(n,n,Acopy,n,indx,info)
+#elif __KIND == __DOUBLE_PRECISION
     CALL dgetrf(n,n,Acopy,n,indx,info)
+#endif
 #endif
     ! if info = i > 0, then U_ii = 0 and the matrix is singular
     ! this case will be dealt with below when checking for singularities
@@ -228,7 +373,11 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             !get the value of info
@@ -252,7 +401,11 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
@@ -289,7 +442,11 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(*,*)caller,': getrs failed'
@@ -306,8 +463,13 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 #ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+            SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
             SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#endif
 #endif
         IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
@@ -340,17 +502,9 @@ SUBROUTINE solveLSEd(A,x_or_b,info)
 
     9999 CONTINUE ! jump here upon error
 
-#if    __KIND == __SINGLE_PRECISION
-END SUBROUTINE solveLSEs
-#elif  __KIND == __DOUBLE_PRECISION
-END SUBROUTINE solveLSEd
-#endif
+END SUBROUTINE DTYPE(solveLSE)
 
-#if    __KIND == __SINGLE_PRECISION
-SUBROUTINE solveLSE_2s(A,x_or_b,x_or_b_2,info)
-#elif  __KIND == __DOUBLE_PRECISION
-SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
-#endif
+SUBROUTINE DTYPE(solveLSE_2)(A,x_or_b,x_or_b_2,info)
 
     !=======================================================================!
     ! solves the LSE A*x1=b1 and A*x2=b2
@@ -366,11 +520,7 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
     USE mkl95_blas
 #endif
     IMPLICIT NONE
-#if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#else
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+    DEFINE_MK()
     ! arguments
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   )  :: A 
     REAL(MK), DIMENSION (:)  , POINTER,INTENT(INOUT)  :: x_or_b, x_or_b_2
@@ -449,7 +599,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+    CALL sgetrf(n,n,Acopy,n,indx,info)
+#elif __KIND == __DOUBLE_PRECISION
     CALL dgetrf(n,n,Acopy,n,indx,info)
+#endif
 #endif
     ! if info = i > 0, then U_ii = 0 and the matrix is singular
     ! this case will be dealt with below when checking for singularities
@@ -551,7 +705,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             !get the value of info
@@ -574,7 +732,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL getrs(Anew,indxnew,bnew,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew,nnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
@@ -585,7 +747,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL getrs(Anew,indxnew,bnew_2,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_2,nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_2,nnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
@@ -625,7 +791,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b,n,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(*,*)caller,': getrs failed'
@@ -635,7 +805,11 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL getrs(Acopy,indx,x_or_b_2,'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b_2,n,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b_2,n,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             WRITE(*,*)caller,': getrs failed'
@@ -652,8 +826,13 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL gemv(A,x_or_b,real_b,1._MK,0._MK)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+            SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
             SIZE(A,1),x_or_b,1,0._MK,real_b,1)
+#endif
 #endif
         IF (SUM(ABS(real_b - exact_b)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
@@ -675,8 +854,13 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 #ifdef __MKL
         CALL gemv(A,x_or_b_2,real_b,1._MK,0._MK)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+            SIZE(A,1),x_or_b_2,1,0._MK,real_b,1)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
             SIZE(A,1),x_or_b_2,1,0._MK,real_b,1)
+#endif
 #endif
         IF (SUM(ABS(real_b - exact_b_2)) .GT. tolerance_LSE) THEN
             WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
@@ -703,17 +887,9 @@ SUBROUTINE solveLSE_2d(A,x_or_b,x_or_b_2,info)
 
     9999 CONTINUE ! jump here upon error
 
-#if    __KIND == __SINGLE_PRECISION
-END SUBROUTINE solveLSE_2s
-#elif  __KIND == __DOUBLE_PRECISION
-END SUBROUTINE solveLSE_2d
-#endif
+END SUBROUTINE DTYPE(solveLSE_2)
 
-#if    __KIND == __SINGLE_PRECISION
-SUBROUTINE solveLSE_ns(A,x_or_b,n_eq,info)
-#elif  __KIND == __DOUBLE_PRECISION
-SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
-#endif
+SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
 
     !=======================================================================!
     ! solves the LSE A*x_i=b_i  for i=1..n_eq
@@ -729,11 +905,7 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
     USE mkl95_blas
 #endif
     IMPLICIT NONE
-#if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#else
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+    DEFINE_MK()
     ! arguments
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(IN   )  :: A 
     REAL(MK), DIMENSION (:,:), POINTER,INTENT(INOUT)  :: x_or_b
@@ -805,7 +977,11 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #ifdef __MKL
     CALL getrf(Acopy,indx,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+    CALL sgetrf(n,n,Acopy,n,indx,info)
+#elif __KIND == __DOUBLE_PRECISION
     CALL dgetrf(n,n,Acopy,n,indx,info)
+#endif
 #endif
     ! if info = i > 0, then U_ii = 0 and the matrix is singular
     ! this case will be dealt with below when checking for singularities
@@ -900,7 +1076,11 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #ifdef __MKL
         CALL getrf(Anew,indxnew,info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+        CALL sgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#elif __KIND == __DOUBLE_PRECISION
         CALL dgetrf(nnew,nnew,Anew,nnew,indxnew,info)
+#endif
 #endif
         IF (info .NE. 0) THEN
             !get the value of info
@@ -924,7 +1104,11 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #ifdef __MKL
             CALL getrs(Anew,indxnew,bnew_n(:,k),'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
+#elif __KIND == __DOUBLE_PRECISION
             CALL dgetrs('N',nnew,1,Anew,nnew,indxnew,bnew_n(:,k),nnew,info)
+#endif
 #endif
             IF (info .NE. 0) THEN
                 WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
@@ -965,7 +1149,11 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #ifdef __MKL
             CALL getrs(Acopy,indx,x_or_b(:,k),'N',info)
 #else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
+#elif __KIND == __DOUBLE_PRECISION
             CALL dgetrs('N',n,1,Acopy,n,indx,x_or_b(:,k),n,info)
+#endif
 #endif
             IF (info .NE. 0) THEN
                 WRITE(cbuf,'(A,I2)') ' getrs new failed with info = ', info
@@ -985,8 +1173,13 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 #ifdef __MKL
             CALL gemv(A,x_or_b(:,k),real_b,1._MK,0._MK)
 #else
+#if   __KIND == __SINGLE_PRECISION
+            CALL sgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
+                SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
+#elif __KIND == __DOUBLE_PRECISION
             CALL dgemv('N',SIZE(A,1),SIZE(A,2),1._MK,A,&
                 SIZE(A,1),x_or_b(:,k),1,0._MK,real_b,1)
+#endif
 #endif
             
             IF (SUM(ABS(real_b - exact_b_n(:,k))) .GT. tolerance_LSE) THEN
@@ -1021,18 +1214,9 @@ SUBROUTINE solveLSE_nd(A,x_or_b,n_eq,info)
 
     9999 CONTINUE ! jump here upon error
 
+END SUBROUTINE DTYPE(solveLSE_n)
 
-#if    __KIND == __SINGLE_PRECISION
-END SUBROUTINE solveLSE_ns
-#elif  __KIND == __DOUBLE_PRECISION
-END SUBROUTINE solveLSE_nd
-#endif
-
-#if    __KIND == __SINGLE_PRECISION
-SUBROUTINE ppm_matrix_svd_s(Z,n,m,info,min_sv)
-#elif  __KIND == __DOUBLE_PRECISION
-SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
-#endif
+SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
     USE ppm_module_write
     USE ppm_module_data, ONLY: ppm_rank
 #ifdef __MKL
@@ -1042,11 +1226,7 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
 
     IMPLICIT NONE
 
-#if    __KIND == __SINGLE_PRECISION 
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif  __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+    DEFINE_MK()
     ! arguments
     REAL(MK),DIMENSION(:,:),          INTENT(IN   ) :: Z
     INTEGER,                          INTENT(IN   ) :: n
@@ -1105,7 +1285,11 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
 
     !get the size for lwork
 #ifdef __MKL
+#if   __KIND == __SINGLE_PRECISION
+    CALL sgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#elif __KIND == __DOUBLE_PRECISION
     CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
 #endif
     IF (info.NE.0) THEN
         CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
@@ -1124,7 +1308,11 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
 
     !decomposition
 #ifdef __MKL
+#if   __KIND == __SINGLE_PRECISION
+    CALL sgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#elif __KIND == __DOUBLE_PRECISION
     CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
+#endif
 #endif
     IF (info.NE.0) THEN
         CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
@@ -1134,7 +1322,11 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
 
     !get singular values
 #ifdef __MKL
+#if   __KIND == __SINGLE_PRECISION
+    CALL rbdsqr(diag,offdiag)
+#elif __KIND == __DOUBLE_PRECISION
     CALL bdsqr(diag,offdiag)
+#endif
 #endif
     IF (info.NE.0) THEN
         CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
@@ -1161,11 +1353,7 @@ SUBROUTINE ppm_matrix_svd_d(Z,n,m,info,min_sv)
     9999 CONTINUE ! jump here upon error
 
 
-#if    __KIND == __SINGLE_PRECISION
-END SUBROUTINE ppm_matrix_svd_s
-#elif  __KIND == __DOUBLE_PRECISION
-END SUBROUTINE ppm_matrix_svd_d
-#endif
+END SUBROUTINE DTYPE(ppm_matrix_svd)
 
 
 !#if    __KIND == __SINGLE_PRECISION

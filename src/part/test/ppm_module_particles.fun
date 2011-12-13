@@ -35,9 +35,9 @@ character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
-type(ppm_t_particles),pointer   :: Particles => NULL()
-type(ppm_t_particles),pointer   :: Particles2 => NULL()
-type(ppm_t_particles),pointer   :: Particles_cross => NULL()
+type(ppm_t_particles_d),pointer :: Particles => NULL()
+type(ppm_t_particles_d),pointer :: Particles2 => NULL()
+type(ppm_t_particles_d),pointer :: Particles_cross => NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()

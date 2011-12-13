@@ -1,4 +1,4 @@
-SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
+SUBROUTINE DTYPE(sop_interpolate)(Particles_old,Particles,opts,info)
     !!!------------------------------------------------------------------------!
     !!! Interpolate the field variables from the old particles' positions 
     !!! to the new ones 
@@ -13,19 +13,15 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
     IMPLICIT NONE
 
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+    DEFINE_MK()
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,       INTENT(IN   )   :: Particles_old
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(IN   )   :: Particles_old
     !!! Old set of particles
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
     !!! New set of particles
-    TYPE(sop_t_opts),  POINTER,           INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)),  POINTER,    INTENT(IN   )   :: opts
     !!! Options
     INTEGER,                              INTENT(  OUT)   :: info
     !!! Return status, 0 upon success
@@ -259,6 +255,4 @@ SUBROUTINE sop_interpolate(Particles_old,Particles,opts,info)
 
     9999  CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_interpolate
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_interpolate)

@@ -2,7 +2,7 @@
 !!! Computes resolution field D
 !!!----------------------------------------------------------------------------!
 
-SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
+SUBROUTINE DTYPE(sop_compute_D)(Particles,D_fun,opts,info,     &
         wp_fun,wp_grad_fun,level_fun,level_grad_fun,nb_fun,&
         only_D_tilde,stats)
 
@@ -14,15 +14,11 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     INCLUDE 'mpif.h'
 #endif
 
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
     !!! particles
-    TYPE(sop_t_opts),  POINTER,           INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)),  POINTER,    INTENT(IN   )   :: opts
     !!! options
     INTEGER,                              INTENT(  OUT)   :: info
 
@@ -39,7 +35,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     !!! if narrow-band function is known analytically
     LOGICAL, OPTIONAL                                     :: only_D_tilde
     !!! only compute D_tilde, then exits (no ghosts, no neighlists, no D)
-    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    TYPE(DTYPE(sop_t_stats)),POINTER,OPTIONAL,INTENT(OUT) :: stats
     !!! statistics on output
 
     ! argument-functions need an interface
@@ -49,26 +45,18 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
             USE ppm_module_sop_typedef
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                               :: D_fun
             REAL(MK),                   INTENT(IN) :: f1
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN) :: dfdx
-            TYPE(sop_t_opts),POINTER,   INTENT(IN) :: opts
+            TYPE(DTYPE(sop_t_opts)),POINTER,   INTENT(IN) :: opts
             REAL(MK),OPTIONAL,          INTENT(IN) :: f2
         END FUNCTION D_fun
 
         !Function that returns the width of the narrow band
         FUNCTION nb_fun(kappa,scale_D)
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                             :: nb_fun
             REAL(MK),                INTENT(IN)  :: kappa
             REAL(MK),                INTENT(IN)  :: scale_D
@@ -78,11 +66,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
@@ -91,11 +75,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         FUNCTION level_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: level_fun
         END FUNCTION level_fun
@@ -104,11 +84,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         FUNCTION wp_grad_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim)                      :: wp_grad_fun
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
         END FUNCTION wp_grad_fun
@@ -117,11 +93,7 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
         FUNCTION level_grad_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim)                      :: level_grad_fun
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)           :: pos
         END FUNCTION level_grad_fun
@@ -698,6 +670,4 @@ SUBROUTINE sop_compute_D(Particles,D_fun,opts,info,     &
     9999 CONTINUE ! jump here upon error
 
 
-END SUBROUTINE sop_compute_D
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_compute_D)

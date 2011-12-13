@@ -41,9 +41,9 @@ character(len=ppm_char)         :: dirname
 integer                         :: isymm = 0
 logical                         :: lsymm = .false.,ok
 real(mk)                        :: t0,t1,t2,t3
-type(ppm_t_particles),pointer   :: Particles=>NULL()
-type(sop_t_opts),pointer        :: opts=>NULL()
-type(sop_t_stats),pointer       :: sop_stats=>NULL()
+type(ppm_t_particles_d),pointer :: Particles=>NULL()
+type(sop_t_opts_d),pointer      :: opts=>NULL()
+type(sop_t_stats_d),pointer     :: sop_stats=>NULL()
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -472,7 +472,7 @@ pure function D_fun(wp,wp_grad,opts,level)
     real(mk)                               :: D_fun
     real(mk),                   intent(in) :: wp
     real(mk),dimension(ppm_dim),intent(in) :: wp_grad
-    type(sop_t_opts),pointer,   intent(in) :: opts
+    type(sop_t_opts_d),pointer,   intent(in) :: opts
     real(mk), optional,         intent(in) :: level
     real(mk)                               :: lengthscale
 

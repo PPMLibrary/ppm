@@ -5,7 +5,7 @@
 !SUBROUTINE sop_potential_psi(xp,D,nvlist,vlist,Npart,Mpart,&
         !Psi_global,Psi_max,info)
 
-SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
+SUBROUTINE DTYPE(sop_potential_psi)(Particles,Psi_global,Psi_max,opts,info)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
     USE ppm_module_io_vtk
@@ -14,18 +14,14 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles),POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)),POINTER,INTENT(INOUT)   :: Particles
     INTEGER,                             INTENT(  OUT)   :: info
     REAL(MK),                            INTENT(  OUT)   :: Psi_global
     REAL(MK),                            INTENT(  OUT)   :: Psi_max
-    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)), POINTER,    INTENT(IN   )   :: opts
 
     ! local variables
     INTEGER                               :: ip,iq,ineigh,iunit,di
@@ -162,9 +158,9 @@ SUBROUTINE sop_potential_psi(Particles,Psi_global,Psi_max,opts,info)
 #endif
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_potential_psi
+END SUBROUTINE DTYPE(sop_potential_psi)
 
-SUBROUTINE sop_plot_potential(opts,filename,info)
+SUBROUTINE DTYPE(sop_plot_potential)(opts,filename,info)
     ! write tabulated values of the interaction potential into a file
     ! using parameters from the opts argument
 
@@ -172,17 +168,13 @@ SUBROUTINE sop_plot_potential(opts,filename,info)
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
-    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
+    DEFINE_MK()
+    TYPE(DTYPE(sop_t_opts)), POINTER,    INTENT(IN   )   :: opts
     CHARACTER(LEN=*),                    INTENT(IN   )   :: filename
     INTEGER,                             INTENT(OUT  )   :: info
 
     REAL(MK)   :: rd,rho,meanD,coeff,Psi_at_cutoff
-    REAL(MK)   :: Psi_part,attractive_radius
+    REAL(MK)   :: Psi_part,attractive_radius,Psi_max
     INTEGER    :: i
     LOGICAL    :: no_fusion
 
@@ -209,6 +201,4 @@ SUBROUTINE sop_plot_potential(opts,filename,info)
 
     CLOSE(271)
 
-END SUBROUTINE sop_plot_potential
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_plot_potential)

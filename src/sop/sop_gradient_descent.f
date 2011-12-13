@@ -1,4 +1,4 @@
-SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
+SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         nvlist_cross,vlist_cross,    &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,threshold,need_deriv,stats)
@@ -26,21 +26,17 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,        INTENT(IN   )   :: Particles_old
-    TYPE(ppm_t_particles), POINTER,        INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER, INTENT(IN   )   :: Particles_old
+    TYPE(DTYPE(ppm_t_particles)), POINTER, INTENT(INOUT)   :: Particles
     INTEGER,      DIMENSION(:),  POINTER,  INTENT(INOUT)   :: nvlist_cross
     INTEGER,      DIMENSION(:,:),POINTER,  INTENT(INOUT)   :: vlist_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmax_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmin_cross
     INTEGER,                               INTENT(  OUT)   :: num_it
-    TYPE(sop_t_opts), POINTER,             INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)), POINTER,      INTENT(IN   )   :: opts
     INTEGER,                               INTENT(  OUT)   :: info
 
     !optional arguments
@@ -52,7 +48,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
     OPTIONAL                                               :: wp_fun
     !Gradient of the field function (usually known only during initialisation)
     OPTIONAL                                               :: wp_grad_fun
-    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    TYPE(DTYPE(sop_t_stats)),POINTER,OPTIONAL,INTENT(OUT)  :: stats
     !!! statistics on output
     ! argument-functions need an interface
     INTERFACE
@@ -60,37 +56,25 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
             USE ppm_module_sop_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                                     :: D_fun
             REAL(MK),                         INTENT(IN) :: f
             REAL(MK),DIMENSION(ppm_dim),      INTENT(IN) :: dfdx
-            TYPE(sop_t_opts),POINTER,         INTENT(IN) :: opts
+            TYPE(DTYPE(sop_t_opts)),POINTER,         INTENT(IN) :: opts
             REAL(MK),OPTIONAL,                INTENT(IN) :: lap_f
         END FUNCTION D_fun
 
         FUNCTION wp_grad_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
             REAL(MK),DIMENSION(ppm_dim)             :: wp_grad_fun
         END FUNCTION wp_grad_fun
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
@@ -992,7 +976,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
         CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,&
             MPI_INTEGER,MPI_SUM,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
-            WRITE(cbuf,'(A,I0,A,E19.10,A,E11.4,A,I4,1X,I4,1X,A,I6,A,I6,A,E7.2)') &
+            WRITE(cbuf,'(A,I0,A,E19.10,A,E11.4,A,I4,1X,I4,1X,A,I6,A,I6,A,E9.2)') &
                 'it_adapt= ',it_adapt,&
                 ' V= ',Psi_global, & !/REAL(tmpvari1,MK),
                 ' Psi_max= ',tmpvar2, &
@@ -1092,7 +1076,7 @@ SUBROUTINE sop_gradient_descent(Particles_old,Particles, &
 
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_gradient_descent
+END SUBROUTINE DTYPE(sop_gradient_descent)
 
 
 
@@ -1110,7 +1094,7 @@ END SUBROUTINE sop_gradient_descent
 !!! 
 !!!----------------------------------------------------------------------------!
 
-SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
+SUBROUTINE DTYPE(sop_gradient_descent_ls)(Particles_old,Particles, &
         nvlist_cross,vlist_cross,   &
         nneighmin_cross,nneighmax_cross,num_it,opts,info, &
         wp_fun,D_fun,wp_grad_fun,level_fun,level_grad_fun,&
@@ -1123,21 +1107,17 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,        INTENT(IN   )   :: Particles_old
-    TYPE(ppm_t_particles), POINTER,        INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)), POINTER, INTENT(IN   )   :: Particles_old
+    TYPE(DTYPE(ppm_t_particles)), POINTER, INTENT(INOUT)   :: Particles
     INTEGER,      DIMENSION(:),  POINTER,  INTENT(INOUT)   :: nvlist_cross
     INTEGER,      DIMENSION(:,:),POINTER,  INTENT(INOUT)   :: vlist_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmax_cross
     INTEGER,                               INTENT(INOUT)   :: nneighmin_cross
     INTEGER,                               INTENT(  OUT)   :: num_it
-    TYPE(sop_t_opts), POINTER,             INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)), POINTER,      INTENT(IN   )   :: opts
     INTEGER,                               INTENT(  OUT)   :: info
 
     !optional arguments
@@ -1154,33 +1134,25 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
     OPTIONAL                                               :: level_grad_fun
     !Gradient of the level function (usually known only during initialisation)
     ! argument-functions need an interface
-    TYPE(sop_t_stats),  POINTER,OPTIONAL,  INTENT(  OUT)  :: stats
+    TYPE(DTYPE(sop_t_stats)),POINTER,OPTIONAL,INTENT(OUT)  :: stats
     !!! statistics on output
     INTERFACE
         FUNCTION D_fun(f1,dfdx,opts,f2)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
             USE ppm_module_sop_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                               :: D_fun
             REAL(MK),                   INTENT(IN) :: f1
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN) :: dfdx
-            TYPE(sop_t_opts),POINTER,   INTENT(IN) :: opts
+            TYPE(DTYPE(sop_t_opts)),POINTER,INTENT(IN) :: opts
             REAL(MK),OPTIONAL,          INTENT(IN) :: f2
         END FUNCTION D_fun
 
         !Function that returns the width of the narrow band
         FUNCTION nb_fun(kappa,scale_D)
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                             :: nb_fun
             REAL(MK),                INTENT(IN)  :: kappa
             REAL(MK),                INTENT(IN)  :: scale_D
@@ -1189,11 +1161,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
             REAL(MK)                                :: wp_fun
         END FUNCTION wp_fun
@@ -1201,11 +1169,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         FUNCTION wp_grad_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
             REAL(MK),DIMENSION(ppm_dim)             :: wp_grad_fun
         END FUNCTION wp_grad_fun
@@ -1213,11 +1177,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         FUNCTION level_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
             REAL(MK)                                :: level_fun
         END FUNCTION level_fun
@@ -1225,11 +1185,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         FUNCTION level_grad_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)  :: pos
             REAL(MK),DIMENSION(ppm_dim)             :: level_grad_fun
         END FUNCTION level_grad_fun
@@ -1537,11 +1493,11 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
             wp     => Get_wps(Particles,Particles%adapt_wpid)
             wp_old => Get_wps(Particles_old,Particles_old%adapt_wpid)
             D_old => Get_wps(Particles_old,Particles_old%D_id)
-            CALL sop_approx_wp_1d(Particles_old%xp,wp_old,D_old,Particles%xp,&
+            CALL sop_approx_wp(Particles_old%xp,wp_old,D_old,Particles%xp,&
                 wp,Particles%Npart,Particles%Mpart,nvlist_cross,vlist_cross,info)
             IF (info .NE. 0) THEN
                 CALL ppm_write(ppm_rank,caller,&
-                    'sop_approx_wp_1d failed.',info)
+                    'sop_approx_wp failed.',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -1571,7 +1527,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 !! routine)
                 D     => Get_wps(Particles,    Particles%D_id)
                 D_old => Get_wps(Particles_old,Particles_old%D_id)
-                CALL sop_approx_wp_1d(Particles_old%xp,D_old,D_old,Particles%xp,&
+                CALL sop_approx_wp(Particles_old%xp,D_old,D_old,Particles%xp,&
                     D,Particles%Npart,Particles%Mpart,&
                     nvlist_cross,vlist_cross,info)
                 IF (info .NE. 0) THEN
@@ -1585,7 +1541,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
                 !      level,Particles%Npart,Particles%Mpart,&
                 !      nvlist_cross,vlist_cross,info)
 
-                CALL sop_approx_wp_2d(Particles_old%xp,level_grad_old,ppm_dim,D_old,&
+                CALL sop_approx_wp(Particles_old%xp,level_grad_old,ppm_dim,D_old,&
                     Particles%xp,level_grad,Particles%Npart,Particles%Mpart,&
                     nvlist_cross,vlist_cross,info)
                 IF (info .NE. 0) THEN
@@ -1977,7 +1933,7 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
         CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
         CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
-            WRITE(cbuf,'(A,I3,2(A,E11.4),A,I4,1X,I4,1X,A,I6,A,I6,A,E7.2)') &
+            WRITE(cbuf,'(A,I3,2(A,E11.4),A,I4,1X,I4,1X,A,I6,A,I6,A,E9.2)') &
                 'it_adapt= ',it_adapt,&
                 ' Psi_mean= ',Psi_global/REAL(tmpvari1,MK),' Psi_max= ',tmpvar2, &
                 ' Nneigh= ', Particles%nneighmin, Particles%nneighmax, &
@@ -2082,6 +2038,4 @@ SUBROUTINE sop_gradient_descent_ls(Particles_old,Particles, &
 
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_gradient_descent_ls
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_gradient_descent_ls)

@@ -1,17 +1,13 @@
 
-SUBROUTINE sop_init_opts(opts,info)
+SUBROUTINE DTYPE(sop_init_opts)(opts,info)
     !!! constructor for sop options derived type
     USE ppm_module_error
 
     IMPLICIT NONE
 
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER  :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER  :: MK = ppm_kind_double
-#endif
-    TYPE(sop_t_opts), POINTER, INTENT(INOUT) :: opts
-    INTEGER                  , INTENT(  OUT) :: info
+    DEFINE_MK()
+    TYPE(DTYPE(sop_t_opts)), POINTER,INTENT(INOUT) :: opts
+    INTEGER                  ,       INTENT(  OUT) :: info
 
     info = 0
 
@@ -50,21 +46,17 @@ SUBROUTINE sop_init_opts(opts,info)
 
     9999 CONTINUE
 
-END SUBROUTINE sop_init_opts
+END SUBROUTINE DTYPE(sop_init_opts)
 
 
-SUBROUTINE sop_init_stats(stats,info)
+SUBROUTINE DTYPE(sop_init_stats)(stats,info)
     !!! constructor for sop statistics derived type
     USE ppm_module_error
 
     IMPLICIT NONE
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER  :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER  :: MK = ppm_kind_double
-#endif
-    TYPE(sop_t_stats), POINTER, INTENT(INOUT) :: stats
-    INTEGER                  , INTENT(  OUT) :: info
+    DEFINE_MK()
+    TYPE(DTYPE(sop_t_stats)), POINTER, INTENT(INOUT) :: stats
+    INTEGER                  ,         INTENT(  OUT) :: info
 
     info = 0
     ALLOCATE(stats,STAT=info)
@@ -80,4 +72,4 @@ SUBROUTINE sop_init_stats(stats,info)
 
     9999 CONTINUE
 
-END SUBROUTINE sop_init_stats
+END SUBROUTINE DTYPE(sop_init_stats)

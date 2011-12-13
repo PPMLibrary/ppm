@@ -63,15 +63,42 @@
      IMPLICIT NONE
 
      INTERFACE sop_approx_wp
-         MODULE PROCEDURE sop_approx_wp_1d
-         MODULE PROCEDURE sop_approx_wp_2d
+         MODULE PROCEDURE sop_approx_wp_1d_s
+         MODULE PROCEDURE sop_approx_wp_1d_d
+         MODULE PROCEDURE sop_approx_wp_2d_s
+         MODULE PROCEDURE sop_approx_wp_2d_d
      END INTERFACE
      INTERFACE sop_dump_debug
-         MODULE PROCEDURE sop_dump_1d
+         MODULE PROCEDURE sop_dump_1d_s
+         MODULE PROCEDURE sop_dump_1d_d
          MODULE PROCEDURE sop_dump_1di
-         MODULE PROCEDURE sop_dump_2d
+         MODULE PROCEDURE sop_dump_2d_s
+         MODULE PROCEDURE sop_dump_2d_d
          MODULE PROCEDURE sop_dump_2di
      END INTERFACE
+
+#define interface_s_d(a) \
+    INTERFACE a ;\
+        MODULE PROCEDURE a/**/_s; \
+        MODULE PROCEDURE a/**/_d; \
+    END INTERFACE
+
+    interface_s_d(sop_adapt_particles)
+    interface_s_d(sop_close_neighbours)
+    interface_s_d(sop_compute_D)
+    interface_s_d(sop_fuse_particles)
+    interface_s_d(sop_fuse2_particles)
+    interface_s_d(sop_gradient_descent)
+    interface_s_d(sop_gradient_descent_ls)
+    interface_s_d(sop_gradient_psi)
+    interface_s_d(sop_interpolate)
+    interface_s_d(sop_potential_psi)
+    interface_s_d(sop_spawn_particles)
+    interface_s_d(sop_spawn2_particles)
+    interface_s_d(sop_init_opts)
+    interface_s_d(sop_init_stats)
+    interface_s_d(sop_plot_potential)
+    interface_s_d(check_duplicates)
 
     !----------------------------------------------------------------------
     ! Private variables for the module
@@ -79,19 +106,18 @@
 
      PRIVATE
 
-     INTEGER, PARAMETER      :: prec = ppm_kind_double
-
-
      INTEGER , DIMENSION(3)  :: ldc
      !!! Number of elements in all dimensions for allocation
 
      !====================================================================!
      ! Variable describing the 'state' of the system
      !====================================================================!
-     REAL(prec)         :: Psi_global 
-     ! totol interaction potential of the particles
-     REAL(prec)         :: Psi_global_old 
-     REAL(prec)         :: Psi_max  
+!     REAL(ppm_kind_single)         :: Psi_global_d
+!     REAL(ppm_kind_double)         :: Psi_global_s
+     ! total interaction potential of the particles
+!     REAL(ppm_kind_single)         :: Psi_global_old_s,Psi_max_s
+!     REAL(ppm_kind_double)         :: Psi_global_old_d,Psi_max_d
+
      INTEGER            :: adapt_wpgradid
      ! id of where the gradient of the field is stored 
      INTEGER            :: fuse_id = 0
@@ -108,14 +134,9 @@
      LOGICAL            :: adaptation_ok
 
      !====================================================================!
-     ! random numbers
-     !====================================================================!
-     REAL(prec), DIMENSION(:), ALLOCATABLE :: randnb
-     INTEGER                               :: randnb_i
-     !====================================================================!
      ! maths
      !====================================================================!
-     REAL(prec),PARAMETER :: PI = ACOS(-1._prec)
+     !REAL(prec),PARAMETER :: PI = ACOS(-1._prec)
 
 
      PUBLIC sop_adapt_particles, sop_init_opts, sop_init_stats,&
@@ -182,56 +203,53 @@
 
      !END SUBROUTINE define_sop_args
 
-
-#define __KIND __DOUBLE_PRECISION
+#define  __KIND __SINGLE_PRECISION
+#define  DTYPE(a) a/**/_s
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "sop/ppm_sop_helpers.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_adapt_particles.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_close_neighbours.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_compute_D.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_dump_debug.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_fuse_particles.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_fuse2_particles.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_gradient_descent.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_gradient_psi.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_interpolate.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_potential_psi.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_spawn_particles.f"
-
-#define __KIND __DOUBLE_PRECISION
 #include "sop/sop_spawn2_particles.f"
-
-#define __KIND __DOUBLE_PRECISION
 #define __LDA 1
 #include "sop/sop_approx_wp.f"
-#define __KIND __DOUBLE_PRECISION
 #define __LDA 2
 #include "sop/sop_approx_wp.f"
+#undef   __KIND
+#undef   DTYPE
+#undef   DEFINE_MK
 
-
+#define  __KIND __DOUBLE_PRECISION
+#define  DTYPE(a) a/**/_d
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#include "sop/ppm_sop_helpers.f"
+#include "sop/sop_adapt_particles.f"
+#include "sop/sop_close_neighbours.f"
+#include "sop/sop_compute_D.f"
+#include "sop/sop_dump_debug.f"
+#include "sop/sop_fuse_particles.f"
+#include "sop/sop_fuse2_particles.f"
+#include "sop/sop_gradient_descent.f"
+#include "sop/sop_gradient_psi.f"
+#include "sop/sop_interpolate.f"
+#include "sop/sop_potential_psi.f"
+#include "sop/sop_spawn_particles.f"
+#include "sop/sop_spawn2_particles.f"
+#define __LDA 1
+#include "sop/sop_approx_wp.f"
+#define __LDA 2
+#include "sop/sop_approx_wp.f"
 #undef __KIND
-#undef __DIM
+#undef   DTYPE
+#undef   DEFINE_MK
 
 #endif
      END MODULE ppm_module_sop

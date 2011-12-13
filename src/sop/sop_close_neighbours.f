@@ -1,16 +1,12 @@
-SUBROUTINE sop_close_neighbours(Particles,opts,info)
+SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
 
 
     IMPLICIT NONE
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
-    TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(sop_t_opts)), POINTER,     INTENT(IN   )   :: opts
     INTEGER,                              INTENT(  OUT)   :: info
     !local variables
 
@@ -88,5 +84,5 @@ SUBROUTINE sop_close_neighbours(Particles,opts,info)
     Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
     nb_neigh => Set_wpi(Particles,nb_neigh_id)
 
-END SUBROUTINE sop_close_neighbours
+END SUBROUTINE DTYPE(sop_close_neighbours)
 

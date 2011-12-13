@@ -20,7 +20,7 @@
 !!! of the DC operators (not very efficient...)
 !!!----------------------------------------------------------------------------!
 
-    SUBROUTINE cnl_vlist(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,ndim,&
+    SUBROUTINE DTYPE(cnl_vlist)(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,ndim,&
  &                             info)
 
 
@@ -28,9 +28,8 @@
     IMPLICIT NONE
 
 #define sym_lists 4
-!#define __3D
 
-      INTEGER, PARAMETER :: MK = ppm_kind_double
+    DEFINE_MK()
     ! arguments
     REAL(MK), DIMENSION(:,:),POINTER, INTENT(IN   )   :: xp
     REAL(MK), DIMENSION(:),POINTER,   INTENT(INOUT)   :: rcp
@@ -151,4 +150,4 @@
 
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE cnl_vlist
+END SUBROUTINE DTYPE(cnl_vlist)

@@ -1,8 +1,8 @@
 #if __DIM == 2
-SUBROUTINE particles_initialize2d(Particles,Npart_global,info,&
+SUBROUTINE DTYPE(particles_initialize2d)(Particles,Npart_global,info,&
         distrib,topoid,minphys,maxphys,cutoff,name)
 #elif __DIM == 3
-SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
+SUBROUTINE DTYPE(particles_initialize3d)(Particles,Npart_global,info,&
         distrib,topoid,minphys,maxphys,cutoff,name)
 #endif
     !-----------------------------------------------------------------------
@@ -12,29 +12,25 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_topo,ppm_comm
     USE ppm_module_write
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    TYPE(ppm_t_particles), POINTER,     INTENT(INOUT)      :: Particles
+    DEFINE_MK()
+    TYPE(DTYPE(ppm_t_particles)),POINTER,INTENT(INOUT)     :: Particles
     !!! Data structure containing the particles
-    INTEGER,                            INTENT(INOUT)      :: Npart_global
+    INTEGER,                             INTENT(INOUT)     :: Npart_global
     !!! total number of particles that will be initialized
-    INTEGER,                            INTENT(  OUT)      :: info
+    INTEGER,                             INTENT(  OUT)     :: info
     !!! Return status, on success 0.
     !-------------------------------------------------------------------------
     !  Optional arguments
     !-------------------------------------------------------------------------
-    INTEGER,OPTIONAL,                   INTENT(IN   )      :: distrib
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: distrib
     !!! type of initial distribution. One of
     !!! ppm_param_part_init_cartesian (default)
     !!! ppm_param_part_init_random
-    INTEGER,OPTIONAL,                   INTENT(IN   )      :: topoid
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: topoid
     !!! topology id (used only to get the extent of the physical domain)
     REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: minphys
     !!! extent of the physical domain. Only if topoid is not present.
@@ -86,8 +82,13 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     ENDIF
     IF (PRESENT(topoid)) THEN
         topo => ppm_topo(topoid)%t
-        min_phys = topo%min_physd
-        max_phys = topo%max_physd
+        IF (MK.EQ.ppm_kind_single) THEN
+            min_phys = topo%min_physs
+            max_phys = topo%max_physs
+        ELSE IF (MK.EQ.ppm_kind_double) THEN
+            min_phys = topo%min_physd
+            max_phys = topo%max_physd
+        ENDIF
     ELSE IF (PRESENT(minphys).AND.PRESENT(maxphys)) THEN
         min_phys = minphys
         max_phys = maxphys
@@ -395,9 +396,9 @@ SUBROUTINE particles_initialize3d(Particles,Npart_global,info,&
     9999 CONTINUE ! jump here upon error
 
 #if __DIM == 2
-END SUBROUTINE particles_initialize2d
+END SUBROUTINE DTYPE(particles_initialize2d)
 #elif __DIM == 3
-END SUBROUTINE particles_initialize3d
+END SUBROUTINE DTYPE(particles_initialize3d)
 #endif
 
 #undef __DIM

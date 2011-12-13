@@ -29,13 +29,6 @@
 #define __UNIFORM 1
 #define __ADAPTIVE 2
 
-!temporary hack.
-!Comment out (or remove...) once ppm_module_particles
-! (which contains the derived type ppm_t_particles)
-!can handle single_precision
-!#define __PARTICLES__FINISHED_SINGLE_PREC 1
-
-
 MODULE ppm_module_dcops
 
 !!! This module provides routines that compute the weights of the DC operators
@@ -94,35 +87,20 @@ MODULE ppm_module_dcops
         MODULE PROCEDURE ppm_dcops_unif_3d_d
     END INTERFACE
 
-    INTERFACE solveLSE
-        MODULE PROCEDURE solveLSEs
-        MODULE PROCEDURE solveLSEd
+#define interface_s_d(a) \
+    INTERFACE a ;\
+        MODULE PROCEDURE a/**/_s; \
+        MODULE PROCEDURE a/**/_d; \
     END INTERFACE
 
-    INTERFACE solveLSE_2
-        MODULE PROCEDURE solveLSE_2s
-        MODULE PROCEDURE solveLSE_2d
-    END INTERFACE
+    interface_s_d(solveLSE)
+    interface_s_d(solveLSE_2)
+    interface_s_d(solveLSE_n)
+    interface_s_d(primitive)
+    interface_s_d(ppm_matrix_svd)
+    interface_s_d(particles_dcop_compute)
 
-    INTERFACE solveLSE_n
-        MODULE PROCEDURE solveLSE_ns
-        MODULE PROCEDURE solveLSE_nd
-    END INTERFACE
-
-    INTERFACE primitive
-        MODULE PROCEDURE primitive_s
-        MODULE PROCEDURE primitive_d
-    END INTERFACE
-
-    INTERFACE ppm_matrix_svd
-        MODULE PROCEDURE ppm_matrix_svd_s
-        MODULE PROCEDURE ppm_matrix_svd_d
-    END INTERFACE
-
-    !INTERFACE ppm_dcop_check_vandermonde
-        !MODULE PROCEDURE ppm_dcop_check_vandermonde_s
-        !MODULE PROCEDURE ppm_dcop_check_vandermonde_d
-    !END INTERFACE
+    !interface_s_d(ppm_dcop_check_vandermonde)
 
 !-------------------------------------------------------------------------
 ! Public subroutine
@@ -134,246 +112,71 @@ PUBLIC :: solveLSE,solveLSE_2,solveLSE_n, &
 
 CONTAINS
 
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
+#define  DTYPE(a) a/**/_s
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+
 #include "dcop/ppm_dcops_helpers.f"
 
-#define __KIND __DOUBLE_PRECISION
 #define __DIM 2
 #define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#define __KIND __DOUBLE_PRECISION
+
 #define __DIM 2
 #define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
 
-#define __KIND __DOUBLE_PRECISION
 #define __DIM 3
 #define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#define __KIND __DOUBLE_PRECISION
+
 #define __DIM 3
 #define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
 
-#define __KIND __DOUBLE_PRECISION
 #define __DIM 2
-#include "dcop/ppm_part_dcops_build.f"
-#define __KIND __DOUBLE_PRECISION
+#include "dcop/ppm_dcop_compute.f"
+
 #define __DIM 3
-#include "dcop/ppm_part_dcops_build.f"
+#include "dcop/ppm_dcop_compute.f"
+
+#undef  __KIND
+#undef  DTYPE
+#undef  DEFINE_MK
+
 
 #define __KIND __DOUBLE_PRECISION
-#define __DIM 2
-#include "dcop/ppm_part_dcops_build2.f"
-#define __KIND __DOUBLE_PRECISION
-#define __DIM 3
-#include "dcop/ppm_part_dcops_build2.f"
+#define  DTYPE(a) a/**/_d
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 
-#define __KIND __DOUBLE_PRECISION
-#include "dcop/ppm_part_dcops.f"
-
-
-#define __KIND __SINGLE_PRECISION
 #include "dcop/ppm_dcops_helpers.f"
 
-#define __KIND __SINGLE_PRECISION
 #define __DIM 2
 #define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#define __KIND __SINGLE_PRECISION
+
 #define __DIM 2
 #define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
 
-#define __KIND __SINGLE_PRECISION
 #define __DIM 3
 #define __MODE __ADAPTIVE
 #include "dcop/ppm_dcops.f"
-#define __KIND __SINGLE_PRECISION
+
 #define __DIM 3
 #define __MODE __UNIFORM
 #include "dcop/ppm_dcops.f"
 
-#ifdef __PARTICLES__FINISHED_SINGLE_PREC
-#define __KIND __SINGLE_PRECISION
 #define __DIM 2
-#include "dcop/ppm_part_dcops_build.f"
-#define __KIND __SINGLE_PRECISION
-#define __DIM 3
-#include "dcop/ppm_part_dcops_build.f"
+#include "dcop/ppm_dcop_compute.f"
 
-#define __KIND __SINGLE_PRECISION
-#define __DIM 2
-#include "dcop/ppm_part_dcops_build2.f"
-#define __KIND __SINGLE_PRECISION
 #define __DIM 3
-#include "dcop/ppm_part_dcops_build2.f"
-#endif
+#include "dcop/ppm_dcop_compute.f"
 
 #undef __KIND
+#undef  DTYPE
+#undef  DEFINE_MK
 
-SUBROUTINE particles_dcop_compute(Particles,eta_id,info,c,min_sv)
-
-    USE ppm_module_data, ONLY: ppm_dim,ppm_rank
-    USE ppm_module_particles_typedef
-    USE ppm_module_write
-    IMPLICIT NONE
-#ifdef __MPI
-    INCLUDE 'mpif.h'
-#endif
-
-    !---------------------------------------------------------
-    ! arguments
-    !---------------------------------------------------------
-    TYPE(ppm_t_particles),   POINTER,    INTENT(INOUT)   :: Particles
-    !!! particles
-    INTEGER,                             INTENT(IN   )   :: eta_id
-    !!! id of the operator kernel
-    INTEGER,                             INTENT(  OUT)   :: info
-    !!! non-zero on output if some error occurred
-    !---------------------------------------------------------
-    ! Optional arguments
-    !---------------------------------------------------------
-    REAL(ppm_kind_double),OPTIONAL                       :: c
-    !!! ratio h/epsilon (default is 1.0)
-    REAL(ppm_kind_double),OPTIONAL   ,  INTENT(  OUT)    :: min_sv
-    !!! smallest singular value
-    !---------------------------------------------------------
-    ! local variables
-    !---------------------------------------------------------
-    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_compute'
-    CHARACTER(LEN = ppm_char)               :: cbuf
-    REAL(KIND(1.D0))                        :: t0,t1,t2
-    LOGICAL                                 :: interp
-
-    !-------------------------------------------------------------------------
-    ! Initialize
-    !-------------------------------------------------------------------------
-    info = 0 ! change if error occurs
-    CALL substart(caller,t0,info)
-#ifdef __MPI
-    t1 = MPI_WTIME(info)
-#endif
-
-    !-------------------------------------------------------------------------
-    ! Check arguments
-    !-------------------------------------------------------------------------
-    IF (.NOT. ASSOCIATED(Particles)) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            & 'Particles not defined',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (.NOT. ASSOCIATED(Particles%ops)) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            & 'No operator data structure found, use particles_dcop_define first',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (eta_id.LE.0 .OR. eta_id.GT.Particles%ops%max_opsid) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            & 'Invalid eta_id, use particles_dcop_define first',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (.NOT. Particles%ops%desc(eta_id)%is_defined) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            & 'Operator not found, use particles_dcop_define first',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (Particles%ops%desc(eta_id)%is_computed) THEN
-        WRITE(cbuf,*) 'WARNING: The operator with id ',eta_id,&
-            & ' and name *',TRIM(ADJUSTL(Particles%ops%desc(eta_id)%name)),&
-            &'* seems to have already been computed. Unnecessary call to',&
-            &' particles_dcop_compute()'
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-    ENDIF
-
-    interp = Particles%ops%desc(eta_id)%interp
-    IF (interp) THEN
-        IF (.NOT. ASSOCIATED(Particles%Particles_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Need to specify which set of particles &
-                &   (particles_cross) should be used for interpolation',&
-                & __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (.NOT. (Particles%neighlists_cross)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Please compute xset neighbor lists first',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (Particles%Particles_cross%nn_sq_id.EQ.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Need to call particles_nearest_neighbors first',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
-        IF (.NOT.Particles%Particles_cross%wps(&
-            Particles%Particles_cross%nn_sq_id)%is_mapped &
-                .OR. .NOT.Particles%Particles_cross%wps(&
-                Particles%Particles_cross%nn_sq_id)%has_ghosts) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-        'Need to call particles_nearest_neighbors first (nn_sq_id not uptodate)',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
-    ELSE
-        IF (.NOT. Particles%neighlists) THEN
-            info = ppm_error_error
-            CALL ppm_error(999,caller,   &
-                & 'Compute neighbor lists first',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
-
-    !-------------------------------------------------------------------------
-    ! Compute the DC operator
-    !-------------------------------------------------------------------------
-
-    Particles%stats%nb_dc_comp = Particles%stats%nb_dc_comp + 1
-
-    IF (ppm_dim .EQ. 2) THEN
-        CALL ppm_dcop_compute2d(Particles,eta_id,info,interp,c,min_sv)
-    ELSE
-        CALL ppm_dcop_compute3d(Particles,eta_id,info,interp,c,min_sv)
-    ENDIF
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            & 'particles_dcop_compute failed',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-
-    !-------------------------------------------------------------------------
-    ! Update states
-    !-------------------------------------------------------------------------
-    Particles%ops%desc(eta_id)%is_computed = .TRUE.
-#ifdef __MPI
-    t2 = MPI_WTIME(info)
-    Particles%stats%t_dc_comp = Particles%stats%t_dc_comp + (t2-t1)
-#endif
-
-    !-------------------------------------------------------------------------
-    ! Finalize
-    !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
-END SUBROUTINE particles_dcop_compute
 
 
 

@@ -1,9 +1,9 @@
 #if __DIM == 2
-SUBROUTINE cnl_vlist_build_2d(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
+SUBROUTINE DTYPE(cnl_vlist_build_2d)(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
            ind,jnd,nnd,clist,ndim,verlet_skin,info)
 #endif
 #if __DIM == 3
-SUBROUTINE cnl_vlist_build_3d(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
+SUBROUTINE DTYPE(cnl_vlist_build_3d)(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
            ind,jnd,nnd,clist,ndim,verlet_skin,info)
 #endif
 
@@ -13,7 +13,7 @@ SUBROUTINE cnl_vlist_build_3d(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
 
 #define sym_lists 4
 
-      INTEGER, PARAMETER :: MK = ppm_kind_double
+    DEFINE_MK()
     ! arguments
     REAL(MK), DIMENSION(:,:),POINTER, INTENT(IN   )   :: xp
     REAL(MK), DIMENSION(:),POINTER,   INTENT(IN   )   :: rcp
@@ -353,10 +353,10 @@ SUBROUTINE cnl_vlist_build_3d(xp,rcp,Npart,Mpart,xmin,xmax,nvlist,vlist,&
     9999 CONTINUE ! jump here upon error
 
 #if __DIM == 2
-END SUBROUTINE cnl_vlist_build_2d
+END SUBROUTINE DTYPE(cnl_vlist_build_2d)
 #endif
 #if __DIM == 3
-END SUBROUTINE cnl_vlist_build_3d
+END SUBROUTINE DTYPE(cnl_vlist_build_3d)
 #endif
 
 #undef __DIM

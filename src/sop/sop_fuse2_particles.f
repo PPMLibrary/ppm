@@ -8,7 +8,7 @@
 !!!
 !!!
 !!!----------------------------------------------------------------------------!
-SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
+SUBROUTINE DTYPE(sop_fuse2_particles)(Particles,opts,info,&
         level_fun,wp_fun,nb_fun,printp,nb_part_del)
 
     USE ppm_module_alloc, ONLY: ppm_alloc
@@ -17,15 +17,11 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles), POINTER,       INTENT(INOUT)   :: Particles
-    TYPE(sop_t_opts), POINTER,            INTENT(IN   )   :: opts
+    TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(sop_t_opts)), POINTER,     INTENT(IN   )   :: opts
     INTEGER,                              INTENT(  OUT)   :: info
 
     OPTIONAL                                              :: wp_fun
@@ -40,11 +36,7 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
         FUNCTION wp_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: wp_fun
         END FUNCTION wp_fun
@@ -53,11 +45,7 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
         FUNCTION level_fun(pos)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)        :: pos
             REAL(MK)                                      :: level_fun
         END FUNCTION level_fun
@@ -65,11 +53,7 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
         !Function that returns the width of the narrow band
         FUNCTION nb_fun(kappa,scale_D)
             USE ppm_module_typedef
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
+            DEFINE_MK()
             REAL(MK)                             :: nb_fun
             REAL(MK),                INTENT(IN)  :: kappa
             REAL(MK),                INTENT(IN)  :: scale_D
@@ -346,6 +330,4 @@ SUBROUTINE sop_fuse2_particles(Particles,opts,info,&
 #endif
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_fuse2_particles
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_fuse2_particles)

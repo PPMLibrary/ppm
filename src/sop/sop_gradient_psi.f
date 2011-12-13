@@ -2,7 +2,7 @@
 !!! Compute gradient of the potential w.r.t particles' positions
 !!! Get ghost values for Gradient_Psi
 !!!----------------------------------------------------------------------------!
-SUBROUTINE sop_gradient_psi(Particles,topo_id,&
+SUBROUTINE DTYPE(sop_gradient_psi)(Particles,topo_id,&
         Gradient_Psi,Psi_global,Psi_max,opts,info,gradD,gradPsi_max)
 
     USE ppm_module_data, ONLY: ppm_dim,ppm_rank,ppm_comm,ppm_mpi_kind
@@ -13,19 +13,15 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 #ifdef __MPI
     INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
-    INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
 
+    DEFINE_MK()
     ! arguments
-    TYPE(ppm_t_particles),POINTER,       INTENT(INOUT)   :: Particles
+    TYPE(DTYPE(ppm_t_particles)),POINTER,INTENT(INOUT)   :: Particles
     INTEGER,                             INTENT(IN   )   :: topo_id
     REAL(MK),DIMENSION(:,:),POINTER,     INTENT(INOUT)   :: Gradient_Psi
     REAL(MK),                            INTENT(  OUT)   :: Psi_global
     REAL(MK),                            INTENT(  OUT)   :: Psi_max
-    TYPE(sop_t_opts), POINTER,           INTENT(IN   )   :: opts
+    TYPE(DTYPE(sop_t_opts)), POINTER,    INTENT(IN   )   :: opts
     INTEGER,                             INTENT(  OUT)   :: info
 
     ! Optional arguments
@@ -281,7 +277,4 @@ SUBROUTINE sop_gradient_psi(Particles,topo_id,&
 
     9999 CONTINUE ! jump here upon error
 
-END SUBROUTINE sop_gradient_psi
-
-
-#undef __KIND
+END SUBROUTINE DTYPE(sop_gradient_psi)
