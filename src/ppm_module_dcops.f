@@ -87,20 +87,35 @@ MODULE ppm_module_dcops
         MODULE PROCEDURE ppm_dcops_unif_3d_d
     END INTERFACE
 
-#define interface_s_d(a) \
-    INTERFACE a ;\
-        MODULE PROCEDURE a/**/_s; \
-        MODULE PROCEDURE a/**/_d; \
+    INTERFACE solveLSE
+        MODULE PROCEDURE solveLSE_s
+        MODULE PROCEDURE solveLSE_d
+    END INTERFACE
+    INTERFACE solveLSE_2
+        MODULE PROCEDURE solveLSE_2_s
+        MODULE PROCEDURE solveLSE_2_d
+    END INTERFACE
+    INTERFACE solveLSE_n
+        MODULE PROCEDURE solveLSE_n_s
+        MODULE PROCEDURE solveLSE_n_d
+    END INTERFACE
+    INTERFACE primitive
+        MODULE PROCEDURE primitive_s
+        MODULE PROCEDURE primitive_d
+    END INTERFACE
+    INTERFACE ppm_matrix_svd
+        MODULE PROCEDURE ppm_matrix_svd_s
+        MODULE PROCEDURE ppm_matrix_svd_d
+    END INTERFACE
+    INTERFACE particles_dcop_compute
+        MODULE PROCEDURE particles_dcop_compute_s
+        MODULE PROCEDURE particles_dcop_compute_d
     END INTERFACE
 
-    interface_s_d(solveLSE)
-    interface_s_d(solveLSE_2)
-    interface_s_d(solveLSE_n)
-    interface_s_d(primitive)
-    interface_s_d(ppm_matrix_svd)
-    interface_s_d(particles_dcop_compute)
-
-    !interface_s_d(ppm_dcop_check_vandermonde)
+    !INTERFACE ppm_dcop_check_vandermonde
+        !MODULE PROCEDUREINTERFACE ppm_dcop_check_vandermonde_s
+        !MODULE PROCEDUREINTERFACE ppm_dcop_check_vandermonde_d
+    !END INTERFACE
 
 !-------------------------------------------------------------------------
 ! Public subroutine

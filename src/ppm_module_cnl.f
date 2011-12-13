@@ -4,18 +4,30 @@
 #define __DOUBLE_PRECISION 2
       USE ppm_module_data
 
-#define interface_s_d(a) \
-      INTERFACE a ;\
-          MODULE PROCEDURE a/**/_s; \
-          MODULE PROCEDURE a/**/_d; \
+      INTERFACE cnl_clist
+          MODULE PROCEDURE cnl_clist_s
+          MODULE PROCEDURE cnl_clist_d
       END INTERFACE
-
-      interface_s_d(cnl_clist)
-      interface_s_d(cnl_vlist)
-      interface_s_d(cnl_vlist_build_2d)
-      interface_s_d(cnl_vlist_build_3d)
-      interface_s_d(cnl_rank2d)
-      interface_s_d(cnl_rank3d)
+      INTERFACE cnl_vlist
+          MODULE PROCEDURE cnl_vlist_s
+          MODULE PROCEDURE cnl_vlist_d
+      END INTERFACE
+      INTERFACE cnl_vlist_build_2d
+          MODULE PROCEDURE cnl_vlist_build_2d_s
+          MODULE PROCEDURE cnl_vlist_build_2d_d
+      END INTERFACE
+      INTERFACE cnl_vlist_build_3d
+          MODULE PROCEDURE cnl_vlist_build_3d_s
+          MODULE PROCEDURE cnl_vlist_build_3d_d
+      END INTERFACE
+      INTERFACE cnl_rank2d
+          MODULE PROCEDURE cnl_rank2d_s
+          MODULE PROCEDURE cnl_rank2d_d
+      END INTERFACE
+      INTERFACE cnl_rank3d
+          MODULE PROCEDURE cnl_rank3d_s
+          MODULE PROCEDURE cnl_rank3d_d
+      END INTERFACE
 
       TYPE t_clist
           !!! Cell list data structure

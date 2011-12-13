@@ -77,28 +77,70 @@
          MODULE PROCEDURE sop_dump_2di
      END INTERFACE
 
-#define interface_s_d(a) \
-    INTERFACE a ;\
-        MODULE PROCEDURE a/**/_s; \
-        MODULE PROCEDURE a/**/_d; \
-    END INTERFACE
-
-    interface_s_d(sop_adapt_particles)
-    interface_s_d(sop_close_neighbours)
-    interface_s_d(sop_compute_D)
-    interface_s_d(sop_fuse_particles)
-    interface_s_d(sop_fuse2_particles)
-    interface_s_d(sop_gradient_descent)
-    interface_s_d(sop_gradient_descent_ls)
-    interface_s_d(sop_gradient_psi)
-    interface_s_d(sop_interpolate)
-    interface_s_d(sop_potential_psi)
-    interface_s_d(sop_spawn_particles)
-    interface_s_d(sop_spawn2_particles)
-    interface_s_d(sop_init_opts)
-    interface_s_d(sop_init_stats)
-    interface_s_d(sop_plot_potential)
-    interface_s_d(check_duplicates)
+     INTERFACE sop_adapt_particles
+         MODULE PROCEDURE sop_adapt_particles_s
+         MODULE PROCEDURE sop_adapt_particles_d
+     END INTERFACE
+     INTERFACE sop_close_neighbours
+         MODULE PROCEDURE sop_close_neighbours_s
+         MODULE PROCEDURE sop_close_neighbours_d
+     END INTERFACE
+     INTERFACE sop_compute_D
+         MODULE PROCEDURE sop_compute_D_s
+         MODULE PROCEDURE sop_compute_D_d
+     END INTERFACE
+     INTERFACE sop_fuse_particles
+         MODULE PROCEDURE sop_fuse_particles_s
+         MODULE PROCEDURE sop_fuse_particles_d
+     END INTERFACE
+     INTERFACE sop_fuse2_particles
+         MODULE PROCEDURE sop_fuse2_particles_s
+         MODULE PROCEDURE sop_fuse2_particles_d
+     END INTERFACE
+     INTERFACE sop_gradient_descent
+         MODULE PROCEDURE sop_gradient_descent_s
+         MODULE PROCEDURE sop_gradient_descent_d
+     END INTERFACE
+     INTERFACE sop_gradient_descent_ls
+         MODULE PROCEDURE sop_gradient_descent_ls_s
+         MODULE PROCEDURE sop_gradient_descent_ls_d
+     END INTERFACE
+     INTERFACE sop_gradient_psi
+         MODULE PROCEDURE sop_gradient_psi_s
+         MODULE PROCEDURE sop_gradient_psi_d
+     END INTERFACE
+     INTERFACE sop_interpolate
+         MODULE PROCEDURE sop_interpolate_s
+         MODULE PROCEDURE sop_interpolate_d
+     END INTERFACE
+     INTERFACE sop_potential_psi
+         MODULE PROCEDURE sop_potential_psi_s
+         MODULE PROCEDURE sop_potential_psi_d
+     END INTERFACE
+     INTERFACE sop_spawn_particles
+         MODULE PROCEDURE sop_spawn_particles_s
+         MODULE PROCEDURE sop_spawn_particles_d
+     END INTERFACE
+     INTERFACE sop_spawn2_particles
+         MODULE PROCEDURE sop_spawn2_particles_s
+         MODULE PROCEDURE sop_spawn2_particles_d
+     END INTERFACE
+     INTERFACE sop_init_opts
+         MODULE PROCEDURE sop_init_opts_s
+         MODULE PROCEDURE sop_init_opts_d
+     END INTERFACE
+     INTERFACE sop_init_stats
+         MODULE PROCEDURE sop_init_stats_s
+         MODULE PROCEDURE sop_init_stats_d
+     END INTERFACE
+     INTERFACE sop_plot_potential
+         MODULE PROCEDURE sop_plot_potential_s
+         MODULE PROCEDURE sop_plot_potential_d
+     END INTERFACE
+     INTERFACE check_duplicates
+         MODULE PROCEDURE check_duplicates_s
+         MODULE PROCEDURE check_duplicates_d
+     END INTERFACE
 
     !----------------------------------------------------------------------
     ! Private variables for the module

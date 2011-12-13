@@ -37,55 +37,163 @@ IMPLICIT NONE
     CHARACTER(LEN=ppm_char),PRIVATE   :: cbuf
     !!! buffer for writeouts
 
-    !REAL(prec),DIMENSION(:),POINTER    :: tmp_cutoff
 
-
-#define interface_s_d(a) \
-    INTERFACE a ;\
-        MODULE PROCEDURE a/**/_s; \
-        MODULE PROCEDURE a/**/_d; \
+    INTERFACE get_xp
+        MODULE PROCEDURE get_xp_s
+        MODULE PROCEDURE get_xp_d
     END INTERFACE
-
-    
-    interface_s_d(get_xp)
-    interface_s_d(set_xp)
-    interface_s_d(get_wpi)
-    interface_s_d(set_wpi)
-    interface_s_d(get_wps)
-    interface_s_d(set_wps)
-    interface_s_d(get_wpv)
-    interface_s_d(set_wpv)
-    interface_s_d(get_dcop)
-    interface_s_d(set_dcop)
-    interface_s_d(ppm_alloc_particles)
-    interface_s_d(particles_dcop_deallocate)
-    interface_s_d(particles_allocate_wpi)
-    interface_s_d(particles_allocate_wps)
-    interface_s_d(particles_allocate_wpv)
-    interface_s_d(particles_mapping_global)
-    interface_s_d(particles_mapping_partial)
-    interface_s_d(particles_mapping_ghosts)
-    interface_s_d(particles_apply_bc)
-    interface_s_d(particles_move)
-    interface_s_d(particles_have_moved)
-    interface_s_d(particles_neighlists)
-    interface_s_d(particles_neighlists_xset)
-    interface_s_d(particles_updated_positions)
-    interface_s_d(particles_updated_nb_part)
-    interface_s_d(particles_update_cutoff)
-    interface_s_d(particles_updated_cutoff)
-    interface_s_d(particles_compute_hmin)
-    interface_s_d(particles_initialize)
-    interface_s_d(particles_io_xyz)
-    interface_s_d(particles_dcop_define)
-    interface_s_d(particles_dcop_free)
-    interface_s_d(particles_dcop_apply)
-    interface_s_d(particles_apply_dcops)
-    interface_s_d(particles_print_stats)
-    interface_s_d(particles_check_arrays)
-    interface_s_d(particles_add)
-    interface_s_d(particles_initialize2d)
-    interface_s_d(particles_initialize3d)
+    INTERFACE set_xp
+        MODULE PROCEDURE set_xp_s
+        MODULE PROCEDURE set_xp_d
+    END INTERFACE
+    INTERFACE get_wpi
+        MODULE PROCEDURE get_wpi_s
+        MODULE PROCEDURE get_wpi_d
+    END INTERFACE
+    INTERFACE set_wpi
+        MODULE PROCEDURE set_wpi_s
+        MODULE PROCEDURE set_wpi_d
+    END INTERFACE
+    INTERFACE get_wps
+        MODULE PROCEDURE get_wps_s
+        MODULE PROCEDURE get_wps_d
+    END INTERFACE
+    INTERFACE set_wps
+        MODULE PROCEDURE set_wps_s
+        MODULE PROCEDURE set_wps_d
+    END INTERFACE
+    INTERFACE get_wpv
+        MODULE PROCEDURE get_wpv_s
+        MODULE PROCEDURE get_wpv_d
+    END INTERFACE
+    INTERFACE set_wpv
+        MODULE PROCEDURE set_wpv_s
+        MODULE PROCEDURE set_wpv_d
+    END INTERFACE
+    INTERFACE get_dcop
+        MODULE PROCEDURE get_dcop_s
+        MODULE PROCEDURE get_dcop_d
+    END INTERFACE
+    INTERFACE set_dcop
+        MODULE PROCEDURE set_dcop_s
+        MODULE PROCEDURE set_dcop_d
+    END INTERFACE
+    INTERFACE ppm_alloc_particles
+        MODULE PROCEDURE ppm_alloc_particles_s
+        MODULE PROCEDURE ppm_alloc_particles_d
+    END INTERFACE
+    INTERFACE particles_dcop_deallocate
+        MODULE PROCEDURE particles_dcop_deallocate_s
+        MODULE PROCEDURE particles_dcop_deallocate_d
+    END INTERFACE
+    INTERFACE particles_allocate_wpi
+        MODULE PROCEDURE particles_allocate_wpi_s
+        MODULE PROCEDURE particles_allocate_wpi_d
+    END INTERFACE
+    INTERFACE particles_allocate_wps
+        MODULE PROCEDURE particles_allocate_wps_s
+        MODULE PROCEDURE particles_allocate_wps_d
+    END INTERFACE
+    INTERFACE particles_allocate_wpv
+        MODULE PROCEDURE particles_allocate_wpv_s
+        MODULE PROCEDURE particles_allocate_wpv_d
+    END INTERFACE
+    INTERFACE particles_mapping_global
+        MODULE PROCEDURE particles_mapping_global_s
+        MODULE PROCEDURE particles_mapping_global_d
+    END INTERFACE
+    INTERFACE particles_mapping_partial
+        MODULE PROCEDURE particles_mapping_partial_s
+        MODULE PROCEDURE particles_mapping_partial_d
+    END INTERFACE
+    INTERFACE particles_mapping_ghosts
+        MODULE PROCEDURE particles_mapping_ghosts_s
+        MODULE PROCEDURE particles_mapping_ghosts_d
+    END INTERFACE
+    INTERFACE particles_apply_bc
+        MODULE PROCEDURE particles_apply_bc_s
+        MODULE PROCEDURE particles_apply_bc_d
+    END INTERFACE
+    INTERFACE particles_move
+        MODULE PROCEDURE particles_move_s
+        MODULE PROCEDURE particles_move_d
+    END INTERFACE
+    INTERFACE particles_have_moved
+        MODULE PROCEDURE particles_have_moved_s
+        MODULE PROCEDURE particles_have_moved_d
+    END INTERFACE
+    INTERFACE particles_neighlists
+        MODULE PROCEDURE particles_neighlists_s
+        MODULE PROCEDURE particles_neighlists_d
+    END INTERFACE
+    INTERFACE particles_neighlists_xset
+        MODULE PROCEDURE particles_neighlists_xset_s
+        MODULE PROCEDURE particles_neighlists_xset_d
+    END INTERFACE
+    INTERFACE particles_updated_positions
+        MODULE PROCEDURE particles_updated_positions_s
+        MODULE PROCEDURE particles_updated_positions_d
+    END INTERFACE
+    INTERFACE particles_updated_nb_part
+        MODULE PROCEDURE particles_updated_nb_part_s
+        MODULE PROCEDURE particles_updated_nb_part_d
+    END INTERFACE
+    INTERFACE particles_update_cutoff
+        MODULE PROCEDURE particles_update_cutoff_s
+        MODULE PROCEDURE particles_update_cutoff_d
+    END INTERFACE
+    INTERFACE particles_updated_cutoff
+        MODULE PROCEDURE particles_updated_cutoff_s
+        MODULE PROCEDURE particles_updated_cutoff_d
+    END INTERFACE
+    INTERFACE particles_compute_hmin
+        MODULE PROCEDURE particles_compute_hmin_s
+        MODULE PROCEDURE particles_compute_hmin_d
+    END INTERFACE
+    INTERFACE particles_initialize
+        MODULE PROCEDURE particles_initialize_s
+        MODULE PROCEDURE particles_initialize_d
+    END INTERFACE
+    INTERFACE particles_io_xyz
+        MODULE PROCEDURE particles_io_xyz_s
+        MODULE PROCEDURE particles_io_xyz_d
+    END INTERFACE
+    INTERFACE particles_dcop_define
+        MODULE PROCEDURE particles_dcop_define_s
+        MODULE PROCEDURE particles_dcop_define_d
+    END INTERFACE
+    INTERFACE particles_dcop_free
+        MODULE PROCEDURE particles_dcop_free_s
+        MODULE PROCEDURE particles_dcop_free_d
+    END INTERFACE
+    INTERFACE particles_dcop_apply
+        MODULE PROCEDURE particles_dcop_apply_s
+        MODULE PROCEDURE particles_dcop_apply_d
+    END INTERFACE
+    INTERFACE particles_apply_dcops
+        MODULE PROCEDURE particles_apply_dcops_s
+        MODULE PROCEDURE particles_apply_dcops_d
+    END INTERFACE
+    INTERFACE particles_print_stats
+        MODULE PROCEDURE particles_print_stats_s
+        MODULE PROCEDURE particles_print_stats_d
+    END INTERFACE
+    INTERFACE particles_check_arrays
+        MODULE PROCEDURE particles_check_arrays_s
+        MODULE PROCEDURE particles_check_arrays_d
+    END INTERFACE
+    INTERFACE particles_add
+        MODULE PROCEDURE particles_add_s
+        MODULE PROCEDURE particles_add_d
+    END INTERFACE
+    INTERFACE particles_initialize2d
+        MODULE PROCEDURE particles_initialize2d_s
+        MODULE PROCEDURE particles_initialize2d_d
+    END INTERFACE
+    INTERFACE particles_initialize3d
+        MODULE PROCEDURE particles_initialize3d_s
+        MODULE PROCEDURE particles_initialize3d_d
+    END INTERFACE
 
 CONTAINS
 
