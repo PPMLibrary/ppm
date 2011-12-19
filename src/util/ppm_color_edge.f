@@ -26,7 +26,7 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-      SUBROUTINE ppm_color_edge(numV, edge_array, coloring)
+      SUBROUTINE ppm_color_edge(numV, edge_array, coloring,info)
       !!! Given the edge array as input and coloring array to be
       !!! modified, colors edges and updates coloring array such that
       !!! coloring array looks like (p1,p2,c1, ..., pX,pY,cZ)
@@ -35,6 +35,9 @@
       !!! This subroutine was introduced in PPM library to replace coloring
       !!! algorithm of Vizing which was in C++
 
+      USE ppm_module_typedef
+      USE ppm_module_substart
+      USE ppm_module_substop
       IMPLICIT NONE
 
       !---------------------------------------------------------------------
@@ -43,12 +46,19 @@
       INTEGER, intent(in) :: numV
       INTEGER, dimension(:), intent(inout) :: edge_array
       INTEGER, dimension(:), intent(inout) :: coloring
+      INTEGER,               intent(  out) :: info
 
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
+      REAL(ppm_kind_double)                :: t0
       INTEGER             :: i
       INTEGER             :: idx
+
+      !-------------------------------------------------------------------------
+      !  Initialise
+      !-------------------------------------------------------------------------
+      CALL substart('ppm_color_edge',t0,info)
 
       nvertices = numV
       !-------------------------------------------------------------------------
@@ -98,11 +108,18 @@
       !-------------------------------------------------------------------------
       DEALLOCATE(used_color)
       DO i = 1, nedges
-          DEALLOCATE(node(i)%list)
+          DEALLOCATE(lists(i)%adj_edge)
+          NULLIFY(node(i)%list)
       ENDDO
       DEALLOCATE(node)
+      DEALLOCATE(lists)
       DEALLOCATE(node_sat)
       DEALLOCATE(size_heap)
+      !-------------------------------------------------------------------------
+      !  Return
+      !-------------------------------------------------------------------------
+ 9999 CONTINUE
+      CALL substop('ppm_color_edge',t0,info)
 
       CONTAINS
           !---------------------------------------------------------------------
@@ -375,7 +392,6 @@
               DEALLOCATE(edges_per_node(i)%adj_edge)
           ENDDO
           DEALLOCATE(edges_per_node)
-          DEALLOCATE(lists)
           END SUBROUTINE create_adjacency_lists
 
           !---------------------------------------------------------------------

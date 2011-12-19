@@ -289,7 +289,13 @@
           ! every edge of a node has distinct color, using minimum number of
           ! of colors possible (which is degree + 1)
           !---------------------------------------------------------------------
-          CALL ppm_color_edge(ppm_nproc,ilinks,optres)
+          CALL ppm_color_edge(ppm_nproc,ilinks,optres,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_sub_failed,'ppm_util_commopt',     &
+     &            'edge coloring failed',__LINE__,info)
+              GOTO 9999
+          ENDIF
           !CALL vizing_coloring(ppm_nproc,nlinks,ilinks,optres)
           !---------------------------------------------------------------------
           !  optres now contains the result as a sequence of nlinks triples
@@ -350,7 +356,7 @@
       !-------------------------------------------------------------------------
       ! First, broadcast the number of rounds to everybody
       IF (ppm_rank .EQ. 0) topo%ncommseq = ii
-          CALL MPI_Bcast(topo%ncommseq,1,MPI_INTEGER,0,ppm_comm,info)
+      CALL MPI_Bcast(topo%ncommseq,1,MPI_INTEGER,0,ppm_comm,info)
 
       !-------------------------------------------------------------------------
       !  Everybody gets the memory needed
