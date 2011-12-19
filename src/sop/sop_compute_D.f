@@ -101,9 +101,9 @@ SUBROUTINE DTYPE(sop_compute_D)(Particles,D_fun,opts,info,     &
 
     ! local variables
     INTEGER                                    :: i,ip,ineigh,iq
-    CHARACTER(LEN = 64)                        :: myformat
-    CHARACTER(LEN = 256)                       :: cbuf
-    CHARACTER(LEN = 256)                       :: caller='sop_compute_D'
+    CHARACTER(LEN=64)                          :: myformat
+    CHARACTER(LEN=ppm_char)                    :: cbuf
+    CHARACTER(LEN=ppm_char)                    :: caller='sop_compute_D'
     REAL(KIND(1.D0))                           :: t0
 
     REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
@@ -628,12 +628,21 @@ SUBROUTINE DTYPE(sop_compute_D)(Particles,D_fun,opts,info,     &
 
         !either this ....
             IF (Dtilde(iq).GE.Dtilde(ip)) CYCLE
-            alpha = (sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/Dtilde(iq)-1._mk) / &
-                (opts%rcp_over_D-1._mk)
+
+            !alpha = (sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
+                !Dtilde(iq)-1._mk) / (opts%rcp_over_D-1._mk)
+            !if(alpha.le.0) then
+                !D(ip)=MIN(D(ip),Dtilde(iq))
+            !else
+                !D(ip)=MIN(D(ip),sqrt(alpha)*Dtilde(ip)+(1._mk-sqrt(alpha))*Dtilde(iq))
+            !endif
+
+            alpha = (sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))/&
+                Dtilde(iq)-1._mk)
             if(alpha.le.0) then
                 D(ip)=MIN(D(ip),Dtilde(iq))
             else
-                D(ip)=MIN(D(ip),sqrt(alpha)*Dtilde(ip)+(1._mk-sqrt(alpha))*Dtilde(iq))
+                D(ip)=MIN(D(ip),2._mk**(alpha)*Dtilde(iq))
             endif
 
         !.... or this:

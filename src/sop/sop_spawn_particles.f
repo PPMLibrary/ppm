@@ -475,6 +475,9 @@ SUBROUTINE DTYPE(check_duplicates)(Particles)
     INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
     INTEGER                                               :: ip,iq,ineigh
     INTEGER                                               :: info
+    CHARACTER(LEN=ppm_char)                               :: cbuf
+    CHARACTER(LEN=ppm_char)              :: caller = 'ppm_check_duplicates'
+
     
     info = 0
 
@@ -489,9 +492,14 @@ SUBROUTINE DTYPE(check_duplicates)(Particles)
     DO ip=1,Particles%Npart
         DO ineigh = 1,Particles%nvlist(ip)
             iq = vlist(ineigh,ip)
-            IF (SUM((xp(1:ppm_dim,iq) - xp(1:ppm_dim,ip))**2).LT.1E-10) THEN
-                write(*,*) 'duplicate particles'
-                write(*,*) 'ip = ',ip,' iq = ',iq
+            IF (SUM((xp(1:ppm_dim,iq) - xp(1:ppm_dim,ip))**2).LT.1E-20) THEN
+                write(cbuf,*) 'duplicate particles'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                write(cbuf,'(2(A,I0))') 'ip = ',ip,' iq = ',iq
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                write(cbuf,'(A,E12.5)') 'Distance between particles is ',&
+                    SQRT((SUM((xp(1:ppm_dim,iq) - xp(1:ppm_dim,ip))**2)))
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
             stop
             ENDIF
         ENDDO

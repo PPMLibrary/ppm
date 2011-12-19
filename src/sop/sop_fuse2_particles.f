@@ -91,7 +91,7 @@ SUBROUTINE DTYPE(sop_fuse2_particles)(Particles,opts,info,&
     info = 0
     IF (opts%del_parts) THEN
         IF (ppm_dim .eq. 2) THEN
-            nb_neigh_max_thresh = 10
+            nb_neigh_max_thresh = 8
         ELSE
             nb_neigh_max_thresh = 15
         ENDIF

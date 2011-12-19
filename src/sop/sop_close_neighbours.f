@@ -1,4 +1,6 @@
 SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
+    !!! Compute and store the number of neighbours that each
+    !!! particle has in a circle of radius D_tilde
 
 
     IMPLICIT NONE
@@ -14,7 +16,7 @@ SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
     INTEGER,DIMENSION(:),    POINTER      :: nvlist=>NULL()
     INTEGER,DIMENSION(:,:),  POINTER      :: vlist=>NULL()
     INTEGER                               :: ip,iq,ineigh
-    !REAL(MK),DIMENSION(:), POINTER        :: D=>NULL()
+    REAL(MK),DIMENSION(:), POINTER        :: D=>NULL()
     REAL(MK),DIMENSION(:), POINTER        :: Dtilde=>NULL()
     REAL(MK)                              :: rr
     REAL(MK)                              :: nn,max_nn,avg_nn
@@ -29,7 +31,7 @@ SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
     nvlist => Particles%nvlist
     vlist => Particles%vlist
     xp => Get_xp(Particles,with_ghosts=.TRUE.)
-    !D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
+    D => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
 
     Dtilde => Get_wps(Particles,Particles%Dtilde_id,with_ghosts=.TRUE.)
 
@@ -49,7 +51,8 @@ SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
             iq = vlist(ineigh,ip)
 
             rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
-                Dtilde(ip)
+                D(ip)
+                !Dtilde(ip)
                 !MIN(Dtilde(ip),Dtilde(iq))
                 !MIN(D(ip),D(iq))
 
@@ -80,7 +83,7 @@ SUBROUTINE DTYPE(sop_close_neighbours)(Particles,opts,info)
     ENDDO particle_loop
 
     xp => Set_xp(Particles,read_only=.TRUE.)
-    !D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
+    D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
     Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
     nb_neigh => Set_wpi(Particles,nb_neigh_id)
 

@@ -339,9 +339,6 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
             !GOTO 9999
         !ENDIF
 
-        !! TODO: check if the above hack is really useful
-
-
         CALL particles_mapping_ghosts(Particles,topo_id,info)
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -373,6 +370,12 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         !if (lbfgs_continue .and. gradPsi_max.lt.1e-1 .or. &
             !&  Particles%nneighmin.lt.opts%nneigh_critical) then 
 
+        !Dtilde => Particles%wps(Particles%Dtilde_id)%vec
+        !DO ip=1,Particles%Npart
+            !write(400+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+        !ENDDO
+        !Dtilde => NULL()
+
         if (.not.adaptation_ok) then
 #ifdef __USE_DEL_METHOD2
             CALL  sop_spawn2_particles(Particles,opts,info,&
@@ -396,7 +399,12 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         else
             adding_particles = .false.
         endif
-        !call check_duplicates(Particles)
+        !Dtilde => Particles%wps(Particles%Dtilde_id)%vec
+        !DO ip=1,Particles%Npart
+            !write(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+        !ENDDO
+        !Dtilde => NULL()
+        call check_duplicates(Particles)
         
 #ifdef __USE_LBFGS
         IF (adding_particles) lbfgs_continue = .FALSE.
@@ -534,8 +542,8 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
             ! drifting away inside the domain, eventually generating plenty
             ! of other small particles that can potentially fill the whole
             ! box (defeating the point of having an adaptive scheme...)
-            ! Roughly, it means that a particle can have a small D only
-            ! if it has neighbours from the older generation (D_old) that
+            ! It means that a particle can have a small D only
+            ! if it has neighbours from the initial generation (D_old) that
             ! also have a small D.
 #ifdef __MPI
         t1 = MPI_WTIME(info)
@@ -561,11 +569,13 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
                 info = -1
                 GOTO 9999
             ENDIF
-            !write(*,*) 'MIN MAX XSET INL : ', MINVAL(nvlist_cross(1:Particles%Npart)), &
+            !write(*,*) 'MIN MAX XSET INL : ', &
+            ! MINVAL(nvlist_cross(1:Particles%Npart)), &
                 !MAXVAL(nvlist_cross(1:Particles%Npart))
 
 #if debug_verbosity > 0
-            IF (it_adapt.eq.1 .and. MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
+            IF (it_adapt.eq.1 .and. &
+                MINVAL(nvlist_cross(1:Particles%Npart)).LE.0) THEN
                 CALL ppm_write(ppm_rank,caller,&
                     'Insufficient number of xset neighbours to compute D',info)
                 info = -1
@@ -587,6 +597,7 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         Particles%stats%nb_xset_inl = Particles%stats%nb_xset_inl+1
 #endif
 
+        !Linear interpolation of D_tilde
             DO ip=1,Particles%Npart
                 if (nvlist_cross(ip).eq.0) then
                     Dtilde(ip) = opts%maximum_D
@@ -621,12 +632,30 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
 
                     Dtilde(ip) = Dtilde(ip) / weight_sum
                     !D(ip) = MAX(D(ip),minDold)
-                    D(ip) = minDold
+                    !D(ip) = minDold
+
+                    D(ip) = Dtilde(ip)
+
+                    !n_loop2: DO ineigh=1,nvlist_cross(ip)
+                        !iq=vlist_cross(ineigh,ip)
+
+                        !weight = SQRT(SUM((xp(1:ppm_dim,ip)-&
+                            !xp_old(1:ppm_dim,iq)**2)))/Dtilde_old(iq) -1._MK
+                        !IF (weight .LT. 0._MK) THEN
+                            !D(ip) = MIN(D(ip),Dtilde_old(iq))
+                        !ELSE
+                            !D(ip) = MIN(D(ip),2._mk**(weight)*Dtilde_old(iq))
+                        !ENDIF
+
+                    !ENDDO n_loop2
+                    !D(ip) = Dtilde(ip)
+
                 endif
 
                 !when Dtilde/D is large, increase rcp
+                rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
                 !rcp(ip) = opts%rcp_over_D * MIN(D(ip),2._MK*minDold)
-                rcp(ip) = opts%rcp_over_D * D(ip)
+                !rcp(ip) = opts%rcp_over_D * D(ip)
             ENDDO
             D     => Set_wps(Particles,    Particles%D_id)
             D_old => Set_wps(Particles_old,Particles_old%D_id,&
@@ -645,8 +674,10 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
             Dtilde => Get_wps(Particles,Particles%Dtilde_id)
             rcp => Get_wps(Particles,Particles%rcp_id)
             DO ip=1,Particles%Npart
-                !rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
-                rcp(ip) = opts%rcp_over_D * D(ip)
+                !so that particles near the edge between regions of high
+                ! and low resolutions get the right number of neighbours
+                rcp(ip) = opts%rcp_over_D * MIN(Dtilde(ip),2._MK*D(ip))
+                !rcp(ip) = opts%rcp_over_D * D(ip)
             ENDDO
             Dtilde => Set_wps(Particles,Particles%Dtilde_id,read_only=.TRUE.)
             D => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
@@ -735,7 +766,8 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         !call check_duplicates(Particles)
         call particles_check_arrays(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_check_arrays before failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_check_arrays before failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -767,7 +799,8 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
 
             write(*,*) 'before LBFGS: info = ',info, Particles%Npart
             Dtilde=>Get_wps(Particles,Particles%Dtilde_id)
-            CALL LBFGS(ppm_dim*Particles%Npart,3,Particles%xp(1:ppm_dim,1:Particles%Npart),&
+            CALL LBFGS(ppm_dim*Particles%Npart,3,&
+                Particles%xp(1:ppm_dim,1:Particles%Npart),&
                 Psi_global,Gradient_Psi(1:ppm_dim,1:Particles%Npart),&
                 .FALSE.,DIAG,(/1,0/),1D-3,ppm_myepsd,Work,info,scaling=Dtilde)    
             Dtilde=>Set_wps(Particles,Particles%Dtilde_id,read_only=.true.)
@@ -779,7 +812,8 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
                 CALL sop_close_neighbours(Particles,opts,info)
 
                 IF (adaptation_ok) THEN
-                    CALL ppm_write(ppm_rank,caller,'LBFGS failed, but adaptation is ok',info)
+                    CALL ppm_write(ppm_rank,caller,&
+                        'LBFGS failed, but adaptation is ok',info)
                 ELSE
                     info = ppm_error_error
                     CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -797,9 +831,10 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
             ENDIF
         ENDIF
 
-        call particles_check_arrays(Particles,info)
+        CALL particles_check_arrays(Particles,info)
         IF (info .NE. 0) THEN
-            CALL ppm_write(ppm_rank,caller,'particles_check_arrays after failed.',info)
+            CALL ppm_write(ppm_rank,caller,&
+                'particles_check_arrays after failed.',info)
             info = -1
             GOTO 9999
         ENDIF
@@ -1930,8 +1965,10 @@ SUBROUTINE DTYPE(sop_gradient_descent_ls)(Particles_old,Particles, &
 #if debug_verbosity > 0
 #ifdef __MPI
         CALL MPI_Allreduce(Psi_max,tmpvar2,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
-        CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-        CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+        CALL MPI_Allreduce(Particles%Npart,tmpvari1,1,&
+            MPI_INTEGER,MPI_SUM,ppm_comm,info)
+        CALL MPI_Allreduce(Particles%Mpart,tmpvari2,1,&
+            MPI_INTEGER,MPI_SUM,ppm_comm,info)
         IF (ppm_rank.EQ.0) THEN
             WRITE(cbuf,'(A,I3,2(A,E11.4),A,I4,1X,I4,1X,A,I6,A,I6,A,E9.2)') &
                 'it_adapt= ',it_adapt,&
@@ -2004,7 +2041,7 @@ SUBROUTINE DTYPE(sop_gradient_descent_ls)(Particles_old,Particles, &
             GOTO 7099
         ELSE
             CALL ppm_write(ppm_rank,caller,&
-                'not enough neighbours and max nb of iterations exceeded. Major Fail.',&
+                'not enough neighbours and max nb of iterations exceeded.',&
                 info)
             info = -1
             GOTO 9999
@@ -2012,7 +2049,8 @@ SUBROUTINE DTYPE(sop_gradient_descent_ls)(Particles_old,Particles, &
     ELSE
 #if debug_verbosity > 0
         IF (ppm_rank.EQ.0) & 
-            CALL ppm_write(ppm_rank,caller,'enough neighbours, we are good to go.',info)
+            CALL ppm_write(ppm_rank,caller,&
+            'enough neighbours, we are good to go.',info)
 #endif
     ENDIF
 

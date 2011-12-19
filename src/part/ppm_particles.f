@@ -1690,6 +1690,7 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
     !!!   (otherwise -> "unassigned particle error")
 
     USE ppm_module_map
+    USE ppm_module_data, ONLY: ppm_comm
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -1759,6 +1760,9 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
     ELSE
         Particles%stats%nb_part_map = Particles%stats%nb_part_map + 1
 
+        IF(dbg) THEN
+            CALL ppm_write(ppm_rank,caller,'pushing xp',info)
+        ENDIF
         CALL ppm_map_part_partial(topoid,Particles%xp,Particles%Npart,info) 
         IF (info .NE. 0) THEN
             info = ppm_error_error
@@ -1769,8 +1773,11 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
 
         DO prop_id = 1,Particles%max_wpiid
             IF(Particles%wpi(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'pushing-wpi ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'pushing-wpi ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
+
                 CALL ppm_map_part_push(Particles%wpi(prop_id)%vec,&
                     Particles%Npart,info)
                 IF (info .NE. 0) THEN
@@ -1783,8 +1790,10 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
         ENDDO
         DO prop_id = 1,Particles%max_wpsid
             IF(Particles%wps(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'pushing-wps ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'pushing-wps ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
                 CALL ppm_map_part_push(Particles%wps(prop_id)%vec,&
                     Particles%Npart,info)
                 IF (info .NE. 0) THEN
@@ -1797,8 +1806,10 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
         ENDDO
         DO prop_id = 1,Particles%max_wpvid
             IF(Particles%wpv(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'pushing-wpv ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'pushing-wpv ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
                 CALL ppm_map_part_push(Particles%wpv(prop_id)%vec,&
                     Particles%wpv(prop_id)%lda, Particles%Npart,info)
                 IF (info .NE. 0) THEN
@@ -1820,8 +1831,10 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
 
         DO prop_id = Particles%max_wpvid,1,-1
             IF(Particles%wpv(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'popping-wpv ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'popping-wpv ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
                 CALL ppm_map_part_pop(Particles%wpv(prop_id)%vec,&
                     Particles%wpv(prop_id)%lda, Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
@@ -1835,8 +1848,10 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
         ENDDO
         DO prop_id = Particles%max_wpsid,1,-1
             IF(Particles%wps(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'popping-wps ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'popping-wps ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
                 CALL ppm_map_part_pop(Particles%wps(prop_id)%vec,&
                     Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
@@ -1850,8 +1865,10 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
         ENDDO
         DO prop_id = Particles%max_wpiid,1,-1
             IF(Particles%wpi(prop_id)%map_parts) THEN
-                IF(dbg) &
-                    write(*,*) 'popping-wpi ',prop_id
+                IF(dbg) THEN
+                    write(cbuf,*) 'popping-wpi ',prop_id
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                ENDIF
                 CALL ppm_map_part_pop(Particles%wpi(prop_id)%vec,&
                     Particles%Npart,Npart_new,info)
                 IF (info .NE. 0) THEN
@@ -1864,6 +1881,9 @@ SUBROUTINE DTYPE(particles_mapping_partial)(Particles,topoid,info,debug)
             ENDIF
         ENDDO
 
+        IF(dbg) THEN
+            CALL ppm_write(ppm_rank,caller,'popping xp',info)
+        ENDIF
         CALL ppm_map_part_pop(Particles%xp,ppm_dim,Particles%Npart,&
             Npart_new,info)
         IF (info .NE. 0) THEN

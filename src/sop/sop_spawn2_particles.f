@@ -1,14 +1,14 @@
 SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
         nneigh_threshold,level_fun,wp_fun,nb_fun)
-    !!!----------------------------------------------------------------------------!
+    !!!------------------------------------------------------------------------!
     !!!
     !!! Insert particles around those with too few neighbours
     !!!
     !!! Uses ppm_alloc to grow/shrink arrays 
     !!!
-    !!! Warning: on output, some particles may be outside the computational domain
-    !!! Call impose_boundary_conditions to fix this.
-    !!!----------------------------------------------------------------------------!
+    !!! Warning: on output, some particles may be outside the computational 
+    !!! domain.  Call particle_impose_bc to fix this.
+    !!!------------------------------------------------------------------------!
 
     USE ppm_module_alloc, ONLY: ppm_alloc
 
@@ -167,7 +167,8 @@ SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
     IF (add_part .GT. 0) THEN
         add_part_alloc  = add_part
         !Keep a copy of the ghosts
-        xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = Particles%xp(1:ppm_dim,Npart+1:Particles%Mpart)
+        xp_g(1:ppm_dim,Npart+1:Particles%Mpart) = &
+            Particles%xp(1:ppm_dim,Npart+1:Particles%Mpart)
 
         lda = (/ppm_dim,Npart+add_part/)
         CALL ppm_alloc(Particles%xp,lda,ppm_param_alloc_grow_preserve,info)
@@ -219,18 +220,18 @@ SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
             GOTO 9999
         ENDIF
 
-        !!-------------------------------------------------------------------------!
+        !!---------------------------------------------------------------------!
         !! Add particles
         !! (either randomly, or using fake random numbers based on particles'
         !! positions. This is a quick hack to ensure exact consistency between
         !! simulations run an different number of processors)
-        !!-------------------------------------------------------------------------!
+        !!---------------------------------------------------------------------!
 
         xp => Particles%xp(1:ppm_dim,1:Npart+add_part) 
         !Cannot use get_xp, because we need access to elements
         ! of the array xp that are beyond Particles%Npart
         D => Particles%wps(Particles%D_id)%vec(1:Npart+add_part)      !same reason
-        Dtilde => Particles%wps(Particles%Dtilde_id)%vec(1:Npart+add_part)      !same reason
+        Dtilde => Particles%wps(Particles%Dtilde_id)%vec(1:Npart+add_part)  !same reason
         rcp => Particles%wps(Particles%rcp_id)%vec(1:Npart+add_part)  !same reason
         nvlist => Particles%nvlist(1:Npart)
         fuse_part => Particles%wpi(fuse_id)%vec(1:Npart+add_part)      !same reason
@@ -279,7 +280,8 @@ SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
                             nb_fun(wp_fun(xp(1:ppm_dim,ip)),opts%scale_D)) &
                             CYCLE add_particles
                     ELSE
-                        IF (ABS(level(ip)).GE.opts%nb_width*nb_fun(wp(ip),opts%scale_D)) &
+                        IF (ABS(level(ip)).GE.opts%nb_width*&
+                            nb_fun(wp(ip),opts%scale_D)) &
                             CYCLE add_particles
                     ENDIF
                 ENDIF
@@ -298,18 +300,18 @@ SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                 opts%spawn_radius*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))/dist + & !mirror image of q
-                                default_stencil(1:ppm_dim,1))
+                                0.0_mk*default_stencil(1:ppm_dim,1))
 
                         else
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                 opts%spawn_radius*D(ip) * &
                                 ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq))/dist + & !mirror image of q
-                                default_stencil(1:ppm_dim,1))
+                                0.0_mk*default_stencil(1:ppm_dim,1))
                         endif
                     else
                         xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                            D(ip) * 0.8_mk * default_stencil(1:ppm_dim,i)
+                            D(ip) * 1.8_mk * default_stencil(1:ppm_dim,i)
                     endif
 
 
@@ -471,7 +473,7 @@ SUBROUTINE DTYPE(check_nn2)(Particles,opts,info)
             nb_close_theo = 6
         ENDIF
 
-        IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
+       ! IF (nb_fuse_neigh .GE.1) nb_close_theo = nb_close_theo / 2
 
         IF (close_neigh .LE. nb_close_theo-1) THEN
             IF (close_neigh .LE. nb_close_theo-2) then
@@ -490,7 +492,8 @@ SUBROUTINE DTYPE(check_nn2)(Particles,opts,info)
                         vlist(close_neigh,ip) = iq 
                     ENDIF
                 ENDDO
-                nvlist(ip) = min(close_neigh,1) !min(close_neigh,nb_close_theo-close_neigh)
+                nvlist(ip) = min(close_neigh,1) 
+                              !min(close_neigh,nb_close_theo-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
                     nvlist(ip) = -6
                 endif

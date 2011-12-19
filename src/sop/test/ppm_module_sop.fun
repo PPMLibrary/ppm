@@ -3,7 +3,7 @@ use ppm_module_particles
 use ppm_module_sop_typedef
 use ppm_module_dcops
 use ppm_module_io_vtk
-use ppm_module_data, ONLY: ppm_mpi_kind
+use ppm_module_data !, ONLY: ppm_mpi_kind
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -18,7 +18,7 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 600
+integer                         :: np_global = 300
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.45_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),disp=>NULL()
@@ -37,9 +37,8 @@ real(mk),dimension(:),pointer   :: delta
 integer,dimension(3)            :: ldc
 integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost=>NULL()
-character(len=ppm_char)         :: dirname
-integer                         :: isymm = 0
-logical                         :: lsymm = .false.,ok
+character(len=ppm_char)         :: dirname,mesg
+logical                         :: ok
 real(mk)                        :: t0,t1,t2,t3
 type(ppm_t_particles_d),pointer :: Particles=>NULL()
 type(sop_t_opts_d),pointer      :: opts=>NULL()
@@ -129,30 +128,36 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         use ppm_module_typedef
         use ppm_module_topo_check
 
+        use ppm_module_util_commopt
+
+
         !start with slightly perturbed cartesian particles
         call particles_initialize(Particles,np_global,info,&
-                ppm_param_part_init_cartesian,topoid)
+                ppm_param_part_init_random,topoid)
+        Assert_Equal(info,0)
         call particles_mapping_global(Particles,topoid,info)
+        Assert_Equal(info,0)
         allocate(disp(ndim,Particles%Npart),stat=info)
         call random_number(disp)
         disp = Particles%h_avg * 1.5_mk * disp
         call particles_move(Particles,disp,info)
+        Assert_Equal(info,0)
         deallocate(disp)
         call particles_apply_bc(Particles,topoid,info)
         Assert_Equal(info,0)
         call particles_mapping_partial(Particles,topoid,info)
         Assert_Equal(info,0)
-
-        !initialise cutoff radii and one property (not used, it will just be carried around)
-        ! cutoff
+        !init cutoff radii
         call particles_allocate_wps(Particles,Particles%rcp_id,info,&
             with_ghosts=.false.,name='rcp')
         Assert_Equal(info,0)
         wp1_id=0
-        ! property
+
+        !init one property (not used, it will just be carried around) 
         call particles_allocate_wps(Particles,wp1_id,info,&
             with_ghosts=.false.,name='wp_test1')
         Assert_Equal(info,0)
+
         ! initialisation
         rcp => get_wps(Particles,Particles%rcp_id)
         wp => get_wps(Particles,wp1_id)
@@ -202,12 +207,13 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         opts%add_parts = .true.
         opts%add_parts = .true.
         opts%param_morse = 2.5_mk
-        opts%rcp_over_D = 3.0_mk
+        opts%rcp_over_D = 2.0_mk
         opts%attractive_radius0 = 0.5_mk !0.4_mk
         opts%adaptivity_criterion = 9.5_mk
         opts%fuse_radius = 0.05_mk
         opts%c = 1.4_mk
         opts%nneigh_critical = 15
+        opts%spawn_radius = 1.3_mk
 
         if (ndim .eq. 2) then
             opts%scale_D = 0.05_mk
@@ -216,7 +222,7 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         else
             opts%scale_D = 0.05_mk
             opts%minimum_D = 0.01_mk
-            opts%maximum_D = 0.10_mk
+            opts%maximum_D = 0.05_mk
         endif
 
         Particles%itime = 0
@@ -224,12 +230,16 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         !one can print-to-file the interaction potential that will be used
         !call sop_plot_potential(opts,'potential.dat',info)
 
+        !--------------------------------------------------
+        ! adapt particles using analytical initial condition
+        !--------------------------------------------------
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,&
             wp_fun=f0_fun,wp_grad_fun=f0_grad_fun)
         Assert_Equal(info,0)
 
         !printout
-        call ppm_vtk_particle_cloud('after_adapt0',Particles,info)
+        call ppm_vtk_particle_cloud('after_adapt0',Particles,info,&
+            with_nvlist=.true.)
 
         ! Now we adapt the particles in the case where the field and
         ! its gradient are NOT known analytically.
@@ -277,7 +287,8 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         call particles_dcop_apply(Particles,wp_id,grad_wp_id,eta_id,info)
         Assert_Equal(info,0)
         grad_exact_id=0
-        call particles_allocate_wpv(Particles,grad_exact_id,ppm_dim,info,name="grad_exact")
+        call particles_allocate_wpv(Particles,grad_exact_id,ppm_dim,info,&
+            name="grad_exact")
 
         grad_wp => Get_wpv(Particles,grad_exact_id)
         xp => Get_xp(Particles)
@@ -337,7 +348,12 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
 
         Assert_Equal(info,0)
         write(*,*) 'L-infinity error is ', MAXVAL(err_vec)/linf
-        !Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
+        Assert_True(MAXVAL(err_vec)/linf.LT.0.1)
+
+        !printout errors
+        call ppm_vtk_particle_cloud('errors_in_gradients',Particles,info,&
+            with_nvlist=.true.)
+
         deallocate(exact_vec,err_vec)
         call particles_dcop_free(Particles,eta_id,info)
         call particles_allocate_wps(Particles,err_x_id,info,&
@@ -350,25 +366,33 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
             iopt=ppm_param_dealloc)
 
 
-
         Particles%itime = 1
         opts%check_dcops=.true.
+        !--------------------------------------------------
+        ! adapt particles using discretized fields
+        !--------------------------------------------------
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info,stats=sop_stats)
         Assert_Equal(info,0)
 
         !printout
-        call ppm_vtk_particle_cloud('after_adapt1',Particles,info)
+        call ppm_vtk_particle_cloud('after_adapt1',Particles,info,&
+            with_nvlist=.true.)
 
         !do nothing and adapt again
         call particles_mapping_ghosts(Particles,topoid,info)
         call particles_neighlists(Particles,topoid,info)!,knn=opts%nneigh_critical+5)
+        write(*,*) 'NOW, neighmin = ',Particles%nneighmin
 
         Particles%itime = 2
+        !--------------------------------------------------
+        ! adapt particles using discretized fields
+        !--------------------------------------------------
         call sop_adapt_particles(topoid,Particles,D_fun,opts,info)
         Assert_Equal(info,0)
 
         !printout
-        call ppm_vtk_particle_cloud('after_adapt2',Particles,info)
+        call ppm_vtk_particle_cloud('after_adapt2',Particles,info,&
+            with_nvlist=.true.)
 
         !move particles and adapt one more time
         allocate(disp(ndim,Particles%Npart),stat=info)
@@ -476,7 +500,7 @@ pure function D_fun(wp,wp_grad,opts,level)
     real(mk), optional,         intent(in) :: level
     real(mk)                               :: lengthscale
 
-    D_fun =  opts%scale_d / sqrt(0.01_mk + sqrt(SUM(wp_grad**2)))
+    D_fun =  opts%scale_d / sqrt(1_mk + sqrt(SUM(wp_grad**2)))
 
 end function D_fun
 
