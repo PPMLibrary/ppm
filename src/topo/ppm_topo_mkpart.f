@@ -544,7 +544,7 @@
       !  Find the neighbours to the subdomains
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
-     &                    min_sub,max_sub,nsubs,nneigh,ineigh,info)
+     &                    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
       IF (info.NE.0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkpart',  &
