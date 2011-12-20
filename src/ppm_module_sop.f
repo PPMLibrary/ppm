@@ -40,6 +40,14 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
+#define __MORSE 1
+#define __SCHRADER 2
+#define __REPULSIVE 3
+
+#ifndef __SOP_POTENTIAL
+#define __SOP_POTENTIAL __MORSE
+#endif
+
 #define debug_verbosity 2
 #define __USE_RANDOMNUMBERS 1
      !method for minimisation of the interaction potential

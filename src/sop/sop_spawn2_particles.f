@@ -299,19 +299,21 @@ SUBROUTINE DTYPE(sop_spawn2_particles)(Particles,opts,info,nb_part_added,&
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                 opts%spawn_radius*D(ip) * &
-                                ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))/dist + & !mirror image of q
-                                0.0_mk*default_stencil(1:ppm_dim,1))
+                                ((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq)))/dist  
+                                ! + 0.0_mk*default_stencil(1:ppm_dim,1))
+                                ! mirror image of q
 
                         else
                             dist = sqrt(sum((xp(1:ppm_dim,ip)-xp_g(1:ppm_dim,iq))**2))
                             xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
                                 opts%spawn_radius*D(ip) * &
-                                ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq))/dist + & !mirror image of q
-                                0.0_mk*default_stencil(1:ppm_dim,1))
+                                ((xp(1:ppm_dim,ip) - xp_g(1:ppm_dim,iq)))/dist 
+                                ! + 0.0_mk*default_stencil(1:ppm_dim,1))
+                                !mirror image of q
                         endif
                     else
                         xp(1:ppm_dim,Npart + add_part) = xp(1:ppm_dim,ip) + &
-                            D(ip) * 1.8_mk * default_stencil(1:ppm_dim,i)
+                            D(ip) * 0.98_mk * default_stencil(1:ppm_dim,i)
                     endif
 
 
@@ -492,7 +494,7 @@ SUBROUTINE DTYPE(check_nn2)(Particles,opts,info)
                         vlist(close_neigh,ip) = iq 
                     ENDIF
                 ENDDO
-                nvlist(ip) = min(close_neigh,1) 
+                nvlist(ip) = min(close_neigh,3) 
                               !min(close_neigh,nb_close_theo-close_neigh)
                 if (nvlist(ip) .eq. 0) then 
                     nvlist(ip) = -6

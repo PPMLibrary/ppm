@@ -143,7 +143,18 @@ SUBROUTINE DTYPE(sop_gradient_psi)(Particles,topo_id,&
             !------------------------------------------------------------------!
             ! here we can choose between different interaction potentials
             !------------------------------------------------------------------!
-#include "potential/potential_gradient.f90"
+#if   __SOP_POTENTIAL == __MORSE
+#include "potential_morse/potential_gradient.f90"
+#elif __SOP_POTENTIAL == __SCHRADER
+#include "potential_schrader/potential_gradient.f90"
+#elif __SOP_POTENTIAL == __REPULSIVE
+#include "potential_repulsive/potential_gradient.f90"
+#else
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'pair-potential not defined - compile with -D_SOP_POTENTIAL',&
+        __LINE__,info)
+#endif
 
             Gradient_Psi(1:ppm_dim,ip)=Gradient_Psi(1:ppm_dim,ip) + &
                 dist/rr * gradPsi

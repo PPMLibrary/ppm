@@ -120,7 +120,18 @@ SUBROUTINE DTYPE(sop_potential_psi)(Particles,Psi_global,Psi_max,opts,info)
             !------------------------------------------------------------------!
             ! here we can choose between different interaction potentials
             !------------------------------------------------------------------!
-#include "potential/potential.f90"
+#if   __SOP_POTENTIAL == __MORSE
+#include "potential_morse/potential.f90"
+#elif __SOP_POTENTIAL == __SCHRADER
+#include "potential_schrader/potential.f90"
+#elif __SOP_POTENTIAL == __REPULSIVE
+#include "potential_repulsive/potential.f90"
+#else
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'pair-potential not defined - compile with -D_SOP_POTENTIAL',&
+        __LINE__,info)
+#endif
 
         ENDDO neighbour_loop
 
@@ -194,7 +205,18 @@ SUBROUTINE DTYPE(sop_plot_potential)(opts,filename,info)
         Psi_part = 0._mk
         rd = REAL(i,MK)/100._MK
 
-#include "potential/potential.f90"
+#if   __SOP_POTENTIAL == __MORSE
+#include "potential_morse/potential.f90"
+#elif __SOP_POTENTIAL == __SCHRADER
+#include "potential_schrader/potential.f90"
+#elif __SOP_POTENTIAL == __REPULSIVE
+#include "potential_repulsive/potential.f90"
+#else
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'pair-potential not defined - compile with -D_SOP_POTENTIAL',&
+        __LINE__,info)
+#endif
 
         WRITE(271,'(2(E22.10,2X))') rd, Psi_part
     ENDDO

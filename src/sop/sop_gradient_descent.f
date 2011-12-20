@@ -370,11 +370,11 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         !if (lbfgs_continue .and. gradPsi_max.lt.1e-1 .or. &
             !&  Particles%nneighmin.lt.opts%nneigh_critical) then 
 
-        !Dtilde => Particles%wps(Particles%Dtilde_id)%vec
-        !DO ip=1,Particles%Npart
-            !write(400+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
-        !ENDDO
-        !Dtilde => NULL()
+        Dtilde => Particles%wps(Particles%Dtilde_id)%vec
+        DO ip=1,Particles%Npart
+            write(400+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+        ENDDO
+        Dtilde => NULL()
 
         if (.not.adaptation_ok) then
 #ifdef __USE_DEL_METHOD2
@@ -399,11 +399,11 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
         else
             adding_particles = .false.
         endif
-        !Dtilde => Particles%wps(Particles%Dtilde_id)%vec
-        !DO ip=1,Particles%Npart
-            !write(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
-        !ENDDO
-        !Dtilde => NULL()
+        Dtilde => Particles%wps(Particles%Dtilde_id)%vec
+        DO ip=1,Particles%Npart
+            write(500+it_adapt,'(3(E20.12,2X))') Particles%xp(1:2,ip),Dtilde(ip)
+        ENDDO
+        Dtilde => NULL()
         call check_duplicates(Particles)
         
 #ifdef __USE_LBFGS

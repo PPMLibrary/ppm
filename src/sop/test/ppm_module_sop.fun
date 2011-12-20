@@ -213,7 +213,7 @@ real(mk),dimension(:),allocatable :: exact_vec,err_vec
         opts%fuse_radius = 0.05_mk
         opts%c = 1.4_mk
         opts%nneigh_critical = 15
-        opts%spawn_radius = 1.3_mk
+        opts%spawn_radius = 0.5_mk
 
         if (ndim .eq. 2) then
             opts%scale_D = 0.05_mk
@@ -446,7 +446,7 @@ pure function f0_fun(pos)
     centre = 0.5_mk
     centre(2) = 0.5_mk
     radius=0.15_mk
-    eps = 0.01_mk
+    eps = 0.003_mk
 
     f0_fun = tanh((sqrt(sum((pos(1:ppm_dim)-centre)**2)) - radius)/eps)
 
@@ -465,7 +465,7 @@ pure function f0_grad_fun(pos)
     centre = 0.5_mk
     centre(2) = 0.5_mk
     radius=0.15_mk
-    eps = 0.01_mk
+    eps = 0.003_mk
 
     d = sqrt(sum((pos(1:ppm_dim)-centre)**2))
     f0 = tanh((d - radius)/eps)
