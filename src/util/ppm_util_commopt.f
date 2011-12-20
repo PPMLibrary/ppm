@@ -194,9 +194,6 @@
       !-------------------------------------------------------------------------
       !  Rank 0 receives all neighbor lists
       !-------------------------------------------------------------------------
-      call MPI_BARRIER(ppm_comm,info)
-      write(*,*) '[',ppm_rank,'] BEFORE'
-      call MPI_BARRIER(ppm_comm,info)
       IF (ppm_rank .GT. 0) THEN
           CALL MPI_Send(topo%ineighproc(1:topo%nneighproc), &
      &                  topo%nneighproc,  &
@@ -210,9 +207,6 @@
      &                      status,info)
           END DO
       END IF
-      call MPI_BARRIER(ppm_comm,info)
-      write(*,*) '[',ppm_rank,'] AFTER'
-      call MPI_BARRIER(ppm_comm,info)
 
       !-------------------------------------------------------------------------
       !  Rank 0: Build graph and call optimizer
@@ -295,7 +289,6 @@
           ! every edge of a node has distinct color, using minimum number of
           ! of colors possible (which is degree + 1)
           !---------------------------------------------------------------------
-      write(*,*) '[',ppm_rank,'] entering ppm_color_edge'
           CALL ppm_color_edge(ppm_nproc,ilinks,optres,info)
           IF (info .NE. 0) THEN
               info = ppm_error_error
@@ -303,7 +296,6 @@
      &            'edge coloring failed',__LINE__,info)
               GOTO 9999
           ENDIF
-      write(*,*) '[',ppm_rank,'] exiting ppm_color_edge'
           !CALL vizing_coloring(ppm_nproc,nlinks,ilinks,optres)
           !---------------------------------------------------------------------
           !  optres now contains the result as a sequence of nlinks triples
@@ -359,15 +351,12 @@
       ENDIF     ! ppm_rank .EQ. 0
 
 
-      write(*,*) '[',ppm_rank,'] outside of if branch'
       !-------------------------------------------------------------------------
       !  Distribute protocol to all processors
       !-------------------------------------------------------------------------
       ! First, broadcast the number of rounds to everybody
       IF (ppm_rank .EQ. 0) topo%ncommseq = ii
       CALL MPI_Bcast(topo%ncommseq,1,MPI_INTEGER,0,ppm_comm,info)
-
-      write(*,*) '[',ppm_rank,'] after Bcast'
 
       !-------------------------------------------------------------------------
       !  Everybody gets the memory needed
@@ -386,8 +375,6 @@
           GOTO 9999
       ENDIF
 
-      write(*,*) '[',ppm_rank,'] before distribution of optimized neigh lists'
-
       ! Then distribute the individual optimized neighbor lists
       IF (ppm_rank .GT. 0) THEN
           CALL MPI_Recv(topo%icommseq(2:topo%ncommseq), &
@@ -401,7 +388,6 @@
           END DO
       END IF
 
-      write(*,*) '[',ppm_rank,'] after distribution of optimized neigh lists'
       !-------------------------------------------------------------------------
       !  Every processor must also communicate to itself in order for
       !  map_part_send to work properly

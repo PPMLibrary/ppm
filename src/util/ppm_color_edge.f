@@ -106,24 +106,15 @@
       !-------------------------------------------------------------------------
       !  Deallocate everything that was used
       !-------------------------------------------------------------------------
-      write(*,*) 'deallocate 1'
       DEALLOCATE(used_color)
-      write(*,*) 'deallocate 2'
       DO i = 1, nedges
-          write(*,*) 'deallocate 2.1 ', i
           DEALLOCATE(lists(i)%adj_edge)
-          write(*,*) 'deallocate 2.2 ', i
           NULLIFY(node(i)%list)
       ENDDO
-      write(*,*) 'deallocate 3'
       DEALLOCATE(node)
-      write(*,*) 'deallocate 4'
       DEALLOCATE(lists)
-      write(*,*) 'deallocate 5'
       DEALLOCATE(node_sat)
-      write(*,*) 'deallocate 6'
       DEALLOCATE(size_heap)
-      write(*,*) 'deallocate done'
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
