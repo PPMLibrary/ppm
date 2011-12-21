@@ -80,6 +80,7 @@ logical                         :: ok
     test netstat
         ! test netstat
 
+        use ppm_module_data
         use ppm_module_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
@@ -105,7 +106,7 @@ logical                         :: ok
         &               0.1_mk,cost,info)
 
         call ppm_netstat(topoid,latency,bandwidth,info)
-
+        print *,ppm_rank,latency,bandwidth
         !assert_true(ok)
 
     end test
