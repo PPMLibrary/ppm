@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :                ppm_module_core_util
+      !  Module       :              ppm_module_util_netstat
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -27,17 +27,19 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      MODULE ppm_module_core_util
-      !!! This module contains all user-callable utility routines.
-         !----------------------------------------------------------------------
-         !  PPM modules
-         !----------------------------------------------------------------------
-         USE ppm_module_init
-         USE ppm_module_finalize
-         USE ppm_module_find_duplicates
-         USE ppm_module_is_initialized
-         USE ppm_module_time
-         USE ppm_module_util_dbg
-         USE ppm_module_util_netstat
 
-      END MODULE ppm_module_core_util
+      MODULE ppm_module_util_netstat
+      !!! This module provides the routines
+      !!! that solve cubic equations with real roots.
+         !----------------------------------------------------------------------
+         !  Define interfaces to the main topology routine(s)
+         !----------------------------------------------------------------------
+
+         !----------------------------------------------------------------------
+         !  include the source
+         !----------------------------------------------------------------------
+         CONTAINS
+
+#include "util/ppm_util_netstat.f"
+
+      END MODULE ppm_module_util_netstat
