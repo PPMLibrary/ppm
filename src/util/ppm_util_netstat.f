@@ -57,7 +57,9 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       INTEGER,            INTENT(IN)    :: topoid
       !!! topology ID to which we are currently mapped
       REAL(MK),           INTENT(OUT)   :: latency
+      !!! Network latency in seconds
       REAL(MK),           INTENT(OUT)   :: bandwidth
+      !!! Network bandwidth in Bytes per second
       INTEGER,            INTENT(OUT)   :: info
       
       ! local vars
@@ -68,13 +70,16 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       REAL(MK), DIMENSION(:), POINTER   :: latencies => NULL()
       REAL(MK), DIMENSION(:), POINTER   :: bandwidths => NULL()
       INTEGER                           :: iproc
+#ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: stat
+#endif
       INTEGER                           :: iopt
+      INTEGER                           :: src,dest
       INTEGER, PARAMETER                :: lncomm = 1000 !N latency comms
       INTEGER, PARAMETER                :: bncomm = 100  !N bandwidth comms
       INTEGEr, DIMENSION(1)             :: lda 
-      INTEGER, DIMENSION(:), POINTER    :: sbuf => NULL()
-      INTEGER, DIMENSION(:), POINTER    :: rbuf => NULL()
+      INTEGER, DIMENSION(:), POINTER    :: buf => NULL()
+!      INTEGER, DIMENSION(:), POINTER    :: rbuf => NULL()
       INTEGER, PARAMETER                :: small = 1
       INTEGER, PARAMETER                :: big   = 8*(1024**2)
       CHARACTER(LEN=32), PARAMETER      :: caller = 'ppm_netstat'
@@ -126,29 +131,38 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       bandwidths(:) = 0.0_MK
       
       
+#ifdef __MPI
       !-------------------------------------------------------------------------
       !  Measure Latency
       !-------------------------------------------------------------------------
-      ALLOCATE(sbuf(small),rbuf(small),stat=info)
+      ALLOCATE(buf(small),stat=info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_alloc,caller,     &
      &        'latency buffer',__LINE__,info)
           GOTO 9999
       ENDIF
-      sbuf(:) = 42
+      buf(:) = 42
     
       DO icomm=1,topo%ncommseq
           irank = topo%icommseq(icomm)
           tag = 100
+          dest = MAX(ppm_rank,irank)
+          src = MIN(ppm_rank,irank)
           
           CALL MPI_Barrier(ppm_comm,info)
           tstart = MPI_Wtime()
           DO i=1,lncomm
-              
-             CALL MPI_SendRecv(sbuf,small,MPI_INTEGER,irank,tag, &
-     &                         rbuf,small,MPI_INTEGER,irank,tag, &
-     &                         ppm_comm,stat,info)
+              IF (ppm_rank.EQ.src) THEN
+                  CALL MPI_Send(buf,small,MPI_INTEGER,dest,i,&
+                  &             ppm_comm,info)
+              ELSE
+                  CALL MPI_Recv(buf,small,MPI_INTEGER,src,i,&
+                  &             ppm_comm,stat,info)
+              ENDIF
+!             CALL MPI_SendRecv(sbuf,small,MPI_INTEGER,irank,tag, &
+!     &                         rbuf,small,MPI_INTEGER,irank,tag, &
+!     &                         ppm_comm,stat,info)
 
           ENDDO
           
@@ -158,7 +172,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       ENDDO
 
 
-      DEALLOCATE(sbuf,rbuf,stat=info)
+      DEALLOCATE(buf,stat=info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_alloc,caller,     &
@@ -168,7 +182,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       !-------------------------------------------------------------------------
       !  Measure Bandwidth
       !-------------------------------------------------------------------------
-      ALLOCATE(sbuf(big),rbuf(big),stat=info)
+      ALLOCATE(buf(big),stat=info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_alloc,caller,     &
@@ -176,7 +190,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
           GOTO 9999
       ENDIF
 
-      sbuf(:) = 42
+      buf(:) = 42
     
       DO icomm=1,topo%ncommseq
           irank = topo%icommseq(icomm)
@@ -186,10 +200,17 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
           tstart = MPI_Wtime()
 
           DO i=1,bncomm
+              IF (ppm_rank.EQ.src) THEN
+                  CALL MPI_Send(buf,big,MPI_INTEGER,dest,i,&
+                  &             ppm_comm,info)
+              ELSE
+                  CALL MPI_Recv(buf,big,MPI_INTEGER,src,i,&
+                  &             ppm_comm,stat,info)
+              ENDIF
               
-             CALL MPI_SendRecv(sbuf,big,MPI_INTEGER,irank,tag, &
-             &                 rbuf,big,MPI_INTEGER,irank,tag, &
-             &                 ppm_comm,stat,info)
+!             CALL MPI_SendRecv(sbuf,big,MPI_INTEGER,irank,tag, &
+!             &                 rbuf,big,MPI_INTEGER,irank,tag, &
+!             &                 ppm_comm,stat,info)
 
           ENDDO
           
@@ -198,13 +219,19 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       ENDDO
 
 
-      DEALLOCATE(sbuf,rbuf,stat=info)
+      DEALLOCATE(buf,stat=info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_alloc,caller,     &
      &        'dealloc bandwidth buffer',__LINE__,info)
           GOTO 9999
       ENDIF
+#else
+      info = ppm_error_warning
+      CALL ppm_error(ppm_err_nompi,caller,     &
+     &    'Bandwidth and latency default to 0',__LINE__,info)
+
+#endif
       !-------------------------------------------------------------------------
       !  Computer summary statistics
       !-------------------------------------------------------------------------
@@ -216,7 +243,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
           !write(*,'(3I,2F14.2)'),i,ppm_rank,topo%icommseq(i),&
           !&                      latencies(i),bandwidths(i)
       ENDDO
-      bandwidth = bandwidth / topo%ncommseq
+      bandwidth = 4*bandwidth / topo%ncommseq
       
       
       !-------------------------------------------------------------------------
