@@ -110,7 +110,7 @@ logical                         :: ok
         &                         '  latency: ',latency*1000.0_mk,&
         &                         ' ms  bandwidth: ',bandwidth/REAL(1024**2,mk),&
         &                         ' MB/s'
-        if (info.eq.0) then
+        if (info.ge.-2) then
             ok = .true.
         endif
         assert_true(ok)

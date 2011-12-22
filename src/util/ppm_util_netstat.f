@@ -130,7 +130,12 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       latencies(:) = 0.0_MK
       bandwidths(:) = 0.0_MK
       
-      
+      IF (ppm_nproc.EQ.1) THEN
+          info = ppm_error_warning
+          CALL ppm_error(ppm_err_test_fail,caller,     &
+     &        'Cannot compute latency/bandwidth on 1 proc',__LINE__,info)
+          GOTO 8888
+      ENDIF
 #ifdef __MPI
       !-------------------------------------------------------------------------
       !  Measure Latency
@@ -156,8 +161,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
               IF (ppm_rank.EQ.src) THEN
                   CALL MPI_Send(buf,small,MPI_INTEGER,dest,i,&
                   &             ppm_comm,info)
-              ENDIF
-              IF (ppm_rank.EQ.dest) THEN
+              ELSE
                   CALL MPI_Recv(buf,small,MPI_INTEGER,src,i,&
                   &             ppm_comm,stat,info)
               ENDIF
@@ -236,6 +240,7 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
       !-------------------------------------------------------------------------
       !  Computer summary statistics
       !-------------------------------------------------------------------------
+8888  CONTINUE
       bandwidth = 0.0_mk
       latency = 0.0_mk
       DO i=1,topo%ncommseq
