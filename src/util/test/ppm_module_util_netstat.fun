@@ -106,8 +106,14 @@ logical                         :: ok
         &               0.1_mk,cost,info)
 
         call ppm_netstat(topoid,latency,bandwidth,info)
-        print *,ppm_rank,latency,bandwidth
-        !assert_true(ok)
+        write(*,'(A,I3,A,F12.6,A,F10.2,A)') 'rank: ',ppm_rank,&
+        &                         '  latency: ',latency*1000.0_mk,&
+        &                         ' ms  bandwidth: ',bandwidth/REAL(1024**2,mk),&
+        &                         ' MB/s'
+        if (info.eq.0) then
+            ok = .true.
+        endif
+        assert_true(ok)
 
     end test
 
