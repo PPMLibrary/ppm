@@ -156,7 +156,8 @@ SUBROUTINE ppm_netstat(topoid,latency,bandwidth,info)
               IF (ppm_rank.EQ.src) THEN
                   CALL MPI_Send(buf,small,MPI_INTEGER,dest,i,&
                   &             ppm_comm,info)
-              ELSE
+              ENDIF
+              IF (ppm_rank.EQ.dest) THEN
                   CALL MPI_Recv(buf,small,MPI_INTEGER,src,i,&
                   &             ppm_comm,stat,info)
               ENDIF
