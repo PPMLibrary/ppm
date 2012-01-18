@@ -149,6 +149,10 @@
          MODULE PROCEDURE check_duplicates_s
          MODULE PROCEDURE check_duplicates_d
      END INTERFACE
+     INTERFACE sop_voronoi_MC
+         MODULE PROCEDURE sop_voronoi_MC_s
+         MODULE PROCEDURE sop_voronoi_MC_d
+     END INTERFACE
 
     !----------------------------------------------------------------------
     ! Private variables for the module
@@ -172,6 +176,9 @@
      ! id of where the gradient of the field is stored 
      INTEGER            :: fuse_id = 0
      ! id of the property storing which particles are candidate for fusion
+
+     INTEGER            :: voronoi_id = 0
+     ! id of the property storing the voronoi volume of each particle
 
      INTEGER            :: nb_neigh_id = 0
 
@@ -269,6 +276,7 @@
 #include "sop/sop_potential_psi.f"
 #include "sop/sop_spawn_particles.f"
 #include "sop/sop_spawn2_particles.f"
+#include "sop/sop_voronoi_MC.f"
 #define __LDA 1
 #include "sop/sop_approx_wp.f"
 #define __LDA 2
@@ -293,6 +301,7 @@
 #include "sop/sop_potential_psi.f"
 #include "sop/sop_spawn_particles.f"
 #include "sop/sop_spawn2_particles.f"
+#include "sop/sop_voronoi_MC.f"
 #define __LDA 1
 #include "sop/sop_approx_wp.f"
 #define __LDA 2

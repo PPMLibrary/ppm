@@ -389,7 +389,8 @@ SUBROUTINE DTYPE(sop_adapt_particles)(topo_id,Particles,D_fun,opts,info,     &
                     ppm_dim,info,with_ghosts=.FALSE.,name='adapt_wpgrad')
                 IF (info.NE.0) THEN
                     info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
+                    CALL ppm_error(ppm_err_alloc,caller,'&
+                        particles_allocate_wpv failed',&
                         &  __LINE__,info)
                     GOTO 9999
                 ENDIF
@@ -399,7 +400,8 @@ SUBROUTINE DTYPE(sop_adapt_particles)(topo_id,Particles,D_fun,opts,info,     &
                         ppm_dim,info,with_ghosts=.FALSE.,&
                         iopt=ppm_param_alloc_grow_preserve,name='adapt_wpgrad')
                     info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,'particles_allocate_wpv failed',&
+                    CALL ppm_error(ppm_err_alloc,caller,&
+                        'particles_allocate_wpv failed',&
                         &  __LINE__,info)
                     GOTO 9999
                 ENDIF

@@ -891,6 +891,17 @@ SUBROUTINE DTYPE(sop_gradient_descent)(Particles_old,Particles, &
             info = -1
             GOTO 9999
         ENDIF
+        
+        CALL sop_voronoi_MC(Particles,opts,info)
+        IF (info .NE. 0) THEN
+            CALL ppm_write(ppm_rank,caller,'sop_voronoi_MC failed.',info)
+            info = -1
+            GOTO 9999
+        ENDIF
+        WRITE(filename,'(A,I0,A,I0)') 'P_Voronoi_It_',&
+            Particles%itime,'_',it_adapt
+        CALL ppm_vtk_particle_cloud(filename,Particles,info)
+
 #endif
 
 
