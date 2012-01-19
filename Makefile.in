@@ -72,7 +72,7 @@ $(shell test -d $(builddir)/lib || mkdir $(builddir)/lib)
 $(shell test -d $(libdir) || mkdir $(libdir))
 $(warning done.)
 
-.PHONY: all clean install new test
+.PHONY: all clean install new test ftest
 
 .DEFAULT: ;
 
@@ -139,6 +139,7 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
+	INC="-Iobjects/" \
 	CPP=$(CPP) DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) \
 	SRC_DIR=$(SRC_DIR) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
 
