@@ -699,7 +699,9 @@
           CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
      &         'Box interaction index JNP',__LINE__,info)
       ENDIF
-
+      IF (PRESENT(clist).AND.(.NOT.ASSOCIATED(clist))) THEN
+          clist => cl
+      ENDIF
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
