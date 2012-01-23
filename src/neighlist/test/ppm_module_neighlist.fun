@@ -109,6 +109,78 @@ real(mk)                         :: eps
         deallocate(seed,randnb)
 
     end teardown
+    
+    test memleak
+        use ppm_module_typedef
+        use ppm_module_mktopo
+        use ppm_module_map
+        use ppm_module_topo_check
+        use ppm_module_util_dbg
+        use ppm_module_test
+
+        integer                         :: mpart
+        integer                         :: newnpart
+        integer                         :: oldip,ip = -1
+        real(mk),dimension(:,:),pointer :: p => NULL()
+        real(mk),dimension(ndim)        :: cp
+        real(mk)                        :: gl = 0.001_mk
+        real(mk), parameter             :: skin = 0.0_mk
+        real(mk)                        :: h
+        integer, dimension(:),pointer   :: nvlist => NULL()
+        integer, dimension(:,:),pointer :: vlist => NULL()
+        integer                         :: snpart 
+        integer                         :: i,j,k
+        integer, dimension(:),pointer   :: pidx => NULL()
+        type(ppm_t_clist),dimension(:),pointer :: clist => NULL()
+       
+        npart=1000
+        CALL part_init(p,npart,min_phys,max_phys,info,&
+        &    ppm_param_part_init_cartesian,0.5_mk)
+        h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
+        gl = 0.0_mk
+        bcdef(1:6) = ppm_param_bcdef_freespace
+        nullify(nvlist,vlist,pidx)
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+
+        call ppm_mktopo(topoid,p,npart,decomp,assig,min_phys,max_phys,bcdef, &
+        &               gl+skin,cost,info)
+
+        call ppm_map_part_global(topoid,p,npart,info)
+        call ppm_map_part_send(npart,newnpart,info)
+        call ppm_map_part_pop(p,ndim,npart,newnpart,info)
+        npart=newnpart
+
+
+        call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl+skin,info)
+        call ppm_map_part_send(npart,mpart,info)
+        call ppm_map_part_pop(p,ndim,npart,mpart,info)
+        
+        call ppm_topo_check(topoid,p,npart,ok,info)
+        !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
+        
+        allocate(pidx(npart))
+        forall(k=1:npart) pidx(k) = k
+        
+        call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
+        &                        vlist,nvlist,info,pidx,clist)
+        assert_equal(info,0)
+        
+        call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
+        &                        vlist,nvlist,info,pidx,clist)
+        
+        assert_equal(info,0)
+        
+        call ppm_destroy_clist(clist,info)
+        assert_equal(info,0)
+
+    end test
 
     test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
         use ppm_module_typedef
@@ -132,7 +204,7 @@ real(mk)                         :: eps
         integer                         :: i,j,k
         integer, dimension(:),pointer   :: pidx
         
-        call part_init(p,npart,min_phys,max_phys,info,&
+        CALL part_init(p,npart,min_phys,max_phys,info,&
         &    ppm_param_part_init_cartesian,0.5_mk)
         print *,npart
         h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
