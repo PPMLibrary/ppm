@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
 
-OK="\033[0;32mok!\033[0m"
+OK="\033[0;32mok\033[0m"
 FAIL="\033[0;31mfail!\033[0m"
-WARN="\033[0;33mwarnings...\033[0m"
+WARN="\033[0;33mwarnings\033[0m"
+
+echo $1 >> $2
 
 output=$($1 2>&1)
 
