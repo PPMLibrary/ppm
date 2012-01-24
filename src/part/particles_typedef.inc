@@ -1,47 +1,105 @@
-TYPE DTYPE(pnt_array_1d)
-    REAL(prec), DIMENSION(:), POINTER              :: vec => NULL()
-    !!! array where the scalar-value property is stored
+TYPE DTYPE(part_prop)
+    !!! Data structure for particle properties
+    INTEGER                                        :: data_type
+    !!! type of the property
+    !!! One of:
+    !!!     ppm_param_...
+    !!! 
     CHARACTER(len=ppm_char)                        :: name
-    !!! name of the scalar-valued property
-    LOGICAL                                        :: has_ghosts
-    !!! true if ghost values are up-to-date
-    LOGICAL                                        :: is_mapped
-    !!! true if there is a one-to-one mapping with the particles
-    LOGICAL                                        :: map_parts
-    !!! true if partial mappings are desired for this property (default)
-    !!! (if false, the array for this property is not reallocated when
-    !!! particles move to a different processor or when they are
-    !!! interpolated from one distribution to another)
-    LOGICAL                                        :: map_ghosts
-    !!! true if ghost mappings are desired for this property (default)
-END TYPE DTYPE(pnt_array_1d)
-
-TYPE DTYPE(pnt_array_2d)
-    REAL(prec), DIMENSION(:,:), POINTER            :: vec =>NULL()
-    !!! array where the vector-value property is stored
-    CHARACTER(len=ppm_char)                        :: name
-    !!! name of the vector-valued property
+    !!! name of the property
+    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags
+    !!! logical flags
+    !!!    ppm_ppt_ghosts
+    !!!          true if ghost values are up-to-date
+    !!!    ppm_ppt_partial
+    !!!          true if there is a one-to-one mapping with the particles
+    !!!    ppm_ppt_reqput
+    !!!    ppm_ppt_map_parts
+    !!!          true if partial mappings are desired for this property (default)
+    !!!          (if false, the array for this property is not reallocated when
+    !!!           particles move to a different processor or when they are
+    !!!           interpolated from one distribution to another)
+    !!!    ppm_ppt_map_ghosts
+    !!!          true if ghost mappings are desired for this property (default)
     INTEGER                                        :: lda
-    !!! leading dimension of the array
-    LOGICAL                                        :: has_ghosts
-    !!! true if ghost values are up-to-date
-    LOGICAL                                        :: is_mapped
-    !!! true if there is a one-to-one mapping with the particles
-    LOGICAL                                        :: map_parts
-    !!! true if partial mappings are desired for this property (default)
-    !!! (if false, the array for this property is not reallocated when
-    !!! particles move to a different processor or when they are
-    !!! interpolated from one distribution to another)
-    LOGICAL                                        :: map_ghosts
-    !!! true if ghost mappings are desired for this property (default)
-END TYPE DTYPE(pnt_array_2d)
+    !!! leading dimension of the data array
+    !!!
+    !!! pointers to arrays where the scalar-value properties are stored
+    INTEGER, DIMENSION(:), POINTER                 :: data_1d_i =>NULL()
+    !!! if the data is 1d integer
+    INTEGER, DIMENSION(:,:), POINTER               :: data_2d_i =>NULL()
+    !!! if the data is 2d integer
+    INTEGER(ppm_kind_int64),DIMENSION(:), POINTER  :: data_1d_li =>NULL()
+    !!! if the data is 1d long integer
+    INTEGER(ppm_kind_int64),DIMENSION(:,:),POINTER :: data_2d_li =>NULL()
+    !!! if the data is 2d long integer
+    REAL(MK), DIMENSION(:), POINTER                :: data_1d_r => NULL()
+    !!! if the data is 1d real
+    REAL(MK), DIMENSION(:,:), POINTER              :: data_2d_r =>NULL()
+    !!! if the data is 2d real
+    COMPLEX(MK), DIMENSION(:), POINTER             :: data_1d_c => NULL()
+    !!! if the data is 1d complex
+    COMPLEX(MK), DIMENSION(:,:), POINTER           :: data_2d_c =>NULL()
+    !!! if the data is 2d complex
+    LOGICAL, DIMENSION(:), POINTER                 :: data_1d_l => NULL()
+    !!! if the data is 1d logical
+    LOGICAL, DIMENSION(:,:), POINTER               :: data_2d_l =>NULL()
+    !!! if the data is 2d logical
 
-TYPE DTYPE(pnt_array_desc)
+    CONTAINS
+        PRIVATE
+        PROCEDURE :: create => DTYPE(prop_create)
+        PROCEDURE :: destroy => DTYPE(prop_destroy)
+
+END TYPE DTYPE(part_prop)
+!----------------------------------------------------------------------
+! Wrapper type to be able to have a pointer array to hold neighlists
+!----------------------------------------------------------------------
+TYPE DTYPE(ppm_ptr_part_prop)
+    TYPE(DTYPE(part_prop)), POINTER  :: t => NULL()
+END TYPE DTYPE(ppm_ptr_part_prop)
+
+TYPE DTYPE(ppm_t_neighlist)
+    INTEGER                                         :: P_id
+    !!! Id of the set of particles that this neighbour list refers to
+    REAL(MK)                                        :: cutoff
+    !!! cutoff radius
+    REAL(MK)                                        :: skin
+    !!! skin layer around the particles
+    INTEGER                                         :: isymm
+    !!! using symmetry
+    INTEGER              , DIMENSION(:  ), POINTER  :: nvlist=> NULL()
+    !!! Number of neighbors of each particles
+    INTEGER              , DIMENSION(:,:), POINTER  :: vlist=> NULL()
+    !!! Neighbor lists
+    LOGICAL                                         :: uptodate
+    !!! true if the neighbor lists have been computed
+    INTEGER                                         :: nneighmin
+    !!! smallest number of neighbors on this processor
+    INTEGER                                         :: nneighmax
+    !!! highest number of neighbors on this processor
+
+    CONTAINS
+        PRIVATE
+        PROCEDURE :: destroy => DTYPE(neigh_destroy)
+
+END TYPE DTYPE(ppm_t_neighlist)
+
+!----------------------------------------------------------------------
+! Wrapper type to be able to have a pointer array to hold neighlists
+!----------------------------------------------------------------------
+TYPE DTYPE(ppm_ptr_t_neighlist)
+    TYPE(DTYPE(ppm_t_neighlist)), POINTER  :: t => NULL()
+END TYPE DTYPE(ppm_ptr_t_neighlist)
+
+TYPE DTYPE(ppm_t_opdesc)
+    !!! Data structure for differential operator
+    !!!
     INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
     !!! degree of each term in the linear combination of differential ops 
     INTEGER, DIMENSION(:), POINTER                 :: order =>NULL()
     !!! approximation order of each term 
-    REAL(prec), DIMENSION(:), POINTER   :: coeffs =>NULL()
+    REAL(MK), DIMENSION(:), POINTER                :: coeffs =>NULL()
     !!! array where the coefficients in linear combinations of 
     !!! differential ops are stored
     INTEGER                                        :: nterms
@@ -64,21 +122,42 @@ TYPE DTYPE(pnt_array_desc)
     !!! true if the operator should be computed for ghost particles too. 
     !!! Note that the resulting values will be wrong for the ghost particles
     !!! that have some neighbours outside the ghost layers. Default is false.
-END TYPE DTYPE(pnt_array_desc)
+
+    CONTAINS
+        PRIVATE
+        PROCEDURE :: destroy => DTYPE(desc_destroy)
+
+END TYPE DTYPE(ppm_t_opdesc)
+
+!----------------------------------------------------------------------
+! Wrapper type to be able to have a pointer array to hold op descriptions
+!----------------------------------------------------------------------
+TYPE DTYPE(ppm_ptr_opdesc)
+    TYPE(DTYPE(ppm_t_opdesc)), POINTER :: t => NULL()
+END TYPE DTYPE(ppm_ptr_opdesc)
+
 
 TYPE DTYPE(ppm_t_operator)
-    TYPE(DTYPE(pnt_array_2d)), DIMENSION(:),  POINTER :: ker => NULL()
-    !!! array of pointers to where the operators are stored
-    TYPE(DTYPE(pnt_array_desc)), DIMENSION(:),POINTER :: desc => NULL()
-    !!! array of pointers to small matrices that describe what 
-    !!! each operator does
+    !!! Data structure containing all diff operators for a particle set
+    !!! 
+    TYPE(DTYPE(ppm_ptr_part_prop)),DIMENSION(:),POINTER :: ker => NULL()
+    !!! where the operators are stored
+    TYPE(DTYPE(ppm_ptr_opdesc)), DIMENSION(:),  POINTER :: desc => NULL()
+    !!! small matrices that describe what each operator does
     INTEGER                                          :: nb_ops
     !!! number of operators stored here
     INTEGER                                          :: max_opsid
     !!! largest index for operators
+
+    CONTAINS
+        PRIVATE
+        PROCEDURE :: destroy => DTYPE(op_destroy)
+
 END TYPE DTYPE(ppm_t_operator)
 
 TYPE DTYPE(particles_stats)
+    !!! Data structure containing statistics about a particle set
+    !!! 
     INTEGER                                          :: nb_nl = 0
     !!! number of neighbour lists constructions
     INTEGER                                          :: nb_inl = 0
@@ -103,148 +182,113 @@ TYPE DTYPE(particles_stats)
     !!! number of partial mappings
     INTEGER                                          :: nb_ghost_push = 0
     !!! number of partial mappings
-    REAL(prec)                                       :: t_nl = 0._prec
+    REAL(MK)                                       :: t_nl = 0._MK
     !!! time spent for neighbour lists constructions
-    REAL(prec)                                       :: t_inl = 0._prec
+    REAL(MK)                                       :: t_inl = 0._MK
     !!! time spent for inhomogeneous neighbour lists constructions
-    REAL(prec)                                       :: t_cinl = 0._prec
+    REAL(MK)                                       :: t_cinl = 0._MK
     !!! time spent for conventional (old and depreciated) inl constructions
-    REAL(prec)                                       :: t_xset_inl = 0._prec
+    REAL(MK)                                       :: t_xset_inl = 0._MK
     !!! time spent for xset inhomogeneous neighbour lists constructions
-    REAL(prec)                                       :: t_xset_nl = 0._prec
+    REAL(MK)                                       :: t_xset_nl = 0._MK
     !!! time spent for xset neighbour lists constructions
-    REAL(prec)                                       :: t_dc_comp = 0._prec
+    REAL(MK)                                       :: t_dc_comp = 0._MK
     !!! time spent for DC operators computation (matrix inversions)
-    REAL(prec)                                       :: t_dc_apply = 0._prec
+    REAL(MK)                                       :: t_dc_apply = 0._MK
     !!! time spent for DC operators evaluation (no matrix inversions)
-    REAL(prec)                                       :: t_kdtree = 0._prec
+    REAL(MK)                                       :: t_kdtree = 0._MK
     !!! time spent for kdtree constructions
-    REAL(prec)                                       :: t_global_map = 0._prec
+    REAL(MK)                                       :: t_global_map = 0._MK
     !!! time spent for global mappings
-    REAL(prec)                                       :: t_part_map = 0._prec
+    REAL(MK)                                       :: t_part_map = 0._MK
     !!! time spent for partial mappings
-    REAL(prec)                                       :: t_ghost_get = 0._prec
+    REAL(MK)                                       :: t_ghost_get = 0._MK
     !!! time spent for partial mappings
-    REAL(prec)                                       :: t_ghost_push = 0._prec
+    REAL(MK)                                       :: t_ghost_push = 0._MK
     !!! time spent for partial mappings
 
     INTEGER                                          :: nb_ls = 0
-    REAL(prec)                                       :: t_ls = 0._prec
-    REAL(prec)                                       :: t_add = 0._prec
-    REAL(prec)                                       :: t_del = 0._prec
-    REAL(prec)                                       :: t_compD = 0._prec
+    REAL(MK)                                       :: t_ls = 0._MK
+    REAL(MK)                                       :: t_add = 0._MK
+    REAL(MK)                                       :: t_del = 0._MK
+    REAL(MK)                                       :: t_compD = 0._MK
 
 END TYPE DTYPE(particles_stats)
 
 TYPE DTYPE(ppm_t_particles)
+    !!! Data structure for a particle set
 
     CHARACTER(LEN=ppm_char)                         :: name
-    !!! name for these particles
-    REAL(prec), DIMENSION(:,:), POINTER             :: xp => NULL()
+    !!! name for this particle set
+    REAL(MK), DIMENSION(:,:), POINTER             :: xp => NULL()
     !!! positions of the particles
-    LOGICAL                                         :: has_ghosts 
-    !!! pseudo-boolean for the positions
-    !!! takes value 1 if the ghost values have been computed
-    !!! 0 if they have not, and -1 if they do not need to be updated
     INTEGER                                         :: Npart
     !!! Number of real particles on this processor
     INTEGER                                         :: Mpart
     !!! Number of particles (including ghosts) on this processor
-    LOGICAL                                         :: areinside
-    !!! true if all the particles are inside the comp. domain
+    LOGICAL, DIMENSION(ppm_param_length_partflags)  :: flags
+    !!! logical flags
+    !!!    ppm_part_ghosts
+    !!!          true if ghost values are up-to-date
+    !!!    ppm_part_partial
+    !!!          true if the particles have been mapped on the active topology
+    !!!    ppm_part_reqput
+    !!!    ppm_part_areinside
+    !!!          true if all the particles are inside the comp. domain
+    !!!    ppm_part_cartesian
+    !!!          true if the particles form a Cartesian grid
 
+
+    ! Topology (links between Particles and topologies)
+    INTEGER                                         :: active_topoid
 
     ! Particles properties
-
-    INTEGER,                 DIMENSION(:), POINTER  :: wp_t => NULL()
-    !!! array containing the type of each property
-    INTEGER,                 DIMENSION(:), POINTER  :: idx => NULL()
-    !!! array containing the index of each property in the data structure
-    !!! corresponding to the type of this property
-    
-
-
-    !   integer
-    TYPE(pnt_array_1d_i),    DIMENSION(:), POINTER  :: wpi  => NULL()
-    !!! array of integer properties
-    INTEGER                                         :: nwpi
-    !!! number of integer properties
-    INTEGER                                         :: max_wpiid
-    !!! maximum index for integer properties
-
-
-    !   scalar
-    TYPE(DTYPE(pnt_array_1d)),    DIMENSION(:),   POINTER :: wps  => NULL()
-    !!! array of scalar properties
-    INTEGER                                         :: nwps
-    !!! number of scalar properties
-    INTEGER                                         :: max_wpsid
-    !!! maximum index for scalar properties
-
-
-    !   vectors
-    TYPE(DTYPE(pnt_array_2d)),    DIMENSION(:),   POINTER :: wpv  => NULL()
-    !!! array of vector properties
-    INTEGER                                         :: nwpv
-    !!! number of vector properties
-    INTEGER                                         :: max_wpvid
-    !!! maximum index for vector properties
+    TYPE(DTYPE(ppm_ptr_part_prop)),DIMENSION(:),POINTER :: props => NULL()
+    !!! array with pointers to each property for this particle set
+    INTEGER                                         :: nwp
+    !!! number of properties
+    INTEGER                                         :: max_wpid
+    !!! highest non-null index in the props array
+    INTEGER                                         :: swp
+    !!! current allocated size of the props array
 
 
     ! Load balancing
-    REAL(prec), DIMENSION(:  ), POINTER             :: pcost=> NULL()
+    REAL(MK), DIMENSION(:), POINTER                 :: pcost=> NULL()
     !!! cost associated to each particle 
 
 
     ! Neighbor lists
-    REAL(prec)                                      :: cutoff
-    !!! cutoff radius
-    REAL(prec)                                      :: skin
-    !!! skin layer around the particles
-    INTEGER                                         :: isymm
-    !!! using symmetry
-    INTEGER              , DIMENSION(:  ), POINTER  :: nvlist=> NULL()
-    !!! Number of neighbors of each particles
-    INTEGER              , DIMENSION(:,:), POINTER  :: vlist=> NULL()
-    !!! Neighbor lists
-    LOGICAL                                         :: neighlists
-    !!! true if the neighbor lists have been computed
-    INTEGER                                         :: nneighmin
-    !!! smallest number of neighbors on this processor
-    INTEGER                                         :: nneighmax
-    !!! highest number of neighbors on this processor
-    LOGICAL                                         :: conventionalinl
-    !!! true if the inl are computed with the old slow routine (default is
-    !!! false)
-
-    
-    ! xset Neighbor lists
-    TYPE(DTYPE(ppm_t_particles)),POINTER            :: Particles_cross=> NULL()
-    !!! Pointer to a second set of Particles (not necessary)
-    INTEGER              , DIMENSION(:  ), POINTER  :: nvlist_cross=> NULL()
-    !!! Number of neighbors of each particles
-    INTEGER              , DIMENSION(:,:), POINTER  :: vlist_cross=> NULL()
-    !!! Neighbor lists
-    LOGICAL                                         :: neighlists_cross
-    !!! true if the neighbor lists have been computed
-    INTEGER                                         :: nneighmin_cross
-    !!! smallest number of neighbors
-    INTEGER                                         :: nneighmax_cross
-    !!! highest number of neighbors
-    INTEGER                                         :: nn_sq_id
-    !!! index of the wps array where nearest-neighbour distances are stored
-
-
-    ! Links between Particles and topologies
-    INTEGER                                         :: active_topoid
-    !!! active topology for these particles
-    LOGICAL                                         :: ontopology
-    !!! true if the particles have been mapped on the active topology
+    TYPE(DTYPE(ppm_ptr_t_neighlist)),DIMENSION(:),POINTER :: neighs => NULL()
+    !!! array with pointers to each neighbor list for this particle set
+    INTEGER                                         :: nnl
+    !!! number of different neighbor lists
+    INTEGER                                         :: max_nlid
+    !!! highest non-null index in the neighs array
+    INTEGER                                         :: snl
+    !!! current allocated size of the neighs array
 
 
     ! DC-PSE
     TYPE(DTYPE(ppm_t_operator)),  POINTER           :: ops => NULL()
     !!! structure that contains the discrete operators
+
+
+    ! stats
+    TYPE(DTYPE(particles_stats))                    :: stats
+    !!! runtime statistics (e.g. timings, memory)
+
+
+    ! clocks
+    REAL(MK)                                        :: time
+    !!! clock for this set of particles
+    INTEGER                                         :: itime
+    !!! iteration number for this set of particles
+
+
+    !------------miscellaneous----------
+    INTEGER                                         :: nn_sq_id
+    !!! index of the wps array where nearest-neighbour distances are stored
 
     !Global indexing
     INTEGER                                         :: gi_id
@@ -293,21 +337,44 @@ TYPE DTYPE(ppm_t_particles)
     ! spacings between particles
     LOGICAL                                         :: cartesian
     !!! true if particles are located exactly on the nodes of a uniform grid
-    REAL(prec)                                      :: h_avg
+    REAL(MK)                                      :: h_avg
     !!! (global) average distance between particles
-    REAL(prec)                                      :: h_min
+    REAL(MK)                                      :: h_min
     !!! (global) minimum distance between particles
+    
+    CONTAINS
+        PRIVATE
+        PROCEDURE     :: create => DTYPE(part_create)
+        PROCEDURE     :: destroy => DTYPE(part_destroy)
+        PROCEDURE     :: get_xp => DTYPE(get_xp)
+        PROCEDURE     :: set_xp => DTYPE(set_xp)
+        PROCEDURE     :: DTYPE(data_1d_i_get)
+        PROCEDURE     :: DTYPE(data_2d_i_get)
+        PROCEDURE     :: DTYPE(data_1d_li_get)
+        PROCEDURE     :: DTYPE(data_2d_li_get)
+        PROCEDURE     :: DTYPE(data_1d_r_get)
+        PROCEDURE     :: DTYPE(data_2d_r_get)
+        PROCEDURE     :: DTYPE(data_1d_c_get)
+        PROCEDURE     :: DTYPE(data_2d_c_get)
+        PROCEDURE     :: DTYPE(data_1d_l_get)
+        PROCEDURE     :: DTYPE(data_2d_l_get)
+        PROCEDURE     :: create_prop => DTYPE(part_prop_create)
 
-    REAL(prec)                                      :: time
-    INTEGER                                         :: itime
-
-    ! runtime statistics
-    TYPE(DTYPE(particles_stats))                    :: stats
+        GENERIC, PUBLIC :: get =>  &
+            DTYPE(data_1d_i_get),&
+            DTYPE(data_2d_i_get),&
+            DTYPE(data_1d_li_get),&
+            DTYPE(data_2d_li_get),&
+            DTYPE(data_1d_r_get),&
+            DTYPE(data_2d_r_get),&
+            DTYPE(data_1d_c_get),&
+            DTYPE(data_2d_c_get),&
+            DTYPE(data_1d_l_get),&
+            DTYPE(data_2d_l_get)
 
 END TYPE DTYPE(ppm_t_particles)
 
-#undef   _prec
-#undef   prec
-#undef   DEFINE_MK
+#undef   MK
+#undef   _MK
 #undef   DTYPE
-#undef   __KIND
+#undef   CTYPE

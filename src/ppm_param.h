@@ -179,6 +179,18 @@
       INTEGER, PARAMETER :: ppm_kind_int32      = 4
       INTEGER, PARAMETER :: ppm_kind_int64      = 8
       !-------------------------------------------------------------------------
+      !  Define the supported types
+      !-------------------------------------------------------------------------
+      INTEGER, PARAMETER :: ppm_type_none                 = 0
+      INTEGER, PARAMETER :: ppm_type_int                  = 1
+      INTEGER, PARAMETER :: ppm_type_longint              = 2
+      INTEGER, PARAMETER :: ppm_type_real_single          = 3
+      INTEGER, PARAMETER :: ppm_type_real_double          = 4
+      INTEGER, PARAMETER :: ppm_type_comp_single          = 5
+      INTEGER, PARAMETER :: ppm_type_comp_double          = 6
+      INTEGER, PARAMETER :: ppm_type_logical              = 7
+      INTEGER, PARAMETER :: ppm_type_char                 = 8
+      !-------------------------------------------------------------------------
       !  Mapping options
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_map_pop             = 1
