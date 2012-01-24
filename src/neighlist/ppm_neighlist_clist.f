@@ -163,7 +163,7 @@
       !-------------------------------------------------------------------------
       IF (PRESENT(pidx)) THEN
           lpidx = .TRUE.
-          npidx = SIZE(pidx,1)
+          npidx = np
           iopt = ppm_param_alloc_fit
           ldc(1) = ppm_dim
           ldc(2) = npidx
