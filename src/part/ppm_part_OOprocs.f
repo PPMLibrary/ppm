@@ -91,7 +91,7 @@ SUBROUTINE DTYPE(part_prop_create)(Particles,propid,datatype,info,&
             !there is at least one empty slot in the array
             ! of property pointers
             propid = propid + 1
-            DO WHILE (Particles%props(propid)%t%data_type .EQ. ppm_type_none)
+            DO WHILE (ASSOCIATED(Particles%props(propid)%t))
                 propid = propid + 1
 
 !--------not a necessary check-------
@@ -136,10 +136,18 @@ SUBROUTINE DTYPE(part_prop_create)(Particles,propid,datatype,info,&
             Particles%swp = nprops
             propid = Particles%nwp+1
         ENDIF
-        Particles%nwp = Particles%nwp + 1
     ELSE
-        !overwriting an existing property
+        !using a given propid
+        !check that this id is not already used
+        IF (ASSOCIATED(Particles%props(propid)%t)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'property id already in use. Use prop_destroy() first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
     ENDIF
+    Particles%nwp = Particles%nwp + 1
         
 
     IF (propid .GT. Particles%max_wpid) Particles%max_wpid = propid
@@ -189,6 +197,45 @@ SUBROUTINE DTYPE(part_prop_create)(Particles,propid,datatype,info,&
     9999  CONTINUE
 
 END SUBROUTINE DTYPE(part_prop_create)
+
+SUBROUTINE DTYPE(part_prop_destroy)(Pc,propid,info)
+    !!! Destroy a property from an existing particle set
+    CLASS(DTYPE(ppm_t_particles))         :: Pc
+    INTEGER,                INTENT(INOUT) :: propid
+    INTEGER,               INTENT(OUT)    :: info
+
+    CHARACTER(LEN=ppm_char)               :: caller = 'particle_prop_destroy'
+    REAL(KIND(1.D0))                      :: t0
+
+    CALL substart(caller,t0,info)
+
+    IF (propid .LE. 0 .OR. propid .GT. Pc%swp) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,&
+            &    'property id larger than size of properties array',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    CALL Pc%props(propid)%t%destroy()
+    NULLIFY(Pc%props(propid)%t)
+
+    Pc%nwp = Pc%nwp - 1
+    IF (propid .EQ. Pc%max_wpid) THEN
+        Pc%max_wpid = Pc%max_wpid - 1
+        IF (Pc%max_wpid .GT. 0) THEN
+            DO WHILE(.NOT.ASSOCIATED(Pc%props(Pc%max_wpid)%t))
+                Pc%max_wpid = Pc%max_wpid - 1
+                IF (Pc%max_wpid .EQ. 0) EXIT
+            ENDDO
+        ENDIF
+    ENDIF
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE
+
+END SUBROUTINE DTYPE(part_prop_destroy)
 
 SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info)
     !!! Constructor for particle property data structure
@@ -304,6 +351,7 @@ SUBROUTINE DTYPE(prop_destroy)(prop)
 
     prop%data_type = ppm_type_none
     prop%lda = 0
+    prop%flags = .FALSE.
 
 END SUBROUTINE DTYPE(prop_destroy)
 

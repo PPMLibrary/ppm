@@ -132,13 +132,23 @@ complex(mk), dimension(:,:), pointer           :: wp_2c => NULL()
         Assert_Equal(info,0)
 
 
-        call Particles%create_prop(wp1_id,ppm_type_longint,info)
+        call Particles%create_prop(wp1_id,&
+            ppm_type_longint,info,with_ghosts=.true.)
         Assert_Equal(info,0)
 
-        call Particles%get(wp_1li,wp1_id)
+        call Particles%get(wp_1li,wp1_id,with_ghosts=.true.)
+        call Particles%set(wp_1li,wp1_id)
 
-        call Particles%create_prop(wp2_id,ppm_type_comp_double,info,3)
-        Assert_Equal(info,0)
+        DO i=1,25
+            wp2_id = 0
+            call Particles%create_prop(wp2_id,ppm_type_comp_double,info,3)
+            Assert_Equal(info,0)
+            wp3_id = 0
+            call Particles%create_prop(wp3_id,ppm_type_real_double,info,1)
+            Assert_Equal(info,0)
+            call Particles%destroy_prop(wp3_id,info)
+            Assert_Equal(info,0)
+        ENDDO
 
         call Particles%get(wp_2c,wp2_id)
 

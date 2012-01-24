@@ -27,9 +27,9 @@ SUBROUTINE __FUNCNAME(Particles,wp,ppt_id,with_ghosts)
                     IF (Particles%props(ppt_id)%t%flags(ppm_ppt_ghosts)) THEN
                         wp => &
 #if   __DIM == 1
-                            Particles%props(ppt_id)%t%WRAP(DATANAME)(1:Particles%Mpart)
+                     Particles%props(ppt_id)%t%WRAP(DATANAME)(1:Particles%Mpart)
 #elif __DIM == 2
-                            Particles%props(ppt_id)%t%WRAP(DATANAME)(:,1:Particles%Mpart)
+                     Particles%props(ppt_id)%t%WRAP(DATANAME)(:,1:Particles%Mpart)
 #endif
                     ELSE
                         write(*,*) line_of_stars
@@ -59,8 +59,8 @@ SUBROUTINE __FUNCNAME(Particles,wp,ppt_id,with_ghosts)
         ENDIF
     ENDIF
     write(*,*) line_of_stars
+        !& TRIM(ADJUSTL(Particles%props(ppt_id)%t%name)),&
     write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-        & TRIM(ADJUSTL(Particles%props(ppt_id)%t%name)),&
         & ') when mapping is not up-to-date. ',&
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
@@ -76,6 +76,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set)
+
 SUBROUTINE __FUNCNAME(Particles,wp,ppt_id,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: Particles
     INTEGER                          :: ppt_id

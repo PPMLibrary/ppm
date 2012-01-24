@@ -358,7 +358,20 @@ TYPE DTYPE(ppm_t_particles)
         PROCEDURE     :: DTYPE(data_2d_c_get)
         PROCEDURE     :: DTYPE(data_1d_l_get)
         PROCEDURE     :: DTYPE(data_2d_l_get)
+
+        PROCEDURE     :: DTYPE(data_1d_i_set)
+        PROCEDURE     :: DTYPE(data_2d_i_set)
+        PROCEDURE     :: DTYPE(data_1d_li_set)
+        PROCEDURE     :: DTYPE(data_2d_li_set)
+        PROCEDURE     :: DTYPE(data_1d_r_set)
+        PROCEDURE     :: DTYPE(data_2d_r_set)
+        PROCEDURE     :: DTYPE(data_1d_c_set)
+        PROCEDURE     :: DTYPE(data_2d_c_set)
+        PROCEDURE     :: DTYPE(data_1d_l_set)
+        PROCEDURE     :: DTYPE(data_2d_l_set)
+
         PROCEDURE     :: create_prop => DTYPE(part_prop_create)
+        PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
 
         GENERIC, PUBLIC :: get =>  &
             DTYPE(data_1d_i_get),&
@@ -371,6 +384,17 @@ TYPE DTYPE(ppm_t_particles)
             DTYPE(data_2d_c_get),&
             DTYPE(data_1d_l_get),&
             DTYPE(data_2d_l_get)
+        GENERIC, PUBLIC :: set =>  &
+            DTYPE(data_1d_i_set),&
+            DTYPE(data_2d_i_set),&
+            DTYPE(data_1d_li_set),&
+            DTYPE(data_2d_li_set),&
+            DTYPE(data_1d_r_set),&
+            DTYPE(data_2d_r_set),&
+            DTYPE(data_1d_c_set),&
+            DTYPE(data_2d_c_set),&
+            DTYPE(data_1d_l_set),&
+            DTYPE(data_2d_l_set)
 
 END TYPE DTYPE(ppm_t_particles)
 
