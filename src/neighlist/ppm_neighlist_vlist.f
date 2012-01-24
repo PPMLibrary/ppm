@@ -375,6 +375,7 @@
                           IF (ibox .EQ. jbox) THEN
                               DO ipart=istart,iend
                                   ip = cl(idom)%lpdx(ipart)
+                                  IF (npdx.LT.ip) CYCLE
                                   IF (lsymm) THEN
                                       DO jpart=(ipart+1),iend
                                           jp = cl(idom)%lpdx(jpart)
@@ -414,6 +415,7 @@
                                           ! translate to real particle
                                           ! index if needed
                                           IF (lpidx) THEN
+                                              IF (npdx.LT.jp) CYCLE
                                               ii = pidx(ip)
                                               jj = pidx(jp)
                                           ELSE
