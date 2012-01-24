@@ -381,6 +381,7 @@
                                           ! translate to real particle
                                           ! index if needed
                                           IF (lpidx) THEN
+                                              IF (npdx.LT.jp) CYCLE
                                               ii = pidx(ip)
                                               jj = pidx(jp)
                                           ELSE
