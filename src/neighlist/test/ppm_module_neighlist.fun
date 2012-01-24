@@ -169,15 +169,15 @@ real(mk)                         :: eps
         forall(k=1:npart) pidx(k) = k
         
         call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
-        &                        vlist,nvlist,info,pidx,clist)
+        &                        vlist,nvlist,info,pidx,npart,clist)
         assert_equal(info,0)
         
         call ppm_neighlist_vlist(topoid,p,mpart,h,skin,.TRUE.,&
-        &                        vlist,nvlist,info,pidx,clist)
+        &                        vlist,nvlist,info,pidx,npart,clist)
         
         assert_equal(info,0)
         
-        call ppm_destroy_clist(clist,info)
+        call ppm_clist_destroy(clist,info)
         assert_equal(info,0)
 
     end test

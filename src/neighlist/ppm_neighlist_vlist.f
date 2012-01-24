@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,clist,lstore)
+     &               nvlist,info,pidx,npidx,clist,lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,clist,lstore)
+     &               nvlist,info,pidx,npidx,clist,lstore)
       !!! Create Verlet lists for all particles of this processor.
       !!!
       !!! TIP: Ghostparticles must be included when passing the positions 
@@ -109,6 +109,8 @@
       !!! OPTIONAL indices of those particles that are to be included in the
       !!! list. By default all particles are taken. If given, particles
       !!! indices in Verlet lists are relative to xp(:,pidx) and not xp(:,:)
+      INTEGER                 , OPTIONAL               :: npidx
+      !!! OPTIONAL upper bound of pidx
       TYPE(ppm_t_clist), DIMENSION(:),POINTER,OPTIONAL :: clist
       !!! Cell list data structure. Pass this argument as null to force
       !!! this routine to recreate a cell list and store it in clist. Otherwise,
@@ -186,7 +188,11 @@
       npdx = np
       IF (PRESENT(pidx)) THEN
           lpidx = .TRUE.
-          IF (np .GT. SIZE(pidx,1)) npdx = SIZE(pidx,1)
+          IF (PRESENT(npidx)) THEN
+              npdx = npidx
+          ELSE
+              IF (np .GT. SIZE(pidx,1)) npdx = SIZE(pidx,1)
+          ENDIF
       ELSE
           lpidx = .FALSE.
       ENDIF
@@ -701,6 +707,8 @@
       ENDIF
       IF (PRESENT(clist).AND.(.NOT.ASSOCIATED(clist))) THEN
           clist => cl
+      ELSE IF (.NOT.PRESENT(clist)) THEN
+          ppm_clist => cl
       ENDIF
       !-------------------------------------------------------------------------
       !  Return
