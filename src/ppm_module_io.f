@@ -45,7 +45,9 @@
       !!! are private to the I/O routines.
          
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
+#ifdef __HDF5
          USE HDF5
+#endif
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------

@@ -157,6 +157,7 @@
       INTEGER                         , INTENT(  OUT) :: info
       !!! Return status, 0 on success
 
+#ifdef __HDF5
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
@@ -195,6 +196,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_io_write_hdf5',t0,info)
+
 #if   __DIM == 0   |  __DIM == 1
       adata_dim = 1
 #elif __DIM == 2
@@ -549,8 +551,18 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
+
+
       CALL substop('ppm_io_write_hdf5',t0,info)
       RETURN
+
+#else
+     info = ppm_error_error
+     CALL ppm_error(ppm_err_open,'ppm_io_write_hdf5',    &
+         &       'PPM has not been compiled for HDF5 support',__LINE__,info)
+
+#endif
+
 #if   __DIM == 0
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE io_write_hdf5_0s
