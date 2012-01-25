@@ -45,6 +45,7 @@
       !!! are private to the I/O routines.
          
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
+         USE HDF5
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------
@@ -235,6 +236,37 @@
          END INTERFACE
 
          !----------------------------------------------------------------------
+         !  Define interface to ppm_io_write_binary
+         !----------------------------------------------------------------------
+         INTERFACE ppm_io_write_hdf5
+             !!! Writes arrays to an HDF5 file
+             MODULE PROCEDURE io_write_hdf5_0s
+             MODULE PROCEDURE io_write_hdf5_0d
+             MODULE PROCEDURE io_write_hdf5_0i
+
+             MODULE PROCEDURE io_write_hdf5_1s
+             MODULE PROCEDURE io_write_hdf5_1d
+             MODULE PROCEDURE io_write_hdf5_1i
+
+             MODULE PROCEDURE io_write_hdf5_2s
+             MODULE PROCEDURE io_write_hdf5_2d
+             MODULE PROCEDURE io_write_hdf5_2i
+
+             MODULE PROCEDURE io_write_hdf5_3s
+             MODULE PROCEDURE io_write_hdf5_3d
+             MODULE PROCEDURE io_write_hdf5_3i
+
+             MODULE PROCEDURE io_write_hdf5_4s
+             MODULE PROCEDURE io_write_hdf5_4d
+             MODULE PROCEDURE io_write_hdf5_4i
+
+             MODULE PROCEDURE io_write_hdf5_5s
+             MODULE PROCEDURE io_write_hdf5_5d
+             MODULE PROCEDURE io_write_hdf5_5i
+
+         END INTERFACE
+
+         !----------------------------------------------------------------------
          !  Define interface to ppm_io_delete
          !----------------------------------------------------------------------
          INTERFACE ppm_io_delete
@@ -266,12 +298,15 @@
 #define __DIM 0
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -290,12 +325,15 @@
 #define __DIM 1
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -311,12 +349,15 @@
 #define __DIM 2
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -332,12 +373,15 @@
 #define __DIM 3
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -353,12 +397,15 @@
 #define __DIM 4
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -374,12 +421,15 @@
 #define __DIM 5
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __INTEGER
 #include "io/ppm_io.f"
+#include "io/ppm_io_write_hdf5.f"
 #undef __KIND
 #define __KIND __LOGICAL
 #include "io/ppm_io.f"
@@ -445,6 +495,7 @@
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io_write_ascii.f"
 #include "io/ppm_io_write_binary.f"
+
 #undef __KIND
 #define __KIND __DOUBLE_PRECISION
 #include "io/ppm_io_write_ascii.f"

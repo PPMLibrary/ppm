@@ -321,6 +321,7 @@
       INTEGER, PARAMETER :: ppm_param_io_concat           = 14
       INTEGER, PARAMETER :: ppm_param_io_single           = 15
       INTEGER, PARAMETER :: ppm_param_io_double           = 16
+      INTEGER, PARAMETER :: ppm_param_io_hdf5             = 17
 
       !-------------------------------------------------------------------------
       !  error severity levels
