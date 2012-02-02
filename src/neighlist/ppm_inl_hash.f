@@ -255,6 +255,8 @@
       !!! This routine needs to be very fast, therefor we skip the usual
       !!! chit-chat and get right to it. (-> no substart,substop unless
       !!! compiled with __DEBUG flag)
+      USE ppm_module_substart
+      USE ppm_module_substop
       IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
@@ -276,7 +278,7 @@
       INTEGER                              :: spot
 
 #ifdef __DEBUG
-      INTEGER                               :: t0
+      REAL(KIND(1.D0))                      :: t0
       CALL substart('hash_insert',t0,info)
 #endif
 
@@ -323,6 +325,8 @@
       !!! This routine needs to be very fast, therefor we skip the usual
       !!! chit-chat and get right to it. (-> no substart,substop unless
       !!! compiled with __DEBUG flag)
+      USE ppm_module_substart
+      USE ppm_module_substop
       IMPLICIT NONE
       !---------------------------------------------------------------------
       !  Arguments
@@ -341,7 +345,7 @@
       INTEGER                               :: spot
 
 #ifdef __DEBUG
-      INTEGER                               :: t0
+      REAL(KIND(1.D0))                      :: t0
       INTEGER                               :: info
       ! the info and t0 are here only needed in debug mode an
       ! will not be propagated

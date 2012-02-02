@@ -17,7 +17,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     !  Arguments
     !-------------------------------------------------------------------------
     DEFINE_MK()
-    TYPE(DTYPE(ppm_t_particles)),        INTENT(INOUT)     :: Pc
+    CLASS(DTYPE(ppm_t_particles))                          :: Pc
     !!! Data structure containing the particle cloud
     INTEGER,                             INTENT(INOUT)     :: Npart_global
     !!! total number of particles that will be initialized
@@ -53,7 +53,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     INTEGER                               :: remaining_rows
 
     REAL(MK)                              :: shift
-    INTEGER                               :: distribution
+    INTEGER                               :: distribution,neigh_id
     TYPE(ppm_t_topo),POINTER              :: topo => NULL()
     REAL(MK), DIMENSION(ppm_dim)          :: min_phys,max_phys,len_phys
 
@@ -376,17 +376,25 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     Pc%flags(ppm_part_areinside) = .TRUE.
 
-!    ! set cutoff to a default value
-!    IF (PRESENT(cutoff)) THEN
-!        Pc%cutoff = cutoff
-!    ELSE
-!        Pc%cutoff = 2.1_MK * Pc%h_avg
-!    ENDIF
+    ! set cutoff to a default value
+    IF (PRESENT(cutoff)) THEN
+        Pc%ghostlayer = cutoff
+    ELSE
+        Pc%ghostlayer = 2.1_MK * Pc%h_avg
+    ENDIF
 
     IF (PRESENT(topoid)) THEN
         Pc%active_topoid = topoid
     ENDIF
 
+    CALL Pc%create_neighlist(neigh_id,info,name='self',&
+        skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'creating neighbour list failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
     !-----------------------------------------------------------------------
     ! Finalize
     !-----------------------------------------------------------------------

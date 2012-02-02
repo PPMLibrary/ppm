@@ -20,21 +20,22 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
         RETURN
     ENDIF
 
-    IF (ppt_id .LE. Pc%max_wpid) THEN
-        IF (Pc%props(ppt_id)%t%flags(ppm_ppt_partial)) THEN
+    IF (ppt_id .LE. Pc%props%max_id) THEN
+        ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)
+        IF (prop%flags(ppm_ppt_partial)) THEN
             IF (PRESENT(with_ghosts)) THEN
                 IF (with_ghosts) THEN
-                    IF (Pc%props(ppt_id)%t%flags(ppm_ppt_ghosts)) THEN
+                    IF (prop%flags(ppm_ppt_ghosts)) THEN
                         wp => &
 #if   __DIM == 1
-                     Pc%props(ppt_id)%t%WRAP(DATANAME)(1:Pc%Mpart)
+                     prop%WRAP(DATANAME)(1:Pc%Mpart)
 #elif __DIM == 2
-                     Pc%props(ppt_id)%t%WRAP(DATANAME)(:,1:Pc%Mpart)
+                     prop%WRAP(DATANAME)(:,1:Pc%Mpart)
 #endif
                     ELSE
                         write(*,*) line_of_stars
                         write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-                            & TRIM(ADJUSTL(Pc%props(ppt_id)%t%name)),&
+                            & TRIM(ADJUSTL(prop%name)),&
                             & ') with ghosts when ghosts are not up-to-date. ',&
                             & 'Returning NULL pointer'
                         write(*,*) 'Run with traceback option to debug'
@@ -51,16 +52,17 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
             ENDIF
             wp => &
 #if   __DIM == 1
-                Pc%props(ppt_id)%t%WRAP(DATANAME)(1:Pc%Npart)
+                prop%WRAP(DATANAME)(1:Pc%Npart)
 #elif __DIM == 2
-                Pc%props(ppt_id)%t%WRAP(DATANAME)(:,1:Pc%Npart)
+                prop%WRAP(DATANAME)(:,1:Pc%Npart)
 #endif
             RETURN
         ENDIF
+        END ASSOCIATE
     ENDIF
     write(*,*) line_of_stars
     write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-        & TRIM(ADJUSTL(Pc%props(ppt_id)%t%name)),&
+        & TRIM(ADJUSTL(Pc%props%vec(ppt_id)%t%name)),&
         & ') when mapping is not up-to-date. ',&
         & 'Returning NULL pointer'
     write(*,*) 'Run with traceback option to debug'
@@ -106,7 +108,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,read_only,ghosts_ok)
     ENDIF
 
     !Assume that the ghost values are now incorrect
-    Pc%props(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
+    Pc%props%vec(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
     wp => NULL()
 
 END SUBROUTINE __FUNCNAME

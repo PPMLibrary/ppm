@@ -23,7 +23,8 @@ INTEGER,PARAMETER   :: ppm_part_partial = 2
 INTEGER,PARAMETER   :: ppm_part_reqput = 3
 INTEGER,PARAMETER   :: ppm_part_areinside = 4
 INTEGER,PARAMETER   :: ppm_part_cartesian = 5
-INTEGER,PARAMETER   :: ppm_param_length_partflags = 5
+INTEGER,PARAMETER   :: ppm_part_neighlists = 6
+INTEGER,PARAMETER   :: ppm_param_length_partflags = 6
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
@@ -33,6 +34,15 @@ INTEGER,PARAMETER   :: ppm_ppt_reqput = 3
 INTEGER,PARAMETER   :: ppm_ppt_map_parts = 4
 INTEGER,PARAMETER   :: ppm_ppt_map_ghosts = 5
 INTEGER,PARAMETER   :: ppm_param_length_pptflags = 5
+
+!PPM internal parameters used only to access entries in the
+!particle's property data structure.
+INTEGER,PARAMETER   :: ppm_ops_inc_ghosts = 1
+INTEGER,PARAMETER   :: ppm_ops_interp = 2
+INTEGER,PARAMETER   :: ppm_ops_iscomputed = 3
+INTEGER,PARAMETER   :: ppm_ops_isdefined = 4
+INTEGER,PARAMETER   :: ppm_ops_vector = 5
+INTEGER,PARAMETER   :: ppm_param_length_opsflags = 5
 
 
 !User parameters 
@@ -64,6 +74,7 @@ INTEGER, PRIVATE, DIMENSION(3)    :: ldc
 !!! Number of elements in all dimensions for allocation
 
 PUBLIC :: ppm_t_particles_s, ppm_t_particles_d
+PUBLIC :: ppm_t_sop_s, ppm_t_sop_d
 
 
 CONTAINS
@@ -112,6 +123,8 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "part/ppm_part_OOprocs.f"
 
+#include "part/container_procedures.inc"
+
 #undef  DTYPE
 #undef  __KIND
 
@@ -156,6 +169,8 @@ CONTAINS
 
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "part/ppm_part_OOprocs.f"
+
+#include "part/container_procedures.inc"
 
 #undef  DTYPE
 #undef  __KIND
