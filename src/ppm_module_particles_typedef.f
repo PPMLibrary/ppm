@@ -123,6 +123,13 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "part/ppm_part_OOprocs.f"
 
+#define __DIM 2
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#include "part/ppm_dcop_compute.f"
+#define __DIM 3
+#include "part/ppm_dcop_compute.f"
+#undef DEFINE_MK
+
 #include "part/container_procedures.inc"
 
 #undef  DTYPE

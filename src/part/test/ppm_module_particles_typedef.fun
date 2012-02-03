@@ -29,6 +29,7 @@ integer                         :: i,j,k,isum1,isum2,ip,wp_id
 integer                         :: wp1_id = 0
 integer                         :: wp2_id = 0
 integer                         :: wp3_id = 0
+integer                         :: op_id
 real(mk)                        :: rsum1,rsum2,rsum3,rsum4
 integer                         :: nstep
 real(mk),dimension(:),pointer   :: delta
@@ -133,7 +134,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         Assert_Equal(info,0)
 
 
-        call Pc%map_global(topoid,info)
+        call Pc%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
 
         call Pc%map_ghosts(info)
@@ -212,7 +213,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !Apply boundary conditions and remap the particles
         call Pc%apply_bc(info)
         Assert_Equal(info,0)
-        call Pc%map_partial(info)
+        call Pc%map(info)
         Assert_Equal(info,0)
 
         !Get the new ghosts
@@ -230,7 +231,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !Re-apply boundary conditions and remap the particles
         call Pc%apply_bc(info)
         Assert_Equal(info,0)
-        call Pc%map_partial(info)
+        call Pc%map(info)
         Assert_Equal(info,0)
 
         call Pc%map_ghosts(info)
@@ -259,17 +260,18 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         use ppm_module_typedef
 
+        call Pc%destroy(info)
         call Pc%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
 
-        call Pc%map_global(topoid,info)
+        call Pc%map(info,global=.true.,topoid=topoid)
         call Pc%map_ghosts(info)
 
         call Pc%comp_neighlist(info)
         Assert_Equal(info,0)
 
-        write(*,*) Pc%neighs(1)%t%nneighmin
-        write(*,*) Pc%neighs(1)%t%nneighmax
+        write(*,*) Pc%neighs%vec(1)%t%nneighmin
+        write(*,*) Pc%neighs%vec(1)%t%nneighmax
 
     end test
 
@@ -283,7 +285,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         Assert_Equal(info,0)
 
 
-        call Pc_a%map_global(topoid,info)
+        call Pc_a%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
 
         call Pc_a%map_ghosts(info)
@@ -292,8 +294,8 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc_a%comp_neighlist(info)
         Assert_Equal(info,0)
 
-        write(*,*) Pc_a%neighs(1)%t%nneighmin
-        write(*,*) Pc_a%neighs(1)%t%nneighmax
+        write(*,*) Pc_a%neighs%vec(1)%t%nneighmin
+        write(*,*) Pc_a%neighs%vec(1)%t%nneighmax
 
         !creating/destroying properties of different types
         call Pc_a%create_prop(wp1_id,ppm_type_longint,info,&
@@ -333,7 +335,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !Apply boundary conditions and remap the particles
         call Pc_a%apply_bc(info)
         Assert_Equal(info,0)
-        call Pc_a%map_partial(info)
+        call Pc_a%map(info)
         Assert_Equal(info,0)
 
         !Get the new ghosts
@@ -351,7 +353,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !Re-apply boundary conditions and remap the particles
         call Pc_a%apply_bc(info)
         Assert_Equal(info,0)
-        call Pc_a%map_partial(info)
+        call Pc_a%map(info)
         Assert_Equal(info,0)
 
         call Pc_a%map_ghosts(info)
@@ -372,6 +374,28 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         !call Pc_a%print_info(info)
         !Assert_Equal(info,0)
+
+    end test
+
+    test operators
+
+        call Pc%initialize(np_global,info,topoid=topoid)
+        Assert_Equal(info,0)
+
+        call Pc%map(info,global=.true.,topoid=topoid)
+        call Pc%map_ghosts(info)
+
+        call Pc%comp_neighlist(info)
+        Assert_Equal(info,0)
+
+        call Pc%create_op(op_id,1,(/2._mk/),(/2,0,0/),(/2/),info,name='dx2')
+        Assert_Equal(info,0)
+
+        call Pc%comp_op(op_id,info)
+        Assert_Equal(info,0)
+
+        call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
+        Assert_Equal(info,0)
 
     end test
 

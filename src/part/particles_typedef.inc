@@ -126,6 +126,15 @@ TYPE DTYPE(ppm_t_operator)
     !!! where the operators are stored
     TYPE(DTYPE(ppm_t_opdesc)),             POINTER :: desc => NULL()
     !!! small matrices that describe what each operator does
+    INTEGER                                        :: P_id = 0
+    !!! Id of the set of particles that this operator takes data from.
+    !!! The default, 0, stands for "self" (the operator is computed
+    !!! on the same set of particles than the one which contains the data).
+    INTEGER                                        :: neigh_id = 1
+    !!! Id of the neighbour list that should be used
+    !!! The default, 1, refers to "self": the list of neighbours within
+    !!! the same set of particles. 
+
     LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
     !!! logical flags
     !!!    ppm_ops_inc_ghosts
@@ -227,7 +236,7 @@ TYPE, ABSTRACT :: DTYPE(ppm_t_container)
     !!! number of different instances
     INTEGER                                         :: iter_id = 0
     !!! index at which the iterator is currently pointing
-    INTEGER                                         :: min_id = 0
+    INTEGER                                         :: min_id = HUGE(1)
     !!! smallest non-null index in the array
     INTEGER                                         :: max_id = 0
     !!! highest non-null index in the array
@@ -262,6 +271,7 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_props)
         PROCEDURE       :: next => DTYPE(next_prop)
         PROCEDURE       :: last => DTYPE(last_prop)
         PROCEDURE       :: prev => DTYPE(prev_prop)
+        PROCEDURE       :: destroy => DTYPE(prop_container_destroy)
 END TYPE DTYPE(ppm_c_props)
 !----------------------------------------------------------------------
 ! Container for operators
@@ -275,6 +285,7 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_operators)
         PROCEDURE       :: next => DTYPE(next_op)
         PROCEDURE       :: last => DTYPE(last_op)
         PROCEDURE       :: prev => DTYPE(prev_op)
+        PROCEDURE       :: destroy => DTYPE(op_container_destroy)
 END TYPE DTYPE(ppm_c_operators)
 !----------------------------------------------------------------------
 ! Container for neighbour lists
@@ -288,6 +299,7 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_neighlists)
         PROCEDURE       :: next => DTYPE(next_neigh)
         PROCEDURE       :: last => DTYPE(last_neigh)
         PROCEDURE       :: prev => DTYPE(prev_neigh)
+        PROCEDURE       :: destroy => DTYPE(neigh_container_destroy)
 END TYPE DTYPE(ppm_c_neighlists)
 
 TYPE DTYPE(ppm_t_particles)
@@ -381,6 +393,7 @@ TYPE DTYPE(ppm_t_particles)
 
         PROCEDURE     :: create_op => DTYPE(part_op_create)
         PROCEDURE     :: destroy_op => DTYPE(part_op_destroy)
+        PROCEDURE     :: comp_op => DTYPE(part_op_compute)
  !       PROCEDURE     :: updated_positions => DTYPE(part_updated_positions)
 
         PROCEDURE     :: map_part_push => DTYPE(part_prop_push)
