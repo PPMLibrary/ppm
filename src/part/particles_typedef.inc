@@ -122,7 +122,7 @@ END TYPE DTYPE(ppm_t_opdesc)
 TYPE DTYPE(ppm_t_operator)
     !!! Data structure containing all diff operators for a particle set
     !!! 
-    TYPE(DTYPE(ppm_t_part_prop)),          POINTER :: ker => NULL()
+    REAL(MK),DIMENSION(:,:),               POINTER :: ker => NULL()
     !!! where the operators are stored
     TYPE(DTYPE(ppm_t_opdesc)),             POINTER :: desc => NULL()
     !!! small matrices that describe what each operator does
@@ -242,6 +242,8 @@ TYPE, ABSTRACT :: DTYPE(ppm_t_container)
     !!! highest non-null index in the array
     INTEGER                                         :: vec_size = 0
     !!! current allocated size of the array
+    CONTAINS
+        PROCEDURE       :: exists => DTYPE(part_DS_exists)
 END TYPE DTYPE(ppm_t_container)
 
 !ABSTRACT INTERFACE
@@ -302,6 +304,36 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_neighlists)
         PROCEDURE       :: destroy => DTYPE(neigh_container_destroy)
 END TYPE DTYPE(ppm_c_neighlists)
 
+!----------------------------------------------------------------------
+! Container for lists of (pointers to) Particle clouds
+!----------------------------------------------------------------------
+TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_Pc)
+    TYPE(DTYPE(ppm_ptr_t_particles)),DIMENSION(:),POINTER :: vec => NULL()
+    !!! array with pointers to each neighbor list for this particle set
+    CLASS(DTYPE(ppm_t_particles)),                 POINTER :: iterator => NULL()
+!    CONTAINS
+!        PROCEDURE       :: begin => DTYPE(begin_pc)
+!        PROCEDURE       :: next => DTYPE(next_pc)
+!        PROCEDURE       :: last => DTYPE(last_pc)
+!        PROCEDURE       :: prev => DTYPE(prev_pc)
+!        PROCEDURE       :: destroy => DTYPE(pc_container_destroy)
+END TYPE DTYPE(ppm_c_Pc)
+
+!----------------------------------------------------------------------
+! Container for lists of (pointers to) adaptive Particle clouds
+!----------------------------------------------------------------------
+TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_aPc)
+    TYPE(DTYPE(ppm_ptr_t_sop)),DIMENSION(:),POINTER  :: vec => NULL()
+    !!! array with pointers to each neighbor list for this particle set
+    CLASS(DTYPE(ppm_t_sop)),                 POINTER :: iterator => NULL()
+!    CONTAINS
+!        PROCEDURE       :: begin => DTYPE(begin_pc)
+!        PROCEDURE       :: next => DTYPE(next_pc)
+!        PROCEDURE       :: last => DTYPE(last_pc)
+!        PROCEDURE       :: prev => DTYPE(prev_pc)
+!        PROCEDURE       :: destroy => DTYPE(pc_container_destroy)
+END TYPE DTYPE(ppm_c_aPc)
+
 TYPE DTYPE(ppm_t_particles)
     !!! Data structure for a particle set
 
@@ -352,6 +384,10 @@ TYPE DTYPE(ppm_t_particles)
     TYPE(DTYPE(ppm_c_operators))                    :: ops
 
 
+    ! Container for lists of (pointers to) other particle clouds
+    TYPE(DTYPE(ppm_c_Pc))                           :: set_Pc
+
+
     ! Load balancing
     REAL(MK), DIMENSION(:), POINTER                 :: pcost=> NULL()
     !!! cost associated to each particle 
@@ -386,6 +422,7 @@ TYPE DTYPE(ppm_t_particles)
 
         PROCEDURE     :: create_prop => DTYPE(part_prop_create)
         PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
+        PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
 
         PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
         PROCEDURE     :: destroy_neighlist => DTYPE(part_neigh_destroy)
@@ -393,7 +430,10 @@ TYPE DTYPE(ppm_t_particles)
 
         PROCEDURE     :: create_op => DTYPE(part_op_create)
         PROCEDURE     :: destroy_op => DTYPE(part_op_destroy)
+        PROCEDURE     :: DTYPE(ppm_dcop_compute2d)
+        PROCEDURE     :: DTYPE(ppm_dcop_compute3d)
         PROCEDURE     :: comp_op => DTYPE(part_op_compute)
+        PROCEDURE     :: apply_op => DTYPE(part_op_apply)
  !       PROCEDURE     :: updated_positions => DTYPE(part_updated_positions)
 
         PROCEDURE     :: map_part_push => DTYPE(part_prop_push)
@@ -457,6 +497,14 @@ TYPE DTYPE(ppm_t_particles)
 
 END TYPE DTYPE(ppm_t_particles)
 
+!----------------------------------------------------------------------
+! Wrapper type to be able to have a pointer array to hold ppm_t_particles
+!----------------------------------------------------------------------
+TYPE DTYPE(ppm_ptr_t_particles)
+    TYPE(DTYPE(ppm_t_particles)), POINTER  :: t => NULL()
+END TYPE DTYPE(ppm_ptr_t_particles)
+
+
 TYPE, EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     !!! an extension of the Particle cloud data structure
     !!! for Self-Organizing Particles
@@ -500,6 +548,10 @@ TYPE, EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     !!! is backed up before adapt
 
 
+    ! Container for lists of (pointers to) other adaptive particle clouds
+    TYPE(DTYPE(ppm_c_aPc))                          :: set_aPc
+
+
     ! Anisotropic particles
     LOGICAL                                         :: anisotropic
     !!! true if the particles have their own cutoff radii
@@ -513,6 +565,13 @@ TYPE, EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
 
 
 END TYPE DTYPE(ppm_t_sop)
+
+!----------------------------------------------------------------------
+! Wrapper type to be able to have a pointer array to hold ppm_t_sop
+!----------------------------------------------------------------------
+TYPE DTYPE(ppm_ptr_t_sop)
+    TYPE(DTYPE(ppm_t_sop)), POINTER  :: t => NULL()
+END TYPE DTYPE(ppm_ptr_t_sop)
 
 #undef   MK
 #undef   _MK

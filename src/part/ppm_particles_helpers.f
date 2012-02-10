@@ -64,3 +64,31 @@ FUNCTION color_print(text,color)
 
 END FUNCTION
 
+
+FUNCTION factorial_m(multi_ind,ndim)
+    INTEGER                 :: factorial_m,i,ndim
+    INTEGER,DIMENSION(ndim) :: multi_ind
+
+    factorial_m = 1
+    DO i=1,ndim
+        factorial_m = factorial_m * factorial(multi_ind(i))
+    ENDDO
+END FUNCTION factorial_m
+
+FUNCTION factorial(n)
+    INTEGER    :: n,i
+    INTEGER    :: factorial
+    factorial = 1
+    DO i=1,n
+        factorial = i*factorial
+    ENDDO
+    RETURN
+END FUNCTION factorial
+
+FUNCTION binomial(n,k)
+    INTEGER    :: n,k
+    INTEGER    :: binomial
+    binomial = factorial(n)/(factorial(k)*factorial(n-k))
+END FUNCTION binomial
+
+

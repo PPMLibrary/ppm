@@ -271,6 +271,71 @@ SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
 
 END SUBROUTINE DTYPE(part_prop_destroy)
 
+SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts)
+    !!! Grow the property array to the correct size
+    !!! (e.g. if the number of particles has changed)
+    CLASS(DTYPE(ppm_t_particles))         :: Pc
+    INTEGER,                INTENT(IN   ) :: id
+    LOGICAL, OPTIONAL                     :: with_ghosts
+    !!! if true, then allocate with Mpart instead of the default size of Npart
+    INTEGER,               INTENT(OUT)    :: info
+
+    INTEGER                               :: lda2,vec_size,npart,i
+    CHARACTER(LEN=ppm_char)               :: caller = 'realloc_prop'
+    CHARACTER(LEN=ppm_char)               :: name2
+    REAL(KIND(1.D0))                      :: t0
+    TYPE(DTYPE(ppm_ptr_part_prop)),DIMENSION(:),POINTER  :: vec_tmp => NULL()
+    TYPE(DTYPE(ppm_t_part_prop)),               POINTER  :: prop => NULL()
+    LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
+
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. ASSOCIATED(Pc%props%vec(id)%t)) THEN
+        ALLOCATE(Pc%props%vec(id)%t,STAT=info)
+        IF (info .NE. 0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_alloc,caller,&
+                'allocating property pointer failed',__LINE__,info)
+            GOTO 9999
+        ENDIF
+    ENDIF
+
+    prop => Pc%props%vec(id)%t
+    flags = prop%flags
+    lda2 = prop%lda
+    name2 = prop%name
+
+    npart = Pc%Npart
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) THEN
+            IF (Pc%flags(ppm_part_ghosts)) THEN
+                npart = Pc%Mpart
+                flags(ppm_ppt_ghosts) = .TRUE.
+            ELSE
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+            'trying to init property for ghosts when ghosts are not computed',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    ENDIF
+    flags(ppm_ppt_partial) = .TRUE.
+
+    ! Create the property
+    CALL prop%create(prop%data_type,npart,lda2,name2,flags,info)
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,caller,&
+            'reallocating property array failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    CALL substop(caller,t0,info)
+    9999  CONTINUE
+
+END SUBROUTINE DTYPE(part_prop_realloc)
+
 SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
     !!! Constructor for particle property data structure
     DEFINE_MK()
@@ -307,7 +372,7 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
     ENDIF
 
 
-    iopt   = ppm_param_alloc_fit
+    iopt   = ppm_param_alloc_grow
 
     IF (lda.GE.2) THEN
         ldc(1) = lda
@@ -716,7 +781,7 @@ SUBROUTINE DTYPE(part_op_create)(Pc,id,nterms,coeffs,degree,order,info,&
     !!! name for this operator
     INTEGER,               INTENT(OUT)    :: info
 
-    INTEGER                               :: lda2,vec_size,npart,lpid,lnlid
+    INTEGER                               :: i,vec_size,npart,lpid,lnlid
     CHARACTER(LEN=ppm_char)               :: caller = 'particle_op_create'
     CHARACTER(LEN=ppm_char)               :: lname
     LOGICAL                               :: lwith_ghosts,lvector,linterp
@@ -963,7 +1028,7 @@ SUBROUTINE DTYPE(op_create)(op,nterms,coeffs,degree,order,&
     op%P_id = pid
     op%neigh_id = nlid
 
-    IF (ASSOCIATED(op%ker).OR.ASSOCIATED(op%ker)) THEN
+    IF (ASSOCIATED(op%desc)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,   &
             &       'operator struct not clean. Use destroy first ',&
@@ -971,7 +1036,7 @@ SUBROUTINE DTYPE(op_create)(op,nterms,coeffs,degree,order,&
         GOTO 9999
     ENDIF
 
-    ALLOCATE(op%ker,op%desc,STAT=info)
+    ALLOCATE(op%desc,STAT=info)
     IF (info.NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,   &
@@ -998,11 +1063,11 @@ SUBROUTINE DTYPE(op_destroy)(op,info)
     
     CALL substart(caller,t0,info)
 
-    CALL op%ker%destroy(info)
+    CALL ppm_alloc(op%ker,ldc,ppm_param_dealloc,info)
     IF (info.NE.0) THEN
         info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,caller,   &
-            &       'ker destroy failed ',__LINE__,info)
+        CALL ppm_error(ppm_err_dealloc,caller,   &
+            &       'ker deallocate failed ',__LINE__,info)
         GOTO 9999
     ENDIF
     CALL op%desc%destroy(info)
@@ -1022,6 +1087,472 @@ SUBROUTINE DTYPE(op_destroy)(op,info)
     9999 CONTINUE
 
 END SUBROUTINE DTYPE(op_destroy)
+
+SUBROUTINE DTYPE(part_op_compute)(Pc,op_id,info,c,min_sv)
+
+    USE ppm_module_write
+    IMPLICIT NONE
+#ifdef __MPI
+    INCLUDE 'mpif.h'
+#endif
+
+    DEFINE_MK()
+    !---------------------------------------------------------
+    ! arguments
+    !---------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                        :: Pc
+    !!! particles
+    INTEGER,                             INTENT(IN   )   :: op_id
+    !!! id of the operator 
+    INTEGER,                             INTENT(  OUT)   :: info
+    !!! non-zero on output if some error occurred
+    !---------------------------------------------------------
+    ! Optional arguments
+    !---------------------------------------------------------
+    REAL(MK),OPTIONAL                       :: c
+    !!! ratio h/epsilon (default is 1.0)
+    REAL(MK),OPTIONAL   ,  INTENT(  OUT)    :: min_sv
+    !!! smallest singular value
+    !---------------------------------------------------------
+    ! local variables
+    !---------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: caller = 'part_dcop_compute'
+    CHARACTER(LEN = ppm_char)               :: cbuf
+    REAL(KIND(1.D0))                        :: t0,t1,t2
+    TYPE(DTYPE(ppm_t_operator)), POINTER    :: op => NULL()
+
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
+
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
+    IF (.NOT. ASSOCIATED(Pc%xp)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,'Particles not defined',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT. Pc%ops%exists(op_id)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'No operator data structure found, use create_op() first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    op => Pc%ops%vec(op_id)%t
+    IF (.NOT. op%flags(ppm_ops_isdefined)) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'Operator not found, use create_op() first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (op%flags(ppm_ops_iscomputed)) THEN
+        WRITE(cbuf,*) 'WARNING: The operator with id ',op_id,&
+            & ' and name *',TRIM(ADJUSTL(op%desc%name)),&
+            &'* seems to have already been computed. Unnecessary call to',&
+            &' particles_dcop_compute()'
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
+    ENDIF
+
+    !-------------------------------------------------------------------------
+    ! Compute the DC operator
+    !-------------------------------------------------------------------------
+
+    Pc%stats%nb_dc_comp = Pc%stats%nb_dc_comp + 1
+
+    IF (ppm_dim .EQ. 2) THEN
+        CALL Pc%DTYPE(ppm_dcop_compute2d)(op_id,info,c,min_sv)
+    ELSE
+        CALL Pc%DTYPE(ppm_dcop_compute3d)(op_id,info,c,min_sv)
+    ENDIF
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(999,caller,   &
+            & 'ppm_dcop_compute failed',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    !-------------------------------------------------------------------------
+    ! Update states
+    !-------------------------------------------------------------------------
+    op%flags(ppm_ops_iscomputed) = .TRUE.
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Pc%stats%t_dc_comp = Pc%stats%t_dc_comp + (t2-t1)
+#endif
+
+    !-------------------------------------------------------------------------
+    ! Finalize
+    !-------------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE DTYPE(part_op_compute)
+
+SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
+        info,input_is_vector)
+    !!!------------------------------------------------------------------------!
+    !!! NEW version
+    !!! Apply DC kernel stored in op_id to the scalar property stored
+    !!! prop_from_id and store the results in prop_to_id
+    !!!------------------------------------------------------------------------!
+    USE ppm_module_data, ONLY: ppm_rank
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN   )   :: from_id
+    !!! id where the data is stored
+    INTEGER,                            INTENT(INOUT)   :: to_id
+    !!! id where the result should be stored (0 if it needs to be allocated)
+    INTEGER,                            INTENT(IN   )   :: op_id
+    !!! id where the DC kernel has been stored
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! Optional arguments
+    !-------------------------------------------------------------------------
+    LOGICAL,  OPTIONAL,                 INTENT(IN   )   :: input_is_vector
+    !!! true if the data from_id is a vector
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                  :: filename
+    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
+    INTEGER                                    :: ip,iq,ineigh,lda,np_target
+    REAL(KIND(1.D0))                           :: t0,t1,t2
+    REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
+    REAL(MK),DIMENSION(:),  POINTER            :: wps1 => NULL(),wps2=>NULL()
+    REAL(MK),DIMENSION(:,:),POINTER            :: wpv1 => NULL(),wpv2=>NULL()
+    REAL(MK),DIMENSION(:),  POINTER            :: dwps => NULL()
+    REAL(MK),DIMENSION(:,:),POINTER            :: dwpv => NULL()
+    INTEGER, DIMENSION(:),  POINTER            :: nvlist => NULL()
+    INTEGER, DIMENSION(:,:),POINTER            :: vlist => NULL()
+    REAL(MK)                                   :: sig
+    LOGICAL                                    :: vector_output
+    LOGICAL                                    :: vector_input
+    LOGICAL                                    :: with_ghosts,isinterp
+
+    TYPE(DTYPE(ppm_t_sop)),POINTER             :: Pc2 => NULL()
+    TYPE(DTYPE(ppm_t_neighlist)),POINTER       :: Nlist => NULL()
+    TYPE(DTYPE(ppm_t_operator)), POINTER       :: op => NULL()
+    !-------------------------------------------------------------------------
+    ! Initialize
+    !-------------------------------------------------------------------------
+    info = 0 ! change if error occurs
+    CALL substart(caller,t0,info)
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
+
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
+    IF (.NOT. ASSOCIATED(Pc%xp)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,'Particles not defined',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT. Pc%ops%exists(op_id)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'No operator data structure found, use create_op() first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    op => Pc%ops%vec(op_id)%t
+    IF (.NOT. op%flags(ppm_ops_isdefined)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Operator not found, use create_op() first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    IF (.NOT.op%flags(ppm_ops_iscomputed)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Operator not computed, use comp_op() first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    isinterp = op%flags(ppm_ops_interp)
+    vector_output =  op%flags(ppm_ops_vector)
+    !if true, then each term of the differential opearator is stored as one
+    !component in eta. This is used when computing e.g. the gradient opearator.
+    !if false, the same input parameters would yield an operator approximating
+    ! the divergence operator.
+    with_ghosts = op%flags(ppm_ops_inc_ghosts)
+    !if true, then the operator should be computed for ghost particles too. 
+    !Note that the resulting values will be wrong for the ghost particles
+    !that have some neighbours outside the ghost layers. Some of these particles
+    !may also not have enough neighbours for the Vandermonde matrix to be
+    !invertible. These particles will be skipped without raising a warning.
+
+    IF (PRESENT(input_is_vector)) THEN
+        vector_input = input_is_vector
+    ELSE
+        vector_input = .FALSE.
+    ENDIF
+    IF (with_ghosts) THEN
+        np_target = Pc%Mpart
+    ELSE
+        np_target = Pc%Npart
+    ENDIF
+
+
+    IF (.NOT. Pc%neighs%exists(op%neigh_id)) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Neighbour lists have not been created',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    Nlist => Pc%neighs%vec(op%neigh_id)%t
+    IF (.NOT. Nlist%uptodate) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,&
+            'Neighbour lists are not up to date',__LINE__,info)
+        GOTO 9999
+    ENDIF
+    nvlist => Nlist%nvlist
+    vlist => Nlist%vlist
+
+    SELECT TYPE(Pc)
+    TYPE IS (DTYPE(ppm_t_sop))
+        IF (isinterp) THEN
+            Pc2 => Pc%set_aPc%vec(op%P_id)%t
+            IF (.NOT. Pc2%props%exists(from_id)) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,   &
+                    & 'The operator input is not allocated.',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+            IF (.NOT.Pc2%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Pc2%props%vec(from_id)%t%name)),' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ELSE
+            IF (.NOT. Pc%props%exists(from_id)) THEN
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,   &
+                    & 'The operator input is not allocated.',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+            IF (.NOT.Pc%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
+                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                    Pc%props%vec(from_id)%t%name)),' are needed.'
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,&
+                    'Please call particles_mapping_ghosts first',&
+                    __LINE__,info)
+                GOTO 9999
+            ENDIF
+        ENDIF
+    CLASS DEFAULT
+        IF (.NOT. Pc%props%exists(from_id)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+                & 'The operator input is not allocated.',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+        IF (.NOT.Pc%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
+            WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+                Pc%props%vec(from_id)%t%name)),' are needed.'
+            CALL ppm_write(ppm_rank,caller,cbuf,info)
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,&
+                'Please call particles_mapping_ghosts first',&
+                __LINE__,info)
+            GOTO 9999
+        ENDIF
+    END SELECT
+
+    !allocate output field if needed
+    !otherwise simply check that the output array had been allocated
+    !to the right size
+    IF (to_id.EQ.0) THEN
+        IF (vector_output) THEN
+#if   __KIND == __SINGLE_PRECISION
+            CALL Pc%create_prop(to_id,ppm_type_real_single,info,lda=op%desc%nterms,&  
+                name="dflt_dcop_apply",with_ghosts=with_ghosts)
+#elif __KIND == __DOUBLE_PRECISION
+            CALL Pc%create_prop(to_id,ppm_type_real_double,info,lda=op%desc%nterms,&  
+                name="dflt_dcop_apply",with_ghosts=with_ghosts)
+#endif
+        ELSE
+#if   __KIND == __SINGLE_PRECISION
+            CALL Pc%create_prop(to_id,ppm_type_real_single,info,&
+                name="dflt_dcop_apply",with_ghosts=with_ghosts)
+#elif __KIND == __DOUBLE_PRECISION
+            CALL Pc%create_prop(to_id,ppm_type_real_double,info,&
+                name="dflt_dcop_apply",with_ghosts=with_ghosts)
+#endif
+        ENDIF
+    ELSE
+        IF (.NOT.Pc%props%vec(to_id)%t%flags(ppm_ppt_partial).OR. &
+            &  with_ghosts .AND. &
+            &  .NOT.Pc%props%vec(to_id)%t%flags(ppm_ppt_ghosts)) THEN
+            CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts)
+        ENDIF
+    ENDIF
+    IF (info .NE. 0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_alloc,caller,&
+            'ppm_prop_(re)allocate failed',__LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (vector_output) THEN
+        CALL Pc%get(dwpv,to_id,with_ghosts=with_ghosts)
+        lda = op%desc%nterms
+        DO ip = 1,np_target
+            dwpv(1:lda,ip) = 0._MK
+        ENDDO
+    ELSE
+        CALL Pc%get(dwps,to_id,with_ghosts=with_ghosts)
+        DO ip = 1,np_target
+            dwps(ip) = 0._MK
+        ENDDO
+    ENDIF
+    eta => Pc%get_dcop(op_id,with_ghosts=with_ghosts)
+
+
+    IF (isinterp) THEN
+        IF (vector_output) THEN
+            IF(vector_input) THEN
+                CALL Pc2%get(wpv2,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            wpv2(1:lda,iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                CALL Pc2%set(wpv2,from_id,read_only=.TRUE.)
+            ELSE
+                CALL Pc2%get(wps2,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            wps2(iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                CALL Pc2%set(wps2,from_id,read_only=.TRUE.)
+            ENDIF
+        ELSE
+            CALL Pc2%get(wps2,from_id,with_ghosts=.TRUE.)
+            DO ip = 1,np_target
+                DO ineigh = 1,nvlist(ip)
+                    iq = vlist(ineigh,ip)
+                    dwps(ip) = dwps(ip) + wps2(iq) * eta(ineigh,ip)
+                ENDDO
+            ENDDO
+            CALL Pc2%set(wps2,from_id,read_only=.TRUE.)
+        ENDIF
+    ELSE
+        sig = -1._mk 
+        IF (vector_output) THEN
+            IF(vector_input) THEN
+                CALL Pc%get(wpv1,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            (wpv1(1:lda,iq) + sig*(wpv1(1:lda,ip)))* &
+                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                CALL Pc%set(wpv1,from_id,read_only=.TRUE.)
+            ELSE
+                CALL Pc%get(wps1,from_id,with_ghosts=.TRUE.)
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
+                            (wps1(iq) + sig*(wps1(ip)))* &
+                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                    ENDDO
+                ENDDO
+                CALL Pc%set(wps1,from_id,read_only=.TRUE.)
+            ENDIF
+        ELSE
+            CALL Pc%get(wps1,from_id,with_ghosts=.TRUE.)
+            DO ip = 1,np_target
+                DO ineigh = 1,nvlist(ip)
+                    iq = vlist(ineigh,ip)
+                    dwps(ip) = dwps(ip) + &
+                        (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
+                ENDDO
+            ENDDO
+            CALL Pc%set(wps1,from_id,read_only=.TRUE.)
+        ENDIF
+    ENDIF
+
+    eta => Pc%set_dcop(op_id)
+    IF (vector_output) THEN
+        IF (with_ghosts) THEN
+            !we assume that the ghosts are up-to-date even though
+            !they clearly are not. we assume you know what you are
+            !doing when using this option.
+            CALL Pc%set(dwpv,to_id,ghosts_ok=.TRUE.)
+        ELSE
+            CALL Pc%set(dwpv,to_id)
+        ENDIF
+    ELSE
+        IF (with_ghosts) THEN
+            CALL Pc%set(dwps,to_id,ghosts_ok=.TRUE.)
+        ELSE
+            CALL Pc%set(dwps,to_id)
+        ENDIF
+    ENDIF
+    nvlist => NULL()
+    vlist => NULL()
+
+    Pc%stats%nb_dc_apply = Pc%stats%nb_dc_apply + 1
+#ifdef __MPI
+    t2 = MPI_WTIME(info)
+    Pc%stats%t_dc_apply = Pc%stats%t_dc_apply+(t2-t1)
+#endif
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE ! jump here upon error
+
+
+END SUBROUTINE DTYPE(part_op_apply)
+
+
 
 
 SUBROUTINE DTYPE(desc_create)(desc,nterms,coeffs,degree,order,name,info)
@@ -1105,6 +1636,9 @@ SUBROUTINE DTYPE(desc_create)(desc,nterms,coeffs,degree,order,name,info)
             &            'failed to allocate ops%desc',__LINE__,info)
         GOTO 9999
     ENDIF
+    desc%order = order 
+    desc%coeffs = coeffs 
+    desc%degree = degree 
     desc%nterms = nterms 
     desc%name = name
 
@@ -1917,12 +2451,12 @@ FUNCTION DTYPE(get_dcop)(Pc,eta_id,with_ghosts)
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             DTYPE(get_dcop) => &
-                Pc%ops%vec(eta_id)%t%ker%data_2d_r(:,1:Pc%Mpart)
+                Pc%ops%vec(eta_id)%t%ker(:,1:Pc%Mpart)
             RETURN
         ENDIF
     ENDIF
     DTYPE(get_dcop) => &
-        Pc%ops%vec(eta_id)%t%ker%data_2d_r(:,1:Pc%Npart)
+        Pc%ops%vec(eta_id)%t%ker(:,1:Pc%Npart)
 
 END FUNCTION DTYPE(get_dcop)
 
@@ -2783,7 +3317,7 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
     !defined already
     IF (PRESENT(nlid)) THEN
         neigh_id = nlid
-        IF (neigh_id .EQ. 0 .OR. neigh_id .GT. Pc%neighs%vec_size) THEN
+        IF (.NOT. Pc%neighs%exists(neigh_id)) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,caller,   &
                 &  'invalid id for neighbour list.',&
@@ -3077,6 +3611,85 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
     9999 CONTINUE ! jump here upon error
 
 END SUBROUTINE DTYPE(part_neighlist)
+
+
+FUNCTION DTYPE(part_DS_exists)(cont,id,caller) RESULT(exists)
+    !!!------------------------------------------------------------------------!
+    !!! Check whether a Data Structure exists and can be accessed at this id
+    !!!------------------------------------------------------------------------!
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_container))                       :: cont
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(IN   )   :: id
+    !!! id where the data is stored
+    LOGICAL                                             :: exists
+    !!! Return status, on success 0.
+    CHARACTER(LEN = *),OPTIONAL                         :: caller
+    !!! Calling routine
+    
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)               :: lcaller
+    INTEGER                                 :: info
+
+
+    IF (PRESENT(caller)) THEN
+        lcaller = TRIM(ADJUSTL(caller))
+    ELSE
+        lcaller = 'ppm_DS_exists'
+    ENDIF
+    exists = .FALSE.
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
+    IF (id.LE.0 .OR. id.GT.cont%max_id) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,lcaller,   &
+            & 'Invalid id for this data structure, use create() first',&
+            __LINE__,info)
+        RETURN
+    ENDIF
+
+    !NB: ugly code b/c no templating
+    SELECT TYPE(cont)
+    TYPE IS (DTYPE(ppm_c_props))
+        IF (ASSOCIATED(cont%vec)) THEN
+            IF (ASSOCIATED(cont%vec(id)%t)) THEN
+                exists = .TRUE.
+                RETURN
+            ENDIF
+        ENDIF
+    TYPE IS (DTYPE(ppm_c_operators))
+        IF (ASSOCIATED(cont%vec)) THEN
+            IF (ASSOCIATED(cont%vec(id)%t)) THEN
+                exists = .TRUE.
+                RETURN
+            ENDIF
+        ENDIF
+    TYPE IS (DTYPE(ppm_c_neighlists))
+        IF (ASSOCIATED(cont%vec)) THEN
+            IF (ASSOCIATED(cont%vec(id)%t)) THEN
+                exists = .TRUE.
+                RETURN
+            ENDIF
+        ENDIF
+    END SELECT
+
+
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_argument,lcaller,   &
+        & 'No data structure found, use create() first',&
+        __LINE__,info)
+    RETURN
+
+
+
+END FUNCTION DTYPE(part_DS_exists)
 
 #undef DEFINE_MK
 

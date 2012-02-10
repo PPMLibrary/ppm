@@ -26,7 +26,7 @@ real(mk),dimension(:  ),pointer :: len_phys
 real(mk),dimension(:  ),pointer :: rcp,wp
 integer,dimension(:),pointer    :: wpi=>NULL()
 integer                         :: i,j,k,isum1,isum2,ip,wp_id
-integer                         :: wp1_id = 0
+integer                         :: wp1_id = 0, dwp1_id = 0
 integer                         :: wp2_id = 0
 integer                         :: wp3_id = 0
 integer                         :: op_id
@@ -124,6 +124,40 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc%destroy(info)
 
     end teardown
+
+
+    test operators
+
+        call Pc%initialize(np_global,info,topoid=topoid)
+        Assert_Equal(info,0)
+
+        call Pc%map(info,global=.true.,topoid=topoid)
+        call Pc%map_ghosts(info)
+
+        call Pc%comp_neighlist(info)
+        Assert_Equal(info,0)
+
+        call Pc%create_op(op_id,1,(/2._mk/),(/2,0,0/),(/2/),info,name='dx2')
+        Assert_Equal(info,0)
+
+        call Pc%comp_op(op_id,info)
+        Assert_Equal(info,0)
+
+        call Pc%create_prop(wp1_id,ppm_type_real_double,info,1,name='testf')
+        Assert_Equal(info,0)
+        call Pc%get(wp_1r,wp1_id)
+        call Pc%get_xp(xp)
+        DO ip=1,Pc%Npart
+            wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
+        ENDDO
+        call Pc%set_xp(xp,read_only=.true.)
+        call Pc%set(wp_1r,wp1_id)
+        call Pc%map_ghosts(info)
+
+        call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
+        Assert_Equal(info,0)
+
+    end test
 
     test initialize_cart
         ! test initialization of particles on a grid
@@ -376,29 +410,6 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !Assert_Equal(info,0)
 
     end test
-
-    test operators
-
-        call Pc%initialize(np_global,info,topoid=topoid)
-        Assert_Equal(info,0)
-
-        call Pc%map(info,global=.true.,topoid=topoid)
-        call Pc%map_ghosts(info)
-
-        call Pc%comp_neighlist(info)
-        Assert_Equal(info,0)
-
-        call Pc%create_op(op_id,1,(/2._mk/),(/2,0,0/),(/2/),info,name='dx2')
-        Assert_Equal(info,0)
-
-        call Pc%comp_op(op_id,info)
-        Assert_Equal(info,0)
-
-        call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
-        Assert_Equal(info,0)
-
-    end test
-
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
