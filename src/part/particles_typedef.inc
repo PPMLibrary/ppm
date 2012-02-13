@@ -269,11 +269,41 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_props)
     !!! array with pointers to each property for this particle set
     TYPE(DTYPE(ppm_t_part_prop)),              POINTER  :: iterator => NULL()
     CONTAINS
+        PRIVATE
         PROCEDURE       :: begin => DTYPE(begin_prop)
         PROCEDURE       :: next => DTYPE(next_prop)
         PROCEDURE       :: last => DTYPE(last_prop)
         PROCEDURE       :: prev => DTYPE(prev_prop)
         PROCEDURE       :: destroy => DTYPE(prop_container_destroy)
+
+        PROCEDURE     :: DTYPE(data_1d_i_check)
+        PROCEDURE     :: DTYPE(data_2d_i_check)
+        PROCEDURE     :: DTYPE(data_1d_li_check)
+        PROCEDURE     :: DTYPE(data_2d_li_check)
+        PROCEDURE     :: DTYPE(data_1d_r_check)
+        PROCEDURE     :: DTYPE(data_2d_r_check)
+        PROCEDURE     :: DTYPE(data_1d_c_check)
+        PROCEDURE     :: DTYPE(data_2d_c_check)
+        PROCEDURE     :: DTYPE(data_1d_l_check)
+        PROCEDURE     :: DTYPE(data_2d_l_check)
+
+
+        !NOTE: for some reason, this does not work
+        ! (ifort crashes at compile time if there is a call
+        !  to this%checktype(wp,wpid,info) )
+        ! One can call the not-overloaded procedures directly,
+        ! but thats very annoying...
+        GENERIC, PUBLIC :: checktype => & 
+            DTYPE(data_1d_i_check),&
+            DTYPE(data_2d_i_check),&
+            DTYPE(data_1d_li_check),&
+            DTYPE(data_2d_li_check),&
+            DTYPE(data_1d_r_check),&
+            DTYPE(data_2d_r_check),&
+            DTYPE(data_1d_c_check),&
+            DTYPE(data_2d_c_check),&
+            DTYPE(data_1d_l_check),&
+            DTYPE(data_2d_l_check)
 END TYPE DTYPE(ppm_c_props)
 !----------------------------------------------------------------------
 ! Container for operators

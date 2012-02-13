@@ -143,19 +143,26 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc%comp_op(op_id,info)
         Assert_Equal(info,0)
 
-        call Pc%create_prop(wp1_id,ppm_type_real_double,info,1,name='testf')
-        Assert_Equal(info,0)
+        call Pc%create_prop(wp1_id,ppm_type_real_double,info,1,name='testf_sca')
+        call Pc%create_prop(wp2_id,ppm_type_real_double,info,3,name='testf_vec')
         call Pc%get(wp_1r,wp1_id)
+        call Pc%get(wp_2r,wp2_id)
         call Pc%get_xp(xp)
         DO ip=1,Pc%Npart
             wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
+            wp_2r(1:ndim,ip) = f0_test(xp(1:ndim,ip),ndim)
         ENDDO
         call Pc%set_xp(xp,read_only=.true.)
         call Pc%set(wp_1r,wp1_id)
+        call Pc%set(wp_2r,wp2_id)
         call Pc%map_ghosts(info)
 
         call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
         Assert_Equal(info,0)
+
+        call Pc%destroy_op(op_id,info)
+        Assert_Equal(info,0)
+
 
     end test
 

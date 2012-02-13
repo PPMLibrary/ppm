@@ -271,16 +271,23 @@ SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
 
 END SUBROUTINE DTYPE(part_prop_destroy)
 
-SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts)
-    !!! Grow the property array to the correct size
-    !!! (e.g. if the number of particles has changed)
+SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
+    !!! Reallocate the property array to the correct size
+    !!! (e.g. if the number of particles has changed or if the type
+    !!! of the data changes)
     CLASS(DTYPE(ppm_t_particles))         :: Pc
     INTEGER,                INTENT(IN   ) :: id
+    INTEGER,               INTENT(OUT)    :: info
     LOGICAL, OPTIONAL                     :: with_ghosts
     !!! if true, then allocate with Mpart instead of the default size of Npart
-    INTEGER,               INTENT(OUT)    :: info
+    INTEGER, OPTIONAL                     :: datatype
+    !!! deallocate the old data array and allocate a new one,
+    !!! possibly of a different data type.
+    INTEGER, OPTIONAL                     :: lda
+    !!! deallocate the old data array and allocate a new one,
+    !!! possibly of a different dimension
 
-    INTEGER                               :: lda2,vec_size,npart,i
+    INTEGER                               :: lda2,vec_size,npart,i,dtype
     CHARACTER(LEN=ppm_char)               :: caller = 'realloc_prop'
     CHARACTER(LEN=ppm_char)               :: name2
     REAL(KIND(1.D0))                      :: t0
@@ -302,7 +309,6 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts)
 
     prop => Pc%props%vec(id)%t
     flags = prop%flags
-    lda2 = prop%lda
     name2 = prop%name
 
     npart = Pc%Npart
@@ -322,8 +328,22 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts)
     ENDIF
     flags(ppm_ppt_partial) = .TRUE.
 
+    IF (PRESENT(lda)) THEN
+        lda2 = lda
+    ELSE
+        lda2 = prop%lda
+    ENDIF
+    IF (PRESENT(datatype)) THEN
+        dtype = datatype
+    ELSE
+        dtype = prop%data_type
+    ENDIF
+    IF (lda2.NE.prop%lda .OR. dtype.NE.prop%data_type) THEN
+        CALL prop%destroy(info)
+    ENDIF
+
     ! Create the property
-    CALL prop%create(prop%data_type,npart,lda2,name2,flags,info)
+    CALL prop%create(dtype,npart,lda2,name2,flags,info)
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_sub_failed,caller,&
@@ -1124,7 +1144,6 @@ SUBROUTINE DTYPE(part_op_compute)(Pc,op_id,info,c,min_sv)
     !-------------------------------------------------------------------------
     ! Initialize
     !-------------------------------------------------------------------------
-    info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
 #ifdef __MPI
     t1 = MPI_WTIME(info)
@@ -1199,8 +1218,7 @@ SUBROUTINE DTYPE(part_op_compute)(Pc,op_id,info,c,min_sv)
 
 END SUBROUTINE DTYPE(part_op_compute)
 
-SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
-        info,input_is_vector)
+SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
     !!!------------------------------------------------------------------------!
     !!! NEW version
     !!! Apply DC kernel stored in op_id to the scalar property stored
@@ -1227,15 +1245,10 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
     INTEGER,                            INTENT(  OUT)   :: info
     !!! Return status, on success 0.
     !-------------------------------------------------------------------------
-    ! Optional arguments
-    !-------------------------------------------------------------------------
-    LOGICAL,  OPTIONAL,                 INTENT(IN   )   :: input_is_vector
-    !!! true if the data from_id is a vector
-    !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
     CHARACTER(LEN = ppm_char)                  :: filename
-    CHARACTER(LEN = ppm_char)               :: caller = 'particles_dcop_apply'
+    CHARACTER(LEN = ppm_char)                  :: caller = 'part_dcop_apply'
     INTEGER                                    :: ip,iq,ineigh,lda,np_target
     REAL(KIND(1.D0))                           :: t0,t1,t2
     REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
@@ -1253,10 +1266,10 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
     TYPE(DTYPE(ppm_t_sop)),POINTER             :: Pc2 => NULL()
     TYPE(DTYPE(ppm_t_neighlist)),POINTER       :: Nlist => NULL()
     TYPE(DTYPE(ppm_t_operator)), POINTER       :: op => NULL()
+    TYPE(DTYPE(ppm_t_part_prop)), POINTER      :: prop_from => NULL()
     !-------------------------------------------------------------------------
     ! Initialize
     !-------------------------------------------------------------------------
-    info = 0 ! change if error occurs
     CALL substart(caller,t0,info)
 #ifdef __MPI
     t1 = MPI_WTIME(info)
@@ -1307,17 +1320,13 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
     !may also not have enough neighbours for the Vandermonde matrix to be
     !invertible. These particles will be skipped without raising a warning.
 
-    IF (PRESENT(input_is_vector)) THEN
-        vector_input = input_is_vector
-    ELSE
-        vector_input = .FALSE.
-    ENDIF
     IF (with_ghosts) THEN
         np_target = Pc%Mpart
     ELSE
         np_target = Pc%Npart
     ENDIF
 
+    lda = op%desc%nterms
 
     IF (.NOT. Pc%neighs%exists(op%neigh_id)) THEN
         info = ppm_error_error
@@ -1337,6 +1346,7 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
     nvlist => Nlist%nvlist
     vlist => Nlist%vlist
 
+
     SELECT TYPE(Pc)
     TYPE IS (DTYPE(ppm_t_sop))
         IF (isinterp) THEN
@@ -1347,16 +1357,8 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
                     & 'The operator input is not allocated.',&
                     __LINE__,info)
                 GOTO 9999
-            ENDIF
-            IF (.NOT.Pc2%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
-                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
-                    Pc2%props%vec(from_id)%t%name)),' are needed.'
-                CALL ppm_write(ppm_rank,caller,cbuf,info)
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,&
-                    'Please call particles_mapping_ghosts first',&
-                    __LINE__,info)
-                GOTO 9999
+            ELSE
+                prop_from => Pc2%props%vec(from_id)%t
             ENDIF
         ELSE
             IF (.NOT. Pc%props%exists(from_id)) THEN
@@ -1365,16 +1367,8 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
                     & 'The operator input is not allocated.',&
                     __LINE__,info)
                 GOTO 9999
-            ENDIF
-            IF (.NOT.Pc%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
-                WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
-                    Pc%props%vec(from_id)%t%name)),' are needed.'
-                CALL ppm_write(ppm_rank,caller,cbuf,info)
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,&
-                    'Please call particles_mapping_ghosts first',&
-                    __LINE__,info)
-                GOTO 9999
+            ELSE
+                prop_from => Pc%props%vec(from_id)%t
             ENDIF
         ENDIF
     CLASS DEFAULT
@@ -1384,18 +1378,30 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
                 & 'The operator input is not allocated.',&
                 __LINE__,info)
             GOTO 9999
-        ENDIF
-        IF (.NOT.Pc%props%vec(from_id)%t%flags(ppm_ppt_ghosts)) THEN
-            WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
-                Pc%props%vec(from_id)%t%name)),' are needed.'
-            CALL ppm_write(ppm_rank,caller,cbuf,info)
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Please call particles_mapping_ghosts first',&
-                __LINE__,info)
-            GOTO 9999
+        ELSE
+            prop_from => Pc%props%vec(from_id)%t
         ENDIF
     END SELECT
+
+    IF (.NOT.prop_from%flags(ppm_ppt_ghosts)) THEN
+        WRITE(cbuf,*) 'Ghost values of ',TRIM(ADJUSTL(&
+            prop_from%name)),' are needed.'
+        CALL ppm_write(ppm_rank,caller,cbuf,info)
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,&
+            'Please call particles_mapping_ghosts first',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+
+    IF (vector_output .AND. prop_from%lda .NE. lda) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_argument,caller,   &
+            & 'Incompatible dimensions between operator and input data',&
+            __LINE__,info)
+        GOTO 9999
+    ENDIF
+    vector_input = (prop_from%lda .GE.2)
 
     !allocate output field if needed
     !otherwise simply check that the output array had been allocated
@@ -1403,10 +1409,10 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
     IF (to_id.EQ.0) THEN
         IF (vector_output) THEN
 #if   __KIND == __SINGLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_single,info,lda=op%desc%nterms,&  
+            CALL Pc%create_prop(to_id,ppm_type_real_single,info,lda=lda,&  
                 name="dflt_dcop_apply",with_ghosts=with_ghosts)
 #elif __KIND == __DOUBLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_double,info,lda=op%desc%nterms,&  
+            CALL Pc%create_prop(to_id,ppm_type_real_double,info,lda=lda,&  
                 name="dflt_dcop_apply",with_ghosts=with_ghosts)
 #endif
         ELSE
@@ -1419,11 +1425,30 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
 #endif
         ENDIF
     ELSE
+        ASSOCIATE (prop_to => Pc%props%vec(to_id)%t)
+        !Destroy and reallocate the target property data structure
+        ! if its type/dimension do not match that of the operator
+        IF (      vector_output.AND.prop_to%lda.LT.2 .OR. &
+             .NOT.vector_output.AND.prop_to%lda.NE.1 .OR. &
+#if   __KIND == __SINGLE_PRECISION
+             prop_to%data_type.NE.ppm_type_real_single) THEN 
+                CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts,&
+                    datatype=ppm_type_real_single,lda=lda)
+#elif __KIND == __DOUBLE_PRECISION
+             prop_to%data_type.NE.ppm_type_real_double) THEN 
+                CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts,&
+                    datatype=ppm_type_real_double,lda=lda)
+#endif
+                write(*,*) 'successfully reallocated to_id'
+        ENDIF
+        !Resize the target property array if its size does not match
+        !that of the operators output.
         IF (.NOT.Pc%props%vec(to_id)%t%flags(ppm_ppt_partial).OR. &
             &  with_ghosts .AND. &
             &  .NOT.Pc%props%vec(to_id)%t%flags(ppm_ppt_ghosts)) THEN
             CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts)
         ENDIF
+        END ASSOCIATE
     ENDIF
     IF (info .NE. 0) THEN
         info = ppm_error_error
@@ -1434,7 +1459,6 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,&
 
     IF (vector_output) THEN
         CALL Pc%get(dwpv,to_id,with_ghosts=with_ghosts)
-        lda = op%desc%nterms
         DO ip = 1,np_target
             dwpv(1:lda,ip) = 0._MK
         ENDDO

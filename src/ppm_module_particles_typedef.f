@@ -3,6 +3,16 @@ MODULE ppm_module_particles_typedef
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
+#define __REAL_SINGLE 3 
+#define __REAL_DOUBLE 4 
+#define __COMPLEX_SINGLE 5 
+#define __COMPLEX_DOUBLE 6 
+#define __INTEGER 7 
+#define __LONGINT 8 
+#define __LOGICAL 9 
+#define __CHAR 10 
+
+#define __crash_on_null_pointers  1
 
 USE ppm_module_alloc
 USE ppm_module_typedef
@@ -86,36 +96,46 @@ CONTAINS
 #define __KIND __SINGLE_PRECISION
 #define __DIM 1
 #define __TYPE INTEGER
+#define __MYTYPE __INTEGER
 #define DATANAME data_1d_i
 #include "part/ppm_particles_get.f"
 #define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
 #define DATANAME data_1d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_single)
+#define __MYTYPE __REAL_SINGLE
 #define DATANAME data_1d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_single)
+#define __MYTYPE __COMPLEX_SINGLE
 #define DATANAME data_1d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
 #define DATANAME data_1d_l
 #include "part/ppm_particles_get.f"
 #undef  __DIM
 
 #define __DIM 2
 #define __TYPE INTEGER
+#define __MYTYPE __INTEGER
 #define DATANAME data_2d_i
 #include "part/ppm_particles_get.f"
 #define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
 #define DATANAME data_2d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_single)
+#define __MYTYPE __REAL_SINGLE
 #define DATANAME data_2d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_single)
+#define __MYTYPE __COMPLEX_SINGLE
 #define DATANAME data_2d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
 #define DATANAME data_2d_l
 #include "part/ppm_particles_get.f"
 #undef  __DIM
@@ -141,36 +161,46 @@ CONTAINS
 #define __KIND __DOUBLE_PRECISION
 #define __DIM 1
 #define __TYPE INTEGER
+#define __MYTYPE __INTEGER
 #define DATANAME data_1d_i
 #include "part/ppm_particles_get.f"
 #define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
 #define DATANAME data_1d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_double)
+#define __MYTYPE __REAL_DOUBLE
 #define DATANAME data_1d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_double)
+#define __MYTYPE __COMPLEX_DOUBLE
 #define DATANAME data_1d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
 #define DATANAME data_1d_l
 #include "part/ppm_particles_get.f"
 #undef  __DIM
 
 #define __DIM 2
 #define __TYPE INTEGER
+#define __MYTYPE __INTEGER
 #define DATANAME data_2d_i
 #include "part/ppm_particles_get.f"
 #define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
 #define DATANAME data_2d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_double)
+#define __MYTYPE __REAL_DOUBLE
 #define DATANAME data_2d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_double)
+#define __MYTYPE __COMPLEX_DOUBLE
 #define DATANAME data_2d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
 #define DATANAME data_2d_l
 #include "part/ppm_particles_get.f"
 #undef  __DIM
