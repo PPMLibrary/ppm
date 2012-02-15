@@ -99,6 +99,7 @@
          fname = filename
       END IF
 
+      ghosts = .FALSE.
       ! print ghosts?
       IF (PRESENT(with_ghosts)) THEN
          ghosts = with_ghosts
@@ -177,11 +178,10 @@
 
       ! write data
       IF (ghosts) THEN
-         N = particles%np
-      ELSE
          N = particles%mp
+      ELSE
+         N = particles%np
       END IF
-
       ! write header
 #define VTK_FILE_TYPE "PolyData"
 #define VTK_NPOINTS N

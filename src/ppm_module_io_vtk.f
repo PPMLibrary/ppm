@@ -62,48 +62,52 @@
          !----------------------------------------------------------------------
 
          TYPE ppm_t_field_2dd
-             REAL(ppm_kind_double), DIMENSION(:,:,:), POINTER :: fdata
+             REAL(ppm_kind_double), DIMENSION(:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                          :: fname
          END TYPE
          TYPE ppm_t_field_3dd
-             REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: fdata
+             REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                            :: fname
          END TYPE
          
          TYPE ppm_t_field_2ds
-             REAL(ppm_kind_single), DIMENSION(:,:,:), POINTER :: fdata
+             REAL(ppm_kind_single), DIMENSION(:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                          :: fname
          END TYPE
          TYPE ppm_t_field_3ds
-             REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata
+             REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                            :: fname
          END TYPE
 
          TYPE ppm_t_particles_s
-             REAL(ppm_kind_single), DIMENSION(:,:), POINTER     :: xp
-             INTEGER                                            :: np,mp
-             TYPE(ppm_t_prop_s),    DIMENSiON(:)  , POINTER     :: prop
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop
-             INTEGER                                            :: nprop,niprop
+             REAL(ppm_kind_single), DIMENSION(:,:), POINTER     :: xp => NULL()
+             INTEGER                                            :: np = 0
+             INTEGER                                            :: mp = 0
+             TYPE(ppm_t_prop_s),    DIMENSiON(:)  , POINTER     :: prop => NULL()
+             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
+             INTEGER                                            :: nprop = 0
+             INTEGER                                            :: niprop = 0
          END TYPE
          TYPE ppm_t_particles_d
-             REAL(ppm_kind_double), DIMENSION(:,:), POINTER     :: xp
-             INTEGER                                            :: np,mp
-             TYPE(ppm_t_prop_d),    DIMENSiON(:)  , POINTER     :: prop
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop
-             INTEGER                                            :: nprop,niprop
+             REAL(ppm_kind_double), DIMENSION(:,:), POINTER     :: xp => NULL()
+             INTEGER                                            :: np = 0
+             INTEGER                                            :: mp = 0
+             TYPE(ppm_t_prop_d),    DIMENSiON(:)  , POINTER     :: prop => NULL()
+             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
+             INTEGER                                            :: nprop = 0
+             INTEGER                                            :: niprop = 0
          END TYPE
 
          TYPE ppm_t_prop_s
-             REAL(ppm_kind_single), DIMENSION(:)  , POINTER     :: wp
+             REAL(ppm_kind_single), DIMENSION(:)  , POINTER     :: wp => NULL()
              CHARACTER(LEN=ppm_char)                            :: name
          END TYPE
          TYPE ppm_t_prop_d
-             REAL(ppm_kind_double), DIMENSION(:)  , POINTER     :: wp
+             REAL(ppm_kind_double), DIMENSION(:)  , POINTER     :: wp => NULL()
              CHARACTER(LEN=ppm_char)                            :: name
          END TYPE
          TYPE ppm_t_prop_i
-             INTEGER              , DIMENSION(:)  , POINTER     :: wp
+             INTEGER              , DIMENSION(:)  , POINTER     :: wp => NULL()
              CHARACTER(LEN=ppm_char)                            :: name
          END TYPE
 
