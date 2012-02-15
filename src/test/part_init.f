@@ -63,9 +63,9 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
     INTEGER                               :: distribution
     INTEGER                               :: part_seedsize
     INTEGER,  DIMENSION(3)                :: ldc
-    INTEGER,  DIMENSION(:), POINTER       :: part_seed
+    INTEGER,  DIMENSION(:), POINTER       :: part_seed => NULL()
 
-    REAL(MK), DIMENSION(:  ), POINTER     :: randnb
+    REAL(MK), DIMENSION(:  ), POINTER     :: randnb => NULL()
     REAL(MK),DIMENSION(3)                 :: minphys
     REAL(MK),DIMENSION(3)                 :: maxphys
     REAL(MK),DIMENSION(3)                 :: lenphys
@@ -211,7 +211,7 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
             CALL RANDOM_SEED(PUT=part_seed)
         ENDIF
         CALL RANDOM_NUMBER(randnb)
-
+        ip = 1
         DO k = 1,nijk(3)
             h = lenphys(3)/REAL(nijk(3),MK)
             pos(3) = minphys(3) + &
@@ -242,7 +242,7 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
                 IF (xp(3,ip) .LT. minphys(3)) xp(3,ip) = xp(3,ip) + lenphys(3)
             ENDDO
         ENDIF
-
+        ip = 1
         IF(ppm_rank.EQ.0) THEN
         DO k = 1,nijk(3)
             h = lenphys(3)/REAL(nijk(3),MK)
