@@ -115,6 +115,9 @@
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
+      INTEGER,DIMENSION(ppm_nproc)                   :: index
+      INTEGER                   :: index_size,count,temp
+      INTEGER,DIMENSION(1)      :: temp_index
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
       REAL(MK)                  :: t0
       !-------------------------------------------------------------------------
@@ -331,9 +334,6 @@
          topo%isublist(i) = isublist(i)
       ENDDO
 
-
-
-
       !-------------------------------------------------------------------------
       !  Determine and store the neighbors of this processor
       !-------------------------------------------------------------------------
@@ -377,6 +377,35 @@
 
       topo%isdefined = .TRUE.
 
+      !-------------------------------------------------------------------------
+      !  Create MPI_Graph and store it in ppm_topo
+      !-------------------------------------------------------------------------
+      temp_index(1) = topo%nneighproc
+      CALL MPI_Allgather(temp_index,1,MPI_INTEGER,index,1,MPI_INTEGER,&
+     &                   ppm_comm,info)
+      IF(info.NE.0) THEN
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+     &           'MPI_Allgather failed'  &
+     &           ,__LINE__,info)
+        GOTO 9999
+      ENDIF
+      DO i=1,ppm_nproc
+        temp = 0
+        DO j=1,i-1
+            temp = temp + index(j)
+        ENDDO
+        index(i) = index(i) + temp
+      ENDDO
+      CALL MPI_Graph_Create(ppm_comm, ppm_nproc, index, topo%ineighproc, 0,&
+     &                      topo%graph_handle,info)
+      IF(info.NE.0) THEN
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+     &           'MPI_Graph_create failed'  &
+     &           ,__LINE__,info)
+        GOTO 9999
+      ENDIF
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------

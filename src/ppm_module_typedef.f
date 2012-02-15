@@ -244,6 +244,9 @@
             !!! max ghostsize width used when creating this topology (double)
             !!! using a larger cutoff when calling routines such as ghost_get
             !!! should ideally raise a warning
+
+            INTEGER                                        :: graph_handle
+            !!! MPI_Graph handle received from MPI. By default it is -1.
          END TYPE ppm_t_topo
 
          !----------------------------------------------------------------------
