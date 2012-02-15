@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Subroutine   :                 ppm_dbg_print
+      !  Subroutine   :                 ppm_vtk_fields
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -30,18 +30,18 @@
 #if   __DIM  == __2D
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_vtk_fields_2ds(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info)
+      &                         filename,info,step)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_vtk_fields_2dd(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info)
+      &                         filename,info,step)
 #endif
 #elif   __DIM  == __3D
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_vtk_fields_3ds(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info)
+      &                         filename,info,step)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_vtk_fields_3dd(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info)
+      &                         filename,info,step)
 #endif
 #endif
 
@@ -91,6 +91,7 @@
       INTEGER, DIMENSION(:)                     :: ghostsize
       CHARACTER(LEN=*),   INTENT(IN)            :: filename
       INTEGER,            INTENT(OUT)           :: info
+      INTEGER,               OPTIONAL, INTENT(IN   ) :: step
       !-------------------------------------------------------------------------
       !  Variables
       !-------------------------------------------------------------------------
@@ -115,7 +116,12 @@
 
       topo => ppm_topo(topoid)%t
       mesh => topo%mesh(meshid)
-      fname = filename
+      IF (PRESENT(step)) THEN
+         WRITE(fname,'(A,A,I0)') &
+              filename(1:LEN_TRIM(filename)), '.', step
+      ELSE
+         fname = filename
+      END IF
       h(:) = 0
       min_phys(:) = 0
       max_phys(:) = 0
