@@ -13,6 +13,7 @@ MODULE ppm_module_particles_typedef
 #define __CHAR 10 
 
 #define __crash_on_null_pointers  1
+#undef __WITH_KDTREE
 
 USE ppm_module_alloc
 USE ppm_module_typedef
@@ -23,8 +24,12 @@ USE ppm_module_substart
 USE ppm_module_substop
 
 IMPLICIT NONE
-
 PRIVATE
+
+!User parameters 
+INTEGER, PARAMETER, PUBLIC :: ppm_param_part_init_cartesian = 1
+INTEGER, PARAMETER, PUBLIC :: ppm_param_part_init_random = 2
+
 
 !PPM internal parameters used only to access entries in the
 !particle data structure.
@@ -47,17 +52,16 @@ INTEGER,PARAMETER   :: ppm_param_length_pptflags = 5
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
-INTEGER,PARAMETER   :: ppm_ops_inc_ghosts = 1
-INTEGER,PARAMETER   :: ppm_ops_interp = 2
-INTEGER,PARAMETER   :: ppm_ops_iscomputed = 3
-INTEGER,PARAMETER   :: ppm_ops_isdefined = 4
-INTEGER,PARAMETER   :: ppm_ops_vector = 5
-INTEGER,PARAMETER   :: ppm_param_length_opsflags = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_inc_ghosts = 1
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_interp = 2
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_iscomputed = 3
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_isdefined = 4
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 5
 
+!PPM internal parameters for default storage IDs of some DS.
+INTEGER, PARAMETER :: ppm_param_default_nlID = 1
 
-!User parameters 
-INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
-INTEGER, PARAMETER :: ppm_param_part_init_random = 2
 
 !----------------------------------------------------------------------
 ! Global variables 

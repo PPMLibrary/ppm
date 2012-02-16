@@ -901,17 +901,10 @@ SUBROUTINE DTYPE(part_op_create)(Pc,id,nterms,coeffs,degree,order,info,&
     IF (PRESENT(neigh_id)) THEN
         lnlid = neigh_id
     ELSE
-        lnlid = 1
+        lnlid = ppm_param_default_nlID
     ENDIF
 
-    IF (lnlid .LE. 0 .OR. lnlid.LT.Pc%neighs%max_id) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,&
-            'Invalid neighbour list. Use comp_neigh() first.',&
-            __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (.NOT.ASSOCIATED(Pc%neighs%vec(lnlid)%t)) THEN
+    IF (.NOT. Pc%neighs%exists(lnlid)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,&
             'Invalid neighbour list. Use comp_neigh() first.',&
@@ -1220,7 +1213,6 @@ END SUBROUTINE DTYPE(part_op_compute)
 
 SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
     !!!------------------------------------------------------------------------!
-    !!! NEW version
     !!! Apply DC kernel stored in op_id to the scalar property stored
     !!! prop_from_id and store the results in prop_to_id
     !!!------------------------------------------------------------------------!
@@ -1439,7 +1431,6 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
                 CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts,&
                     datatype=ppm_type_real_double,lda=lda)
 #endif
-                write(*,*) 'successfully reallocated to_id'
         ENDIF
         !Resize the target property array if its size does not match
         !that of the operators output.
@@ -1457,6 +1448,7 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
         GOTO 9999
     ENDIF
 
+    !zero the output array
     IF (vector_output) THEN
         CALL Pc%get(dwpv,to_id,with_ghosts=with_ghosts)
         DO ip = 1,np_target
@@ -3372,29 +3364,29 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
     !check that we have a cutoff radius
     SELECT TYPE (Pc)
     CLASS IS (DTYPE(ppm_t_sop))
-    IF (Pc%rcp_id.LE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'cutoff radii for adaptive particles have not been defined',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-    CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=.TRUE.)
-    IF (.NOT.ASSOCIATED(rcp)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'DS for cutoff radii is not associated',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
+        IF (Pc%rcp_id.LE.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+                &  'cutoff radii for adaptive particles have not been defined',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
+        CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=.TRUE.)
+        IF (.NOT.ASSOCIATED(rcp)) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+                &  'DS for cutoff radii is not associated',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
     CLASS DEFAULT
-    IF (Nlist%cutoff.LE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-        &  'cutoff is negative or zero - do we really want neighbour lists?',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
+        IF (Nlist%cutoff.LE.0) THEN
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_argument,caller,   &
+            &  'cutoff is negative or zero - do we really want neighbour lists?',&
+                &  __LINE__,info)
+            GOTO 9999
+        ENDIF
     END SELECT
 
     IF (Nlist%isymm.EQ.1) THEN
@@ -3441,13 +3433,7 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
             ENDIF
         ENDIF
 
-        SELECT TYPE (Pc)
-        CLASS IS (DTYPE(ppm_t_sop))
-
-            !FIXME: when adaptive ghost layers are available
-            ghostlayer(1:2*ppm_dim)=Pc%ghostlayer
-
-            IF (ensure_knn) THEN
+        IF (ensure_knn) THEN
 #ifdef __WITH_KDTREE
 
                 Pc%stats%nb_kdtree = Pc%stats%nb_kdtree+1
@@ -3501,8 +3487,14 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
                 GOTO 9999
 #endif
 !__WITH_KDTREE
+        ELSE  
 
-            ELSE
+            SELECT TYPE (Pc)
+            CLASS IS (DTYPE(ppm_t_sop))
+
+                !FIXME: when adaptive ghost layers are available
+                ghostlayer(1:2*ppm_dim)=Pc%ghostlayer
+
 #ifdef __WITH_CNL
                 conventionalinl: IF (Pc%conventionalinl) THEN
                     Pc%stats%nb_cinl = Pc%stats%nb_cinl+1
@@ -3515,14 +3507,14 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
 #if   __KIND == __SINGLE_PRECISION
                     CALL cnl_vlist(Pc%xp,&
                         rcp,Pc%Npart,Pc%Mpart,&
-                        ppm_topo(topoid)%t%min_subs(:,1)-Pc%ghostlayer
-                        ppm_topo(topoid)%t%max_subs(:,1)+Pc%ghostlayer
+                        ppm_topo(topoid)%t%min_subs(:,1)-Pc%ghostlayer,&
+                        ppm_topo(topoid)%t%max_subs(:,1)+Pc%ghostlayer,&
                         Pc%nvlist,Pc%vlist,ppm_dim,info)
 #elif __KIND == __DOUBLE_PRECISION
                     CALL cnl_vlist(Pc%xp,&
                         rcp,Pc%Npart,Pc%Mpart,&
-                        ppm_topo(topoid)%t%min_subd(:,1)-Pc%ghostlayer
-                        ppm_topo(topoid)%t%max_subd(:,1)+Pc%ghostlayer
+                        ppm_topo(topoid)%t%min_subd(:,1)-Pc%ghostlayer,&
+                        ppm_topo(topoid)%t%max_subd(:,1)+Pc%ghostlayer,&
                         Pc%nvlist,Pc%vlist,ppm_dim,info)
 #endif
                     IF (info .NE. 0) THEN
@@ -3560,29 +3552,29 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,&
 #ifdef __WITH_CNL
                 ENDIF conventionalinl
 #endif
-            ENDIF
 
-        CLASS DEFAULT
+            CLASS DEFAULT
 
-            Pc%stats%nb_nl = Pc%stats%nb_nl+1
+                Pc%stats%nb_nl = Pc%stats%nb_nl+1
 
 #ifdef __MPI
-            t1 = MPI_WTIME(info)
+                t1 = MPI_WTIME(info)
 #endif
-            CALL ppm_neighlist_vlist(topoid,Pc%xp,Pc%Mpart,&
-                Nlist%cutoff,skin,symmetry,Nlist%vlist,&
-                Nlist%nvlist,info,lstore=lstore)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'ppm_neighlist_vlist failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+                CALL ppm_neighlist_vlist(topoid,Pc%xp,Pc%Mpart,&
+                    Nlist%cutoff,skin,symmetry,Nlist%vlist,&
+                    Nlist%nvlist,info,lstore=lstore)
+                IF (info .NE. 0) THEN
+                    info = ppm_error_error
+                    CALL ppm_error(ppm_err_sub_failed,caller,&
+                        'ppm_neighlist_vlist failed',__LINE__,info)
+                    GOTO 9999
+                ENDIF
 #ifdef __MPI
-            t2 = MPI_WTIME(info)
-            Pc%stats%t_nl = Pc%stats%t_nl + (t2 - t1)
+                t2 = MPI_WTIME(info)
+                Pc%stats%t_nl = Pc%stats%t_nl + (t2 - t1)
 #endif
-        END SELECT
+            END SELECT
+        ENDIF
 
         !restore subdomain sizes (revert hack)
         IF (PRESENT(incl_ghosts)) THEN
@@ -3715,6 +3707,77 @@ FUNCTION DTYPE(part_DS_exists)(cont,id,caller) RESULT(exists)
 
 END FUNCTION DTYPE(part_DS_exists)
 
+SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,nlid)
+    !!! Set a cutoff radius for a particle cloud and update the
+    !!! the ghostlayer sizes.
+    !!! The cutoff radius concerns the default neighbor list, unless
+    !!! specified otherwise.
+    !-------------------------------------------------------------------------
+    ! Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_particles))            :: Pc
+    REAL(MK),                 INTENT(IN   )  :: cutoff
+    !!! cutoff radius
+    INTEGER,                  INTENT(   OUT) :: info
+    !!! return status. On success, 0
+    INTEGER,OPTIONAL,         INTENT(IN    ) :: nlid
+    !!! ID of the neighbor list for which this cutoff radius
+    !!! applies. Default is ppm_param_default_nlID
+    
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    TYPE(DTYPE(ppm_t_neighlist)),     POINTER :: nl => NULL()
+    INTEGER                                   :: neigh_id 
+    CHARACTER(LEN = ppm_char)                 :: caller = 'part_set_cutoff'
+    REAL(KIND(1.D0))                          :: t0
+
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+
+    !-------------------------------------------------------------------------
+    !  Set new cutoff
+    !-------------------------------------------------------------------------
+    IF (PRESENT(nlid)) THEN
+        neigh_id = nlid
+    ELSE
+        neigh_id = ppm_param_default_nlID
+    ENDIF
+    
+    Pc%neighs%vec(neigh_id)%t%cutoff = cutoff
+
+    ! Compute ghostlayer sizes
+    IF (cutoff.GT.Pc%ghostlayer) THEN
+        !If the new cutoff is larger than the current ghostsize
+        ! then the new ghostsize is the new cutoff
+        Pc%ghostlayer = cutoff
+        ! update states
+        Pc%flags(ppm_part_ghosts) = .FALSE.
+    ELSE IF (cutoff .LT. Pc%ghostlayer) THEN
+        !Else, we find the new maximum cutoff radius amongst
+        !all existing neighbor lists on this particle cloud
+        Pc%ghostlayer = 0._mk
+        nl => Pc%neighs%begin()
+        DO WHILE (ASSOCIATED(nl))
+            IF (nl%cutoff .GT. Pc%ghostlayer) THEN
+                Pc%ghostlayer = nl%cutoff
+            ENDIF
+            nl => Pc%neighs%next()
+        ENDDO
+        !no need to update states: ghosts are still ok.
+    ENDIF
+
+    !-----------------------------------------------------------------------
+    ! Finalize
+    !-----------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE DTYPE(part_set_cutoff)
 #undef DEFINE_MK
 
 

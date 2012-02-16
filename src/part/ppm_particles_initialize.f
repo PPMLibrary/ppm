@@ -5,9 +5,9 @@ SUBROUTINE DTYPE(particles_initialize2d)(Pc,Npart_global,info,&
 SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         distrib,topoid,minphys,maxphys,cutoff,name)
 #endif
-    !-----------------------------------------------------------------------
-    ! Set initial particle positions
-    !-----------------------------------------------------------------------
+    !!!-----------------------------------------------------------------------
+    !!! Set initial particle positions
+    !!!-----------------------------------------------------------------------
     USE ppm_module_substart
     USE ppm_module_substop
     USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_topo,ppm_comm
@@ -46,8 +46,8 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     INTEGER                               :: ip,i,j,k,Npart,iopt
     INTEGER                               :: nijk(ppm_dim),nijk_global(ppm_dim)
-    CHARACTER(LEN = ppm_char)              :: filename,cbuf
-    CHARACTER(LEN = ppm_char)              :: caller = 'particles_initialize'
+    CHARACTER(LEN = ppm_char)             :: filename,cbuf
+    CHARACTER(LEN = ppm_char)             :: caller = 'particles_initialize'
     REAL(MK)                              :: y,z,h
     REAL(KIND(1.D0))                      :: t0
     INTEGER                               :: remaining_rows

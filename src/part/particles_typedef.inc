@@ -455,6 +455,7 @@ TYPE DTYPE(ppm_t_particles)
         PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
 
         PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
+        PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
         PROCEDURE     :: destroy_neighlist => DTYPE(part_neigh_destroy)
         PROCEDURE     :: comp_neighlist => DTYPE(part_neighlist)
 

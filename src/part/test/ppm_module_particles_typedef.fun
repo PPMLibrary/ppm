@@ -12,11 +12,11 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = 3.1415926535897931_mk
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid,nneigh_theo
-integer                         :: np_global = 10000
+integer                         :: np_global = 3000
 integer                         :: npart_g
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk)                        :: cutoff_input
@@ -125,47 +125,6 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
     end teardown
 
-
-    test operators
-
-        call Pc%initialize(np_global,info,topoid=topoid)
-        Assert_Equal(info,0)
-
-        call Pc%map(info,global=.true.,topoid=topoid)
-        call Pc%map_ghosts(info)
-
-        call Pc%comp_neighlist(info)
-        Assert_Equal(info,0)
-
-        call Pc%create_op(op_id,1,(/2._mk/),(/2,0,0/),(/2/),info,name='dx2')
-        Assert_Equal(info,0)
-
-        call Pc%comp_op(op_id,info)
-        Assert_Equal(info,0)
-
-        call Pc%create_prop(wp1_id,ppm_type_real_double,info,1,name='testf_sca')
-        call Pc%create_prop(wp2_id,ppm_type_real_double,info,3,name='testf_vec')
-        call Pc%get(wp_1r,wp1_id)
-        call Pc%get(wp_2r,wp2_id)
-        call Pc%get_xp(xp)
-        DO ip=1,Pc%Npart
-            wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
-            wp_2r(1:ndim,ip) = f0_test(xp(1:ndim,ip),ndim)
-        ENDDO
-        call Pc%set_xp(xp,read_only=.true.)
-        call Pc%set(wp_1r,wp1_id)
-        call Pc%set(wp_2r,wp2_id)
-        call Pc%map_ghosts(info)
-
-        call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
-        Assert_Equal(info,0)
-
-        call Pc%destroy_op(op_id,info)
-        Assert_Equal(info,0)
-
-
-    end test
-
     test initialize_cart
         ! test initialization of particles on a grid
 
@@ -245,7 +204,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc%set_xp(xp,read_only=.true.)
         call Pc%set(wp_1r,wp3_id)
 
-        !Move the particles with this velocity field
+        !Move the particles with this displacement field
         call Pc%move(wp_2r,info)
         Assert_Equal(info,0)
 
@@ -288,8 +247,6 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         Assert_Equal_Within(err,0,tol)
         call Pc%set_xp(xp,read_only=.true.)
         call Pc%set(wp_1r,wp3_id,read_only=.true.)
-
-
 
         !call Pc%print_info(info)
         !Assert_Equal(info,0)
@@ -367,7 +324,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc_a%set_xp(xp,read_only=.true.)
         call Pc_a%set(wp_1r,wp3_id)
 
-        !Move the particles with this velocity field
+        !Move the particles with this displacement field
         call Pc_a%move(wp_2r,info)
         Assert_Equal(info,0)
 
