@@ -55,14 +55,10 @@ SUBROUTINE __FUNCNAME(props,wp,id,info)
         ppm_type_int&
 #elif __MYTYPE == __LONGINT
         ppm_type_longint& 
-#elif __MYTYPE == __REAL_SINGLE
-        ppm_type_real_single& 
-#elif __MYTYPE == __REAL_DOUBLE
-        ppm_type_real_double& 
-#elif __MYTYPE == __COMPLEX_SINGLE
-        ppm_type_comp_single& 
-#elif __MYTYPE == __COMPLEX_DOUBLE
-        ppm_type_comp_double& 
+#elif __MYTYPE == __REAL
+        ppm_type_real& 
+#elif __MYTYPE == __COMPLEX
+        ppm_type_comp& 
 #elif __MYTYPE == __LOGICAL
         ppm_type_logical& 
 #else

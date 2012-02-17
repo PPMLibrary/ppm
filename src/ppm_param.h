@@ -184,12 +184,10 @@
       INTEGER, PARAMETER :: ppm_type_none                 = 0
       INTEGER, PARAMETER :: ppm_type_int                  = 1
       INTEGER, PARAMETER :: ppm_type_longint              = 2
-      INTEGER, PARAMETER :: ppm_type_real_single          = 3
-      INTEGER, PARAMETER :: ppm_type_real_double          = 4
-      INTEGER, PARAMETER :: ppm_type_comp_single          = 5
-      INTEGER, PARAMETER :: ppm_type_comp_double          = 6
-      INTEGER, PARAMETER :: ppm_type_logical              = 7
-      INTEGER, PARAMETER :: ppm_type_char                 = 8
+      INTEGER, PARAMETER :: ppm_type_real                 = 3
+      INTEGER, PARAMETER :: ppm_type_comp                 = 4
+      INTEGER, PARAMETER :: ppm_type_logical              = 5
+      INTEGER, PARAMETER :: ppm_type_char                 = 6
       !-------------------------------------------------------------------------
       !  Mapping options
       !-------------------------------------------------------------------------

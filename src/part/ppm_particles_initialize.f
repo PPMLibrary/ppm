@@ -122,8 +122,8 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     !number of particles on this processor
     Npart = PRODUCT(nijk)
 
-    !proc 0 takes care of the additional rows (remainder)
-    IF (ppm_rank.EQ.0) THEN
+    !last proc takes care of the additional rows (remainder)
+    IF (ppm_rank.EQ.ppm_nproc-1) THEN
 #if   __DIM == 2
         Npart = Npart + remaining_rows * nijk(1)
 #elif __DIM == 3
@@ -196,7 +196,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         ENDDO
 #endif
 
-        IF(ppm_rank.EQ.0) THEN
+        IF(ppm_rank.EQ.(ppm_nproc-1)) THEN
 #if __DIM == 3
         DO k = 1,nijk(3)
             h = len_phys(3)/REAL(nijk(3),MK)

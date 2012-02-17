@@ -270,8 +270,8 @@ TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_props)
     TYPE(DTYPE(ppm_t_part_prop)),              POINTER  :: iterator => NULL()
     CONTAINS
         PRIVATE
-        PROCEDURE       :: begin => DTYPE(begin_prop)
-        PROCEDURE       :: next => DTYPE(next_prop)
+        PROCEDURE, PUBLIC       :: begin => DTYPE(begin_prop)
+        PROCEDURE, PUBLIC       :: next => DTYPE(next_prop)
         PROCEDURE       :: last => DTYPE(last_prop)
         PROCEDURE       :: prev => DTYPE(prev_prop)
         PROCEDURE       :: destroy => DTYPE(prop_container_destroy)
@@ -389,10 +389,17 @@ TYPE DTYPE(ppm_t_particles)
     !!!    ppm_part_neighlists
     !!!          true if neighbour lists within this particle cloud are
     !!!          up-to-date
+    !!!    ppm_part_global_index
+    !!!          true if particles have an uptodate global index
 
 
     ! Topology (links between Particles and topologies)
     INTEGER                                         :: active_topoid
+    !!! Topology on which particles are currently mapped
+
+    ! Special data IDs
+    INTEGER                                         :: gi_ID
+    !!! Global index
 
 
     !ghost layers
@@ -458,6 +465,8 @@ TYPE DTYPE(ppm_t_particles)
         PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
         PROCEDURE     :: destroy_neighlist => DTYPE(part_neigh_destroy)
         PROCEDURE     :: comp_neighlist => DTYPE(part_neighlist)
+        PROCEDURE     :: get_nvlist => DTYPE(get_nvlist)
+        PROCEDURE     :: get_vlist => DTYPE(get_vlist)
 
         PROCEDURE     :: create_op => DTYPE(part_op_create)
         PROCEDURE     :: destroy_op => DTYPE(part_op_destroy)
@@ -477,6 +486,8 @@ TYPE DTYPE(ppm_t_particles)
 
 
         PROCEDURE     :: print_info => DTYPE(part_print_info)
+
+        PROCEDURE     :: comp_global_index => DTYPE(part_comp_global_index)
 
         PROCEDURE     :: get_xp => DTYPE(get_xp)
         PROCEDURE     :: set_xp => DTYPE(set_xp)
@@ -542,10 +553,6 @@ TYPE, EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
 
     INTEGER                                         :: nn_sq_id
     !!! index of the wps array where nearest-neighbour distances are stored
-
-    !Global indexing
-    INTEGER                                         :: gi_id
-    !!! index of the wpi array where the global indices are stored (if needed)
 
     ! Adaptive particles
     LOGICAL                                         :: adaptive

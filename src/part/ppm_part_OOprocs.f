@@ -412,21 +412,12 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
         CASE (ppm_type_longint)
             CALL ppm_alloc(prop%data_2d_li,ldc,iopt,info)
             IF (zero_data) prop%data_2d_li(1:lda,1:npart) = 0
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_alloc(prop%data_2d_r,ldc,iopt,info)
             IF (zero_data) prop%data_2d_r(1:lda,1:npart) = 0._MK
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_alloc(prop%data_2d_c,ldc,iopt,info)
             IF (zero_data) prop%data_2d_c(1:lda,1:npart) = 0._MK
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_alloc(prop%data_2d_r,ldc,iopt,info)
-            IF (zero_data) prop%data_2d_r(1:lda,1:npart) = 0._MK
-        CASE (ppm_type_comp_double)
-            CALL ppm_alloc(prop%data_2d_c,ldc,iopt,info)
-            IF (zero_data) prop%data_2d_c(1:lda,1:npart) = 0._MK
-#endif
         CASE (ppm_type_logical )
             CALL ppm_alloc(prop%data_2d_l,ldc,iopt,info)
             IF (zero_data) prop%data_2d_l(1:lda,1:npart) = .FALSE.
@@ -443,21 +434,12 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
         CASE (ppm_type_longint)
             CALL ppm_alloc(prop%data_1d_li,ldc,iopt,info)
             IF (zero_data) prop%data_1d_li(1:npart) = 0
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_alloc(prop%data_1d_r,ldc,iopt,info)
             IF (zero_data) prop%data_1d_r(1:npart) = 0._MK
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_alloc(prop%data_1d_c,ldc,iopt,info)
             IF (zero_data) prop%data_1d_c(1:npart) = 0._MK
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_alloc(prop%data_1d_r,ldc,iopt,info)
-            IF (zero_data) prop%data_1d_r(1:npart) = 0._MK
-        CASE (ppm_type_comp_double)
-            CALL ppm_alloc(prop%data_1d_c,ldc,iopt,info)
-            IF (zero_data) prop%data_1d_c(1:npart) = 0._MK
-#endif
         CASE (ppm_type_logical )
             CALL ppm_alloc(prop%data_1d_l,ldc,iopt,info)
             IF (zero_data) prop%data_1d_l(1:npart) = .FALSE.
@@ -617,13 +599,8 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
     TYPE IS (DTYPE(ppm_t_sop))
         ASSOCIATE (ghosts => Pc%flags(ppm_part_ghosts))
             IF (Pc%rcp_id.LE.0) THEN
-#if   __KIND == __SINGLE_PRECISION
-                CALL Pc%create_prop(Pc%rcp_id,ppm_type_real_single,info,&
+                CALL Pc%create_prop(Pc%rcp_id,ppm_type_real,info,&
                     name='rcp',with_ghosts=ghosts) 
-#elif __KIND == __DOUBLE_PRECISION
-                CALL Pc%create_prop(Pc%rcp_id,ppm_type_real_double,info,&
-                    name='rcp',with_ghosts=ghosts) 
-#endif
             ENDIF
             CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=ghosts)
             IF (PRESENT(cutoff)) THEN
@@ -1400,21 +1377,11 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
     !to the right size
     IF (to_id.EQ.0) THEN
         IF (vector_output) THEN
-#if   __KIND == __SINGLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_single,info,lda=lda,&  
+            CALL Pc%create_prop(to_id,ppm_type_real,info,lda=lda,&  
                 name="dflt_dcop_apply",with_ghosts=with_ghosts)
-#elif __KIND == __DOUBLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_double,info,lda=lda,&  
-                name="dflt_dcop_apply",with_ghosts=with_ghosts)
-#endif
         ELSE
-#if   __KIND == __SINGLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_single,info,&
+            CALL Pc%create_prop(to_id,ppm_type_real,info,&
                 name="dflt_dcop_apply",with_ghosts=with_ghosts)
-#elif __KIND == __DOUBLE_PRECISION
-            CALL Pc%create_prop(to_id,ppm_type_real_double,info,&
-                name="dflt_dcop_apply",with_ghosts=with_ghosts)
-#endif
         ENDIF
     ELSE
         ASSOCIATE (prop_to => Pc%props%vec(to_id)%t)
@@ -1422,15 +1389,9 @@ SUBROUTINE DTYPE(part_op_apply)(Pc,from_id,to_id,op_id,info)
         ! if its type/dimension do not match that of the operator
         IF (      vector_output.AND.prop_to%lda.LT.2 .OR. &
              .NOT.vector_output.AND.prop_to%lda.NE.1 .OR. &
-#if   __KIND == __SINGLE_PRECISION
-             prop_to%data_type.NE.ppm_type_real_single) THEN 
+             prop_to%data_type.NE.ppm_type_real) THEN 
                 CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts,&
-                    datatype=ppm_type_real_single,lda=lda)
-#elif __KIND == __DOUBLE_PRECISION
-             prop_to%data_type.NE.ppm_type_real_double) THEN 
-                CALL Pc%realloc_prop(to_id,info,with_ghosts=with_ghosts,&
-                    datatype=ppm_type_real_double,lda=lda)
-#endif
+                    datatype=ppm_type_real,lda=lda)
         ENDIF
         !Resize the target property array if its size does not match
         !that of the operators output.
@@ -1742,6 +1703,7 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
     Pc%flags(ppm_part_reqput) = .FALSE.
     Pc%flags(ppm_part_cartesian) = .FALSE.
     Pc%flags(ppm_part_neighlists) = .FALSE.
+    Pc%flags(ppm_part_global_index) = .FALSE.
     Pc%active_topoid = -1
     ! No active topology yet
 
@@ -1759,6 +1721,7 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
     Pc%time = 0._MK
     Pc%itime = 0
 
+    Pc%gi_id = 0
 
     SELECT TYPE(Pc)
     CLASS IS (DTYPE(ppm_t_sop))
@@ -1768,7 +1731,6 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
         ! Particles are by default not adaptive
         Pc%adaptive = .FALSE.
         Pc%adapt_wpid = 0
-        Pc%gi_id = 0
         Pc%rcp_id = 0
         Pc%D_id = 0
         Pc%Dtilde_id = 0
@@ -2140,21 +2102,12 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
                         CASE (ppm_type_longint)
                             prop%data_2d_li(1:lda,ip) = &
                                 prop%data_2d_li(1:lda,Npart-i+1)
-#if   __KIND == __SINGLE_PRECISION
-                        CASE (ppm_type_real_single )
+                        CASE (ppm_type_real)
                             prop%data_2d_r(1:lda,ip) = &
                                 prop%data_2d_r(1:lda,Npart-i+1)
-                        CASE (ppm_type_comp_single)
+                        CASE (ppm_type_comp)
                             prop%data_2d_c(1:lda,ip) = &
                                 prop%data_2d_c(1:lda,Npart-i+1)
-#elif __KIND ==__DOUBLE_PRECISION
-                        CASE (ppm_type_real_double)
-                            prop%data_2d_r(1:lda,ip) = &
-                                prop%data_2d_r(1:lda,Npart-i+1)
-                        CASE (ppm_type_comp_double)
-                            prop%data_2d_c(1:lda,ip) = &
-                                prop%data_2d_c(1:lda,Npart-i+1)
-#endif
                         CASE (ppm_type_logical )
                             prop%data_2d_l(1:lda,ip) = &
                                 prop%data_2d_l(1:lda,Npart-i+1)
@@ -2168,21 +2121,12 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
                         CASE (ppm_type_longint)
                             prop%data_1d_li(ip) = &
                                 prop%data_1d_li(Npart-i+1)
-#if   __KIND == __SINGLE_PRECISION
-                        CASE (ppm_type_real_single )
+                        CASE (ppm_type_real)
                             prop%data_1d_r(ip) = &
                                 prop%data_1d_r(Npart-i+1)
-                        CASE (ppm_type_comp_single)
+                        CASE (ppm_type_comp)
                             prop%data_1d_c(ip) = &
                                 prop%data_1d_c(Npart-i+1)
-#elif __KIND ==__DOUBLE_PRECISION
-                        CASE (ppm_type_real_double)
-                            prop%data_1d_r(ip) = &
-                                prop%data_1d_r(Npart-i+1)
-                        CASE (ppm_type_comp_double)
-                            prop%data_1d_c(ip) = &
-                                prop%data_1d_c(Npart-i+1)
-#endif
                         CASE (ppm_type_logical )
                             prop%data_1d_l(ip) = &
                                 prop%data_1d_l(Npart-i+1)
@@ -2264,21 +2208,12 @@ SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
                 &  'Type not supported for mappings.',&
                 &  __LINE__,info)
             GOTO 9999
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_map_part_push(&
             prop%data_2d_r,lda,Pc%Npart,info)
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_map_part_push(&
             prop%data_2d_c,lda,Pc%Npart,info)
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_map_part_push(&
-            prop%data_2d_r,lda,Pc%Npart,info)
-        CASE (ppm_type_comp_double)
-            CALL ppm_map_part_push(&
-            prop%data_2d_c,lda,Pc%Npart,info)
-#endif
         CASE (ppm_type_logical )
             CALL ppm_map_part_push(&
             prop%data_2d_l,lda,Pc%Npart,info)
@@ -2296,21 +2231,12 @@ SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
                 &  'Type not supported for mappings.',&
                 &  __LINE__,info)
             GOTO 9999
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_map_part_push(&
             prop%data_1d_r,Pc%Npart,info)
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_map_part_push(&
             prop%data_1d_c,Pc%Npart,info)
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_map_part_push(&
-            prop%data_1d_r,Pc%Npart,info)
-        CASE (ppm_type_comp_double)
-            CALL ppm_map_part_push(&
-            prop%data_1d_c,Pc%Npart,info)
-#endif
         CASE (ppm_type_logical )
             CALL ppm_map_part_push(&
             prop%data_1d_l,Pc%Npart,info)
@@ -2388,21 +2314,12 @@ SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
                 &  'Type not supported for mappings.',&
                 &  __LINE__,info)
             GOTO 9999
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_map_part_pop(&
             prop%data_2d_r,lda,Pc%Npart,Npart_new,info)
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_map_part_pop(&
             prop%data_2d_c,lda,Pc%Npart,Npart_new,info)
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_map_part_pop(&
-            prop%data_2d_r,lda,Pc%Npart,Npart_new,info)
-        CASE (ppm_type_comp_double)
-            CALL ppm_map_part_pop(&
-            prop%data_2d_c,lda,Pc%Npart,Npart_new,info)
-#endif
         CASE (ppm_type_logical )
             CALL ppm_map_part_pop(&
             prop%data_2d_l,lda,Pc%Npart,Npart_new,info)
@@ -2420,21 +2337,12 @@ SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
                 &  'Type not supported for mappings.',&
                 &  __LINE__,info)
             GOTO 9999
-#if   __KIND == __SINGLE_PRECISION
-        CASE (ppm_type_real_single )
+        CASE (ppm_type_real)
             CALL ppm_map_part_pop(&
             prop%data_1d_r,Pc%Npart,Npart_new,info)
-        CASE (ppm_type_comp_single)
+        CASE (ppm_type_comp)
             CALL ppm_map_part_pop(&
             prop%data_1d_c,Pc%Npart,Npart_new,info)
-#elif __KIND ==__DOUBLE_PRECISION
-        CASE (ppm_type_real_double)
-            CALL ppm_map_part_pop(&
-            prop%data_1d_r,Pc%Npart,Npart_new,info)
-        CASE (ppm_type_comp_double)
-            CALL ppm_map_part_pop(&
-            prop%data_1d_c,Pc%Npart,Npart_new,info)
-#endif
         CASE (ppm_type_logical )
             CALL ppm_map_part_pop(&
             prop%data_1d_l,Pc%Npart,Npart_new,info)
@@ -3778,6 +3686,58 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,nlid)
     9999 CONTINUE ! jump here upon error
 
 END SUBROUTINE DTYPE(part_set_cutoff)
+
+SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
+    !!! Compute a global index for particles
+    !!! (Uses MPI communications)
+    !-------------------------------------------------------------------------
+    ! Arguments
+    !-------------------------------------------------------------------------
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_particles))            :: Pc
+    INTEGER,                  INTENT(   OUT) :: info
+    !!! return status. On success, 0
+
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CHARACTER(LEN = ppm_char)                 :: caller = 'part_global_index'
+    REAL(KIND(1.D0))                          :: t0
+
+    INTEGER                        :: offset
+    INTEGER                        :: i
+    INTEGER, DIMENSION(:), POINTER :: wp
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+
+    IF (.NOT. Pc%flags(ppm_part_global_index)) THEN
+        CALL Pc%create_prop(Pc%gi_id,ppm_type_int,info,name="GlobalIndex")
+        Pc%flags(ppm_part_global_index) = .TRUE.
+    END IF
+#ifdef __MPI
+    CALL MPI_Scan(Pc%Npart,offset,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+    offset = offset - Pc%Npart
+#else
+    offset = 0
+#endif
+    CALL Pc%get(wp,Pc%gi_id)
+    FORALL (i=1:Pc%Npart) wp(i) = offset + i !- 1 !uncomment if index from 0
+    CALL Pc%set(wp,Pc%gi_id)
+
+    !-----------------------------------------------------------------------
+    ! Finalize
+    !-----------------------------------------------------------------------
+    CALL substop(caller,t0,info)
+
+    9999 CONTINUE ! jump here upon error
+
+END SUBROUTINE DTYPE(part_comp_global_index)
 #undef DEFINE_MK
 
 

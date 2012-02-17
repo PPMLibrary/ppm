@@ -162,7 +162,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc%set(wp_2i,wp1_id)
 
 
-        call Pc%create_prop(wp1_id,ppm_type_real_double,info,&
+        call Pc%create_prop(wp1_id,ppm_type_real,info,&
             name='test_r',zero=.true.)
         Assert_Equal(info,0)
         call Pc%get(wp_1r,wp1_id)
@@ -175,9 +175,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
 
         DO i=1,25
-            call Pc%create_prop(wp2_id,ppm_type_comp_double,info,3)
+            call Pc%create_prop(wp2_id,ppm_type_comp,info,3)
             Assert_Equal(info,0)
-            call Pc%create_prop(wp3_id,ppm_type_real_double,info,1)
+            call Pc%create_prop(wp3_id,ppm_type_real,info,1)
             Assert_Equal(info,0)
             call Pc%get(wp_2c,wp2_id)
             call Pc%set(wp_2c,wp2_id)
@@ -189,9 +189,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         ENDDO
 
         !Set up a velocity field and a scalar test function on the particles
-        call Pc%create_prop(wp2_id,ppm_type_real_double,info,3,name='velocity')
+        call Pc%create_prop(wp2_id,ppm_type_real,info,3,name='velocity')
         Assert_Equal(info,0)
-        call Pc%create_prop(wp3_id,ppm_type_real_double,info,1,name='testf')
+        call Pc%create_prop(wp3_id,ppm_type_real,info,1,name='testf')
         Assert_Equal(info,0)
         call Pc%get(wp_2r,wp2_id)
         call Pc%get(wp_1r,wp3_id)
@@ -309,9 +309,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Pc_a%set(wp_1i,wp1_id)
 
         !Set up a velocity field and a scalar test function on the particles
-        call Pc_a%create_prop(wp2_id,ppm_type_real_double,info,3,name='velocity')
+        call Pc_a%create_prop(wp2_id,ppm_type_real,info,3,name='velocity')
         Assert_Equal(info,0)
-        call Pc_a%create_prop(wp3_id,ppm_type_real_double,info,1,name='testf')
+        call Pc_a%create_prop(wp3_id,ppm_type_real,info,1,name='testf')
         Assert_Equal(info,0)
         call Pc_a%get(wp_2r,wp2_id)
         call Pc_a%get(wp_1r,wp3_id)

@@ -17,7 +17,7 @@ MODULE ppm_module_particles_typedef
 
 USE ppm_module_alloc
 USE ppm_module_typedef
-USE ppm_module_data, ONLY: ppm_rank,ppm_dim
+USE ppm_module_data, ONLY: ppm_rank,ppm_dim,ppm_comm
 USE ppm_module_error
 USE ppm_module_write
 USE ppm_module_substart
@@ -39,16 +39,17 @@ INTEGER,PARAMETER   :: ppm_part_reqput = 3
 INTEGER,PARAMETER   :: ppm_part_areinside = 4
 INTEGER,PARAMETER   :: ppm_part_cartesian = 5
 INTEGER,PARAMETER   :: ppm_part_neighlists = 6
-INTEGER,PARAMETER   :: ppm_param_length_partflags = 6
+INTEGER,PARAMETER   :: ppm_part_global_index = 7
+INTEGER,PARAMETER   :: ppm_param_length_partflags = 7
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
-INTEGER,PARAMETER   :: ppm_ppt_ghosts = 1
-INTEGER,PARAMETER   :: ppm_ppt_partial = 2
-INTEGER,PARAMETER   :: ppm_ppt_reqput = 3
-INTEGER,PARAMETER   :: ppm_ppt_map_parts = 4
-INTEGER,PARAMETER   :: ppm_ppt_map_ghosts = 5
-INTEGER,PARAMETER   :: ppm_param_length_pptflags = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_ghosts = 1
+INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_partial = 2
+INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_reqput = 3
+INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_parts = 4
+INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_ghosts = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_pptflags = 5
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
@@ -60,7 +61,7 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 5
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 5
 
 !PPM internal parameters for default storage IDs of some DS.
-INTEGER, PARAMETER :: ppm_param_default_nlID = 1
+INTEGER, PARAMETER,PUBLIC :: ppm_param_default_nlID = 1
 
 
 !----------------------------------------------------------------------
@@ -89,6 +90,7 @@ INTEGER, PRIVATE, DIMENSION(3)    :: ldc
 
 PUBLIC :: ppm_t_particles_s, ppm_t_particles_d
 PUBLIC :: ppm_t_sop_s, ppm_t_sop_d
+PUBLIC :: ppm_t_part_prop_s, ppm_t_part_prop_d
 
 
 CONTAINS
@@ -108,11 +110,11 @@ CONTAINS
 #define DATANAME data_1d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_single)
-#define __MYTYPE __REAL_SINGLE
+#define __MYTYPE __REAL
 #define DATANAME data_1d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_single)
-#define __MYTYPE __COMPLEX_SINGLE
+#define __MYTYPE __COMPLEX
 #define DATANAME data_1d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
@@ -131,11 +133,11 @@ CONTAINS
 #define DATANAME data_2d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_single)
-#define __MYTYPE __REAL_SINGLE
+#define __MYTYPE __REAL
 #define DATANAME data_2d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_single)
-#define __MYTYPE __COMPLEX_SINGLE
+#define __MYTYPE __COMPLEX
 #define DATANAME data_2d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
@@ -156,6 +158,7 @@ CONTAINS
 #undef DEFINE_MK
 
 #include "part/container_procedures.inc"
+#include "part/ppm_part_neighlists_get.f"
 
 #undef  DTYPE
 #undef  __KIND
@@ -173,11 +176,11 @@ CONTAINS
 #define DATANAME data_1d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_double)
-#define __MYTYPE __REAL_DOUBLE
+#define __MYTYPE __REAL
 #define DATANAME data_1d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_double)
-#define __MYTYPE __COMPLEX_DOUBLE
+#define __MYTYPE __COMPLEX
 #define DATANAME data_1d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
@@ -196,11 +199,11 @@ CONTAINS
 #define DATANAME data_2d_li
 #include "part/ppm_particles_get.f"
 #define __TYPE REAL(ppm_kind_double)
-#define __MYTYPE __REAL_DOUBLE
+#define __MYTYPE __REAL
 #define DATANAME data_2d_r
 #include "part/ppm_particles_get.f"
 #define __TYPE COMPLEX(ppm_kind_double)
-#define __MYTYPE __COMPLEX_DOUBLE
+#define __MYTYPE __COMPLEX
 #define DATANAME data_2d_c
 #include "part/ppm_particles_get.f"
 #define __TYPE LOGICAL
@@ -221,6 +224,7 @@ CONTAINS
 #undef DEFINE_MK
 
 #include "part/container_procedures.inc"
+#include "part/ppm_part_neighlists_get.f"
 
 #undef  DTYPE
 #undef  __KIND
