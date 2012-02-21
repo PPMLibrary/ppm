@@ -1,20 +1,19 @@
-         SUBROUTINE DTYPE(ppm_vtk_particle_cloud)(filename, Particles, info, &
-              step, with_ghosts, with_nvlist, wpi_list, wps_list,     &
-              wpv_list, wpv_field_list)
+         SUBROUTINE DTYPE(ppm_vtk_particle_cloud)(filename, Pc, info, &
+              step, with_ghosts, with_nvlist, wp_list,wp_field_list)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
            DEFINE_MK()
            CHARACTER(LEN=*),                INTENT(IN   ) :: filename
-           TYPE(DTYPE(ppm_t_particles)),POINTER,INTENT(IN):: Particles
+           TYPE(DTYPE(ppm_t_particles)),    INTENT(INOUT) :: Pc
            INTEGER,                         INTENT(  OUT) :: info
            INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_nvlist
-           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpi_list
-           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wps_list
-           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_list
-           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wpv_field_list
+           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wp_list
+           !list of properties to print out (default = ALL)
+           INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wp_field_list
+           !list of properties to print out as vector field (default = NONE)
            !--------------------------------------------------------------------
            !  Variables
            !--------------------------------------------------------------------
@@ -22,15 +21,18 @@
            CHARACTER(LEN=ppm_char)              :: scratch
            CHARACTER(LEN=ppm_char)              :: fname
            REAL(ppm_kind_double)                :: t0
-           INTEGER                              :: i, j, k, l, nd, N
-           INTEGER                              :: nb_wps, nb_wpv, nb_wpv_field
-           INTEGER                              :: nb_wpi
-           INTEGER, DIMENSION(:),   ALLOCATABLE :: wpi_l, wps_l, wpv_l, wpv_field_l
+           INTEGER                              :: i,j,k,l,nd,N,ii
+           INTEGER                              :: nb_wps, nb_wpv, nb_wp_field
+           INTEGER                              :: nb_wp,nb_wpi
+           INTEGER, DIMENSION(:),   ALLOCATABLE :: wpi_l, wps_l, wpv_l, wp_field_l
            LOGICAL                              :: ghosts
            LOGICAL                              :: nvlist
            REAL(MK), DIMENSION(:,:),POINTER     :: xp  => NULL()
            REAL(MK), DIMENSION(:),  POINTER     :: wp  => NULL()
+           REAL(MK), DIMENSION(:,:),  POINTER   :: wp2d  => NULL()
            INTEGER, DIMENSION(:),   POINTER     :: wpi  => NULL()
+
+           TYPE(DTYPE(ppm_t_part_prop)),POINTER :: prop => NULL()
            !--------------------------------------------------------------------
            !  Code
            !--------------------------------------------------------------------
@@ -66,151 +68,141 @@
                GOTO 9999
            ENDIF
 
+           nb_wpi=0
+           nb_wps=0
+           nb_wpv=0
+
            ! create the list of properties to print
            ! integer property
-           IF(PRESENT(wpi_list)) THEN
-              nb_wpi=SIZE(wpi_list)
-              ALLOCATE(wpi_l(nb_wpi),STAT=info)
-              wpi_l=wpi_list
-              DO i=1,nb_wpi
-                 IF (wpi_l(i).GT.Particles%max_wpiid) THEN
+           IF(PRESENT(wp_list)) THEN
+              nb_wp=SIZE(wp_list)
+
+              ALLOCATE(wpi_l(nb_wp),wps_l(nb_wp),wpv_l(nb_wp),STAT=info)
+              !find how many integer/scalar/vector properties are to be
+              !printed out
+              DO i=1,nb_wp
+                 ii = wp_list(i)
+                 IF (.NOT.Pc%props%exists(ii)) THEN
                     info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'integer property index exceeds size of property array',&
+                    CALL ppm_error(ppm_err_argument,caller,   &
+                 &  'invalid property for printout. Data may not be allocated',&
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
-                 IF (.NOT.Particles%wpi(wpi_l(i))%is_mapped) THEN
+                 prop => Pc%props%vec(ii)%t
+                 IF (.NOT.prop%flags(ppm_ppt_partial)) THEN
                     info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
+                    CALL ppm_error(ppm_err_argument,caller,   &
                          &  'trying to printout a property that is not mapped &
                          & to the particles',&
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
+                 SELECT CASE (prop%data_type)
+                 CASE (ppm_type_int)
+                     IF (prop%lda.NE.1) THEN
+                         info = ppm_error_error
+                         CALL ppm_error(ppm_err_argument,caller,   &
+                     &  'no support for printout of vector integer properties',&
+                             &  __LINE__,info)
+                         GOTO 9999
+                     ENDIF
+                     nb_wpi = nb_wpi + 1
+                     wpi_l(nb_wpi) = ii
+
+                 CASE (ppm_type_real)
+                     IF (prop%lda.EQ.1) THEN
+                         nb_wps = nb_wps + 1
+                         wps_l(nb_wps) = ii
+                     ELSE
+                         nb_wpv = nb_wpv + 1
+                         wpv_l(nb_wpv) = ii
+                     ENDIF
+                 CASE DEFAULT
+                     info = ppm_error_error
+                     CALL ppm_error(ppm_err_argument,caller,   &
+                 &  'no support for vtk printout of data other than real or int',&
+                         &  __LINE__,info)
+                     GOTO 9999
+                 END SELECT
+                 prop => NULL()
               ENDDO
+
            ELSE
-              !printout all properties i that are mapped
-              nb_wpi = 0
-              DO i=1,Particles%max_wpiid
-                 IF (Particles%wpi(i)%is_mapped) &
-                      nb_wpi = nb_wpi + 1
-              ENDDO
-              ALLOCATE(wpi_l(nb_wpi),STAT=info)
-              nb_wpi = 0
-              DO i=1,Particles%max_wpiid
-                 IF (Particles%wpi(i)%is_mapped) THEN
-                    nb_wpi = nb_wpi + 1
-                    wpi_l(nb_wpi) = i
-                 ENDIF
-              ENDDO
+              nb_wp = 0
            ENDIF
 
-           ! scalar property
-           IF(PRESENT(wps_list)) THEN
-              nb_wps=SIZE(wps_list)
-              ALLOCATE(wps_l(nb_wps),STAT=info)
-              wps_l=wps_list
-              DO i=1,nb_wps
-                 IF (wps_l(i).GT.Particles%max_wpsid) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'scalar property index exceeds size of property array',&
-                         &  __LINE__,info)
-                    GOTO 9999
-                 ENDIF
-                 IF (.NOT.Particles%wps(wps_l(i))%is_mapped) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'trying to printout a property that is not mapped &
-                         & to the particles',&
-                         &  __LINE__,info)
-                    GOTO 9999
-                 ENDIF
-              ENDDO
-           ELSE
-              !printout all properties i that are mapped
-              nb_wps = 0
-              DO i=1,Particles%max_wpsid
-                 IF (Particles%wps(i)%is_mapped) &
-                      nb_wps = nb_wps + 1
-              ENDDO
-              ALLOCATE(wps_l(nb_wps),STAT=info)
-              nb_wps = 0
-              DO i=1,Particles%max_wpsid
-                 IF (Particles%wps(i)%is_mapped) THEN
-                    nb_wps = nb_wps + 1
-                    wps_l(nb_wps) = i
-                 ENDIF
-              ENDDO
-           ENDIF
-
-           ! vector property
-           IF(PRESENT(wpv_list)) THEN
-              nb_wpv=SIZE(wpv_list)
-              ALLOCATE(wpv_l(nb_wpv),STAT=info)
-              wpv_l=wpv_list
-              DO i=1,nb_wpv
-                 IF (wpv_l(i).GT.Particles%max_wpvid) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'vector property index exceeds size of property array',&
-                         &  __LINE__,info)
-                    GOTO 9999
-                 ENDIF
-                 IF (.NOT.Particles%wpv(wpv_l(i))%is_mapped) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'trying to printout a property that is not mapped &
-                         & to the particles',&
-                         &  __LINE__,info)
-                    GOTO 9999
-                 ENDIF
-              ENDDO
-           ELSE
-              !printout all properties i that are mapped
-              nb_wpv = 0
-              DO i=1,Particles%max_wpvid
-                 IF (Particles%wpv(i)%is_mapped) &
-                      nb_wpv = nb_wpv + 1
-              ENDDO
-              ALLOCATE(wpv_l(nb_wpv),STAT=info)
-              nb_wpv = 0
-              DO i=1,Particles%max_wpvid
-                 IF (Particles%wpv(i)%is_mapped) THEN
-                    nb_wpv = nb_wpv + 1
-                    wpv_l(nb_wpv) = i
-                 ENDIF
-              ENDDO
-           ENDIF
 
            ! vector field property
-           IF(PRESENT(wpv_field_list)) THEN
-              nb_wpv_field=SIZE(wpv_field_list)
-              ALLOCATE(wpv_field_l(nb_wpv_field),STAT=info)
-              wpv_field_l=wpv_field_list
-              DO i=1,nb_wpv_field
-                 IF (wpv_field_l(i).GT.Particles%max_wpvid) THEN
+           IF(PRESENT(wp_field_list)) THEN
+              nb_wp_field=SIZE(wp_field_list)
+              ALLOCATE(wp_field_l(nb_wp_field),STAT=info)
+              wp_field_l=wp_field_list
+
+              !Check that the listed properties are indeed vector fields,
+              ! are allocated and mapped to particles
+              DO i=1,nb_wp_field
+                 ii = wp_field_list(i)
+                 IF (.NOT.Pc%props%exists(ii)) THEN
                     info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
-                         &  'vector field property index exceeds size of property array',&
+                    CALL ppm_error(ppm_err_argument,caller,   &
+                 &  'invalid property for printout. Data may not be allocated',&
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
-                 IF (.NOT.Particles%wpv(wpv_field_l(i))%is_mapped) THEN
+                 prop => Pc%props%vec(ii)%t
+                 IF (.NOT.prop%flags(ppm_ppt_partial)) THEN
                     info = ppm_error_error
-                    CALL ppm_error(999,caller,   &
+                    CALL ppm_error(ppm_err_argument,caller,   &
                          &  'trying to printout a property that is not mapped &
                          & to the particles',&
                          &  __LINE__,info)
                     GOTO 9999
                  ENDIF
+                 IF (.NOT. prop%data_type.EQ.ppm_type_real .OR. &
+                        prop%lda.LE.1) THEN 
+                         info = ppm_error_error
+                         CALL ppm_error(ppm_err_argument,caller,   &
+                     &  'property should be a real vector field',&
+                             &  __LINE__,info)
+                         GOTO 9999
+                 ENDIF
+                 prop => NULL()
               ENDDO
            ELSE
               ! dont print anything
-              nb_wpv_field = 0
+              nb_wp_field = 0
            ENDIF
 
+           IF (.NOT. PRESENT(wp_list) .AND. .NOT. PRESENT(wp_field_list)) THEN
+               !printout all properties i that are mapped
+               nb_wp = Pc%props%nb
+               ALLOCATE(wpi_l(nb_wp),wps_l(nb_wp),wpv_l(nb_wp),STAT=info)
+               prop => Pc%props%begin()
+               DO WHILE (ASSOCIATED(prop))
+                   IF (prop%flags(ppm_ppt_partial)) THEN
+                       SELECT CASE (prop%data_type)
+                       CASE (ppm_type_int)
+                           IF (prop%lda.EQ.1) THEN
+                               nb_wpi = nb_wpi + 1
+                               wpi_l(nb_wpi) = Pc%props%iter_id
+                           ENDIF
+
+                       CASE (ppm_type_real)
+                           IF (prop%lda.EQ.1) THEN
+                               nb_wps = nb_wps + 1
+                               wps_l(nb_wps) = Pc%props%iter_id
+                           ELSE
+                               nb_wpv = nb_wpv + 1
+                               wpv_l(nb_wpv) = Pc%props%iter_id
+                           ENDIF
+                       CASE DEFAULT
+                           !not a supported type for printout (yet)
+                       END SELECT
+                       prop => Pc%props%next()
+                   ENDIF
+               ENDDO
+           ENDIF
 
 #ifdef __MPI
            ! write parallel file
@@ -233,29 +225,30 @@
               WRITE(iUnit,'(3A)') "      <PDataArray Name='nvlist' type='Float64' />"
               END IF
               DO i=1,nb_wpi
-              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                   Particles%wpi(wpi_l(i))%name &
-                   (1:LEN_TRIM(Particles%wpi(wpi_l(i))%name)), &
-                   "' type='Float64' />"
+                  prop => Pc%props%vec(wpi_l(i))%t
+                  WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                      prop%name (1:LEN_TRIM(prop%name)), &
+                      "' type='Float64' />"
               END DO
               DO i=1,nb_wps
-              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                   Particles%wps(wps_l(i))%name &
-                   (1:LEN_TRIM(Particles%wps(wps_l(i))%name)), &
-                   "' type='Float64' />"
+                  prop => Pc%props%vec(wps_l(i))%t
+                  WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                      prop%name (1:LEN_TRIM(prop%name)), &
+                      "' type='Float64' />"
               END DO
               DO i=1,nb_wpv
-                 nd = Particles%wpv(i)%lda
-                 DO l=1,nd
-                    WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(i))%name), '_', l
-                    WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                        scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
-                 END DO
+                  prop => Pc%props%vec(wpv_l(i))%t
+                  nd = prop%lda
+                  DO l=1,nd
+                      WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
+                      WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                          scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
+                  END DO
               END DO
-              DO i=1,nb_wpv_field
-              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                   Particles%wpv(wpv_field_l(i))%name &
-                   (1:LEN_TRIM(Particles%wpv(wpv_field_l(i))%name)), &
+              DO i=1,nb_wp_field
+                  prop => Pc%props%vec(wp_field_l(i))%t
+                  WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                   prop%name (1:LEN_TRIM(prop%name)), &
                    "' type='Float64' />"
               END DO
               WRITE(iUnit,'(A)') "    </PPointData>"              
@@ -292,9 +285,9 @@
 
            ! write data
            IF (ghosts) THEN
-              N = Particles%Mpart
+              N = Pc%Mpart
            ELSE
-              N = Particles%Npart
+              N = Pc%Npart
            END IF
 
            ! write header
@@ -317,9 +310,9 @@
               END IF
               IF (nb_wpi .GT. 0) THEN
                  DO i=1,nb_wpi
+                    prop => Pc%props%vec(wpi_l(i))%t
                     WRITE(iUnit,'(A)',advance='no') &
-                         Particles%wpi(wpi_l(i))%name &
-                         (1:LEN_TRIM(Particles%wpi(wpi_l(i))%name))
+                         prop%name (1:LEN_TRIM(prop%name))
                     IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
                  END DO
               END IF
@@ -328,9 +321,9 @@
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Scalars='"
                  DO i=1,nb_wps
+                    prop => Pc%props%vec(wps_l(i))%t
                     WRITE(iUnit,'(A)',advance='no') &
-                         Particles%wps(wps_l(i))%name &
-                         (1:LEN_TRIM(Particles%wps(wps_l(i))%name))
+                         prop%name (1:LEN_TRIM(prop%name))
                     IF (i .LT. nb_wps) WRITE(iUnit,'(A)',advance='no') " "
                  END DO
               END IF
@@ -339,25 +332,25 @@
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Vectors='"
                  DO i=1,nb_wpv
+                    prop => Pc%props%vec(wpv_l(i))%t
                     WRITE(iUnit,'(A)',advance='no') &
-                         Particles%wpv(wpv_l(i))%name &
-                         (1:LEN_TRIM(Particles%wpv(wpv_l(i))%name))
+                         prop%name (1:LEN_TRIM(prop%name))
                     IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',advance='no') " "
                  END DO
-                 IF (nb_wpv .GT. 0 .AND. nb_wpv_field .GT. 0) &
+                 IF (nb_wpv .GT. 0 .AND. nb_wp_field .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') " "
-                 DO i=1,nb_wpv_field
+                 DO i=1,nb_wp_field
+                    prop => Pc%props%vec(wp_field_l(i))%t
                     WRITE(iUnit,'(A)',advance='no') &
-                         Particles%wpv(wpv_field_l(i))%name &
-                         (1:LEN_TRIM(Particles%wpv(wpv_field_l(i))%name))
-                    IF (i .LT. nb_wpv_field) WRITE(iUnit,'(A)',advance='no') " "
+                         prop%name (1:LEN_TRIM(prop%name))
+                    IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',advance='no') " "
                  END DO
               END IF
               WRITE(iUnit,'(A)') "'>"
 
               ! property values
               IF (nvlist) THEN
-                 wpi => Particles%nvlist
+                 CALL Pc%get_nvlist(nvlist=wpi,nlid=ppm_param_default_nlID)
 #define VTK_NAME "nvlist"
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
@@ -365,59 +358,63 @@
                  wpi => NULL()
               END IF
               DO k=1,nb_wpi
-                 wpi => get_wpi(Particles,wpi_l(k),with_ghosts=ghosts)
-#define VTK_NAME Particles%wpi(wpi_l(k))%name
+                 prop => Pc%props%vec(wpi_l(k))%t
+                 CALL Pc%get(wpi,wpi_l(k),with_ghosts=ghosts)
+#define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
 #include "vtk/print_data_array.f"
-                 wpi => set_wpi(Particles,wpi_l(k),read_only=.TRUE.)
+                 CALL Pc%set(wpi,wpi_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wps
-                 wp => get_wps(Particles,wps_l(k),with_ghosts=ghosts)
-#define VTK_NAME Particles%wps(wps_l(k))%name
+                 prop => Pc%props%vec(wps_l(k))%t
+                 CALL Pc%get(wp,wps_l(k),with_ghosts=ghosts)
+#define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
-                 wp => set_wps(Particles,wps_l(k),read_only=.TRUE.)
+                 CALL Pc%set(wp,wps_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wpv
-                 xp => get_wpv(Particles,wpv_l(k),with_ghosts=ghosts)
-                 nd = SIZE(xp,1)
+                 prop => Pc%props%vec(wpv_l(k))%t
+                 CALL Pc%get(wp2d,wpv_l(k),with_ghosts=ghosts)
+                 nd = SIZE(wp2d,1)
                  DO l=1,nd
-                    WRITE(scratch,'(A,A,I0)') TRIM(Particles%wpv(wpv_l(k))%name), '_', l
-                    wp => xp(l,:)
+                    WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
+                    wp => wp2d(l,:)
 #define VTK_NAME scratch
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
                     wp => NULL()
                  END DO
-                 xp => set_wpv(Particles,wpv_l(k),read_only=.TRUE.)
+                 CALL Pc%set(wp2d,wpv_l(k),read_only=.TRUE.)
               END DO
-              DO k=1,nb_wpv_field
-                 xp => get_wpv(Particles,wpv_field_l(k),with_ghosts=ghosts)
-                 nd = SIZE(xp,1)
-#define VTK_NAME Particles%wpv(wpv_field_l(k))%name
+              DO k=1,nb_wp_field
+                 prop => Pc%props%vec(wp_field_l(k))%t
+                 CALL Pc%get(wp2d,wp_field_l(k),with_ghosts=ghosts)
+                 nd = SIZE(wp2d,1)
+#define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
-#define VTK_VECTOR xp
+#define VTK_VECTOR wp2d
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
-                 xp => set_wpv(Particles,wpv_field_l(k),read_only=.TRUE.)
+                 CALL Pc%set(wp2d,wp_field_l(k),read_only=.TRUE.)
               END DO
               WRITE(iUnit,'(A)') "      </PointData>"
            END IF
 
            ! print point coordinates
            WRITE(iUnit,'(A)') "      <Points>"
-           xp => get_xp(Particles,with_ghosts=ghosts)
+           CALL Pc%get_xp(xp,with_ghosts=ghosts)
            nd = SIZE(xp,1)
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
 #define VTK_VECTOR xp
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
-           xp => set_xp(Particles,read_only=.TRUE.)
+           CALL Pc%set_xp(xp,read_only=.TRUE.)
            WRITE(iUnit,'(A)') "      </Points>"
 
            ! create a vertex for every point

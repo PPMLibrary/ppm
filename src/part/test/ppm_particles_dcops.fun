@@ -100,11 +100,6 @@ real(mk)                        :: tol_error,err
         call Pc%set(wp_2r,wp2_id)
         call Pc%apply_bc(info)
         call Pc%map(info)
-        if(info.ne.0) then
-            write(*,*) 'map failed'
-            stop
-        endif
-         
 
         call Pc%create_prop(wp1_id,ppm_type_real,info,1,name='testf_sca')
         call Pc%create_prop(wp2_id,ppm_type_real,info,ndim,name='testf_vec')
@@ -363,8 +358,8 @@ function inf_error(Pc,wp_id,dwp_id,op_id)
 
     end associate
 
-    write(fname,'(A,I0)') 'test_grad',ppm_nproc
-    CALL ppm_vtk_particle_cloud(TRIM(ADJUSTL(fname)),Pc,info)
+!    write(fname,'(A,I0)') 'test_grad',ppm_nproc
+!    CALL ppm_vtk_particle_cloud(TRIM(ADJUSTL(fname)),Pc,info)
 
 #ifdef __MPI
     call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
@@ -374,8 +369,8 @@ function inf_error(Pc,wp_id,dwp_id,op_id)
 #endif
     inf_error = inf_error/linf
 
-    if (ppm_rank.eq.0) &
-        write(*,*) '[',ppm_rank,']','Error is ',inf_error
+!    if (ppm_rank.eq.0) &
+!        write(*,*) '[',ppm_rank,']','Error is ',inf_error
 
     deallocate(err,exact,degree,order)
 end function inf_error
