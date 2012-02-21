@@ -407,7 +407,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
 #ifdef __MKL
         IF (PRESENT(min_sv)) THEN
             Z_copy = Z
-            CALL ppm_matrix_svd(Z_copy,ncoeff,ncoeff,info,min_sv_p)
+            CALL DTYPE(ppm_matrix_svd)(Z_copy,ncoeff,ncoeff,info,min_sv_p)
             IF (info .NE. 0) THEN
                 IF (ppm_dim .EQ. 2 ) THEN
                     myformat = TRIM(ADJUSTL('(2(E30.22))'))
