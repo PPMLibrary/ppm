@@ -62,13 +62,13 @@ ppfile=${OBJDIR}${dir}$fname
 # use cpp to get the #include deps
 preproc=$($CPP $INC $DEFINE -w -MM ${SRCDIR}${dir}$fname \
         | $SED $ef "s/^\s+/\t/
-                    s|([a-z0-9_]+)\.o|${OBJDIR}${dir}\1.f|i")
+                    s|([a-z0-9_]+)\.o|${OBJDIR}${dir}\1.f|I")
 
 # resolve fortran include deps
 finclude=$(grep -E -i "^[ \t]*include " $ppfile \
          | $SED $ef -e 's/^\s*//' \
                     -e '/mpif.*\.h/d' \
-                    -e "s|include\s*|\t|i" \
+                    -e "s|include\s*|\t|I" \
                     -e 's/"//g' \
                     -e "s/'//g" \
                     -e '$q;s/$$/ \\/g')
@@ -83,7 +83,7 @@ fi
 fuse=$(grep -E -i "^[ \t]*use " $ppfile \
      | $SED $ef 's/^\s*//
                  s/,.*//
-                 s/use[ \t]*//i')
+                 s/use[ \t]*//I')
 
 fuse=`echo "$fuse" | sort | uniq`
 
