@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module   :                   ppm_module_typedef
+      !  Module       :                 ppm_module_diffop_typedef
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -26,56 +26,74 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
 
-      MODULE ppm_module_typedef
-      !!! This module contains the definition of some ppm data types
-      !!! and stores them.
-      !!! NOTE: they should perhaps be stored in ppm_module_data instead, but
-      !!! it is then harder to avoid module circular dependency.
+#define __REAL 3 
+#define __COMPLEX 4 
+#define __INTEGER 5 
+#define __LONGINT 6 
+#define __LOGICAL 7 
+#define __CHAR 8 
+
+#define __crash_on_null_pointers  1
+#undef __WITH_KDTREE
+
+      MODULE ppm_module_diffop_typedef
+      !!! Declares differential operator data types
+      !!!
+      !!! [NOTE]
+      !!! Most of the declared variables in this module should not be accessed
+      !!! directly by the PPM client developer, they are used internally in the
+      !!! library.
 
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_mesh_typedef
-         USE ppm_module_particles_typedef
-         USE ppm_module_topo_typedef
+         USE ppm_module_alloc
+         USE ppm_module_data
+         !USE ppm_module_typedef
+         USE ppm_module_container_typedef
+         USE ppm_module_error
+         USE ppm_module_write
+         USE ppm_module_substart
+         USE ppm_module_substop
 
+         IMPLICIT NONE
          !----------------------------------------------------------------------
-         ! Data types
-         !----------------------------------------------------------------------
-         !----------------------------------------------------------------------
-         ! Pointer to cell list (needed to make lists of cell lists)
-         !----------------------------------------------------------------------
-         TYPE ppm_t_clist
-             !!! Cell list data structure
-             INTEGER, DIMENSION(:), POINTER    :: nm  => NULL()
-             !!! Number of cells in x,y,(z) direction (including the ghosts 
-             !!! cells) in each subdomain. 
-             INTEGER, DIMENSION(:), POINTER    :: lpdx => NULL()
-             !!! particle index list
-             INTEGER, DIMENSION(:), POINTER    :: lhbx => NULL()
-             !!! first particle in each cell
-         END TYPE
-
-
-         !----------------------------------------------------------------------
-         ! Global variables and parameters
+         ! Global parameters
          !----------------------------------------------------------------------
 
          !----------------------------------------------------------------------
-         ! Topologies
+         ! Type declaration
          !----------------------------------------------------------------------
-         TYPE(ppm_ptr_t_topo_s), DIMENSION(:), POINTER :: ppm_topo_s => NULL()
-         !!! the PPM topologies array (single precision)
-         TYPE(ppm_ptr_t_topo_d), DIMENSION(:), POINTER :: ppm_topo_d => NULL()
-         !!! the PPM topologies array (double precision)
 
-         INTEGER :: ppm_next_avail_topo
-         !!! ID of the next available topology to be used by
-         !!! ppm_topo_alloc.
-         !!!
-         !!! At initialization this is set to ppm_param_undefined              +
-         !!! If it points within (1,SIZE(ppm_topo)) this slot is (re)used to
-         !!! store the new topology, if it is > SIZE(ppm_topo) then the ppm_topo
-         !!! array must be extended
-      END MODULE ppm_module_typedef
+#define  DTYPE(a) a/**/_s
+#define  MK ppm_kind_single
+#define  _MK _ppm_kind_single
+#include "diffop/diffop_typedef.inc"
+
+#define  DTYPE(a) a/**/_d
+#define  MK ppm_kind_double
+#define  _MK _ppm_kind_double
+#include "diffop/diffop_typedef.inc"
+
+         !----------------------------------------------------------------------
+         ! Type-bound procedures
+         !----------------------------------------------------------------------
+
+
+         CONTAINS
+
+
+#define DTYPE(a) a/**/_s
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#include "diffop/diffop_typeproc.f"
+
+#define DTYPE(a) a/**/_d
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#include "diffop/diffop_typeproc.f"
+
+
+         END MODULE ppm_module_diffop_typedef
+
