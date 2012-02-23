@@ -10,6 +10,16 @@
 PPM=0
 NUM=0
 
+#extended regexp flag
+ef=$(echo 'aaa' | $SED -E 's/a+/b/')
+
+if [[ $ef == b ]]
+then
+    ef="-E"
+else
+    ef="-r"
+fi
+
 if [[ $1 == --ppm ]]
 then
     PPM=1
@@ -51,17 +61,17 @@ ppfile=${OBJDIR}${dir}$fname
 
 # use cpp to get the #include deps
 preproc=$($CPP $INC $DEFINE -w -MM ${SRCDIR}${dir}$fname \
-        | $SED -E "s/^\s+/\t/
-                   s|([a-z0-9_]+)\.o|${OBJDIR}${dir}\1.f|i")
+        | $SED $ef "s/^\s+/\t/
+                    s|([a-z0-9_]+)\.o|${OBJDIR}${dir}\1.f|i")
 
 # resolve fortran include deps
 finclude=$(grep -E -i "^[ \t]*include " $ppfile \
-         | $SED -E -e 's/^\s*//' \
-                   -e '/mpif.*\.h/d' \
-                   -e "s|include\s*|\t|i" \
-                   -e 's/"//g' \
-                   -e "s/'//g" \
-                   -e '$q;s/$$/ \\/g')
+         | $SED $ef -e 's/^\s*//' \
+                    -e '/mpif.*\.h/d' \
+                    -e "s|include\s*|\t|i" \
+                    -e 's/"//g' \
+                    -e "s/'//g" \
+                    -e '$q;s/$$/ \\/g')
 if [ "$finclude" ]
 then
     finclude="${OBJDIR}${1/\.f/.o}: ${finclude:1}"
@@ -71,9 +81,9 @@ fi
 
 # resolve use statement deps
 fuse=$(grep -E -i "^[ \t]*use " $ppfile \
-     | $SED -E 's/^\s*//
-                s/,.*//
-                s/use[ \t]*//i')
+     | $SED $ef 's/^\s*//
+                 s/,.*//
+                 s/use[ \t]*//i')
 
 fuse=`echo "$fuse" | sort | uniq`
 
@@ -115,9 +125,9 @@ filtered=${filtered:1}
 if [ "$filtered" ];
 then
     fuse=$(echo "$filtered" \
-	 | $SED -E -e 's/$$/.o/' \
-                   -e "s|^|\t${OBJDIR}|" \
-                   -e '$q;s/$$/ \\/g')
+	 | $SED $ef -e 's/$$/.o/' \
+                    -e "s|^|\t${OBJDIR}|" \
+                    -e '$q;s/$$/ \\/g')
     fuse="${ppfile/\.f/.o}: ${fuse:1}"
 else
     fuse=''
