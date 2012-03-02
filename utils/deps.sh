@@ -11,7 +11,7 @@ PPM=0
 NUM=0
 
 #extended regexp flag
-ef=$(echo 'aaa' | $SED -E 's/a+/b/')
+ef=$(echo 'aaa' | $SED -E 's/a+/b/' 2>&1 )
 
 if [[ $ef == b ]]
 then
