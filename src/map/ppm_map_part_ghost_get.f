@@ -146,6 +146,7 @@
       REAL(MK), DIMENSION(:,:), POINTER :: xt  => NULL()
       ! position of potential ghosts
       REAL(MK), DIMENSION(:,:), POINTER :: xt_offset => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: xt_off_fac => NULL()
       ! offset of pot. ghosts
       REAL(MK)                      :: xminf,yminf,zminf ! full domain
       REAL(MK)                      :: xmaxf,ymaxf,zmaxf ! full domain
@@ -315,6 +316,7 @@
       ldu(2) = Npart
       CALL ppm_alloc(xt,ldu,iopt,info)
       CALL ppm_alloc(xt_offset,ldu,iopt,info)
+      CALL ppm_alloc(xt_off_fac,ldu,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
@@ -456,6 +458,8 @@
                      xt(2,nghost)   = xp(2,ipart)
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
+                     xt_off_fac(1,nghost) = 1.0_MK
+                     xt_off_fac(2,nghost) = 1.0_MK
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -495,6 +499,9 @@
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
                      xt_offset(3,nghost) = 0.0_MK
+                     xt_off_fac(1,nghost) = 0.0_MK
+                     xt_off_fac(2,nghost) = 0.0_MK
+                     xt_off_fac(3,nghost) = 0.0_MK
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -721,9 +728,11 @@
          IF (ppm_kind.EQ.ppm_kind_double) THEN
             CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
             CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+            CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
          ELSE
             CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
             CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+            CALL ppm_alloc(ppm_ghost_offset_facs,ldu,iopt,info)
          ENDIF
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
@@ -919,41 +928,53 @@
      &                       ppm_kind_double)
                          ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
      &                       ppm_kind_double)
+                         ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                       ppm_kind_double)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
      &                       ppm_kind_double)
                          ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
      &                       ppm_kind_double)
+                         ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(2,i), &
+     &                       ppm_kind_double)
 #else
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = xt(1,i)
                          ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                         ppm_ghost_offset_facd(ibuffer) = xt_off_fac(1,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = xt(2,i)
                          ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                         ppm_ghost_offset_facd(ibuffer) = xt_off_fac(2,i)
 #endif
                      ELSE
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = xt(1,i)
                          ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                         ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = xt(2,i)
                          ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                         ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
 #else
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
      &                       ppm_kind_single)
                          ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
      &                       ppm_kind_single)
+                         ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                       ppm_kind_single)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),        &
      &                       ppm_kind_single)
                          ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+     &                       ppm_kind_single)
+                         ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(2,i), &
      &                       ppm_kind_single)
 #endif
                      ENDIF
@@ -995,11 +1016,15 @@
      &                      ppm_kind_double)
                          ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
      &                      ppm_kind_double)
+                         ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                      ppm_kind_double)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
      &                      ppm_kind_double)
                          ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+     &                      ppm_kind_double)
+                         ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(2,i), &
      &                      ppm_kind_double)
 
                          ibuffer = ibuffer + 1 
@@ -1007,37 +1032,47 @@
      &                      ppm_kind_double)
                          ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(3,i), &
      &                      ppm_kind_double)
+                         ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(3,i), &
+     &                      ppm_kind_double)
 #else
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = xt(1,i)
                          ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                         ppm_ghost_offset_facd(ibuffer) = xt_off_fac(1,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = xt(2,i)
                          ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                         ppm_ghost_offset_facd(ibuffer) = xt_off_fac(2,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbufferd(ibuffer)   = xt(3,i)
                          ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
+                         ppm_ghost_offset_facd(ibuffer) = xt_off_fac(3,i)
 #endif
                      ELSE
 #if    __KIND == __SINGLE_PRECISION
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = xt(1,i)
                          ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                         ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = xt(2,i)
                          ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                         ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = xt(3,i)
                          ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
+                         ppm_ghost_offset_facs(ibuffer) = xt_off_fac(3,i)
 #else
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
      &                      ppm_kind_single)
                          ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
+     &                      ppm_kind_single)
+                         ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(1,i), &
      &                      ppm_kind_single)
 
                          ibuffer = ibuffer + 1 
@@ -1045,11 +1080,15 @@
      &                      ppm_kind_single)
                          ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
      &                      ppm_kind_single)
+                         ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(2,i), &
+     &                      ppm_kind_single)
 
                          ibuffer = ibuffer + 1 
                          ppm_sendbuffers(ibuffer)   = REAL(xt(3,i),        &
      &                      ppm_kind_single)
                          ppm_ghost_offsets(ibuffer) = REAL(xt_offset(3,i), &
+     &                      ppm_kind_single)
+                         ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(3,i), &
      &                      ppm_kind_single)
 #endif
                      ENDIF
@@ -1262,41 +1301,53 @@
      &                            ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_double)
+                               ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                            ppm_kind_double)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = REAL(xt(2,i),        &
      &                            ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
      &                            ppm_kind_double)
+                               ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(2,i), &
+     &                            ppm_kind_double)
 #else
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = xt(1,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                               ppm_ghost_offset_facd(ibuffer) = xt_off_fac(1,i)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = xt(2,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                               ppm_ghost_offset_facd(ibuffer) = xt_off_fac(2,i)
 #endif
                            ELSE
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = xt(1,i)
                                ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = xt(2,i)
                                ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
 #else
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),        &
      &                            ppm_kind_single)
                                ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_single)
+                               ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                            ppm_kind_single)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = REAL(xt(2,i),   &
      &                            ppm_kind_single)
                                ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
+     &                            ppm_kind_single)
+                               ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(2,i), &
      &                            ppm_kind_single)
 #endif
                            ENDIF 
@@ -1340,11 +1391,15 @@
      &                            ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(1,i), &
      &                            ppm_kind_double)
+                               ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(1,i), &
+     &                            ppm_kind_double)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer) = REAL(xt(2,i),          &
      &                            ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(2,i), &
+     &                            ppm_kind_double)
+                               ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(2,i), &
      &                            ppm_kind_double)
 
                                ibuffer = ibuffer + 1 
@@ -1352,33 +1407,43 @@
      &                            ppm_kind_double)
                                ppm_ghost_offsetd(ibuffer) = REAL(xt_offset(3,i), &
      &                            ppm_kind_double)
+                               ppm_ghost_offset_facd(ibuffer) = REAL(xt_off_fac(3,i), &
+     &                            ppm_kind_double)
 #else
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = xt(1,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(1,i)
+                               ppm_ghost_offset_facd(ibuffer) = xt_off_fac(1,i)
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = xt(2,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(2,i)
+                               ppm_ghost_offset_facd(ibuffer) = xt_off_fac(2,i)
                                ibuffer = ibuffer + 1 
                                ppm_sendbufferd(ibuffer)   = xt(3,i)
                                ppm_ghost_offsetd(ibuffer) = xt_offset(3,i)
+                               ppm_ghost_offset_facd(ibuffer) = xt_off_fac(3,i)
 #endif
                            ELSE
 #if    __KIND == __SINGLE_PRECISION
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = xt(1,i)
                                ppm_ghost_offsets(ibuffer) = xt_offset(1,i)
+                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(1,i)
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = xt(2,i)
                                ppm_ghost_offsets(ibuffer) = xt_offset(2,i)
+                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(2,i)
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = xt(3,i)
                                ppm_ghost_offsets(ibuffer) = xt_offset(3,i)
+                               ppm_ghost_offset_facs(ibuffer) = xt_off_fac(3,i)
 #else
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = REAL(xt(1,i),   &
      &                            ppm_kind_single)
                                ppm_ghost_offsets(ibuffer) = REAL(xt_offset(1,i), &
+     &                            ppm_kind_single)
+                               ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(1,i), &
      &                            ppm_kind_single)
 
                                ibuffer = ibuffer + 1 
@@ -1386,11 +1451,15 @@
      &                            ppm_kind_single)
                                ppm_ghost_offsets(ibuffer) = REAL(xt_offset(2,i), &
      &                            ppm_kind_single)
+                               ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(2,i), &
+     &                            ppm_kind_single)
 
                                ibuffer = ibuffer + 1 
                                ppm_sendbuffers(ibuffer)   = REAL(xt(3,i),   &
      &                            ppm_kind_single)
                                ppm_ghost_offsets(ibuffer) = REAL(xt_offset(3,i), &
+     &                            ppm_kind_single)
+                               ppm_ghost_offset_facs(ibuffer) = REAL(xt_off_fac(3,i), &
      &                            ppm_kind_single)
 #endif
                            ENDIF 
@@ -1446,6 +1515,13 @@
       ENDIF
 
       CALL ppm_alloc(xt_offset,ldu,iopt,info)
+      IF (info .NE. 0) THEN
+         info = ppm_error_error
+         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &
+     &       'xt',__LINE__,info)
+      ENDIF
+      
+      CALL ppm_alloc(xt_off_fac,ldu,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_ghost_get',     &

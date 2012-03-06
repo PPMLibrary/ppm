@@ -7,6 +7,7 @@
   ldu(2) = 2*nghostplus
   CALL ppm_alloc(xt,ldu,iopt,info) 
   CALL ppm_alloc(xt_offset,ldu,iopt,info) 
+  CALL ppm_alloc(xt_off_fac,ldu,iopt,info) 
   IF (info.NE.0) THEN
      info = ppm_error_fatal
      CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get', &
@@ -45,20 +46,36 @@
   ymaxf = max_phys(2)
   ymaxi = max_phys(2) - ghostsize
   
-  DO i = 1, nghostplus
-     IF ( xt(2,i) > ymaxi .AND. xt(2,i) < ymaxf ) THEN
+  IF ( ppm_dim == 2 ) THEN
+    DO i = 1, nghostplus
+      IF ( xt(2,i) > ymaxi .AND. xt(2,i) < ymaxf ) THEN
         k         = k + 1
         ighost(k) = ighost(i)
         xt(1,k)   = xt(1,i)
         xt(2,k)   = 2.0_MK*ymaxf - xt(2,i)
         xt_offset(1,k) = xt_offset(1,i)
-        xt_offset(2,k) = 2.0_MK*(ymaxf-xt(2,i))
-        IF ( ppm_dim == 3 ) THEN
-           xt(3,k)   = xt(3,i)
-           xt_offset(3,k) = xt_offset(3,i)
-        END IF
-     END IF
-  END DO
+        xt_offset(2,k) = 2.0_MK*ymaxf !2.0_MK*(ymaxf-xt(2,i))
+        xt_off_fac(1,k) = xt_off_fac(1,i)
+        xt_off_fac(2,k) = -1.0_MK
+      END IF
+    END DO
+  ELSE IF ( ppm_dim == 3 ) THEN
+    DO i = 1, nghostplus
+      IF ( xt(2,i) > ymaxi .AND. xt(2,i) < ymaxf ) THEN
+        k         = k + 1
+        ighost(k) = ighost(i)
+        xt(1,k)   = xt(1,i)
+        xt(2,k)   = 2.0_MK*ymaxf - xt(2,i)
+        xt(3,k)   = xt(3,i)
+        xt_offset(1,k) = xt_offset(1,i)
+        xt_offset(2,k) = 2.0_MK*ymaxf !2.0_MK*(ymaxf-xt(2,i))
+        xt_offset(3,k) = xt_offset(3,i)
+        xt_off_fac(1,k) = xt_off_fac(1,i)
+        xt_off_fac(2,k) = -1.0_MK
+        xt_off_fac(3,k) = xt_off_fac(3,i)
+      END IF
+    END DO
+  END IF
   
   !----------------------------------------------------------
   ! update the ghost counter.
