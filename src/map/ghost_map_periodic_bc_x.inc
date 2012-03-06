@@ -7,6 +7,7 @@
          ldu(2) = 2*nghostplus
          CALL ppm_alloc(xt,ldu,iopt,info) 
          CALL ppm_alloc(xt_offset,ldu,iopt,info) 
+         CALL ppm_alloc(xt_off_fac,ldu,iopt,info) 
          IF (info.NE.0) THEN
             info = ppm_error_fatal
             CALL ppm_error(ppm_err_alloc,'ppm_map_part_ghost_get',     &
@@ -41,9 +42,12 @@
                xt(2,k)   = xt(2,i)
                xt_offset(1,k) = len_phys(1)
                xt_offset(2,k) = xt_offset(2,i)
+               xt_off_fac(1,k) = xt_off_fac(1,i)
+               xt_off_fac(2,k) = xt_off_fac(2,i)
                IF (ppm_dim.EQ.3) THEN
                   xt(3,k)   = xt(3,i)
                   xt_offset(3,k) = xt_offset(3,i)
+                  xt_off_fac(3,k) = xt_off_fac(3,i)
                ENDIF 
             ENDIF
          ENDDO
@@ -62,9 +66,12 @@
                   xt(2,k)   = xt(2,i)
                   xt_offset(1,k) = -len_phys(1)
                   xt_offset(2,k) = xt_offset(2,i)
+                  xt_off_fac(1,k) = xt_off_fac(1,i)
+                  xt_off_fac(2,k) = xt_off_fac(2,i)
                   IF (ppm_dim.EQ.3) THEN
                      xt(3,k)   = xt(3,i)
                      xt_offset(3,k) = xt_offset(3,i)
+                     xt_off_fac(3,k) = xt_off_fac(3,i)
                   ENDIF 
                ENDIF
             ENDDO
