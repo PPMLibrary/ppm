@@ -101,7 +101,7 @@
       CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
       NULLIFY(topo%mesh)
       topo%max_meshid = 0
-      topo%graph_handle = -1
+      topo%mpi_graph_id = -1
 
       !-------------------------------------------------------------------------
       !  Mark this topology as not defined

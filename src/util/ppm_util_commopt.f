@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_util_commopt
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -62,6 +62,11 @@
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
+#if   __KIND == __SINGLE_PRECISION
+      INTEGER, PARAMETER :: MK = ppm_kind_single
+#elif __KIND == __DOUBLE_PRECISION
+      INTEGER, PARAMETER :: MK = ppm_kind_double
+#endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -76,6 +81,7 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)                 :: t0
       INTEGER, DIMENSION(2)                 :: ldu
+      INTEGER, DIMENSION(1)                 :: ldu_1D
       INTEGER                               :: iopt
       ! number of neighborhood relations in total
       INTEGER                               :: nlinks
@@ -88,15 +94,38 @@
       INTEGER, DIMENSION(:  ) , POINTER     :: optres      => NULL()
       ! number of neighbors of all every CPU. index: MPI rank
       INTEGER, DIMENSION(:  ) , POINTER     :: nneighprocs => NULL()
+      ! all neighbors of all processors in 1D for MPI_Alltoall
+      INTEGER, DIMENSION(:  ) , POINTER     :: ineighprocs_1D => NULL()
       ! all neighbors of all processors. 1st index: neighbor nr., 2nd:
       ! processor rank
       INTEGER, DIMENSION(:,:) , POINTER     :: ineighprocs => NULL()
+      INTEGER, DIMENSION(:)   , POINTER     :: weights => NULL()
+      ! Sources in the graph
+      INTEGER, DIMENSION(:)   , POINTER     :: sources=>NULL()
+      ! Source weights
+      INTEGER, DIMENSION(:)   , POINTER     :: sw=>NULL()
+      ! Destinations (targets) in the graph
+      INTEGER, DIMENSION(:)   , POINTER     :: dests=>NULL()
+      ! Destination weights (edge weights)
+      INTEGER, DIMENSION(:)   , POINTER     :: dw=>NULL()
       INTEGER                               :: i,j,maxneigh,isize,ii,isin
       ! processor ranks
       INTEGER                               :: p1,p2
       ! min and max of assigned colors
       INTEGER                               :: mincolor,maxcolor
+      ! offset for the MPI_Alltoall send/recv buffer
+      INTEGER                               :: offset
+      ! new communicator that will be returned after MPI_Graph comm is
+      ! created
+      INTEGER                               :: newcomm
+      ! Total number of neighbors update by rank 0
+      INTEGER                               :: total_nneigh
+      ! Torsten's library needs this 'n'
+      INTEGER                               :: n,reorderedcomm
       LOGICAL                               :: valid
+      LOGICAL                               :: file_exists
+      CHARACTER(LEN=ppm_char)               :: filename
+      INTEGER                               :: inneigh,outneigh,weighted
 #ifdef __MPI
       ! MPI comm status
       INTEGER, DIMENSION(MPI_STATUS_SIZE)   :: status
@@ -105,7 +134,10 @@
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
-
+!      EXTERNAL mpix_dist_graph_create
+!      EXTERNAL mpix_dist_graph_neighbors_count
+!      EXTERNAL mpix_dist_graph_neighbors
+!      EXTERNAL tpm_topomap
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
@@ -151,8 +183,8 @@
       !  Allocate memory for number of neighbors
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
-      ldu(1) = ppm_nproc
-      CALL ppm_alloc(nneighprocs,ldu,iopt,info)
+      ldu_1D(1) = ppm_nproc
+      CALL ppm_alloc(nneighprocs,ldu_1D,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
@@ -193,6 +225,7 @@
 
       !-------------------------------------------------------------------------
       !  Rank 0 receives all neighbor lists
+      !  TODO: Should we use a MPI_Alltoall here?
       !-------------------------------------------------------------------------
       IF (ppm_rank .GT. 0) THEN
           CALL MPI_Send(topo%ineighproc(1:topo%nneighproc), &
@@ -208,6 +241,167 @@
           END DO
       END IF
 
+      !-------------------------------------------------------------------------
+      !  Rank 0 broadcasts the total number of neighbors of all the
+      !  processors to other MPI processes
+      !-------------------------------------------------------------------------
+      total_nneigh = SUM(nneighprocs)
+      CALL MPI_Bcast(total_nneigh,1,MPI_INTEGER,0,ppm_comm,info)
+      CALL MPI_Barrier(ppm_comm,info)
+
+      !-----------------------------------------------------------------------
+      !  Allocate memory for number of neighbors in 1D so that MPI_Bcast
+      !  would work fine
+      !-----------------------------------------------------------------------
+      iopt   = ppm_param_alloc_fit
+      ldu_1D(1) = total_nneigh   ! at this point every process has the same
+                                 ! total_nneigh
+      CALL ppm_alloc(ineighprocs_1D,ldu_1D,iopt,info)
+      IF (info .NE. 0) THEN
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &      'number of neighbors NNEIGHPROCS_1D',__LINE__,info)
+        GOTO 9999
+      ENDIF
+      ineighprocs_1D=0
+      IF (ppm_rank .EQ. 0) THEN
+!        DO i=0,ppm_nproc-1
+!            print*,'neigh of rank=',i,'->',ineighprocs(1:nneighprocs(i+1),i+1)
+!        ENDDO
+        ineighprocs_1D(1:nneighprocs(1))= topo%ineighproc(1:topo%nneighproc)
+        DO i=1,ppm_nproc-1
+            offset = i*nneighprocs(i+1)+1
+            ineighprocs_1D(offset:offset+nneighprocs(i+1)-1)= &
+     &                               ineighprocs(1:nneighprocs(i+1),i+1)
+        ENDDO
+!        print*,'rank=0->',ineighprocs_1D(1:nneighprocs(1))
+!        DO i=1,ppm_nproc-1
+!            offset = i*nneighprocs(i+1)+1
+!            print*,'NEW neigh of rank=',i,'->',ineighprocs_1D(offset:offset+ &
+!     &                      nneighprocs(i+1)-1)
+!        ENDDO
+      ENDIF
+      !-----------------------------------------------------------------------
+      !  Rank 0 broadcasts all neighborlists to everyone so that every rank
+      !  can create the same MPI_Graph
+      !-----------------------------------------------------------------------
+      ! Wait for rank 0 to finish up his work
+      CALL MPI_Barrier(ppm_comm,info)
+      CALL MPI_Bcast(ineighprocs_1D,total_nneigh,MPI_INTEGER,0,ppm_comm,info)
+      CALL MPI_Bcast(nneighprocs,ppm_nproc,MPI_INTEGER,0,ppm_comm,info)
+      IF (info .NE. 0) THEN
+        info = ppm_error_fatal
+        CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &      'links ILINKS',__LINE__,info)
+        GOTO 9999
+      ENDIF
+
+      !-------------------------------------------------------------------------
+      !  The topology file should be provided so that LIBTOPOMAP can be used
+      !  TODO: Update the path of the file
+      !-------------------------------------------------------------------------
+      filename="ppm_processor_topology.txt"
+      INQUIRE(FILE=filename, EXIST=file_exists)
+      IF (file_exists) THEN
+      !-------------------------------------------------------------------------
+      !  Using Torsten Hoefler's LIBTOPOMAP to find a better mapping of MPI
+      !  processes onto physical processors
+      !-------------------------------------------------------------------------
+
+          iopt   = ppm_param_alloc_fit
+          ldu(1) = total_nneigh
+          ldu(2) = 0
+          CALL ppm_alloc(weights,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+         &      'number of neighbors NNEIGHPROCS_1D',__LINE__,info)
+            GOTO 9999
+          ENDIF
+      ! TODO:
+      ! if the graph has weighted edges this 'weights' array needs to be
+      ! modified
+          weights=1
+          n=1
+          CALL mpix_dist_graph_create(ppm_comm,n,ppm_rank,nneighprocs,&
+     &     ineighprocs_1D,weights,MPI_INFO_NULL,0,topo%mpi_graph_id,info)
+          IF (info .NE. 0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &                   'mpix_dist_graph_create failed',__LINE__,info)
+            GOTO 9999
+          ENDIF
+          ppm_comm = topo%mpi_graph_id
+
+          CALL tpm_topomap(ppm_comm,filename,50,ppm_rank,info)
+
+          !  Find neighbors in the graph
+          weighted = 1
+          CALL mpix_dist_graph_neighbors_count(ppm_comm,inneigh,outneigh,  &
+     &                                     weighted,info)
+          IF (info .NE. 0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &      'mpix_dist_graph_neighbors_count failed',__LINE__,info)
+            GOTO 9999
+          ENDIF
+          !---------------------------------------------------------------------
+          !  Allocate memory for graph sources and destinations as well as
+          !  weights. Use always ppm_param_alloc_fit
+          !---------------------------------------------------------------------
+          iopt   = ppm_param_alloc_fit
+          ldu(1) = inneigh
+          CALL ppm_alloc(sources,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &        'sources',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(sw,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &        'sources',__LINE__,info)
+              GOTO 9999
+          ENDIF
+
+          ldu(1) = outneigh
+          CALL ppm_alloc(dests,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &        'sources',__LINE__,info)
+              GOTO 9999
+          ENDIF
+          CALL ppm_alloc(dw,ldu,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',     &
+     &        'sources',__LINE__,info)
+              GOTO 9999
+          ENDIF
+
+          CALL mpix_dist_graph_neighbors(ppm_comm,inneigh,sources,sw,outneigh, &
+     &                               dests,dw,info)
+          IF (info .NE. 0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_util_commopt',       &
+     &      'mpix_dist_graph_neighbors failed',__LINE__,info)
+            GOTO 9999
+          ENDIF
+
+          CALL MPI_Comm_split(ppm_comm, 0, ppm_rank, reorderedcomm,info);
+          topo%mpi_graph_id = reorderedcomm
+          ppm_comm = reorderedcomm
+      ELSE ! There is no provided processor topology file
+          !---------------------------------------------------------------------
+          !  Else do not use Libtopomap to create a weighted graph
+          !---------------------------------------------------------------------
+          CALL MPI_Graph_create(ppm_comm,ppm_nproc,nneighprocs,&
+     &                      ineighprocs_1D,0,topo%mpi_graph_id,info)
+
+      ENDIF
       !-------------------------------------------------------------------------
       !  Rank 0: Build graph and call optimizer
       !-------------------------------------------------------------------------

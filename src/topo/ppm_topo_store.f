@@ -115,15 +115,21 @@
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
-      INTEGER,DIMENSION(ppm_nproc)                   :: index
-      INTEGER                   :: index_size,count,temp
-      INTEGER,DIMENSION(1)      :: temp_index
+      INTEGER,DIMENSION(ppm_nproc)                   :: index,procs,degrees
+      INTEGER                   :: index_size,count,temp,temp_comm
+      INTEGER                   :: inneighbors,outneighbors,weighted
+      INTEGER, DIMENSION(:), ALLOCATABLE :: inn,out,inw,outw
+      INTEGER,DIMENSION(1)      :: my_index,my_degree
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      INTEGER, POINTER          :: weights => NULL()
       REAL(MK)                  :: t0
+
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      
+!      EXTERNAL MPIX_Dist_graph_create
+!      EXTERNAL MPIX_Dist_graph_neighbors_count
+!      EXTERNAL MPIX_Dist_graph_neighbors
       !-------------------------------------------------------------------------
       !  Initialise 
       !-------------------------------------------------------------------------
@@ -380,32 +386,119 @@
       !-------------------------------------------------------------------------
       !  Create MPI_Graph and store it in ppm_topo
       !-------------------------------------------------------------------------
-      temp_index(1) = topo%nneighproc
-      CALL MPI_Allgather(temp_index,1,MPI_INTEGER,index,1,MPI_INTEGER,&
-     &                   ppm_comm,info)
-      IF(info.NE.0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
-     &           'MPI_Allgather failed'  &
-     &           ,__LINE__,info)
-        GOTO 9999
-      ENDIF
-      DO i=1,ppm_nproc
-        temp = 0
-        DO j=1,i-1
-            temp = temp + index(j)
-        ENDDO
-        index(i) = index(i) + temp
-      ENDDO
-      CALL MPI_Graph_Create(ppm_comm, ppm_nproc, index, topo%ineighproc, 0,&
-     &                      topo%graph_handle,info)
-      IF(info.NE.0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
-     &           'MPI_Graph_create failed'  &
-     &           ,__LINE__,info)
-        GOTO 9999
-      ENDIF
+!      my_index(1) = topo%ineighproc(ppm_rank+1)
+!      index = 0
+!      CALL MPI_Allgather(my_index,1,MPI_INTEGER,index,1,MPI_INTEGER,&
+!     &                   ppm_comm,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPI_Allgather failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      DO i=1,ppm_nproc
+!        temp = 0
+!        DO j=1,i-1
+!            temp = temp + index(j)
+!        ENDDO
+!        index(i) = index(i) + temp
+!      ENDDO
+!      print*,'rank',ppm_rank,'my index',my_index,'index',index,topo%ineighproc
+!
+!      CALL MPI_Graph_Create(ppm_comm,ppm_nproc,index,topo%ineighproc,0,&
+!     &                      topo%mpi_graph_id,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPI_Graph_create failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+      !-------------------------------------------------------------------------
+      !  Use Libtopomap to find a better numbering of processes to processors
+      !-------------------------------------------------------------------------
+!      DO i=0,ppm_nproc-1
+!        procs(i+1)=i
+!      ENDDO
+!      my_degree = topo%nneighproc
+!      CALL MPI_Allgather(my_degree,1,MPI_INTEGER,degrees,1,MPI_INTEGER,&
+!     &                   ppm_comm,info)
+!      ! copy ppm_comm first
+!      temp_comm = ppm_comm
+!      CALL MPIX_Dist_graph_create(ppm_comm,ppm_nproc,degrees,topo%ineighproc,&
+!     &                            weights,MPI_INFO_NULL,0,temp_comm,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPIX_Dist_graph_create failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      ppm_comm = temp_comm
+!      CALL MPIX_Dist_graph_neighbors_count(ppm_comm,inneighbors,outneighbors,&
+!     &                                     weighted,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPIX_Dist_graph_neighbors_count failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      CALL ppm_alloc(inn,inneighbors,ppm_param_alloc_fit,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'ppm_alloc (inn) failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      CALL ppm_alloc(out,outneighbors,ppm_param_alloc_fit,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'ppm_alloc (out) failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      CALL ppm_alloc(inw,inneighbors,ppm_param_alloc_fit,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'ppm_alloc (inw) failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      CALL ppm_alloc(outw,outneighbors,ppm_param_alloc_fit,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'ppm_alloc (outw) failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      CALL MPIX_Dist_graph_neighbors(ppm_comm,inneighbors,inn,inw,outneighbors,&
+!     &                              out,outw,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPIX_Dist_graph_neighbors failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!
+!      ! Create a reordered comm
+!      CALL MPI_Comm_split(ppm_comm,0,ppm_rank,temp_comm,info)
+!      IF(info.NE.0) THEN
+!        info = ppm_error_fatal
+!        CALL ppm_error(ppm_err_argument,'ppm_topo_store', &
+!     &           'MPI_Comm_split failed'  &
+!     &           ,__LINE__,info)
+!        GOTO 9999
+!      ENDIF
+!      ! Store back the reordered comm as ppm_comm
+!      ppm_comm = temp_comm
+
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------
