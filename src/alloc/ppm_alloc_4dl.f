@@ -128,7 +128,9 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
+#ifdef __DEBUG
       CALL substart('ppm_alloc_4dl',t0,info)
+#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -517,7 +519,9 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
+#ifdef __DEBUG
       CALL substop('ppm_alloc_4dl',t0,info)
+#endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_4dl_s

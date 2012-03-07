@@ -124,7 +124,9 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
+#ifdef __DEBUG
       CALL substart('ppm_alloc_3dl',t0,info)
+#endif
 
       !-------------------------------------------------------------------------
       !  Point to proper work array
@@ -457,7 +459,9 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
+#ifdef __DEBUG
       CALL substop('ppm_alloc_3dl',t0,info)
+#endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_3dl_s
