@@ -12,7 +12,7 @@
 !                 IF (WRAP(DTYPE)_args(j)%default_set) THEN
 #ifdef __STRING
 #ifdef ARRAY
-                   WRITE (*,'(A)',advance='no') '= '
+                   WRITE (*,'(A)',advance='no') ' = '
                    DO l=LBOUND(WRAP(DTYPE)_args(j)%variable,1), &
                         UBOUND(WRAP(DTYPE)_args(j)%variable,1)
                       WRITE (*,'(2A)',advance='no') &
@@ -27,6 +27,7 @@
 #endif
 #else
 #ifdef ARRAY
+                   WRITE (*,'(A)',advance='no') ' = '
                    DO l=LBOUND(WRAP(DTYPE)_args(j)%variable,1), &
                         UBOUND(WRAP(DTYPE)_args(j)%variable,1)
                       WRITE(scratch,*) WRAP(DTYPE)_args(j)%variable(l)

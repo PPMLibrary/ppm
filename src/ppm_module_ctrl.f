@@ -121,7 +121,7 @@ MODULE ppm_module_ctrl
        &    logical_array_func, string_array_func,                  &
        &    complex_array_func, dcomplex_array_func,                &
 #endif
-       &    reset, add_cmd, ctrl_file_test, break_help,             &
+       &    reset, add_cmd, ctrl_file_name, break_help,             &
        &    find_arg, find_flag, arg_count,                         &
        &    enabling_flag, disabling_flag, exit_gracefully
 
@@ -369,7 +369,6 @@ MODULE ppm_module_ctrl
   LOGICAL                                         :: help_enabled   = .TRUE.
   LOGICAL                                         :: ctrl_enabled   = .TRUE.
   CHARACTER(LEN=ppm_char)                         :: ctrl_file_name = 'Ctrl'
-  CHARACTER(LEN=ppm_char)                         :: ctrl_file_test = ''
   ! test run
   LOGICAL                                         :: in_test        = .FALSE.
 
@@ -665,7 +664,6 @@ CONTAINS
     help_enabled          = .TRUE.
     ctrl_enabled          = .TRUE.
     ctrl_file_name        = 'Ctrl'
-    ctrl_file_test        = ''
     in_test               = .FALSE.
   END SUBROUTINE reset
   !-------------------------------------------------------------------------
