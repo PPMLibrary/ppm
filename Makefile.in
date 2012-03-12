@@ -76,7 +76,7 @@ $(warning done.)
 
 .DEFAULT: ;
 
-all: $(TARGET)
+all: gpu $(TARGET)
 
 # This archives all of the objects in the PPM library
 $(TARGET): $(OBJECTS)
@@ -116,6 +116,9 @@ $(OBJ_DIR)/%.o: $(SRC_DIR)/%.f
 	$(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $(OBJ_DIR)/__$*.f
 	@mv $(builddir)/*.mod $(MODULES_DIR)
 	@rm $(OBJ_DIR)/__$*.f
+
+include Makefile.gpu
+
 
 # This is used to clean up the files created when running make
 clean:

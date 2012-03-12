@@ -88,17 +88,17 @@
       !-------------------------------------------------------------------------
       ! Arguments
       !-------------------------------------------------------------------------
-      INTEGER                        , INTENT(IN   ) :: topoid
+      INTEGER                        , INTENT(IN   )        :: topoid
       !!! topology identifier of target
-      INTEGER                        , INTENT(IN   ) :: meshid
+      INTEGER                        , INTENT(IN   )        :: meshid
       !!! id of the mesh (user)
 #if   __MODE == __SCA
-      REAL(MK) , DIMENSION(:)         , POINTER        :: up
+      REAL(MK) , DIMENSION(:)         , POINTER             :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:    ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:    ) , INTENT(IN), POINTER :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN), POINTER :: field_up
 #endif
       !!! field from which to interpolate
 #elif __MODE == __VEC
@@ -107,9 +107,9 @@
       REAL(MK) , DIMENSION(:,:)       , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN), POINTER :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:,:) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:,:) , INTENT(IN), POINTER :: field_up
 #endif
       !!! field from which to interpolate
 #endif

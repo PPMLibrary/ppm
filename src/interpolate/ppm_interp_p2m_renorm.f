@@ -2847,10 +2847,10 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
 #endif     
          END DO              ! loop over subs
       CASE(ppm_param_rmsh_kernel_bsp2)
-        !-----------------------------------------------------------------------
+	    !-----------------------------------------------------------------------
          !  B-spline 2 (Witch hat)
          !-----------------------------------------------------------------------
-        DO isub = 1,topo%nsublist
+		DO isub = 1,topo%nsublist
 
 #if __MODE == __VEC
          !------------------------------------------------------------------------
@@ -2859,593 +2859,593 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
          IF(lda.EQ.4) THEN
              DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
 
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
+				
+				x30 = xp3
+				x31 = x30 - 1.0_mk
                 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
-                
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
 
-                field_up(1,ip10,ip20,ip30,isub) = field_up(1,ip10,ip20,ip30,isub) + &
-                    & a10*a20*a30*up(1,iq)
-                field_up(1,ip10,ip20,ip31,isub) = field_up(1,ip10,ip20,ip31,isub) + &
-                    & a10*a20*a31*up(1,iq)
-                field_up(1,ip10,ip21,ip30,isub) = field_up(1,ip10,ip21,ip30,isub) + &
-                    & a10*a21*a30*up(1,iq)
-                field_up(1,ip10,ip21,ip31,isub) = field_up(1,ip10,ip21,ip31,isub) + &
-                    & a10*a21*a31*up(1,iq)
-                field_up(1,ip11,ip20,ip30,isub) = field_up(1,ip11,ip20,ip30,isub) + &
-                    & a11*a20*a30*up(1,iq)
-                field_up(1,ip11,ip20,ip31,isub) = field_up(1,ip11,ip20,ip31,isub) + &
-                    & a11*a20*a31*up(1,iq)
-                field_up(1,ip11,ip21,ip30,isub) = field_up(1,ip11,ip21,ip30,isub) + &
-                    & a11*a21*a30*up(1,iq)
-                field_up(1,ip11,ip21,ip31,isub) = field_up(1,ip11,ip21,ip31,isub) + &
-                    & a11*a21*a31*up(1,iq)
-                
-                field_up(2,ip10,ip20,ip30,isub) = field_up(2,ip10,ip20,ip30,isub) + &
-                    & a10*a20*a30*up(2,iq)
-                field_up(2,ip10,ip20,ip31,isub) = field_up(2,ip10,ip20,ip31,isub) + &
-                    & a10*a20*a31*up(2,iq)
-                field_up(2,ip10,ip21,ip30,isub) = field_up(2,ip10,ip21,ip30,isub) + &
-                    & a10*a21*a30*up(2,iq)
-                field_up(2,ip10,ip21,ip31,isub) = field_up(2,ip10,ip21,ip31,isub) + &
-                    & a10*a21*a31*up(2,iq)
-                field_up(2,ip11,ip20,ip30,isub) = field_up(2,ip11,ip20,ip30,isub) + &
-                    & a11*a20*a30*up(2,iq)
-                field_up(2,ip11,ip20,ip31,isub) = field_up(2,ip11,ip20,ip31,isub) + &
-                    & a11*a20*a31*up(2,iq)
-                field_up(2,ip11,ip21,ip30,isub) = field_up(2,ip11,ip21,ip30,isub) + &
-                    & a11*a21*a30*up(2,iq)
-                field_up(2,ip11,ip21,ip31,isub) = field_up(2,ip11,ip21,ip31,isub) + &
-                    & a11*a21*a31*up(2,iq)
-                    
-                field_up(3,ip10,ip20,ip30,isub) = field_up(3,ip10,ip20,ip30,isub) + &
-                    & a10*a20*a30*up(3,iq)
-                field_up(3,ip10,ip20,ip31,isub) = field_up(3,ip10,ip20,ip31,isub) + &
-                    & a10*a20*a31*up(3,iq)
-                field_up(3,ip10,ip21,ip30,isub) = field_up(3,ip10,ip21,ip30,isub) + &
-                    & a10*a21*a30*up(3,iq)
-                field_up(3,ip10,ip21,ip31,isub) = field_up(3,ip10,ip21,ip31,isub) + &
-                    & a10*a21*a31*up(3,iq)
-                field_up(3,ip11,ip20,ip30,isub) = field_up(3,ip11,ip20,ip30,isub) + &
-                    & a11*a20*a30*up(3,iq)
-                field_up(3,ip11,ip20,ip31,isub) = field_up(3,ip11,ip20,ip31,isub) + &
-                    & a11*a20*a31*up(3,iq)
-                field_up(3,ip11,ip21,ip30,isub) = field_up(3,ip11,ip21,ip30,isub) + &
-                    & a11*a21*a30*up(3,iq)
-                field_up(3,ip11,ip21,ip31,isub) = field_up(3,ip11,ip21,ip31,isub) + &
-                    & a11*a21*a31*up(3,iq)
-                
-                field_up(4,ip10,ip20,ip30,isub) = field_up(4,ip10,ip20,ip30,isub) + &
-                    & a10*a20*a30*up(4,iq)
-                field_up(4,ip10,ip20,ip31,isub) = field_up(4,ip10,ip20,ip31,isub) + &
-                    & a10*a20*a31*up(4,iq)
-                field_up(4,ip10,ip21,ip30,isub) = field_up(4,ip10,ip21,ip30,isub) + &
-                    & a10*a21*a30*up(4,iq)
-                field_up(4,ip10,ip21,ip31,isub) = field_up(4,ip10,ip21,ip31,isub) + &
-                    & a10*a21*a31*up(4,iq)
-                field_up(4,ip11,ip20,ip30,isub) = field_up(4,ip11,ip20,ip30,isub) + &
-                    & a11*a20*a30*up(4,iq)
-                field_up(4,ip11,ip20,ip31,isub) = field_up(4,ip11,ip20,ip31,isub) + &
-                    & a11*a20*a31*up(4,iq)
-                field_up(4,ip11,ip21,ip30,isub) = field_up(4,ip11,ip21,ip30,isub) + &
-                    & a11*a21*a30*up(4,iq)
-                field_up(4,ip11,ip21,ip31,isub) = field_up(4,ip11,ip21,ip31,isub) + &
-                    & a11*a21*a31*up(4,iq)
-                    
-            END DO
-        !------------------------------------------------------------------------
-        !  Unrolled versions for 3-vectors
-        !------------------------------------------------------------------------
+				field_up(1,ip10,ip20,ip30,isub) = field_up(1,ip10,ip20,ip30,isub) + &
+					& a10*a20*a30*up(1,iq)
+				field_up(1,ip10,ip20,ip31,isub) = field_up(1,ip10,ip20,ip31,isub) + &
+					& a10*a20*a31*up(1,iq)
+				field_up(1,ip10,ip21,ip30,isub) = field_up(1,ip10,ip21,ip30,isub) + &
+					& a10*a21*a30*up(1,iq)
+				field_up(1,ip10,ip21,ip31,isub) = field_up(1,ip10,ip21,ip31,isub) + &
+					& a10*a21*a31*up(1,iq)
+				field_up(1,ip11,ip20,ip30,isub) = field_up(1,ip11,ip20,ip30,isub) + &
+					& a11*a20*a30*up(1,iq)
+				field_up(1,ip11,ip20,ip31,isub) = field_up(1,ip11,ip20,ip31,isub) + &
+					& a11*a20*a31*up(1,iq)
+				field_up(1,ip11,ip21,ip30,isub) = field_up(1,ip11,ip21,ip30,isub) + &
+					& a11*a21*a30*up(1,iq)
+				field_up(1,ip11,ip21,ip31,isub) = field_up(1,ip11,ip21,ip31,isub) + &
+					& a11*a21*a31*up(1,iq)
+				
+				field_up(2,ip10,ip20,ip30,isub) = field_up(2,ip10,ip20,ip30,isub) + &
+					& a10*a20*a30*up(2,iq)
+				field_up(2,ip10,ip20,ip31,isub) = field_up(2,ip10,ip20,ip31,isub) + &
+					& a10*a20*a31*up(2,iq)
+				field_up(2,ip10,ip21,ip30,isub) = field_up(2,ip10,ip21,ip30,isub) + &
+					& a10*a21*a30*up(2,iq)
+				field_up(2,ip10,ip21,ip31,isub) = field_up(2,ip10,ip21,ip31,isub) + &
+					& a10*a21*a31*up(2,iq)
+				field_up(2,ip11,ip20,ip30,isub) = field_up(2,ip11,ip20,ip30,isub) + &
+					& a11*a20*a30*up(2,iq)
+				field_up(2,ip11,ip20,ip31,isub) = field_up(2,ip11,ip20,ip31,isub) + &
+					& a11*a20*a31*up(2,iq)
+				field_up(2,ip11,ip21,ip30,isub) = field_up(2,ip11,ip21,ip30,isub) + &
+					& a11*a21*a30*up(2,iq)
+				field_up(2,ip11,ip21,ip31,isub) = field_up(2,ip11,ip21,ip31,isub) + &
+					& a11*a21*a31*up(2,iq)
+					
+				field_up(3,ip10,ip20,ip30,isub) = field_up(3,ip10,ip20,ip30,isub) + &
+					& a10*a20*a30*up(3,iq)
+				field_up(3,ip10,ip20,ip31,isub) = field_up(3,ip10,ip20,ip31,isub) + &
+					& a10*a20*a31*up(3,iq)
+				field_up(3,ip10,ip21,ip30,isub) = field_up(3,ip10,ip21,ip30,isub) + &
+					& a10*a21*a30*up(3,iq)
+				field_up(3,ip10,ip21,ip31,isub) = field_up(3,ip10,ip21,ip31,isub) + &
+					& a10*a21*a31*up(3,iq)
+				field_up(3,ip11,ip20,ip30,isub) = field_up(3,ip11,ip20,ip30,isub) + &
+					& a11*a20*a30*up(3,iq)
+				field_up(3,ip11,ip20,ip31,isub) = field_up(3,ip11,ip20,ip31,isub) + &
+					& a11*a20*a31*up(3,iq)
+				field_up(3,ip11,ip21,ip30,isub) = field_up(3,ip11,ip21,ip30,isub) + &
+					& a11*a21*a30*up(3,iq)
+				field_up(3,ip11,ip21,ip31,isub) = field_up(3,ip11,ip21,ip31,isub) + &
+					& a11*a21*a31*up(3,iq)
+				
+				field_up(4,ip10,ip20,ip30,isub) = field_up(4,ip10,ip20,ip30,isub) + &
+					& a10*a20*a30*up(4,iq)
+				field_up(4,ip10,ip20,ip31,isub) = field_up(4,ip10,ip20,ip31,isub) + &
+					& a10*a20*a31*up(4,iq)
+				field_up(4,ip10,ip21,ip30,isub) = field_up(4,ip10,ip21,ip30,isub) + &
+					& a10*a21*a30*up(4,iq)
+				field_up(4,ip10,ip21,ip31,isub) = field_up(4,ip10,ip21,ip31,isub) + &
+					& a10*a21*a31*up(4,iq)
+				field_up(4,ip11,ip20,ip30,isub) = field_up(4,ip11,ip20,ip30,isub) + &
+					& a11*a20*a30*up(4,iq)
+				field_up(4,ip11,ip20,ip31,isub) = field_up(4,ip11,ip20,ip31,isub) + &
+					& a11*a20*a31*up(4,iq)
+				field_up(4,ip11,ip21,ip30,isub) = field_up(4,ip11,ip21,ip30,isub) + &
+					& a11*a21*a30*up(4,iq)
+				field_up(4,ip11,ip21,ip31,isub) = field_up(4,ip11,ip21,ip31,isub) + &
+					& a11*a21*a31*up(4,iq)
+					
+			END DO
+		!------------------------------------------------------------------------
+		!  Unrolled versions for 3-vectors
+		!------------------------------------------------------------------------
          ELSEIF (lda .EQ. 3) THEN
-            DO ip = 1,store_info(isub)
+			DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
 
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
+				x30 = xp3
+				x31 = x30 - 1.0_mk
 
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
 
 
-                a10a20a30 = a10*a20*a30
-                a10a20a31 = a10*a20*a31
-                a10a21a30 = a10*a21*a30
-                a10a21a31 = a10*a21*a31
-                a11a20a30 = a11*a20*a30
-                a11a20a31 = a11*a20*a31
-                a11a21a30 = a11*a21*a30
-                a11a21a31 = a11*a21*a31
-                
+				a10a20a30 = a10*a20*a30
+				a10a20a31 = a10*a20*a31
+				a10a21a30 = a10*a21*a30
+				a10a21a31 = a10*a21*a31
+				a11a20a30 = a11*a20*a30
+				a11a20a31 = a11*a20*a31
+				a11a21a30 = a11*a21*a30
+				a11a21a31 = a11*a21*a31
+				
 #ifdef __NOMICROINSTRUCTIONS
-                field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(1,iq)
-                field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(2,iq)
-                field_up(3,ip10,ip20,ip30,isub)=field_up(3,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(3,iq)
-                field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(1,iq)
-                field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(2,iq)
-                field_up(3,ip11,ip20,ip30,isub)=field_up(3,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(3,iq)
-                field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(1,iq)
-                field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(2,iq)
-                field_up(3,ip10,ip21,ip30,isub)=field_up(3,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(3,iq)
-                field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(1,iq)
-                field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(2,iq)
-                field_up(3,ip11,ip21,ip30,isub)=field_up(3,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(3,iq)
-                field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(1,iq)
-                field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(2,iq)
-                field_up(3,ip10,ip20,ip31,isub)=field_up(3,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(3,iq)
-                field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(1,iq)
-                field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(2,iq)
-                field_up(3,ip11,ip20,ip31,isub)=field_up(3,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(3,iq)
-                field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(1,iq)
-                field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(2,iq)
-                field_up(3,ip10,ip21,ip31,isub)=field_up(3,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(3,iq)
-                field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(1,iq)
-                field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(2,iq)
-                field_up(3,ip11,ip21,ip31,isub)=field_up(3,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(3,iq)
+				field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(1,iq)
+				field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(2,iq)
+				field_up(3,ip10,ip20,ip30,isub)=field_up(3,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(3,iq)
+				field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(1,iq)
+				field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(2,iq)
+				field_up(3,ip11,ip20,ip30,isub)=field_up(3,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(3,iq)
+				field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(1,iq)
+				field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(2,iq)
+				field_up(3,ip10,ip21,ip30,isub)=field_up(3,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(3,iq)
+				field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(1,iq)
+				field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(2,iq)
+				field_up(3,ip11,ip21,ip30,isub)=field_up(3,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(3,iq)
+				field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(1,iq)
+				field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(2,iq)
+				field_up(3,ip10,ip20,ip31,isub)=field_up(3,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(3,iq)
+				field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(1,iq)
+				field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(2,iq)
+				field_up(3,ip11,ip20,ip31,isub)=field_up(3,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(3,iq)
+				field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(1,iq)
+				field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(2,iq)
+				field_up(3,ip10,ip21,ip31,isub)=field_up(3,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(3,iq)
+				field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(1,iq)
+				field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(2,iq)
+				field_up(3,ip11,ip21,ip31,isub)=field_up(3,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(3,iq)
 #else
-                field_up(1:3,ip10,ip20,ip30,isub)=field_up(1:3,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(1:3,iq)
-                field_up(1:3,ip11,ip20,ip30,isub)=field_up(1:3,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(1:3,iq)
-                field_up(1:3,ip10,ip21,ip30,isub)=field_up(1:3,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(1:3,iq)
-                field_up(1:3,ip11,ip21,ip30,isub)=field_up(1:3,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(1:3,iq)
-                field_up(1:3,ip10,ip20,ip31,isub)=field_up(1:3,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(1:3,iq)
-                field_up(1:3,ip11,ip20,ip31,isub)=field_up(1:3,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(1:3,iq)
-                field_up(1:3,ip10,ip21,ip31,isub)=field_up(1:3,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(1:3,iq)
-                field_up(1:3,ip11,ip21,ip31,isub)=field_up(1:3,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(1:3,iq)
+				field_up(1:3,ip10,ip20,ip30,isub)=field_up(1:3,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(1:3,iq)
+				field_up(1:3,ip11,ip20,ip30,isub)=field_up(1:3,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(1:3,iq)
+				field_up(1:3,ip10,ip21,ip30,isub)=field_up(1:3,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(1:3,iq)
+				field_up(1:3,ip11,ip21,ip30,isub)=field_up(1:3,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(1:3,iq)
+				field_up(1:3,ip10,ip20,ip31,isub)=field_up(1:3,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(1:3,iq)
+				field_up(1:3,ip11,ip20,ip31,isub)=field_up(1:3,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(1:3,iq)
+				field_up(1:3,ip10,ip21,ip31,isub)=field_up(1:3,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(1:3,iq)
+				field_up(1:3,ip11,ip21,ip31,isub)=field_up(1:3,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(1:3,iq)
 #endif
-            END DO
-        !------------------------------------------------------------------------
-        !  Unrolled versions for 2-vectors
-        !------------------------------------------------------------------------
-        ELSEIF (lda .EQ. 2) THEN
-            DO ip = 1,store_info(isub)
+			END DO
+		!------------------------------------------------------------------------
+		!  Unrolled versions for 2-vectors
+		!------------------------------------------------------------------------
+		ELSEIF (lda .EQ. 2) THEN
+			DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
 
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
+				
+				x30 = xp3
+				x31 = x30 - 1.0_mk
                 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
-                
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
 
 
-                a10a20a30 = a10*a20*a30
-                a10a20a31 = a10*a20*a31
-                a10a21a30 = a10*a21*a30
-                a10a21a31 = a10*a21*a31
-                a11a20a30 = a11*a20*a30
-                a11a20a31 = a11*a20*a31
-                a11a21a30 = a11*a21*a30
-                a11a21a31 = a11*a21*a31
-                
+				a10a20a30 = a10*a20*a30
+				a10a20a31 = a10*a20*a31
+				a10a21a30 = a10*a21*a30
+				a10a21a31 = a10*a21*a31
+				a11a20a30 = a11*a20*a30
+				a11a20a31 = a11*a20*a31
+				a11a21a30 = a11*a21*a30
+				a11a21a31 = a11*a21*a31
+				
 #ifdef __NOMICROINSTRUCTIONS
-                field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(1,iq)
-                field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(2,iq)
-                field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(1,iq)
-                field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(2,iq)
-                field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(1,iq)
-                field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(2,iq)
-                field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(1,iq)
-                field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(2,iq)
-                field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(1,iq)
-                field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(2,iq)
-                field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(1,iq)
-                field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(2,iq)
-                field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(1,iq)
-                field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(2,iq)
-                field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(1,iq)
-                field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(2,iq)
+				field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(1,iq)
+				field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(2,iq)
+				field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(1,iq)
+				field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(2,iq)
+				field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(1,iq)
+				field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(2,iq)
+				field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(1,iq)
+				field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(2,iq)
+				field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(1,iq)
+				field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(2,iq)
+				field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(1,iq)
+				field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(2,iq)
+				field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(1,iq)
+				field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(2,iq)
+				field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(1,iq)
+				field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(2,iq)
 #else
-                field_up(1:2,ip10,ip20,ip30,isub)=field_up(1:2,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(1:2,iq)
-                field_up(1:2,ip11,ip20,ip30,isub)=field_up(1:2,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(1:2,iq)
-                field_up(1:2,ip10,ip21,ip30,isub)=field_up(1:2,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(1:2,iq)
-                field_up(1:2,ip11,ip21,ip30,isub)=field_up(1:2,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(1:2,iq)
-                field_up(1:2,ip10,ip20,ip31,isub)=field_up(1:2,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(1:2,iq)
-                field_up(1:2,ip11,ip20,ip31,isub)=field_up(1:2,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(1:2,iq)
-                field_up(1:2,ip10,ip21,ip31,isub)=field_up(1:2,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(1:2,iq)
-                field_up(1:2,ip11,ip21,ip31,isub)=field_up(1:2,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(1:2,iq)
+				field_up(1:2,ip10,ip20,ip30,isub)=field_up(1:2,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(1:2,iq)
+				field_up(1:2,ip11,ip20,ip30,isub)=field_up(1:2,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(1:2,iq)
+				field_up(1:2,ip10,ip21,ip30,isub)=field_up(1:2,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(1:2,iq)
+				field_up(1:2,ip11,ip21,ip30,isub)=field_up(1:2,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(1:2,iq)
+				field_up(1:2,ip10,ip20,ip31,isub)=field_up(1:2,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(1:2,iq)
+				field_up(1:2,ip11,ip20,ip31,isub)=field_up(1:2,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(1:2,iq)
+				field_up(1:2,ip10,ip21,ip31,isub)=field_up(1:2,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(1:2,iq)
+				field_up(1:2,ip11,ip21,ip31,isub)=field_up(1:2,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(1:2,iq)
 #endif
-            ENDDO
-        !------------------------------------------------------------------------
-        !  Unrolled versions for 1-vectors
-        !------------------------------------------------------------------------
-        ELSEIF (lda .EQ. 1) THEN
-            DO ip = 1,store_info(isub)
+			ENDDO
+		!------------------------------------------------------------------------
+		!  Unrolled versions for 1-vectors
+		!------------------------------------------------------------------------
+		ELSEIF (lda .EQ. 1) THEN
+			DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
-                
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
+				
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
+				
+				x30 = xp3
+				x31 = x30 - 1.0_mk
                 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
-                
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
-                
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
+				
 
-                a10a20a30 = a10*a20*a30
-                a10a20a31 = a10*a20*a31
-                a10a21a30 = a10*a21*a30
-                a10a21a31 = a10*a21*a31
-                a11a20a30 = a11*a20*a30
-                a11a20a31 = a11*a20*a31
-                a11a21a30 = a11*a21*a30
-                a11a21a31 = a11*a21*a31
+				a10a20a30 = a10*a20*a30
+				a10a20a31 = a10*a20*a31
+				a10a21a30 = a10*a21*a30
+				a10a21a31 = a10*a21*a31
+				a11a20a30 = a11*a20*a30
+				a11a20a31 = a11*a20*a31
+				a11a21a30 = a11*a21*a30
+				a11a21a31 = a11*a21*a31
 
-                field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(1,iq)
-                field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(1,iq)
-                field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(1,iq)
-                field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(1,iq)
-                field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(1,iq)
-                field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(1,iq)
-                field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(1,iq)
-                field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(1,iq)
-            ENDDO
-        !------------------------------------------------------------------------
-        !  All other lda are NOT UNROLLED. Vectorization will be over lda!
-        !------------------------------------------------------------------------
-        ELSE
-            DO ip = 1,store_info(isub)
+				field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(1,iq)
+				field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(1,iq)
+				field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(1,iq)
+				field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(1,iq)
+				field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(1,iq)
+				field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(1,iq)
+				field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(1,iq)
+				field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(1,iq)
+			ENDDO
+		!------------------------------------------------------------------------
+		!  All other lda are NOT UNROLLED. Vectorization will be over lda!
+		!------------------------------------------------------------------------
+		ELSE
+			DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
-                
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
+				
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
+				
+				x30 = xp3
+				x31 = x30 - 1.0_mk
                 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
-                
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
-                
-                a10a20a30 = a10*a20*a30
-                a10a20a31 = a10*a20*a31
-                a10a21a30 = a10*a21*a30
-                a10a21a31 = a10*a21*a31
-                a11a20a30 = a11*a20*a30
-                a11a20a31 = a11*a20*a31
-                a11a21a30 = a11*a21*a30
-                a11a21a31 = a11*a21*a31
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
+				
+				a10a20a30 = a10*a20*a30
+				a10a20a31 = a10*a20*a31
+				a10a21a30 = a10*a21*a30
+				a10a21a31 = a10*a21*a31
+				a11a20a30 = a11*a20*a30
+				a11a20a31 = a11*a20*a31
+				a11a21a30 = a11*a21*a30
+				a11a21a31 = a11*a21*a31
 
-                DO ldn=1,lda
+				DO ldn=1,lda
 
-                    field_up(ldn,ip10,ip20,ip30,isub)=field_up(ldn,ip10,ip20,ip30,isub)+&
-                        &a10a20a30*up(ldn,iq)
-                    field_up(ldn,ip11,ip20,ip30,isub)=field_up(ldn,ip11,ip20,ip30,isub)+&
-                        &a11a20a30*up(ldn,iq)
-                    field_up(ldn,ip10,ip21,ip30,isub)=field_up(ldn,ip10,ip21,ip30,isub)+&
-                        &a10a21a30*up(ldn,iq)
-                    field_up(ldn,ip11,ip21,ip30,isub)=field_up(ldn,ip11,ip21,ip30,isub)+&
-                        &a11a21a30*up(ldn,iq)
-                    field_up(ldn,ip10,ip20,ip31,isub)=field_up(ldn,ip10,ip20,ip31,isub)+&
-                        &a10a20a31*up(ldn,iq)
-                    field_up(ldn,ip11,ip20,ip31,isub)=field_up(ldn,ip11,ip20,ip31,isub)+&
-                        &a11a20a31*up(ldn,iq)
-                    field_up(ldn,ip10,ip21,ip31,isub)=field_up(ldn,ip10,ip21,ip31,isub)+&
-                        &a10a21a31*up(ldn,iq)
-                    field_up(ldn,ip11,ip21,ip31,isub)=field_up(ldn,ip11,ip21,ip31,isub)+&
-                        &a11a21a31*up(ldn,iq)
-                ENDDO    ! lda
-            ENDDO        ! iq
-        END IF          ! unrolled lda cases
+					field_up(ldn,ip10,ip20,ip30,isub)=field_up(ldn,ip10,ip20,ip30,isub)+&
+						&a10a20a30*up(ldn,iq)
+					field_up(ldn,ip11,ip20,ip30,isub)=field_up(ldn,ip11,ip20,ip30,isub)+&
+						&a11a20a30*up(ldn,iq)
+					field_up(ldn,ip10,ip21,ip30,isub)=field_up(ldn,ip10,ip21,ip30,isub)+&
+						&a10a21a30*up(ldn,iq)
+					field_up(ldn,ip11,ip21,ip30,isub)=field_up(ldn,ip11,ip21,ip30,isub)+&
+						&a11a21a30*up(ldn,iq)
+					field_up(ldn,ip10,ip20,ip31,isub)=field_up(ldn,ip10,ip20,ip31,isub)+&
+						&a10a20a31*up(ldn,iq)
+					field_up(ldn,ip11,ip20,ip31,isub)=field_up(ldn,ip11,ip20,ip31,isub)+&
+						&a11a20a31*up(ldn,iq)
+					field_up(ldn,ip10,ip21,ip31,isub)=field_up(ldn,ip10,ip21,ip31,isub)+&
+						&a10a21a31*up(ldn,iq)
+					field_up(ldn,ip11,ip21,ip31,isub)=field_up(ldn,ip11,ip21,ip31,isub)+&
+						&a11a21a31*up(ldn,iq)
+				ENDDO    ! lda
+			ENDDO        ! iq
+		END IF          ! unrolled lda cases
 #elif __MODE == __SCA
-            DO ip = 1,store_info(isub)
+			DO ip = 1,store_info(isub)
                
-                isubl = topo%isublist(isub)
-                iq    = list_sub(isub,ip)
+				isubl = topo%isublist(isub)
+				iq    = list_sub(isub,ip)
 
-                !x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
-                !x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
-                !x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
+				!x0(1)  = (xp(1,iq)-min_phys(1,topoid))*dxi(1)
+				!x0(2)  = (xp(2,iq)-min_phys(2,topoid))*dxi(2)
+				!x0(3)  = (xp(3,iq)-min_phys(3,topoid))*dxi(3)
 
-                x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+				x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
+				x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+				x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
                
-                !ip11 = INT(x0(1))+2-istart(1,isubl)
-                !ip21 = INT(x0(2))+2-istart(2,isubl)
-                !ip31 = INT(x0(3))+2-istart(3,isubl)
-            
-                ip10 = INT(x0(1)) + 1
-                ip20 = INT(x0(2)) + 1
-                ip30 = INT(x0(3)) + 1
+				!ip11 = INT(x0(1))+2-istart(1,isubl)
+				!ip21 = INT(x0(2))+2-istart(2,isubl)
+				!ip31 = INT(x0(3))+2-istart(3,isubl)
+			
+				ip10 = INT(x0(1)) + 1
+				ip20 = INT(x0(2)) + 1
+				ip30 = INT(x0(3)) + 1
 
-                ip11 = ip10 + 1
-                ip21 = ip20 + 1
-                ip31 = ip30 + 1
+				ip11 = ip10 + 1
+				ip21 = ip20 + 1
+				ip31 = ip30 + 1
          
-                xp1 = x0(1)-REAL(ip10-1,mk)
-                xp2 = x0(2)-REAL(ip20-1,mk)
-                xp3 = x0(3)-REAL(ip30-1,mk)                
+				xp1 = x0(1)-REAL(ip10-1,mk)
+				xp2 = x0(2)-REAL(ip20-1,mk)
+				xp3 = x0(3)-REAL(ip30-1,mk)				
 
-                x10 = xp1
-                x11 = x10 - 1.0_mk
+				x10 = xp1
+				x11 = x10 - 1.0_mk
 
-                x20 = xp2
-                x21 = x20 - 1.0_mk
+				x20 = xp2
+				x21 = x20 - 1.0_mk
+				
+				x30 = xp3
+				x31 = x30 - 1.0_mk
                 
-                x30 = xp3
-                x31 = x30 - 1.0_mk
-                
-                a10 = 1.0_mk - x10
-                a20 = 1.0_mk - x20
-                a30 = 1.0_mk - x30
+				a10 = 1.0_mk - x10
+				a20 = 1.0_mk - x20
+				a30 = 1.0_mk - x30
 
-                a11 = 1.0_mk + x11
-                a21 = 1.0_mk + x21
-                a31 = 1.0_mk + x31
-                
-                a10a20a30 = a10*a20*a30
-                a10a20a31 = a10*a20*a31
-                a10a21a30 = a10*a21*a30
-                a10a21a31 = a10*a21*a31
-                a11a20a30 = a11*a20*a30
-                a11a20a31 = a11*a20*a31
-                a11a21a30 = a11*a21*a30
-                a11a21a31 = a11*a21*a31
+				a11 = 1.0_mk + x11
+				a21 = 1.0_mk + x21
+				a31 = 1.0_mk + x31
+				
+				a10a20a30 = a10*a20*a30
+				a10a20a31 = a10*a20*a31
+				a10a21a30 = a10*a21*a30
+				a10a21a31 = a10*a21*a31
+				a11a20a30 = a11*a20*a30
+				a11a20a31 = a11*a20*a31
+				a11a21a30 = a11*a21*a30
+				a11a21a31 = a11*a21*a31
 
 
-                field_up(ip10,ip20,ip30,isub)=field_up(ip10,ip20,ip30,isub)+&
-                    &a10a20a30*up(iq)
-                field_up(ip11,ip20,ip30,isub)=field_up(ip11,ip20,ip30,isub)+&
-                    &a11a20a30*up(iq)
-                field_up(ip10,ip21,ip30,isub)=field_up(ip10,ip21,ip30,isub)+&
-                    &a10a21a30*up(iq)
-                field_up(ip11,ip21,ip30,isub)=field_up(ip11,ip21,ip30,isub)+&
-                    &a11a21a30*up(iq)
-                field_up(ip10,ip20,ip31,isub)=field_up(ip10,ip20,ip31,isub)+&
-                    &a10a20a31*up(iq)
-                field_up(ip11,ip20,ip31,isub)=field_up(ip11,ip20,ip31,isub)+&
-                    &a11a20a31*up(iq)
-                field_up(ip10,ip21,ip31,isub)=field_up(ip10,ip21,ip31,isub)+&
-                    &a10a21a31*up(iq)
-                field_up(ip11,ip21,ip31,isub)=field_up(ip11,ip21,ip31,isub)+&
-                    &a11a21a31*up(iq)
-            ENDDO        ! iq
+				field_up(ip10,ip20,ip30,isub)=field_up(ip10,ip20,ip30,isub)+&
+					&a10a20a30*up(iq)
+				field_up(ip11,ip20,ip30,isub)=field_up(ip11,ip20,ip30,isub)+&
+					&a11a20a30*up(iq)
+				field_up(ip10,ip21,ip30,isub)=field_up(ip10,ip21,ip30,isub)+&
+					&a10a21a30*up(iq)
+				field_up(ip11,ip21,ip30,isub)=field_up(ip11,ip21,ip30,isub)+&
+					&a11a21a30*up(iq)
+				field_up(ip10,ip20,ip31,isub)=field_up(ip10,ip20,ip31,isub)+&
+					&a10a20a31*up(iq)
+				field_up(ip11,ip20,ip31,isub)=field_up(ip11,ip20,ip31,isub)+&
+					&a11a20a31*up(iq)
+				field_up(ip10,ip21,ip31,isub)=field_up(ip10,ip21,ip31,isub)+&
+					&a10a21a31*up(iq)
+				field_up(ip11,ip21,ip31,isub)=field_up(ip11,ip21,ip31,isub)+&
+					&a11a21a31*up(iq)
+			ENDDO        ! iq
 #endif
-         END DO              ! loop over subs
+		 END DO              ! loop over subs
       CASE DEFAULT
          info = ppm_error_error
          CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',    &

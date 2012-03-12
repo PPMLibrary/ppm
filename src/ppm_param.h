@@ -350,4 +350,9 @@
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_bsp2    = 1
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_mp4     = 2
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_m3p6    = 3
+      !-------------------------------------------------------------------------
+      !  Device parameters
+      !-------------------------------------------------------------------------
+      INTEGER, PARAMETER :: ppm_param_device_cpu    = 1
+      INTEGER, PARAMETER :: ppm_param_device_gpu    = 2
       

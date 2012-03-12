@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :            ppm_module_rmsh_remesh
+      !  Module       :            ppm_module_interp_m2p
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -41,19 +41,34 @@
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
-        INTERFACE ppm_interp_m2p
+        INTERFACE cpu_m2p
            ! 2d scalar
-           MODULE PROCEDURE m2p_ss_2d
-           MODULE PROCEDURE m2p_ds_2d
+           MODULE PROCEDURE cpu_m2p_ss_2d
+           MODULE PROCEDURE cpu_m2p_ds_2d
            ! 2d vector
-           MODULE PROCEDURE m2p_sv_2d
-           MODULE PROCEDURE m2p_dv_2d
+           MODULE PROCEDURE cpu_m2p_sv_2d
+           MODULE PROCEDURE cpu_m2p_dv_2d
            ! 3d scalar
-           MODULE PROCEDURE m2p_ss_3d
-           MODULE PROCEDURE m2p_ds_3d
+           MODULE PROCEDURE cpu_m2p_ss_3d
+           MODULE PROCEDURE cpu_m2p_ds_3d
            ! 3d vector
-           MODULE PROCEDURE m2p_sv_3d
-           MODULE PROCEDURE m2p_dv_3d
+           MODULE PROCEDURE cpu_m2p_sv_3d
+           MODULE PROCEDURE cpu_m2p_dv_3d
+        END INTERFACE
+
+        INTERFACE gpu_m2p
+           ! 2d scalar
+           MODULE PROCEDURE gpu_m2p_ss_2d
+           MODULE PROCEDURE gpu_m2p_ds_2d
+           ! 2d vector
+           MODULE PROCEDURE gpu_m2p_sv_2d
+           MODULE PROCEDURE gpu_m2p_dv_2d
+           ! 3d scalar
+           MODULE PROCEDURE gpu_m2p_ss_3d
+           MODULE PROCEDURE gpu_m2p_ds_3d
+           ! 3d vector
+           MODULE PROCEDURE gpu_m2p_sv_3d
+           MODULE PROCEDURE gpu_m2p_dv_3d
         END INTERFACE
 
         INTERFACE m2p_interp_bsp2
@@ -87,30 +102,34 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA SINGLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC SINGLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC SINGLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND
@@ -120,30 +139,34 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA DOUBLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC DOUBLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC DOUBLE
-#include "interpolate/ppm_interp_m2p.f"
-#include "interpolate/m2p_interp_bsp2.f"
-#include "interpolate/m2p_interp_mp4.f"
+#include "interpolate/gpu_m2p/ppm_gpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/ppm_cpu_interp_m2p.f"
+#include "interpolate/cpu_m2p/m2p_interp_bsp2.f"
+#include "interpolate/cpu_m2p/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND        

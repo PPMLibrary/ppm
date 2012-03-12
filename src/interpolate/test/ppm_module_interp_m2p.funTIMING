@@ -1,0 +1,4262 @@
+test_suite ppm_module_interp_m2p
+
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    integer, parameter              :: debug = 0
+    !integer, parameter              :: mk = kind(1.0d0) ! double precision
+    integer, parameter              :: mk = kind(1.0e0) ! single precision
+#ifdef __MPI
+    integer, parameter              :: comm = mpi_comm_world
+#endif
+    integer                         :: ndim,nspec
+    integer                         :: rank
+    integer                         :: nproc
+    integer                         :: decomp
+    integer                         :: assig
+    integer                         :: tolexp
+    real(mk)                        :: tol
+    integer                         :: info
+    integer                         :: topoid,meshid
+    real(mk),dimension(:,:),pointer :: xp => NULL()
+    real(mk),dimension(:,:),pointer :: wp => NULL()
+    real(mk),dimension(:,:),pointer :: wp_gpu => NULL()
+    real(mk),dimension(:  ),pointer :: h => NULL()
+    real(mk),dimension(:  ),pointer :: min_phys => NULL()
+    real(mk),dimension(:  ),pointer :: max_phys => NULL()
+    integer, dimension(:  ),pointer :: ghostsize => NULL()
+    integer                         :: i,j,k,p_i,ai,aj,it,isub
+    integer, dimension(6)           :: bcdef
+    real(mk),dimension(:  ),pointer :: cost => NULL()
+    integer, dimension(:,:),pointer :: istart => NULL()
+    integer, dimension(:,:),pointer :: ndata => NULL()
+    integer, dimension(:  ),pointer :: nm => NULL()
+    integer                         :: np,mp
+    integer                         :: kernel
+    real(mk),dimension(:,:,:,:  ), pointer :: field_wp2 => NULL() ! field_wp(ldn,i,j,isub)
+    real(mk),dimension(:,:,:,:,:), pointer :: field_wp3 => NULL() ! field_wp(ldn,i,j,k,isub)
+    real(mk),dimension(:  ),pointer :: field_x => NULL()
+    real(mk)                        :: maxm3
+    integer                         :: seedsize
+    integer,  dimension(:),allocatable :: seed
+    !---- The following variables are needed for testing the moments
+    integer, parameter              :: nmom2 = 10
+    integer, parameter              :: nmom3 = 19
+    integer, dimension(2,nmom2)     :: alpha2
+    integer, dimension(3,nmom3)     :: alpha3
+    real(mk),dimension(nmom2)       :: f_moments2, f_mom_global2, p_moments2
+    real(mk),dimension(nmom3)       :: f_moments3, f_mom_global3, p_moments3
+
+    data ((alpha2(ai,aj), ai=1,2), aj=1,nmom2) /0,0, 1,0, 0,1, 2,0, 0,2, &
+    &                                           1,1, 3,0, 0,3, 2,1, 1,2/
+    data ((alpha3(ai,aj), ai=1,3), aj=1,nmom3)               /0,0,0, &
+    &                                           1,0,0, 0,1,0, 0,0,1, &
+    &                      2,0,0, 0,2,0, 0,0,2, 1,1,0, 0,1,1, 1,0,1, &
+    & 3,0,0, 0,3,0, 0,0,3, 0,1,2, 0,2,1, 1,2,0, 1,0,2, 2,1,0, 2,0,1/
+
+    real(mk) :: start_t, end_t, total_t_cpu, total_t_gpu
+    integer  :: ntrial = 10
+
+    real(mk) :: rn 
+    integer  :: dimn, p
+
+    real(mk)                        :: mu, var
+    real(mk)                        :: x_coor, y_coor, z_coor 
+    real(mk)                        :: ana_sol 
+    real(mk)                        :: diff 
+    real(mk)                        :: L2_norm_cpu, Linf_norm_cpu
+    real(mk)                        :: L2_norm_gpu, Linf_norm_gpu
+
+    real(mk)                        :: steepness = 15.0_mk 
+
+    INTEGER, PARAMETER              :: unit_m2p_mp4_2d = 2
+    INTEGER, PARAMETER              :: unit_m2p_mp4_3d = 3
+    INTEGER, PARAMETER              :: unit_m2p_bsp2_2d = 4
+    INTEGER, PARAMETER              :: unit_m2p_bsp2_3d = 5
+
+!-------------------------- init testsuit -------------------------------------
+    init
+        use ppm_module_data
+
+        tol = 100.0_mk*epsilon(1.0_mk)
+        tolexp = int(log10(epsilon(1.0_mk)))
+        bcdef(1:6) = ppm_param_bcdef_freespace
+
+        allocate(min_phys(3),max_phys(3),ghostsize(3),&
+        &         nm(3),h(3),field_x(3),stat=info)
+
+        if(mk .EQ. kind(1.0e0)) then
+            OPEN(unit=unit_m2p_mp4_2d, file='convergence_m2p_mp4_2d_sp')
+            OPEN(unit=unit_m2p_mp4_3d, file='convergence_m2p_mp4_3d_sp')
+            OPEN(unit=unit_m2p_bsp2_2d, file='convergence_m2p_bsp2_2d_sp')
+            OPEN(unit=unit_m2p_bsp2_3d, file='convergence_m2p_bsp2_3d_sp')
+        elseif(mk .EQ. kind(1.0d0)) then
+            OPEN(unit=unit_m2p_mp4_2d, file='convergence_m2p_mp4_2d_dp')
+            OPEN(unit=unit_m2p_mp4_3d, file='convergence_m2p_mp4_3d_dp')
+            OPEN(unit=unit_m2p_bsp2_2d, file='convergence_m2p_bsp2_2d_dp')
+            OPEN(unit=unit_m2p_bsp2_3d, file='convergence_m2p_bsp2_3d_dp')
+        endif
+
+#ifdef __MPI
+        call mpi_comm_rank(comm,rank,info)
+        call mpi_comm_size(comm,nproc,info)
+#else
+        nproc = 1
+        rank = 0
+#endif
+
+    end init
+!------------------------------------------------------------------------------
+
+
+!------------------------- finalize testsuit ----------------------------------
+    finalize
+
+        close(unit=unit_m2p_mp4_2d)
+        close(unit=unit_m2p_mp4_3d)
+        close(unit=unit_m2p_bsp2_2d)
+        close(unit=unit_m2p_bsp2_3d)
+
+        deallocate(min_phys,max_phys,ghostsize,nm)
+
+    end finalize
+!------------------------------------------------------------------------------
+
+
+!------------------------------ test setup ------------------------------------
+    setup
+        
+        nullify(xp)
+        nullify(wp)
+        nullify(field_wp2)
+        nullify(field_wp3)
+        nullify(cost)
+
+        call random_seed(size=seedsize)
+        allocate(seed(seedsize))
+        do i=1,seedsize
+            seed(i)=10+i*i*(rank+1)
+        enddo
+        call random_seed(put=seed)
+
+    end setup
+!------------------------------------------------------------------------------
+        
+
+!--------------------------- test teardown ------------------------------------
+    teardown
+        
+        use ppm_module_finalize
+
+        call ppm_finalize(info)
+        
+        deallocate(xp,wp,stat=info)
+        deallocate(field_wp2,field_wp3,stat=info)
+        deallocate(seed)
+        deallocate(cost)
+
+    end teardown
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_32_32
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 33*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_64_64
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 65*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_128_128
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 129*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_256_256
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 257*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_512_512
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 513*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_1024_1024
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 1025*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_2d_2048_2048
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(2)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL()
+        integer                         :: nsublist
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 2049*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_3d_8_8_8
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 9*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_cpu:', L2_norm_cpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_3d_16_16_16
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 17*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_cpu:', L2_norm_cpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_3d_32_32_32
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 33*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_cpu:', L2_norm_cpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_3d_64_64_64
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 65*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_cpu:', L2_norm_cpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_mp4_3d_128_128_128
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_mp4
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        do i=1,ndim
+            nm(i) = 129*nproc
+        enddo
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - mp4 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_cpu:', L2_norm_cpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_mp4_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_32_32
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 33*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_64_64
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 65*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_128_128
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 129*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_256_256
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 257*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_512_512
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 513*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_1024_1024
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 1025*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_2d_2048_2048
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 2
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 1.0_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 2049*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO j = 1, nm(2) - 1
+            DO i = 1, nm(1) - 1
+                p = p + 1
+                xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+
+
+        allocate(field_wp2(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+        &        stat=info) ! 2d
+
+        DO j = 1, nm(2)
+            DO i = 1, nm(1)
+                x_coor = (i - 1)*h(1) + min_phys(1)
+                y_coor = (j - 1)*h(2) + min_phys(2)
+                field_wp2(1,i,j,1) = EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 2d using ',nm(1)*nm(2)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp2,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                L2_norm_gpu = L2_norm_gpu + diff**2
+                IF(diff .GT. Linf_norm_gpu) THEN
+                    Linf_norm_gpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp2,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO j = 2, nm(2)-2
+            DO i = 2, nm(1)-2
+                p = i + (j-1)*(nm(1)-1)
+                ana_sol = EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)
+                diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                L2_norm_cpu = L2_norm_cpu + diff**2
+                IF(diff .GT. Linf_norm_cpu) THEN
+                    Linf_norm_cpu = diff
+                ENDIF
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_2d,'(F7.4,4F15.12)') 1.024_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_3d_8_8_8
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 9*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_3d_16_16_16
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 17*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_3d_32_32_32
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 33*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_3d_64_64_64
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 65*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+!------------------------------------------------------------------------------
+    test m2p_bsp2_3d_128_128_128
+        use ppm_module_typedef
+        use ppm_module_data
+        use ppm_module_mktopo
+        use ppm_module_topo_get
+        use ppm_module_interp
+        use ppm_module_init
+        use ppm_module_finalize
+        use ppm_module_map
+
+        implicit none
+        integer, dimension(3)           :: maxndata
+        integer, dimension(:  ), pointer:: isublist => NULL() 
+        integer                         :: nsublist
+        
+        ndim = 3
+        nspec = 1
+        kernel = ppm_param_rmsh_kernel_bsp2
+        do i=1,ndim
+            min_phys(i) = 0.0_mk
+            max_phys(i) = 0.125_mk
+            ghostsize(i) = 1
+        enddo
+        
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
+    
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+
+        topoid = 0
+        meshid = -1
+
+        allocate(nm(ndim),stat=info)
+        nm(:) = 129*nproc
+
+        np = (nm(1)-1)*(nm(2)-1)*(nm(3)-1)
+        allocate(xp(ndim,np),wp(nspec,np),wp_gpu(nspec,np),stat=info)
+
+        do i=1,ndim
+            h(i) = (max_phys(i) - min_phys(i)) / real(nm(i)-1,mk)
+        enddo
+
+        mu  = (max_phys(1) - min_phys(1))/2.0_mk + min_phys(1)
+        var = (max_phys(1) - min_phys(1))/steepness
+
+        p = 0
+        DO k = 1, nm(3)-1
+            DO j = 1, nm(2) - 1
+                DO i = 1, nm(1) - 1
+                    p = p + 1
+                    xp(1,p) = (REAL(i,mk) - 0.5_mk)*h(1) + min_phys(1)
+                    xp(2,p) = (REAL(j,mk) - 0.5_mk)*h(2) + min_phys(2)
+                    xp(3,p) = (REAL(k,mk) - 0.5_mk)*h(3) + min_phys(3)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,ghostsize,cost,nm,info)
+        
+        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+        &               isublist,nsublist,info)
+        
+
+        allocate(field_wp3(nspec,(1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+        &       stat=info) ! 3d
+
+        DO k = 1, nm(3)
+            DO j = 1, nm(2)
+                DO i = 1, nm(1)
+                    x_coor = (i - 1)*h(1) + min_phys(1)
+                    y_coor = (j - 1)*h(2) + min_phys(2)
+                    z_coor = (k - 1)*h(3) + min_phys(3)
+                    field_wp3(1,i,j,k,1) = &
+        &      EXP(-((x_coor-mu)**2)/var)*EXP(-((y_coor-mu)**2)/var)*EXP(-((z_coor-mu)**2)/var)
+                ENDDO
+            ENDDO
+        ENDDO
+
+        call ppm_map_part_global(topoid,xp,np,info) ! positions
+        call ppm_map_part_send(np,mp,info)          ! send
+        call ppm_map_part_pop(xp,ndim,np,mp,info)   ! positions
+        np = mp
+
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel, &
+        &           ghostsize,field_wp3,info)
+        call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel, &
+        &           ghostsize,field_wp3,info,device=ppm_param_device_cpu)
+
+        print *, 'Running m2p - bsp2 test in 3d using ',nm(1)*nm(2)*nm(3)/1024,'K particles'
+        do i = 1,np
+           do j = 1,nspec
+              IF((wp(j,i) - wp_gpu(j,i)) .GT. 0.001) THEN
+                 print *, 'Inconsistent at: ', i, j
+                 print *, 'CPU:', wp(j,i)
+                 print *, 'GPU:', wp_gpu(j,i)
+              ENDIF
+           enddo
+        enddo
+
+        total_t_gpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp_gpu,1,kernel,ghostsize,&
+        &                   field_wp3,info)
+           call cpu_time(end_t)
+           total_t_gpu = total_t_gpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+
+        L2_norm_gpu   = 0.0_mk
+        Linf_norm_gpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp_gpu(1,p))/ana_sol
+                    L2_norm_gpu = L2_norm_gpu + diff**2
+                    IF(diff .GT. Linf_norm_gpu) THEN
+                        Linf_norm_gpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_gpu = L2_norm_gpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_gpu = SQRT(L2_norm_gpu)
+
+        print *, 'GPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_gpu:', Linf_norm_gpu
+
+        total_t_cpu = 0.0_mk
+        DO i = 1,ntrial
+           call cpu_time(start_t)
+           call ppm_interp_m2p(topoid,meshid,xp,np,wp,1,kernel,ghostsize,&
+        &                   field_wp3,info,device=ppm_param_device_cpu)
+           call cpu_time(end_t)
+           total_t_cpu = total_t_cpu + (end_t - start_t)*1000.0_mk/(real(ntrial))
+        ENDDO
+ 
+        L2_norm_cpu   = 0.0_mk
+        Linf_norm_cpu = 0.0_mk
+        DO k = 2, nm(3)-2
+            DO j = 2, nm(2)-2
+                DO i = 2, nm(1)-2
+                    p = i + (j-1)*(nm(1)-1) + (k-1)*(nm(1)-1)*(nm(2)-1)
+                    ana_sol = &
+      & EXP(-((xp(1,p)-mu)**2)/var)*EXP(-((xp(2,p)-mu)**2)/var)*EXP(-((xp(3,p)-mu)**2)/var)
+                    diff    = ABS(ana_sol - wp(1,p))/ana_sol
+                    L2_norm_cpu = L2_norm_cpu + diff**2
+                    IF(diff .GT. Linf_norm_cpu) THEN
+                        Linf_norm_cpu = diff
+                    ENDIF
+                ENDDO
+            ENDDO
+        ENDDO
+
+        L2_norm_cpu = L2_norm_cpu/((nm(1)-3)*(nm(2)-3)*(nm(3)-3))
+        L2_norm_cpu = SQRT(L2_norm_cpu)
+
+        print *, 'CPU Results:'
+        print *, 'L2_norm_gpu:', L2_norm_gpu, 'Linf_norm_cpu:', Linf_norm_cpu
+
+        print *, total_t_gpu, total_t_cpu
+
+        WRITE(unit_m2p_bsp2_3d,'(F7.4,4F15.12)') 0.128_mk/(nm(1)-1), L2_norm_gpu, Linf_norm_gpu, L2_norm_cpu,  &
+       &                           Linf_norm_cpu 
+
+    end test
+!------------------------------------------------------------------------------
+
+end test_suite

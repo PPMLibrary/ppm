@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :            ppm_module_rmsh_remesh
+      !  Module       :            ppm_module_interp_p2m
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -41,28 +41,35 @@
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
-        INTERFACE ppm_interp_p2m
+        
+        INTERFACE cpu_p2m
            ! 2d scalar
-           MODULE PROCEDURE p2m_ss_2d
-           MODULE PROCEDURE p2m_ds_2d
+           MODULE PROCEDURE cpu_p2m_ss_2d
+           MODULE PROCEDURE cpu_p2m_ds_2d
            ! 2d vector
-           MODULE PROCEDURE p2m_sv_2d
-           MODULE PROCEDURE p2m_dv_2d
+           MODULE PROCEDURE cpu_p2m_sv_2d
+           MODULE PROCEDURE cpu_p2m_dv_2d
            ! 3d scalar
-           MODULE PROCEDURE p2m_ss_3d
-           MODULE PROCEDURE p2m_ds_3d
+           MODULE PROCEDURE cpu_p2m_ss_3d
+           MODULE PROCEDURE cpu_p2m_ds_3d
            ! 3d vector
-           MODULE PROCEDURE p2m_sv_3d
-           MODULE PROCEDURE p2m_dv_3d
+           MODULE PROCEDURE cpu_p2m_sv_3d
+           MODULE PROCEDURE cpu_p2m_dv_3d
         END INTERFACE
 
-        INTERFACE ppm_interp_p2m_reno
+        INTERFACE gpu_p2m
            ! 2d scalar
-           MODULE PROCEDURE p2m_renorm_ss_3d
-           MODULE PROCEDURE p2m_renorm_ds_3d
+           MODULE PROCEDURE gpu_p2m_ss_2d
+           MODULE PROCEDURE gpu_p2m_ds_2d
+           ! 2d vector
+           MODULE PROCEDURE gpu_p2m_sv_2d
+           MODULE PROCEDURE gpu_p2m_dv_2d
+           ! 3d scalar
+           MODULE PROCEDURE gpu_p2m_ss_3d
+           MODULE PROCEDURE gpu_p2m_ds_3d
            ! 3d vector
-           MODULE PROCEDURE p2m_renorm_sv_3d
-           MODULE PROCEDURE p2m_renorm_dv_3d
+           MODULE PROCEDURE gpu_p2m_sv_3d
+           MODULE PROCEDURE gpu_p2m_dv_3d
         END INTERFACE
 
         INTERFACE p2m_interp_bsp2
@@ -94,32 +101,34 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND
@@ -129,32 +138,34 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
-#include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/gpu_p2m/ppm_gpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/ppm_cpu_interp_p2m.f"
+#include "interpolate/cpu_p2m/p2m_interp_bsp2.f"
+#include "interpolate/cpu_p2m/p2m_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND        

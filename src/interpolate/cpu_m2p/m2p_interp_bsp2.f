@@ -97,9 +97,9 @@
       REAL(MK) , DIMENSION(:)         , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:    ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:    ) , INTENT(IN), POINTER :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN), POINTER :: field_up
 #endif
       !!! field from which to interpolate
 #elif __MODE == __VEC
@@ -108,17 +108,17 @@
       REAL(MK) , DIMENSION(:,:)       , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:  ) , INTENT(IN), POINTER :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:,:) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:,:) , INTENT(IN), POINTER :: field_up
 #endif
       !!! field from which to interpolate
 #endif
-      REAL(MK), DIMENSION(:,:)       , INTENT(IN   ) :: xp
+      REAL(MK), DIMENSION(:,:)        , INTENT(IN), POINTER :: xp
       !!! particle positions
-      INTEGER , DIMENSION(:  )       , INTENT(IN   ) :: ghostsize
+      INTEGER , DIMENSION(:  )        , INTENT(IN)          :: ghostsize
       !!! ghost size
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER                         , INTENT(  OUT) :: info
       !!! Returns 0 upon success
 
       !-------------------------------------------------------------------------

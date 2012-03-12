@@ -47,6 +47,9 @@ AC_ARG_ENABLE([mpi],
 : ${CFLAGS="-O3"}
 : ${FCFLAGS="-O3"}
 
+# get target host, vendor and os
+AC_CANONICAL_TARGET
+
 # Checks for basic compiler and flags
 AC_PROG_CXX
 AC_PROG_CPP
@@ -131,6 +134,21 @@ if test "x${use_mpi}" = xyes; then
 fi
 
 # Checks for libraries and set preprocessing flags
+AC_LANG([C])
+
+have_gpu=no
+AC_ARG_ENABLE([gpu],[AS_HELP_STRING([--enable-gpu],
+  [enable GPU support. This will compile the OpenCL versions of the PPM
+   interpolation routines to make use of the GPU hardware on the target hosts.
+   (default is no)])],
+   [have_gpu=yes]
+#  [echo "#define __GPU" >> ./src/ppm_define.h]
+)
+if test "x${have_gpu}" = xyes; then
+    AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__GPU"])
+    AC_CHECK_HEADER([CL/opencl.h])
+    AC_CHECK_LIB([OpenCL],[clGetPlatformIDs])
+fi
 
 # this test should be omitted if the compiler is intel, they provide their own
 # math implementation

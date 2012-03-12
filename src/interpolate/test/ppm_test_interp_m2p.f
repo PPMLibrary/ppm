@@ -28,6 +28,7 @@
       !-------------------------------------------------------------------------
 program ppm_test_interp_m2p
 
+    use ppm_param
     use ppm_module_core
     use ppm_module_typedef
     use ppm_module_mktopo
@@ -42,7 +43,6 @@ program ppm_test_interp_m2p
 
     implicit none
 
-#include "../../ppm_define.h"
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif

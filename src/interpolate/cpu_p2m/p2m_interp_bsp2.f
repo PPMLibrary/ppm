@@ -281,6 +281,7 @@
            !----------------------------------------------------------------!
            IF (lda .EQ. 3) THEN
               isubl = topo%isublist(isub)
+
               DO ip = 1,store_info(isub)
 
                  iq    = list_sub(isub,ip)
@@ -504,8 +505,8 @@
               !----------------------------------------------------------------!
            ELSEIF (lda .EQ. 1) THEN
               isubl = topo%isublist(isub)
-              DO ip = 1,store_info(isub)
 
+              DO ip = 1,store_info(isub)
                  iq    = list_sub(isub,ip)
 
                  x01 = (xp(1,iq)-min_sub(1,isubl))*dxxi
