@@ -51,44 +51,4 @@ FUNCTION particles_dflt_opname(i)
     RETURN
 END FUNCTION
 
-FUNCTION color_print(text,color)
-    !!! Return a string that will appear in color if printed out to the terminal
-    CHARACTER(LEN=ppm_char)   :: color_print
-    CHARACTER(LEN=*)          :: text
-    CHARACTER(LEN=10)         :: mycolor
-    INTEGER                   :: color
-
-    write(mycolor,'(A,I0,A)') '[',color,'m'
-    color_print = achar(27)//TRIM(mycolor)//TRIM(ADJUSTL(text))//achar(27)//'[0m'
-    RETURN
-
-END FUNCTION
-
-
-FUNCTION factorial_m(multi_ind,ndim)
-    INTEGER                 :: factorial_m,i,ndim
-    INTEGER,DIMENSION(ndim) :: multi_ind
-
-    factorial_m = 1
-    DO i=1,ndim
-        factorial_m = factorial_m * factorial(multi_ind(i))
-    ENDDO
-END FUNCTION factorial_m
-
-FUNCTION factorial(n)
-    INTEGER    :: n,i
-    INTEGER    :: factorial
-    factorial = 1
-    DO i=1,n
-        factorial = i*factorial
-    ENDDO
-    RETURN
-END FUNCTION factorial
-
-FUNCTION binomial(n,k)
-    INTEGER    :: n,k
-    INTEGER    :: binomial
-    binomial = factorial(n)/(factorial(k)*factorial(n-k))
-END FUNCTION binomial
-
 

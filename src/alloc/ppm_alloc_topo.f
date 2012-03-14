@@ -39,10 +39,10 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_mesh_alloc
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Arguments
@@ -130,11 +130,6 @@
           IF (ASSOCIATED(topo%nneighsubs)) DEALLOCATE(topo%nneighsubs,STAT=info)
           IF (ASSOCIATED(topo%ineighproc)) DEALLOCATE(topo%ineighproc,STAT=info)
           IF (ASSOCIATED(topo%icommseq)) DEALLOCATE(topo%icommseq,STAT=info)
-          IF (topo%max_meshid .GT. 0) THEN
-            ldc(1) = topo%max_meshid
-            CALL ppm_mesh_alloc_equi(topo%mesh, ldc, &
-     &                          ppm_param_dealloc,info)
-          ENDIF
           DEALLOCATE(topo,stat=info)
           NULLIFY(topo)
           IF (info .NE. 0) THEN
@@ -174,13 +169,11 @@
          NULLIFY(topo%nneighsubs)
          NULLIFY(topo%ineighproc)
          NULLIFY(topo%icommseq)
-         NULLIFY(topo%mesh)
          topo%ID = 0
          topo%prec = ppm_param_undefined
          topo%nsubs = 0
          topo%nsublist = 0
          topo%nneighproc = 0
-         topo%max_meshid = 0
       ENDIF
 
 

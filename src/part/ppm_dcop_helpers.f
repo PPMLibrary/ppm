@@ -1,8 +1,10 @@
+#ifdef REMOVEME
 !-------------------------------------------------------------
 ! Primitive function as defined in Chen et al., 
-!             Int. J. Numer. Meth. Engng 2003; 56:935–960.
+!             Int. J. Numer. Meth. Engng 2003; 56:935-960.
 ! (here, the quartic spline)
 !-------------------------------------------------------------
+#endif
 FUNCTION DTYPE(primitive)(x)
 
     IMPLICIT NONE
@@ -1051,7 +1053,7 @@ END SUBROUTINE DTYPE(solveLSE_n)
 
 SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
     USE ppm_module_write
-    USE ppm_module_data, ONLY: ppm_rank
+    USE ppm_module_data
 #ifdef __MKL
     USE mkl95_lapack
     USE mkl95_blas

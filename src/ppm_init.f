@@ -33,6 +33,7 @@
       !  Modules 
       !-------------------------------------------------------------------------
       USE ppm_module_data
+      USE ppm_module_topo_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error

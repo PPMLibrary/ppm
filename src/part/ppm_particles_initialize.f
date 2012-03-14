@@ -8,17 +8,13 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     !!!-----------------------------------------------------------------------
     !!! Set initial particle positions
     !!!-----------------------------------------------------------------------
-    USE ppm_module_substart
-    USE ppm_module_substop
-    USE ppm_module_data, ONLY: ppm_rank,ppm_nproc,ppm_topo,ppm_comm
-    USE ppm_module_write
 
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_particles))                          :: Pc
-    !!! Data structure containing the particle cloud
+    !!! Data structure containing the Particle set
     INTEGER,                             INTENT(INOUT)     :: Npart_global
     !!! total number of particles that will be initialized
     INTEGER,                             INTENT(  OUT)     :: info
@@ -137,7 +133,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         IF (info .NE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_dealloc,caller,&
-                'destroying Particle cloud failed',__LINE__,info)
+                'destroying Particle set failed',__LINE__,info)
             GOTO 9999
         ENDIF
     ENDIF
@@ -146,7 +142,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     IF (info .NE. 0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_alloc,caller,&
-            'creating Particle cloud failed',__LINE__,info)
+            'creating Particle set failed',__LINE__,info)
         GOTO 9999
     ENDIF
 

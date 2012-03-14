@@ -1,3 +1,9 @@
+#define CONTAINER DTYPE(ppm_c_pmaps)
+#define __CONTAINER(a) DTYPE(ppm_c_pmaps)_/**/a
+#define VEC_TYPE DTYPE(ppm_t_part_mapping)
+#include "cont/collection_typeproc.f"
+
+
 SUBROUTINE DTYPE(map_create)(map,source_topoid,target_topoid,info)
     !!! Constructor for particle mapping data structure
     DEFINE_MK()
@@ -35,19 +41,20 @@ SUBROUTINE DTYPE(map_destroy)(map,info)
     map%source_topoid = -1
     map%target_topoid = -1
 
-    IF(ASSOCIATED(map%send)) DEALLOCATE(map%send,STAT=info)
-    IF(ASSOCIATED(map%recv)) DEALLOCATE(map%recv,STAT=info)
-    IF(ASSOCIATED(map%nsend)) DEALLOCATE(map%nsend,STAT=info)
-    IF(ASSOCIATED(map%nrecv)) DEALLOCATE(map%nrecv,STAT=info)
-    IF(ASSOCIATED(map%psend)) DEALLOCATE(map%psend,STAT=info)
-    IF(ASSOCIATED(map%precv)) DEALLOCATE(map%precv,STAT=info)
-    IF(ASSOCIATED(map%pp)) DEALLOCATE(map%pp,STAT=info)
-    IF(ASSOCIATED(map%qq)) DEALLOCATE(map%qq,STAT=info)
+    dealloc_pointer(map%send)
+    dealloc_pointer(map%recv)
+    dealloc_pointer(map%nsend)
+    dealloc_pointer(map%nrecv)
+    dealloc_pointer(map%psend)
+    dealloc_pointer(map%precv)
+    dealloc_pointer(map%pp)
+    dealloc_pointer(map%qq)
 
     map%oldNpart = 0
     map%newNpart = 0
 
     CALL substop(caller,t0,info)
+    9999  CONTINUE
 
 END SUBROUTINE DTYPE(map_destroy)
 

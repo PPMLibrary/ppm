@@ -2,7 +2,7 @@
 
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(props,wp,id,info) 
+SUBROUTINE __FUNCNAME(Pc,wp,id,info) 
     !!!------------------------------------------------------------------------!
     !!! Check whether a Data Structure exists and can be accessed at this id
     !!!------------------------------------------------------------------------!
@@ -10,7 +10,7 @@ SUBROUTINE __FUNCNAME(props,wp,id,info)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    CLASS(DTYPE(ppm_c_props))                           :: props
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
     !!! Data structure containing the particles
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER,        INTENT(IN   )   :: wp

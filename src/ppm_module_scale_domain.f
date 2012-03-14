@@ -35,6 +35,7 @@
 
       MODULE ppm_module_scale_domain
       !!! This module provides routines for scaling the domain
+         USE ppm_module_topo_typedef
          !----------------------------------------------------------------------
          !  Define interfaces to the domain scaling routine
          !----------------------------------------------------------------------

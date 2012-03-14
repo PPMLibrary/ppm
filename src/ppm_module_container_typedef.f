@@ -54,13 +54,14 @@
          !----------------------------------------------------------------------
          ! Type declaration
          !----------------------------------------------------------------------
+         !List of integers, stored as an array
 
-#define  DTYPE(a) a/**/_s
 #include "cont/container_typedef.inc"
 
-#define  DTYPE(a) a/**/_d
-#include "cont/container_typedef.inc"
+         TYPE, EXTENDS(ppm_t_container) :: idList 
+             INTEGER, DIMENSION(:), POINTER :: vec => NULL()
 
+         END TYPE idList
          !----------------------------------------------------------------------
          ! Global variables 
          !----------------------------------------------------------------------

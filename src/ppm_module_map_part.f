@@ -43,6 +43,7 @@
       !!!
       !!! The module also holds the needed work arrays for these routines.
          
+         USE ppm_module_topo_typedef
          USE ppm_module_map_part_util
          USE ppm_module_map_part_ghost
          USE ppm_module_map_part_global

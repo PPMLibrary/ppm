@@ -65,24 +65,18 @@ END TYPE DTYPE(ppm_t_operator)
 !----------------------------------------------------------------------
 ! Wrapper type to be able to have a pointer array to hold operators
 !----------------------------------------------------------------------
-TYPE DTYPE(ppm_ptr_ops)
+TYPE DTYPE(ppm_t_ptr_ops)
     TYPE(DTYPE(ppm_t_operator)), POINTER :: t => NULL()
-END TYPE DTYPE(ppm_ptr_ops)
+END TYPE DTYPE(ppm_t_ptr_ops)
+
 !----------------------------------------------------------------------
 ! Container for operators
 !----------------------------------------------------------------------
-TYPE, EXTENDS(DTYPE(ppm_t_container)) ::  DTYPE(ppm_c_operators)
-    TYPE(DTYPE(ppm_ptr_ops)),DIMENSION(:),POINTER :: vec => NULL()
-    !!! array with pointers to each differential operator for this particle set
-    TYPE(DTYPE(ppm_t_operator)),          POINTER :: iterator => NULL()
-    CONTAINS
-    PROCEDURE       :: begin => DTYPE(begin_op)
-    PROCEDURE       :: next => DTYPE(next_op)
-    PROCEDURE       :: last => DTYPE(last_op)
-    PROCEDURE       :: prev => DTYPE(prev_op)
-    PROCEDURE       :: destroy => DTYPE(op_container_destroy)
-    PROCEDURE       :: exists => DTYPE(op_exists)
-END TYPE DTYPE(ppm_c_operators)
+#define CONTAINER DTYPE(ppm_c_operators)
+#define __CONTAINER(a) DTYPE(ppm_c_operators)_/**/a
+#define VEC_TYPE DTYPE(ppm_t_ptr_ops)
+#define ITERATOR_TYPE DTYPE(ppm_t_operator)
+#include "cont/extended_container_template.inc"
 
 #undef   MK
 #undef   _MK

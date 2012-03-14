@@ -1,3 +1,17 @@
+         TYPE DTYPE(ppm_t_patch)
+         !!! The patch type
+
+            INTEGER                                       :: topoid
+            !!! id of the topology on which this patch belongs
+            INTEGER              , DIMENSION(:  ),POINTER :: npatch => NULL()
+            !!! number of patches for each subdomain
+
+            INTEGER              , DIMENSION(:,:),POINTER :: istart => NULL()
+            !!! Starting indices of the mesh of this patch in the mesh for this sub
+            INTEGER              , DIMENSION(:,:),POINTER :: iend => NULL()
+            !!! Ending indices of the mesh of this patch in the mesh for this sub
+         END TYPE DTYPE(ppm_t_patch)
+
          TYPE DTYPE(ppm_t_topo)
          !!! The topology type
 
@@ -86,8 +100,11 @@
             INTEGER                                        :: max_meshid
             !!! Number of meshes defined on this topology
 
-            TYPE(DTYPE(ppm_t_equi_mesh)), DIMENSION(:  ), POINTER :: mesh => NULL()
-            !!! List of meshes defined on this topology. Index: meshid
+!            TYPE(DTYPE(ppm_t_equi_mesh)), DIMENSION(:), POINTER :: mesh => NULL()
+!            !!! List of meshes defined on this topology. Index: meshid
+
+            TYPE(DTYPE(ppm_t_patch)), DIMENSION(:),POINTER :: patches => NULL()
+            !!! List of patches data structures on this topology.
 
             REAL(MK)                                       :: ghostsize
             !!! max ghostsize width used when creating this topology

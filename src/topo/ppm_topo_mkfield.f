@@ -61,7 +61,7 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
+      USE ppm_module_mesh_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error

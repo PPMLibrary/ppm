@@ -15,19 +15,12 @@
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
-    IF (id.LE.0 .OR. id.GT.cont%max_id) THEN
+    IF (id.LE.0 .OR. id.LT.this%min_id .OR. id.GT.this%max_id) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,lcaller,   &
             & 'Invalid id for this data structure, use create() first',&
             __LINE__,info)
         RETURN
-    ENDIF
-
-    IF (ASSOCIATED(cont%vec)) THEN
-        IF (ASSOCIATED(cont%vec(id)%t)) THEN
-            exists = .TRUE.
-            RETURN
-        ENDIF
     ENDIF
 
 

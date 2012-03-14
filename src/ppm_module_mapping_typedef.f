@@ -47,16 +47,12 @@
          USE ppm_module_map_part_ghost
          USE ppm_module_map_part_global
          USE ppm_module_map_part_partial
-         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_substart
          USE ppm_module_substop
+         USE ppm_module_container_typedef
+         USE ppm_module_interfaces
 
          IMPLICIT NONE
-         PRIVATE
-
-         PUBLIC :: ppm_ptr_t_part_mapping_s,ppm_ptr_t_part_mapping_d
-         PUBLIC :: ppm_t_part_mapping_s,ppm_t_part_mapping_d
-
 
          !----------------------------------------------------------------------
          !  Type declaration

@@ -37,6 +37,11 @@
       !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
       !!! fields are user-provided arrays.
          !----------------------------------------------------------------------
+         !  Modules
+         !----------------------------------------------------------------------
+         USE ppm_module_topo_typedef
+         USE ppm_module_mesh_typedef
+         !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
          INTEGER, DIMENSION(:  ), POINTER :: isendfromsub => NULL()

@@ -38,7 +38,7 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_typedef, ONLY: ppm_t_equi_mesh
+      USE ppm_module_mesh_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error

@@ -37,7 +37,7 @@
       !!! This module provides neighbor
       !!! search routines (cell lists, Verlet lists).
       
-         USE ppm_module_typedef, ONLY: ppm_t_clist
+         USE ppm_module_topo_typedef
         
 
          TYPE(ppm_t_clist), DIMENSION(:), POINTER   :: ppm_clist

@@ -72,12 +72,6 @@
       !-------------------------------------------------------------------------
       !  Modules 
       !-------------------------------------------------------------------------
-      USE ppm_module_data, ONLY: ppm_rank,ppm_dim,ppm_debug,&
-          &                      ppm_mpi_kind,ppm_kind,ppm_myepsd,ppm_myepss
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_error
-      USE ppm_module_alloc
       IMPLICIT NONE
       DEFINE_MK()
       !-------------------------------------------------------------------------
