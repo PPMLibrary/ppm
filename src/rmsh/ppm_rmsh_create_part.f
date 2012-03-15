@@ -121,7 +121,6 @@
       USE ppm_module_substop
       USE ppm_module_data_rmsh
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_data
       USE ppm_module_check_id
 
@@ -281,7 +280,10 @@
       !  Get istart
       !-------------------------------------------------------------------------
       topo   => ppm_topo(topoid)%t
-      p_mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          p_mesh => t
+      END SELECT
       istart => p_mesh%istart
       nm     => p_mesh%nm
       ndata  => p_mesh%nnodes

@@ -59,6 +59,7 @@
       USE ppm_module_util_invert_list
       USE ppm_module_alloc
       USE ppm_module_topo_alloc
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes

@@ -50,7 +50,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_topo
-      USE ppm_module_typedef
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
@@ -115,7 +114,11 @@
       ! TODO check parameters
 
       topo => ppm_topo(topoid)%t
-      mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          mesh => t
+      END SELECT
+
       IF (PRESENT(step)) THEN
          WRITE(fname,'(A,A,I0)') &
               filename(1:LEN_TRIM(filename)), '.', step

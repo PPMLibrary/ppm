@@ -93,7 +93,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -193,7 +192,10 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
-      mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          mesh => t
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Count number of data points to be sent
@@ -1760,18 +1762,19 @@
           xhi = 0
           yhi = 0
           zhi = 0
-          DO i=1,ppm_topo(topoid)%t%nsublist
-              isub = ppm_topo(topoid)%t%isublist(i)
-              IF (ppm_topo(topoid)%t%mesh(meshid)%nnodes(1,isub).GT.xhi) THEN
-                  xhi = ppm_topo(topoid)%t%mesh(meshid)%nnodes(1,isub)
-              ENDIF
-              IF (ppm_topo(topoid)%t%mesh(meshid)%nnodes(2,isub).GT.yhi) THEN
-                  yhi = ppm_topo(topoid)%t%mesh(meshid)%nnodes(2,isub)
-              ENDIF
-              IF (ppm_topo(topoid)%t%mesh(meshid)%nnodes(3,isub).GT.zhi) THEN
-                  zhi = ppm_topo(topoid)%t%mesh(meshid)%nnodes(3,isub)
-              ENDIF
-          ENDDO
+          WRITE(*,*) 'FIXME IN ppm_map_field_push_3d.f'
+          !DO i=1,ppm_topo(topoid)%t%nsublist
+              !isub = ppm_topo(topoid)%t%isublist(i)
+              !IF (ppm_mesh%vec(meshid)%nnodes(1,isub).GT.xhi) THEN
+                  !xhi = ppm_mesh%vec(meshid)%nnodes(1,isub)
+              !ENDIF
+              !IF (ppm_mesh%vec(meshid)%nnodes(2,isub).GT.yhi) THEN
+                  !yhi = ppm_mesh%vec(meshid)%nnodes(2,isub)
+              !ENDIF
+              !IF (ppm_mesh%vec(meshid)%nnodes(3,isub).GT.zhi) THEN
+                  !zhi = ppm_mesh%vec(meshid)%nnodes(3,isub)
+              !ENDIF
+          !ENDDO
 #if   __DIM == __VFIELD
           IF (lda .LT. 1) THEN
               info = ppm_error_error

@@ -37,8 +37,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_typedef
-      USE ppm_module_mesh_alloc
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -95,12 +94,12 @@
       CALL ppm_alloc(topo%max_physs,ldc,iopt,info)
       CALL ppm_alloc(topo%max_physd,ldc,iopt,info)
 
-      !-------------------------------------------------------------------------
-      !  Deallocate the meshes
-      !-------------------------------------------------------------------------
-      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-      NULLIFY(topo%mesh)
-      topo%max_meshid = 0
+!      !-------------------------------------------------------------------------
+!      !  Deallocate the meshes
+!      !-------------------------------------------------------------------------
+!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
+!      NULLIFY(topo%mesh)
+!      topo%max_meshid = 0
 
       !-------------------------------------------------------------------------
       !  Mark this topology as not defined

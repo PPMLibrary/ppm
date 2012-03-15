@@ -35,13 +35,16 @@
 #define __SCA              6
 
       MODULE ppm_module_io_vtk
-         USE ppm_module_typedef,   ONLY: ppm_char, ppm_error_fatal, &
-                                         ppm_kind_single, ppm_kind_double
+         USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
+                                         ppm_kind_single, ppm_kind_double,&
+                                         ppm_error_error
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
          USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm
-         USE ppm_module_typedef,   ONLY: ppm_error_error
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
+         USE ppm_module_interfaces
+         USE ppm_module_topo_typedef
+         USE ppm_module_mesh_typedef
 
          IMPLICIT NONE
 

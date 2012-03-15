@@ -38,13 +38,13 @@
             MODULE PROCEDURE ppm_check_topoid
          END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  Define interface to the meshid check routine
-         !----------------------------------------------------------------------
-         INTERFACE ppm_check_meshid
-         !!! checks mesh ID
-            MODULE PROCEDURE ppm_check_meshid
-         END INTERFACE
+         !!----------------------------------------------------------------------
+         !!  Define interface to the meshid check routine
+         !!----------------------------------------------------------------------
+         !INTERFACE ppm_check_meshid
+         !!!! checks mesh ID
+            !MODULE PROCEDURE ppm_check_meshid
+         !END INTERFACE
 
          !----------------------------------------------------------------------
          !  include the source 
@@ -53,6 +53,6 @@
  
 #include "topo/ppm_check_topoid.f"
 
-#include "topo/ppm_check_meshid.f"
+!#include "topo/ppm_check_meshid.f"
 
       END MODULE ppm_module_check_id

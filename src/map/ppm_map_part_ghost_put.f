@@ -69,7 +69,7 @@
       !-------------------------------------------------------------------------
       !  Modules 
       !-------------------------------------------------------------------------
-      USE ppm_module_typedef
+      USE ppm_module_topo_typedef
       USE ppm_module_data
       USE ppm_module_alloc
       USE ppm_module_substart

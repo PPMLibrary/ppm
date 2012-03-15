@@ -36,6 +36,7 @@
       MODULE ppm_module_mktopo
       !!! This module provides the interface to the routines that create
       !!! topologies.
+         USE ppm_module_topo_typedef
          !----------------------------------------------------------------------
          !  Define interfaces to the main topology routine(s)
          !----------------------------------------------------------------------

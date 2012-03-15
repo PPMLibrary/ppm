@@ -6,7 +6,9 @@ WARN="\033[0;33mwarnings\033[0m"
 
 echo $1 >> $2
 
-output=$($1 2>&1)
+cmd="$1 2>&1"
+
+output=`eval $cmd`
 
 if [ $? -eq 0 ]
 then

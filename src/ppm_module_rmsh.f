@@ -47,6 +47,8 @@
          !----------------------------------------------------------------------
          USE ppm_module_interp_m2p
          USE ppm_module_interp_p2m
+         USE ppm_module_topo_typedef
+         USE ppm_module_mesh_typedef
          
         !-----------------------------------------------------------------------
         !  Define interface ppm_rmsh_comp_weights

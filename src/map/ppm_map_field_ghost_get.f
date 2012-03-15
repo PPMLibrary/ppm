@@ -97,7 +97,10 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
-      mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          mesh => t
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Check if ghost mappings have been initalized, if no do so now.

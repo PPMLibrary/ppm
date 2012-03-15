@@ -88,7 +88,6 @@
       USE ppm_module_data
       USE ppm_module_data_rmsh
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_write
       USE ppm_module_check_id
       IMPLICIT NONE
@@ -205,7 +204,10 @@
       !-------------------------------------------------------------------------
       !  Get the mesh
       !-------------------------------------------------------------------------
-      p_mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          p_mesh => t
+      END SELECT
       !-------------------------------------------------------------------------
       !  Get istart
       !-------------------------------------------------------------------------

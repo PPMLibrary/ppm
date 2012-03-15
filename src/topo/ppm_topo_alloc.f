@@ -38,8 +38,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_mesh_alloc
-      USE ppm_module_typedef
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -412,13 +411,13 @@
       NULLIFY(topo%icommseq)
       topo%isoptimized = .FALSE.
 
-      !-------------------------------------------------------------------------
-      !  By default there are no meshes defined on a topology
-      !-------------------------------------------------------------------------
-      topo%max_meshid = 0
-      iopt = ppm_param_dealloc
-      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-      NULLIFY(topo%mesh)
+!      !-------------------------------------------------------------------------
+!      !  By default there are no meshes defined on a topology
+!      !-------------------------------------------------------------------------
+!      topo%max_meshid = 0
+!      iopt = ppm_param_dealloc
+!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
+!      NULLIFY(topo%mesh)
 
       !-------------------------------------------------------------------------
       !  Mark this topology as not defined

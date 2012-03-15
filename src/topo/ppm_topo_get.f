@@ -53,7 +53,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_check_id
-      USE ppm_module_typedef
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------

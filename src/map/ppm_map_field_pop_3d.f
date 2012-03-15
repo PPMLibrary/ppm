@@ -91,7 +91,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -211,7 +210,10 @@
       !  set the local pointers to the topology and mesh
       !-------------------------------------------------------------------------
       target_topo => ppm_topo(target_topoid)%t
-      target_mesh => target_topo%mesh(target_meshid)
+      SELECT TYPE (t => ppm_mesh%vec(target_meshid))
+      TYPE IS (ppm_t_equi_mesh)
+          target_mesh => t
+      END SELECT
 
       IF (ppm_debug .GT. 0) THEN
         CALL check_two
