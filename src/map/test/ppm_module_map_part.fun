@@ -43,7 +43,7 @@ real(mk)                         :: t0,t1,t2,t3
 
     init
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_init
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
@@ -110,7 +110,7 @@ real(mk)                         :: t0,t1,t2,t3
     test global
         ! test global mapping
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
 
@@ -175,7 +175,7 @@ real(mk)                         :: t0,t1,t2,t3
     test partial
         ! test partial mapping
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
 
@@ -244,7 +244,7 @@ real(mk)                         :: t0,t1,t2,t3
     test ghost_get
         ! test ghost get and how it treats pbc
         ! Ticket #32
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg
@@ -295,7 +295,7 @@ real(mk)                         :: t0,t1,t2,t3
     test pbc_and_map_load
         ! test ghost get map load and periodic BC
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg
@@ -472,7 +472,7 @@ real(mk)                         :: t0,t1,t2,t3
 
     test getsymbc
         ! tests symmetric boundary conditions and ghost get
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg
@@ -522,7 +522,7 @@ real(mk)                         :: t0,t1,t2,t3
     
     test get_mixed_bc
         ! tests symmetric and periodic BC conditions and ghost get
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg
@@ -585,7 +585,7 @@ real(mk)                         :: t0,t1,t2,t3
     test symbc_and_map_load
         ! test ghost get map load and sym BC
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg
@@ -687,7 +687,7 @@ real(mk)                         :: t0,t1,t2,t3
     test symbc_and_map_load2
         ! another test ghost get map load and sym BC
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_util_dbg

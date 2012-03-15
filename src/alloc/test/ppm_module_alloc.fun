@@ -19,7 +19,6 @@ integer                         :: info
 
     init
 
-        use ppm_module_typedef
         use ppm_module_init
         
         tol = epsilon(1.0_mk)

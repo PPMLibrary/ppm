@@ -46,7 +46,7 @@ logical                          :: lsymm = .false.,ok
 
     init
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_init
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
@@ -118,70 +118,70 @@ logical                          :: lsymm = .false.,ok
 
 
 !============ Test cases ======================
-    test mesh_define
-        ! a simplistic test for checking if mesh_define is working
-
-        use ppm_module_typedef
-        use ppm_module_mktopo
-        use ppm_module_map_field
-        use ppm_module_map_field_global
-        use ppm_module_mesh_define
-        use ppm_module_topo_get
-        use ppm_module_topo_check
-
-
-        allocate(nm(ndim),stat=info)
-        do i=1,ndim
-            nm(i) = 32*nproc
-        enddo
-
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
-        !decomp = ppm_param_decomp_xpencil
-        assig  = ppm_param_assign_internal
-
-        topoid = 0
-        meshid = -1
-
-        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
-        &               bcdef,ghostsize,cost,nm,info)
-
-        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
-                        isublist,nsublist,info)
-        
-        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-        &        stat=info) ! 2d
-        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-        &        stat=info) ! 2d
-        
+!    test mesh_define
+!        ! a simplistic test for checking if mesh_define is working
+!
+!        use ppm_module_topo_typedef
+!        use ppm_module_mktopo
+!        use ppm_module_map_field
+!        use ppm_module_map_field_global
+!        use ppm_module_mesh_define
+!        use ppm_module_topo_get
+!        use ppm_module_topo_check
+!
+!
+!        allocate(nm(ndim),stat=info)
+!        do i=1,ndim
+!            nm(i) = 32*nproc
+!        enddo
+!
+!        !----------------
+!        ! make topology
+!        !----------------
+!        decomp = ppm_param_decomp_cuboid
+!        !decomp = ppm_param_decomp_xpencil
+!        assig  = ppm_param_assign_internal
+!
+!        topoid = 0
+!        meshid = -1
+!
+!        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
+!        &               bcdef,ghostsize,cost,nm,info)
+!
+!        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
+!                        isublist,nsublist,info)
+!        
 !        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
-!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!        &       stat=info) ! 3d
+!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+!        &        stat=info) ! 2d
 !        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
-!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!        &       stat=info) ! 3d
-        
-        do i=1,ndim
-            h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
-        enddo
-       
-        meshid_ref = -1
-        nm_ref = nm
-        call ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
-        call ppm_map_field_global(topoid,topoid,meshid,meshid_ref,info)
-        call ppm_map_field_push(topoid,meshid,field,info)
-        call ppm_map_field_send(info)
-        call ppm_map_field_pop(topoid,meshid_ref,field_ref,ghostsize,info)
-
-
-        assert_equal(info,0)
-    end test
+!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
+!        &        stat=info) ! 2d
+!        
+!!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+!!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+!!        &       stat=info) ! 3d
+!!        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
+!!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
+!!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
+!!        &       stat=info) ! 3d
+!        
+!        do i=1,ndim
+!            h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
+!        enddo
+!       
+!        meshid_ref = -1
+!        nm_ref = nm
+!        call ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
+!        call ppm_map_field_global(topoid,topoid,meshid,meshid_ref,info)
+!        call ppm_map_field_push(topoid,meshid,field,info)
+!        call ppm_map_field_send(info)
+!        call ppm_map_field_pop(topoid,meshid_ref,field_ref,ghostsize,info)
+!
+!
+!        assert_equal(info,0)
+!    end test
 
 
 end test_suite

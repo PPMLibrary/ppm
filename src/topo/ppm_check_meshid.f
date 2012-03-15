@@ -63,7 +63,7 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)          :: t0
       LOGICAL                        :: topo_ok
-      TYPE(ppm_t_topo), POINTER      :: topo => NULL()
+      !TYPE(ppm_t_topo), POINTER      :: topo => NULL()
 
       !-------------------------------------------------------------------------
       !  Initialise
@@ -71,27 +71,29 @@
       CALL substart('ppm_check_meshid',t0,info)
       valid = .TRUE.
 
-      !-------------------------------------------------------------------------
-      !  Check arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF
+      CALL ppm_write(ppm_rank,'ppm_check_meshid','NEED TO UPDATE THIS CHECKING ROUTINE',info)
 
-      !-------------------------------------------------------------------------
-      !  Validity check
-      !-------------------------------------------------------------------------
-      CALL ppm_check_topoid(topoid,topo_ok,info)
-      IF (.NOT. topo_ok) THEN
-        valid = .FALSE.
-        GOTO 9999
-      ENDIF
-      topo => ppm_topo(topoid)%t
+      !!-------------------------------------------------------------------------
+      !!  Check arguments
+      !!-------------------------------------------------------------------------
+      !IF (ppm_debug .GT. 0) THEN
+        !CALL check
+        !IF (info .NE. 0) GOTO 9999
+      !ENDIF
 
-      IF ((meshid .LT. 1).OR.(meshid .GT. topo%max_meshid)) THEN
-          valid = .FALSE.
-      ENDIF
+      !!-------------------------------------------------------------------------
+      !!  Validity check
+      !!-------------------------------------------------------------------------
+      !CALL ppm_check_topoid(topoid,topo_ok,info)
+      !IF (.NOT. topo_ok) THEN
+        !valid = .FALSE.
+        !GOTO 9999
+      !ENDIF
+      !topo => ppm_topo(topoid)%t
+
+      !IF ((meshid .LT. 1).OR.(meshid .GT. topo%max_meshid)) THEN
+          !valid = .FALSE.
+      !ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
@@ -99,23 +101,23 @@
  9999 CONTINUE
       CALL substop('ppm_check_meshid',t0,info)
       RETURN
-      CONTAINS
-      SUBROUTINE check
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_check_meshid',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              valid = .FALSE.
-              GOTO 8888
-          ENDIF
-          CALL ppm_check_topoid(topoid,topo_ok,info)
-          IF (.NOT. topo_ok) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_check_meshid',  &
-     &            'Topoid out of range!',__LINE__,info)
-              valid = .FALSE.
-              GOTO 8888
-          ENDIF
- 8888     CONTINUE
-      END SUBROUTINE check
+      !CONTAINS
+      !SUBROUTINE check
+          !IF (.NOT. ppm_initialized) THEN
+              !info = ppm_error_error
+              !CALL ppm_error(ppm_err_ppm_noinit,'ppm_check_meshid',  &
+     !&            'Please call ppm_init first!',__LINE__,info)
+              !valid = .FALSE.
+              !GOTO 8888
+          !ENDIF
+          !CALL ppm_check_topoid(topoid,topo_ok,info)
+          !IF (.NOT. topo_ok) THEN
+              !info = ppm_error_error
+              !CALL ppm_error(ppm_err_argument,'ppm_check_meshid',  &
+     !&            'Topoid out of range!',__LINE__,info)
+              !valid = .FALSE.
+              !GOTO 8888
+          !ENDIF
+ !8888     CONTINUE
+      !END SUBROUTINE check
       END SUBROUTINE ppm_check_meshid

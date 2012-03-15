@@ -53,6 +53,6 @@
  
 #include "topo/ppm_check_topoid.f"
 
-!#include "topo/ppm_check_meshid.f"
+#include "topo/ppm_check_meshid.f"
 
       END MODULE ppm_module_check_id

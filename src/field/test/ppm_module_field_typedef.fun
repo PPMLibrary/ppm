@@ -1,6 +1,5 @@
 test_suite ppm_module_field_typedef
 
-
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
 

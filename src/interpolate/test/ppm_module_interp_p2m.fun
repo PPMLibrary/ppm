@@ -129,7 +129,7 @@ test_suite ppm_module_interp_p2m
 
 !------------------------------------------------------------------------------
     test p2m_mp4_2d
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_data
         use ppm_module_mktopo
         use ppm_module_topo_get
@@ -259,7 +259,7 @@ test_suite ppm_module_interp_p2m
 
 !------------------------------------------------------------------------------
     test p2m_mp4_3d
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_data
         use ppm_module_mktopo
         use ppm_module_topo_get

@@ -702,13 +702,13 @@
      &                 'topo_id is invalid!',__LINE__,info)
            GOTO 8888
         ENDIF
-        CALL ppm_check_meshid(topoid,meshid,lok,info)
-        IF (.NOT.lok) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                 'mesh_id is invalid!',__LINE__,info)
-           GOTO 8888
-        ENDIF
+        !CALL ppm_check_meshid(topoid,meshid,lok,info)
+        !IF (.NOT.lok) THEN
+           !info = ppm_error_error
+           !CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
+     !&                 'mesh_id is invalid!',__LINE__,info)
+           !GOTO 8888
+        !ENDIF
  8888   CONTINUE
       END SUBROUTINE check
 #if   __DIME == __2D

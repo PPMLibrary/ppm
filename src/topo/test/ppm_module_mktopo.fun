@@ -40,7 +40,7 @@ real(mk)                         :: t0,t1,t2,t3
 
     init
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_init
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
@@ -105,7 +105,7 @@ real(mk)                         :: t0,t1,t2,t3
     test cuboid
         ! test cuboid decomposition
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
 
         !----------------

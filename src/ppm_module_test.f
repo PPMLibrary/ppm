@@ -36,9 +36,6 @@
       MODULE ppm_module_test
       !!! This module provides useful routines for ppm unit test cases
 
-         INTEGER, PARAMETER :: ppm_param_part_init_cartesian = 1
-         INTEGER, PARAMETER :: ppm_param_part_init_random    = 2
-
          !----------------------------------------------------------------------
          !  Define interfaces to part_init
          !----------------------------------------------------------------------
