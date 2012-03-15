@@ -499,9 +499,9 @@
                      xt_offset(1,nghost) = 0.0_MK
                      xt_offset(2,nghost) = 0.0_MK
                      xt_offset(3,nghost) = 0.0_MK
-                     xt_off_fac(1,nghost) = 0.0_MK
-                     xt_off_fac(2,nghost) = 0.0_MK
-                     xt_off_fac(3,nghost) = 0.0_MK
+                     xt_off_fac(1,nghost) = 1.0_MK
+                     xt_off_fac(2,nghost) = 1.0_MK
+                     xt_off_fac(3,nghost) = 1.0_MK
                   ENDIF
                ELSE    
                   !-------------------------------------------------------------
@@ -859,6 +859,7 @@
                ENDIF
                CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
                CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+               CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
             ELSE
                IF (ASSOCIATED(ppm_sendbuffers)) THEN
                   ldu(1) = ppm_sendbufsize + &
@@ -868,6 +869,7 @@
                ENDIF 
                CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
                CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+               CALL ppm_alloc(ppm_ghost_offset_facs,ldu,iopt,info)
             ENDIF
             ppm_sendbufsize = ldu(1) 
             IF (info .NE. 0) THEN
@@ -1235,12 +1237,14 @@
                      IF ((ibuffer + nghostplus*ppm_dim).GT.ppm_sendbufsize) THEN
                         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
                         CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
                         ppm_sendbufsize = ldu(1)
                      ENDIF
                   ELSE
                      IF ((ibuffer + nghostplus*ppm_dim).GT.ppm_sendbufsize) THEN
                         CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
                         CALL ppm_alloc(ppm_ghost_offsets,ldu,iopt,info)
+                        CALL ppm_alloc(ppm_ghost_offset_facs,ldu,iopt,info)
                         ppm_sendbufsize = ldu(1)
                      ENDIF
                   ENDIF
