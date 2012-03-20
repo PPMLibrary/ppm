@@ -3,9 +3,6 @@ test_suite ppm_module_field_typedef
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
 
-
-
-
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -24,7 +21,7 @@ use ppm_module_topo_typedef
     integer                         :: tolexp
     real(mk)                        :: tol
     integer                         :: info
-    integer                         :: topoid,meshid
+    integer                         :: topoid=-1
     real(mk),dimension(:,:),pointer :: xp => NULL()
     real(mk),dimension(:,:),pointer :: wp => NULL()
     real(mk),dimension(:  ),pointer :: min_phys => NULL()
@@ -46,10 +43,13 @@ use ppm_module_topo_typedef
 !-------------------------- init testsuit -------------------------------------
     init
         use ppm_module_data
+        use ppm_module_init
 
         tol = 100.0_mk*epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
-
+        ndim = 2
+        nspec = 1
+        allocate(bcdef(2*ndim))
         allocate(min_phys(ndim),max_phys(ndim),ghostsize(ndim),&
         &        ighostsize(ndim),nm(ndim),h(ndim),stat=info)
 
@@ -61,6 +61,8 @@ use ppm_module_topo_typedef
         nproc = 1
         rank = 0
 #endif
+
+        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
     end init
 !------------------------------------------------------------------------------
@@ -92,9 +94,6 @@ use ppm_module_topo_typedef
         enddo
         call random_seed(put=seed)
 
-        ndim = 2
-        nspec = 1
-        allocate(bcdef(2*ndim))
         bcdef(1:2*ndim) = ppm_param_bcdef_freespace
         kernel = ppm_param_rmsh_kernel_mp4
         do i=1,ndim
@@ -115,9 +114,10 @@ use ppm_module_topo_typedef
 
         call ppm_finalize(info)
         
-        deallocate(xp,wp,stat=info)
-        deallocate(seed,cost)
-        deallocate(bcdef,ghostsize,ighostsize)
+        if (associated(xp)) deallocate(xp)
+        if (associated(wp)) deallocate(wp)
+        if (associated(cost)) deallocate(cost)
+        if (allocated(seed)) deallocate(seed)
 
     end teardown
 !------------------------------------------------------------------------------
@@ -127,36 +127,30 @@ use ppm_module_topo_typedef
     test create_field
         use ppm_module_data
         use ppm_module_mktopo
-        use ppm_module_topo_get
-        use ppm_module_interp_p2m
-        use ppm_module_init
         use ppm_module_finalize
-        use ppm_module_map
         use ppm_module_interfaces
 
         implicit none
         integer, dimension(2)            :: maxndata
         integer, dimension(:  ), pointer :: isublist => NULL()
         integer                          :: nsublist
-        integer                          :: ipatch
+        integer                          :: ipatch,isub
 
         integer                          :: mypatchid
-        real(mk),dimension(2*ndim)        :: my_patch
+        real(mk),dimension(2*ndim)       :: my_patch
         real(mk),dimension(ndim)         :: offset
         real(mk),dimension(ndim)         :: u_maxsub
         real(mk)                         :: sca_ghostsize
 
-        type(ppm_t_field)                :: Vort
-        type(ppm_t_field)                :: Veloc
-        type(ppm_t_equi_mesh)            :: Mesh1
+        type(ppm_t_field)                :: Vort,Veloc
+        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
     !type(ppm_t_subpatch),POINTER     :: p => NULL()
-        class(ppm_t_subpatch_),POINTER     :: p => NULL()
+        class(ppm_t_subpatch_),POINTER   :: p => NULL()
+        type(ppm_t_topo),      POINTER   :: topo => NULL()
 
         real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-        real(mk),dimension(:,:,:),pointer  :: field3d_1,field3d_2
+        real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
 
-        call ppm_init(ndim,mk,tolexp,0,debug,info,99)
-    
         !----------------
         ! make topology
         !----------------
@@ -180,20 +174,39 @@ use ppm_module_topo_typedef
         !Create Mesh
         !--------------------------
         offset = 0._mk
-        call Mesh1%create(topoid,Nm,offset,info)
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
-        
+
         mypatchid = 1
-        my_patch = (/0.5,5.1,3.1,10.0/)
+        my_patch = (/0.5,0.1,5.1,10.0/)
+
+
+        topo => ppm_topo(Mesh1%topoid)%t
+        do isub = 1,topo%nsublist
+            write(*,*) 'On sub ',isub
+            write(*,*) '   ',topo%min_subd(1:ndim,isub)
+            write(*,*) '   ',topo%max_subd(1:ndim,isub)
+        enddo   
+
+        write(*,*) CEILING(MAX(my_patch(1:ndim), &
+            topo%min_subd(1:ndim,1)-Mesh1%Offset(1:ndim)/Mesh1%h(1:ndim)))
 
         call Mesh1%add_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
+
+
+        Assert_True(allocated(Mesh1%subpatch))
+
+        p => Mesh1%subpatch%begin()
+
 
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
         !--------------------------
         call Vort%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
+        write(*,*) 'ok till here'
+
         call Veloc%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
 
@@ -236,6 +249,8 @@ use ppm_module_topo_typedef
         !--------------------
         !Mesh1%remove_patch(patch_ID = 2)
 
+
+        
  
     end test
 !------------------------------------------------------------------------------

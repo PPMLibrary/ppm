@@ -1,6 +1,8 @@
 test_suite ppm_module_mesh
 
-
+use ppm_module_mesh_typedef
+use ppm_module_topo_typedef
+use ppm_module_mktopo
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -8,39 +10,34 @@ test_suite ppm_module_mesh
 
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
-real(mk),parameter              :: pi = 3.1415926535897931_mk
+real(mk),parameter              :: pi = ACOS(-1._mk)
 integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol
 integer                         :: info,comm,rank,nproc
-integer                         :: topoid
-integer                         :: meshid,meshid_ref
+real(mk)                        :: tol
+integer                         :: topoid=-1
 real(mk),dimension(:  ),pointer :: min_phys => NULL()
 real(mk),dimension(:  ),pointer :: max_phys => NULL()
-real(mk),dimension(:  ),pointer :: h => NULL()
-integer                         :: np
-real(mk),dimension(:,:),pointer :: xp => NULL()
-real(mk),dimension(:  ),pointer :: len_phys => NULL()
-integer, dimension(:  ),pointer :: ghostsize => NULL()
+
+integer, dimension(:  ),pointer :: ighostsize => NULL()
+real(mk)                        :: sca_ghostsize
+
 integer                         :: i,j
 integer                         :: nsublist
 integer, dimension(:  ),pointer :: isublist => NULL()
-integer, dimension(2*ndim)           :: bcdef
+integer, dimension(2*ndim)      :: bcdef
 real(mk),dimension(:  ),pointer :: cost => NULL()
-real(mk),dimension(:,:,:),pointer :: field => NULL()
-real(mk),dimension(:,:,:),pointer :: field_ref => NULL()
 integer, dimension(:  ),pointer :: nm => NULL()
-integer, dimension(:  ),pointer :: nm_ref => NULL()
-integer ,dimension(:,:),pointer :: istart => NULL()
-integer ,dimension(:,:),pointer :: ndata => NULL()
-integer ,dimension(:,:),pointer :: istart_ref => NULL()
-integer ,dimension(:,:),pointer :: ndata_ref => NULL()
-integer, dimension(ndim)        :: maxndata
-integer                         :: seedsize
-integer,  dimension(:),allocatable :: seed
-real(mk), dimension(:),allocatable :: randnb
-integer                          :: isymm = 0
-logical                          :: lsymm = .false.,ok
+real(mk),dimension(:  ),pointer :: h => NULL()
+type(ppm_t_topo),       pointer :: topo => NULL()
+
+type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+integer                          :: ipatch,isub
+class(ppm_t_subpatch_),POINTER   :: p => NULL()
+
+integer                          :: mypatchid
+real(mk),dimension(2*ndim)       :: my_patch
+real(mk),dimension(ndim)         :: offset
 
 !---------------- init -----------------------
 
@@ -49,19 +46,14 @@ logical                          :: lsymm = .false.,ok
         use ppm_module_topo_typedef
         use ppm_module_init
         
-        allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
-            &         ghostsize(ndim),nm(ndim),nm_ref(ndim),&
-            &         h(ndim),stat=info)
+        allocate(min_phys(ndim),max_phys(ndim),&
+            &         ighostsize(ndim),nm(ndim),h(ndim))
         
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
-        len_phys(1:ndim) = max_phys-min_phys
-        ghostsize(1:ndim) = 2
+        ighostsize(1:ndim) = 2
         bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
-        np = 0 
-        nullify(field,field_ref)
-        nullify(isublist,istart,ndata,istart_ref,ndata_ref)
 
 #ifdef __MPI
         comm = mpi_comm_world
@@ -85,7 +77,7 @@ logical                          :: lsymm = .false.,ok
 
         call ppm_finalize(info)
 
-        deallocate(min_phys,max_phys,len_phys,ghostsize,nm)
+        deallocate(min_phys,max_phys,ighostsize,h,nm)
 
     end finalize
 
@@ -95,27 +87,109 @@ logical                          :: lsymm = .false.,ok
 
     setup
 
-!        call random_seed(size=seedsize)
-!        allocate(seed(seedsize))
-!        allocate(randnb((1+ndim)*np),stat=info)
-!        do i=1,seedsize
-!            seed(i)=10+i*i*(rank+1)
-!        enddo
-!        call random_seed(put=seed)
-!        call random_number(randnb)
-        
-
     end setup
 !----------------------------------------------
         
 
 !--------------- teardown ---------------------
     teardown
-        
-
+        NULLIFY(topo)
     end teardown
 !----------------------------------------------
 
+    test mesh_create_destroy
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+        topoid = 0
+        sca_ghostsize = 0.05_mk 
+        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+            &               bcdef,sca_ghostsize,cost,info)
+        Assert_Equal(info,0)
+
+        Nm = 125
+        offset = 0._mk
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+
+        h = (max_phys-min_phys)/Nm
+        call Mesh1%create(topoid,offset,info,h=h)
+        Assert_Equal(info,0)
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+    end test
+
+    test mesh_add_patches
+        Nm = 129
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+
+        mypatchid = 1
+        my_patch = (/0.5,0.1,5.1,10.0/)
+
+        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        Assert_Equal(info,0)
+        Assert_True(allocated(Mesh1%subpatch))
+
+        ipatch = 0
+        topo => ppm_topo(Mesh1%topoid)%t
+        do i = 1,topo%nsublist
+            isub = topo%isublist(i)
+            if (all(my_patch(1:ndim).LT.topo%max_subd(1:ndim,isub)) .AND. &
+                all(my_patch(ndim+1:2*ppm_dim).GT.topo%min_subd(1:ndim,isub)))&
+                then
+                !count one subpatch
+                ipatch = ipatch + 1
+            endif
+        enddo   
+
+        isub = 0
+        p => Mesh1%subpatch%begin()
+        DO WHILE (ASSOCIATED(p))
+            isub = isub+1
+            p => Mesh1%subpatch%next()
+        ENDDO
+        Assert_Equal(isub,ipatch)
+
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+
+        Assert_False(allocated(Mesh1%subpatch))
+    end test
+
+    test mesh_add_patch_uniform
+        !testing for a single patch that covers the whole domain
+        Nm = 129
+        Nm(ndim) = 65
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+        topo => ppm_topo(Mesh1%topoid)%t
+
+        mypatchid = 1
+        my_patch(1:ndim)        = min_phys(1:ndim)
+        my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
+
+        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        Assert_Equal(info,0)
+
+        Assert_True(allocated(Mesh1%subpatch))
+
+        isub = 0
+        p => Mesh1%subpatch%begin()
+        DO WHILE (ASSOCIATED(p))
+            isub = isub+1
+            write(*,*) 'subp ',isub, p%istart,p%iend
+            p => Mesh1%subpatch%next()
+        ENDDO
+        Assert_Equal(isub,topo%nsublist)
+
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+    end test
 
 !============ Test cases ======================
 !    test mesh_define

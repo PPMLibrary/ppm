@@ -1,4 +1,4 @@
-!--*- f90 -*--------------------------------------------------------------
+!--*- f90 -*------enable_fortran_macros-----------------------------------
 !  Module   :                   ppm_module_field_typedef
 !-------------------------------------------------------------------------
 ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -80,6 +80,11 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: discretize_on => field_discretize_on
 END TYPE ppm_t_field
 
+#define CONTAINER ppm_c_fields
+#define __CONTAINER(a) ppm_c_fields_/**/a
+#define VEC_TYPE ppm_t_field
+#include "cont/collection_template.inc"
+
 !----------------------------------------------------------------------
 !  Type-bound procedures
 !----------------------------------------------------------------------
@@ -88,6 +93,11 @@ CONTAINS
 #define CONTAINER ppm_c_mesh_data
 #define __CONTAINER(a) ppm_c_mesh_data_/**/a
 #define VEC_TYPE ppm_t_mesh_data
+#include "cont/collection_typeproc.f"
+
+#define CONTAINER ppm_c_fields
+#define __CONTAINER(a) ppm_c_fields_/**/a
+#define VEC_TYPE ppm_t_field
 #include "cont/collection_typeproc.f"
 
 #include "field/field_typeproc.f"

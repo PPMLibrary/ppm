@@ -39,11 +39,12 @@ FUNCTION __CONTAINER(exists)(this,id,caller) RESULT(exists)
     CHARACTER(LEN = *),OPTIONAL                    :: caller
 END FUNCTION
 !PUSH
-SUBROUTINE __CONTAINER(push)(this,element,info)
+SUBROUTINE __CONTAINER(push)(this,element,info,id)
     IMPORT CONTAINER,VEC_TYPE
     CLASS(CONTAINER)                   :: this
     CLASS(VEC_TYPE),POINTER            :: element
     INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(OUT) :: id
 END SUBROUTINE
 !REMOVE
 SUBROUTINE __CONTAINER(remove)(this,id,info)

@@ -184,9 +184,16 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     ! the mesh and the field.
     flags = .FALSE.
 
+    ALLOCATE(ppm_t_mesh_data::mdat,STAT=info)
+    or_fail_alloc("could not allocate new mesh_data pointer")
+
     CALL mdat%create(mesh%ID,this%lda,p_idx,flags,info)
     or_fail("could not create new mesh_data object")
 
+    IF (.NOT. ALLOCATED(this%M)) THEN
+        ALLOCATE(ppm_c_mesh_data::this%M,STAT=info)
+        or_fail_alloc("could not allocate mesh_data collection")
+    ENDIF
     IF (.NOT.this%M%exists(mesh%ID)) THEN
         CALL this%M%push(mdat,info)
         or_fail("could not add new mesh_data to M collection")

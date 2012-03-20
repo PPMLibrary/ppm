@@ -214,10 +214,22 @@ SUBROUTINE subpatch_create(p,meshid,istart,iend,info)
 
     CALL substart(caller,t0,info)
 
+    IF (.NOT.ASSOCIATED(p%istart)) THEN
+        ALLOCATE(p%istart(ppm_dim),STAT=info)
+        or_fail_alloc("could not allocate p%istart")
+    ENDIF
+    IF (.NOT.ASSOCIATED(p%iend)) THEN
+        ALLOCATE(p%iend(ppm_dim),STAT=info)
+        or_fail_alloc("could not allocate p%iend")
+    ENDIF
+
     p%meshID=meshid
     p%istart = istart
-    p%iend = iend
-    ALLOCATE(ppm_c_subpatch_data::p%subpatch_data)
+    p%iend   = iend
+    IF (.NOT.ALLOCATED(p%subpatch_data)) THEN
+        ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
+        or_fail_alloc("could not allocate p%subpatch_data")
+    ENDIF
 
     CALL substop(caller,t0,info)
     9999  CONTINUE
@@ -240,14 +252,66 @@ SUBROUTINE subpatch_destroy(p,info)
     or_fail_dealloc("p%istart")
     CALL ppm_alloc(p%iend,ldc,iopt,info)
     or_fail_dealloc("p%iend")
-    CALL p%subpatch_data%destroy(info)
-    or_fail_dealloc("p%subpatch_data")
+    IF (ALLOCATED(p%subpatch_data)) THEN
+        CALL p%subpatch_data%destroy(info)
+        or_fail_dealloc("p%subpatch_data")
+    ENDIF
 
     p%meshID=0
 
     CALL substop(caller,t0,info)
     9999  CONTINUE
 END SUBROUTINE subpatch_destroy
+
+!CREATE
+SUBROUTINE subpatch_A_create(this,vecsize,info)
+    !!! Destructor for subdomain data data structure
+    CLASS(ppm_t_A_subpatch)            :: this
+    INTEGER                            :: vecsize
+    INTEGER,               INTENT(OUT) :: info
+
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_A_create'
+
+    CALL substart(caller,t0,info)
+
+    IF (ASSOCIATED(this%subpatch)) THEN
+        CALL this%destroy(info)
+        or_fail_dealloc("could not destroy this ppm_t_A_subpatch object")
+    ENDIF
+    IF (.NOT.ASSOCIATED(this%subpatch)) THEN
+        ALLOCATE(this%subpatch(vecsize),STAT=info)
+        or_fail_alloc("could not allocate this%subpatch")
+    ENDIF
+
+    this%nsubpatch = 0
+
+    CALL substop(caller,t0,info)
+    9999  CONTINUE
+END SUBROUTINE subpatch_A_create
+
+!DESTROY
+SUBROUTINE subpatch_A_destroy(this,info)
+    !!! Destructor for subdomain data data structure
+    CLASS(ppm_t_A_subpatch)            :: this
+    INTEGER,               INTENT(OUT) :: info
+
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_A_destroy'
+
+    CALL substart(caller,t0,info)
+
+    this%nsubpatch = 0
+    IF (ASSOCIATED(this%subpatch)) THEN
+        DEALLOCATE(this%subpatch,STAT=info)
+        or_fail_dealloc("could not deallocate this%subpatch")
+    ENDIF
+    NULLIFY(this%subpatch)
+
+    CALL substop(caller,t0,info)
+    9999  CONTINUE
+END SUBROUTINE subpatch_A_destroy
+
 
 SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
     !!! Add a patch to a mesh
@@ -268,8 +332,9 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
     REAL(KIND(1.D0))                   :: t0
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
     CHARACTER(LEN=ppm_char)   :: caller = 'mesh_add_patch'
-    INTEGER                   :: i,meshid,isub
-    CLASS(ppm_t_subpatch_),POINTER :: p => NULL()
+    INTEGER                   :: i,meshid,isub,nsubpatch,id
+    CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
+    CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
     INTEGER,              DIMENSION(ppm_dim) :: istart,iend
     REAL(ppm_kind_double),DIMENSION(ppm_dim) :: h,Offset
     !-------------------------------------------------------------------------
@@ -286,12 +351,25 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
     h = this%h
     Offset = this%Offset
     meshid = this%ID
+    topo => ppm_topo(this%topoid)%t
+    !-------------------------------------------------------------------------
+    !  Allocate bookkeeping arrays (pointers between patches and subpatches)
+    !-------------------------------------------------------------------------
+
+    nsubpatch = 0
+    ALLOCATE(ppm_t_A_subpatch::A_p,STAT=info)
+    or_fail_alloc("could not allocate ppm_t_A_subpatch pointer")
+
+    SELECT TYPE(t => A_p)
+    TYPE IS (ppm_t_A_subpatch)
+        CALL t%create(topo%nsublist,info)
+        or_fail("could not initialize ppm_t_A_subpatch pointer")
+    END SELECT
 
     !-------------------------------------------------------------------------
     !  intersect each subdomain with the patch and store the corresponding
     !  subpatch in the mesh data structure
     !-------------------------------------------------------------------------
-    topo => ppm_topo(this%topoid)%t
     ! loop through all subdomains on this processor
     DO i = 1,topo%nsublist
         isub = topo%isublist(i)
@@ -301,28 +379,40 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
                THEN 
 
             ! finds the mesh nodes which are contained in the overlap region
-            istart(1:ppm_dim) = CEILING((MAX(patch(1:ppm_dim),&
+            istart(1:ppm_dim) = 1 + CEILING((MAX(patch(1:ppm_dim),&
                 topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
-            iend(1:ppm_dim)= FLOOR((MIN(patch(ppm_dim+1:2*ppm_dim),&
-                topo%max_subd(ppm_dim+1:2*ppm_dim,isub))-Offset(1:ppm_dim))&
-                /h(1:ppm_dim))
+            iend(1:ppm_dim)= 1 + FLOOR((MIN(patch(ppm_dim+1:2*ppm_dim),&
+                topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
 
             ! create a new subpatch object
-            CALL p%create(meshid,istart,iend,info)
-            or_fail("could not create new subpatch")
+            ALLOCATE(ppm_t_subpatch::p,STAT=info)
+            or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+
+            SELECT TYPE(pp => p)
+            TYPE IS (ppm_t_subpatch)
+                CALL pp%create(meshid,istart,iend,info)
+                or_fail("could not create new subpatch")
+            END SELECT
+
+            nsubpatch = nsubpatch+1
+            A_p%subpatch(nsubpatch)%t => p
+
 
             ! add it to the list of subpatches on this mesh
             CALL this%subpatch%push(p,info)
             or_fail("could not add new subpatch to mesh")
+            p => NULL()
 
         ENDIF
     ENDDO
+    CALL this%patch%push(A_p,info,id)
+    this%patch%vec(id)%nsubpatch = nsubpatch
 
     9999 CONTINUE
     CALL substop(caller,t0,info)
 END SUBROUTINE equi_mesh_add_patch
 
-SUBROUTINE equi_mesh_create(this,topoid,Nm,Offset,info)
+SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     !!! Creator for the cartesian mesh object
     !-------------------------------------------------------------------------
     !  Modules
@@ -341,12 +431,17 @@ SUBROUTINE equi_mesh_create(this,topoid,Nm,Offset,info)
     !!! cartesian mesh object
     INTEGER                 , INTENT(IN   ) :: topoid
     !!! Topology ID for which mesh has been created 
-    INTEGER , DIMENSION(:),   INTENT(IN   ) :: Nm
-    !!! Global number of mesh points in the whole comput. domain
     REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: Offset
     !!! Offset in each dimension
     INTEGER                 , INTENT(  OUT) :: info
     !!! Returns status, 0 upon success
+    INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: Nm
+    !!! Global number of mesh points in the whole comput. domain
+    !!! Makes sense only if the computational domain is bounded.
+    !!! Note: Exactly one of Nm and h should be specified
+    REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN   ) :: h
+    !!! Mesh spacing
+    !!! Note: Exactly one of Nm and h should be specified
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -388,20 +483,6 @@ SUBROUTINE equi_mesh_create(this,topoid,Nm,Offset,info)
 
     !check_equal(SIZE(Nm,1),ppm_dim,"invalid size for Nm")
 
-    IF (SIZE(Nm,1) .NE. ppm_dim) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_alloc,caller,  &
-            &       'invalid size for Nm. Should be ppm_dim',__LINE__,info)
-        GOTO 9999
-    ENDIF
-
-    IF (SIZE(Offset,1) .NE. ppm_dim) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_alloc,caller,  &
-            &       'invalid size for Offset. Should be ppm_dim',__LINE__,info)
-        GOTO 9999
-    ENDIF
-
     !-------------------------------------------------------------------------
     !  (Re)allocate memory for the internal mesh list and Arrays at meshid
     !-------------------------------------------------------------------------
@@ -417,12 +498,39 @@ SUBROUTINE equi_mesh_create(this,topoid,Nm,Offset,info)
     CALL ppm_alloc(this%h,ldc,iopt,info)
     or_fail_alloc('h')
 
+    IF (.NOT.ALLOCATED(this%subpatch)) THEN
+        ALLOCATE(ppm_c_subpatch::this%subpatch,STAT=info)
+        or_fail_alloc("could not allocate this%subpatch")
+    ENDIF
+
+    IF (.NOT.ALLOCATED(this%patch)) THEN
+        ALLOCATE(ppm_c_A_subpatch::this%patch,STAT=info)
+        or_fail_alloc("could not allocate this%patch")
+    ENDIF
+
+    IF (.NOT.ALLOCATED(this%sub)) THEN
+        ALLOCATE(ppm_c_A_subpatch::this%sub,STAT=info)
+        or_fail_alloc("could not allocate this%sub")
+    ENDIF
+
     !-------------------------------------------------------------------------
     !  Store the mesh information
     !-------------------------------------------------------------------------
-
-    this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
     this%Offset(1:ppm_dim) = Offset(1:ppm_dim)
+
+    IF (PRESENT(h)) THEN
+        this%h(1:ppm_dim) = h(1:ppm_dim)
+    ELSE
+        this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
+        IF (ASSOCIATED(topo%max_physs)) THEN
+            this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) - &
+                topo%min_physs(1:ppm_dim))/(Nm(1:ppm_dim)-1)
+        ELSE
+            this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) - &
+                topo%min_physd(1:ppm_dim))/(Nm(1:ppm_dim)-1)
+        ENDIF
+    ENDIF
+    
 
 
     !-------------------------------------------------------------------------
@@ -435,25 +543,38 @@ SUBROUTINE equi_mesh_create(this,topoid,Nm,Offset,info)
     SUBROUTINE check
         CALL ppm_check_topoid(topoid,valid,info)
         IF (.NOT. valid) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,  &
-                &            'topoid not valid',__LINE__,info)
-            GOTO 8888
+            fail("topoid not valid",ppm_err_argument,info,8888)
         ENDIF
         IF (ppm_topo(topoid)%t%nsubs .LE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,  &
-                &            'nsubs must be >0',__LINE__,info)
-            GOTO 8888
+            fail("nsubs mush be >0",ppm_err_argument,info,8888)
         ENDIF
-        DO i=1,ppm_dim
-            IF (Nm(i) .LT. 2) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,  &
-                    &                'Nm must be >1 in all space dimensions',__LINE__,info)
-                GOTO 8888
+        IF (SIZE(Offset,1) .NE. ppm_dim) THEN
+            fail("invalid size for Offset. Should be ppm_dim",ppm_err_argument,info,8888)
+        ENDIF
+
+        IF (PRESENT(Nm)) THEN
+            IF (PRESENT(h)) THEN
+                fail("cannot specify both Nm and h. Choose only one.",ppm_err_argument,info,8888)
             ENDIF
-        ENDDO
+            !TODO: check that the domain is finite
+            IF (SIZE(Nm,1) .NE. ppm_dim) THEN
+                fail("invalid size for Nm. Should be ppm_dim",ppm_err_argument,info,8888)
+            ENDIF
+            DO i=1,ppm_dim
+                IF (Nm(i) .LT. 2) THEN
+                    fail("Nm must be >1 in all space dimensions",ppm_err_argument,info,8888)
+                ENDIF
+            ENDDO
+
+        ENDIF
+        IF (PRESENT(h)) THEN
+            IF (SIZE(h,1) .NE. ppm_dim) THEN
+                fail("invalid size for h. Should be ppm_dim",ppm_err_argument,info,8888)
+            ENDIF
+            IF (ANY (h .LE. ppm_myepsd)) THEN
+                fail("h must be >0 in all space dimensions",ppm_err_argument,info,8888)
+            ENDIF
+        ENDIF
         8888     CONTINUE
     END SUBROUTINE check
 END SUBROUTINE equi_mesh_create
@@ -508,7 +629,11 @@ SUBROUTINE equi_mesh_destroy(this,info)
     or_fail_dealloc('h')
 
     CALL this%subpatch%destroy(info)
+    or_fail_dealloc('subpatch object')
+
+    DEALLOCATE(this%subpatch,STAT=info)
     or_fail_dealloc('subpatch')
+
 
     !TODO !!!!!
 !    CALL this%patch%destroy(info)

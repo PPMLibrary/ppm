@@ -1,4 +1,4 @@
-!--*- f90 -*--------------------------------------------------------------
+!--*- f90 -*-----enable_fortran_macros------------------------------------
 !  Module   :                   ppm_module_mesh_typedef
 !-------------------------------------------------------------------------
 ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -101,6 +101,15 @@ END TYPE
 #include "cont/collection_template.inc"
 
 
+TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
+    CONTAINS
+    PROCEDURE :: create  => subpatch_A_create
+    PROCEDURE :: destroy => subpatch_A_destroy
+END TYPE
+#define CONTAINER ppm_c_A_subpatch
+#define __CONTAINER(a) ppm_c_A_subpatch_/**/a
+#define VEC_TYPE ppm_t_A_subpatch
+#include "cont/collection_template.inc"
 
 TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
@@ -140,6 +149,11 @@ CONTAINS
 #define CONTAINER ppm_c_subpatch
 #define __CONTAINER(a) ppm_c_subpatch_/**/a
 #define VEC_TYPE ppm_t_subpatch
+#include "cont/collection_typeproc.f"
+
+#define CONTAINER ppm_c_A_subpatch
+#define __CONTAINER(a) ppm_c_A_subpatch_/**/a
+#define VEC_TYPE ppm_t_A_subpatch
 #include "cont/collection_typeproc.f"
 
 

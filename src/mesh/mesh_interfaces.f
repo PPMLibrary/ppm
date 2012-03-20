@@ -52,19 +52,40 @@ SUBROUTINE subpatch_destroy_(p,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
+!CREATE
+SUBROUTINE subpatch_A_create_(this,vecsize,info)
+    !!! Destructor for subdomain data data structure
+    IMPORT ppm_t_A_subpatch_
+    CLASS(ppm_t_A_subpatch_)            :: this
+    INTEGER                            :: vecsize
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE
 
-SUBROUTINE equi_mesh_create_(this,topoid,Nm,Offset,info)
+!DESTROY
+SUBROUTINE subpatch_A_destroy_(this,info)
+    !!! Destructor for subdomain data data structure
+    IMPORT ppm_t_A_subpatch_
+    CLASS(ppm_t_A_subpatch_)            :: this
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE
+
+SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h)
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                  :: this
     !!! cartesian mesh object
     INTEGER                 , INTENT(IN   ) :: topoid
     !!! Topology ID for which mesh has been created 
-    INTEGER , DIMENSION(:),   INTENT(IN   ) :: Nm
-    !!! Global number of mesh points in the whole comput. domain
     REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: Offset
     !!! Offset in each dimension
     INTEGER                 , INTENT(  OUT) :: info
     !!! Returns status, 0 upon success
+    INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: Nm
+    !!! Global number of mesh points in the whole comput. domain
+    !!! Makes sense only if the computational domain is bounded.
+    !!! Note: Exactly one of Nm and h should be specified
+    REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN   ) :: h
+    !!! Mesh spacing
+    !!! Note: Exactly one of Nm and h should be specified
 END SUBROUTINE
 
 SUBROUTINE equi_mesh_destroy_(this,info)

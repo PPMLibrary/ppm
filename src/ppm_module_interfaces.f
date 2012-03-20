@@ -191,6 +191,11 @@ TYPE,ABSTRACT :: ppm_t_field_
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
 END TYPE ppm_t_field_
 
+#define CONTAINER ppm_c_fields_
+#define __CONTAINER(a) ppm_c_fields__/**/a
+#define VEC_TYPE ppm_t_field_
+#include "cont/collection_abstract_template.inc"
+
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
 !!----------------------------------------------------------------------
@@ -234,7 +239,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_data_
     !!! if the data is 4d logical
 
     CONTAINS
-    PROCEDURE(subpatch_data_create_),DEFERRED  :: create
+    PROCEDURE(subpatch_data_create_), DEFERRED :: create
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
 END TYPE
 
@@ -257,7 +262,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! container for the data arrays for each property discretized
     !!! on this mesh
     CONTAINS
-    PROCEDURE(subpatch_create_),DEFERRED   :: create
+    PROCEDURE(subpatch_create_), DEFERRED  :: create
     PROCEDURE(subpatch_destroy_),DEFERRED  :: destroy
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
@@ -276,9 +281,20 @@ TYPE ppm_t_ptr_subpatch
     CLASS(ppm_t_subpatch_), POINTER :: t => NULL()
 END TYPE
 
-TYPE ppm_t_A_subpatch
+TYPE,ABSTRACT :: ppm_t_A_subpatch_
+    INTEGER                                        :: nsubpatch = 0
+    !!! Number of subpatches for this patch
     TYPE(ppm_t_ptr_subpatch),DIMENSION(:), POINTER :: subpatch => NULL()
+    !!! Pointers to each subpatches for this patch
+    CONTAINS
+    PROCEDURE(subpatch_A_create_) ,DEFERRED  :: create
+    PROCEDURE(subpatch_A_destroy_),DEFERRED  :: destroy
 END TYPE
+
+#define CONTAINER ppm_c_A_subpatch_
+#define __CONTAINER(a) ppm_c_A_subpatch__/**/a
+#define VEC_TYPE ppm_t_A_subpatch_
+#include "cont/collection_abstract_template.inc"
 
 TYPE ppm_t_mesh_maplist
     !!! TODO: check what this is used for (imported from Petros code
@@ -336,10 +352,12 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     CLASS(ppm_c_subpatch_),ALLOCATABLE            :: subpatch
     !!! container for subdomains patches 
 
-    TYPE(ppm_t_A_subpatch), DIMENSION(:), POINTER :: patch => NULL()
+    INTEGER                            :: npatch
+    !!! Number of patches (NOT subpatches)
+    CLASS(ppm_c_A_subpatch_),ALLOCATABLE          :: patch
     !!! array of arrays of pointers to the subpatches for each patch
 
-    TYPE(ppm_t_A_subpatch), DIMENSION(:), POINTER :: sub => NULL()
+    CLASS(ppm_c_A_subpatch_),ALLOCATABLE          :: sub
     !!! array of arrays of pointers to the subpatches for each sub.
 
 
@@ -545,6 +563,15 @@ INTERFACE
 #define VEC_TYPE ppm_t_subpatch_
 #include "cont/collection_interfaces.f"
          
+#define CONTAINER ppm_c_A_subpatch_
+#define __CONTAINER(a) ppm_c_A_subpatch__/**/a
+#define VEC_TYPE ppm_t_A_subpatch_
+#include "cont/collection_interfaces.f"
+
+#define CONTAINER ppm_c_fields_
+#define __CONTAINER(a) ppm_c_fields__/**/a
+#define VEC_TYPE ppm_t_field_
+#include "cont/collection_interfaces.f"
 
 END INTERFACE
 
