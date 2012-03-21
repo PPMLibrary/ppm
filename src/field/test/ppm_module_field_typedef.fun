@@ -188,21 +188,25 @@ use ppm_module_topo_typedef
             write(*,*) '   ',topo%max_subd(1:ndim,isub)
         enddo   
 
-        write(*,*) CEILING(MAX(my_patch(1:ndim), &
-            topo%min_subd(1:ndim,1)-Mesh1%Offset(1:ndim)/Mesh1%h(1:ndim)))
-
         call Mesh1%add_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
 
 
         Assert_True(allocated(Mesh1%subpatch))
 
+        i=1
         p => Mesh1%subpatch%begin()
+        do while(associated(p))
+           write(*,*) 'subpatch no ',i,' status = ',allocated(p%subpatch_data)
+           i=i+1
+           p => Mesh1%subpatch%next()
+        enddo
 
 
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
         !--------------------------
+        write(*,*) 'in discretize'
         call Vort%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
         write(*,*) 'ok till here'

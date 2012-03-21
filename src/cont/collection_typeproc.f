@@ -7,13 +7,15 @@ FUNCTION __CONTAINER(begin)(this) RESULT (iterator)
     CLASS(CONTAINER), INTENT(INOUT)   :: this
     CLASS(VEC_TYPE),POINTER   :: iterator
 
-    this%iter_id = this%min_id
-    IF (this%iter_id.GT.0 .AND. this%iter_id.LE.this%vec_size) THEN
-        SELECT TYPE (t => this%vec(this%min_id))
-        TYPE IS (VEC_TYPE)
-            iterator => t
-            RETURN
-        END SELECT
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%min_id
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%min_id))
+            TYPE IS (VEC_TYPE)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
     ENDIF
     iterator => NULL()
 END FUNCTION __CONTAINER(begin)
@@ -22,13 +24,15 @@ FUNCTION __CONTAINER(next)(this) RESULT (iterator)
     CLASS(CONTAINER), INTENT(INOUT)   :: this
     CLASS(VEC_TYPE),POINTER   :: iterator
 
-    IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LT.this%max_id) THEN
+    IF (this%nb.GT.0) THEN
         this%iter_id = this%iter_id + 1
-        SELECT TYPE (t => this%vec(this%iter_id))
-        TYPE IS (VEC_TYPE)
-            iterator => t
-            RETURN
-        END SELECT
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%iter_id))
+            TYPE IS (VEC_TYPE)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
     ENDIF
     iterator => NULL()
 END FUNCTION __CONTAINER(next)
@@ -37,13 +41,15 @@ FUNCTION __CONTAINER(prev)(this) RESULT (iterator)
     CLASS(CONTAINER), INTENT(INOUT)   :: this
     CLASS(VEC_TYPE),POINTER   :: iterator
 
-    IF (this%iter_id.GT.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+    IF (this%nb.GT.0) THEN
         this%iter_id = this%iter_id - 1
-        SELECT TYPE (t => this%vec(this%iter_id))
-        TYPE IS (VEC_TYPE)
-            iterator => t
-            RETURN
-        END SELECT
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%iter_id))
+            TYPE IS (VEC_TYPE)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
     ENDIF
     iterator => NULL()
 END FUNCTION __CONTAINER(prev)
@@ -52,13 +58,15 @@ FUNCTION __CONTAINER(last)(this) RESULT (iterator)
     CLASS(CONTAINER), INTENT(INOUT)   :: this
     CLASS(VEC_TYPE),POINTER   :: iterator
 
-    this%iter_id = this%max_id
-    IF (this%iter_id.GT.0 .AND. this%iter_id.LE.this%vec_size) THEN
-        SELECT TYPE (t => this%vec(this%max_id))
-        TYPE IS (VEC_TYPE)
-            iterator => t
-            RETURN
-        END SELECT
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%max_id
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%max_id))
+            TYPE IS (VEC_TYPE)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
     ENDIF
     iterator => NULL()
 
@@ -118,12 +126,12 @@ END FUNCTION __CONTAINER(exists)
 SUBROUTINE __CONTAINER(push)(this,element,info,id)
     !!! add an element into the collection
     CLASS(CONTAINER)                   :: this
-    CLASS(WRAP(VEC_TYPE)_),POINTER            :: element
+    CLASS(WRAP(VEC_TYPE)_),POINTER     :: element
     INTEGER,               INTENT(OUT) :: info
     INTEGER,OPTIONAL,      INTENT(OUT) :: id
     !!! index of the element in the collection
 
-    TYPE(VEC_TYPE),DIMENSION(:),POINTER :: vec_temp
+    TYPE(VEC_TYPE),DIMENSION(:),POINTER :: vec_temp => NULL()
     INTEGER                            :: i
     CHARACTER(LEN=ppm_char)            :: caller = "__CONTAINER(push)"
     REAL(KIND(1.D0))                   :: t0
@@ -138,14 +146,15 @@ SUBROUTINE __CONTAINER(push)(this,element,info,id)
 
     IF (this%max_id.GT.this%vec_size) THEN
         !if the array is empty, allocate with a reasonable size
-        IF (this%vec_size.EQ.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
+        IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
             this%vec_size = 10
             ALLOCATE(VEC_TYPE::this%vec(this%vec_size),STAT=info)
         ELSE
         !if the array is full, double its size
             SELECT TYPE (t => this%vec)
             TYPE IS (VEC_TYPE)
-                ALLOCATE(vec_temp(this%vec_size))
+                ALLOCATE(vec_temp(this%vec_size),STAT=info)
+                or_fail_alloc("could not allocate temporary array")
                 FORALL (i=1:this%vec_size)
                     vec_temp(i) = t(i)
                 END FORALL
@@ -160,7 +169,8 @@ SUBROUTINE __CONTAINER(push)(this,element,info,id)
                 FORALL (i=1:this%vec_size)
                     t(i) = vec_temp(i)
                 END FORALL
-                DEALLOCATE(vec_temp)
+                DEALLOCATE(vec_temp,STAT=info)
+                or_fail_dealloc("could not deallocate temporary array")
                 this%vec_size = 2 * this%vec_size
             END SELECT
         ENDIF
@@ -179,15 +189,22 @@ SUBROUTINE __CONTAINER(push)(this,element,info,id)
 
 END SUBROUTINE __CONTAINER(push)
 !REMOVE
-SUBROUTINE __CONTAINER(remove)(this,id,info)
-    !!! remove an element (identified by its id) from the collection
+SUBROUTINE __CONTAINER(remove)(this,info,id)
+    !!! remove the current element (as defined by the iterator pointer)
+    !!! from the collection
     CLASS(CONTAINER)                   :: this
-    INTEGER,          INTENT(IN   )    :: id
     INTEGER,          INTENT(  OUT)    :: info
+    INTEGER,OPTIONAL, INTENT(IN   )    :: id
 
+    INTEGER                            :: del_id
     !deallocate the element
     !CALL this%vec(id)%destroy(info)
-    SELECT TYPE (t => this%vec(id))
+    IF (PRESENT(id)) THEN
+        del_id = id
+    ELSE
+        del_id = this%iter_id
+    ENDIF
+    SELECT TYPE (t => this%vec(del_id))
     TYPE IS (VEC_TYPE)
         CALL t%destroy(info)
     END SELECT
@@ -195,12 +212,13 @@ SUBROUTINE __CONTAINER(remove)(this,id,info)
     IF (this%max_id.GT.this%min_id) THEN
         SELECT TYPE(v => this%vec)
         TYPE IS (VEC_TYPE)
-            v(id) = v(this%max_id) 
+            v(del_id) = v(this%max_id) 
         CLASS DEFAULT
         END SELECT
     ENDIF
     this%nb = this%nb - 1
     this%max_id = this%max_id - 1
+    this%iter_id = this%iter_id - 1
     IF (this%nb.EQ.0 .OR. this%max_id.EQ.0) this%min_id = 0
 
 END SUBROUTINE __CONTAINER(remove)

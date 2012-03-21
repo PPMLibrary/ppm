@@ -53,12 +53,13 @@ SUBROUTINE subpatch_destroy_(p,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_A_create_(this,vecsize,info)
+SUBROUTINE subpatch_A_create_(this,vecsize,info,patchid)
     !!! Destructor for subdomain data data structure
     IMPORT ppm_t_A_subpatch_
     CLASS(ppm_t_A_subpatch_)            :: this
     INTEGER                            :: vecsize
     INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(IN ) :: patchid
 END SUBROUTINE
 
 !DESTROY
@@ -107,3 +108,14 @@ SUBROUTINE equi_mesh_add_patch_(this,patch,info,patchid)
     INTEGER, OPTIONAL                       :: patchid
     !!! id of the patch, if we want one.
 END SUBROUTINE
+
+FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
+    !!! returns a pointer to a new subpatch_data object
+    IMPORT ppm_t_equi_mesh_,ppm_t_subpatch_data_
+    IMPLICIT NONE
+    CLASS(ppm_t_equi_mesh_)                 :: this
+    !!! cartesian mesh object
+    CLASS(ppm_t_subpatch_data_),POINTER       :: sp
+    INTEGER                 , INTENT(  OUT) :: info
+    !!! Returns status, 0 upon success
+END FUNCTION 

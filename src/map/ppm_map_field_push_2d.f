@@ -192,7 +192,7 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
-      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           mesh => t
       END SELECT

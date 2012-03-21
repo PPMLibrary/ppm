@@ -156,13 +156,9 @@ TYPE,ABSTRACT ::  ppm_t_mesh_data_
     PROCEDURE(mesh_data_create_),DEFERRED :: create
     PROCEDURE(mesh_data_destroy_),DEFERRED :: destroy
 END TYPE
-!----------------------------------------------------------------------
+
 ! Container for mesh_data
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_mesh_data_
-#define __CONTAINER(a) ppm_c_mesh_data__/**/a
-#define VEC_TYPE ppm_t_mesh_data_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(ppm_t_mesh_data_)
 
 TYPE,ABSTRACT :: ppm_t_field_
     !!! Data structure for fields 
@@ -190,11 +186,8 @@ TYPE,ABSTRACT :: ppm_t_field_
     PROCEDURE(field_destroy_),DEFERRED :: destroy
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
 END TYPE ppm_t_field_
-
-#define CONTAINER ppm_c_fields_
-#define __CONTAINER(a) ppm_c_fields__/**/a
-#define VEC_TYPE ppm_t_field_
-#include "cont/collection_abstract_template.inc"
+! Container for fields
+define_abstract_collection_type(ppm_t_field_)
 
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
@@ -242,14 +235,8 @@ TYPE,ABSTRACT :: ppm_t_subpatch_data_
     PROCEDURE(subpatch_data_create_), DEFERRED :: create
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
 END TYPE
-
-!----------------------------------------------------------------------
 ! Container for lists of (pointers to) subpatch_data
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_subpatch_data_
-#define __CONTAINER(a) ppm_c_subpatch_data__/**/a
-#define VEC_TYPE ppm_t_subpatch_data_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(ppm_t_subpatch_data_)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
     INTEGER               :: meshID
@@ -269,32 +256,24 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
-!----------------------------------------------------------------------
 ! Container for lists of (pointers to) subpatch
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_subpatch_
-#define __CONTAINER(a) ppm_c_subpatch__/**/a
-#define VEC_TYPE ppm_t_subpatch_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(ppm_t_subpatch_)
 
-TYPE ppm_t_ptr_subpatch
-    CLASS(ppm_t_subpatch_), POINTER :: t => NULL()
-END TYPE
 
 TYPE,ABSTRACT :: ppm_t_A_subpatch_
+    INTEGER                                        :: patchid = 0
+    !!! Id of the patch
     INTEGER                                        :: nsubpatch = 0
     !!! Number of subpatches for this patch
-    TYPE(ppm_t_ptr_subpatch),DIMENSION(:), POINTER :: subpatch => NULL()
+    CLASS(ppm_t_ptr_subpatch_),DIMENSION(:),POINTER :: subpatch => NULL()
     !!! Pointers to each subpatches for this patch
     CONTAINS
     PROCEDURE(subpatch_A_create_) ,DEFERRED  :: create
     PROCEDURE(subpatch_A_destroy_),DEFERRED  :: destroy
 END TYPE
+! Container for subpatch pointer arrays
+define_abstract_collection_type(ppm_t_A_subpatch_)
 
-#define CONTAINER ppm_c_A_subpatch_
-#define __CONTAINER(a) ppm_c_A_subpatch__/**/a
-#define VEC_TYPE ppm_t_A_subpatch_
-#include "cont/collection_abstract_template.inc"
 
 TYPE ppm_t_mesh_maplist
     !!! TODO: check what this is used for (imported from Petros code
@@ -408,16 +387,12 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_create_),   DEFERRED :: create
     PROCEDURE(equi_mesh_destroy_),  DEFERRED :: destroy
     PROCEDURE(equi_mesh_add_patch_),DEFERRED :: add_patch
+    PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
+      &                             DEFERRED :: new_subpatch_data_ptr 
 END TYPE
+! Container for meshes
+define_abstract_collection_type(ppm_t_equi_mesh_)
 
-
-!----------------------------------------------------------------------
-! Container for Meshes
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_meshes_
-#define __CONTAINER(a) ppm_c_meshes__/**/a
-#define VEC_TYPE ppm_t_equi_mesh_
-#include "cont/collection_abstract_template.inc"
 
 !----------------------------------------------------------------------
 !  INTERFACES
@@ -543,35 +518,21 @@ INTERFACE
 #include "mesh/mesh_interfaces.f"
 
 
-#define CONTAINER ppm_c_mesh_data_
-#define __CONTAINER(a) ppm_c_mesh_data__/**/a
-#define VEC_TYPE ppm_t_mesh_data_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER ppm_c_meshes_
-#define __CONTAINER(a) ppm_c_meshes__/**/a
-#define VEC_TYPE ppm_t_equi_mesh_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER ppm_c_subpatch_data_
-#define __CONTAINER(a) ppm_c_subpatch_data__/**/a
-#define VEC_TYPE ppm_t_subpatch_data_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER ppm_c_subpatch_
-#define __CONTAINER(a) ppm_c_subpatch__/**/a
-#define VEC_TYPE ppm_t_subpatch_
-#include "cont/collection_interfaces.f"
-         
-#define CONTAINER ppm_c_A_subpatch_
-#define __CONTAINER(a) ppm_c_A_subpatch__/**/a
-#define VEC_TYPE ppm_t_A_subpatch_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER ppm_c_fields_
-#define __CONTAINER(a) ppm_c_fields__/**/a
-#define VEC_TYPE ppm_t_field_
-#include "cont/collection_interfaces.f"
+!----------------------------------------------------------------------
+! Interfaces for collections type-bound procedures
+!----------------------------------------------------------------------
+! Container for meshes
+define_abstract_collection_interfaces(ppm_t_equi_mesh_)
+! Container for subpatch pointer arrays
+define_abstract_collection_interfaces(ppm_t_A_subpatch_)
+! Container for mesh_data
+define_abstract_collection_interfaces(ppm_t_mesh_data_)
+! Container for fields
+define_abstract_collection_interfaces(ppm_t_field_)
+! Container for lists of (pointers to) subpatch_data
+define_abstract_collection_interfaces(ppm_t_subpatch_data_)
+! Container for lists of (pointers to) subpatch
+define_abstract_collection_interfaces(ppm_t_subpatch_)
 
 END INTERFACE
 

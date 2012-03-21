@@ -123,12 +123,12 @@
       topo => ppm_topo(topoid)%t
       target_topo => ppm_topo(target_topoid)%t
 
-      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           mesh => t
       END SELECT
 
-      SELECT TYPE (t => ppm_mesh%vec(target_meshid))
+      SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           target_mesh => t
       END SELECT

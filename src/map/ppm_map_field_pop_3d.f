@@ -210,7 +210,7 @@
       !  set the local pointers to the topology and mesh
       !-------------------------------------------------------------------------
       target_topo => ppm_topo(target_topoid)%t
-      SELECT TYPE (t => ppm_mesh%vec(target_meshid))
+      SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           target_mesh => t
       END SELECT

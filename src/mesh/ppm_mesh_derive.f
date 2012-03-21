@@ -104,7 +104,7 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
       topo => ppm_topo(topoid)%t
-      SELECT TYPE (t => ppm_mesh%vec(template_meshid))
+      SELECT TYPE (t => ppm_mesh%vec(template_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           p_mesh => t
       END SELECT

@@ -65,13 +65,7 @@ TYPE, EXTENDS(ppm_t_mesh_data_):: ppm_t_mesh_data
     PROCEDURE :: destroy => mesh_data_destroy
 
 END TYPE ppm_t_mesh_data
-!----------------------------------------------------------------------
-! Container for mesh_data
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_mesh_data
-#define __CONTAINER(a) ppm_c_mesh_data_/**/a
-#define VEC_TYPE ppm_t_mesh_data
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_mesh_data)
 
 TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     CONTAINS
@@ -79,26 +73,15 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: destroy => field_destroy
     PROCEDURE :: discretize_on => field_discretize_on
 END TYPE ppm_t_field
-
-#define CONTAINER ppm_c_fields
-#define __CONTAINER(a) ppm_c_fields_/**/a
-#define VEC_TYPE ppm_t_field
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_field)
 
 !----------------------------------------------------------------------
 !  Type-bound procedures
 !----------------------------------------------------------------------
 CONTAINS
 
-#define CONTAINER ppm_c_mesh_data
-#define __CONTAINER(a) ppm_c_mesh_data_/**/a
-#define VEC_TYPE ppm_t_mesh_data
-#include "cont/collection_typeproc.f"
-
-#define CONTAINER ppm_c_fields
-#define __CONTAINER(a) ppm_c_fields_/**/a
-#define VEC_TYPE ppm_t_field
-#include "cont/collection_typeproc.f"
+define_collection_procedures(ppm_t_mesh_data)
+define_collection_procedures(ppm_t_field)
 
 #include "field/field_typeproc.f"
 

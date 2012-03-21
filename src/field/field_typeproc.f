@@ -132,18 +132,18 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     CLASS(ppm_t_field)                 :: this
     CLASS(ppm_t_equi_mesh_)            :: mesh
     !!! mesh onto which this field is to be discretized
-    INTEGER,               INTENT(OUT) :: info
-    INTEGER, OPTIONAL                  :: datatype
+    INTEGER,               INTENT(OUT)  :: info
+    INTEGER, OPTIONAL                   :: datatype
     !!! By default, the type is assumed to be real, double-precision.
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'field_discretize_on'
-    CLASS(ppm_t_mesh_data_),POINTER      :: mdat => NULL()
-    CLASS(ppm_t_subpatch_),POINTER     :: p => NULL()
-    CLASS(ppm_t_subpatch_data_),POINTER    :: subpdat => NULL()
-    INTEGER                            :: dtype,p_idx
-    INTEGER,DIMENSION(:),POINTER       :: Nmp => NULL()
-    LOGICAL,DIMENSION(ppm_mdata_lflags):: flags
+    REAL(KIND(1.D0))                    :: t0
+    CHARACTER(LEN=ppm_char)             :: caller = 'field_discretize_on'
+    CLASS(ppm_t_mesh_data_),    POINTER :: mdat => NULL()
+    CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
+    CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
+    INTEGER                             :: dtype,p_idx
+    INTEGER,DIMENSION(:),       POINTER :: Nmp => NULL()
+    LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
 
     CALL substart(caller,t0,info)
 
@@ -158,10 +158,18 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     !Create a new data array on the mesh to store this field
     p => mesh%subpatch%begin()
     DO WHILE (ASSOCIATED(p))
+        ! create a new subpatch_data object
+        !ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
+        subpdat => mesh%new_subpatch_data_ptr(info)
+        or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
 
         Nmp(1:ppm_dim) = p%iend(1:ppm_dim) - p%istart(1:ppm_dim)
         CALL subpdat%create(dtype,this%lda,Nmp,info)
         or_fail("could not create new subpatch_data")
+
+        IF (.not.allocated(p%subpatch_data)) THEN
+           fail("p%subpatch_data not allocated")
+        ENDIF
 
         CALL p%subpatch_data%push(subpdat,info)
         or_fail("could not add new subpatch_data to subpatch collection")
@@ -200,7 +208,7 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     ELSE
         SELECT TYPE(md => mdat)
         TYPE IS (ppm_t_mesh_data)
-            SELECT TYPE(v => this%M%vec(mesh%ID))
+            SELECT TYPE(v => this%M%vec(mesh%ID)%t)
             TYPE IS (ppm_t_mesh_data)
                 v = md
             CLASS DEFAULT

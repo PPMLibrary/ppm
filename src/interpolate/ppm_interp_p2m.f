@@ -222,7 +222,7 @@
       !-------------------------------------------------------------------------
       !  Get the meshid
       !-------------------------------------------------------------------------
-      SELECT TYPE (t => ppm_mesh%vec(meshid))
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           p_mesh => t
       END SELECT

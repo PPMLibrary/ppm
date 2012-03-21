@@ -155,6 +155,43 @@ real(mk),dimension(ndim)         :: offset
         ENDDO
         Assert_Equal(isub,ipatch)
 
+        mypatchid = 3
+        my_patch = (/0.1,0.0,0.3,0.8/)
+
+        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        Assert_Equal(info,0)
+
+        
+        !find subpatches from patch 1
+        DO i=1,Mesh1%patch%vec(1)%nsubpatch
+            p => Mesh1%patch%vec(1)%subpatch(i)%t
+            write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%patchid
+        ENDDO
+        p=>NULL()
+
+
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+
+        Assert_False(allocated(Mesh1%subpatch))
+    end test
+
+    test mesh_add_many_patches
+        Nm = 129
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+
+        mypatchid = 0
+        DO i = 1,Nm(1)/4
+            DO j = 1,Nm(2)/4
+                mypatchid = mypatchid + 1
+                my_patch = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
+                call Mesh1%add_patch(my_patch,info,mypatchid) 
+                Assert_Equal(info,0)
+                Assert_True(allocated(Mesh1%subpatch))
+            ENDDO
+        ENDDO
+        
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
 

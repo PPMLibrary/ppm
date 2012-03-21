@@ -71,14 +71,7 @@ TYPE,EXTENDS(ppm_t_subpatch_data_) :: ppm_t_subpatch_data
     PROCEDURE :: create    => subpatch_data_create
     PROCEDURE :: destroy   => subpatch_data_destroy
 END TYPE
-
-!----------------------------------------------------------------------
-! Container for lists of (pointers to) subpatch_data
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_subpatch_data
-#define __CONTAINER(a) ppm_c_subpatch_data_/**/a
-#define VEC_TYPE ppm_t_subpatch_data
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_subpatch_data)
 
 TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
@@ -92,13 +85,7 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
         &                   subpatch_get_field_3d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
-!----------------------------------------------------------------------
-! Container for lists of (pointers to) subpatch
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_subpatch
-#define __CONTAINER(a) ppm_c_subpatch_/**/a
-#define VEC_TYPE ppm_t_subpatch
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_subpatch)
 
 
 TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
@@ -106,66 +93,34 @@ TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
     PROCEDURE :: create  => subpatch_A_create
     PROCEDURE :: destroy => subpatch_A_destroy
 END TYPE
-#define CONTAINER ppm_c_A_subpatch
-#define __CONTAINER(a) ppm_c_A_subpatch_/**/a
-#define VEC_TYPE ppm_t_A_subpatch
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_A_subpatch)
 
 TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
     PROCEDURE  :: create    => equi_mesh_create
     PROCEDURE  :: destroy   => equi_mesh_destroy
     PROCEDURE  :: add_patch => equi_mesh_add_patch
+    PROCEDURE  :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
 END TYPE
-
-!----------------------------------------------------------------------
-! Container for lists of (pointers to) Meshes
-!----------------------------------------------------------------------
-#define CONTAINER ppm_c_meshes
-#define __CONTAINER(a) ppm_c_meshes_/**/a
-#define VEC_TYPE ppm_t_equi_mesh
-#include "cont/collection_template.inc"
+define_collection_type(ppm_t_equi_mesh)
 
 !----------------------------------------------------------------------
 ! DATA STORAGE for the meshes
 !----------------------------------------------------------------------
-TYPE(ppm_c_meshes)                 :: ppm_mesh
+TYPE(ppm_c_equi_mesh)              :: ppm_mesh
 !!! container for PPM meshes data structures
 !----------------------------------------------------------------------
 !  Type-bound procedures
 !----------------------------------------------------------------------
 CONTAINS
 
-#define CONTAINER ppm_c_meshes
-#define __CONTAINER(a) ppm_c_meshes_/**/a
-#define VEC_TYPE ppm_t_equi_mesh
-#include "cont/collection_typeproc.f"
-
-#define CONTAINER ppm_c_subpatch_data
-#define __CONTAINER(a) ppm_c_subpatch_data_/**/a
-#define VEC_TYPE ppm_t_subpatch_data
-#include "cont/collection_typeproc.f"
-
-#define CONTAINER ppm_c_subpatch
-#define __CONTAINER(a) ppm_c_subpatch_/**/a
-#define VEC_TYPE ppm_t_subpatch
-#include "cont/collection_typeproc.f"
-
-#define CONTAINER ppm_c_A_subpatch
-#define __CONTAINER(a) ppm_c_A_subpatch_/**/a
-#define VEC_TYPE ppm_t_A_subpatch
-#include "cont/collection_typeproc.f"
+!Procedures for collections of derived types
+define_collection_procedures(ppm_t_equi_mesh)
+define_collection_procedures(ppm_t_subpatch_data)
+define_collection_procedures(ppm_t_subpatch)
+define_collection_procedures(ppm_t_A_subpatch)
 
 
 #include "mesh/mesh_typeproc.f"
-
-!#define  DTYPE(a) a/**/_s
-!#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
-!#include "mesh/mesh_data_typeproc.f"
-!
-!#define  DTYPE(a) a/**/_d
-!#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
-!#include "mesh/mesh_data_typeproc.f"
-!
 
 END MODULE ppm_module_mesh_typedef

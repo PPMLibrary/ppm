@@ -35,7 +35,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
 
     !Direct access to the data arrays 
     ! TODO? different API?
-    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%p_idx)%data_3d_rd
+    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_3d_rd
 
 
 END SUBROUTINE
@@ -49,7 +49,7 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
 
     !Direct access to the data arrays 
     ! TODO? different API?
-    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%p_idx)%data_2d_rd
+    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_2d_rd
 
 
 END SUBROUTINE
@@ -87,6 +87,7 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
 
     ldc(1:ppm_dim) = Nmp(1:ppm_dim)
 
+    ndim = ppm_dim
     IF (lda.GE.2) THEN
         ndim = ndim +1
         ldc(ndim) = lda
@@ -264,11 +265,12 @@ SUBROUTINE subpatch_destroy(p,info)
 END SUBROUTINE subpatch_destroy
 
 !CREATE
-SUBROUTINE subpatch_A_create(this,vecsize,info)
+SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
     !!! Destructor for subdomain data data structure
     CLASS(ppm_t_A_subpatch)            :: this
     INTEGER                            :: vecsize
     INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(IN)  :: patchid
 
     REAL(KIND(1.D0))                   :: t0
     CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_A_create'
@@ -280,11 +282,16 @@ SUBROUTINE subpatch_A_create(this,vecsize,info)
         or_fail_dealloc("could not destroy this ppm_t_A_subpatch object")
     ENDIF
     IF (.NOT.ASSOCIATED(this%subpatch)) THEN
-        ALLOCATE(this%subpatch(vecsize),STAT=info)
+        ALLOCATE(ppm_t_ptr_subpatch::this%subpatch(vecsize),STAT=info)
         or_fail_alloc("could not allocate this%subpatch")
     ENDIF
 
     this%nsubpatch = 0
+    IF (PRESENT(patchid)) THEN
+        this%patchid = patchid
+    ELSE
+        this%patchid = 0
+    ENDIF
 
     CALL substop(caller,t0,info)
     9999  CONTINUE
@@ -301,6 +308,7 @@ SUBROUTINE subpatch_A_destroy(this,info)
 
     CALL substart(caller,t0,info)
 
+    this%patchid = 0
     this%nsubpatch = 0
     IF (ASSOCIATED(this%subpatch)) THEN
         DEALLOCATE(this%subpatch,STAT=info)
@@ -362,7 +370,7 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
 
     SELECT TYPE(t => A_p)
     TYPE IS (ppm_t_A_subpatch)
-        CALL t%create(topo%nsublist,info)
+        CALL t%create(topo%nsublist,info,patchid)
         or_fail("could not initialize ppm_t_A_subpatch pointer")
     END SELECT
 
@@ -392,21 +400,37 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
             TYPE IS (ppm_t_subpatch)
                 CALL pp%create(meshid,istart,iend,info)
                 or_fail("could not create new subpatch")
+                write(*,*) 'New subpatch created, satus = ',&
+                    allocated(pp%subpatch_data)
             END SELECT
 
             nsubpatch = nsubpatch+1
             A_p%subpatch(nsubpatch)%t => p
 
-
             ! add it to the list of subpatches on this mesh
-            CALL this%subpatch%push(p,info)
+            CALL this%subpatch%push(p,info,id)
             or_fail("could not add new subpatch to mesh")
+
+                write(*,*) 'New subpatch created, satus2 = ',&
+                    allocated(p%subpatch_data)
+
             p => NULL()
+
+                write(*,*) 'New subpatch created, satus3 = ',&
+                    allocated(this%subpatch%vec(id)%t%subpatch_data)
 
         ENDIF
     ENDDO
     CALL this%patch%push(A_p,info,id)
-    this%patch%vec(id)%nsubpatch = nsubpatch
+    this%patch%vec(id)%t%nsubpatch = nsubpatch
+
+    p=>this%subpatch%begin()
+    do while (associated(p))
+        if (.not.allocated(p%subpatch_data)) then
+            write(*,*) 'p%subpatch_data is NOT allocated - WTF?'
+        endif
+        p=>this%subpatch%next()
+    enddo
 
     9999 CONTINUE
     CALL substop(caller,t0,info)
@@ -628,11 +652,12 @@ SUBROUTINE equi_mesh_destroy(this,info)
     CALL ppm_alloc(this%h,ldc,iopt,info)
     or_fail_dealloc('h')
 
-    CALL this%subpatch%destroy(info)
-    or_fail_dealloc('subpatch object')
-
-    DEALLOCATE(this%subpatch,STAT=info)
-    or_fail_dealloc('subpatch')
+    IF (ALLOCATED(this%subpatch)) THEN
+        CALL this%subpatch%destroy(info)
+        or_fail_dealloc('subpatch object')
+        DEALLOCATE(this%subpatch,STAT=info)
+        or_fail_dealloc('subpatch')
+    ENDIF
 
 
     !TODO !!!!!
@@ -649,3 +674,36 @@ SUBROUTINE equi_mesh_destroy(this,info)
     CALL substop(caller,t0,info)
     RETURN
 END SUBROUTINE equi_mesh_destroy
+
+FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
+    !!! returns a pointer to a new subpatch_data object
+    IMPLICIT NONE
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(ppm_t_equi_mesh)                  :: this
+    !!! cartesian mesh object
+    CLASS(ppm_t_subpatch_data_),POINTER     :: sp
+    INTEGER                 , INTENT(  OUT) :: info
+    !!! Returns status, 0 upon success
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER , DIMENSION(3)    :: ldc
+    REAL(ppm_kind_double)     :: t0
+    CHARACTER(LEN=ppm_char)   :: caller = 'equi_mesh_new_subpatch_data_ptr'
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+
+    ALLOCATE(ppm_t_subpatch_data::sp,STAT=info)
+    or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
+
+    !-------------------------------------------------------------------------
+    !  Return
+    !-------------------------------------------------------------------------
+    9999 CONTINUE
+    CALL substop(caller,t0,info)
+    RETURN
+END FUNCTION equi_mesh_new_subpatch_data_ptr

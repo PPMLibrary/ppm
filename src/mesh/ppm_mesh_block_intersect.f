@@ -141,12 +141,12 @@
       from_topo => ppm_topo(from_topoid)%t
       to_topo => ppm_topo(to_topoid)%t
 
-      SELECT TYPE(t => ppm_mesh%vec(from_meshid))
+      SELECT TYPE(t => ppm_mesh%vec(from_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           from_mesh => t
       END SELECT
 
-      SELECT TYPE(t => ppm_mesh%vec(to_meshid))
+      SELECT TYPE(t => ppm_mesh%vec(to_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
           to_mesh => t
       END SELECT

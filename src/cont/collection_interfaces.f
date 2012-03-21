@@ -47,11 +47,11 @@ SUBROUTINE __CONTAINER(push)(this,element,info,id)
     INTEGER,OPTIONAL,      INTENT(OUT) :: id
 END SUBROUTINE
 !REMOVE
-SUBROUTINE __CONTAINER(remove)(this,id,info)
+SUBROUTINE __CONTAINER(remove)(this,info,id)
     IMPORT CONTAINER
     CLASS(CONTAINER)                   :: this
-    INTEGER,          INTENT(IN   )    :: id
     INTEGER,          INTENT(  OUT)    :: info
+    INTEGER,OPTIONAL, INTENT(IN   )    :: id
 END SUBROUTINE
 
 #undef CONTAINER
