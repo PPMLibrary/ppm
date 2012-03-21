@@ -4,6 +4,7 @@ SUBROUTINE subpatch_get_field_2d_rd_(this,wp,Field,info)
     CLASS(ppm_t_subpatch_)              :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
+    INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
@@ -12,6 +13,7 @@ SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
     CLASS(ppm_t_subpatch_)              :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
+    INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
 SUBROUTINE subpatch_data_create_(pdata,datatype,lda,Nmp,info)

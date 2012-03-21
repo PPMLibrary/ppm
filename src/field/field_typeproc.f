@@ -163,8 +163,8 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
         subpdat => mesh%new_subpatch_data_ptr(info)
         or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
 
-        Nmp(1:ppm_dim) = p%iend(1:ppm_dim) - p%istart(1:ppm_dim)
-        CALL subpdat%create(dtype,this%lda,Nmp,info)
+        !Nmp(1:ppm_dim) = p%iend(1:ppm_dim) - p%istart(1:ppm_dim)
+        CALL subpdat%create(dtype,this%lda,p%nnodes,info)
         or_fail("could not create new subpatch_data")
 
         IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN

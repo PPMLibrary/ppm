@@ -180,25 +180,20 @@ use ppm_module_topo_typedef
         mypatchid = 1
         my_patch = (/0.5,0.1,5.1,10.0/)
 
-
-        topo => ppm_topo(Mesh1%topoid)%t
-        do isub = 1,topo%nsublist
-            write(*,*) 'On sub ',isub
-            write(*,*) '   ',topo%min_subd(1:ndim,isub)
-            write(*,*) '   ',topo%max_subd(1:ndim,isub)
-        enddo   
+        !topo => ppm_topo(Mesh1%topoid)%t
+        !do isub = 1,topo%nsublist
+        !    write(*,*) 'On sub ',isub
+        !    write(*,*) '   ',topo%min_subd(1:ndim,isub)
+        !    write(*,*) '   ',topo%max_subd(1:ndim,isub)
+        !enddo   
 
         call Mesh1%add_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
-
-
         Assert_True(associated(Mesh1%subpatch))
 
-        i=1
         p => Mesh1%subpatch%begin()
         do while(associated(p))
-           write(*,*) 'subpatch no ',i,' status = ',associated(p%subpatch_data)
-           i=i+1
+           Assert_True(associated(p%subpatch_data))
            p => Mesh1%subpatch%next()
         enddo
 
@@ -206,10 +201,8 @@ use ppm_module_topo_typedef
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
         !--------------------------
-        write(*,*) 'in discretize'
         call Vort%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
-        write(*,*) 'ok till here'
 
         call Veloc%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
@@ -219,34 +212,32 @@ use ppm_module_topo_typedef
         !--------------------------
         p => Mesh1%subpatch%begin()
 
-        DO WHILE (ASSOCIATED(p))
-
+        do while (ASSOCIATED(p))
             call p%get_field(field2d_1,Vort,info)
             call p%get_field(field2d_2,Veloc,info)
 
-            DO i = p%istart(1),p%iend(1)
-                DO j = p%istart(2),p%iend(2)
+            do i = 1,p%nnodes(1)
+                do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field2d_2(i,j) = sqrt(field2d_1(i,j))
-                ENDDO
-            ENDDO
+                    field2d_2(i,j) = sin(field2d_1(i,j))
+                enddo
+            enddo
             p => Mesh1%subpatch%next()
-
-        ENDDO
+        enddo
 
         !Second version
-        DO ipatch = 1,Mesh1%subpatch%nb
-            p => Mesh1%subpatch%vec(ipatch) 
+        do ipatch = 1,Mesh1%subpatch%nb
+            p => Mesh1%subpatch%vec(ipatch)%t
             call p%get_field(field2d_1,Vort,info)
             call p%get_field(field2d_2,Veloc,info)
 
-            DO i = p%istart(1),p%iend(1)
-                DO j = p%istart(2),p%iend(2)
+            do i = 1,p%nnodes(1)
+                do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field2d_2(i,j) = sqrt(field2d_1(i,j))
-                ENDDO
-            ENDDO
-        ENDDO
+                    field2d_2(i,j) = sin(field2d_1(i,j))
+                enddo
+            enddo
+        enddo
 
         !--------------------
         ! Remove a patch

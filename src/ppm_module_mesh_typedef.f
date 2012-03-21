@@ -107,6 +107,7 @@ define_collection_type(ppm_t_equi_mesh)
 !----------------------------------------------------------------------
 ! DATA STORAGE for the meshes
 !----------------------------------------------------------------------
+INTEGER                            :: ppm_nb_meshes = 0
 TYPE(ppm_c_equi_mesh)              :: ppm_mesh
 !!! container for PPM meshes data structures
 !----------------------------------------------------------------------

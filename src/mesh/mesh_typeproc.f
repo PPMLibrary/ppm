@@ -31,7 +31,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     CLASS(ppm_t_subpatch)                :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
-    INTEGER :: info
+    INTEGER,                 INTENT(OUT) :: info
 
     !Direct access to the data arrays 
     ! TODO? different API?
@@ -45,7 +45,7 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     CLASS(ppm_t_subpatch)                :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
-    INTEGER :: info
+    INTEGER,                 INTENT(OUT) :: info
 
     !Direct access to the data arrays 
     ! TODO? different API?
@@ -66,10 +66,7 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
 
     REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt, ndim
-    CHARACTER(LEN=ppm_char)            :: caller = 'sub_create'
-    INTEGER,DIMENSION(:),POINTER :: istart,iend
-
-
+    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
 
     CALL substart(caller,t0,info)
 
@@ -78,11 +75,7 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
 
     ! Determine allocation size of the data array
     IF (MINVAL(Nmp(1:ppm_dim)) .LE. 0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_argument,caller,   &
-            & 'invalid size for patch data. This patch should be deleted',&
-            &  __LINE__,info)
-        GOTO 9999
+        or_fail("invalid size for patch data. This patch should be deleted")
     ENDIF
 
     ldc(1:ppm_dim) = Nmp(1:ppm_dim)
@@ -223,10 +216,15 @@ SUBROUTINE subpatch_create(p,meshid,istart,iend,info)
         ALLOCATE(p%iend(ppm_dim),STAT=info)
         or_fail_alloc("could not allocate p%iend")
     ENDIF
+    IF (.NOT.ASSOCIATED(p%nnodes)) THEN
+        ALLOCATE(p%nnodes(ppm_dim),STAT=info)
+        or_fail_alloc("could not allocate p%nnodes")
+    ENDIF
 
     p%meshID=meshid
     p%istart = istart
     p%iend   = iend
+    p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
     IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
         ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
         or_fail_alloc("could not allocate p%subpatch_data")
@@ -249,6 +247,8 @@ SUBROUTINE subpatch_destroy(p,info)
     CALL substart(caller,t0,info)
 
     iopt = ppm_param_dealloc
+    CALL ppm_alloc(p%nnodes,ldc,iopt,info)
+    or_fail_dealloc("p%nnodes")
     CALL ppm_alloc(p%istart,ldc,iopt,info)
     or_fail_dealloc("p%istart")
     CALL ppm_alloc(p%iend,ldc,iopt,info)
@@ -474,7 +474,12 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
         IF (info .NE. 0) GOTO 9999
     ENDIF
 
+    !This mesh is defined for a given topology
     this%topoid = topoid
+
+    !Global id, internal to ppm
+    ppm_nb_meshes = ppm_nb_meshes + 1
+    this%ID = ppm_nb_meshes
 
     topo => ppm_topo(topoid)%t
 

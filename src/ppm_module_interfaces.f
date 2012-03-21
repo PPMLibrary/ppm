@@ -245,6 +245,8 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! Lower-left coordinates
     INTEGER, DIMENSION(:),POINTER :: iend => NULL()
     !!! Upper-right coordinates
+    INTEGER, DIMENSION(:),POINTER :: nnodes => NULL()
+    !!! number of nodes in each direction
     CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data
     !!! container for the data arrays for each property discretized
     !!! on this mesh
