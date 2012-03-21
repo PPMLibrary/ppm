@@ -59,10 +59,7 @@ END TYPE DTYPE(ppm_t_part_prop)_
 !----------------------------------------------------------------------
 ! Container for properties
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_props)_
-#define __CONTAINER(a) DTYPE(ppm_c_props)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_part_prop)_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 
 
 !!----------------------------------------------------------------------
@@ -98,10 +95,7 @@ END TYPE DTYPE(ppm_t_neighlist)_
 !----------------------------------------------------------------------
 ! Container for neighbour lists
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_neighlist)_
-#define __CONTAINER(a) DTYPE(ppm_c_neighlist)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_neighlist)_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(DTYPE(ppm_t_neighlist)_)
 
 
 
@@ -213,11 +207,11 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
     INTEGER                                         :: isymm
 
     ! Container for Particles properties
-    CLASS(DTYPE(ppm_c_props)_),ALLOCATABLE            :: props
+    CLASS(DTYPE(ppm_c_part_prop)_),POINTER          :: props => NULL()
 
 
     ! Container for Neighbor lists
-    CLASS(DTYPE(ppm_c_neighlist)_),ALLOCATABLE       :: neighs
+    CLASS(DTYPE(ppm_c_neighlist)_),POINTER          :: neighs => NULL()
 
 
     ! Container for differential operators
@@ -225,7 +219,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
 
 
     ! Container for particle mappings
-    CLASS(DTYPE(ppm_c_pmaps)_),ALLOCATABLE            :: maps
+    CLASS(DTYPE(ppm_c_part_mapping)_),POINTER       :: maps => NULL()
 
     ! List of IDs of other Particle sets
     TYPE(idList)                                    :: set_Pc
@@ -411,13 +405,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_l_check),&
         DTYPE(data_2d_l_check)
 END TYPE DTYPE(ppm_t_particles)_
-!----------------------------------------------------------------------
-! Container for Particle sets
-!----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_Ps)_
-#define __CONTAINER(a) DTYPE(ppm_c_Ps)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_particles)_
-#include "cont/collection_abstract_template.inc"
+define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 
 
 TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_sop)_
@@ -479,11 +467,7 @@ END TYPE DTYPE(ppm_t_sop)_
 !----------------------------------------------------------------------
 ! Container for adaptive Particle sets
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_aPs)_
-#define __CONTAINER(a) DTYPE(ppm_c_aPs)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_sop)_
-#include "cont/collection_abstract_template.inc"
-
+define_abstract_collection_type(DTYPE(ppm_t_sop)_)
 
 #undef   MK
 #undef   _MK

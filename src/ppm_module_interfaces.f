@@ -267,7 +267,7 @@ TYPE,ABSTRACT :: ppm_t_A_subpatch_
     !!! Id of the patch
     INTEGER                                        :: nsubpatch = 0
     !!! Number of subpatches for this patch
-    CLASS(ppm_t_ptr_subpatch_),DIMENSION(:),POINTER :: subpatch => NULL()
+    TYPE(ppm_t_ptr_subpatch),DIMENSION(:),POINTER  :: subpatch => NULL()
     !!! Pointers to each subpatches for this patch
     CONTAINS
     PROCEDURE(subpatch_A_create_) ,DEFERRED  :: create

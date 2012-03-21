@@ -1,22 +1,7 @@
-#define CONTAINER DTYPE(ppm_c_props)_
-#define __CONTAINER(a) DTYPE(ppm_c_props)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_part_prop)_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER DTYPE(ppm_c_neighlist)_
-#define __CONTAINER(a) DTYPE(ppm_c_neighlist)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_neighlist)_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER DTYPE(ppm_c_Ps)_
-#define __CONTAINER(a) DTYPE(ppm_c_Ps)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_particles)_
-#include "cont/collection_interfaces.f"
-
-#define CONTAINER DTYPE(ppm_c_aPs)_
-#define __CONTAINER(a) DTYPE(ppm_c_aPs)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_sop)_
-#include "cont/collection_interfaces.f"
+define_abstract_collection_interfaces(DTYPE(ppm_t_part_prop)_)
+define_abstract_collection_interfaces(DTYPE(ppm_t_neighlist)_)
+define_abstract_collection_interfaces(DTYPE(ppm_t_particles)_)
+define_abstract_collection_interfaces(DTYPE(ppm_t_sop)_)
 
 !CREATE ENTRY
 SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,zero)

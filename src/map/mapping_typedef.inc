@@ -13,10 +13,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for particle mappings
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_pmaps)
-#define __CONTAINER(a) DTYPE(ppm_c_pmaps)_/**/a
-#define VEC_TYPE DTYPE(ppm_t_part_mapping)
-#include "cont/collection_template.inc"
+define_collection_type(DTYPE(ppm_t_part_mapping))
 
 
 TYPE,EXTENDS(DTYPE(ppm_t_mesh_mapping)_) :: DTYPE(ppm_t_mesh_mapping)

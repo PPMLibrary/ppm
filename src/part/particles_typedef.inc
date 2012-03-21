@@ -11,10 +11,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for properties
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_props)
-#define __CONTAINER(a) DTYPE(ppm_c_props)_/**/a
-#define VEC_TYPE DTYPE(ppm_t_part_prop)
-#include "cont/collection_template.inc"
+define_collection_type(DTYPE(ppm_t_part_prop))
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -26,11 +23,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for neighbour lists
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_neighlist)
-#define __CONTAINER(a) DTYPE(ppm_c_neighlist)_/**/a
-#define VEC_TYPE DTYPE(ppm_t_neighlist)
-#include "cont/collection_template.inc"
-
+define_collection_type(DTYPE(ppm_t_neighlist))
 
 TYPE,EXTENDS( DTYPE(particles_stats)_) :: DTYPE(particles_stats)
 END TYPE
@@ -195,10 +188,7 @@ END TYPE DTYPE(ppm_t_particles)
 !----------------------------------------------------------------------
 ! Container for lists of (pointers to) Particle sets
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_Ps)
-#define __CONTAINER(a) DTYPE(ppm_c_Ps)_/**/a
-#define VEC_TYPE DTYPE(ppm_t_particles)
-#include "cont/collection_template.inc"
+define_collection_type(DTYPE(ppm_t_particles))
 
 
 TYPE,EXTENDS(DTYPE(ppm_t_sop)_) :: DTYPE(ppm_t_sop)
@@ -209,10 +199,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for adaptive Particle sets
 !----------------------------------------------------------------------
-#define CONTAINER DTYPE(ppm_c_aPs)
-#define __CONTAINER(a) DTYPE(ppm_c_aPs)_/**/a
-#define VEC_TYPE DTYPE(ppm_t_sop)
-#include "cont/collection_template.inc"
+define_collection_type(DTYPE(ppm_t_sop))
 
 #undef   MK
 #undef   _MK

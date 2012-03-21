@@ -1,8 +1,5 @@
 macro define_collection_type(element_type)
-<% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr")%>
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
-TYPE, EXTENDS(<%= element_ptr_type %>_) ::  <%= element_ptr_type %>
-END TYPE 
 TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
         CONTAINS
             PROCEDURE       :: begin   => <%= collection_type %>_begin
@@ -17,15 +14,15 @@ END TYPE
 end macro
 
 macro define_abstract_collection_type(element_type)
-<% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr")%>
+<% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr").chop%>
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
-TYPE,ABSTRACT ::  <%= element_ptr_type %>
+TYPE  <%= element_ptr_type %>
     CLASS(<%= element_type %>),                  POINTER :: t => NULL()
 END TYPE 
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
-    CLASS(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
-    CLASS(<%= element_type %>),                  POINTER :: iterator => NULL()
+    TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
+    CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
     CONTAINS
     PROCEDURE(<%= collection_type %>_begin),  DEFERRED :: begin
     PROCEDURE(<%= collection_type %>_next),   DEFERRED :: next 

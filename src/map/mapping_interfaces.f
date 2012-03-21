@@ -1,8 +1,4 @@
-#define CONTAINER DTYPE(ppm_c_pmaps)_
-#define __CONTAINER(a) DTYPE(ppm_c_pmaps)__/**/a
-#define VEC_TYPE DTYPE(ppm_t_part_mapping)_
-#include "cont/collection_interfaces.f"
-
+define_abstract_collection_interfaces(DTYPE(ppm_t_part_mapping)_)
 
 SUBROUTINE DTYPE(map_create)_(map,source_topoid,target_topoid,info)
     !!! Constructor for particle mapping data structure
