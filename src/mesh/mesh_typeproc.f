@@ -227,7 +227,7 @@ SUBROUTINE subpatch_create(p,meshid,istart,iend,info)
     p%meshID=meshid
     p%istart = istart
     p%iend   = iend
-    IF (.NOT.ALLOCATED(p%subpatch_data)) THEN
+    IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
         ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
         or_fail_alloc("could not allocate p%subpatch_data")
     ENDIF
@@ -253,7 +253,7 @@ SUBROUTINE subpatch_destroy(p,info)
     or_fail_dealloc("p%istart")
     CALL ppm_alloc(p%iend,ldc,iopt,info)
     or_fail_dealloc("p%iend")
-    IF (ALLOCATED(p%subpatch_data)) THEN
+    IF (ASSOCIATED(p%subpatch_data)) THEN
         CALL p%subpatch_data%destroy(info)
         or_fail_dealloc("p%subpatch_data")
     ENDIF
@@ -400,8 +400,6 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
             TYPE IS (ppm_t_subpatch)
                 CALL pp%create(meshid,istart,iend,info)
                 or_fail("could not create new subpatch")
-                write(*,*) 'New subpatch created, satus = ',&
-                    allocated(pp%subpatch_data)
             END SELECT
 
             nsubpatch = nsubpatch+1
@@ -411,26 +409,10 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
             CALL this%subpatch%push(p,info,id)
             or_fail("could not add new subpatch to mesh")
 
-                write(*,*) 'New subpatch created, satus2 = ',&
-                    allocated(p%subpatch_data)
-
-            p => NULL()
-
-                write(*,*) 'New subpatch created, satus3 = ',&
-                    allocated(this%subpatch%vec(id)%t%subpatch_data)
-
         ENDIF
     ENDDO
     CALL this%patch%push(A_p,info,id)
     this%patch%vec(id)%t%nsubpatch = nsubpatch
-
-    p=>this%subpatch%begin()
-    do while (associated(p))
-        if (.not.allocated(p%subpatch_data)) then
-            write(*,*) 'p%subpatch_data is NOT allocated - WTF?'
-        endif
-        p=>this%subpatch%next()
-    enddo
 
     9999 CONTINUE
     CALL substop(caller,t0,info)
@@ -522,17 +504,17 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     CALL ppm_alloc(this%h,ldc,iopt,info)
     or_fail_alloc('h')
 
-    IF (.NOT.ALLOCATED(this%subpatch)) THEN
+    IF (.NOT.ASSOCIATED(this%subpatch)) THEN
         ALLOCATE(ppm_c_subpatch::this%subpatch,STAT=info)
         or_fail_alloc("could not allocate this%subpatch")
     ENDIF
 
-    IF (.NOT.ALLOCATED(this%patch)) THEN
+    IF (.NOT.ASSOCIATED(this%patch)) THEN
         ALLOCATE(ppm_c_A_subpatch::this%patch,STAT=info)
         or_fail_alloc("could not allocate this%patch")
     ENDIF
 
-    IF (.NOT.ALLOCATED(this%sub)) THEN
+    IF (.NOT.ASSOCIATED(this%sub)) THEN
         ALLOCATE(ppm_c_A_subpatch::this%sub,STAT=info)
         or_fail_alloc("could not allocate this%sub")
     ENDIF
@@ -652,7 +634,7 @@ SUBROUTINE equi_mesh_destroy(this,info)
     CALL ppm_alloc(this%h,ldc,iopt,info)
     or_fail_dealloc('h')
 
-    IF (ALLOCATED(this%subpatch)) THEN
+    IF (ASSOCIATED(this%subpatch)) THEN
         CALL this%subpatch%destroy(info)
         or_fail_dealloc('subpatch object')
         DEALLOCATE(this%subpatch,STAT=info)

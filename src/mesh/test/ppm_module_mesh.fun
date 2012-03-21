@@ -133,7 +133,7 @@ real(mk),dimension(ndim)         :: offset
 
         call Mesh1%add_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
-        Assert_True(allocated(Mesh1%subpatch))
+        Assert_True(associated(Mesh1%subpatch))
 
         ipatch = 0
         topo => ppm_topo(Mesh1%topoid)%t
@@ -163,9 +163,9 @@ real(mk),dimension(ndim)         :: offset
 
         
         !find subpatches from patch 1
-        DO i=1,Mesh1%patch%vec(1)%nsubpatch
-            p => Mesh1%patch%vec(1)%subpatch(i)%t
-            write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%patchid
+        DO i=1,Mesh1%patch%vec(1)%t%nsubpatch
+            p => Mesh1%patch%vec(1)%t%subpatch(i)%t
+            write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%t%patchid
         ENDDO
         p=>NULL()
 
@@ -173,7 +173,7 @@ real(mk),dimension(ndim)         :: offset
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
 
-        Assert_False(allocated(Mesh1%subpatch))
+        Assert_False(associated(Mesh1%subpatch))
     end test
 
     test mesh_add_many_patches
@@ -188,14 +188,14 @@ real(mk),dimension(ndim)         :: offset
                 my_patch = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
                 call Mesh1%add_patch(my_patch,info,mypatchid) 
                 Assert_Equal(info,0)
-                Assert_True(allocated(Mesh1%subpatch))
+                Assert_True(associated(Mesh1%subpatch))
             ENDDO
         ENDDO
         
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
 
-        Assert_False(allocated(Mesh1%subpatch))
+        Assert_False(associated(Mesh1%subpatch))
     end test
 
     test mesh_add_patch_uniform
@@ -213,7 +213,7 @@ real(mk),dimension(ndim)         :: offset
         call Mesh1%add_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
 
-        Assert_True(allocated(Mesh1%subpatch))
+        Assert_True(associated(Mesh1%subpatch))
 
         isub = 0
         p => Mesh1%subpatch%begin()

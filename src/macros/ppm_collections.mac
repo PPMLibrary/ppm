@@ -68,7 +68,6 @@ END FUNCTION
 SUBROUTINE <%= collection_type %>_destroy(this,info)
     IMPORT <%= collection_type %>,<%= element_type %>
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER             :: p => NULL()
     INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
 !EXISTS
@@ -195,7 +194,7 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
     this%nb = 0
     this%vec_size=0
 
-    CALL substart(caller,t0,info)
+    CALL substop(caller,t0,info)
     9999 CONTINUE
 END SUBROUTINE
 
@@ -274,26 +273,21 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
             DO i=1,this%vec_size
                 SELECT TYPE (t => this%vec(i)%t)
                 TYPE IS (<%= element_type %>)
-                    SELECT TYPE (tmp => vec_temp(i)%t)
-                    TYPE IS (<%= element_type %>)
-                        tmp = t
-                    END SELECT
+                    vec_temp(i)%t => t
                 END SELECT
             ENDDO
 
-            DEALLOCATE(this%vec)
+            DEALLOCATE(this%vec,STAT=info)
+            $or_fail_dealloc("could not deallocate collection array")
 
             ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
             $or_fail_alloc("could not allocate collection array")
 
             DO i=1,this%vec_size
-                SELECT TYPE (t => this%vec(i)%t)
-                TYPE IS (<%= element_type %>)
-                    SELECT TYPE (tmp => vec_temp(i)%t)
-                    TYPE IS (<%= element_type %>)
-                        t = tmp
-                    END SELECT
-                END SELECT
+                 SELECT TYPE (tmp => vec_temp(i)%t)
+                 TYPE IS (<%= element_type %>)
+                     this%vec(i)%t => tmp
+                 END SELECT
             ENDDO
             this%vec_size = 2 * this%vec_size
             DEALLOCATE(vec_temp,STAT=info)
@@ -301,15 +295,18 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
         ENDIF
     ENDIF
 
-    SELECT TYPE (t => this%vec(this%max_id)%t)
+    IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
+        $fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
+    ENDIF
+
+    SELECT TYPE (e => element)
     TYPE IS (<%= element_type %>)
-        SELECT TYPE (e => element)
-        TYPE IS (<%= element_type %>)
-            t = e
-        END SELECT
+        this%vec(this%max_id)%t => e
     END SELECT
 
-    CALL substart(caller,t0,info)
+    element => NULL()
+
+    CALL substop(caller,t0,info)
     9999 CONTINUE
 
 END SUBROUTINE

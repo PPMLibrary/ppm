@@ -192,12 +192,12 @@ use ppm_module_topo_typedef
         Assert_Equal(info,0)
 
 
-        Assert_True(allocated(Mesh1%subpatch))
+        Assert_True(associated(Mesh1%subpatch))
 
         i=1
         p => Mesh1%subpatch%begin()
         do while(associated(p))
-           write(*,*) 'subpatch no ',i,' status = ',allocated(p%subpatch_data)
+           write(*,*) 'subpatch no ',i,' status = ',associated(p%subpatch_data)
            i=i+1
            p => Mesh1%subpatch%next()
         enddo

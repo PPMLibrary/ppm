@@ -174,7 +174,7 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! number of components (1 for scalar fields)
     !!!
     !!! pointers to arrays where the scalar-value properties are stored
-    CLASS(ppm_c_mesh_data_),ALLOCATABLE              :: M
+    CLASS(ppm_c_mesh_data_),POINTER              :: M
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
     ! CLASS(ppm_c_part_data_),ALLOCATABLE            :: P
@@ -245,7 +245,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! Lower-left coordinates
     INTEGER, DIMENSION(:),POINTER :: iend => NULL()
     !!! Upper-right coordinates
-    CLASS(ppm_c_subpatch_data_),ALLOCATABLE :: subpatch_data
+    CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data
     !!! container for the data arrays for each property discretized
     !!! on this mesh
     CONTAINS
@@ -328,15 +328,15 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     INTEGER, DIMENSION(:,:), POINTER    :: nnodes    => NULL()
     INTEGER, DIMENSION(:,:), POINTER    :: istart    => NULL()
 
-    CLASS(ppm_c_subpatch_),ALLOCATABLE            :: subpatch
+    CLASS(ppm_c_subpatch_),POINTER            :: subpatch
     !!! container for subdomains patches 
 
     INTEGER                            :: npatch
     !!! Number of patches (NOT subpatches)
-    CLASS(ppm_c_A_subpatch_),ALLOCATABLE          :: patch
+    CLASS(ppm_c_A_subpatch_),POINTER          :: patch
     !!! array of arrays of pointers to the subpatches for each patch
 
-    CLASS(ppm_c_A_subpatch_),ALLOCATABLE          :: sub
+    CLASS(ppm_c_A_subpatch_),POINTER          :: sub
     !!! array of arrays of pointers to the subpatches for each sub.
 
 

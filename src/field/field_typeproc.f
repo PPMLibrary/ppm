@@ -167,7 +167,7 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
         CALL subpdat%create(dtype,this%lda,Nmp,info)
         or_fail("could not create new subpatch_data")
 
-        IF (.not.allocated(p%subpatch_data)) THEN
+        IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
            fail("p%subpatch_data not allocated")
         ENDIF
 
@@ -198,7 +198,7 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     CALL mdat%create(mesh%ID,this%lda,p_idx,flags,info)
     or_fail("could not create new mesh_data object")
 
-    IF (.NOT. ALLOCATED(this%M)) THEN
+    IF (.NOT.ASSOCIATED(this%M)) THEN
         ALLOCATE(ppm_c_mesh_data::this%M,STAT=info)
         or_fail_alloc("could not allocate mesh_data collection")
     ENDIF
