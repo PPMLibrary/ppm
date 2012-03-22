@@ -1,5 +1,5 @@
       !-------------------------------------------------------------------------
-      !  Subroutine   :                     ppm_util_tic
+      !  Subroutine   :                     ppm_tstats_tic
       !-------------------------------------------------------------------------
       ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_util_tic(info)
+      SUBROUTINE ppm_tstats_tic(id,step,info)
       !!! Puts the current cpu time in a buffer
       !!! Calls ppm_util_time,
       !!! which uses either `MPI_Wtime`, f90 `CPU_TIME` or `etime`,
@@ -36,45 +36,56 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_write
+      USE ppm_module_error
+      USE ppm_module_util_time
       IMPLICIT NONE
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
+      INTEGER                , INTENT(IN   ) :: id
+      INTEGER                , INTENT(IN   ) :: step
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
+      CHARACTER(LEN=ppm_char)             :: caller = 'ppm_tstats_tic'
       INTEGER, DIMENSION(3)               :: ldu
+      INTEGER                             :: iopt
+      INTEGER                             :: istat
       
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time
       !-------------------------------------------------------------------------
 
-      ! increment buffer counter
-      ppm_btic%idx = ppm_btic%idx + 1
-
       ! check that the array in ppm_btic%tic is large enough - reallocate if not
-      IF (ppm_btic%nbuff.LT.ppm_btic%idx) THEN
-          ldu(1) = ppm_btic%idx + 10
-          CALL ppm_alloc(ppm_btic%tic,ldu,&
-              ppm_param_alloc_grow_preserve,info)
-          IF (info .NE. 0) THEN
+      IF (step.GT.ppm_tstats_nsamples) THEN
+          ldu(1) = 2 * ppm_tstats_nsamples
+          iopt = ppm_param_alloc_grow_preserve
+          DO istat = 1,ppm_ntstats
+            CALL ppm_alloc(ppm_tstats(istat)%times,ldu,iopt,info)
+            IF (info .NE. 0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_util_tic','tic',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,caller,'growing ppm_tstats',__LINE__,info)
               GOTO 9999
-          ENDIF
-          ppm_btic%nbuff = ppm_btic%idx + 10
+            ENDIF
+            ppm_tstats(istat)% &
+            &   times(ppm_tstats_nsamples+1:2*ppm_tstats_nsamples) = 0.0_mk
+          ENDDO
+          ppm_tstats_nsamples = 2 * ppm_tstats_nsamples
       ENDIF
 
       ! add a timing entry in the buffer
-      CALL ppm_util_time(ppm_btic%tic(ppm_btic%idx))
+      CALL ppm_util_time(ppm_tstats(id)%times(step))
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       RETURN
-      END SUBROUTINE ppm_util_tic
+      END SUBROUTINE ppm_tstats_tic
