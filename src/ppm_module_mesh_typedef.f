@@ -80,9 +80,8 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
-    GENERIC    :: get_field => &
-        &                   subpatch_get_field_2d_rd,&
-        &                   subpatch_get_field_3d_rd
+!    GENERIC    :: get_field => subpatch_get_field_3d_rd,&
+!        &                   subpatch_get_field_2d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
 define_collection_type(ppm_t_subpatch)

@@ -400,14 +400,27 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
             TYPE IS (ppm_t_subpatch)
                 CALL pp%create(meshid,istart,iend,info)
                 or_fail("could not create new subpatch")
+                nsubpatch = nsubpatch+1
+                write(*,*) 'ok here 0'
+                A_p%subpatch(nsubpatch)%t => pp
             END SELECT
 
-            nsubpatch = nsubpatch+1
-            A_p%subpatch(nsubpatch)%t => p
+                write(*,*) 'ok here 1'
+                write(*,*) 'subpatch assoc? ',associated(this%subpatch)
+
+                select type(t=>this%subpatch)
+                type is (ppm_c_subpatch)
+                    write(*,*) 'type is ok'
+                CLASS is (ppm_c_subpatch_)
+                    write(*,*) 'type is of the abstract kind'
+                class default
+                    write(*,*) 'this is all BS'
+                end select
 
             ! add it to the list of subpatches on this mesh
             CALL this%subpatch%push(p,info,id)
             or_fail("could not add new subpatch to mesh")
+                write(*,*) 'ok here 2'
 
         ENDIF
     ENDDO

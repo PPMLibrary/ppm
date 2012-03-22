@@ -99,7 +99,7 @@ macro define_collection_procedures(element_type)
 !BEGIN
 FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER   :: iterator
+    CLASS(<%= element_type %>_),POINTER   :: iterator
 
     IF (this%nb.GT.0) THEN
         this%iter_id = this%min_id
@@ -116,7 +116,7 @@ END FUNCTION
 !NEXT
 FUNCTION <%= collection_type %>_next(this) RESULT (iterator)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER   :: iterator
+    CLASS(<%= element_type %>_),POINTER   :: iterator
 
     IF (this%nb.GT.0) THEN
         this%iter_id = this%iter_id + 1
@@ -133,7 +133,7 @@ END FUNCTION
 !PREVIOUS
 FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER   :: iterator
+    CLASS(<%= element_type %>_),POINTER   :: iterator
 
     IF (this%nb.GT.0) THEN
         this%iter_id = this%iter_id - 1
@@ -150,7 +150,7 @@ END FUNCTION
 !LAST
 FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER   :: iterator
+    CLASS(<%= element_type %>_),POINTER   :: iterator
 
     IF (this%nb.GT.0) THEN
         this%iter_id = this%max_id
@@ -169,7 +169,7 @@ END FUNCTION
 !DESTROY CONTAINER
 SUBROUTINE <%= collection_type %>_destroy(this,info)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER :: p => NULL()
+    CLASS(<%= element_type %>_),POINTER :: p => NULL()
     INTEGER, INTENT(OUT) :: info
 
     CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_destroy"
