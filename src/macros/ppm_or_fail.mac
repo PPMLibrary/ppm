@@ -1,4 +1,5 @@
 macro fail(message, type=ppm_err_alloc,info=info,exit_point=9999,caller=caller)
+  <%= info %> = ppm_error_error
   call ppm_error(<%= type %>, &
       <%= message %>,&
       <%= caller %>, 100000 , <%= info %>)

@@ -396,31 +396,18 @@ SUBROUTINE equi_mesh_add_patch(this,patch,info,patchid)
             ALLOCATE(ppm_t_subpatch::p,STAT=info)
             or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
-            SELECT TYPE(pp => p)
-            TYPE IS (ppm_t_subpatch)
-                CALL pp%create(meshid,istart,iend,info)
+            !SELECT TYPE(pp => p)
+            !TYPE IS (ppm_t_subpatch)
+                CALL p%create(meshid,istart,iend,info)
                 or_fail("could not create new subpatch")
-                nsubpatch = nsubpatch+1
-                write(*,*) 'ok here 0'
-                A_p%subpatch(nsubpatch)%t => pp
-            END SELECT
+            !END SELECT
 
-                write(*,*) 'ok here 1'
-                write(*,*) 'subpatch assoc? ',associated(this%subpatch)
-
-                select type(t=>this%subpatch)
-                type is (ppm_c_subpatch)
-                    write(*,*) 'type is ok'
-                CLASS is (ppm_c_subpatch_)
-                    write(*,*) 'type is of the abstract kind'
-                class default
-                    write(*,*) 'this is all BS'
-                end select
+            nsubpatch = nsubpatch+1
+            A_p%subpatch(nsubpatch)%t => p
 
             ! add it to the list of subpatches on this mesh
             CALL this%subpatch%push(p,info,id)
             or_fail("could not add new subpatch to mesh")
-                write(*,*) 'ok here 2'
 
         ENDIF
     ENDDO
@@ -525,16 +512,22 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     IF (.NOT.ASSOCIATED(this%subpatch)) THEN
         ALLOCATE(ppm_c_subpatch::this%subpatch,STAT=info)
         or_fail_alloc("could not allocate this%subpatch")
+    ELSE
+        fail("subpatch collection is already allocated. Call destroy() first?")
     ENDIF
 
     IF (.NOT.ASSOCIATED(this%patch)) THEN
         ALLOCATE(ppm_c_A_subpatch::this%patch,STAT=info)
         or_fail_alloc("could not allocate this%patch")
+    ELSE
+        fail("patch collection is already allocated. Call destroy() first?")
     ENDIF
 
     IF (.NOT.ASSOCIATED(this%sub)) THEN
         ALLOCATE(ppm_c_A_subpatch::this%sub,STAT=info)
         or_fail_alloc("could not allocate this%sub")
+    ELSE
+        fail("sub collection is already allocated. Call destroy() first?")
     ENDIF
 
     !-------------------------------------------------------------------------
@@ -658,14 +651,18 @@ SUBROUTINE equi_mesh_destroy(this,info)
         DEALLOCATE(this%subpatch,STAT=info)
         or_fail_dealloc('subpatch')
     ENDIF
-
-
-    !TODO !!!!!
-!    CALL this%patch%destroy(info)
-!    or_fail_dealloc('patch')
-!    ENDIF
-!    CALL this%sub%destroy(info)
-!    or_fail_dealloc('sub')
+    IF (ASSOCIATED(this%patch)) THEN
+        CALL this%patch%destroy(info)
+        or_fail_dealloc('patch object')
+        DEALLOCATE(this%patch,STAT=info)
+        or_fail_dealloc('patch')
+    ENDIF
+    IF (ASSOCIATED(this%sub)) THEN
+        CALL this%sub%destroy(info)
+        or_fail_dealloc('sub object')
+        DEALLOCATE(this%sub,STAT=info)
+        or_fail_dealloc('sub')
+    ENDIF
 
     !-------------------------------------------------------------------------
     !  Return

@@ -74,6 +74,7 @@ END TYPE
 define_collection_type(ppm_t_subpatch_data)
 
 TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
+    integer :: test = 17
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
     PROCEDURE  :: destroy   => subpatch_destroy

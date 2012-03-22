@@ -139,11 +139,11 @@ TYPE,ABSTRACT ::  ppm_t_mesh_data_
     !!! Contains pointers to the data and bookkeeping information
     !!! for each mesh on which fieldID has been discretized.
 
-    INTEGER                                          :: meshID
+    INTEGER                                          :: meshID = 0
     !!! ID of the mesh on which fieldID is discretized
-    INTEGER                                          :: lda
+    INTEGER                                          :: lda = 0
     !!! number of components (1 for scalar fields)
-    INTEGER                                          :: p_idx
+    INTEGER                                          :: p_idx = 0
     !!! Storage index for of the data array on the subpatches of this mesh
     !!! (A mesh stores data for several fields. Each subpatch thus 
     !!!  contains a list of data arrays, corresponding to the different
@@ -166,15 +166,15 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! vorticity) and links to its discretized representation on meshes 
     !!! and/or on particles.
 
-    INTEGER                                          :: fieldID
+    INTEGER                                          :: fieldID = 0
     !!! global identifier 
     CHARACTER(LEN=ppm_char)                          :: name
     !!! string description
-    INTEGER                                          :: lda
+    INTEGER                                          :: lda = 0
     !!! number of components (1 for scalar fields)
     !!!
     !!! pointers to arrays where the scalar-value properties are stored
-    CLASS(ppm_c_mesh_data_),POINTER              :: M
+    CLASS(ppm_c_mesh_data_),POINTER              :: M => NULL()
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
     ! CLASS(ppm_c_part_data_),ALLOCATABLE            :: P
@@ -247,7 +247,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! Upper-right coordinates
     INTEGER, DIMENSION(:),POINTER :: nnodes => NULL()
     !!! number of nodes in each direction
-    CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data
+    CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data => NULL()
     !!! container for the data arrays for each property discretized
     !!! on this mesh
     CONTAINS
@@ -311,10 +311,10 @@ END TYPE
 
 TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
-    INTEGER                           :: ID
+    INTEGER                           :: ID = 0
     !!! ID of the mesh in the belonging topology
     !!! It is the same as its index in the ppm_t_topo%mesh array
-    INTEGER                           :: topoid
+    INTEGER                           :: topoid = 0
     !!! ID of the topology for which this mesh is defined
 
     INTEGER, DIMENSION(:), POINTER    :: Nm    => NULL()
@@ -330,15 +330,15 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     INTEGER, DIMENSION(:,:), POINTER    :: nnodes    => NULL()
     INTEGER, DIMENSION(:,:), POINTER    :: istart    => NULL()
 
-    CLASS(ppm_c_subpatch_),POINTER            :: subpatch
+    CLASS(ppm_c_subpatch_),POINTER            :: subpatch => NULL()
     !!! container for subdomains patches 
 
-    INTEGER                            :: npatch
+    INTEGER                            :: npatch = 0
     !!! Number of patches (NOT subpatches)
-    CLASS(ppm_c_A_subpatch_),POINTER          :: patch
+    CLASS(ppm_c_A_subpatch_),POINTER          :: patch => NULL()
     !!! array of arrays of pointers to the subpatches for each patch
 
-    CLASS(ppm_c_A_subpatch_),POINTER          :: sub
+    CLASS(ppm_c_A_subpatch_),POINTER          :: sub => NULL()
     !!! array of arrays of pointers to the subpatches for each sub.
 
 

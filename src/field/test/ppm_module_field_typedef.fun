@@ -7,7 +7,7 @@ use ppm_module_topo_typedef
     INCLUDE "mpif.h"
 #endif
 
-    integer, parameter              :: debug = 2
+    integer, parameter              :: debug = 0
     integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 #ifdef __MPI
     integer, parameter              :: comm = mpi_comm_world
@@ -187,9 +187,7 @@ use ppm_module_topo_typedef
         !    write(*,*) '   ',topo%max_subd(1:ndim,isub)
         !enddo   
 
-        write(*,*) 'starting add patch'
         call Mesh1%add_patch(my_patch,info,mypatchid) 
-        write(*,*) 'done add patch'
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
