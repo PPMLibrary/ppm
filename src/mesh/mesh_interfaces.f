@@ -97,7 +97,7 @@ SUBROUTINE equi_mesh_destroy_(this,info)
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE equi_mesh_add_patch_(this,patch,info,patchid)
+SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid)
     !!! Add a patch to a mesh
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                  :: this
@@ -109,6 +109,16 @@ SUBROUTINE equi_mesh_add_patch_(this,patch,info,patchid)
     !!! Returns status, 0 upon success
     INTEGER, OPTIONAL                       :: patchid
     !!! id of the patch, if we want one.
+END SUBROUTINE
+
+SUBROUTINE equi_mesh_def_uniform_(this,info,patchid)
+    !!! Add a uniform patch to a mesh
+    IMPORT ppm_t_equi_mesh_,ppm_kind_double
+    CLASS(ppm_t_equi_mesh_)                  :: this
+    INTEGER                 , INTENT(  OUT) :: info
+    !!! Returns status, 0 upon success
+    INTEGER, OPTIONAL                       :: patchid
+    !!! id of the (uniform) patch, if we want one.
 END SUBROUTINE
 
 FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)

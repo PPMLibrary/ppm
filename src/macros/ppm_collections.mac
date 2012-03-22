@@ -301,6 +301,10 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
         this%vec(this%max_id)%t => e
     END SELECT
 
+    IF (.NOT.ASSOCIATED(this%vec(this%max_id)%t)) THEN
+       $fail("Pushing element into collection failed unexpectedly")
+    ENDIF
+
     element => NULL()
 
     CALL substop(caller,t0,info)

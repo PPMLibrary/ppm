@@ -153,10 +153,9 @@ TYPE,ABSTRACT ::  ppm_t_mesh_data_
     !!! Booleans used to track the state of this discretization.
 
     CONTAINS
-    PROCEDURE(mesh_data_create_),DEFERRED :: create
+    PROCEDURE(mesh_data_create_), DEFERRED :: create
     PROCEDURE(mesh_data_destroy_),DEFERRED :: destroy
 END TYPE
-
 ! Container for mesh_data
 define_abstract_collection_type(ppm_t_mesh_data_)
 
@@ -166,15 +165,15 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! vorticity) and links to its discretized representation on meshes 
     !!! and/or on particles.
 
-    INTEGER                                          :: fieldID = 0
+    INTEGER                                         :: fieldID = 0
     !!! global identifier 
-    CHARACTER(LEN=ppm_char)                          :: name
+    CHARACTER(LEN=ppm_char)                         :: name
     !!! string description
-    INTEGER                                          :: lda = 0
+    INTEGER                                         :: lda = 0
     !!! number of components (1 for scalar fields)
     !!!
     !!! pointers to arrays where the scalar-value properties are stored
-    CLASS(ppm_c_mesh_data_),POINTER              :: M => NULL()
+    CLASS(ppm_c_mesh_data_),POINTER                 :: M => NULL()
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
     ! CLASS(ppm_c_part_data_),ALLOCATABLE            :: P
@@ -182,8 +181,8 @@ TYPE,ABSTRACT :: ppm_t_field_
     !    !!! for each particle set on which this field has been discretized.
 
     CONTAINS
-    PROCEDURE(field_create_),DEFERRED :: create
-    PROCEDURE(field_destroy_),DEFERRED :: destroy
+    PROCEDURE(field_create_),       DEFERRED :: create
+    PROCEDURE(field_destroy_),      DEFERRED :: destroy
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
 END TYPE ppm_t_field_
 ! Container for fields
@@ -194,11 +193,11 @@ define_abstract_collection_type(ppm_t_field_)
 !!----------------------------------------------------------------------
 TYPE,ABSTRACT :: ppm_t_subpatch_data_
     !!! pointers to arrays where the data are stored
-    INTEGER, DIMENSION(:,:), POINTER          :: data_2d_i => NULL()
+    INTEGER, DIMENSION(:,:), POINTER                       :: data_2d_i => NULL()
     !!! if the data is 2d int
-    INTEGER, DIMENSION(:,:,:), POINTER        :: data_3d_i => NULL()
+    INTEGER, DIMENSION(:,:,:), POINTER                     :: data_3d_i => NULL()
     !!! if the data is 3d int
-    INTEGER, DIMENSION(:,:,:,:), POINTER      :: data_4d_i => NULL()
+    INTEGER, DIMENSION(:,:,:,:), POINTER                   :: data_4d_i => NULL()
     !!! if the data is 4d int
     REAL(ppm_kind_single), DIMENSION(:,:), POINTER         :: data_2d_rs => NULL()
     !!! if the data is 2d real
@@ -224,11 +223,11 @@ TYPE,ABSTRACT :: ppm_t_subpatch_data_
     !!! if the data is 3d complex
     COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:), POINTER  :: data_4d_cd => NULL()
     !!! if the data is 4d complex
-    LOGICAL, DIMENSION(:,:), POINTER          :: data_2d_l => NULL()
+    LOGICAL, DIMENSION(:,:), POINTER                       :: data_2d_l => NULL()
     !!! if the data is 2d logical
-    LOGICAL, DIMENSION(:,:,:), POINTER        :: data_3d_l => NULL()
+    LOGICAL, DIMENSION(:,:,:), POINTER                     :: data_3d_l => NULL()
     !!! if the data is 3d logical
-    LOGICAL, DIMENSION(:,:,:,:), POINTER      :: data_4d_l => NULL()
+    LOGICAL, DIMENSION(:,:,:,:), POINTER                   :: data_4d_l => NULL()
     !!! if the data is 4d logical
 
     CONTAINS
@@ -239,6 +238,7 @@ END TYPE
 define_abstract_collection_type(ppm_t_subpatch_data_)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
+    !!! intersection of a user-defined patch and a subdomain
     INTEGER               :: meshID
     !!! MeshID to which this subpatch belongs
     INTEGER, DIMENSION(:),POINTER :: istart => NULL()
@@ -263,6 +263,7 @@ define_abstract_collection_type(ppm_t_subpatch_)
 
 
 TYPE,ABSTRACT :: ppm_t_A_subpatch_
+    !!! Bookkeeping derived-type. Contains an array of pointers to subpatches
     INTEGER                                        :: patchid = 0
     !!! Id of the patch
     INTEGER                                        :: nsubpatch = 0
@@ -326,7 +327,7 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     REAL(ppm_kind_double),DIMENSION(:),POINTER :: h => NULL()
     !!! mesh spacing
 
-    !TODO : delete those 2 guys
+    !TODO : delete those 2 guys once the transition to the new DS is done
     INTEGER, DIMENSION(:,:), POINTER    :: nnodes    => NULL()
     INTEGER, DIMENSION(:,:), POINTER    :: istart    => NULL()
 
@@ -338,8 +339,9 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     CLASS(ppm_c_A_subpatch_),POINTER          :: patch => NULL()
     !!! array of arrays of pointers to the subpatches for each patch
 
+    !TODO: this does not work yet
     CLASS(ppm_c_A_subpatch_),POINTER          :: sub => NULL()
-    !!! array of arrays of pointers to the subpatches for each sub.
+    !!! pointers to the subpatches contained in each sub.
 
 
     !------------------------------------------------------------------
@@ -388,7 +390,8 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     CONTAINS
     PROCEDURE(equi_mesh_create_),   DEFERRED :: create
     PROCEDURE(equi_mesh_destroy_),  DEFERRED :: destroy
-    PROCEDURE(equi_mesh_add_patch_),DEFERRED :: add_patch
+    PROCEDURE(equi_mesh_def_patch_),DEFERRED :: def_patch
+    PROCEDURE(equi_mesh_def_uniform_),DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
       &                             DEFERRED :: new_subpatch_data_ptr 
 END TYPE
@@ -523,17 +526,11 @@ INTERFACE
 !----------------------------------------------------------------------
 ! Interfaces for collections type-bound procedures
 !----------------------------------------------------------------------
-! Container for meshes
 define_abstract_collection_interfaces(ppm_t_equi_mesh_)
-! Container for subpatch pointer arrays
 define_abstract_collection_interfaces(ppm_t_A_subpatch_)
-! Container for mesh_data
 define_abstract_collection_interfaces(ppm_t_mesh_data_)
-! Container for fields
 define_abstract_collection_interfaces(ppm_t_field_)
-! Container for lists of (pointers to) subpatch_data
 define_abstract_collection_interfaces(ppm_t_subpatch_data_)
-! Container for lists of (pointers to) subpatch
 define_abstract_collection_interfaces(ppm_t_subpatch_)
 
 END INTERFACE

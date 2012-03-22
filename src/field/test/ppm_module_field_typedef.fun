@@ -187,7 +187,7 @@ use ppm_module_topo_typedef
         !    write(*,*) '   ',topo%max_subd(1:ndim,isub)
         !enddo   
 
-        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 

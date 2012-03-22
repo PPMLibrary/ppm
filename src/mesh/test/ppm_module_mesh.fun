@@ -131,7 +131,7 @@ real(mk),dimension(ndim)         :: offset
         mypatchid = 1
         my_patch = (/0.5,0.1,5.1,10.0/)
 
-        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -158,7 +158,7 @@ real(mk),dimension(ndim)         :: offset
         mypatchid = 3
         my_patch = (/0.1,0.0,0.3,0.8/)
 
-        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
 
         
@@ -186,7 +186,7 @@ real(mk),dimension(ndim)         :: offset
             DO j = 1,Nm(2)/4
                 mypatchid = mypatchid + 1
                 my_patch = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
-                call Mesh1%add_patch(my_patch,info,mypatchid) 
+                call Mesh1%def_patch(my_patch,info,mypatchid) 
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
@@ -210,7 +210,7 @@ real(mk),dimension(ndim)         :: offset
         my_patch(1:ndim)        = min_phys(1:ndim)
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
 
-        call Mesh1%add_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
 
         Assert_True(associated(Mesh1%subpatch))
@@ -224,6 +224,14 @@ real(mk),dimension(ndim)         :: offset
         ENDDO
         Assert_Equal(isub,topo%nsublist)
 
+        call Mesh1%destroy(info)
+        Assert_Equal(info,0)
+
+        !test the wrapper routine
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+        call Mesh1%def_uniform(info)
+        Assert_Equal(info,0)
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
     end test
