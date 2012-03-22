@@ -36,11 +36,11 @@ SUBROUTINE subpatch_data_destroy_(pdata,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_create_(p,meshid,istart,iend,info)
+SUBROUTINE subpatch_create_(p,meshID,istart,iend,info)
     !!! Constructor for subpatch
     IMPORT ppm_t_subpatch_,ppm_kind_double
     CLASS(ppm_t_subpatch_)              :: p
-    INTEGER                            :: meshid
+    INTEGER                            :: meshID
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
     INTEGER,               INTENT(OUT) :: info
@@ -131,3 +131,17 @@ FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
     INTEGER                 , INTENT(  OUT) :: info
     !!! Returns status, 0 upon success
 END FUNCTION 
+!CREATE
+SUBROUTINE field_info_create_(this,fieldID,info)
+    IMPORT ppm_t_field_info_
+    CLASS(ppm_t_field_info_)              :: this
+    INTEGER,                  INTENT(IN ) :: fieldID
+    INTEGER,                  INTENT(OUT) :: info
+END SUBROUTINE
+!DESTROY
+SUBROUTINE field_info_destroy_(this,info)
+    IMPORT ppm_t_field_info_
+    CLASS(ppm_t_field_info_)             :: this
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE 
+

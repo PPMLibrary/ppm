@@ -131,33 +131,35 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 #define  _MK _ppm_kind_double
 #include "part/particles_abstract_typedef.f"
 
-TYPE,ABSTRACT ::  ppm_t_mesh_data_
-    !!! Data structure for mesh data. 
+TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     !!! (Contained inside a ppm_t_field, so relates to one specific
     !!!  field, denoted by fieldID)
+    !!! Data structure containing info about the current discretization
+    !!! of fieldID on a given Mesh
     !!! 
     !!! Contains pointers to the data and bookkeeping information
-    !!! for each mesh on which fieldID has been discretized.
+    !!! for a mesh on which fieldID has been discretized.
 
     INTEGER                                          :: meshID = 0
-    !!! ID of the mesh on which fieldID is discretized
+    !!! id of the mesh on which fieldID is discretized
     INTEGER                                          :: lda = 0
     !!! number of components (1 for scalar fields)
     INTEGER                                          :: p_idx = 0
-    !!! Storage index for of the data array on the subpatches of this mesh
+    !!! Storage index for the subpatch_data object which contains the data where
+    !!! fieldID has been discretized on this mesh.
     !!! (A mesh stores data for several fields. Each subpatch thus 
     !!!  contains a list of data arrays, corresponding to the different
-    !!!  fields. The p_idx index gives the location of the data array
+    !!!  fields. The data_ptr points to the location of the data array
     !!!  corresponding to fieldID within this list)
     LOGICAL,DIMENSION(ppm_mdata_lflags)              :: flags = .FALSE.
     !!! Booleans used to track the state of this discretization.
 
     CONTAINS
-    PROCEDURE(mesh_data_create_), DEFERRED :: create
-    PROCEDURE(mesh_data_destroy_),DEFERRED :: destroy
+    PROCEDURE(mesh_discr_info_create_), DEFERRED :: create
+    PROCEDURE(mesh_discr_info_destroy_),DEFERRED :: destroy
 END TYPE
-! Container for mesh_data
-define_abstract_collection_type(ppm_t_mesh_data_)
+! Container for mesh_discr_info
+define_abstract_collection_type(ppm_t_mesh_discr_info_)
 
 TYPE,ABSTRACT :: ppm_t_field_
     !!! Data structure for fields 
@@ -165,7 +167,7 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! vorticity) and links to its discretized representation on meshes 
     !!! and/or on particles.
 
-    INTEGER                                         :: fieldID = 0
+    INTEGER                                         :: ID = 0
     !!! global identifier 
     CHARACTER(LEN=ppm_char)                         :: name
     !!! string description
@@ -173,10 +175,10 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! number of components (1 for scalar fields)
     !!!
     !!! pointers to arrays where the scalar-value properties are stored
-    CLASS(ppm_c_mesh_data_),POINTER                 :: M => NULL()
+    CLASS(ppm_c_mesh_discr_info_),POINTER           :: M => NULL()
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
-    ! CLASS(ppm_c_part_data_),ALLOCATABLE            :: P
+    ! CLASS(ppm_c_part_discr_info_),POINTER           :: P => NULL()
     !    !!! Collection of pointers to the data and bookkeeping information
     !    !!! for each particle set on which this field has been discretized.
 
@@ -239,8 +241,8 @@ define_abstract_collection_type(ppm_t_subpatch_data_)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
-    INTEGER               :: meshID
-    !!! MeshID to which this subpatch belongs
+    INTEGER                       :: meshID = 0
+    !!! ID of the mesh to which this subpatch belongs
     INTEGER, DIMENSION(:),POINTER :: istart => NULL()
     !!! Lower-left coordinates
     INTEGER, DIMENSION(:),POINTER :: iend => NULL()
@@ -310,8 +312,28 @@ TYPE ppm_t_mesh_maplist
     !!! recv buffer pointer
 END TYPE
 
+TYPE,ABSTRACT ::  ppm_t_field_info_
+    !!! (Contained inside a ppm_t_equi_mesh, so relates to one specific
+    !!!  field, denoted by meshID)
+    !!! Data structure containing info about a given field currently 
+    !!! discretized this Mesh
+    !!! 
+    !!! Contains pointers to the field itself as well as some
+    !!!  bookkeeping information 
+
+    INTEGER                                 :: fieldID = 0
+    !!! pointer to a field that is discretized on this mesh
+
+    CONTAINS
+    PROCEDURE(field_info_create_), DEFERRED :: create
+    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
+END TYPE
+! Container for field_info
+define_abstract_collection_type(ppm_t_field_info_)
+
 TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
+   
     INTEGER                           :: ID = 0
     !!! ID of the mesh in the belonging topology
     !!! It is the same as its index in the ppm_t_topo%mesh array
@@ -342,6 +364,9 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !TODO: this does not work yet
     CLASS(ppm_c_A_subpatch_),POINTER          :: sub => NULL()
     !!! pointers to the subpatches contained in each sub.
+
+    CLASS(ppm_c_field_info_),POINTER          :: field_ptr => NULL()
+    !!! Pointers to the fields that are currently discretized on this mesh
 
 
     !------------------------------------------------------------------
@@ -528,7 +553,8 @@ INTERFACE
 !----------------------------------------------------------------------
 define_abstract_collection_interfaces(ppm_t_equi_mesh_)
 define_abstract_collection_interfaces(ppm_t_A_subpatch_)
-define_abstract_collection_interfaces(ppm_t_mesh_data_)
+define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
+define_abstract_collection_interfaces(ppm_t_field_info_)
 define_abstract_collection_interfaces(ppm_t_field_)
 define_abstract_collection_interfaces(ppm_t_subpatch_data_)
 define_abstract_collection_interfaces(ppm_t_subpatch_)

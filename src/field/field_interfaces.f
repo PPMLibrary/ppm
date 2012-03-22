@@ -27,10 +27,9 @@
 ! CH-8092 Zurich, Switzerland
 !-------------------------------------------------------------------------
 !CREATE
-SUBROUTINE field_create_(this,fieldID,lda,name,info)
+SUBROUTINE field_create_(this,lda,name,info)
     IMPORT ppm_t_field_
     CLASS(ppm_t_field_)                      :: this
-    INTEGER,                     INTENT(IN) :: fieldID
     INTEGER,                     INTENT(IN) :: lda
     CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
@@ -42,9 +41,9 @@ SUBROUTINE field_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !CREATE
-SUBROUTINE mesh_data_create_(this,meshID,lda,p_idx,flags,info)
-    IMPORT ppm_t_mesh_data_,ppm_mdata_lflags
-    CLASS(ppm_t_mesh_data_)                      :: this
+SUBROUTINE mesh_discr_info_create_(this,meshID,lda,p_idx,flags,info)
+    IMPORT ppm_t_mesh_discr_info_,ppm_mdata_lflags
+    CLASS(ppm_t_mesh_discr_info_)           :: this
     INTEGER,                     INTENT(IN) :: meshID
     INTEGER,                     INTENT(IN) :: lda
     INTEGER,                     INTENT(IN) :: p_idx
@@ -52,9 +51,9 @@ SUBROUTINE mesh_data_create_(this,meshID,lda,p_idx,flags,info)
     INTEGER,                    INTENT(OUT) :: info
 END SUBROUTINE
 !DESTROY
-SUBROUTINE mesh_data_destroy_(this,info)
-    IMPORT ppm_t_mesh_data_
-    CLASS(ppm_t_mesh_data_)             :: this
+SUBROUTINE mesh_discr_info_destroy_(this,info)
+    IMPORT ppm_t_mesh_discr_info_
+    CLASS(ppm_t_mesh_discr_info_)             :: this
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 

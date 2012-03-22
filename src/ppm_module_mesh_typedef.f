@@ -27,6 +27,7 @@ IMPLICIT NONE
 !----------------------------------------------------------------------
 ! Global variables 
 !----------------------------------------------------------------------
+INTEGER                            :: ppm_nb_meshes = 0
 !----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
@@ -68,6 +69,14 @@ TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
 END TYPE
 define_collection_type(ppm_t_A_subpatch)
 
+
+TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
+    CONTAINS
+    PROCEDURE :: create  => field_info_create
+    PROCEDURE :: destroy => field_info_destroy
+END TYPE
+define_collection_type(ppm_t_field_info)
+
 TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
     PROCEDURE  :: create    => equi_mesh_create
@@ -81,7 +90,6 @@ define_collection_type(ppm_t_equi_mesh)
 !----------------------------------------------------------------------
 ! DATA STORAGE for the meshes
 !----------------------------------------------------------------------
-INTEGER                            :: ppm_nb_meshes = 0
 TYPE(ppm_c_equi_mesh)              :: ppm_mesh
 
 
@@ -94,6 +102,7 @@ CONTAINS
 !Procedures for collections of derived types
 define_collection_procedures(ppm_t_equi_mesh)
 define_collection_procedures(ppm_t_subpatch_data)
+define_collection_procedures(ppm_t_field_info)
 define_collection_procedures(ppm_t_subpatch)
 define_collection_procedures(ppm_t_A_subpatch)
 
@@ -104,11 +113,21 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
 
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
+
+    CALL substart(caller,t0,info)
+
     !Direct access to the data arrays 
-    ! TODO? different API?
     wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_3d_rd
+    IF (.NOT.ASSOCIATED(wp)) THEN
+        IF (Field%lda+ppm_dim.NE.3) THEN
+            fail("wrong dimensions for pointer arg wp")
+        ENDIF
+    ENDIF
 
-
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
 END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
@@ -118,10 +137,22 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
 
-    !Direct access to the data arrays 
-    ! TODO? different API?
-    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_2d_rd
+    REAL(KIND(1.D0))                   :: t0
+    INTEGER                            :: iopt, ndim
+    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
 
+    CALL substart(caller,t0,info)
+
+    !Direct access to the data arrays 
+    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_2d_rd
+    IF (.NOT.ASSOCIATED(wp)) THEN
+        IF (Field%lda+ppm_dim.NE.2) THEN
+            fail("wrong dimensions for pointer arg wp")
+        ENDIF
+    ENDIF
+
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
 
 END SUBROUTINE
 
@@ -265,10 +296,10 @@ SUBROUTINE subpatch_data_destroy(pdata,info)
 END SUBROUTINE subpatch_data_destroy
 
 !CREATE
-SUBROUTINE subpatch_create(p,meshid,istart,iend,info)
+SUBROUTINE subpatch_create(p,meshID,istart,iend,info)
     !!! Destructor for subdomain data data structure
     CLASS(ppm_t_subpatch)              :: p
-    INTEGER                            :: meshid
+    INTEGER                            :: meshID
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
     INTEGER,               INTENT(OUT) :: info
@@ -292,7 +323,7 @@ SUBROUTINE subpatch_create(p,meshid,istart,iend,info)
         or_fail_alloc("could not allocate p%nnodes")
     ENDIF
 
-    p%meshID=meshid
+    p%meshID = meshID
     p%istart = istart
     p%iend   = iend
     p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
@@ -327,9 +358,8 @@ SUBROUTINE subpatch_destroy(p,info)
     IF (ASSOCIATED(p%subpatch_data)) THEN
         CALL p%subpatch_data%destroy(info)
         or_fail_dealloc("p%subpatch_data")
+        NULLIFY(p%subpatch_data)
     ENDIF
-
-    p%meshID=0
 
     CALL substop(caller,t0,info)
     9999  CONTINUE
@@ -411,7 +441,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
     REAL(KIND(1.D0))                   :: t0
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
     CHARACTER(LEN=ppm_char)   :: caller = 'mesh_def_patch'
-    INTEGER                   :: i,meshid,isub,nsubpatch,id,pid
+    INTEGER                   :: i,isub,nsubpatch,id,pid,meshID
     CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
     CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
     INTEGER,              DIMENSION(ppm_dim) :: istart,iend
@@ -432,7 +462,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
     !-------------------------------------------------------------------------
     h = this%h
     Offset = this%Offset
-    meshid = this%ID
+    meshID = this%ID
     topo => ppm_topo(this%topoid)%t
     !-------------------------------------------------------------------------
     !  Allocate bookkeeping arrays (pointers between patches and subpatches)
@@ -475,7 +505,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
             ALLOCATE(ppm_t_subpatch::p,STAT=info)
                 or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
-            CALL p%create(meshid,istart,iend,info)
+            CALL p%create(meshID,istart,iend,info)
                 or_fail("could not create new subpatch")
 
             nsubpatch = nsubpatch+1
@@ -513,7 +543,6 @@ SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
     !-------------------------------------------------------------------------
     REAL(KIND(1.D0))                           :: t0
     CHARACTER(LEN=ppm_char)                    :: caller = 'mesh_def_uniform'
-    INTEGER                                    :: i,meshid,isub,nsubpatch,id,pid
     REAL(ppm_kind_double),DIMENSION(2*ppm_dim) :: patch
     !-------------------------------------------------------------------------
     !  Initialise
@@ -595,9 +624,11 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     !This mesh is defined for a given topology
     this%topoid = topoid
 
-    !Global id, internal to ppm
+    !dumb way of creating a global ID for this mesh
+    !TODO find something better? (needed if one creates and destroy
+    ! many meshes)
     ppm_nb_meshes = ppm_nb_meshes + 1
-    this%ID = ppm_nb_meshes
+    this%ID = ppm_nb_meshes 
 
     topo => ppm_topo(topoid)%t
 
@@ -782,6 +813,8 @@ SUBROUTINE equi_mesh_destroy(this,info)
         or_fail_dealloc('sub')
     ENDIF
 
+    this%ID = 0
+
     !-------------------------------------------------------------------------
     !  Return
     !-------------------------------------------------------------------------
@@ -822,5 +855,42 @@ FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
     CALL substop(caller,t0,info)
     RETURN
 END FUNCTION equi_mesh_new_subpatch_data_ptr
+
+!CREATE
+SUBROUTINE field_info_create(this,fieldID,info)
+    !!! Constructor for subdomain data data structure
+    CLASS(ppm_t_field_info)               :: this
+    INTEGER,                  INTENT(IN)  :: fieldID
+    INTEGER,                  INTENT(OUT) :: info
+
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = 'field_info_create'
+
+    CALL substart(caller,t0,info)
+
+    this%fieldID = fieldID
+
+    CALL substop(caller,t0,info)
+
+    9999  CONTINUE
+
+END SUBROUTINE field_info_create
+!DESTROY
+SUBROUTINE field_info_destroy(this,info)
+    !!! Destructor for subdomain data data structure
+    CLASS(ppm_t_field_info)             :: this
+    INTEGER,               INTENT(OUT) :: info
+
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = 'field_info_destroy'
+
+    CALL substart(caller,t0,info)
+
+    this%fieldID = 0
+
+    CALL substop(caller,t0,info)
+    9999  CONTINUE
+END SUBROUTINE field_info_destroy
+
 
 END MODULE ppm_module_mesh_typedef

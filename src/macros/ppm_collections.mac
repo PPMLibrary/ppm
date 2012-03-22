@@ -10,6 +10,7 @@ TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
             PROCEDURE       :: exists  => <%= collection_type %>_exists
             PROCEDURE       :: push    => <%= collection_type %>_push
             PROCEDURE       :: remove  => <%= collection_type %>_remove
+            PROCEDURE       :: grow_size=><%= collection_type %>_grow_size
 END TYPE
 end macro
 
@@ -32,6 +33,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     PROCEDURE(<%= collection_type %>_exists), DEFERRED :: exists 
     PROCEDURE(<%= collection_type %>_push),   DEFERRED :: push 
     PROCEDURE(<%= collection_type %>_remove), DEFERRED :: remove 
+    PROCEDURE(<%= collection_type %>_grow_size),DEFERRED::grow_size 
 END TYPE 
 end macro
 
@@ -63,17 +65,16 @@ FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
 END FUNCTION
 !DESTROY COLLECTION
 SUBROUTINE <%= collection_type %>_destroy(this,info)
-    IMPORT <%= collection_type %>,<%= element_type %>
+    IMPORT <%= collection_type %>
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
     INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
 !EXISTS
-FUNCTION <%= collection_type %>_exists(this,id,caller) RESULT(exists)
+FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
     IMPORT <%= collection_type %>
     CLASS(<%= collection_type %>)                  :: this
-    INTEGER,                       INTENT(IN   )   :: id
     LOGICAL                                        :: exists
-    CHARACTER(LEN = *),OPTIONAL                    :: caller
+    INTEGER,                       INTENT(IN   )   :: id
 END FUNCTION
 !PUSH ELEMENT INTO COLLECTION
 SUBROUTINE <%= collection_type %>_push(this,element,info,id)
@@ -89,6 +90,12 @@ SUBROUTINE <%= collection_type %>_remove(this,info,id)
     CLASS(<%= collection_type %>)      :: this
     INTEGER,          INTENT(  OUT)    :: info
     INTEGER,OPTIONAL, INTENT(IN   )    :: id
+END SUBROUTINE
+!GROW COLLECTION SIZE
+SUBROUTINE <%= collection_type %>_grow_size(this,info)
+    IMPORT <%= collection_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
 end macro
 
@@ -196,10 +203,8 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
 END SUBROUTINE
 
 !EXISTS
-FUNCTION <%= collection_type %>_exists(this,id,caller) RESULT(exists)
-    !!!------------------------------------------------------------------------!
-    !!! Check whether a neighbor list exists and can be accessed at this id
-    !!!------------------------------------------------------------------------!
+FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
+    !!! Check whether an element exists and can be accessed at this id
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
@@ -209,26 +214,27 @@ FUNCTION <%= collection_type %>_exists(this,id,caller) RESULT(exists)
     !!! id where the data is stored
     LOGICAL                                        :: exists
     !!! Return status, on success 0.
-    CHARACTER(LEN = *),OPTIONAL                    :: caller
-    !!! Calling routine
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)               :: lcaller
     INTEGER                                 :: info
 
-    IF (PRESENT(caller)) THEN
-        lcaller = TRIM(ADJUSTL(caller))
-    ELSE
-        lcaller = 'ppm_DS_exists'
-    ENDIF
-    exists = .FALSE.
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
     IF (id.LE.0 .OR. id.LT.this%min_id .OR. id.GT.this%max_id) THEN
-        $fail("Invalid id for this data structure, use create() first",ppm_err_argument,info,9999,lcaller)
+        exists = .FALSE.
+        RETURN
     ENDIF
+    IF (.NOT.ASSOCIATED(this%vec)) THEN
+        exists = .FALSE.
+        RETURN
+    ENDIF
+    IF (.NOT.ASSOCIATED(this%vec(id)%t)) THEN
+        exists = .FALSE.
+        RETURN
+    ENDIF
+    exists = .TRUE.
 
     9999 CONTINUE
     RETURN
@@ -258,38 +264,8 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
     IF (PRESENT(id)) id = this%max_id
 
     IF (this%max_id.GT.this%vec_size) THEN
-        IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
-            !if the array is empty, allocate with a reasonable size
-            this%vec_size = 10
-            ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
-        ELSE
-            !if the array is full, double its size
-            ALLOCATE(vec_temp(this%vec_size),STAT=info)
-            $or_fail_alloc("could not allocate temporary array")
-
-            DO i=1,this%vec_size
-                SELECT TYPE (t => this%vec(i)%t)
-                TYPE IS (<%= element_type %>)
-                    vec_temp(i)%t => t
-                END SELECT
-            ENDDO
-
-            DEALLOCATE(this%vec,STAT=info)
-            $or_fail_dealloc("could not deallocate collection array")
-
-            ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
-            $or_fail_alloc("could not allocate collection array")
-
-            DO i=1,this%vec_size
-                 SELECT TYPE (tmp => vec_temp(i)%t)
-                 TYPE IS (<%= element_type %>)
-                     this%vec(i)%t => tmp
-                 END SELECT
-            ENDDO
-            this%vec_size = 2 * this%vec_size
-            DEALLOCATE(vec_temp,STAT=info)
-            $or_fail_dealloc("could not deallocate temporary array")
-        ENDIF
+        CALL this%grow_size(info)
+            $or_fail("could not grow <%= collection_type %> to a larger size")
     ENDIF
 
     IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
@@ -347,5 +323,58 @@ SUBROUTINE <%= collection_type %>_remove(this,info,id)
     this%iter_id = this%iter_id - 1
     IF (this%nb.EQ.0 .OR. this%max_id.EQ.0) this%min_id = 0
 
+END SUBROUTINE
+!GROW COLLECTION SIZE
+SUBROUTINE <%= collection_type %>_grow_size(this,info)
+    !!! Reallocate collection to a larger size
+    !!! (twice the size seems good)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(OUT  )   :: info
+
+    TYPE(<%= element_ptr_type %>),DIMENSION(:),POINTER :: vec_temp => NULL()
+    INTEGER                            :: i
+    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_push"
+    REAL(KIND(1.D0))                   :: t0
+
+    CALL substart(caller,t0,info)
+
+    IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
+        !if the array is empty, allocate with a reasonable size
+        this%vec_size = 10
+        ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
+    ELSE
+        !if the array is full, double its size
+        ! allocate a temporary array to store the current element
+        ALLOCATE(vec_temp(this%vec_size),STAT=info)
+        $or_fail_alloc("could not allocate temporary array")
+
+        ! copy the elements to the temporary array
+        DO i=1,this%vec_size
+            SELECT TYPE (t => this%vec(i)%t)
+            TYPE IS (<%= element_type %>)
+                vec_temp(i)%t => t
+            END SELECT
+        ENDDO
+
+        !reallocate the collection to a larger size
+        DEALLOCATE(this%vec,STAT=info)
+        $or_fail_dealloc("could not deallocate collection array")
+        ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
+        $or_fail_alloc("could not allocate collection array")
+
+        !copy the elements back from the temporary array to the collection
+        DO i=1,this%vec_size
+             SELECT TYPE (tmp => vec_temp(i)%t)
+             TYPE IS (<%= element_type %>)
+                 this%vec(i)%t => tmp
+             END SELECT
+        ENDDO
+        this%vec_size = 2 * this%vec_size
+        DEALLOCATE(vec_temp,STAT=info)
+        $or_fail_dealloc("could not deallocate temporary array")
+    ENDIF
+
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
 END SUBROUTINE
 end macro

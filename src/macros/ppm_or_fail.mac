@@ -49,6 +49,12 @@ macro macro_test(a)
   <%= a %>
 end macro
 
+macro check_associated(p,type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+if (.NOT.associated(<%= p %>)) then
+  $fail("pointer <%= p %> is not associated and should be",<%= type %>,<%= info %>,<%= exit_point %>,<%= caller %>)
+endif
+end macro
+
 macro check_equal(a,b,message)
 if (<%= a %> .NE. <%= b%>) then
    call write(cbuf,*) &

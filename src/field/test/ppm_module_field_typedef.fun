@@ -2,6 +2,10 @@ test_suite ppm_module_field_typedef
 
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
+use ppm_module_data
+use ppm_module_mktopo
+use ppm_module_finalize
+use ppm_module_interfaces
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -39,6 +43,16 @@ use ppm_module_topo_typedef
     integer                         :: kernel
     integer                         :: seedsize
     integer,  dimension(:),allocatable :: seed
+        real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
+        real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
+        real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
+        integer, dimension(2)            :: maxndata
+        integer, dimension(:  ), pointer :: isublist => NULL()
+        integer                          :: nsublist
+        integer                          :: ipatch,mypatchid
+        type(ppm_t_topo),      POINTER   :: topo => NULL()
+        real(mk)                         :: sca_ghostsize
+
 
 !-------------------------- init testsuit -------------------------------------
     init
@@ -70,7 +84,10 @@ use ppm_module_topo_typedef
 
 !------------------------- finalize testsuit ----------------------------------
     finalize
+        use ppm_module_finalize
 
+        call ppm_finalize(info)
+        
         deallocate(min_phys,max_phys,ghostsize,nm)
 
     end finalize
@@ -110,10 +127,6 @@ use ppm_module_topo_typedef
 !--------------------------- test teardown ------------------------------------
     teardown
         
-        use ppm_module_finalize
-
-        call ppm_finalize(info)
-        
         if (associated(xp)) deallocate(xp)
         if (associated(wp)) deallocate(wp)
         if (associated(cost)) deallocate(cost)
@@ -124,32 +137,12 @@ use ppm_module_topo_typedef
 
 
 !------------------------------------------------------------------------------
-    test create_field
-        use ppm_module_data
-        use ppm_module_mktopo
-        use ppm_module_finalize
-        use ppm_module_interfaces
-
-        implicit none
-        integer, dimension(2)            :: maxndata
-        integer, dimension(:  ), pointer :: isublist => NULL()
-        integer                          :: nsublist
-        integer                          :: ipatch,isub
-
-        integer                          :: mypatchid
-        real(mk),dimension(2*ndim)       :: my_patch
+    test field_uniform_basics
         real(mk),dimension(ndim)         :: offset
-        real(mk),dimension(ndim)         :: u_maxsub
-        real(mk)                         :: sca_ghostsize
 
         type(ppm_t_field)                :: Vort,Veloc
         type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
-    !type(ppm_t_subpatch),POINTER     :: p => NULL()
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
-        type(ppm_t_topo),      POINTER   :: topo => NULL()
-
-        real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-        real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
 
         !----------------
         ! make topology
@@ -159,17 +152,137 @@ use ppm_module_topo_typedef
         topoid = 0
 
         allocate(nm(ndim),stat=info)
-        do i=1,ndim
-            nm(i) = 16*nproc
-        enddo
+        nm(1:ndim) = 16*nproc
 
-        u_maxsub = 0.2_mk
         sca_ghostsize = 0.05_mk 
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
         
+        !--------------------------
+        !Define Fields
+        !--------------------------
+        call Vort%create(1,"Vorticity",info) !scalar field
+        Assert_Equal(info,0)
+        call Veloc%create(ndim,"Velocity",info) !vector field
+        Assert_Equal(info,0)
+
+        !--------------------------
+        !Create Mesh
+        !--------------------------
+        offset = 0._mk
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+
+        call Mesh1%def_uniform(info) 
+        Assert_Equal(info,0)
+        Assert_True(associated(Mesh1%subpatch))
+
+        p => Mesh1%subpatch%begin()
+        do while(associated(p))
+           Assert_True(associated(p%subpatch_data))
+           p => Mesh1%subpatch%next()
+        enddo
+
+        !--------------------------
+        !Create data arrays on the mesh for the vorticity and velocity fields
+        !--------------------------
+        call Vort%discretize_on(Mesh1,info)
+        Assert_Equal(info,0)
+
+        call Veloc%discretize_on(Mesh1,info)
+        Assert_Equal(info,0)
+
+        !--------------------------
+        ! Iterate through patches and initialize the data arrays
+        !--------------------------
+        p => Mesh1%subpatch%begin()
+
+        do while (ASSOCIATED(p))
+            call p%get_field(field2d_1,Vort,info)
+            call p%get_field(field3d_1,Veloc,info)
+
+            do i = 1,p%nnodes(1)
+                do j = 1,p%nnodes(2)
+                    field2d_1(i,j) = cos(i*h(1)+j)
+                    field3d_1(i,j,1) = sin(field2d_1(i,j))
+                    field3d_1(i,j,2) = cos(field2d_1(i,j))
+                enddo
+            enddo
+            p => Mesh1%subpatch%next()
+        enddo
+
+        !Second version
+        do ipatch = 1,Mesh1%subpatch%nb
+            p => Mesh1%subpatch%vec(ipatch)%t
+            call p%get_field(field2d_1,Vort,info)
+            call p%get_field(field3d_1,Veloc,info)
+
+            do i = 1,p%nnodes(1)
+                do j = 1,p%nnodes(2)
+                    field2d_1(i,j) = cos(i*h(1)+j)
+                    field3d_1(i,j,1) = sin(field2d_1(i,j))
+                    field3d_1(i,j,2) = cos(field2d_1(i,j))
+                enddo
+            enddo
+        enddo
+
+        field2d_1 => NULL()
+        field3d_1 => NULL()
+        !--------------------
+        ! Remove a patch
+        !--------------------
+        !Mesh1%remove_patch(patch_ID = 2)
+        
+        call Vort%destroy(info)
+        Assert_equal(info,0)
+        call Veloc%destroy(info)
+        Assert_equal(info,0)
+        call Mesh1%destroy(info)
+        Assert_equal(info,0)
+        call Mesh2%destroy(info)
+        Assert_equal(info,0)
+
+        p=>NULL()
+
+        write(*,*) 'DONE test_field_uniform_basic'
+
+    end test
+!------------------------------------------------------------------------------
+    test field_basics
+        implicit none
+        real(mk),dimension(2*ndim)       :: my_patch
+        real(mk),dimension(ndim)         :: offset
+
+        type(ppm_t_field)                :: Vort,Veloc
+        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+        class(ppm_t_subpatch_),POINTER   :: p => NULL()
+
+        !----------------
+        ! make topology
+        !----------------
+        decomp = ppm_param_decomp_cuboid
+        assig  = ppm_param_assign_internal
+        topoid = 0
+
+        allocate(nm(ndim),stat=info)
+        nm(1:ndim) = 16*nproc
+
+        sca_ghostsize = 0.05_mk 
+
+        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+        &               bcdef,sca_ghostsize,cost,info)
+        Assert_Equal(info,0)
+        
+        !--------------------------
+        !Define Fields
+        !--------------------------
+        call Vort%create(1,"Vorticity",info)
+        Assert_Equal(info,0)
+        call Veloc%create(ndim,"Velocity",info)
+        Assert_Equal(info,0)
+
         !--------------------------
         !Create Mesh
         !--------------------------
@@ -214,12 +327,12 @@ use ppm_module_topo_typedef
 
         do while (ASSOCIATED(p))
             call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field2d_2,Veloc,info)
+            call p%get_field(field3d_1,Veloc,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field2d_2(i,j) = sin(field2d_1(i,j))
+                    field3d_1(i,j,1:ndim) = 17.4
                 enddo
             enddo
             p => Mesh1%subpatch%next()
@@ -229,12 +342,12 @@ use ppm_module_topo_typedef
         do ipatch = 1,Mesh1%subpatch%nb
             p => Mesh1%subpatch%vec(ipatch)%t
             call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field2d_2,Veloc,info)
+            call p%get_field(field3d_1,Veloc,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field2d_2(i,j) = sin(field2d_1(i,j))
+                    field3d_1(i,j,1:ndim) = 17.4
                 enddo
             enddo
         enddo
@@ -244,10 +357,8 @@ use ppm_module_topo_typedef
         !--------------------
         !Mesh1%remove_patch(patch_ID = 2)
 
-
-        
- 
     end test
+
 !------------------------------------------------------------------------------
 
 end test_suite
