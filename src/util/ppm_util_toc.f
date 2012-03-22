@@ -27,21 +27,25 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_util_toc(mesg,diff_t,info,verbose)
+      SUBROUTINE ppm_tstats_toc(id,step,diff_t,info,verbose)
       !!! Calls ppm_util_time, pop the last tic out of the buffer
       !!! and returns the difference.
       !!! Optionally, print the results on stdout.
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
+      USE ppm_module_data
+      USE ppm_module_alloc
       USE ppm_module_write
+      USE ppm_module_error
+      USE ppm_module_util_time
       IMPLICIT NONE
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      CHARACTER(LEN=*)       , INTENT(IN   ) :: mesg
-      !!! Returns status, 0 upon success
+      INTEGER                , INTENT(IN   ) :: id
+      INTEGER                , INTENT(IN   ) :: step
       REAL(MK)               , INTENT(  OUT) :: diff_t
       !!! Difference in time between tic and toc
       INTEGER                , INTENT(  OUT) :: info
@@ -51,47 +55,33 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)               :: ldu
-      REAL(MK)               :: t0,t1
+      INTEGER, DIMENSION(3)                  :: ldu
+      REAL(MK)                               :: t0,t1
       !!! Current CPU clock time
       CHARACTER(LEN=ppm_char)                :: cbuf
-      CHARACTER(LEN=ppm_char)                :: caller = 'ppm_util_toc'
+      CHARACTER(LEN=ppm_char)                :: caller = 'ppm_tstats_toc'
       
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time
       !-------------------------------------------------------------------------
-      IF (ppm_btic%idx.LE.0) THEN
+      IF (ppm_tstats(id)%times(step).EQ.0.0_mk) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_sub_failed,'ppm_util_toc',&
-              'wrong number of tics and tocs',__LINE__,info)
+              'never has been ticked before',__LINE__,info)
           GOTO 9999
-      ELSE
-          t0 = ppm_btic%tic(ppm_btic%idx)
-          ppm_btic%idx = ppm_btic%idx -1
       ENDIF
       CALL ppm_util_time(t1)
 
       ! difference between current time and last entry in the tic buffer
-      diff_t = t1-t0
+      diff_t = t1-ppm_tstats(id)%times(step)
+      ppm_tstats(id)%times(step) = diff_t 
 
-      ! increment counter for statistics
-      ppm_tstats_idx = ppm_tstats_idx + 1
-
-      ! check that the array in ppm_btic%tic is large enough - reallocate if not
-      IF (ppm_tstats_idx.GT.max_size) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_sub_failed,caller,&
-          'array ppm_t_tstats%stat overflow - max_size too small',__LINE__,info)
-          GOTO 9999
-      ENDIF
-
-      ppm_tstats_times(ppm_tstats_idx)  = diff_t
-      ppm_tstats_labels(ppm_tstats_idx) = mesg
 
       IF (PRESENT(verbose)) THEN
           IF (verbose) THEN
-              WRITE(cbuf,'(A,A,E17.7,A)') mesg, ' took ',diff_t,' seconds'
+              WRITE(cbuf,'(A,A,E17.7,A)')ppm_tstats(id)%label, ' took ',&
+              & diff_t,' seconds'
               CALL ppm_write(ppm_rank,caller,cbuf,info)
           ENDIF
       ENDIF
@@ -101,4 +91,4 @@
       !-------------------------------------------------------------------------
  9999 CONTINUE
       RETURN
-      END SUBROUTINE ppm_util_toc
+      END SUBROUTINE ppm_tstats_toc
