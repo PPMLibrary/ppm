@@ -160,4 +160,35 @@ SUBROUTINE equi_mesh_set_rel_(this,field,info)
     !!! this mesh is discretized on that field
     INTEGER,               INTENT(OUT)  :: info
 END SUBROUTINE
-
+!GHOST GET
+SUBROUTINE equi_mesh_map_ghost_get_(this,ghostsize,info)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)                 :: this
+    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
+    INTEGER                 , INTENT(  OUT) :: info
+END SUBROUTINE
+SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
+        ghostsize,nsendlist,isendfromsub,isendtosub,&
+        isendblkstart,isendblksize,ioffset,info,lsymm)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)                 :: this
+    CLASS(ppm_t_equi_mesh_)                 :: to_mesh
+    INTEGER                 , INTENT(IN   ) :: isub
+    INTEGER                 , INTENT(IN   ) :: jsub
+    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
+    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: offset
+    INTEGER, DIMENSION(:)   , POINTER       :: isendfromsub
+    INTEGER, DIMENSION(:)   , POINTER       :: isendtosub
+    INTEGER, DIMENSION(:,:) , POINTER       :: ioffset
+    INTEGER, DIMENSION(:,:) , POINTER       :: isendblkstart
+    INTEGER, DIMENSION(:,:) , POINTER       :: isendblksize
+    INTEGER                 , INTENT(INOUT) :: nsendlist
+    INTEGER                 , INTENT(  OUT) :: info
+    LOGICAL, DIMENSION(3)   , INTENT(IN   ), OPTIONAL :: lsymm
+END SUBROUTINE
+SUBROUTINE equi_mesh_map_ghost_init_(this,ghostsize,info)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)                 :: this
+    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
+    INTEGER                 , INTENT(  OUT) :: info
+END SUBROUTINE

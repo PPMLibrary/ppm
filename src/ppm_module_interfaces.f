@@ -397,11 +397,14 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_create_),   DEFERRED :: create
     PROCEDURE(equi_mesh_destroy_),  DEFERRED :: destroy
     PROCEDURE(equi_mesh_def_patch_),DEFERRED :: def_patch
+    PROCEDURE(equi_mesh_set_rel_),  DEFERRED :: set_rel
     PROCEDURE(equi_mesh_def_uniform_),DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-      &                             DEFERRED :: new_subpatch_data_ptr 
-    PROCEDURE(equi_mesh_list_of_fields_),DEFERRED :: list_of_fields
-    PROCEDURE(equi_mesh_set_rel_),  DEFERRED :: set_rel
+      &                               DEFERRED :: new_subpatch_data_ptr 
+    PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
+    PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
+    PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
+    PROCEDURE(equi_mesh_map_ghost_get_),  DEFERRED :: map_ghost_get
 END TYPE
 ! Container for meshes
 define_abstract_collection_type(ppm_t_equi_mesh_)

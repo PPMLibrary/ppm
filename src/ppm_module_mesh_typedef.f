@@ -81,10 +81,13 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     PROCEDURE  :: create    => equi_mesh_create
     PROCEDURE  :: destroy   => equi_mesh_destroy
     PROCEDURE  :: def_patch => equi_mesh_def_patch
+    PROCEDURE  :: set_rel   => equi_mesh_set_rel
     PROCEDURE  :: def_uniform           => equi_mesh_def_uniform
     PROCEDURE  :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
     PROCEDURE  :: list_of_fields        => equi_mesh_list_of_fields
-    PROCEDURE  :: set_rel   => equi_mesh_set_rel
+    PROCEDURE  :: block_intersect       => equi_mesh_block_intersect
+    PROCEDURE  :: map_ghost_init        => equi_mesh_map_ghost_init
+    PROCEDURE  :: map_ghost_get         => equi_mesh_map_ghost_get
 END TYPE
 define_collection_type(ppm_t_equi_mesh)
 
@@ -94,6 +97,22 @@ define_collection_type(ppm_t_equi_mesh)
 TYPE(ppm_c_equi_mesh)              :: ppm_mesh
 
 
+!------------------------------------------------
+! TODO: stuff that should be moved somewhere else:
+!------------------------------------------------
+!used to be in ppm_module_map_field_ghost.f
+         INTEGER, DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: isendtosub    => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: sendbuf       => NULL()
+         INTEGER, DIMENSION(:  ), POINTER :: recvbuf       => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblkstart => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: isendblksize  => NULL()
+         INTEGER, DIMENSION(:,:), POINTER :: ioffset       => NULL()
+         ! sorted (according to proc-proc interaction order) offset list)
+         INTEGER, DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
+
+         PRIVATE :: isendfromsub,isendtosub,sendbuf,recvbuf,isendblkstart
+         PRIVATE :: isendblksize,ioffset,mesh_ghost_offset
 
 !----------------------------------------------------------------------
 !  Type-bound procedures
@@ -903,5 +922,9 @@ SUBROUTINE equi_mesh_set_rel(this,field,info)
     end_subroutine()
 END SUBROUTINE
 
+
+#include "mesh/mesh_block_intersect.f"
+#include "mesh/mesh_map_ghost_init.f"
+#include "mesh/mesh_map_ghost_get.f"
 
 END MODULE ppm_module_mesh_typedef

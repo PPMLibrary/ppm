@@ -266,7 +266,9 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
             enddo
             p => Mesh1%subpatch%next()
         enddo
-
+        
+        call Mesh1%map_ghost_get(ighostsize,info)
+            Assert_Equal(info,0)
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
