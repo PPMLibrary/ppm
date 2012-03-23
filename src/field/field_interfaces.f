@@ -27,12 +27,13 @@
 ! CH-8092 Zurich, Switzerland
 !-------------------------------------------------------------------------
 !CREATE
-SUBROUTINE field_create_(this,lda,name,info)
-    IMPORT ppm_t_field_
+SUBROUTINE field_create_(this,lda,name,info,init_func)
+    IMPORT ppm_t_field_,ppm_kind_double
     CLASS(ppm_t_field_)                      :: this
     INTEGER,                     INTENT(IN) :: lda
     CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
+    REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
 END SUBROUTINE
 !DESTROY
 SUBROUTINE field_destroy_(this,info)
@@ -56,7 +57,7 @@ SUBROUTINE mesh_discr_info_destroy_(this,info)
     CLASS(ppm_t_mesh_discr_info_)             :: this
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
-
+!DISCRETIZE MESH ON FIELD
 SUBROUTINE field_discretize_on_(this,mesh,info,datatype)
     IMPORT ppm_t_field_,ppm_t_equi_mesh_
     !!! Allocate field on a mesh
@@ -69,4 +70,15 @@ SUBROUTINE field_discretize_on_(this,mesh,info,datatype)
     INTEGER, OPTIONAL                  :: datatype
     !!! By default, the type is assumed to be real, double-precision.
 END SUBROUTINE 
+!ESTABLISH RELATIONSHIP BETWEEN FIELD AND MESH
+SUBROUTINE field_set_rel_(this,mesh,p_idx,info)
+    IMPORT ppm_t_field_,ppm_t_equi_mesh_
+    CLASS(ppm_t_field_)                :: this
+    CLASS(ppm_t_equi_mesh_)            :: mesh
+    !!! mesh that this field is discretized on
+    INTEGER,               INTENT(IN )  :: p_idx
+    !!! index in the mesh data structure where the data for this field is stored
+    INTEGER,               INTENT(OUT)  :: info
+END SUBROUTINE
+
 

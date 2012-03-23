@@ -144,6 +144,7 @@ use ppm_module_interfaces
         type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
+        integer,dimension(:),pointer :: ilist => NULL()
         !----------------
         ! make topology
         !----------------
@@ -230,6 +231,15 @@ use ppm_module_interfaces
 
         field2d_1 => NULL()
         field3d_1 => NULL()
+
+
+        ilist => Mesh1%list_of_fields(info)
+        if(associated(ilist)) then
+            write(*,*) 'mesh1%list: ', ilist
+        endif
+        ilist => Mesh2%list_of_fields(info)
+        write(*,*) 'mesh2%list: ', associated(ilist)
+
         !--------------------
         ! Remove a patch
         !--------------------

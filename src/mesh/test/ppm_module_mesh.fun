@@ -2,6 +2,7 @@ test_suite ppm_module_mesh
 
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
+use ppm_module_field_typedef
 use ppm_module_mktopo
 
 #ifdef __MPI
@@ -38,6 +39,10 @@ class(ppm_t_subpatch_),POINTER   :: p => NULL()
 integer                          :: mypatchid
 real(mk),dimension(2*ndim)       :: my_patch
 real(mk),dimension(ndim)         :: offset
+
+real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
+real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
+real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
 
 !---------------- init -----------------------
 
@@ -165,7 +170,7 @@ real(mk),dimension(ndim)         :: offset
         !find subpatches from patch 1
         DO i=1,Mesh1%patch%vec(1)%t%nsubpatch
             p => Mesh1%patch%vec(1)%t%subpatch(i)%t
-            write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%t%patchid
+            !write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%t%patchid
         ENDDO
         p=>NULL()
 
@@ -203,7 +208,7 @@ real(mk),dimension(ndim)         :: offset
         Nm = 129
         Nm(ndim) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm)
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
         topo => ppm_topo(Mesh1%topoid)%t
 
         mypatchid = 1
@@ -211,7 +216,7 @@ real(mk),dimension(ndim)         :: offset
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
 
         call Mesh1%def_patch(my_patch,info,mypatchid) 
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
 
         Assert_True(associated(Mesh1%subpatch))
 
@@ -219,23 +224,60 @@ real(mk),dimension(ndim)         :: offset
         p => Mesh1%subpatch%begin()
         DO WHILE (ASSOCIATED(p))
             isub = isub+1
-            write(*,*) 'subp ',isub, p%istart,p%iend
             p => Mesh1%subpatch%next()
         ENDDO
         Assert_Equal(isub,topo%nsublist)
 
         call Mesh1%destroy(info)
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
 
-        !test the wrapper routine
+        !test the wrapper routine, which does the same thing
         call Mesh1%create(topoid,offset,info,Nm=Nm)
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
         call Mesh1%def_uniform(info)
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
         call Mesh1%destroy(info)
-        Assert_Equal(info,0)
+            Assert_Equal(info,0)
     end test
 
+    test mesh_mappings_uniform
+        !testing mappings for a single patch that covers the whole domain
+        type(ppm_t_field) :: Field1
+        Nm = 129
+        Nm(ndim) = 65
+        call Mesh1%create(topoid,offset,info,Nm=Nm)
+            Assert_Equal(info,0)
+        call Mesh1%def_uniform(info)
+            Assert_Equal(info,0)
+
+        call Field1%create(1,'testField',info,init_func=my_init_function) 
+            Assert_Equal(info,0)
+        call Field1%discretize_on(Mesh1,info)
+            Assert_Equal(info,0)
+
+        p => Mesh1%subpatch%begin()
+
+        do while (ASSOCIATED(p))
+            call p%get_field(field2d_1,Field1,info)
+            do i = 1,p%nnodes(1)
+                do j = 1,p%nnodes(2)
+                    field2d_1(i,j) = cos(i*h(1)+j)
+                enddo
+            enddo
+            p => Mesh1%subpatch%next()
+        enddo
+
+
+        call Mesh1%destroy(info)
+            Assert_Equal(info,0)
+    end test
+
+    FUNCTION my_init_function(x) RESULT(val)
+        REAL(ppm_kind_double) :: val
+        REAL(ppm_kind_double),DIMENSION(1:ndim),INTENT(IN) :: x
+
+        val = sum(x)
+    END FUNCTION
 !============ Test cases ======================
 !    test mesh_define
 !        ! a simplistic test for checking if mesh_define is working

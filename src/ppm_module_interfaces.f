@@ -1,31 +1,4 @@
-!--*- f90 -*--------------------------------------------------------------
-!  Module   :                   ppm_module_typedef
-!-------------------------------------------------------------------------
-! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
-!                    Center for Fluid Dynamics (DTU)
-!
-!
-! This file is part of the Parallel Particle Mesh Library (PPM).
-!
-! PPM is free software: you can redistribute it and/or modify
-! it under the terms of the GNU Lesser General Public License 
-! as published by the Free Software Foundation, either 
-! version 3 of the License, or (at your option) any later 
-! version.
-!
-! PPM is distributed in the hope that it will be useful,
-! but WITHOUT ANY WARRANTY; without even the implied warranty of
-! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-! GNU General Public License for more details.
-!
-! You should have received a copy of the GNU General Public License
-! and the GNU Lesser General Public License along with PPM. If not,
-! see <http://www.gnu.org/licenses/>.
-!
-! Parallel Particle Mesh Library (PPM)
-! ETH Zurich
-! CH-8092 Zurich, Switzerland
-!-------------------------------------------------------------------------
+ppm_header(ppm_module_interfaces)
 
 MODULE ppm_module_interfaces
 !!! Declares all data types 
@@ -49,7 +22,7 @@ USE ppm_module_util_functions
 IMPLICIT NONE
 
 !----------------------------------------------------------------------
-! Internal parameters
+! Global parameters
 !----------------------------------------------------------------------
 !PPM internal parameters used only to access entries in the
 !mesh data structures.
@@ -186,6 +159,7 @@ TYPE,ABSTRACT :: ppm_t_field_
     PROCEDURE(field_create_),       DEFERRED :: create
     PROCEDURE(field_destroy_),      DEFERRED :: destroy
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
+    PROCEDURE(field_set_rel_),      DEFERRED :: set_rel
 END TYPE ppm_t_field_
 ! Container for fields
 define_abstract_collection_type(ppm_t_field_)
@@ -195,6 +169,10 @@ define_abstract_collection_type(ppm_t_field_)
 !!----------------------------------------------------------------------
 TYPE,ABSTRACT :: ppm_t_subpatch_data_
     !!! pointers to arrays where the data are stored
+    INTEGER                                                :: fieldID = 0
+    !!! ID of the field that is discretized here
+    INTEGER                                                :: datatype = 0
+    !!! Data type of the data being discretized
     INTEGER, DIMENSION(:,:), POINTER                       :: data_2d_i => NULL()
     !!! if the data is 2d int
     INTEGER, DIMENSION(:,:,:), POINTER                     :: data_3d_i => NULL()
@@ -368,6 +346,9 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     CLASS(ppm_c_field_info_),POINTER          :: field_ptr => NULL()
     !!! Pointers to the fields that are currently discretized on this mesh
 
+    CLASS(ppm_t_mesh_mapping_s_),POINTER      :: mapping_s => NULL()
+    CLASS(ppm_t_mesh_mapping_d_),POINTER      :: mapping_d => NULL()
+
 
     !------------------------------------------------------------------
     !  Mesh ghosts mappings
@@ -419,6 +400,8 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_def_uniform_),DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
       &                             DEFERRED :: new_subpatch_data_ptr 
+    PROCEDURE(equi_mesh_list_of_fields_),DEFERRED :: list_of_fields
+    PROCEDURE(equi_mesh_set_rel_),  DEFERRED :: set_rel
 END TYPE
 ! Container for meshes
 define_abstract_collection_type(ppm_t_equi_mesh_)

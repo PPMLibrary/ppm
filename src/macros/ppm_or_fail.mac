@@ -66,3 +66,37 @@ if (<%= a %> .NE. <%= b%>) then
 endif
 end macro
 
+macro start_subroutine(name=default_name)
+    REAL(KIND(1.D0))                   :: t0
+    CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
+
+    !-------------------------------------------------------------------------
+    !  Initialise
+    !-------------------------------------------------------------------------
+    CALL substart(caller,t0,info)
+end macro
+
+macro end_subroutine(exit_point=9999)
+    CALL substop(caller,t0,info)
+    <%= exit_point %> CONTINUE
+end macro
+
+macro start_function(name=default_name)
+    CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
+
+    info = 0
+end macro
+
+macro end_function(exit_point=9999)
+    <%= exit_point %> CONTINUE
+end macro
+
+macro destroy_collection_ptr(collection_pointer)
+<% coll_ptr = collection_pointer %>
+IF (ASSOCIATED(<%= coll_ptr %>)) THEN
+    CALL <%= coll_ptr %>%destroy(info)
+        $or_fail_dealloc("<%= coll_ptr %> object")
+    DEALLOCATE(<%= coll_ptr %>,STAT=info)
+        $or_fail_dealloc("<%= coll_ptr %> pointer")
+ENDIF
+end macro

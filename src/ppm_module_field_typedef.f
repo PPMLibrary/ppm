@@ -47,6 +47,7 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: create => field_create
     PROCEDURE :: destroy => field_destroy
     PROCEDURE :: discretize_on => field_discretize_on
+    PROCEDURE :: set_rel => field_set_rel
 END TYPE ppm_t_field
 define_collection_type(ppm_t_field)
 
@@ -61,33 +62,30 @@ define_collection_procedures(ppm_t_mesh_discr_info)
 define_collection_procedures(ppm_t_field)
 
 !CREATE
-SUBROUTINE field_create(this,lda,name,info)
+SUBROUTINE field_create(this,lda,name,info,init_func)
     !!! Constructor for subdomain data data structure
     CLASS(ppm_t_field)                      :: this
     INTEGER,                     INTENT(IN) :: lda
     !!! number of components
     CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
+    REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
+    !!! support for initialisation function not finished (need to think
+    !!! about data types...)
 
-
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'field_create'
-
-
-    CALL substart(caller,t0,info)
-
+    start_subroutine("field_create")
 
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
     this%name = TRIM(ADJUSTL(name))
     this%lda = lda
+    IF (ASSOCIATED(this%M)) THEN
+        fail("Seems like this field was alrady allocated - Call destroy() first?")
+    ENDIF
     ALLOCATE(ppm_c_mesh_discr_info::this%M,STAT=info)
     or_fail_alloc("could not allocate this%M with ppm_c_mesh_discr_info type")
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE field_create
 !DESTROY
 SUBROUTINE field_destroy(this,info)
@@ -95,21 +93,19 @@ SUBROUTINE field_destroy(this,info)
     CLASS(ppm_t_field)                 :: this
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'field_destroy'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("field_destroy")
 
     this%ID = 0
     this%name = ''
     this%lda = 0
-    IF (ASSOCIATED(this%M)) THEN
-        CALL this%M%destroy(info)
-        or_fail_dealloc("failed to destroy this%M")
-    ENDIF
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    !Destroy the bookkeeping entries in the fields that are
+    !discretized on this mesh
+    !TODO !!!
+
+    destroy_collection_ptr(this%M)
+
+    end_subroutine()
 END SUBROUTINE field_destroy
 !CREATE
 SUBROUTINE mesh_discr_info_create(this,meshID,lda,p_idx,flags,info)
@@ -123,24 +119,14 @@ SUBROUTINE mesh_discr_info_create(this,meshID,lda,p_idx,flags,info)
     LOGICAL,DIMENSION(ppm_mdata_lflags)     :: flags
     INTEGER,                    INTENT(OUT) :: info
 
-
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'mesh_discr_info_create'
-
-
-    CALL substart(caller,t0,info)
-
+    start_subroutine("mesh_discr_info_create")
 
     this%meshID = meshID
     this%lda    = lda
     this%p_idx  = p_idx
     this%flags  = flags
 
-
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE mesh_discr_info_create
 !DESTROY
 SUBROUTINE mesh_discr_info_destroy(this,info)
@@ -148,18 +134,14 @@ SUBROUTINE mesh_discr_info_destroy(this,info)
     CLASS(ppm_t_mesh_discr_info)             :: this
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'mesh_discr_info_destroy'
-
-    CALL substart(caller,t0,info)
-
+    start_subroutine("mesh_discr_info_destroy")
+    
     this%meshID = 0
     this%lda = 0
     this%p_idx = 0
     this%flags = .FALSE.
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE mesh_discr_info_destroy
 
 
@@ -178,16 +160,12 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     INTEGER, OPTIONAL                   :: datatype
     !!! By default, the type is assumed to be real, double-precision.
 
-    REAL(KIND(1.D0))                    :: t0
-    CHARACTER(LEN=ppm_char)             :: caller = 'field_discretize_on'
     CLASS(ppm_t_mesh_discr_info_),    POINTER :: mdinfo => NULL()
     CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
     CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
     INTEGER                             :: dtype,p_idx
-    INTEGER,DIMENSION(:),       POINTER :: Nmp => NULL()
-    LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
 
-    CALL substart(caller,t0,info)
+    start_subroutine("field_discretize_on")
 
     IF (PRESENT(datatype)) THEN
         dtype = datatype
@@ -200,9 +178,6 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
         fail("Field needs to be initialized before calling discretized. Call ThisField%create() first")
     ENDIF
 
-    ALLOCATE(Nmp(ppm_dim),STAT=info)
-    or_fail_alloc("could not allocate Nmp")
-
     !Check that the mesh contains patches onto which the data
     ! should be allocated. If not, create a single patch that
     ! covers the whole domain.
@@ -211,7 +186,7 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     ELSE
         IF (mesh%subpatch%nb.LE.0) THEN
             CALL mesh%def_uniform(info)
-            or_fail("failed to create a uniform patch data structure")
+                or_fail("failed to create a uniform patch data structure")
         ENDIF
     ENDIF
 
@@ -221,18 +196,17 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
         ! create a new subpatch_data object
         !ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
         subpdat => mesh%new_subpatch_data_ptr(info)
-        or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
+            or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
 
-        !Nmp(1:ppm_dim) = p%iend(1:ppm_dim) - p%istart(1:ppm_dim)
-        CALL subpdat%create(dtype,this%lda,p%nnodes,info)
-        or_fail("could not create new subpatch_data")
+        CALL subpdat%create(this%ID,dtype,this%lda,p%nnodes,info)
+            or_fail("could not create new subpatch_data")
 
         IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
            fail("p%subpatch_data not allocated")
         ENDIF
 
         CALL p%subpatch_data%push(subpdat,info)
-        or_fail("could not add new subpatch_data to subpatch collection")
+            or_fail("could not add new subpatch_data to subpatch collection")
 
         p => mesh%subpatch%next()
     ENDDO
@@ -250,22 +224,46 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
 
     !Update the bookkeeping table to store the relationship between
     ! the mesh and the field.
+    CALL this%set_rel(mesh,p_idx,info)
+        or_fail("failed to log the relationship between this field and that mesh")
+
+    CALL mesh%set_rel(this,info)
+        or_fail("failed to log the relationship between this mesh and that field")
+
+    end_subroutine()
+END SUBROUTINE field_discretize_on
+
+SUBROUTINE field_set_rel(this,mesh,p_idx,info)
+    !!! Create bookkeeping data structure to log the relationship between
+    !!! the field and a mesh
+    CLASS(ppm_t_field)                  :: this
+    CLASS(ppm_t_equi_mesh_)             :: mesh
+    !!! mesh that this field is discretized on
+    INTEGER,                INTENT(IN ) :: p_idx
+    !!! index in the mesh data structure where the data for this field is stored
+    INTEGER,                INTENT(OUT) :: info
+
+    TYPE(ppm_t_mesh_discr_info),POINTER :: mdinfo => NULL()
+    LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
+
+    start_subroutine("field_set_rel")
+
     flags = .FALSE.
 
-    ALLOCATE(ppm_t_mesh_discr_info::mdinfo,STAT=info)
-    or_fail_alloc("could not allocate new mesh_discr_info pointer")
+    ALLOCATE(mdinfo,STAT=info)
+        or_fail_alloc("could not allocate new mesh_discr_info pointer")
 
     CALL mdinfo%create(mesh%ID,this%lda,p_idx,flags,info)
-    or_fail("could not create new mesh_discr_info object")
+        or_fail("could not create new mesh_discr_info object")
 
     IF (.NOT.ASSOCIATED(this%M)) THEN
         ALLOCATE(ppm_c_mesh_discr_info::this%M,STAT=info)
-        or_fail_alloc("could not allocate mesh_discr_info collection")
+            or_fail_alloc("could not allocate mesh_discr_info collection")
     ENDIF
 
     IF (this%M%vec_size.LT.mesh%ID) THEN
         CALL this%M%grow_size(info)
-        or_fail("could not grow_size this%M")
+            or_fail("could not grow_size this%M")
     ENDIF
     !if the collection is still too small, it means we should consider
     ! using a hash table for meshIDs...
@@ -276,18 +274,21 @@ SUBROUTINE field_discretize_on(this,mesh,info,datatype)
     IF (this%M%exists(mesh%ID)) THEN
         fail("It seems like this Mesh had already been discretized on this field. Are you sure you want to do that a second time?")
     ELSE
-        SELECT TYPE(md => mdinfo)
-        TYPE IS (ppm_t_mesh_discr_info)
-            this%M%vec(mesh%ID)%t => md
-        END SELECT
+        !add mesh_discr_info to the collection, at index meshID
+        !Update the counters nb,max_id and min_id accordingly
+        !(this is not very clean without hash table)
+        this%M%vec(mesh%ID)%t => mdinfo
+        this%M%nb = this%M%nb + 1
+        IF (this%M%nb.EQ.1) THEN
+            this%M%max_id = mesh%ID
+            this%M%min_id = mesh%ID
+        ELSE
+            this%M%max_id = MAX(this%M%max_id,mesh%ID)
+            this%M%min_id = MIN(this%M%min_id,mesh%ID)
+        ENDIF
     ENDIF
 
-    DEALLOCATE(Nmp,STAT=info)
-    or_fail_dealloc("could not deallocate Nmp")
-
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
-END SUBROUTINE field_discretize_on
-
+    end_subroutine()
+END SUBROUTINE field_set_rel
 
 END MODULE ppm_module_field_typedef

@@ -48,7 +48,6 @@ END TYPE
 define_collection_type(ppm_t_subpatch_data)
 
 TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
-    integer :: test = 17
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
     PROCEDURE  :: destroy   => subpatch_destroy
@@ -82,8 +81,10 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     PROCEDURE  :: create    => equi_mesh_create
     PROCEDURE  :: destroy   => equi_mesh_destroy
     PROCEDURE  :: def_patch => equi_mesh_def_patch
-    PROCEDURE  :: def_uniform=>equi_mesh_def_uniform
+    PROCEDURE  :: def_uniform           => equi_mesh_def_uniform
     PROCEDURE  :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
+    PROCEDURE  :: list_of_fields        => equi_mesh_list_of_fields
+    PROCEDURE  :: set_rel   => equi_mesh_set_rel
 END TYPE
 define_collection_type(ppm_t_equi_mesh)
 
@@ -113,10 +114,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_data_create")
 
     !Direct access to the data arrays 
     wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_3d_rd
@@ -126,8 +124,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
         ENDIF
     ENDIF
 
-    CALL substop(caller,t0,info)
-    9999 CONTINUE
+    end_subroutine()
 END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
@@ -137,11 +134,9 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt, ndim
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_data_create")
 
     !Direct access to the data arrays 
     wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_2d_rd
@@ -151,27 +146,28 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
         ENDIF
     ENDIF
 
-    CALL substop(caller,t0,info)
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
+SUBROUTINE subpatch_data_create(this,fieldID,datatype,lda,Nmp,info)
     !!! Constructor for subdomain data data structure
-    CLASS(ppm_t_subpatch_data)              :: pdata
+    CLASS(ppm_t_subpatch_data)              :: this
+    INTEGER,                     INTENT(IN) :: fieldID
+    !!! ID of the field that is discretized on this mesh patch
     INTEGER,                     INTENT(IN) :: datatype
+    !!! data type of the data
     INTEGER,                     INTENT(IN) :: lda
     !!! number of data components per mesh node
     INTEGER,DIMENSION(:),POINTER,INTENT(IN) :: Nmp
     !!! number of mesh nodes in each dimension on this patch
     INTEGER,                    INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt, ndim
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_data_create'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_data_create")
 
+    this%fieldID = fieldID
+    this%datatype = datatype
 
     iopt   = ppm_param_alloc_grow
 
@@ -192,17 +188,17 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
     CASE (2)
         SELECT CASE (datatype)
         CASE (ppm_type_int)
-            CALL ppm_alloc(pdata%data_2d_i,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_i,ldc,iopt,info)
         CASE (ppm_type_real_single)
-            CALL ppm_alloc(pdata%data_2d_rs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_rs,ldc,iopt,info)
         CASE (ppm_type_real_double)
-            CALL ppm_alloc(pdata%data_2d_rd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_rd,ldc,iopt,info)
         CASE (ppm_type_comp_single)
-            CALL ppm_alloc(pdata%data_2d_cs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_cs,ldc,iopt,info)
         CASE (ppm_type_comp_double)
-            CALL ppm_alloc(pdata%data_2d_cd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_cd,ldc,iopt,info)
         CASE (ppm_type_logical)
-            CALL ppm_alloc(pdata%data_2d_l,ldc,iopt,info)
+            CALL ppm_alloc(this%data_2d_l,ldc,iopt,info)
         CASE DEFAULT
             info = ppm_error_fatal
             CALL ppm_error(ppm_err_argument,caller,   &
@@ -211,17 +207,17 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
     CASE (3)
         SELECT CASE (datatype)
         CASE (ppm_type_int)
-            CALL ppm_alloc(pdata%data_3d_i,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_i,ldc,iopt,info)
         CASE (ppm_type_real_single)
-            CALL ppm_alloc(pdata%data_3d_rs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_rs,ldc,iopt,info)
         CASE (ppm_type_real_double)
-            CALL ppm_alloc(pdata%data_3d_rd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_rd,ldc,iopt,info)
         CASE (ppm_type_comp_single)
-            CALL ppm_alloc(pdata%data_3d_cs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_cs,ldc,iopt,info)
         CASE (ppm_type_comp_double)
-            CALL ppm_alloc(pdata%data_3d_cd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_cd,ldc,iopt,info)
         CASE (ppm_type_logical)
-            CALL ppm_alloc(pdata%data_3d_l,ldc,iopt,info)
+            CALL ppm_alloc(this%data_3d_l,ldc,iopt,info)
         CASE DEFAULT
             info = ppm_error_fatal
             CALL ppm_error(ppm_err_argument,caller,   &
@@ -230,17 +226,17 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
     CASE (4)
         SELECT CASE (datatype)
         CASE (ppm_type_int)
-            CALL ppm_alloc(pdata%data_4d_i,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_i,ldc,iopt,info)
         CASE (ppm_type_real_single)
-            CALL ppm_alloc(pdata%data_4d_rs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_rs,ldc,iopt,info)
         CASE (ppm_type_real_double)
-            CALL ppm_alloc(pdata%data_4d_rd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_rd,ldc,iopt,info)
         CASE (ppm_type_comp_single)
-            CALL ppm_alloc(pdata%data_4d_cs,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_cs,ldc,iopt,info)
         CASE (ppm_type_comp_double)
-            CALL ppm_alloc(pdata%data_4d_cd,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_cd,ldc,iopt,info)
         CASE (ppm_type_logical)
-            CALL ppm_alloc(pdata%data_4d_l,ldc,iopt,info)
+            CALL ppm_alloc(this%data_4d_l,ldc,iopt,info)
         CASE DEFAULT
             info = ppm_error_fatal
             CALL ppm_error(ppm_err_argument,caller,   &
@@ -251,48 +247,45 @@ SUBROUTINE subpatch_data_create(pdata,datatype,lda,Nmp,info)
 
     or_fail_alloc('allocating mesh patch data failed')
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE subpatch_data_create
 !DESTROY
-SUBROUTINE subpatch_data_destroy(pdata,info)
+SUBROUTINE subpatch_data_destroy(this,info)
     !!! Destructor for subdomain data data structure
-    CLASS(ppm_t_subpatch_data)     :: pdata
+    CLASS(ppm_t_subpatch_data)         :: this
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt
-    CHARACTER(LEN=ppm_char)            :: caller = 'patch_data_destroy'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("patch_data_destroy")
+
+    this%fieldID = 0
+    this%datatype = 0
 
     iopt = ppm_param_dealloc
-    CALL ppm_alloc(pdata%data_2d_i,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_i,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_i,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_i,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_i,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_i,ldc,iopt,info)
 
-    CALL ppm_alloc(pdata%data_2d_l,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_l,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_l,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_l,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_l,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_l,ldc,iopt,info)
 
-    CALL ppm_alloc(pdata%data_2d_rs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_rs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_rs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_2d_rd,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_rd,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_rd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_rs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_rs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_rs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_rd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_rd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_rd,ldc,iopt,info)
 
-    CALL ppm_alloc(pdata%data_2d_cs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_cs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_cs,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_2d_cd,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_3d_cd,ldc,iopt,info)
-    CALL ppm_alloc(pdata%data_4d_cd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_cs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_cs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_cs,ldc,iopt,info)
+    CALL ppm_alloc(this%data_2d_cd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_3d_cd,ldc,iopt,info)
+    CALL ppm_alloc(this%data_4d_cd,ldc,iopt,info)
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE subpatch_data_destroy
 
 !CREATE
@@ -304,23 +297,21 @@ SUBROUTINE subpatch_create(p,meshID,istart,iend,info)
     INTEGER,DIMENSION(:)               :: iend
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_create'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_create")
 
     IF (.NOT.ASSOCIATED(p%istart)) THEN
         ALLOCATE(p%istart(ppm_dim),STAT=info)
-        or_fail_alloc("could not allocate p%istart")
+            or_fail_alloc("could not allocate p%istart")
     ENDIF
     IF (.NOT.ASSOCIATED(p%iend)) THEN
         ALLOCATE(p%iend(ppm_dim),STAT=info)
-        or_fail_alloc("could not allocate p%iend")
+            or_fail_alloc("could not allocate p%iend")
     ENDIF
     IF (.NOT.ASSOCIATED(p%nnodes)) THEN
         ALLOCATE(p%nnodes(ppm_dim),STAT=info)
-        or_fail_alloc("could not allocate p%nnodes")
+            or_fail_alloc("could not allocate p%nnodes")
     ENDIF
 
     p%meshID = meshID
@@ -329,11 +320,10 @@ SUBROUTINE subpatch_create(p,meshID,istart,iend,info)
     p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
     IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
         ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
-        or_fail_alloc("could not allocate p%subpatch_data")
+            or_fail_alloc("could not allocate p%subpatch_data")
     ENDIF
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE subpatch_create
 
 !DESTROY
@@ -342,27 +332,21 @@ SUBROUTINE subpatch_destroy(p,info)
     CLASS(ppm_t_subpatch)              :: p
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_destroy'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_destroy")
 
     iopt = ppm_param_dealloc
     CALL ppm_alloc(p%nnodes,ldc,iopt,info)
-    or_fail_dealloc("p%nnodes")
+        or_fail_dealloc("p%nnodes")
     CALL ppm_alloc(p%istart,ldc,iopt,info)
-    or_fail_dealloc("p%istart")
+        or_fail_dealloc("p%istart")
     CALL ppm_alloc(p%iend,ldc,iopt,info)
-    or_fail_dealloc("p%iend")
-    IF (ASSOCIATED(p%subpatch_data)) THEN
-        CALL p%subpatch_data%destroy(info)
-        or_fail_dealloc("p%subpatch_data")
-        NULLIFY(p%subpatch_data)
-    ENDIF
+        or_fail_dealloc("p%iend")
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    destroy_collection_ptr(p%subpatch_data)
+
+    end_subroutine()
 END SUBROUTINE subpatch_destroy
 
 !CREATE
@@ -373,10 +357,7 @@ SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
     INTEGER,               INTENT(OUT) :: info
     INTEGER,OPTIONAL,      INTENT(IN)  :: patchid
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_A_create'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_A_create")
 
     IF (ASSOCIATED(this%subpatch)) THEN
         CALL this%destroy(info)
@@ -394,8 +375,7 @@ SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
         this%patchid = 0
     ENDIF
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE subpatch_A_create
 
 !DESTROY
@@ -404,10 +384,7 @@ SUBROUTINE subpatch_A_destroy(this,info)
     CLASS(ppm_t_A_subpatch)            :: this
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'subpatch_A_destroy'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("subpatch_A_destroy")
 
     this%patchid = 0
     this%nsubpatch = 0
@@ -417,8 +394,7 @@ SUBROUTINE subpatch_A_destroy(this,info)
     ENDIF
     NULLIFY(this%subpatch)
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE subpatch_A_destroy
 
 
@@ -438,18 +414,14 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    REAL(KIND(1.D0))                   :: t0
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    CHARACTER(LEN=ppm_char)   :: caller = 'mesh_def_patch'
     INTEGER                   :: i,isub,nsubpatch,id,pid,meshID
     CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
     CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
     INTEGER,              DIMENSION(ppm_dim) :: istart,iend
     REAL(ppm_kind_double),DIMENSION(ppm_dim) :: h,Offset
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("mesh_def_patch")
 
     !-------------------------------------------------------------------------
     !  Check arguments
@@ -515,6 +487,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
             CALL this%subpatch%push(p,info,id)
                 or_fail("could not add new subpatch to mesh")
 
+            !TODO keeping track of the list of subpatches for each subdomain
             !CALL this%sub%push(info,id)
                 !or_fail("could not add new subpatch_ptr_array to mesh%sub")
             !this%sub%vec(id)%t%nsubpatch = nsubpatch
@@ -527,8 +500,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid)
     this%patch%vec(id)%t%nsubpatch = nsubpatch
     this%patch%vec(id)%t%patchid = pid
 
-    9999 CONTINUE
-    CALL substop(caller,t0,info)
+    end_subroutine()
 END SUBROUTINE equi_mesh_def_patch
 
 SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
@@ -541,13 +513,9 @@ SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    REAL(KIND(1.D0))                           :: t0
-    CHARACTER(LEN=ppm_char)                    :: caller = 'mesh_def_uniform'
     REAL(ppm_kind_double),DIMENSION(2*ppm_dim) :: patch
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("mesh_def_uniform")
 
     !create a huge patch
     patch(1:ppm_dim)           = -HUGE(1._ppm_kind_double)
@@ -557,16 +525,15 @@ SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
     ! between this infinite patch and the (hopefully) finite
     ! computational domain)
     CALL this%def_patch(patch,info,patchid)
-    or_fail("failed to add patch")
+        or_fail("failed to add patch")
 
     !TODO add some checks for the finiteness of the computational domain
 
-    9999 CONTINUE
-    CALL substop(caller,t0,info)
+    end_subroutine()
 END SUBROUTINE equi_mesh_def_uniform
 
 SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
-    !!! Creator for the cartesian mesh object
+    !!! Constructor for the cartesian mesh object
     !-------------------------------------------------------------------------
     !  Modules
     !-------------------------------------------------------------------------
@@ -600,18 +567,10 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     !-------------------------------------------------------------------------
     INTEGER , DIMENSION(3)    :: ldc
     INTEGER                   :: iopt,ld,ud,kk,i,j,isub
-    REAL(ppm_kind_double)     :: t0
     LOGICAL                   :: valid
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    CHARACTER(LEN=ppm_char)   :: caller = 'equi_mesh_create'
-    !-------------------------------------------------------------------------
-    !  Externals
-    !-------------------------------------------------------------------------
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("equi_mesh_create")
 
     !-------------------------------------------------------------------------
     !  Check arguments
@@ -702,9 +661,9 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h)
     !-------------------------------------------------------------------------
     !  Return
     !-------------------------------------------------------------------------
-    9999 CONTINUE
-    CALL substop(caller,t0,info)
+    end_subroutine()
     RETURN
+
     CONTAINS
     SUBROUTINE check
         CALL ppm_check_topoid(topoid,valid,info)
@@ -769,18 +728,10 @@ SUBROUTINE equi_mesh_destroy(this,info)
     !-------------------------------------------------------------------------
     INTEGER , DIMENSION(3)    :: ldc
     INTEGER                   :: iopt,ld,ud,kk,i,j,isub
-    REAL(ppm_kind_double)     :: t0
     LOGICAL                   :: valid
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    CHARACTER(LEN=ppm_char)   :: caller = 'equi_mesh_destroy'
-    !-------------------------------------------------------------------------
-    !  Externals
-    !-------------------------------------------------------------------------
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("equi_mesh_destroy")
 
     !-------------------------------------------------------------------------
     !  (Re)allocate memory for the internal mesh list and Arrays at meshid
@@ -788,39 +739,27 @@ SUBROUTINE equi_mesh_destroy(this,info)
     ldc = 1
     iopt   = ppm_param_dealloc
     CALL ppm_alloc(this%Offset,ldc,iopt,info)
-    or_fail_dealloc('Offset')
+        or_fail_dealloc("Offset")
     CALL ppm_alloc(this%Nm,ldc,iopt,info)
-    or_fail_dealloc('Nm')
+        or_fail_dealloc("Nm")
     CALL ppm_alloc(this%h,ldc,iopt,info)
-    or_fail_dealloc('h')
+        or_fail_dealloc("h")
 
-    IF (ASSOCIATED(this%subpatch)) THEN
-        CALL this%subpatch%destroy(info)
-        or_fail_dealloc('subpatch object')
-        DEALLOCATE(this%subpatch,STAT=info)
-        or_fail_dealloc('subpatch')
-    ENDIF
-    IF (ASSOCIATED(this%patch)) THEN
-        CALL this%patch%destroy(info)
-        or_fail_dealloc('patch object')
-        DEALLOCATE(this%patch,STAT=info)
-        or_fail_dealloc('patch')
-    ENDIF
-    IF (ASSOCIATED(this%sub)) THEN
-        CALL this%sub%destroy(info)
-        or_fail_dealloc('sub object')
-        DEALLOCATE(this%sub,STAT=info)
-        or_fail_dealloc('sub')
-    ENDIF
+    destroy_collection_ptr(this%subpatch)
+    destroy_collection_ptr(this%patch)
+    destroy_collection_ptr(this%sub)
+
+
+    !Destroy the bookkeeping entries in the fields that are
+    !discretized on this mesh
+    !TODO !!!
+
+
+    destroy_collection_ptr(this%field_ptr)
 
     this%ID = 0
 
-    !-------------------------------------------------------------------------
-    !  Return
-    !-------------------------------------------------------------------------
-    9999 CONTINUE
-    CALL substop(caller,t0,info)
-    RETURN
+    end_subroutine()
 END SUBROUTINE equi_mesh_destroy
 
 FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
@@ -838,22 +777,12 @@ FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER , DIMENSION(3)    :: ldc
-    REAL(ppm_kind_double)     :: t0
-    CHARACTER(LEN=ppm_char)   :: caller = 'equi_mesh_new_subpatch_data_ptr'
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("equi_mesh_new_subpatch_data_ptr")
 
     ALLOCATE(ppm_t_subpatch_data::sp,STAT=info)
     or_fail_alloc("could not allocate ppm_t_subpatch_data pointer")
 
-    !-------------------------------------------------------------------------
-    !  Return
-    !-------------------------------------------------------------------------
-    9999 CONTINUE
-    CALL substop(caller,t0,info)
-    RETURN
+    end_subroutine()
 END FUNCTION equi_mesh_new_subpatch_data_ptr
 
 !CREATE
@@ -863,17 +792,11 @@ SUBROUTINE field_info_create(this,fieldID,info)
     INTEGER,                  INTENT(IN)  :: fieldID
     INTEGER,                  INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'field_info_create'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("field_info_create")
 
     this%fieldID = fieldID
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE field_info_create
 !DESTROY
 SUBROUTINE field_info_destroy(this,info)
@@ -881,16 +804,104 @@ SUBROUTINE field_info_destroy(this,info)
     CLASS(ppm_t_field_info)             :: this
     INTEGER,               INTENT(OUT) :: info
 
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'field_info_destroy'
-
-    CALL substart(caller,t0,info)
+    start_subroutine("field_info_destroy")
 
     this%fieldID = 0
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    end_subroutine()
 END SUBROUTINE field_info_destroy
+
+FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
+    !!! Returns a pointer to an array containing the IDs of all the
+    !!! fields that are currently discretized on this mesh
+    CLASS(ppm_t_equi_mesh)          :: this
+    INTEGER,DIMENSION(:),POINTER    :: fids
+    INTEGER,            INTENT(OUT) :: info
+
+    INTEGER                         :: i,j
+
+    start_function("equi_mesh_list_of_fields")
+
+    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
+        fids => NULL()
+        RETURN
+    ENDIF
+    IF (this%field_ptr%nb.LE.0) THEN
+        fids => NULL()
+        RETURN
+    ENDIF
+
+    ALLOCATE(fids(this%field_ptr%nb),STAT=info)
+        or_fail_alloc("fids")
+
+    j=1
+    DO i=this%field_ptr%min_id,this%field_ptr%max_id
+        IF (ASSOCIATED(this%field_ptr%vec(i)%t)) THEN
+            fids(j) = this%field_ptr%vec(i)%t%fieldID
+            j=j+1
+        ENDIF
+    ENDDO
+
+    RETURN
+
+    end_function()
+END FUNCTION
+
+SUBROUTINE equi_mesh_set_rel(this,field,info)
+    !!! Create bookkeeping data structure to log the relationship between
+    !!! the mesh and a field
+    CLASS(ppm_t_equi_mesh)             :: this
+    CLASS(ppm_t_field_)                :: field
+    !!! this mesh is discretized on that field
+    INTEGER,               INTENT(OUT) :: info
+
+    TYPE(ppm_t_field_info),POINTER     :: fdinfo => NULL()
+
+    start_subroutine("equi_mesh_set_rel")
+
+
+    ALLOCATE(fdinfo,STAT=info)
+        or_fail_alloc("could not allocate new field_info pointer")
+
+
+    CALL fdinfo%create(field%ID,info)
+        or_fail("could not create new field_info object")
+
+    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
+        ALLOCATE(ppm_c_field_info::this%field_ptr,STAT=info)
+            or_fail_alloc("could not allocate field_info collection")
+    ENDIF
+
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        CALL this%field_ptr%grow_size(info)
+            or_fail("could not grow_size this%field_ptr")
+    ENDIF
+    !if the collection is still too small, it means we should consider
+    ! using a hash table for meshIDs...
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        fail("The id of the mesh that we are trying to store in a Field collection seems to large. Why not implement a hash function?")
+    ENDIF
+
+    IF (this%field_ptr%exists(field%ID)) THEN
+        fail("It seems like this Mesh already has a pointer to that field. Are you sure you want to do that a second time?")
+    ELSE
+        !add field_info to the collection, at index fieldID
+        !Update the counters nb,max_id and min_id accordingly
+        !(this is not very clean without hash table)
+        this%field_ptr%vec(field%ID)%t => fdinfo
+        this%field_ptr%nb = this%field_ptr%nb + 1
+        IF (this%field_ptr%nb.EQ.1) THEN
+            this%field_ptr%max_id = field%ID
+            this%field_ptr%min_id = field%ID
+        ELSE
+            this%field_ptr%max_id = MAX(this%field_ptr%max_id,field%ID)
+            this%field_ptr%min_id = MIN(this%field_ptr%min_id,field%ID)
+        ENDIF
+    ENDIF
+    
+
+    end_subroutine()
+END SUBROUTINE
 
 
 END MODULE ppm_module_mesh_typedef
