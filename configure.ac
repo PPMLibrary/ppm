@@ -146,7 +146,7 @@ AC_ARG_ENABLE([gpu],[AS_HELP_STRING([--enable-gpu],
 )
 if test "x${have_gpu}" = xyes; then
     AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__GPU"])
-    AC_CHECK_HEADER([CL/opencl.h])
+    AC_CHECK_HEADER([CL/opencl.h],,,AC_INCLUDES_DEFAULT)
     AC_CHECK_LIB([OpenCL],[clGetPlatformIDs])
 fi
 
