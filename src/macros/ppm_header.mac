@@ -1,4 +1,4 @@
-macro ppm_header(ppm_module_name=ppm_module_name)
+include ppm_header(ppm_module_name=ppm_module_name)
 !--*- f90 -*--------------------------------------------------------------
 !  Module   :                   <%= ppm_module_name %>
 !-------------------------------------------------------------------------
@@ -27,5 +27,5 @@ macro ppm_header(ppm_module_name=ppm_module_name)
 ! ETH Zurich
 ! CH-8092 Zurich, Switzerland
 !-------------------------------------------------------------------------
-end macro
+end include
 

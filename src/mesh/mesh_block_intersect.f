@@ -1,5 +1,5 @@
       SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub,jsub,offset,&
-              ghostsize,nsendlist,isendfromsub,isendtosub,&
+              ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
               isendblkstart,isendblksize,ioffset,info,lsymm)
       !!! This routine determines common mesh blocks (intersections) of
       !!! two subs, possibly shifted and/or extended with ghostlayers.
@@ -45,6 +45,8 @@
       !!! Global sub index of sources
       INTEGER, DIMENSION(:)   , POINTER       :: isendtosub
       !!! Global sub index of targets
+      INTEGER, DIMENSION(:,:) , POINTER       :: isendpatchid
+      !!! Global patch index of data patches
       INTEGER, DIMENSION(:,:) , POINTER       :: ioffset
       !!! Meshblock offset for periodic images.
       !!!
@@ -70,14 +72,16 @@
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)            :: ldu
       INTEGER, DIMENSION(ppm_dim)      :: iblockstart,nblocksize
-      INTEGER                          :: iblockstopk,k,iopt,pdim,isize
+      INTEGER                          :: iblockstopk,k,iopt,pdim,isize,ipatch
       INTEGER                          :: fromistartk,toistartk
-      INTEGER                          :: fromnnodesk,tonnodesk
+      INTEGER                          :: fromiendk,toiendk
+      !INTEGER                          :: fromnnodesk,tonnodesk
       INTEGER, DIMENSION(3)            :: chop
       LOGICAL                          :: dosend
       LOGICAL                          :: valid
       TYPE(ppm_t_topo),      POINTER   :: from_topo => NULL()
       TYPE(ppm_t_topo),      POINTER   :: to_topo   => NULL()
+      TYPE(ppm_t_subpatch),  POINTER   :: p   => NULL()
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -118,61 +122,82 @@
       !-------------------------------------------------------------------------
       !  Determine current minimal common length of lists
       !-------------------------------------------------------------------------
-      isize = MIN(SIZE(isendfromsub,1),SIZE(isendtosub,1),        &
+      isize = MIN(SIZE(isendfromsub,1),SIZE(isendtosub,1),SIZE(isendpatchid,2),&
      &    SIZE(isendblkstart,2),SIZE(isendblksize,2),SIZE(ioffset,2))
 
       !-------------------------------------------------------------------------
       !  Determine intersecting mesh blocks
       !-------------------------------------------------------------------------
-      dosend = .TRUE.
-      DO k=1,pdim
-          fromistartk=this%istart(k,isub)+offset(k)
-          fromnnodesk=this%nnodes(k,isub)-chop(k)
-          toistartk  =to_mesh%istart(k,jsub)-ghostsize(k)
-          tonnodesk  =to_mesh%nnodes(k,jsub)+2*ghostsize(k)
-          iblockstart(k) = MAX(fromistartk,toistartk)
-          iblockstopk = MIN((fromistartk+fromnnodesk),(toistartk+tonnodesk))
-          nblocksize(k)  = iblockstopk-iblockstart(k)
-          ! do not send if there is nothing to be sent
-          IF (nblocksize(k) .LT. 1) dosend = .FALSE.
+      ! loop over each subpatch of the target sub
+      DO ipatch=1,to_mesh%subpatch_by_sub(jsub)%nsubpatch
+          dosend = .TRUE.
+          SELECT TYPE(p => to_mesh%subpatch_by_sub(jsub)%vec(ipatch)%t)
+          TYPE IS (ppm_t_subpatch)
+              !intersect the patch that this subpatch belongs to
+              ! (coordinates istart_g and iend_g) with the extented target
+              ! sub and with the source sub
+              DO k=1,pdim
+                  fromistartk= this%istart(k,isub)+offset(k)
+                  fromiendk  = this%iend(k,isub)-chop(k)
+
+                  toistartk  = p%istart_g(k)
+                  toiendk    = p%iend_g(k)
+                  iblockstart(k) = MAX(fromistartk,toistartk)
+                  iblockstopk    = MIN(fromiendk,toiendk)
+
+                  toistartk  = to_mesh%istart(k,jsub)-ghostsize(k)
+                  toiendk    = to_mesh%iend(k,jsub)+ghostsize(k)
+                  iblockstart(k) = MAX(fromistartk,toistartk)
+                  iblockstopk    = MIN(fromiendk,toiendk)
+
+                  nblocksize(k)  = iblockstopk-iblockstart(k)
+                  ! do not send if there is nothing to be sent
+                  IF (nblocksize(k).LT.1) dosend = .FALSE.
+              ENDDO
+              IF (dosend) THEN
+                  nsendlist = nsendlist + 1
+                  IF (nsendlist .GT. isize) THEN
+                      !-----------------------------------------------------------
+                      !  Grow memory for the sendlists
+                      !-----------------------------------------------------------
+                      isize  = 2*isize
+                      iopt   = ppm_param_alloc_grow_preserve
+                      ldu(1) = isize
+                      CALL ppm_alloc(isendfromsub,ldu,iopt,info)
+                      or_fail_alloc("isendfromsub")
+                      CALL ppm_alloc(isendtosub,ldu,iopt,info)
+                      or_fail_alloc("isendtosub")
+                      ldu(1) = pdim
+                      ldu(2) = isize
+                      CALL ppm_alloc(isendpatchid,ldu,iopt,info)
+                      or_fail_alloc("isendpatchid")
+                      CALL ppm_alloc(isendblkstart,ldu,iopt,info)
+                      or_fail_alloc("isendblkstart")
+                      CALL ppm_alloc(isendblksize,ldu,iopt,info)
+                      or_fail_alloc("isendblksize")
+                      CALL ppm_alloc(ioffset,ldu,iopt,info)
+                      or_fail_alloc("ioffset")
+                  ENDIF
+                  !---------------------------------------------------------------
+                  !  send block (isendblkstart...isendblkstart+nblocksize-1) 
+                  !  from sub isub to sub jsub
+                  !---------------------------------------------------------------
+                  ! global sub index of local sub where the blocks come from
+                  isendfromsub(nsendlist)        = isub
+                  ! global sub index of other sub where the blocks go to
+                  isendtosub(nsendlist)          = jsub
+                  ! global patch index of which the blocks belong
+                  isendpatchid(1:pdim,nsendlist) = p%istart_g(1:pdim)
+                  ! start of mesh block in global mesh
+                  isendblkstart(1:pdim,nsendlist)= &
+                      iblockstart(1:pdim) - offset(1:pdim)
+                  ! size of mesh block
+                  isendblksize(1:pdim,nsendlist) = nblocksize(1:pdim)
+                  ! mesh block offset for periodic images
+                  ioffset(1:pdim,nsendlist)      = offset(1:pdim)
+              ENDIF
+          END SELECT
       ENDDO
-      IF (dosend) THEN
-          nsendlist = nsendlist + 1
-          IF (nsendlist .GT. isize) THEN
-              !-----------------------------------------------------------------
-              !  Grow memory for the sendlists
-              !-----------------------------------------------------------------
-              isize  = 2*isize
-              iopt   = ppm_param_alloc_grow_preserve
-              ldu(1) = isize
-              CALL ppm_alloc(isendfromsub,ldu,iopt,info)
-                    or_fail_alloc("isendfromsub")
-              CALL ppm_alloc(isendtosub,ldu,iopt,info)
-                    or_fail_alloc("isendtosub")
-              ldu(1) = pdim
-              ldu(2) = isize
-              CALL ppm_alloc(isendblkstart,ldu,iopt,info)
-                    or_fail_alloc("isendblkstart")
-              CALL ppm_alloc(isendblksize,ldu,iopt,info)
-                    or_fail_alloc("isendblksize")
-              CALL ppm_alloc(ioffset,ldu,iopt,info)
-                    or_fail_alloc("ioffset")
-          ENDIF
-          !---------------------------------------------------------------------
-          !  send block (isendblkstart...isendblkstart+nblocksize-1) 
-          !  from sub isub to sub jsub
-          !---------------------------------------------------------------------
-          ! global sub index of local sub where the blocks come from
-          isendfromsub(nsendlist)        = isub
-          ! global sub index of other sub where the blocks go to
-          isendtosub(nsendlist)          = jsub
-          ! start of mesh block in global mesh
-          isendblkstart(1:pdim,nsendlist)= iblockstart(1:pdim) - offset(1:pdim)
-          ! size of mesh block
-          isendblksize(1:pdim,nsendlist) = nblocksize(1:pdim)
-          ! mesh block offset for periodic images
-          ioffset(1:pdim,nsendlist)      = offset(1:pdim)
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return 

@@ -80,5 +80,13 @@ SUBROUTINE field_set_rel_(this,mesh,p_idx,info)
     !!! index in the mesh data structure where the data for this field is stored
     INTEGER,               INTENT(OUT)  :: info
 END SUBROUTINE
+!PUSH FIELD DATA ON A MESH GHOST MAPPING BUFFERS
+SUBROUTINE field_map_ghost_push_(this,mesh,info)
+    IMPORT ppm_t_field_,ppm_t_equi_mesh_
+    CLASS(ppm_t_field_)                 :: this
+    CLASS(ppm_t_equi_mesh_)             :: mesh
+    INTEGER,                INTENT(OUT) :: info
+END SUBROUTINE
+
 
 

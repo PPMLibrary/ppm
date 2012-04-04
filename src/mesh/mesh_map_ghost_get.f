@@ -96,6 +96,8 @@
             or_fail_alloc("ppm_mesh_isendblkstart")
       CALL ppm_alloc(ppm_mesh_isendblksize,ldu,iopt,info)
             or_fail_alloc("ppm_mesh_isendblksize")
+      CALL ppm_alloc(ppm_mesh_isendpatchid,ldu,iopt,info)
+            or_fail_alloc("ppm_mesh_isendpatchid")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global mesh receive lists
@@ -110,6 +112,8 @@
             or_fail_alloc("ppm_mesh_irecvblkstart")
       CALL ppm_alloc(ppm_mesh_irecvblksize,ldu,iopt,info)
             or_fail_alloc("ppm_mesh_irecvblksize")
+      CALL ppm_alloc(ppm_mesh_irecvpatchid,ldu,iopt,info)
+            or_fail_alloc("ppm_mesh_irecvpatchid")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global send/recv lists
@@ -162,6 +166,7 @@
              ppm_mesh_isendblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j)
              ppm_mesh_isendblksize(1:pdim,j) = this%ghost_blksize(1:pdim,j)
              ppm_mesh_isendfromsub(j) = this%ghost_fromsub(j)
+             ppm_mesh_isendpatchid(1:pdim,j) = this%ghost_patchid(1:pdim,j)
          ENDDO
 
          !----------------------------------------------------------------------
@@ -173,6 +178,7 @@
              ppm_mesh_irecvblkstart(1:pdim,j) = this%ghost_recvblkstart(1:pdim,j)
              ppm_mesh_irecvblksize(1:pdim,j) = this%ghost_recvblksize(1:pdim,j)
              ppm_mesh_irecvtosub(j) = this%ghost_recvtosub(j)
+             ppm_mesh_irecvpatchid(1:pdim,j) = this%ghost_recvpatchid(1:pdim,j)
          ENDDO
       ENDDO
 

@@ -37,13 +37,15 @@ SUBROUTINE subpatch_data_destroy_(this,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_create_(p,meshID,istart,iend,info)
+SUBROUTINE subpatch_create_(p,meshID,istart,iend,istart_g,iend_g,info)
     !!! Constructor for subpatch
     IMPORT ppm_t_subpatch_,ppm_kind_double
     CLASS(ppm_t_subpatch_)             :: p
     INTEGER                            :: meshID
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
+    INTEGER,DIMENSION(:)               :: istart_g
+    INTEGER,DIMENSION(:)               :: iend_g
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
@@ -98,7 +100,7 @@ SUBROUTINE equi_mesh_destroy_(this,info)
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid)
+SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid,infinite)
     !!! Add a patch to a mesh
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                 :: this
@@ -110,6 +112,8 @@ SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid)
     !!! Returns status, 0 upon success
     INTEGER, OPTIONAL                       :: patchid
     !!! id of the patch, if we want one.
+    LOGICAL, OPTIONAL                       :: infinite
+    !!! true if the patch should cover the whole computational domain
 END SUBROUTINE
 
 SUBROUTINE equi_mesh_def_uniform_(this,info,patchid)
@@ -168,7 +172,7 @@ SUBROUTINE equi_mesh_map_ghost_get_(this,ghostsize,info)
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
-        ghostsize,nsendlist,isendfromsub,isendtosub,&
+        ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
         isendblkstart,isendblksize,ioffset,info,lsymm)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
@@ -179,6 +183,7 @@ SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
     INTEGER, DIMENSION(:)   , INTENT(IN   ) :: offset
     INTEGER, DIMENSION(:)   , POINTER       :: isendfromsub
     INTEGER, DIMENSION(:)   , POINTER       :: isendtosub
+    INTEGER, DIMENSION(:,:) , POINTER       :: isendpatchid
     INTEGER, DIMENSION(:,:) , POINTER       :: ioffset
     INTEGER, DIMENSION(:,:) , POINTER       :: isendblkstart
     INTEGER, DIMENSION(:,:) , POINTER       :: isendblksize
@@ -192,3 +197,9 @@ SUBROUTINE equi_mesh_map_ghost_init_(this,ghostsize,info)
     INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
+SUBROUTINE equi_mesh_map_ghost_push_(this,field,info)
+    IMPORT ppm_t_equi_mesh_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)            :: this
+    CLASS(ppm_t_field_)                :: field
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE 
