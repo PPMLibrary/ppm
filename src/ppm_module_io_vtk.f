@@ -180,13 +180,13 @@
          !  Ugly interface
          !----------------------------------------------------------------------
 
-         SUBROUTINE ppm_vtk_init(filename, type, info,              &
+         SUBROUTINE ppm_vtk_init(filename, vtype, info,             &
                                  version, byte_order, whole_extent, &
                                  origin, spacing, extent,           &
                                  npoints, nverts, nlines, nstrips, npolys)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: filename
-           CHARACTER(LEN=*),                              INTENT(IN   ) :: type
+           CHARACTER(LEN=*),                              INTENT(IN   ) :: vtype
            INTEGER,                                       INTENT(  OUT) :: info
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: version
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: byte_order
@@ -216,7 +216,7 @@
               ibyte_order = byte_order
            END IF
            ! save type for ppm_vtk_close and reset current_section
-           vtk_type = type
+           vtk_type = vtype
            current_section = 0
            ! open output file
            OPEN(iUnit, FILE=filename, IOSTAT=info, ACTION='WRITE')
@@ -228,10 +228,10 @@
               GOTO 9999
            END IF
            WRITE(iUnit,'(A)')  "<?xml version='1.0' ?>"
-           WRITE(iUnit,'(7A)') "<VTKFile type='", type, &
+           WRITE(iUnit,'(7A)') "<VTKFile type='", vtype, &
                                "' version='",     iversion(1:LEN_TRIM(iversion)),  &
                                "' byte_order='",  ibyte_order(1:LEN_TRIM(ibyte_order)), "'>"
-           WRITE(iUnit,'(2A)',advance='no') "  <", type
+           WRITE(iUnit,'(2A)',advance='no') "  <", vtype
            IF (PRESENT(whole_extent)) THEN
               WRITE(iUnit, '(A)', advance='no') " WholeExtent='"
               DO i=LBOUND(whole_extent,1),UBOUND(whole_extent,1)
@@ -335,13 +335,13 @@
          END SUBROUTINE ppm_vtk_section
 
          SUBROUTINE ppm_vtk_data(name, data, info, &
-                                 format, type, ncomponents, offset)
+                                 format, vtype, ncomponents, offset)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: name
            REAL(ppm_kind_single), DIMENSION(:),           INTENT(IN   ) :: data
            INTEGER,                                       INTENT(  OUT) :: info
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: format
-           CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: type
+           CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: vtype
            INTEGER,                             OPTIONAL, INTENT(IN   ) :: ncomponents
            INTEGER,                             OPTIONAL, INTENT(IN   ) :: offset
            ! vars
@@ -361,8 +361,8 @@
               GOTO 9999
            END IF
            WRITE(iUnit,'(A)',advance='no') "        <DataArray"
-           IF (PRESENT(type)) THEN
-              WRITE(iUnit,'(3A)',advance='no') " type='", type(1:LEN_TRIM(type)), "'"
+           IF (PRESENT(vtype)) THEN
+              WRITE(iUnit,'(3A)',advance='no') " type='", vtype(1:LEN_TRIM(vtype)), "'"
            END IF
            WRITE(iUnit,'(3A)',advance='no') " Name='", name(1:LEN_TRIM(name)), "'"
            IF (PRESENT(ncomponents)) THEN
