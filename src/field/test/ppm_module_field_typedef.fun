@@ -207,8 +207,8 @@ use ppm_module_interfaces
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(i,j,1) = sin(field2d_1(i,j))
-                    field3d_1(i,j,2) = cos(field2d_1(i,j))
+                    field3d_1(1,i,j) = sin(field2d_1(i,j))
+                    field3d_1(2,i,j) = cos(field2d_1(i,j))
                 enddo
             enddo
             p => Mesh1%subpatch%next()
@@ -223,8 +223,8 @@ use ppm_module_interfaces
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(i,j,1) = sin(field2d_1(i,j))
-                    field3d_1(i,j,2) = cos(field2d_1(i,j))
+                    field3d_1(1,i,j) = sin(field2d_1(i,j))
+                    field3d_1(2,i,j) = cos(field2d_1(i,j))
                 enddo
             enddo
         enddo
@@ -342,7 +342,7 @@ use ppm_module_interfaces
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(i,j,1:ndim) = 17.4
+                    field3d_1(1:ndim,i,j) = 17.4
                 enddo
             enddo
             p => Mesh1%subpatch%next()
@@ -357,7 +357,7 @@ use ppm_module_interfaces
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(i,j,1:ndim) = 17.4
+                    field3d_1(1:ndim,i,j) = 17.4
                 enddo
             enddo
         enddo

@@ -250,7 +250,7 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         call Mesh1%def_uniform(info)
             Assert_Equal(info,0)
 
-        call Field1%create(1,'testField',info,init_func=my_init_function) 
+        call Field1%create(3,'testField',info,init_func=my_init_function) 
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -258,17 +258,31 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         p => Mesh1%subpatch%begin()
 
         do while (ASSOCIATED(p))
-            call p%get_field(field2d_1,Field1,info)
+            call p%get_field(field3d_1,Field1,info)
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
-                    field2d_1(i,j) = cos(i*h(1)+j)
+                    field3d_1(1,i,j) = cos(i*h(1)+j)
+                    field3d_1(2,i,j) = sin(i*h(1)+j)
+                    field3d_1(3,i,j) = cos(i*h(1)+j)**2
                 enddo
             enddo
             p => Mesh1%subpatch%next()
         enddo
-        
+
         call Mesh1%map_ghost_get(ighostsize,info)
             Assert_Equal(info,0)
+
+        call Mesh1%map_ghost_get(ighostsize,info)
+            Assert_Equal(info,0)
+
+        call Field1%map_ghost_push(Mesh1,info)
+            Assert_Equal(info,0)
+
+!        call Mesh1%map_send(info)
+
+!        call Field1%ghost_pop(Mesh1,info)
+!            Assert_Equal(info,0)
+
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)

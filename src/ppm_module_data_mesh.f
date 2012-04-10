@@ -45,11 +45,15 @@
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblkstart => NULL()
          ! start (lower-left corner) of mesh block to be sent in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid => NULL()
+         !!! list of source patch ids to send from local processor 
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize => NULL()
          ! size (in grid points) of blocks to be sent
          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub => NULL()
          ! list of destination subs to recv to on local processors (local sub
          ! number on destination processor)
+         INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid => NULL()
+         !!! list of source patch ids to receive from local processor 
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblkstart => NULL()
          ! start (lower-left corner) of mesh block to be recvd in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist

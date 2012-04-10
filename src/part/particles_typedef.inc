@@ -11,7 +11,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for properties
 !----------------------------------------------------------------------
-define_collection_type(DTYPE(ppm_t_part_prop))
+minclude define_collection_type(DTYPE(ppm_t_part_prop))
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -23,7 +23,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for neighbour lists
 !----------------------------------------------------------------------
-define_collection_type(DTYPE(ppm_t_neighlist))
+minclude define_collection_type(DTYPE(ppm_t_neighlist))
 
 TYPE,EXTENDS( DTYPE(particles_stats)_) :: DTYPE(particles_stats)
 END TYPE
@@ -188,7 +188,7 @@ END TYPE DTYPE(ppm_t_particles)
 !----------------------------------------------------------------------
 ! Container for lists of (pointers to) Particle sets
 !----------------------------------------------------------------------
-define_collection_type(DTYPE(ppm_t_particles))
+minclude define_collection_type(DTYPE(ppm_t_particles))
 
 
 TYPE,EXTENDS(DTYPE(ppm_t_sop)_) :: DTYPE(ppm_t_sop)
@@ -199,7 +199,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for adaptive Particle sets
 !----------------------------------------------------------------------
-define_collection_type(DTYPE(ppm_t_sop))
+minclude define_collection_type(DTYPE(ppm_t_sop))
 
 #undef   MK
 #undef   _MK

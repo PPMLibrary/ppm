@@ -35,7 +35,6 @@ end macro
 
 macro dealloc_pointer(p,info=info)
 if (associated(<%= p %>)) deallocate(<%= p %>,stat=<%= info %>)
-nullify(<%= p %>)
 $or_fail_dealloc("<%= p %>")
 end macro
 

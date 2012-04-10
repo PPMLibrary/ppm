@@ -106,7 +106,7 @@ TYPE,ABSTRACT, EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_part_mapping)_
     PROCEDURE(DTYPE(map_destroy)_),DEFERRED     :: destroy
 
 END TYPE DTYPE(ppm_t_part_mapping)_
-define_abstract_collection_type(DTYPE(ppm_t_part_mapping)_)
+minclude define_abstract_collection_type(DTYPE(ppm_t_part_mapping)_)
 
 
 TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_mesh_mapping)_

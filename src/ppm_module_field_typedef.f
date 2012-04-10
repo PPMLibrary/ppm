@@ -1,4 +1,4 @@
-ppm_header(ppm_module_field_typedef)
+minclude ppm_header(ppm_module_field_typedef)
 
 MODULE ppm_module_field_typedef
 !!! Declares field data type
@@ -40,7 +40,7 @@ TYPE, EXTENDS(ppm_t_mesh_discr_info_):: ppm_t_mesh_discr_info
     PROCEDURE :: destroy => mesh_discr_info_destroy
 
 END TYPE ppm_t_mesh_discr_info
-define_collection_type(ppm_t_mesh_discr_info)
+minclude define_collection_type(ppm_t_mesh_discr_info)
 
 TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     CONTAINS
@@ -48,8 +48,9 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: destroy => field_destroy
     PROCEDURE :: discretize_on => field_discretize_on
     PROCEDURE :: set_rel => field_set_rel
+    PROCEDURE :: map_ghost_push => field_map_ghost_push
 END TYPE ppm_t_field
-define_collection_type(ppm_t_field)
+minclude define_collection_type(ppm_t_field)
 
 
 
@@ -58,8 +59,8 @@ define_collection_type(ppm_t_field)
 !----------------------------------------------------------------------
 CONTAINS
 
-define_collection_procedures(ppm_t_mesh_discr_info)
-define_collection_procedures(ppm_t_field)
+minclude define_collection_procedures(ppm_t_mesh_discr_info)
+minclude define_collection_procedures(ppm_t_field)
 
 !CREATE
 SUBROUTINE field_create(this,lda,name,info,init_func)
@@ -290,5 +291,23 @@ SUBROUTINE field_set_rel(this,mesh,p_idx,info)
 
     end_subroutine()
 END SUBROUTINE field_set_rel
+
+SUBROUTINE field_map_ghost_push(this,mesh,info)
+    !!! Push field data into the buffers of a mesh for ghost mappings
+    !!! The field must of course be stored on this mesh
+    !!! (for now) we assume that mesh%map_ghost_get() has already been called
+    CLASS(ppm_t_field)                  :: this
+    CLASS(ppm_t_equi_mesh_)             :: mesh
+    !!! mesh that this field is discretized on
+    INTEGER,                INTENT(OUT) :: info
+
+    start_subroutine("field_map_ghost_push")
+
+
+    CALL mesh%map_ghost_push(this,info)
+        or_fail("mesh%map_ghost_push")
+
+    end_subroutine()
+END SUBROUTINE field_map_ghost_push
 
 END MODULE ppm_module_field_typedef

@@ -1,4 +1,4 @@
-ppm_header(ppm_module_interfaces)
+!ppm_header(ppm_module_interfaces)
 
 MODULE ppm_module_interfaces
 !!! Declares all data types 
@@ -132,7 +132,7 @@ TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     PROCEDURE(mesh_discr_info_destroy_),DEFERRED :: destroy
 END TYPE
 ! Container for mesh_discr_info
-define_abstract_collection_type(ppm_t_mesh_discr_info_)
+minclude define_abstract_collection_type(ppm_t_mesh_discr_info_)
 
 TYPE,ABSTRACT :: ppm_t_field_
     !!! Data structure for fields 
@@ -160,9 +160,10 @@ TYPE,ABSTRACT :: ppm_t_field_
     PROCEDURE(field_destroy_),      DEFERRED :: destroy
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
     PROCEDURE(field_set_rel_),      DEFERRED :: set_rel
+    PROCEDURE(field_map_ghost_push_),DEFERRED:: map_ghost_push
 END TYPE ppm_t_field_
 ! Container for fields
-define_abstract_collection_type(ppm_t_field_)
+minclude define_abstract_collection_type(ppm_t_field_)
 
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
@@ -215,18 +216,24 @@ TYPE,ABSTRACT :: ppm_t_subpatch_data_
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
 END TYPE
 ! Container for lists of (pointers to) subpatch_data
-define_abstract_collection_type(ppm_t_subpatch_data_)
+minclude define_abstract_collection_type(ppm_t_subpatch_data_)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
     INTEGER                       :: meshID = 0
     !!! ID of the mesh to which this subpatch belongs
-    INTEGER, DIMENSION(:),POINTER :: istart => NULL()
+    INTEGER, DIMENSION(:),POINTER :: istart   => NULL()
     !!! Lower-left coordinates
-    INTEGER, DIMENSION(:),POINTER :: iend => NULL()
+    INTEGER, DIMENSION(:),POINTER :: iend     => NULL()
     !!! Upper-right coordinates
-    INTEGER, DIMENSION(:),POINTER :: nnodes => NULL()
+    INTEGER, DIMENSION(:),POINTER :: nnodes   => NULL()
     !!! number of nodes in each direction
+    INTEGER, DIMENSION(:),POINTER :: istart_g => NULL()
+    !!! Lower-left coordinates of the patch associated with this subpatch
+    !!! (used for mapping routines)
+    INTEGER, DIMENSION(:),POINTER :: iend_g   => NULL()
+    !!! Upper-right coordinates of the patch associated with this subpatch
+    !!! (used for mapping routines)
     CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data => NULL()
     !!! container for the data arrays for each property discretized
     !!! on this mesh
@@ -239,7 +246,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !PROCEDURE  :: get => subpatch_get
 END TYPE
 ! Container for lists of (pointers to) subpatch
-define_abstract_collection_type(ppm_t_subpatch_)
+minclude define_abstract_collection_type(ppm_t_subpatch_)
 
 
 TYPE,ABSTRACT :: ppm_t_A_subpatch_
@@ -255,7 +262,7 @@ TYPE,ABSTRACT :: ppm_t_A_subpatch_
     PROCEDURE(subpatch_A_destroy_),DEFERRED  :: destroy
 END TYPE
 ! Container for subpatch pointer arrays
-define_abstract_collection_type(ppm_t_A_subpatch_)
+minclude define_abstract_collection_type(ppm_t_A_subpatch_)
 
 
 TYPE ppm_t_mesh_maplist
@@ -307,7 +314,14 @@ TYPE,ABSTRACT ::  ppm_t_field_info_
     PROCEDURE(field_info_destroy_),DEFERRED :: destroy
 END TYPE
 ! Container for field_info
-define_abstract_collection_type(ppm_t_field_info_)
+minclude define_abstract_collection_type(ppm_t_field_info_)
+
+TYPE ppm_t_subpatch_ptr_array
+    INTEGER                                       :: size = 0
+    INTEGER                                       :: nsubpatch = 0
+    TYPE(ppm_t_ptr_subpatch),DIMENSION(:),POINTER :: vec => NULL()
+END TYPE
+
 
 TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
@@ -327,20 +341,22 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     REAL(ppm_kind_double),DIMENSION(:),POINTER :: h => NULL()
     !!! mesh spacing
 
-    !TODO : delete those 2 guys once the transition to the new DS is done
+    !TODO : delete this guy once the transition to the new DS is done
     INTEGER, DIMENSION(:,:), POINTER    :: nnodes    => NULL()
+
     INTEGER, DIMENSION(:,:), POINTER    :: istart    => NULL()
+    INTEGER, DIMENSION(:,:), POINTER    :: iend    => NULL()
 
     CLASS(ppm_c_subpatch_),POINTER            :: subpatch => NULL()
     !!! container for subdomains patches 
 
-    INTEGER                            :: npatch = 0
+    INTEGER                                   :: npatch = 0
     !!! Number of patches (NOT subpatches)
     CLASS(ppm_c_A_subpatch_),POINTER          :: patch => NULL()
     !!! array of arrays of pointers to the subpatches for each patch
 
-    !TODO: this does not work yet
-    CLASS(ppm_c_A_subpatch_),POINTER          :: sub => NULL()
+    TYPE(ppm_t_subpatch_ptr_array),DIMENSION(:),POINTER :: &
+                                                 subpatch_by_sub => NULL()
     !!! pointers to the subpatches contained in each sub.
 
     CLASS(ppm_c_field_info_),POINTER          :: field_ptr => NULL()
@@ -364,6 +380,9 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !!! list of target subs of ghost mesh blocks (globel sub number).
     !!! These are the subs a block will serve as a ghost on.
     !!! 1st index: meshblock ID
+    INTEGER, DIMENSION(:,:), POINTER :: ghost_patchid   => NULL()
+    !!! list of patches of ghost mesh blocks (globel sub number).
+    !!! 1st index: patch ID
     INTEGER, DIMENSION(:,:), POINTER :: ghost_blkstart => NULL()
     !!! start (lower-left corner) of ghost mesh block in GLOBAL
     !!! mesh coordinates. First index: x,y[,z], 2nd: meshblock ID
@@ -381,6 +400,10 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     !!! i.e. being ghost on the local processor (globel sub number).
     !!! These are the subs where the blocks will serve as ghosts
     !!! 1st index: meshblock ID
+    INTEGER, DIMENSION(:,:),POINTER  :: ghost_recvpatchid => NULL()
+    !!! list of patches (global indices) for ghost mesh blocks to be received,
+    !!! i.e. being ghost on the local processor (globel sub number).
+    !!! 1st index: patch ID
     INTEGER, DIMENSION(:,:), POINTER  :: ghost_recvblkstart => NULL()
     !!! start (lower-left corner) of received ghost mesh block in
     !!! GLOBAL  mesh coordinates. 1st index: x,y[,z], 2nd: meshblock ID
@@ -394,20 +417,21 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     TYPE(ppm_t_mesh_maplist), POINTER :: mapping => NULL()
 
     CONTAINS
-    PROCEDURE(equi_mesh_create_),   DEFERRED :: create
-    PROCEDURE(equi_mesh_destroy_),  DEFERRED :: destroy
-    PROCEDURE(equi_mesh_def_patch_),DEFERRED :: def_patch
-    PROCEDURE(equi_mesh_set_rel_),  DEFERRED :: set_rel
-    PROCEDURE(equi_mesh_def_uniform_),DEFERRED :: def_uniform
+    PROCEDURE(equi_mesh_create_),         DEFERRED :: create
+    PROCEDURE(equi_mesh_destroy_),        DEFERRED :: destroy
+    PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
+    PROCEDURE(equi_mesh_set_rel_),        DEFERRED :: set_rel
+    PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-      &                               DEFERRED :: new_subpatch_data_ptr 
+      &                                   DEFERRED :: new_subpatch_data_ptr 
     PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
     PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
     PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
     PROCEDURE(equi_mesh_map_ghost_get_),  DEFERRED :: map_ghost_get
+    PROCEDURE(equi_mesh_map_ghost_push_), DEFERRED :: map_ghost_push
 END TYPE
 ! Container for meshes
-define_abstract_collection_type(ppm_t_equi_mesh_)
+minclude define_abstract_collection_type(ppm_t_equi_mesh_)
 
 
 !----------------------------------------------------------------------
@@ -537,13 +561,13 @@ INTERFACE
 !----------------------------------------------------------------------
 ! Interfaces for collections type-bound procedures
 !----------------------------------------------------------------------
-define_abstract_collection_interfaces(ppm_t_equi_mesh_)
-define_abstract_collection_interfaces(ppm_t_A_subpatch_)
-define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
-define_abstract_collection_interfaces(ppm_t_field_info_)
-define_abstract_collection_interfaces(ppm_t_field_)
-define_abstract_collection_interfaces(ppm_t_subpatch_data_)
-define_abstract_collection_interfaces(ppm_t_subpatch_)
+minclude define_abstract_collection_interfaces(ppm_t_equi_mesh_)
+minclude define_abstract_collection_interfaces(ppm_t_A_subpatch_)
+minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
+minclude define_abstract_collection_interfaces(ppm_t_field_info_)
+minclude define_abstract_collection_interfaces(ppm_t_field_)
+minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
+minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 
 END INTERFACE
 
