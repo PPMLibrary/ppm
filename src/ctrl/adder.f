@@ -258,7 +258,7 @@
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
     IF (PRESENT(vtype)) THEN
-       def%type         =  vtype
+       def%vtype         =  vtype
     END IF
 #endif
     ! group
