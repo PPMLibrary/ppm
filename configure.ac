@@ -127,8 +127,10 @@ if test "x${use_mpi}" = xyes; then
 fi
 AC_LANG([C])
 
+AC_SUBST(MPI_ENABLED,["false"])
 if test "x${use_mpi}" = xyes; then
     AC_SUBST(FUNIT_FLAGS,["--with-mpi"])
+    AC_SUBST(MPI_ENABLED,["true"])
 fi
 
 # Checks for libraries and set preprocessing flags
@@ -265,5 +267,5 @@ fi
 
   
 # Generate Makefiles
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile settings])
 AC_OUTPUT

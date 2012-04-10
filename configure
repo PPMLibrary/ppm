@@ -602,6 +602,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 DEBUG
 FUNIT_FLAGS
+MPI_ENABLED
 ax_cv_f90_modflag
 EGREP
 GREP
@@ -5909,8 +5910,12 @@ ac_link='$CC -o conftest$ac_exeext $CFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $
 ac_compiler_gnu=$ac_cv_c_compiler_gnu
 
 
+MPI_ENABLED="false"
+
 if test "x${use_mpi}" = xyes; then
     FUNIT_FLAGS="--with-mpi"
+
+    MPI_ENABLED="true"
 
 fi
 
@@ -6136,7 +6141,7 @@ fi
 
 
 # Generate Makefiles
-ac_config_files="$ac_config_files Makefile"
+ac_config_files="$ac_config_files Makefile settings"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -6856,6 +6861,7 @@ for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
+    "settings") CONFIG_FILES="$CONFIG_FILES settings" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
