@@ -7,7 +7,7 @@
 !        &                         min, max,                                   &
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
-                                 type, &
+                                 vtype, &
 #endif
 #ifdef __F2003
                                  default_func, validator, &
@@ -135,7 +135,7 @@
 #endif
 
 #if defined(__LOGICAL) && !defined(ARRAY)
-    LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: type
+    LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: vtype
 !!! Type of flag. Logical flags require no value to be supplied.
 !!! Instead the behavior depends on this argument. One of:
 !!! enabling_flag :: Presence of flag sets variable to .TRUE.
@@ -257,8 +257,8 @@
 !     END IF
 #endif
 #if defined(__LOGICAL) && !defined(ARRAY)
-    IF (PRESENT(type)) THEN
-       def%type         =  type
+    IF (PRESENT(vtype)) THEN
+       def%vtype         =  vtype
     END IF
 #endif
     ! group
