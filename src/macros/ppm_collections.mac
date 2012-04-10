@@ -1,4 +1,4 @@
-include define_collection_type(element_type)
+include macro define_collection_type(element_type)
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
         CONTAINS
@@ -15,9 +15,9 @@ TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
 !            PROCEDURE       :: remove  => <%= collection_type %>_remove
 !            PROCEDURE       :: grow_size=><%= collection_type %>_grow_size
 END TYPE
-end include
+end macro
 
-include define_abstract_collection_type(element_type)
+include macro define_abstract_collection_type(element_type)
 <% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr").chop%>
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 TYPE  <%= element_ptr_type %>
@@ -38,9 +38,9 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     PROCEDURE(<%= collection_type %>_remove), DEFERRED :: remove 
     PROCEDURE(<%= collection_type %>_grow_size),DEFERRED::grow_size 
 END TYPE 
-end include
+end macro
 
-include define_abstract_collection_interfaces(element_type)
+include macro define_abstract_collection_interfaces(element_type)
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 !FIRST ELEMENT
 FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
@@ -100,10 +100,10 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
     INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
-end include
+end macro
 
 
-include define_collection_procedures(element_type)
+include macro define_collection_procedures(element_type)
 <% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr") %>
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 !BEGIN
@@ -380,4 +380,4 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
     CALL substop(caller,t0,info)
     9999 CONTINUE
 END SUBROUTINE
-end include
+end macro
