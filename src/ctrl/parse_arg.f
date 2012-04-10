@@ -35,7 +35,7 @@
                       GOTO 9999
                    END IF
 #else
-                   IF (WRAP(DTYPE)_args(i)%type .EQV. enabling_flag) THEN
+                   IF (WRAP(DTYPE)_args(i)%vtype .EQV. enabling_flag) THEN
                       WRAP(DTYPE)_args(i)%variable = .TRUE.
                    ELSE
                       WRAP(DTYPE)_args(i)%variable = .FALSE.
