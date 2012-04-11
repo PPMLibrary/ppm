@@ -136,24 +136,48 @@
               !intersect the patch that this subpatch belongs to
               ! (coordinates istart_g and iend_g) with the extented target
               ! sub and with the source sub
+              write(*,*) '---------------------------------'
+              write(*,*) 'INTERSECTING: pdim = ',pdim
+              write(*,*) '  OFFSET = ',offset
+              write(*,*) '  CHOP = ',chop
+              write(*,*) ' patch : '
+              write(*,*) '     ',p%istart_g
+              write(*,*) '     ',p%iend_g
+              write(*,*) ' source sub : '
+              write(*,*) '     ',this%istart(1:pdim,isub)
+              write(*,*) '     ',this%iend(1:pdim,isub)
+              write(*,*) ' offset source sub : '
+              write(*,*) '     ',this%istart(1:pdim,isub)+offset(1:pdim)
+              write(*,*) '     ',this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)
+              write(*,*) ' extended target sub : '
+              write(*,*) '     ',to_mesh%istart(1:pdim,jsub)-ghostsize(1:pdim)
+              write(*,*) '     ',to_mesh%iend(1:pdim,jsub)+ghostsize(1:pdim)
+
               DO k=1,pdim
                   fromistartk= this%istart(k,isub)+offset(k)
-                  fromiendk  = this%iend(k,isub)-chop(k)
+                  fromiendk  = this%iend(k,isub)+offset(k)-chop(k)
 
                   toistartk  = p%istart_g(k)
                   toiendk    = p%iend_g(k)
+
                   iblockstart(k) = MAX(fromistartk,toistartk)
                   iblockstopk    = MIN(fromiendk,toiendk)
 
                   toistartk  = to_mesh%istart(k,jsub)-ghostsize(k)
                   toiendk    = to_mesh%iend(k,jsub)+ghostsize(k)
-                  iblockstart(k) = MAX(fromistartk,toistartk)
-                  iblockstopk    = MIN(fromiendk,toiendk)
+
+                  iblockstart(k) = MAX(iblockstart(k),toistartk)
+                  iblockstopk    = MIN(iblockstopk,toiendk)
 
                   nblocksize(k)  = iblockstopk-iblockstart(k)
                   ! do not send if there is nothing to be sent
                   IF (nblocksize(k).LT.1) dosend = .FALSE.
               ENDDO
+
+              write(*,*) 'iblockstart = ',iblockstart
+              write(*,*) 'nblockssize = ',nblocksize
+              write(*,*) '---------------------------------'
+
               IF (dosend) THEN
                   nsendlist = nsendlist + 1
                   IF (nsendlist .GT. isize) THEN

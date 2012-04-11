@@ -75,7 +75,7 @@ SUBROUTINE subpatch_A_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h)
+SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h,ghostsize)
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                 :: this
     !!! cartesian mesh object
@@ -92,6 +92,7 @@ SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h)
     REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN   ) :: h
     !!! Mesh spacing
     !!! Note: Exactly one of Nm and h should be specified
+    INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: ghostsize
 END SUBROUTINE
 
 SUBROUTINE equi_mesh_destroy_(this,info)
@@ -165,11 +166,11 @@ SUBROUTINE equi_mesh_set_rel_(this,field,info)
     INTEGER,               INTENT(OUT)  :: info
 END SUBROUTINE
 !GHOST GET
-SUBROUTINE equi_mesh_map_ghost_get_(this,ghostsize,info)
+SUBROUTINE equi_mesh_map_ghost_get_(this,info,ghostsize)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
-    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
     INTEGER                 , INTENT(  OUT) :: info
+    INTEGER, OPTIONAL, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
 END SUBROUTINE
 SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
         ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
@@ -198,6 +199,17 @@ SUBROUTINE equi_mesh_map_ghost_init_(this,ghostsize,info)
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 SUBROUTINE equi_mesh_map_ghost_push_(this,field,info)
+    IMPORT ppm_t_equi_mesh_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)            :: this
+    CLASS(ppm_t_field_)                :: field
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE 
+SUBROUTINE equi_mesh_map_send_(this,info)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)            :: this
+    INTEGER,               INTENT(OUT) :: info
+END SUBROUTINE 
+SUBROUTINE equi_mesh_map_ghost_pop_(this,field,info)
     IMPORT ppm_t_equi_mesh_,ppm_t_field_
     CLASS(ppm_t_equi_mesh_)            :: this
     CLASS(ppm_t_field_)                :: field

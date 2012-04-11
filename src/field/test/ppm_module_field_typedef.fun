@@ -256,8 +256,6 @@ use ppm_module_interfaces
 
         p=>NULL()
 
-        write(*,*) 'DONE test_field_uniform_basic'
-
     end test
 !------------------------------------------------------------------------------
     test field_basics

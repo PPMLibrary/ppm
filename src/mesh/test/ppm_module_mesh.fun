@@ -9,7 +9,7 @@ use ppm_module_mktopo
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 0
+integer, parameter              :: debug = 2
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
 integer,parameter               :: ndim=2
@@ -269,19 +269,24 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
             p => Mesh1%subpatch%next()
         enddo
 
-        call Mesh1%map_ghost_get(ighostsize,info)
-            Assert_Equal(info,0)
 
-        call Mesh1%map_ghost_get(ighostsize,info)
+        !call Mesh1%map_ghost_get(info,ighostsize)
+        !    Assert_Equal(info,0)
+
+        call Mesh1%map_ghost_get(info,ighostsize)
             Assert_Equal(info,0)
 
         call Field1%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
+        write(*,*) 'PUSH OK'
 
-!        call Mesh1%map_send(info)
+        call Mesh1%map_send(info)
+            Assert_Equal(info,0)
+        write(*,*) 'SEND OK'
 
-!        call Field1%ghost_pop(Mesh1,info)
-!            Assert_Equal(info,0)
+        call Field1%map_ghost_pop(Mesh1,info)
+            Assert_Equal(info,0)
+        write(*,*) 'POP OK'
 
 
         call Mesh1%destroy(info)

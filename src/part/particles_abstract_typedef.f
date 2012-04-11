@@ -59,7 +59,7 @@ END TYPE DTYPE(ppm_t_part_prop)_
 !----------------------------------------------------------------------
 ! Container for properties
 !----------------------------------------------------------------------
-define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
+minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 
 
 !!----------------------------------------------------------------------
@@ -95,7 +95,7 @@ END TYPE DTYPE(ppm_t_neighlist)_
 !----------------------------------------------------------------------
 ! Container for neighbour lists
 !----------------------------------------------------------------------
-define_abstract_collection_type(DTYPE(ppm_t_neighlist)_)
+minclude define_abstract_collection_type(DTYPE(ppm_t_neighlist)_)
 
 
 
@@ -405,7 +405,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_l_check),&
         DTYPE(data_2d_l_check)
 END TYPE DTYPE(ppm_t_particles)_
-define_abstract_collection_type(DTYPE(ppm_t_particles)_)
+minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 
 
 TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_sop)_
@@ -467,7 +467,7 @@ END TYPE DTYPE(ppm_t_sop)_
 !----------------------------------------------------------------------
 ! Container for adaptive Particle sets
 !----------------------------------------------------------------------
-define_abstract_collection_type(DTYPE(ppm_t_sop)_)
+minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
 
 #undef   MK
 #undef   _MK

@@ -1,4 +1,4 @@
-!ppm_header(ppm_module_interfaces)
+!minclude ppm_header(ppm_module_interfaces)
 
 MODULE ppm_module_interfaces
 !!! Declares all data types 
@@ -94,15 +94,15 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 #define  _MK _ppm_kind_double
 #include "map/mapping_abstract_typedef.f"
 
-#define  DTYPE(a) a/**/_s
-#define  MK ppm_kind_single
-#define  _MK _ppm_kind_single
-#include "part/particles_abstract_typedef.f"
+!#define  DTYPE(a) a/**/_s
+!#define  MK ppm_kind_single
+!#define  _MK _ppm_kind_single
+!#include "part/particles_abstract_typedef.f"
 
-#define  DTYPE(a) a/**/_d
-#define  MK ppm_kind_double
-#define  _MK _ppm_kind_double
-#include "part/particles_abstract_typedef.f"
+!#define  DTYPE(a) a/**/_d
+!#define  MK ppm_kind_double
+!#define  _MK _ppm_kind_double
+!#include "part/particles_abstract_typedef.f"
 
 TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     !!! (Contained inside a ppm_t_field, so relates to one specific
@@ -161,6 +161,7 @@ TYPE,ABSTRACT :: ppm_t_field_
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
     PROCEDURE(field_set_rel_),      DEFERRED :: set_rel
     PROCEDURE(field_map_ghost_push_),DEFERRED:: map_ghost_push
+    PROCEDURE(field_map_ghost_pop_),DEFERRED:: map_ghost_pop
 END TYPE ppm_t_field_
 ! Container for fields
 minclude define_abstract_collection_type(ppm_t_field_)
@@ -341,6 +342,9 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     REAL(ppm_kind_double),DIMENSION(:),POINTER :: h => NULL()
     !!! mesh spacing
 
+    INTEGER, DIMENSION(:), POINTER    :: ghostsize   => NULL()
+    !!! size of the ghost layer, in number of mesh points
+
     !TODO : delete this guy once the transition to the new DS is done
     INTEGER, DIMENSION(:,:), POINTER    :: nnodes    => NULL()
 
@@ -429,6 +433,8 @@ TYPE,ABSTRACT :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
     PROCEDURE(equi_mesh_map_ghost_get_),  DEFERRED :: map_ghost_get
     PROCEDURE(equi_mesh_map_ghost_push_), DEFERRED :: map_ghost_push
+    PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
+    PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
 END TYPE
 ! Container for meshes
 minclude define_abstract_collection_type(ppm_t_equi_mesh_)
@@ -445,113 +451,113 @@ INTERFACE
 #define  DTYPE(a) a/**/_d
 #include "map/mapping_interfaces.f"
 
-#define  DTYPE(a) a/**/_s
-#define  MK ppm_kind_single
-#include "part/particles_interfaces.f"
+!#define  DTYPE(a) a/**/_s
+!#define  MK ppm_kind_single
+!#include "part/particles_interfaces.f"
 
-#define  DTYPE(a) a/**/_d
-#define  MK ppm_kind_double
-#include "part/particles_interfaces.f"
+!#define  DTYPE(a) a/**/_d
+!#define  MK ppm_kind_double
+!#include "part/particles_interfaces.f"
 
-#define DTYPE(a) a/**/_s
-#define __KIND __SINGLE_PRECISION
-#define __DIM 1
-#define __TYPE INTEGER
-#define __MYTYPE __INTEGER
-#define DATANAME data_1d_i
-#include "part/particles_get_interfaces.f"
-#define __TYPE INTEGER(ppm_kind_int64)
-#define __MYTYPE __LONGINT
-#define DATANAME data_1d_li
-#include "part/particles_get_interfaces.f"
-#define __TYPE REAL(ppm_kind_single)
-#define __MYTYPE __REAL
-#define DATANAME data_1d_r
-#include "part/particles_get_interfaces.f"
-#define __TYPE COMPLEX(ppm_kind_single)
-#define __MYTYPE __COMPLEX
-#define DATANAME data_1d_c
-#include "part/particles_get_interfaces.f"
-#define __TYPE LOGICAL
-#define __MYTYPE __LOGICAL
-#define DATANAME data_1d_l
-#include "part/particles_get_interfaces.f"
-#undef  __DIM
+!#define DTYPE(a) a/**/_s
+!#define __KIND __SINGLE_PRECISION
+!#define __DIM 1
+!#define __TYPE INTEGER
+!#define __MYTYPE __INTEGER
+!#define DATANAME data_1d_i
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE INTEGER(ppm_kind_int64)
+!#define __MYTYPE __LONGINT
+!#define DATANAME data_1d_li
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE REAL(ppm_kind_single)
+!#define __MYTYPE __REAL
+!#define DATANAME data_1d_r
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE COMPLEX(ppm_kind_single)
+!#define __MYTYPE __COMPLEX
+!#define DATANAME data_1d_c
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE LOGICAL
+!#define __MYTYPE __LOGICAL
+!#define DATANAME data_1d_l
+!#include "part/particles_get_interfaces.f"
+!#undef  __DIM
 
-#define __DIM 2
-#define __TYPE INTEGER
-#define __MYTYPE __INTEGER
-#define DATANAME data_2d_i
-#include "part/particles_get_interfaces.f"
-#define __TYPE INTEGER(ppm_kind_int64)
-#define __MYTYPE __LONGINT
-#define DATANAME data_2d_li
-#include "part/particles_get_interfaces.f"
-#define __TYPE REAL(ppm_kind_single)
-#define __MYTYPE __REAL
-#define DATANAME data_2d_r
-#include "part/particles_get_interfaces.f"
-#define __TYPE COMPLEX(ppm_kind_single)
-#define __MYTYPE __COMPLEX
-#define DATANAME data_2d_c
-#include "part/particles_get_interfaces.f"
-#define __TYPE LOGICAL
-#define __MYTYPE __LOGICAL
-#define DATANAME data_2d_l
-#include "part/particles_get_interfaces.f"
-#undef  __DIM
-#undef DTYPE
-#undef __KIND
+!#define __DIM 2
+!#define __TYPE INTEGER
+!#define __MYTYPE __INTEGER
+!#define DATANAME data_2d_i
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE INTEGER(ppm_kind_int64)
+!#define __MYTYPE __LONGINT
+!#define DATANAME data_2d_li
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE REAL(ppm_kind_single)
+!#define __MYTYPE __REAL
+!#define DATANAME data_2d_r
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE COMPLEX(ppm_kind_single)
+!#define __MYTYPE __COMPLEX
+!#define DATANAME data_2d_c
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE LOGICAL
+!#define __MYTYPE __LOGICAL
+!#define DATANAME data_2d_l
+!#include "part/particles_get_interfaces.f"
+!#undef  __DIM
+!#undef DTYPE
+!#undef __KIND
 
-#define DTYPE(a) a/**/_d
-#define __KIND __DOUBLE_PRECISION
-#define __DIM 1
-#define __TYPE INTEGER
-#define __MYTYPE __INTEGER
-#define DATANAME data_1d_i
-#include "part/particles_get_interfaces.f"
-#define __TYPE INTEGER(ppm_kind_int64)
-#define __MYTYPE __LONGINT
-#define DATANAME data_1d_li
-#include "part/particles_get_interfaces.f"
-#define __TYPE REAL(ppm_kind_double)
-#define __MYTYPE __REAL
-#define DATANAME data_1d_r
-#include "part/particles_get_interfaces.f"
-#define __TYPE COMPLEX(ppm_kind_double)
-#define __MYTYPE __COMPLEX
-#define DATANAME data_1d_c
-#include "part/particles_get_interfaces.f"
-#define __TYPE LOGICAL
-#define __MYTYPE __LOGICAL
-#define DATANAME data_1d_l
-#include "part/particles_get_interfaces.f"
-#undef  __DIM
+!#define DTYPE(a) a/**/_d
+!#define __KIND __DOUBLE_PRECISION
+!#define __DIM 1
+!#define __TYPE INTEGER
+!#define __MYTYPE __INTEGER
+!#define DATANAME data_1d_i
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE INTEGER(ppm_kind_int64)
+!#define __MYTYPE __LONGINT
+!#define DATANAME data_1d_li
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE REAL(ppm_kind_double)
+!#define __MYTYPE __REAL
+!#define DATANAME data_1d_r
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE COMPLEX(ppm_kind_double)
+!#define __MYTYPE __COMPLEX
+!#define DATANAME data_1d_c
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE LOGICAL
+!#define __MYTYPE __LOGICAL
+!#define DATANAME data_1d_l
+!#include "part/particles_get_interfaces.f"
+!#undef  __DIM
 
-#define __DIM 2
-#define __TYPE INTEGER
-#define __MYTYPE __INTEGER
-#define DATANAME data_2d_i
-#include "part/particles_get_interfaces.f"
-#define __TYPE INTEGER(ppm_kind_int64)
-#define __MYTYPE __LONGINT
-#define DATANAME data_2d_li
-#include "part/particles_get_interfaces.f"
-#define __TYPE REAL(ppm_kind_double)
-#define __MYTYPE __REAL
-#define DATANAME data_2d_r
-#include "part/particles_get_interfaces.f"
-#define __TYPE COMPLEX(ppm_kind_double)
-#define __MYTYPE __COMPLEX
-#define DATANAME data_2d_c
-#include "part/particles_get_interfaces.f"
-#define __TYPE LOGICAL
-#define __MYTYPE __LOGICAL
-#define DATANAME data_2d_l
-#include "part/particles_get_interfaces.f"
-#undef  __DIM
-#undef DTYPE
-#undef __KIND
+!#define __DIM 2
+!#define __TYPE INTEGER
+!#define __MYTYPE __INTEGER
+!#define DATANAME data_2d_i
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE INTEGER(ppm_kind_int64)
+!#define __MYTYPE __LONGINT
+!#define DATANAME data_2d_li
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE REAL(ppm_kind_double)
+!#define __MYTYPE __REAL
+!#define DATANAME data_2d_r
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE COMPLEX(ppm_kind_double)
+!#define __MYTYPE __COMPLEX
+!#define DATANAME data_2d_c
+!#include "part/particles_get_interfaces.f"
+!#define __TYPE LOGICAL
+!#define __MYTYPE __LOGICAL
+!#define DATANAME data_2d_l
+!#include "part/particles_get_interfaces.f"
+!#undef  __DIM
+!#undef DTYPE
+!#undef __KIND
 
 #include "field/field_interfaces.f"
 

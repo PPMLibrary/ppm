@@ -87,6 +87,13 @@ SUBROUTINE field_map_ghost_push_(this,mesh,info)
     CLASS(ppm_t_equi_mesh_)             :: mesh
     INTEGER,                INTENT(OUT) :: info
 END SUBROUTINE
+!POP FIELD DATA FROM A MESH GHOST MAPPING BUFFERS
+SUBROUTINE field_map_ghost_pop_(this,mesh,info)
+    IMPORT ppm_t_field_,ppm_t_equi_mesh_
+    CLASS(ppm_t_field_)                 :: this
+    CLASS(ppm_t_equi_mesh_)             :: mesh
+    INTEGER,                INTENT(OUT) :: info
+END SUBROUTINE
 
 
 

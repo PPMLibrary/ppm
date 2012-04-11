@@ -1,4 +1,4 @@
-minclude ppm_header(ppm_module_field_typedef)
+!minclude ppm_header(ppm_module_field_typedef)
 
 MODULE ppm_module_field_typedef
 !!! Declares field data type
@@ -49,6 +49,7 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: discretize_on => field_discretize_on
     PROCEDURE :: set_rel => field_set_rel
     PROCEDURE :: map_ghost_push => field_map_ghost_push
+    PROCEDURE :: map_ghost_pop  => field_map_ghost_pop
 END TYPE ppm_t_field
 minclude define_collection_type(ppm_t_field)
 
@@ -309,5 +310,22 @@ SUBROUTINE field_map_ghost_push(this,mesh,info)
 
     end_subroutine()
 END SUBROUTINE field_map_ghost_push
+
+SUBROUTINE field_map_ghost_pop(this,mesh,info)
+    !!! Pop field data from the buffers of a mesh for ghost mappings
+    !!! The field must of course be stored on this mesh
+    CLASS(ppm_t_field)                  :: this
+    CLASS(ppm_t_equi_mesh_)             :: mesh
+    !!! mesh that this field is discretized on
+    INTEGER,                INTENT(OUT) :: info
+
+    start_subroutine("field_map_ghost_pop")
+
+
+    CALL mesh%map_ghost_pop(this,info)
+        or_fail("mesh%map_ghost_pop")
+
+    end_subroutine()
+END SUBROUTINE field_map_ghost_pop
 
 END MODULE ppm_module_field_typedef

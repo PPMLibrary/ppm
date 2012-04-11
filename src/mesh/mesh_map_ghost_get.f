@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_get(this,ghostsize,info)
+      SUBROUTINE equi_mesh_map_ghost_get(this,info,ghostsize)
       !!! This routine receives/updates the values of the ghost mesh points of
       !!! each sub from its corresponding neighbor subs (i.e. adds ghost
       !!! layers to the subs of the current topology).
@@ -26,11 +26,11 @@
       !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)                  :: this
-      INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
-      !!! Size of the ghost layer in numbers of grid points in all space
-      !!! dimensions (1...ppm_dim).
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      INTEGER, OPTIONAL, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
+      !!! size of the ghost layers, in number of mesh nodes.
+      !!! If not present, the
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -58,11 +58,15 @@
 
       topo => ppm_topo(this%topoid)%t
 
+      IF (PRESENT(ghostsize)) THEN
+          this%ghostsize = ghostsize
+      ENDIF
+
       !-------------------------------------------------------------------------
       !  Check if ghost mappings have been initalized, if no do so now.
       !-------------------------------------------------------------------------
       IF (.NOT. this%ghost_initialized) THEN
-        CALL this%map_ghost_init(ghostsize,info)
+        CALL this%map_ghost_init(this%ghostsize,info)
             or_fail("map_field_ghost_init failed")
       ENDIF
 
@@ -190,7 +194,7 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (SIZE(ghostsize,1) .LT. ppm_dim) THEN
+          IF (SIZE(this%ghostsize,1) .LT. ppm_dim) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,caller,  &
      &            'ghostsize must be at least of length ppm_dim',__LINE__,info)

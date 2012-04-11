@@ -11,6 +11,7 @@ SUBROUTINE part_initd(xp,Npart_global,min_phys,max_phys,info,&
     USE ppm_module_substart
     USE ppm_module_substop
     USE ppm_module_data
+    USE ppm_module_interfaces
     USE ppm_module_write
     USE ppm_module_alloc
     USE ppm_module_error

@@ -125,9 +125,9 @@
       INTEGER                        , INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
       !!! lda=1 for the case of scalar data
+#endif
       INTEGER                        , INTENT(IN   ) :: p_idx
       !!! The index where the data is stored on the subpatches
-#endif
       CLASS(ppm_t_equi_mesh)                         :: this
       !!! Source mesh
       INTEGER                        , INTENT(  OUT) :: info
@@ -329,8 +329,7 @@
                        IF (ALL(p%istart_g.EQ.patchid)) THEN
                             found_patch = .TRUE.
 #if __KIND == __DOUBLE_PRECISION
-                                )
-                    fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+                            fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
 #endif
                             exit patches
                        ENDIF
