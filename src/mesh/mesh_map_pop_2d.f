@@ -411,36 +411,6 @@
                !----------------------------------------------------------------
                isub = invsublist(jsub)
                !----------------------------------------------------------------
-               !  Mesh offset for this sub
-               !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be received in local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
-               xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
-               yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
-               IF (ppm_debug .GT. 1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-               ENDIF
-
-               !----------------------------------------------------------------
                !  Get pointer to the data for this sub, this field and this block
                ! TODO: room for improvement!...
                !----------------------------------------------------------------
@@ -450,14 +420,11 @@
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
                patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
-                   write(*,*) 'IPATCH = ',ipatch
+                   fdata => NULL()
                    SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_g.EQ.patchid)) THEN
                             found_patch = .TRUE.
-#if __KIND == __DOUBLE_PRECISION
-                            fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
-#endif
                             !------------------------------------------------
                             !  Determine size of field data array needed
                             !------------------------------------------------
@@ -497,29 +464,55 @@
                             ldl(2) = 1-this%ghostsize(2)
                             !ldl(3) = 1
 #endif
-                            write(*,*) 'allocating fdata...'
-                            write(*,*) 'associated(fdata) = ',associated(fdata)
-                            write(*,*) 'size(fdata) = ',size(fdata)
-                            write(*,*) 'ubound(fdata) = ',ubound(fdata)
-                            write(*,*) 'lbound(fdata) = ',lbound(fdata)
-                            write(*,*) 'ldl = ',ldl
-                            write(*,*) 'ldu = ',ldu
-                            CALL ppm_alloc(fdata,ldl,ldu,iopt,info)
-                                or_fail_alloc("fdata")
-                            write(*,*) '...ok'
 
+
+#if __KIND == __DOUBLE_PRECISION
+                            call ppm_alloc(p%subpatch_data%vec(p_idx)%t%data_3d_rd,&
+                                ldl,ldu,iopt,info)
+                            fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+#elif
+                            write(*,*) "WRONG TYPE!!!!"
+#endif
                             exit patches
                        ENDIF
                    END SELECT
                ENDDO patches
-               
-
-               WRITE(mesg,*) 'found a patch : ',found_patch
-               CALL ppm_write(ppm_rank,caller,mesg,info)
 
                IF (.NOT. found_patch) THEN
                    fail("could not find a patch on this sub with the right global id")
                ENDIF
+               !----------------------------------------------------------------
+               !  Mesh offset for this sub
+               !----------------------------------------------------------------
+               mofs(1) = this%istart(1,jsub)-1
+               mofs(2) = this%istart(2,jsub)-1
+               !----------------------------------------------------------------
+               !  Get boundaries of mesh block to be received in local sub
+               !  coordinates
+               !----------------------------------------------------------------
+               xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
+               ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
+               xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
+               yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
+               IF (ppm_debug .GT. 1) THEN
+                   WRITE(mesg,'(A,2I4)') 'start: ',             &
+     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j)
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,2I4)') 'size: ',             &
+     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j)
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,2I4)') 'size_b: ',xhi-xlo+1,yhi-ylo+1
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
+                   CALL ppm_write(ppm_rank,caller,mesg,info)
+               ENDIF
+
 
 #if   __DIM == __VFIELD
                !----------------------------------------------------------------
@@ -3162,6 +3155,7 @@
             ENDDO             ! ppm_precvbuffer
          ENDDO                ! ppm_nrecvlist
       ENDIF                   ! ppm_kind
+
 
  8888 CONTINUE
       !-------------------------------------------------------------------------
