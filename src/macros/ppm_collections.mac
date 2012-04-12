@@ -4,6 +4,7 @@ include macro overload_function(func_name)
 % end 
 end macro
 
+
 include macro define_collection_type(element_type)
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>

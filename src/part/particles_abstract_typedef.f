@@ -55,12 +55,75 @@ TYPE,ABSTRACT:: DTYPE(ppm_t_part_prop)_
     PROCEDURE(DTYPE(prop_print_info)_),DEFERRED :: print_info
 
 END TYPE DTYPE(ppm_t_part_prop)_
-
 !----------------------------------------------------------------------
 ! Container for properties
 !----------------------------------------------------------------------
 minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 
+!!----------------------------------------------------------------------
+!! DC operators
+!!----------------------------------------------------------------------
+TYPE,ABSTRACT :: DTYPE(ppm_t_opdesc)_
+    !!! Data structure to describe differential operator
+    !!!  It only contains semantic information on the operator
+    INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
+    !!! degree of each term in the linear combination of differential ops 
+    INTEGER, DIMENSION(:), POINTER                 :: order =>NULL()
+    !!! approximation order of each term 
+    REAL(MK), DIMENSION(:), POINTER                :: coeffs =>NULL()
+    !!! array where the coefficients in linear combinations of 
+    !!! differential ops are stored
+    INTEGER                                        :: nterms
+    !!! number of terms
+    CHARACTER(LEN=ppm_char)                        :: name
+    !!! name of the vector-valued property
+
+    CONTAINS
+    PROCEDURE(DTYPE(desc_create)_),  DEFERRED :: create
+    PROCEDURE(DTYPE(desc_destroy)_), DEFERRED :: destroy
+END TYPE DTYPE(ppm_t_opdesc)_
+
+TYPE,ABSTRACT :: DTYPE(ppm_t_operator)_
+    !!! Data structure containing all diff operators for a particle set
+    !!! 
+    REAL(MK),DIMENSION(:,:),               POINTER :: ker => NULL()
+    !!! where the operators are stored
+    CLASS(DTYPE(ppm_t_opdesc)_),           POINTER :: desc => NULL()
+    !!! small matrices that describe what each operator does
+    INTEGER                                        :: P_id = 0
+    !!! Id of the set of particles that this operator takes data from.
+    !!! The default, 0, stands for "self" (the operator is computed
+    !!! on the same set of particles than the one which contains the data).
+    INTEGER                                        :: neigh_id = 1
+    !!! Id of the neighbour list that should be used
+    !!! The default, 1, refers to "self": the list of neighbours within
+    !!! the same set of particles. 
+
+    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
+    !!! logical flags
+    !!!    ppm_ops_inc_ghosts
+    !!!           true if the operator should be computed for ghost 
+    !!!           particles too.  Note that the resulting values 
+    !!!           will be wrong for the ghost particles
+    !!!           that have some neighbours outside the ghost layers. 
+    !!!           Default is false.
+    !!!    ppm_ops_interp
+    !!!          true if the op interpolates data from one set of particles
+    !!!    ppm_ops_iscomputed
+    !!!          true if the operator has been computed and is uptodate
+    !!!    ppm_ops_isdefined
+    !!!          true if the operator has been defined 
+    !!!    ppm_ops_vector
+    !!!          true if each term represents a component (ie the result
+    !!!          of the operator should be a vector field, like for gradients)
+    !!!          false if the components are added up (like for the divergence)
+
+    CONTAINS
+    PROCEDURE(DTYPE(op_create)_),  DEFERRED :: create
+    PROCEDURE(DTYPE(op_destroy)_), DEFERRED :: destroy
+
+END TYPE DTYPE(ppm_t_operator)_
+minclude define_abstract_collection_type(DTYPE(ppm_t_operator)_)
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -215,7 +278,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
 
 
     ! Container for differential operators
- !   CLASS(DTYPE(ppm_c_operators)_),ALLOCATABLE        :: ops
+    CLASS(DTYPE(ppm_c_operator)_),POINTER           :: ops => NULL()
 
 
     ! Container for particle mappings
@@ -231,7 +294,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
 
 
     ! stats
-    CLASS(DTYPE(particles_stats)_),ALLOCATABLE        :: stats
+    CLASS(DTYPE(particles_stats)_),ALLOCATABLE      :: stats
     !!! runtime statistics (e.g. timings, memory)
 
 
@@ -408,66 +471,66 @@ END TYPE DTYPE(ppm_t_particles)_
 minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 
 
-TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_sop)_
-    !!! an extension of the Particle set data structure
-    !!! for Self-Organizing Particles
+!TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_sop)_
+    !!!! an extension of the Particle set data structure
+    !!!! for Self-Organizing Particles
 
-    INTEGER                                         :: nn_sq_id
-    !!! index of the wps array where nearest-neighbour distances are stored
+    !INTEGER                                         :: nn_sq_id
+    !!!! index of the wps array where nearest-neighbour distances are stored
 
-    ! Adaptive particles
-    LOGICAL                                         :: adaptive
-    !!! true if the particles have their own cutoff radii
-    !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
-    INTEGER                                         :: rcp_id
-    !!! index of the wps array where the cutoff radius is stored
-    INTEGER                                         :: D_id
-    !!! index of the wps array where D is stored
-    INTEGER                                         :: Dtilde_id
-    !!! index of the wps array where D_tilde is stored
-    INTEGER                                         :: adapt_wpid
-    !!! index of the wps array where is stored the property on 
-    !!! which adaptation is based 
-    !!! default is first 1d property that is not rcp_id (if any)
-    !!! otherwise, it is rcp_id
-    !    INTEGER                                         :: adapt_wpgradid
-    !    !!! index of the wpv array where is stored the gradient of the property 
-    !    !!! on which adaptation is based (if needed)
-    LOGICAL                                         :: level_set
-    !!! true if particles carry a level-set function
-    INTEGER                                         :: level_id
-    !!! index of the wps array where the level-set is stored
-    !    INTEGER                                         :: level_old_id
-    !!! index of the wps array where the level-set is backed up before adapt
+    !! Adaptive particles
+    !LOGICAL                                         :: adaptive
+    !!!! true if the particles have their own cutoff radii
+    !!!! in this case, the cutoff will be stored in wps(rcp_id)%vec
+    !INTEGER                                         :: rcp_id
+    !!!! index of the wps array where the cutoff radius is stored
+    !INTEGER                                         :: D_id
+    !!!! index of the wps array where D is stored
+    !INTEGER                                         :: Dtilde_id
+    !!!! index of the wps array where D_tilde is stored
+    !INTEGER                                         :: adapt_wpid
+    !!!! index of the wps array where is stored the property on 
+    !!!! which adaptation is based 
+    !!!! default is first 1d property that is not rcp_id (if any)
+    !!!! otherwise, it is rcp_id
+    !!    INTEGER                                         :: adapt_wpgradid
+    !!    !!! index of the wpv array where is stored the gradient of the property 
+    !!    !!! on which adaptation is based (if needed)
+    !LOGICAL                                         :: level_set
+    !!!! true if particles carry a level-set function
+    !INTEGER                                         :: level_id
+    !!!! index of the wps array where the level-set is stored
+    !!    INTEGER                                         :: level_old_id
+    !!!! index of the wps array where the level-set is backed up before adapt
 
-    INTEGER                                         :: level_grad_id
-    !!! index of the wps array where the gradient of the level-set is stored
-    !    INTEGER                                         :: level_grad_old_id
-    !!! index of the wps array where the gradient of the level-set 
-    !!! is backed up before adapt
-
-
-    ! List of IDs of other adaptive Particle sets
-    TYPE(idList)                                    :: set_aPc
+    !INTEGER                                         :: level_grad_id
+    !!!! index of the wps array where the gradient of the level-set is stored
+    !!    INTEGER                                         :: level_grad_old_id
+    !!!! index of the wps array where the gradient of the level-set 
+    !!!! is backed up before adapt
 
 
-    ! Anisotropic particles
-    LOGICAL                                         :: anisotropic
-    !!! true if the particles have their own cutoff radii
-    !!! in this case, the G tensor will be stored in wpv(G_id)%vec
-    INTEGER                                         :: G_id
-    !!! index where G is stored
-
-    !    CONTAINS
-    !        PRIVATE
-    !        PROCEDURE     :: create => DTYPE(sop_part_create)
+    !! List of IDs of other adaptive Particle sets
+    !TYPE(idList)                                    :: set_aPc
 
 
-END TYPE DTYPE(ppm_t_sop)_
-!----------------------------------------------------------------------
-! Container for adaptive Particle sets
-!----------------------------------------------------------------------
-minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
+    !! Anisotropic particles
+    !LOGICAL                                         :: anisotropic
+    !!!! true if the particles have their own cutoff radii
+    !!!! in this case, the G tensor will be stored in wpv(G_id)%vec
+    !INTEGER                                         :: G_id
+    !!!! index where G is stored
+
+    !!    CONTAINS
+    !!        PRIVATE
+    !!        PROCEDURE     :: create => DTYPE(sop_part_create)
+
+
+!END TYPE DTYPE(ppm_t_sop)_
+!!----------------------------------------------------------------------
+!! Container for adaptive Particle sets
+!!----------------------------------------------------------------------
+!minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
 
 #undef   MK
 #undef   _MK

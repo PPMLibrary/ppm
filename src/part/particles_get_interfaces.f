@@ -31,6 +31,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
     __TYPE,DIMENSION(:,:),POINTER   :: wp
 #endif
     INTEGER                         :: info
+    LOGICAL,OPTIONAL                :: with_ghosts
 END SUBROUTINE
 #undef __FUNCNAME
 

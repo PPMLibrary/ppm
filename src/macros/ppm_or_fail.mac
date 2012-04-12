@@ -38,6 +38,11 @@ if (associated(<%= p %>)) deallocate(<%= p %>,stat=<%= info %>)
 $or_fail_dealloc("<%= p %>")
 end macro
 
+macro dealloc_allocatable(p,info=info)
+if (allocated(<%= p %>)) deallocate(<%= p %>,stat=<%= info %>)
+$or_fail_dealloc("<%= p %>")
+end macro
+
 macro dealloc_pointers(list)
 <% list.to_s.split(',').each do |ptr| %>
 $dealloc_pointer(<%= ptr %>)

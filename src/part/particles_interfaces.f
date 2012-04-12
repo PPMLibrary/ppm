@@ -1,7 +1,8 @@
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_part_prop)_)
+minclude define_abstract_collection_interfaces(DTYPE(ppm_t_operator)_)
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_neighlist)_)
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_particles)_)
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_sop)_)
+!minclude define_abstract_collection_interfaces(DTYPE(ppm_t_sop)_)
 
 !CREATE ENTRY
 SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,zero)
@@ -161,18 +162,50 @@ END SUBROUTINE
 
 SUBROUTINE DTYPE(particles_initialize2d)_(Pc,Npart_global,info,&
         distrib,topoid,minphys,maxphys,cutoff,name)
-    IMPORT DTYPE(ppm_t_particles)_
+    IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
     CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
     INTEGER,                             INTENT(INOUT)     :: Npart_global
+    !!! total number of particles that will be initialized
     INTEGER,                             INTENT(  OUT)     :: info
+    !!! Returns status, 0 upon success.
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: distrib
+    !!! type of initial distribution. One of
+    !!! ppm_param_part_init_cartesian (default)
+    !!! ppm_param_part_init_random
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: topoid
+    !!! topology id (used only to get the extent of the physical domain)
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: minphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: maxphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
+    !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
 END SUBROUTINE
 
 SUBROUTINE DTYPE(particles_initialize3d)_(Pc,Npart_global,info,&
         distrib,topoid,minphys,maxphys,cutoff,name)
-    IMPORT DTYPE(ppm_t_particles)_
+    IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
     CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
     INTEGER,                             INTENT(INOUT)     :: Npart_global
+    !!! total number of particles that will be initialized
     INTEGER,                             INTENT(  OUT)     :: info
+    !!! Returns status, 0 upon success.
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: distrib
+    !!! type of initial distribution. One of
+    !!! ppm_param_part_init_cartesian (default)
+    !!! ppm_param_part_init_random
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: topoid
+    !!! topology id (used only to get the extent of the physical domain)
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: minphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: maxphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
+    !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
 END SUBROUTINE
 
 !!temporary hack to deal with both 2d and 3d
@@ -181,13 +214,27 @@ SUBROUTINE DTYPE(part_initialize)_(Pc,Npart_global,info,&
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    IMPORT DTYPE(ppm_t_particles)_
+    IMPORT DTYPE(ppm_t_particles)_,MK,ppm_dim
     CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
     !!! Data structure containing the particles
     INTEGER,                            INTENT(INOUT)      :: Npart_global
     !!! total number of particles that will be initialized
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: distrib
+    !!! type of initial distribution. One of
+    !!! ppm_param_part_init_cartesian (default)
+    !!! ppm_param_part_init_random
+    INTEGER,OPTIONAL,                    INTENT(IN   )     :: topoid
+    !!! topology id (used only to get the extent of the physical domain)
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: minphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),DIMENSION(ppm_dim),OPTIONAL,INTENT(IN   )     :: maxphys
+    !!! extent of the physical domain. Only if topoid is not present.
+    REAL(MK),                   OPTIONAL,INTENT(IN   )     :: cutoff
+    !!! cutoff of the particles
+    CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
+    !!! name for this set of particles
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_print_info)_(Pc,info,level,fileunit)
@@ -196,6 +243,10 @@ SUBROUTINE DTYPE(part_print_info)_(Pc,info,level,fileunit)
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
+    INTEGER, OPTIONAL,                  INTENT(IN   )      :: level
+    !!! indentation level at which to printout the info. Default = 0
+    INTEGER, OPTIONAL,                  INTENT(IN   )      :: fileunit
+    !!! Already open file unit for printout. Default = stdout
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_del_parts)_(Pc,list_del_parts,nb_del,info)
@@ -237,7 +288,7 @@ FUNCTION DTYPE(get_dcop)_(Pc,eta_id,with_ghosts)
     IMPORT DTYPE(ppm_t_particles)_, MK
     CLASS(DTYPE(ppm_t_particles)_)      :: Pc
     INTEGER                            :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER    :: DTYPE(get_dcop)
+    REAL(MK),DIMENSION(:,:),POINTER    :: DTYPE(get_dcop)_
     LOGICAL,OPTIONAL                   :: with_ghosts
 END FUNCTION
 
@@ -245,7 +296,7 @@ FUNCTION DTYPE(set_dcop)_(Pc,eta_id)
     IMPORT DTYPE(ppm_t_particles)_, MK
     CLASS(DTYPE(ppm_t_particles)_)   :: Pc
     INTEGER                         :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER :: DTYPE(set_dcop)
+    REAL(MK),DIMENSION(:,:),POINTER :: DTYPE(set_dcop)_
 END FUNCTION
 
 SUBROUTINE DTYPE(part_mapping)_(Pc,info,debug,global,topoid)
@@ -254,14 +305,24 @@ SUBROUTINE DTYPE(part_mapping)_(Pc,info,debug,global,topoid)
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
+    LOGICAL, OPTIONAL                                   :: global
+    !!! does a global mapping. Default is false (i.e. partial mapping)
+    INTEGER, OPTIONAL                                   :: topoid
+    !!! topology id
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_mapping_ghosts)_(Pc,info,ghostsize,debug)
-    IMPORT DTYPE(ppm_t_particles)_
+    IMPORT DTYPE(ppm_t_particles)_,MK
     CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)   :: info
     !!! Return status, on success 0.
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_apply_bc)_(Pc,info)
@@ -288,6 +349,16 @@ SUBROUTINE DTYPE(part_neighlist)_(Pc,info,nlid,lstore,incl_ghosts,knn)
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
     !!! Return status, on success 0.
+    INTEGER, OPTIONAL,                  INTENT(INOUT)      :: nlid
+    !!! which neighbour list are we computing. Default is 1
+    LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
+    !!! store verlet lists
+    LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
+    !!! if true, then verlet lists are computed for all particles, incl. ghosts.
+    !!! Default is false.
+    INTEGER, OPTIONAL,                  INTENT(IN   )      :: knn
+    !!! if present, neighbour lists are constructed such that each particle
+    !!! has at least knn neighbours.
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,nlid)
@@ -336,6 +407,76 @@ SUBROUTINE DTYPE(neigh_destroy)_(neigh,info)
     INTEGER,                                INTENT(  OUT)  :: info
 END SUBROUTINE
 
+SUBROUTINE DTYPE(desc_create)_(desc,nterms,coeffs,degree,order,name,info)
+    !!! Create a description for a differential operator
+    IMPORT DTYPE(ppm_t_opdesc)_,MK
+    CLASS(DTYPE(ppm_t_opdesc)_)           :: desc
+    INTEGER,                INTENT(IN   ) :: nterms
+    !!! Number of terms in the linear combination
+    REAL(MK),DIMENSION(:),  INTENT(IN   ) :: coeffs
+    !!! Multiplicative coefficients of each term in the linear combination of
+    !!! differential operators
+    INTEGER,DIMENSION(:),   INTENT(IN   ) :: degree
+    !!! Degree of differentiation of each term
+    INTEGER,DIMENSION(:),   INTENT(IN   ) :: order
+    !!! Order of approxmiation for each term
+    CHARACTER(LEN=*)                      :: name
+    !!! name for this operator
+    INTEGER,                INTENT(OUT)   :: info
+    !!! Returns status, 0 upon success.
+END SUBROUTINE
+
+SUBROUTINE DTYPE(desc_destroy)_(desc,info)
+    IMPORT DTYPE(ppm_t_opdesc)_,MK
+    CLASS(DTYPE(ppm_t_opdesc)_)             :: desc
+    INTEGER,                 INTENT(  OUT)  :: info
+END SUBROUTINE
+
+SUBROUTINE DTYPE(op_create)_(op,nterms,coeffs,degree,order,&
+        name,with_ghosts,vector,interp,pid,nlid,info)
+    !!! Create a differential operator
+    IMPORT DTYPE(ppm_t_operator)_,MK
+    CLASS(DTYPE(ppm_t_operator)_)         :: op
+    INTEGER,                INTENT(IN   ) :: nterms
+    !!! Number of terms in the linear combination
+    REAL(MK),DIMENSION(:),  INTENT(IN   ) :: coeffs
+    !!! Multiplicative coefficients of each term in the linear combination of
+    !!! differential operators
+    INTEGER,DIMENSION(:),   INTENT(IN   ) :: degree
+    !!! Degree of differentiation of each term
+    INTEGER,DIMENSION(:),   INTENT(IN   ) :: order
+    !!! Order of approxmiation for each term
+    LOGICAL,                INTENT(IN   ) :: with_ghosts
+    !!! True if the operator should be computed for ghost particles too. 
+    !!! Note that the resulting values will be wrong for the ghost particles
+    !!! that have some neighbours outside the ghost layers. Default is false.
+    LOGICAL,                INTENT(IN   ) :: vector
+    !!! True if the operator is a vector field. Default is false.
+    LOGICAL,                INTENT(IN   ) :: interp
+    !!! True if the operator interpolates data from one set of particles to
+    !!! another. Default is false.
+    INTEGER,                INTENT(IN   ) :: pid
+    !!! Id of the set of particles that this operator takes data from.
+    !!! The default, 0, stands for "self" (the operator is computed
+    !!! on the same set of particles than the one which contains the data).
+    INTEGER,                INTENT(IN   ) :: nlid
+    !!! Id of the neighbour list that should be used
+    !!! The default, 1, refers to "self": the list of neighbours within
+    !!! the same set of particles. 
+    CHARACTER(LEN=*)                      :: name
+    !!! name for this operator
+    INTEGER,                INTENT(OUT)   :: info
+    !!! Returns status, 0 upon success.
+END SUBROUTINE
+!DESTROY ENTRY
+SUBROUTINE DTYPE(op_destroy)_(op,info)
+    !!! Destroy the description for a differential operator
+    IMPORT DTYPE(ppm_t_operator)_
+    CLASS(DTYPE(ppm_t_operator)_)              :: op
+    INTEGER                                   :: i
+    INTEGER,                   INTENT(  OUT)  :: info
+    !!! Returns status, 0 upon success.
+END SUBROUTINE
 
 #undef DTYPE
 #undef MK

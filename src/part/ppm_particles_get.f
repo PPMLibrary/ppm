@@ -28,7 +28,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
-    IF (.NOT.props%exists(id)) THEN
+    IF (.NOT.Pc%props%exists(id)) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
             & 'This property id does not exist.',&
@@ -37,9 +37,9 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     ENDIF
 
 #if   __DIM == 1
-    IF (props%vec(id)%t%lda.NE.1) THEN
+    IF (Pc%props%vec(id)%t%lda.NE.1) THEN
 #elif __DIM == 2
-    IF (props%vec(id)%t%lda.LT.2) THEN
+    IF (Pc%props%vec(id)%t%lda.LT.2) THEN
 #endif
         info = ppm_error_error
         CALL ppm_error(ppm_err_argument,caller,   &
@@ -50,7 +50,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     ENDIF
 
 
-    IF (props%vec(id)%t%data_type.NE. &
+    IF (Pc%props%vec(id)%t%data_type.NE. &
 #if   __MYTYPE == __INTEGER
         ppm_type_int&
 #elif __MYTYPE == __LONGINT
@@ -70,6 +70,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
         CALL ppm_error(ppm_err_argument,caller,   &
             & 'Argument has the wrong type for this property id',&
             __LINE__,info)
+        info = nullv(1)
         RETURN
     ENDIF
 
@@ -100,7 +101,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
     ENDIF
 
     !CALL Pc%props%checktype(wp,ppt_id,info)
-    CALL Pc%props%__CHECKTYPE(wp,ppt_id,info)
+    CALL Pc%__CHECKTYPE(wp,ppt_id,info)
     !IF (info.NE.0) THEN
         !info = ppm_error_error
         !WRITE(cbuf,'(A,I0,A)') & 
@@ -216,3 +217,4 @@ END SUBROUTINE __FUNCNAME
 
 #undef DATANAME
 #undef __TYPE
+#undef __MYTYPE

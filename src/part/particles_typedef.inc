@@ -14,6 +14,25 @@ END TYPE
 minclude define_collection_type(DTYPE(ppm_t_part_prop))
 
 !!----------------------------------------------------------------------
+!! DC operators
+!!----------------------------------------------------------------------
+TYPE,EXTENDS(DTYPE(ppm_t_opdesc)_) :: DTYPE(ppm_t_opdesc)
+    !!! Data structure to describe differential operator
+    !!!  It only contains semantic information on the operator
+    CONTAINS
+    PROCEDURE :: create => DTYPE(desc_create)
+    PROCEDURE :: destroy => DTYPE(desc_destroy)
+END TYPE 
+
+TYPE,EXTENDS(DTYPE(ppm_t_operator)_) :: DTYPE(ppm_t_operator)
+    !!! Data structure containing all diff operators for a particle set
+    CONTAINS
+    PROCEDURE :: create => DTYPE(op_create)
+    PROCEDURE :: destroy => DTYPE(op_destroy)
+END TYPE 
+minclude define_collection_type(DTYPE(ppm_t_operator))
+
+!!----------------------------------------------------------------------
 !! Particle neighbor lists
 !!----------------------------------------------------------------------
 TYPE,EXTENDS(DTYPE(ppm_t_neighlist)_) :: DTYPE(ppm_t_neighlist)
@@ -191,16 +210,69 @@ END TYPE DTYPE(ppm_t_particles)
 minclude define_collection_type(DTYPE(ppm_t_particles))
 
 
-TYPE,EXTENDS(DTYPE(ppm_t_sop)_) :: DTYPE(ppm_t_sop)
+!TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
+!    !    CONTAINS
+!    !        PRIVATE
+!    !        PROCEDURE     :: create => DTYPE(sop_part_create)
+!END TYPE
+TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
+    !!! an extension of the Particle set data structure
+    !!! for Self-Organizing Particles
+
+    INTEGER                                         :: nn_sq_id
+    !!! index of the wps array where nearest-neighbour distances are stored
+
+    ! Adaptive particles
+    LOGICAL                                         :: adaptive
+    !!! true if the particles have their own cutoff radii
+    !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
+    INTEGER                                         :: rcp_id
+    !!! index of the wps array where the cutoff radius is stored
+    INTEGER                                         :: D_id
+    !!! index of the wps array where D is stored
+    INTEGER                                         :: Dtilde_id
+    !!! index of the wps array where D_tilde is stored
+    INTEGER                                         :: adapt_wpid
+    !!! index of the wps array where is stored the property on 
+    !!! which adaptation is based 
+    !!! default is first 1d property that is not rcp_id (if any)
+    !!! otherwise, it is rcp_id
+    !    INTEGER                                         :: adapt_wpgradid
+    !    !!! index of the wpv array where is stored the gradient of the property 
+    !    !!! on which adaptation is based (if needed)
+    LOGICAL                                         :: level_set
+    !!! true if particles carry a level-set function
+    INTEGER                                         :: level_id
+    !!! index of the wps array where the level-set is stored
+    !    INTEGER                                         :: level_old_id
+    !!! index of the wps array where the level-set is backed up before adapt
+
+    INTEGER                                         :: level_grad_id
+    !!! index of the wps array where the gradient of the level-set is stored
+    !    INTEGER                                         :: level_grad_old_id
+    !!! index of the wps array where the gradient of the level-set 
+    !!! is backed up before adapt
+
+
+    ! List of IDs of other adaptive Particle sets
+    TYPE(idList)                                    :: set_aPc
+
+
+    ! Anisotropic particles
+    LOGICAL                                         :: anisotropic
+    !!! true if the particles have their own cutoff radii
+    !!! in this case, the G tensor will be stored in wpv(G_id)%vec
+    INTEGER                                         :: G_id
+    !!! index where G is stored
+
     !    CONTAINS
     !        PRIVATE
     !        PROCEDURE     :: create => DTYPE(sop_part_create)
-END TYPE
-!----------------------------------------------------------------------
-! Container for adaptive Particle sets
-!----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_sop))
+
+
+END TYPE DTYPE(ppm_t_sop)
 
 #undef   MK
 #undef   _MK
 #undef   DTYPE
+#undef   CTYPE
