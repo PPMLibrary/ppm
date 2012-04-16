@@ -411,6 +411,8 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Part1%set_field(wp_2r,Field1,info,read_only=.false.)
         Assert_Equal(info,0)
 
+        !call Part1%print_info(info)
+
 
         call Part1%destroy(info)
         Assert_Equal(info,0)

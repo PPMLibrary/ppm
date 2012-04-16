@@ -45,13 +45,12 @@
          USE ppm_module_interfaces
          USE ppm_module_topo_typedef
          USE ppm_module_mesh_typedef
+         USE ppm_module_particles_typedef
 
          IMPLICIT NONE
 
          PUBLIC :: ppm_vtk_particles, ppm_vtk_fields, &
-              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd, &
-              ppm_t_particles_s,ppm_t_particles_d, &
-              ppm_t_prop_s,ppm_t_prop_d,ppm_t_prop_i
+              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
@@ -80,38 +79,6 @@
          TYPE ppm_t_field_3ds
              REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                            :: fname
-         END TYPE
-
-         TYPE ppm_t_particles_s
-             REAL(ppm_kind_single), DIMENSION(:,:), POINTER     :: xp => NULL()
-             INTEGER                                            :: np = 0
-             INTEGER                                            :: mp = 0
-             TYPE(ppm_t_prop_s),    DIMENSiON(:)  , POINTER     :: prop => NULL()
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
-             INTEGER                                            :: nprop = 0
-             INTEGER                                            :: niprop = 0
-         END TYPE
-         TYPE ppm_t_particles_d
-             REAL(ppm_kind_double), DIMENSION(:,:), POINTER     :: xp => NULL()
-             INTEGER                                            :: np = 0
-             INTEGER                                            :: mp = 0
-             TYPE(ppm_t_prop_d),    DIMENSiON(:)  , POINTER     :: prop => NULL()
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
-             INTEGER                                            :: nprop = 0
-             INTEGER                                            :: niprop = 0
-         END TYPE
-
-         TYPE ppm_t_prop_s
-             REAL(ppm_kind_single), DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
-         END TYPE
-         TYPE ppm_t_prop_d
-             REAL(ppm_kind_double), DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
-         END TYPE
-         TYPE ppm_t_prop_i
-             INTEGER              , DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
          END TYPE
 
          !----------------------------------------------------------------------
@@ -148,26 +115,30 @@
          !  New Interface
          !----------------------------------------------------------------------
 
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
+#define  DTYPE(a) a/**/_s
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "vtk/ppm_vtk_particles.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
+#define  DTYPE(a) a/**/_d
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "vtk/ppm_vtk_particles.f"
 #undef __KIND
 
 #define __DIM __2D
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
 #undef __DIM
 #define __DIM __3D
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
 #undef __DIM

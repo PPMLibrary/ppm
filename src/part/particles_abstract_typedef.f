@@ -334,8 +334,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_set_cutoff)_),  DEFERRED :: set_cutoff 
     PROCEDURE(DTYPE(part_neigh_destroy)_),DEFERRED:: destroy_neighlist 
     PROCEDURE(DTYPE(part_neighlist)_),   DEFERRED :: comp_neighlist 
-!    PROCEDURE(DTYPE(get_nvlist)_),DEFERRED :: get_nvlist 
-!    PROCEDURE(DTYPE(get_vlist)_),DEFERRED :: get_vlist 
+    PROCEDURE(DTYPE(get_nvlist)_),       DEFERRED :: get_nvlist 
+    PROCEDURE(DTYPE(get_vlist)_),        DEFERRED :: get_vlist 
 
 !    PROCEDURE(DTYPE(part_op_create)_),DEFERRED :: create_op 
 !    PROCEDURE(DTYPE(part_op_destroy)_),DEFERRED :: destroy_op 

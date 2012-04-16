@@ -307,6 +307,23 @@ FUNCTION DTYPE(set_dcop)_(Pc,eta_id)
     REAL(MK),DIMENSION(:,:),POINTER :: DTYPE(set_dcop)_
 END FUNCTION
 
+SUBROUTINE DTYPE(get_vlist)_(Pc,nvlist,vlist,nlid)
+    IMPORT DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
+    INTEGER,DIMENSION(:),        POINTER  :: nvlist
+    INTEGER,DIMENSION(:,:),      POINTER  :: vlist
+    INTEGER                               :: nlid
+    INTEGER                               :: info
+END SUBROUTINE
+
+SUBROUTINE DTYPE(get_nvlist)_(Pc,nvlist,nlid)
+    IMPORT DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
+    INTEGER,DIMENSION(:),        POINTER  :: nvlist
+    INTEGER                               :: nlid
+    INTEGER                               :: info
+END SUBROUTINE
+
 SUBROUTINE DTYPE(part_mapping)_(Pc,info,debug,global,topoid)
     IMPORT DTYPE(ppm_t_particles)_
     CLASS(DTYPE(ppm_t_particles)_)                          :: Pc

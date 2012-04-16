@@ -11,38 +11,24 @@ SUBROUTINE DTYPE(get_vlist)(Pc,nvlist,vlist,nlid)
     !!! id of the neighbour list 
     INTEGER                               :: info
 
-
-    !---------------------------------------------------------
-    ! local variables
-    !---------------------------------------------------------
-    CHARACTER(LEN = ppm_char)             :: caller = 'get_vlist'
+    start_subroutine("get_vlist")
 
     
     nvlist => NULL()
     vlist => NULL()
 
     IF (.NOT.Pc%neighs%exists(nlid)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighbour list is invalid or not allocated',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("neighbour list is invalid or not allocated")
     ENDIF
 
     IF (.NOT.Pc%neighs%vec(nlid)%t%uptodate) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighbour lists have not been computed',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("neighbour lists have not been computed")
     ENDIF
 
     nvlist => Pc%neighs%vec(nlid)%t%nvlist
     vlist => Pc%neighs%vec(nlid)%t%vlist
 
-
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(get_vlist)
 
 SUBROUTINE DTYPE(get_nvlist)(Pc,nvlist,nlid)
@@ -55,31 +41,19 @@ SUBROUTINE DTYPE(get_nvlist)(Pc,nvlist,nlid)
     !!! id of the neighbour list 
     INTEGER                               :: info
 
-    !---------------------------------------------------------
-    ! local variables
-    !---------------------------------------------------------
-    CHARACTER(LEN = ppm_char)             :: caller = 'get_nvlist'
+    start_subroutine("get_nvlist")
     
     nvlist => NULL()
 
     IF (.NOT.Pc%neighs%exists(nlid)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighbour list is invalid or not allocated',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("neighbour list is invalid or not allocated")
     ENDIF
 
     IF (.NOT.Pc%neighs%vec(nlid)%t%uptodate) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighbour lists have not been computed',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("neighbour lists have not been computed")
     ENDIF
 
     nvlist => Pc%neighs%vec(nlid)%t%nvlist
 
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(get_nvlist)
