@@ -224,9 +224,11 @@ TYPE,ABSTRACT :: DTYPE(particles_stats)_
 END TYPE DTYPE(particles_stats)_
 
 
-TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     !!! Data structure for a particle set
 
+    INTEGER                                         :: ID = 0
+    !!! ID
     CHARACTER(LEN=ppm_char)                         :: name
     !!! name for this particle set
     REAL(MK), DIMENSION(:,:), POINTER               :: xp => NULL()
@@ -293,6 +295,10 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
     !!! cost associated to each particle 
 
 
+    CLASS(ppm_c_field_info_),POINTER                :: field_ptr => NULL()
+    !!! Pointers to the fields that are currently discretized on this 
+    !!! Particle set
+
     ! stats
     CLASS(DTYPE(particles_stats)_),ALLOCATABLE      :: stats
     !!! runtime statistics (e.g. timings, memory)
@@ -314,19 +320,20 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
     !!! (global) minimum distance between particles
 
     CONTAINS
-    PROCEDURE(DTYPE(part_create)_),DEFERRED :: create 
-    PROCEDURE(DTYPE(part_destroy)_),DEFERRED :: destroy 
-    PROCEDURE(DTYPE(part_initialize)_),DEFERRED :: initialize 
-    PROCEDURE(DTYPE(part_del_parts)_),DEFERRED :: del_parts 
+    PROCEDURE(DTYPE(part_create)_),      DEFERRED :: create 
+    PROCEDURE(DTYPE(part_destroy)_),     DEFERRED :: destroy 
+    PROCEDURE(DTYPE(part_initialize)_),  DEFERRED :: initialize 
+    PROCEDURE(DTYPE(part_del_parts)_),   DEFERRED :: del_parts 
+    PROCEDURE(DTYPE(part_set_rel)_),     DEFERRED :: set_rel
 
-    PROCEDURE(DTYPE(part_prop_create)_),DEFERRED :: create_prop 
+    PROCEDURE(DTYPE(part_prop_create)_), DEFERRED :: create_prop 
     PROCEDURE(DTYPE(part_prop_destroy)_),DEFERRED :: destroy_prop 
     PROCEDURE(DTYPE(part_prop_realloc)_),DEFERRED :: realloc_prop 
 
     PROCEDURE(DTYPE(part_neigh_create)_),DEFERRED :: create_neighlist 
-    PROCEDURE(DTYPE(part_set_cutoff)_),DEFERRED :: set_cutoff 
-    PROCEDURE(DTYPE(part_neigh_destroy)_),DEFERRED :: destroy_neighlist 
-    PROCEDURE(DTYPE(part_neighlist)_),DEFERRED :: comp_neighlist 
+    PROCEDURE(DTYPE(part_set_cutoff)_),  DEFERRED :: set_cutoff 
+    PROCEDURE(DTYPE(part_neigh_destroy)_),DEFERRED:: destroy_neighlist 
+    PROCEDURE(DTYPE(part_neighlist)_),   DEFERRED :: comp_neighlist 
 !    PROCEDURE(DTYPE(get_nvlist)_),DEFERRED :: get_nvlist 
 !    PROCEDURE(DTYPE(get_vlist)_),DEFERRED :: get_vlist 
 
@@ -355,6 +362,55 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(set_xp)_),DEFERRED :: set_xp 
     PROCEDURE(DTYPE(get_dcop)_),DEFERRED :: get_dcop 
     PROCEDURE(DTYPE(set_dcop)_),DEFERRED :: set_dcop 
+
+    PROCEDURE(DTYPE(data_1d_i_get_field)_),DEFERRED :: DTYPE(data_1d_i_get_field)
+    PROCEDURE(DTYPE(data_2d_i_get_field)_),DEFERRED :: DTYPE(data_2d_i_get_field)
+    PROCEDURE(DTYPE(data_1d_li_get_field)_),DEFERRED :: &
+        DTYPE(data_1d_li_get_field)
+    PROCEDURE(DTYPE(data_2d_li_get_field)_),DEFERRED :: &
+        DTYPE(data_2d_li_get_field)
+    PROCEDURE(DTYPE(data_1d_r_get_field)_),DEFERRED :: DTYPE(data_1d_r_get_field)
+    PROCEDURE(DTYPE(data_2d_r_get_field)_),DEFERRED :: DTYPE(data_2d_r_get_field)
+    PROCEDURE(DTYPE(data_1d_c_get_field)_),DEFERRED :: DTYPE(data_1d_c_get_field)
+    PROCEDURE(DTYPE(data_2d_c_get_field)_),DEFERRED :: DTYPE(data_2d_c_get_field)
+    PROCEDURE(DTYPE(data_1d_l_get_field)_),DEFERRED :: DTYPE(data_1d_l_get_field)
+    PROCEDURE(DTYPE(data_2d_l_get_field)_),DEFERRED :: DTYPE(data_2d_l_get_field)
+    GENERIC       :: get_field =>  &
+        DTYPE(data_1d_i_get_field),&
+        DTYPE(data_2d_i_get_field),&
+        DTYPE(data_1d_li_get_field),&
+        DTYPE(data_2d_li_get_field),&
+        DTYPE(data_1d_r_get_field),&
+        DTYPE(data_2d_r_get_field),&
+        DTYPE(data_1d_c_get_field),&
+        DTYPE(data_2d_c_get_field),&
+        DTYPE(data_1d_l_get_field),&
+        DTYPE(data_2d_l_get_field)
+
+    PROCEDURE(DTYPE(data_1d_i_set_field)_),DEFERRED :: DTYPE(data_1d_i_set_field)
+    PROCEDURE(DTYPE(data_2d_i_set_field)_),DEFERRED :: DTYPE(data_2d_i_set_field)
+    PROCEDURE(DTYPE(data_1d_li_set_field)_),DEFERRED :: &
+        DTYPE(data_1d_li_set_field)
+    PROCEDURE(DTYPE(data_2d_li_set_field)_),DEFERRED :: &
+        DTYPE(data_2d_li_set_field)
+    PROCEDURE(DTYPE(data_1d_r_set_field)_),DEFERRED :: DTYPE(data_1d_r_set_field)
+    PROCEDURE(DTYPE(data_2d_r_set_field)_),DEFERRED :: DTYPE(data_2d_r_set_field)
+    PROCEDURE(DTYPE(data_1d_c_set_field)_),DEFERRED :: DTYPE(data_1d_c_set_field)
+    PROCEDURE(DTYPE(data_2d_c_set_field)_),DEFERRED :: DTYPE(data_2d_c_set_field)
+    PROCEDURE(DTYPE(data_1d_l_set_field)_),DEFERRED :: DTYPE(data_1d_l_set_field)
+    PROCEDURE(DTYPE(data_2d_l_set_field)_),DEFERRED :: DTYPE(data_2d_l_set_field)
+    GENERIC       :: set_field =>  &
+        DTYPE(data_1d_i_set_field),&
+        DTYPE(data_2d_i_set_field),&
+        DTYPE(data_1d_li_set_field),&
+        DTYPE(data_2d_li_set_field),&
+        DTYPE(data_1d_r_set_field),&
+        DTYPE(data_2d_r_set_field),&
+        DTYPE(data_1d_c_set_field),&
+        DTYPE(data_2d_c_set_field),&
+        DTYPE(data_1d_l_set_field),&
+        DTYPE(data_2d_l_set_field)
+
     PROCEDURE(DTYPE(data_1d_i_get)_),DEFERRED :: DTYPE(data_1d_i_get)
     PROCEDURE(DTYPE(data_2d_i_get)_),DEFERRED :: DTYPE(data_2d_i_get)
     PROCEDURE(DTYPE(data_1d_li_get)_),DEFERRED :: DTYPE(data_1d_li_get)
@@ -365,17 +421,6 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(data_2d_c_get)_),DEFERRED :: DTYPE(data_2d_c_get)
     PROCEDURE(DTYPE(data_1d_l_get)_),DEFERRED :: DTYPE(data_1d_l_get)
     PROCEDURE(DTYPE(data_2d_l_get)_),DEFERRED :: DTYPE(data_2d_l_get)
-
-    PROCEDURE(DTYPE(data_1d_i_set)_),DEFERRED :: DTYPE(data_1d_i_set)
-    PROCEDURE(DTYPE(data_2d_i_set)_),DEFERRED :: DTYPE(data_2d_i_set)
-    PROCEDURE(DTYPE(data_1d_li_set)_),DEFERRED :: DTYPE(data_1d_li_set)
-    PROCEDURE(DTYPE(data_2d_li_set)_),DEFERRED :: DTYPE(data_2d_li_set)
-    PROCEDURE(DTYPE(data_1d_r_set)_),DEFERRED :: DTYPE(data_1d_r_set)
-    PROCEDURE(DTYPE(data_2d_r_set)_),DEFERRED :: DTYPE(data_2d_r_set)
-    PROCEDURE(DTYPE(data_1d_c_set)_),DEFERRED :: DTYPE(data_1d_c_set)
-    PROCEDURE(DTYPE(data_2d_c_set)_),DEFERRED :: DTYPE(data_2d_c_set)
-    PROCEDURE(DTYPE(data_1d_l_set)_),DEFERRED :: DTYPE(data_1d_l_set)
-    PROCEDURE(DTYPE(data_2d_l_set)_),DEFERRED :: DTYPE(data_2d_l_set)
     GENERIC       :: get =>  &
         DTYPE(data_1d_i_get),&
         DTYPE(data_2d_i_get),&
@@ -387,6 +432,17 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_particles)_
         DTYPE(data_2d_c_get),&
         DTYPE(data_1d_l_get),&
         DTYPE(data_2d_l_get)
+
+    PROCEDURE(DTYPE(data_1d_i_set)_),DEFERRED :: DTYPE(data_1d_i_set)
+    PROCEDURE(DTYPE(data_2d_i_set)_),DEFERRED :: DTYPE(data_2d_i_set)
+    PROCEDURE(DTYPE(data_1d_li_set)_),DEFERRED :: DTYPE(data_1d_li_set)
+    PROCEDURE(DTYPE(data_2d_li_set)_),DEFERRED :: DTYPE(data_2d_li_set)
+    PROCEDURE(DTYPE(data_1d_r_set)_),DEFERRED :: DTYPE(data_1d_r_set)
+    PROCEDURE(DTYPE(data_2d_r_set)_),DEFERRED :: DTYPE(data_2d_r_set)
+    PROCEDURE(DTYPE(data_1d_c_set)_),DEFERRED :: DTYPE(data_1d_c_set)
+    PROCEDURE(DTYPE(data_2d_c_set)_),DEFERRED :: DTYPE(data_2d_c_set)
+    PROCEDURE(DTYPE(data_1d_l_set)_),DEFERRED :: DTYPE(data_1d_l_set)
+    PROCEDURE(DTYPE(data_2d_l_set)_),DEFERRED :: DTYPE(data_2d_l_set)
     GENERIC       :: set =>  &
         DTYPE(data_1d_i_set),&
         DTYPE(data_2d_i_set),&

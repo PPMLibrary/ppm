@@ -251,7 +251,7 @@ END SUBROUTINE
 
 SUBROUTINE DTYPE(part_del_parts)_(Pc,list_del_parts,nb_del,info)
     IMPORT DTYPE(ppm_t_particles)_
-    CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
+    CLASS(DTYPE(ppm_t_particles)_)                         :: Pc
     !!! Data structure containing the particles
     INTEGER,DIMENSION(:),POINTER,           INTENT(IN   )  :: list_del_parts
     !!! list of particles to be deleted
@@ -259,6 +259,14 @@ SUBROUTINE DTYPE(part_del_parts)_(Pc,list_del_parts,nb_del,info)
     !!! number of particles to be deleted
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
+END SUBROUTINE
+
+!ESTABLISH RELATIONSHIP BETWEEN A PARTICLE SET AND A FIELD
+SUBROUTINE DTYPE(part_set_rel)_(this,field,info)
+    IMPORT ppm_t_field_,DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)     :: this
+    CLASS(ppm_t_field_)                :: field
+    INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_prop_push)_(Pc,prop_id,info)

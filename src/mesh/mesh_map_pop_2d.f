@@ -470,7 +470,7 @@
                             call ppm_alloc(p%subpatch_data%vec(p_idx)%t%data_3d_rd,&
                                 ldl,ldu,iopt,info)
                             fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
-#elif
+#else
                             write(*,*) "WRONG TYPE!!!!"
 #endif
                             exit patches

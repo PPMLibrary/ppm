@@ -138,10 +138,10 @@ FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
     !!! Returns status, 0 upon success
 END FUNCTION 
 !CREATE
-SUBROUTINE field_info_create_(this,fieldID,info)
-    IMPORT ppm_t_field_info_
+SUBROUTINE field_info_create_(this,field,info)
+    IMPORT ppm_t_field_info_,ppm_t_main_abstr
     CLASS(ppm_t_field_info_)              :: this
-    INTEGER,                  INTENT(IN ) :: fieldID
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN ) :: field
     INTEGER,                  INTENT(OUT) :: info
 END SUBROUTINE
 !DESTROY

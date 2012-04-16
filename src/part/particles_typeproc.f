@@ -97,18 +97,14 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
     or_fail_dealloc("allocating property failed")
 
     end_subroutine()
-
 END SUBROUTINE DTYPE(prop_create)
 !DESTROY ENTRY
 SUBROUTINE DTYPE(prop_destroy)(prop,info)
     CLASS(DTYPE(ppm_t_part_prop))      :: prop
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'prop_destroy'
 
-
-    CALL substart(caller,t0,info)
+    start_subroutine("prop_destroy")
 
     IF(ASSOCIATED(prop%data_1d_i)) DEALLOCATE(prop%data_1d_i,STAT=info)
     IF(ASSOCIATED(prop%data_2d_i)) DEALLOCATE(prop%data_2d_i,STAT=info)
@@ -125,8 +121,7 @@ SUBROUTINE DTYPE(prop_destroy)(prop,info)
     prop%lda = 0
     prop%flags = .FALSE.
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(prop_destroy)
 
 SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
@@ -155,13 +150,9 @@ SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER                              :: lev,fileu,id
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'prop_print_info'
     CHARACTER(LEN = ppm_char)            :: myformat
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("prop_print_info")
 
 
     IF (PRESENT(fileunit)) THEN
@@ -195,13 +186,8 @@ SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
     WRITE(fileu,myformat) 'flags: ',prop%flags
 
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(prop_print_info)
-
-
-
-
 
 !!----------------------------------------------------------------
 !! Procedures for Particle Sets DS
@@ -352,7 +338,6 @@ SUBROUTINE DTYPE(part_prop_create)(Pc,id,datatype,info,&
         or_fail("pushing new property into collection failed")
 
     end_subroutine()
-
 END SUBROUTINE DTYPE(part_prop_create)
 
 SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
@@ -397,7 +382,6 @@ SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
     END ASSOCIATE
 
     end_subroutine()
-
 END SUBROUTINE DTYPE(part_prop_destroy)
 
 SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
@@ -554,7 +538,6 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
         or_fail("pushing new neighbour list into collection failed")
 
     end_subroutine()
-
 END SUBROUTINE DTYPE(part_neigh_create)
 
 SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
@@ -563,10 +546,7 @@ SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
     INTEGER,                INTENT(INOUT) :: id
     INTEGER,               INTENT(OUT)    :: info
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_neigh_destroy'
-    REAL(KIND(1.D0))                      :: t0
-
-    CALL substart(caller,t0,info)
+    start_subroutine("part_neigh_destroy")
 
     ASSOCIATE (cont => Pc%neighs)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
@@ -613,8 +593,6 @@ SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
 END SUBROUTINE DTYPE(part_neigh_destroy)
 
 
-
-
 SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
 
     !!! create a ppm_t_particles data type
@@ -658,6 +636,13 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
         CALL Pc%destroy(info)
             or_fail_dealloc("Pc%destroy")
     ENDIF
+
+    !dumb way of creating a global ID for this mesh
+    !TODO find something better? (needed if one creates and destroy
+    ! many meshes)
+    ppm_nb_part_sets = ppm_nb_part_sets + 1
+    Pc%ID = ppm_nb_part_sets 
+
     !-----------------------------------------------------------------
     !  Allocate memory for the positions
     !-----------------------------------------------------------------
@@ -767,6 +752,7 @@ SUBROUTINE DTYPE(part_destroy)(Pc,info)
 
     start_subroutine("part_destroy")
 
+    Pc%ID = 0
     ! first deallocate all content of Pc
     dealloc_pointer(Pc%xp)
 
@@ -905,7 +891,6 @@ SUBROUTINE DTYPE(part_print_info)(Pc,info,level,fileunit)
 END SUBROUTINE DTYPE(part_print_info)
 
 SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
-
     !!! remove some particles from a Particle set
     !!! WARNING: this implementation is NOT efficient
     !!! if the number of particles to delete is large.
@@ -931,20 +916,13 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
     !-------------------------------------------------------------------------
-    !  Optional arguments
-    !-------------------------------------------------------------------------
-    !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
 
     INTEGER                              :: i,ip,Npart,del_part,lda
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'ppm_del_particles'
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("part_del_parts")
 
     !-----------------------------------------------------------------
     !  check arguments
@@ -1038,6 +1016,59 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_del_parts)
+
+SUBROUTINE DTYPE(part_set_rel)(this,field,info)
+    !!! Create bookkeeping data structure to log the relationship between
+    !!! the particle set and a field
+    CLASS(DTYPE(ppm_t_particles))      :: this
+    CLASS(ppm_t_field_)                :: field
+    INTEGER,               INTENT(OUT) :: info
+    TYPE(ppm_t_field_info),POINTER     :: fdinfo => NULL()
+
+    start_subroutine("part_set_rel")
+
+
+    ALLOCATE(fdinfo,STAT=info)
+        or_fail_alloc("could not allocate new field_info pointer")
+
+
+    CALL fdinfo%create(field,info)
+        or_fail("could not create new field_info object")
+
+    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
+        ALLOCATE(ppm_c_field_info::this%field_ptr,STAT=info)
+            or_fail_alloc("could not allocate field_info collection")
+    ENDIF
+
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        CALL this%field_ptr%grow_size(info)
+            or_fail("could not grow_size this%field_ptr")
+    ENDIF
+    !if the collection is still too small, it means we should consider
+    ! using a hash table for particle set IDs...
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        fail("The id of the partile set that we are trying to store in a Field collection seems to large. Why not implement a hash function?")
+    ENDIF
+
+    IF (this%field_ptr%exists(field%ID)) THEN
+        fail("It seems like this particle set already has a pointer to that field. Are you sure you want to do that a second time?")
+    ELSE
+        !add field_info to the collection, at index fieldID
+        !Update the counters nb,max_id and min_id accordingly
+        !(this is not very clean without hash table)
+        this%field_ptr%vec(field%ID)%t => fdinfo
+        this%field_ptr%nb = this%field_ptr%nb + 1
+        IF (this%field_ptr%nb.EQ.1) THEN
+            this%field_ptr%max_id = field%ID
+            this%field_ptr%min_id = field%ID
+        ELSE
+            this%field_ptr%max_id = MAX(this%field_ptr%max_id,field%ID)
+            this%field_ptr%min_id = MIN(this%field_ptr%min_id,field%ID)
+        ENDIF
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_set_rel)
 
 SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
 
@@ -1485,18 +1516,16 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     REAL(MK)                                  :: cutoff
     !!! cutoff radius
     TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
-    CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_ghosts'
-    REAL(KIND(1.D0))                          :: t0,t1,t2
+    REAL(KIND(1.D0))                          :: t1,t2
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
     LOGICAL                                   :: skip_send
     CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
     CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
     CLASS(DTYPE(ppm_t_operator)_),  POINTER :: op => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("part_mapping_ghosts")
+
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg=debug
     skip_ghost_get = .FALSE.
@@ -2415,16 +2444,13 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)                 :: caller = 'part_global_index'
-    REAL(KIND(1.D0))                          :: t0
-
     INTEGER                        :: offset
     INTEGER                        :: i
     INTEGER, DIMENSION(:), POINTER :: wp
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("part_comp_global_index")
 
     IF (.NOT. Pc%flags(ppm_part_global_index)) THEN
         CALL Pc%create_prop(Pc%gi_id,ppm_type_int,info,name="GlobalIndex")
@@ -2455,13 +2481,11 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
     INTEGER,               INTENT(OUT)    :: info
 
     INTEGER                               :: vec_size,npart,i
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_map_create'
-    REAL(KIND(1.D0))                      :: t0
     TYPE(DTYPE(ppm_t_ptr_part_mapping)),DIMENSION(:),POINTER:: vec_tmp => NULL()
     CLASS(DTYPE(ppm_t_part_mapping)_),               POINTER:: map => NULL()
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
 
-    CALL substart(caller,t0,info)
+    start_subroutine("part_map_create")
 
     !Generate a new id (we should use templating here...)
     ASSOCIATE (cont => Pc%maps )
@@ -2532,10 +2556,7 @@ SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
     INTEGER,                INTENT(INOUT) :: id
     INTEGER,               INTENT(OUT)    :: info
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_map_destroy'
-    REAL(KIND(1.D0))                      :: t0
-
-    CALL substart(caller,t0,info)
+    start_subroutine("part_map_destroy")
 
     ASSOCIATE (cont => Pc%maps)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
@@ -2616,69 +2637,36 @@ SUBROUTINE DTYPE(desc_create)(desc,nterms,coeffs,degree,order,name,info)
     INTEGER,                INTENT(OUT)   :: info
     !!! Returns status, 0 upon success.
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'desc_create'
-    REAL(KIND(1.D0))                      :: t0
-    
-    CALL substart(caller,t0,info)
+    start_subroutine("desc_create")
 
     !Check arguments
     IF (MINVAL(degree).LT.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &       'invalid degree: must be positive',__LINE__,info)
-        GOTO 9999
+        fail("invalid degree: must be positive")
     ENDIF
     IF (MINVAL(order).LT.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &     'invalid approx order: must be positive',__LINE__,info)
-        GOTO 9999
+        fail("invalid approx order: must be positive")
     ENDIF
     IF (SIZE(degree).NE.ppm_dim*nterms) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &     'wrong number of terms in degree argument',__LINE__,info)
-        GOTO 9999
+        fail("wrong number of terms in degree argument")
     ENDIF
     IF (SIZE(order).NE.nterms) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &      'wrong number of terms in order argument',__LINE__,info)
-        GOTO 9999
+        fail("wrong number of terms in order argument")
     ENDIF
     IF (SIZE(coeffs).NE.nterms) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &      'wrong number of terms in coeffs argument',__LINE__,info)
-        GOTO 9999
+        fail("wrong number of terms in coeffs argument")
     ENDIF
 
 
     !allocate operators descriptors
     ldc(1) = ppm_dim * nterms
     CALL ppm_alloc(desc%degree,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail_alloc("desc%degree")
     ldc(1) = nterms
     CALL ppm_alloc(desc%order,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail_alloc("desc%order")
     ldc(1) = nterms
     CALL ppm_alloc(desc%coeffs,ldc,ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &            'failed to allocate ops%desc',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail_alloc("desc%coeffs")
     desc%order = order 
     desc%coeffs = coeffs 
     desc%degree = degree 

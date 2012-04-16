@@ -55,6 +55,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: destroy => DTYPE(part_destroy)
     PROCEDURE     :: initialize => DTYPE(part_initialize)
     PROCEDURE     :: del_parts => DTYPE(part_del_parts)
+    PROCEDURE     :: set_rel   => DTYPE(part_set_rel)
 
     PROCEDURE     :: create_prop => DTYPE(part_prop_create)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
@@ -92,6 +93,29 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: set_xp => DTYPE(set_xp)
     PROCEDURE     :: get_dcop => DTYPE(get_dcop)
     PROCEDURE     :: set_dcop => DTYPE(set_dcop)
+
+    PROCEDURE     :: DTYPE(data_1d_i_get_field)
+    PROCEDURE     :: DTYPE(data_2d_i_get_field)
+    PROCEDURE     :: DTYPE(data_1d_li_get_field)
+    PROCEDURE     :: DTYPE(data_2d_li_get_field)
+    PROCEDURE     :: DTYPE(data_1d_r_get_field)
+    PROCEDURE     :: DTYPE(data_2d_r_get_field)
+    PROCEDURE     :: DTYPE(data_1d_c_get_field)
+    PROCEDURE     :: DTYPE(data_2d_c_get_field)
+    PROCEDURE     :: DTYPE(data_1d_l_get_field)
+    PROCEDURE     :: DTYPE(data_2d_l_get_field)
+
+    PROCEDURE     :: DTYPE(data_1d_i_set_field)
+    PROCEDURE     :: DTYPE(data_2d_i_set_field)
+    PROCEDURE     :: DTYPE(data_1d_li_set_field)
+    PROCEDURE     :: DTYPE(data_2d_li_set_field)
+    PROCEDURE     :: DTYPE(data_1d_r_set_field)
+    PROCEDURE     :: DTYPE(data_2d_r_set_field)
+    PROCEDURE     :: DTYPE(data_1d_c_set_field)
+    PROCEDURE     :: DTYPE(data_2d_c_set_field)
+    PROCEDURE     :: DTYPE(data_1d_l_set_field)
+    PROCEDURE     :: DTYPE(data_2d_l_set_field)
+
     PROCEDURE     :: DTYPE(data_1d_i_get)
     PROCEDURE     :: DTYPE(data_2d_i_get)
     PROCEDURE     :: DTYPE(data_1d_li_get)
@@ -113,28 +137,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: DTYPE(data_2d_c_set)
     PROCEDURE     :: DTYPE(data_1d_l_set)
     PROCEDURE     :: DTYPE(data_2d_l_set)
-!    GENERIC       :: get =>  &
-!        DTYPE(data_1d_i_get),&
-!        DTYPE(data_2d_i_get),&
-!        DTYPE(data_1d_li_get),&
-!        DTYPE(data_2d_li_get),&
-!        DTYPE(data_1d_r_get),&
-!        DTYPE(data_2d_r_get),&
-!        DTYPE(data_1d_c_get),&
-!        DTYPE(data_2d_c_get),&
-!        DTYPE(data_1d_l_get),&
-!        DTYPE(data_2d_l_get)
-!    GENERIC       :: set =>  &
-!        DTYPE(data_1d_i_set),&
-!        DTYPE(data_2d_i_set),&
-!        DTYPE(data_1d_li_set),&
-!        DTYPE(data_2d_li_set),&
-!        DTYPE(data_1d_r_set),&
-!        DTYPE(data_2d_r_set),&
-!        DTYPE(data_1d_c_set),&
-!        DTYPE(data_2d_c_set),&
-!        DTYPE(data_1d_l_set),&
-!        DTYPE(data_2d_l_set)
 
     PROCEDURE       :: create_map => DTYPE(part_map_create)
     PROCEDURE       :: destroy_map => DTYPE(part_map_destroy)
@@ -186,22 +188,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: DTYPE(data_2d_c_check)
     PROCEDURE     :: DTYPE(data_1d_l_check)
     PROCEDURE     :: DTYPE(data_2d_l_check)
-    !NOTE: for some reason, this does not work
-    ! (ifort crashes at compile time if there is a call
-    !  to this%checktype(wp,wpid,info) )
-    ! One can call the not-overloaded procedures directly,
-    ! but thats very annoying...
-!    GENERIC       :: checktype => & 
-!        DTYPE(data_1d_i_check),&
-!        DTYPE(data_2d_i_check),&
-!        DTYPE(data_1d_li_check),&
-!        DTYPE(data_2d_li_check),&
-!        DTYPE(data_1d_r_check),&
-!        DTYPE(data_2d_r_check),&
-!        DTYPE(data_1d_c_check),&
-!        DTYPE(data_2d_c_check),&
-!        DTYPE(data_1d_l_check),&
-!        DTYPE(data_2d_l_check)
 
 END TYPE DTYPE(ppm_t_particles)
 !----------------------------------------------------------------------

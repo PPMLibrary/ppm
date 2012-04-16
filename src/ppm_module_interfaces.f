@@ -68,6 +68,8 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_part_neighlists = 6
 INTEGER,PARAMETER,PUBLIC   :: ppm_part_global_index = 7
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_partflags = 7
 
+INTEGER,PARAMETER,PUBLIC   :: ppm_pdata_lflags = 3
+
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
 INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_ghosts = 1
@@ -93,6 +95,8 @@ INTEGER, PARAMETER,PUBLIC :: ppm_param_default_nlID = 1
 !----------------------------------------------------------------------
 ! Global variables 
 !----------------------------------------------------------------------
+INTEGER                            :: ppm_nb_meshes    = 0
+INTEGER                            :: ppm_nb_part_sets = 0
 !----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
@@ -101,6 +105,39 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 !----------------------------------------------------------------------
 ! Type declaration
 !----------------------------------------------------------------------
+
+TYPE,ABSTRACT :: ppm_t_main_abstr
+END TYPE
+
+TYPE,ABSTRACT ::  ppm_t_field_info_
+    !!! (Contained inside a ppm_t_equi_mesh, or ppm_t_particles_ 
+    !!! so relates to one specific mesh or particle set)
+    !!! Data structure containing info about a given field currently 
+    !!! discretized on this Mesh or Particle Set.
+    !!! 
+    !!! Contains pointers to the field itself as well as some
+    !!!  bookkeeping information 
+
+    INTEGER                               :: fieldID = 0
+    !!! ID of the field
+    CLASS(ppm_t_main_abstr),POINTER       :: field_ptr => NULL()
+    !!! pointer to a field that is discretized on this mesh
+
+    CONTAINS
+    PROCEDURE(field_info_create_), DEFERRED :: create
+    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
+END TYPE
+minclude define_abstract_collection_type(ppm_t_field_info_)
+
+TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
+    CONTAINS
+    PROCEDURE :: create  => field_info_create
+    PROCEDURE :: destroy => field_info_destroy
+END TYPE
+minclude define_collection_type(ppm_t_field_info)
+
+
+
 #define  DTYPE(a) a/**/_s
 #define  MK ppm_kind_single
 #define  _MK _ppm_kind_single
@@ -132,6 +169,8 @@ TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
 
     INTEGER                                          :: meshID = 0
     !!! id of the mesh on which fieldID is discretized
+    CLASS(ppm_t_main_abstr),POINTER                     :: mesh_ptr => NULL()
+    !!! pointer to the mesh
     INTEGER                                          :: lda = 0
     !!! number of components (1 for scalar fields)
     INTEGER                                          :: p_idx = 0
@@ -148,10 +187,38 @@ TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     PROCEDURE(mesh_discr_info_create_), DEFERRED :: create
     PROCEDURE(mesh_discr_info_destroy_),DEFERRED :: destroy
 END TYPE
-! Container for mesh_discr_info
 minclude define_abstract_collection_type(ppm_t_mesh_discr_info_)
 
-TYPE,ABSTRACT :: ppm_t_field_
+TYPE,ABSTRACT ::  ppm_t_part_discr_info_
+    !!! (Contained inside a ppm_t_field, so relates to one specific
+    !!!  field, denoted by fieldID)
+    !!! Data structure containing info about the current discretization
+    !!! of fieldID on a given particle set
+    !!! 
+    !!! Contains pointers to the data and bookkeeping information
+    !!! for a particle set on which fieldID has been discretized.
+
+    INTEGER                                          :: partID = 0
+    !!! id of the mesh on which fieldID is discretized
+    CLASS(ppm_t_main_abstr),POINTER                  :: part_ptr => NULL()
+    !!! pointer to the mesh
+    INTEGER                                          :: lda = 0
+    !!! number of components (1 for scalar fields)
+    INTEGER                                          :: p_idx = 0
+    !!! Storage index for the property object which contains the data where
+    !!! fieldID has been discretized on this particle set.
+    !!! (A particle set stores data for several fields. Each set of data
+    !!!  is a property object.)
+    LOGICAL,DIMENSION(ppm_pdata_lflags)              :: flags = .FALSE.
+    !!! Booleans used to track the state of this discretization.
+
+    CONTAINS
+    PROCEDURE(part_discr_info_create_), DEFERRED :: create
+    PROCEDURE(part_discr_info_destroy_),DEFERRED :: destroy
+END TYPE
+minclude define_abstract_collection_type(ppm_t_part_discr_info_)
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     !!! Data structure for fields 
     !!! A field represents a mathematical concept (e.g. velocity, or
     !!! vorticity) and links to its discretized representation on meshes 
@@ -168,17 +235,22 @@ TYPE,ABSTRACT :: ppm_t_field_
     CLASS(ppm_c_mesh_discr_info_),POINTER           :: M => NULL()
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
-    ! CLASS(ppm_c_part_discr_info_),POINTER           :: P => NULL()
-    !    !!! Collection of pointers to the data and bookkeeping information
-    !    !!! for each particle set on which this field has been discretized.
+    CLASS(ppm_c_part_discr_info_),POINTER           :: P => NULL()
+        !!! Collection of pointers to the data and bookkeeping information
+        !!! for each particle set on which this field has been discretized.
 
     CONTAINS
     PROCEDURE(field_create_),       DEFERRED :: create
     PROCEDURE(field_destroy_),      DEFERRED :: destroy
-    PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
-    PROCEDURE(field_set_rel_),      DEFERRED :: set_rel
+    PROCEDURE(field_set_rel_mesh_), DEFERRED :: set_rel_mesh
+    PROCEDURE(field_set_rel_part_), DEFERRED :: set_rel_part
+    GENERIC   :: set_rel => set_rel_mesh,set_rel_part
     PROCEDURE(field_map_ghost_push_),DEFERRED:: map_ghost_push
     PROCEDURE(field_map_ghost_pop_),DEFERRED:: map_ghost_pop
+    PROCEDURE(field_discretize_on_mesh_),DEFERRED::field_discretize_on_mesh
+    PROCEDURE(field_discretize_on_part_),DEFERRED::field_discretize_on_part
+    GENERIC   :: discretize_on => &
+                    field_discretize_on_mesh,field_discretize_on_part
 END TYPE ppm_t_field_
 ! Container for fields
 minclude define_abstract_collection_type(ppm_t_field_)
@@ -315,25 +387,6 @@ TYPE ppm_t_mesh_maplist
     !!! recv buffer pointer
 END TYPE
 
-TYPE,ABSTRACT ::  ppm_t_field_info_
-    !!! (Contained inside a ppm_t_equi_mesh, so relates to one specific
-    !!!  field, denoted by meshID)
-    !!! Data structure containing info about a given field currently 
-    !!! discretized this Mesh
-    !!! 
-    !!! Contains pointers to the field itself as well as some
-    !!!  bookkeeping information 
-
-    INTEGER                                 :: fieldID = 0
-    !!! pointer to a field that is discretized on this mesh
-
-    CONTAINS
-    PROCEDURE(field_info_create_), DEFERRED :: create
-    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
-END TYPE
-! Container for field_info
-minclude define_abstract_collection_type(ppm_t_field_info_)
-
 TYPE ppm_t_subpatch_ptr_array
     INTEGER                                       :: size = 0
     INTEGER                                       :: nsubpatch = 0
@@ -341,7 +394,7 @@ TYPE ppm_t_subpatch_ptr_array
 END TYPE
 
 
-TYPE,ABSTRACT :: ppm_t_equi_mesh_
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
    
     INTEGER                           :: ID = 0
@@ -587,11 +640,46 @@ INTERFACE
 minclude define_abstract_collection_interfaces(ppm_t_equi_mesh_)
 minclude define_abstract_collection_interfaces(ppm_t_A_subpatch_)
 minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
+minclude define_abstract_collection_interfaces(ppm_t_part_discr_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 
 END INTERFACE
+
+CONTAINS
+minclude define_collection_procedures(ppm_t_field_info)
+
+!CREATE
+SUBROUTINE field_info_create(this,field,info)
+    !!! Constructor for subdomain data data structure
+    CLASS(ppm_t_field_info)                    :: this
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)  :: field
+    INTEGER,                  INTENT(OUT)      :: info
+    start_subroutine("field_info_create")
+
+    SELECT TYPE(field)
+    CLASS IS (ppm_t_field_)
+        this%fieldID = field%ID
+        this%field_ptr => field
+    CLASS DEFAULT
+        fail("Wrong type. Argument should be a field")
+    END SELECT
+
+    end_subroutine()
+END SUBROUTINE field_info_create
+!DESTROY
+SUBROUTINE field_info_destroy(this,info)
+    !!! Destructor for subdomain data data structure
+    CLASS(ppm_t_field_info)            :: this
+    INTEGER,               INTENT(OUT) :: info
+    start_subroutine("field_info_destroy")
+
+    this%fieldID = 0
+    this%field_ptr => NULL()
+
+    end_subroutine()
+END SUBROUTINE field_info_destroy
 
 END MODULE ppm_module_interfaces

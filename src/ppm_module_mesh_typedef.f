@@ -25,10 +25,6 @@ IMPLICIT NONE
 ! Internal parameters
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-! Global variables 
-!----------------------------------------------------------------------
-INTEGER                            :: ppm_nb_meshes = 0
-!----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
 INTEGER, PRIVATE, DIMENSION(3)  :: ldc
@@ -68,13 +64,6 @@ TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
 END TYPE
 minclude define_collection_type(ppm_t_A_subpatch)
 
-
-TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
-    CONTAINS
-    PROCEDURE :: create  => field_info_create
-    PROCEDURE :: destroy => field_info_destroy
-END TYPE
-minclude define_collection_type(ppm_t_field_info)
 
 TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
@@ -145,7 +134,6 @@ CONTAINS
 !Procedures for collections of derived types
 minclude define_collection_procedures(ppm_t_equi_mesh)
 minclude define_collection_procedures(ppm_t_subpatch_data)
-minclude define_collection_procedures(ppm_t_field_info)
 minclude define_collection_procedures(ppm_t_subpatch)
 minclude define_collection_procedures(ppm_t_A_subpatch)
 
@@ -1010,31 +998,6 @@ FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
     end_subroutine()
 END FUNCTION equi_mesh_new_subpatch_data_ptr
 
-!CREATE
-SUBROUTINE field_info_create(this,fieldID,info)
-    !!! Constructor for subdomain data data structure
-    CLASS(ppm_t_field_info)               :: this
-    INTEGER,                  INTENT(IN)  :: fieldID
-    INTEGER,                  INTENT(OUT) :: info
-
-    start_subroutine("field_info_create")
-
-    this%fieldID = fieldID
-
-    end_subroutine()
-END SUBROUTINE field_info_create
-!DESTROY
-SUBROUTINE field_info_destroy(this,info)
-    !!! Destructor for subdomain data data structure
-    CLASS(ppm_t_field_info)             :: this
-    INTEGER,               INTENT(OUT) :: info
-
-    start_subroutine("field_info_destroy")
-
-    this%fieldID = 0
-
-    end_subroutine()
-END SUBROUTINE field_info_destroy
 
 FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
     !!! Returns a pointer to an array containing the IDs of all the
@@ -1089,7 +1052,7 @@ SUBROUTINE equi_mesh_set_rel(this,field,info)
         or_fail_alloc("could not allocate new field_info pointer")
 
 
-    CALL fdinfo%create(field%ID,info)
+    CALL fdinfo%create(field,info)
         or_fail("could not create new field_info object")
 
     IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
