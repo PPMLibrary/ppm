@@ -5,24 +5,34 @@ include macro overload_function(func_name)
 end macro
 
 
+
+
 include macro define_collection_type(element_type)
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
 TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
         CONTAINS
-<%['begin','next','last','prev','destroy','exists','push','remove','grow_size'].each do |func_name| %>
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
             PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
 <% end %>
-!            PROCEDURE       :: begin   => <%= collection_type %>_begin
-!            PROCEDURE       :: next    => <%= collection_type %>_next
-!            PROCEDURE       :: last    => <%= collection_type %>_last
-!            PROCEDURE       :: prev    => <%= collection_type %>_prev
-!            PROCEDURE       :: destroy => <%= collection_type %>_destroy
-!            PROCEDURE       :: exists  => <%= collection_type %>_exists
-!            PROCEDURE       :: push    => <%= collection_type %>_push
-!            PROCEDURE       :: remove  => <%= collection_type %>_remove
-!            PROCEDURE       :: grow_size=><%= collection_type %>_grow_size
 END TYPE
 end macro
+
+
+include macro define_pointer_collection_type(element_type)
+!collection of pointers to objects (removing an element does not delete the object
+!itself, just the pointer to the object)
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_pc") %>
+TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
+        CONTAINS
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
+            PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
+<% end %>
+END TYPE
+end macro
+
+
+
+
 
 include macro define_abstract_collection_type(element_type)
 <% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr").chop%>
@@ -35,17 +45,14 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
     CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
     CONTAINS
-    PROCEDURE(<%= collection_type %>_begin),  DEFERRED :: begin
-    PROCEDURE(<%= collection_type %>_next),   DEFERRED :: next 
-    PROCEDURE(<%= collection_type %>_prev),   DEFERRED :: prev 
-    PROCEDURE(<%= collection_type %>_last),   DEFERRED :: last 
-    PROCEDURE(<%= collection_type %>_destroy),DEFERRED :: destroy 
-    PROCEDURE(<%= collection_type %>_exists), DEFERRED :: exists 
-    PROCEDURE(<%= collection_type %>_push),   DEFERRED :: push 
-    PROCEDURE(<%= collection_type %>_remove), DEFERRED :: remove 
-    PROCEDURE(<%= collection_type %>_grow_size),DEFERRED::grow_size 
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
+    PROCEDURE(<%= collection_type %>_<%=func_name%>),  DEFERRED :: <%=func_name%>
+<% end %>
 END TYPE 
 end macro
+
+
+
 
 include macro define_abstract_collection_interfaces(element_type)
 <% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
@@ -86,6 +93,13 @@ FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
     LOGICAL                                        :: exists
     INTEGER,                       INTENT(IN   )   :: id
 END FUNCTION
+!HAS
+FUNCTION <%= collection_type %>_has(this,object) RESULT(has)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>)                  :: this
+    LOGICAL                                        :: has
+    CLASS(<%= element_type %>),TARGET,INTENT(IN)   :: object
+END FUNCTION
 !PUSH ELEMENT INTO COLLECTION
 SUBROUTINE <%= collection_type %>_push(this,element,info,id)
     IMPORT <%= collection_type %>,<%= element_type %>
@@ -108,6 +122,10 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
     INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
 end macro
+
+
+
+
 
 
 include macro define_collection_procedures(element_type)
@@ -247,6 +265,37 @@ FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
     exists = .TRUE.
 
     9999 CONTINUE
+    RETURN
+
+END FUNCTION
+
+!HAS
+FUNCTION <%= collection_type %>_has(this,object) RESULT(has)
+    !!! Check whether an element is present in the collection
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(<%= collection_type %>)                  :: this
+    !!! Data structure containing the particles
+    LOGICAL                                        :: has
+    !!! id where the data is stored
+    CLASS(<%= element_type %>_),TARGET,INTENT(IN)  :: object
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                 :: info
+    CLASS(<%= element_type %>_),POINTER     :: p
+
+    has = .TRUE.
+
+    p => this%begin()
+    DO WHILE(ASSOCIATED(p))
+        IF (ASSOCIATED(p,object)) RETURN
+        p => this%next()
+    ENDDO
+
+    has = .FALSE.
     RETURN
 
 END FUNCTION

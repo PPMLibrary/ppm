@@ -1,83 +1,95 @@
-macro fail(message, type=ppm_err_alloc,info=info,exit_point=9999,caller=caller)
-  <%= info %> = ppm_error_error
-  call ppm_error(<%= type %>, &
-      <%= message %>,&
-      <%= caller %>, 10000 , <%= info %>)
-  goto <%= exit_point %>
+macro ppm_fail(message, type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+CALL ppm_error(<%= type %>, &
+  <%= message %>,&
+  <%= caller %>, 10000 , <%= info %>)
+GOTO <%= exit_point %>
 end macro
 
-macro or_fail(message, type=ppm_err_alloc,info=info)
-if (<%= info %>.NE.0) then
-  call ppm_error(<%= type %>, &
-      <%= message %>,&
-      caller, 10000 , <%= info %>)
-  goto 9999
-end if
+macro fail(message, type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+<%= info %> = ppm_error_error
+$ppm_fail(<%=message%>,<%=type%>,<%=info%>,<%=exit_point%>,<%=caller%>)
+end macro
+
+macro or_fail(message, type=ppm_err_argument,info=info)
+IF (<%= info %>.NE.0) THEN
+  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+END IF
 end macro
 
 macro or_fail_alloc(message, type=ppm_err_alloc,info=info)
-if (<%= info %>.NE.0) then
-  call ppm_error(<%= type %>, &
-      <%= message %>,&
-      caller, 10000 , <%= info %>)
-  goto 9999
-end if
+IF (<%= info %>.NE.0) THEN
+  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+END IF
 end macro
 
 macro or_fail_dealloc(message, type=ppm_err_dealloc,info=info)
-if (<%= info %>.NE.0) then
-  call ppm_error(<%= type %>, &
-      <%= message %>,&
-      caller, 10000 , <%= info %>)
-  goto 9999
-end if
+IF (<%= info %>.NE.0) THEN
+  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+END IF
 end macro
 
 macro dealloc_pointer(p,info=info)
-if (associated(<%= p %>)) deallocate(<%= p %>,stat=<%= info %>)
+IF (ASSOCIATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
 $or_fail_dealloc("<%= p %>")
 end macro
 
 macro dealloc_allocatable(p,info=info)
-if (allocated(<%= p %>)) deallocate(<%= p %>,stat=<%= info %>)
+IF (ALLOCATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
 $or_fail_dealloc("<%= p %>")
 end macro
 
 macro dealloc_pointers(list)
-<% list.to_s.split(',').each do |ptr| %>
+% list.to_s.split(',').each do |ptr|
 $dealloc_pointer(<%= ptr %>)
-<% end %>
+% end
 end macro
 
-macro macro_test(a)
-  <%= a %>
-end macro
-
-macro check_associated(p,type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
-if (.NOT.associated(<%= p %>)) then
-  $fail("pointer <%= p %> is not associated and should be",<%= type %>,<%= info %>,<%= exit_point %>,<%= caller %>)
-endif
-end macro
-
-macro check_equal(a,b,message)
-if (<%= a %> .NE. <%= b%>) then
-   call write(cbuf,*) &
-       & "equality check failed:",   CHAR(10),&
-       & "    <%= a %> = ",<%= a %>, CHAR(10),&
-       & "    <%= b %> = ",<%= b %>,&
+macro check_associated(p,message="default",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+    <% p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )%>
+IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
+    WRITE(cbuf,*) &
+       & "check failed:",   CHAR(10),&
+       & "    <%= p_s %> is not associated",&
        & <%= message %> 
-   call ppm_error(ppm_err_argument,cbuf,10000, info)
-endif
+   $fail(cbuf,ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
+ENDIF
+end macro
+
+macro check_equal(a,b,message,info=info,exit_point=9999)
+% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+% b_s = b.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+IF (<%= a_s %> .NE. <%= b_s%>) THEN
+   WRITE(cbuf,*) &
+       & "equality check failed:",   CHAR(10),&
+       & "    <%= a_s %> = ",<%= a_s %>, CHAR(10),&
+       & "    <%= b_s %> = ",<%= b_s %>,&
+       & <%= message %> 
+   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+ENDIF
+end macro
+
+macro check_true(a,message,info=info,exit_point=9999)
+% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+IF (.NOT.<%= a_s %>) THEN
+   WRITE(cbuf,*) &
+       & "check failed:",   CHAR(10),&
+       & "    <%= a_s %> is not true",&
+       & <%= message %> 
+   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+ENDIF
 end macro
 
 macro start_subroutine(name=default_name)
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
+REAL(KIND(1.D0))                   :: t0
+CHARACTER(LEN=ppm_char)            :: caller = "<%= name.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )%>"
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+!-------------------------------------------------------------------------
+!  Initialise
+!-------------------------------------------------------------------------
+CALL substart(caller,t0,info)
 end macro
 
 macro end_subroutine(exit_point=9999)
@@ -96,7 +108,7 @@ macro end_function(exit_point=9999)
 end macro
 
 macro destroy_collection_ptr(collection_pointer)
-<% coll_ptr = collection_pointer %>
+% coll_ptr = collection_pointer
 IF (ASSOCIATED(<%= coll_ptr %>)) THEN
     CALL <%= coll_ptr %>%destroy(info)
         $or_fail_dealloc("<%= coll_ptr %> object")

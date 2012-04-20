@@ -346,15 +346,16 @@
 
               ! property values
               IF (nvlist) THEN
-                 CALL Pc%get_nvlist(nvlist=wpi,nlid=ppm_param_default_nlID)
+                 CALL Pc%get_nvlist(nvlist=wpi,info=info)
+                    or_fail("could not access neighbour list")
 #define VTK_NAME "nvlist"
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
 #include "vtk/print_data_array.f"
-                 wpi => NULL()
-              END IF
-              DO k=1,nb_wpi
-                 prop => Pc%props%vec(wpi_l(k))%t
+                 wpi => null()
+              end if
+              do k=1,nb_wpi
+                 prop => pc%props%vec(wpi_l(k))%t
                  CALL Pc%get(wpi,wpi_l(k),with_ghosts=ghosts)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"

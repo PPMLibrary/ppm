@@ -84,13 +84,9 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_pptflags = 5
 INTEGER,PARAMETER,PUBLIC   :: ppm_ops_inc_ghosts = 1
 INTEGER,PARAMETER,PUBLIC   :: ppm_ops_interp = 2
 INTEGER,PARAMETER,PUBLIC   :: ppm_ops_iscomputed = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_isdefined = 4
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 5
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 4
+INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 4
 
-
-!PPM internal parameters for default storage IDs of some DS.
-INTEGER, PARAMETER,PUBLIC :: ppm_param_default_nlID = 1
 
 !----------------------------------------------------------------------
 ! Global variables 
@@ -137,26 +133,92 @@ END TYPE
 minclude define_collection_type(ppm_t_field_info)
 
 
+TYPE,ABSTRACT :: ppm_t_operator_discr_
+    !!! discretized operator
+    CLASS(ppm_t_main_abstr),POINTER                :: discr_src => NULL()
+    !!! Pointer to the discretization (mesh or particles) that this operator
+    !!! takes data from
+    CLASS(ppm_t_main_abstr),POINTER                :: discr_to => NULL()
+    !!! Pointer to the discretization (mesh or particles) that this operator
+    !!! returns values on
+    INTEGER,DIMENSION(:),POINTER                   :: order => NULL()
+    !!! Order of approximation for each term of the differential operator
+
+    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
+    !!! logical flags
+    !!!    ppm_ops_inc_ghosts
+    !!!           true if the operator should be computed for ghost 
+    !!!           particles too.  Note that the resulting values 
+    !!!           will be wrong for the ghost particles
+    !!!           that have some neighbours outside the ghost layers. 
+    !!!           Default is false.
+    !!!    ppm_ops_interp
+    !!!          true if the op interpolates data from one set of particles
+    !!!    ppm_ops_iscomputed
+    !!!          true if the operator has been computed and is uptodate
+    !!!    ppm_ops_vector
+    !!!          true if each term represents a component (ie the result
+    !!!          of the operator should be a vector field, like for gradients)
+    !!!          false if the components are added up (like for the divergence)
+
+    CONTAINS
+    PROCEDURE(operator_discr_destroy_), DEFERRED :: destroy
+    !PROCEDURE(operator_discr_compute_), DEFERRED :: compute
+END TYPE
+minclude define_abstract_collection_type(ppm_t_operator_discr_)
+
+TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
+    CONTAINS
+    PROCEDURE create  => operator_discr_create
+    PROCEDURE destroy => operator_discr_destroy
+    PROCEDURE compute => operator_discr_compute
+END TYPE
+minclude define_collection_type(ppm_t_operator_discr)
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
+    !!! Generic differential operator
+    !!! (It only contains semantic information on the operator)
+    INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
+    !!! degree of each term in the linear combination of differential ops 
+    INTEGER, DIMENSION(:), POINTER                 :: order =>NULL()
+    !!! approximation order of each term 
+    REAL(ppm_kind_double), DIMENSION(:), POINTER   :: coeffs =>NULL()
+    !!! array where the coefficients in linear combinations of 
+    !!! differential ops are stored
+    INTEGER                                        :: nterms
+    !!! number of terms
+    CHARACTER(LEN=ppm_char)                        :: name
+    !!! name of the vector-valued property
+
+    CONTAINS
+    PROCEDURE(operator_create_),       DEFERRED :: create
+    PROCEDURE(operator_destroy_),      DEFERRED :: destroy
+    PROCEDURE(operator_discretize_on_),DEFERRED :: discretize_on
+END TYPE
+minclude define_abstract_collection_type(ppm_t_operator_)
+
+
 
 #define  DTYPE(a) a/**/_s
 #define  MK ppm_kind_single
 #define  _MK _ppm_kind_single
 #include "map/mapping_abstract_typedef.f"
+#include "operator/operator_discr_abstract_typedef.f"
+#include "part/particles_abstract_typedef.f"
+#undef  DTYPE
+#undef  MK
+#undef  _MK
+
 
 #define  DTYPE(a) a/**/_d
 #define  MK ppm_kind_double
 #define  _MK _ppm_kind_double
 #include "map/mapping_abstract_typedef.f"
-
-#define  DTYPE(a) a/**/_s
-#define  MK ppm_kind_single
-#define  _MK _ppm_kind_single
+#include "operator/operator_discr_abstract_typedef.f"
 #include "part/particles_abstract_typedef.f"
-
-#define  DTYPE(a) a/**/_d
-#define  MK ppm_kind_double
-#define  _MK _ppm_kind_double
-#include "part/particles_abstract_typedef.f"
+#undef  DTYPE
+#undef  MK
+#undef  _MK
 
 TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     !!! (Contained inside a ppm_t_field, so relates to one specific
@@ -245,10 +307,10 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     PROCEDURE(field_set_rel_mesh_), DEFERRED :: set_rel_mesh
     PROCEDURE(field_set_rel_part_), DEFERRED :: set_rel_part
     GENERIC   :: set_rel => set_rel_mesh,set_rel_part
-    PROCEDURE(field_map_ghost_push_),DEFERRED:: map_ghost_push
-    PROCEDURE(field_map_ghost_pop_),DEFERRED:: map_ghost_pop
-    PROCEDURE(field_discretize_on_mesh_),DEFERRED::field_discretize_on_mesh
-    PROCEDURE(field_discretize_on_part_),DEFERRED::field_discretize_on_part
+    PROCEDURE(field_map_ghost_push_),    DEFERRED :: map_ghost_push
+    PROCEDURE(field_map_ghost_pop_),     DEFERRED :: map_ghost_pop
+    PROCEDURE(field_discretize_on_mesh_),DEFERRED :: field_discretize_on_mesh
+    PROCEDURE(field_discretize_on_part_),DEFERRED :: field_discretize_on_part
     GENERIC   :: discretize_on => &
                     field_discretize_on_mesh,field_discretize_on_part
 END TYPE ppm_t_field_
@@ -523,11 +585,17 @@ INTERFACE
 
 #define  DTYPE(a) a/**/_s
 #define  MK ppm_kind_single
+#include "operator/dcop_interfaces.f"
 #include "part/particles_interfaces.f"
+#undef  DTYPE
+#undef  MK
 
 #define  DTYPE(a) a/**/_d
 #define  MK ppm_kind_double
+#include "operator/dcop_interfaces.f"
 #include "part/particles_interfaces.f"
+#undef  DTYPE
+#undef  MK
 
 #define DTYPE(a) a/**/_s
 #define __KIND __SINGLE_PRECISION
@@ -633,6 +701,7 @@ INTERFACE
 
 #include "mesh/mesh_interfaces.f"
 
+#include "operator/operator_interfaces.f"
 
 !----------------------------------------------------------------------
 ! Interfaces for collections type-bound procedures
@@ -643,6 +712,8 @@ minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
 minclude define_abstract_collection_interfaces(ppm_t_part_discr_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_)
+minclude define_abstract_collection_interfaces(ppm_t_operator_)
+minclude define_abstract_collection_interfaces(ppm_t_operator_discr_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 
@@ -650,6 +721,7 @@ END INTERFACE
 
 CONTAINS
 minclude define_collection_procedures(ppm_t_field_info)
+minclude define_collection_procedures(ppm_t_operator_discr)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)
@@ -681,5 +753,40 @@ SUBROUTINE field_info_destroy(this,info)
 
     end_subroutine()
 END SUBROUTINE field_info_destroy
+
+!DESTROY (DUMMY ROUTINE)
+SUBROUTINE operator_discr_create(this,Part_src,Part_to,info,&
+        nterms,with_ghosts,vector,interp,order)
+    CLASS(ppm_t_operator_discr)        :: this
+    CLASS(ppm_t_main_abstr),INTENT(IN),TARGET :: Part_src
+    CLASS(ppm_t_main_abstr),INTENT(IN),TARGET :: Part_to
+    INTEGER,                INTENT(OUT)   :: info
+    INTEGER,                INTENT(IN)    :: nterms
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: with_ghosts
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: vector
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: interp
+    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN):: order
+    start_subroutine("operator_discr_create")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
+!DESTROY (DUMMY ROUTINE)
+SUBROUTINE operator_discr_destroy(this,info)
+    CLASS(ppm_t_operator_discr)        :: this
+    INTEGER,               INTENT(OUT) :: info
+    start_subroutine("operator_discr_destroy")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
+!COMPUTE (DUMMY ROUTINE)
+SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
+    CLASS(ppm_t_operator_discr)                  :: this
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)    :: Field_src
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(INOUT) :: Field_to
+    INTEGER,                       INTENT(OUT)   :: info
+    start_subroutine("operator_discr_compute")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
 
 END MODULE ppm_module_interfaces

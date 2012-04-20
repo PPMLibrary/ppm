@@ -300,7 +300,7 @@ SUBROUTINE field_discretize_on_part(this,part,info,datatype)
     !!! Allocate field on a particle set
     !!! If the field has a procedure for initialization (e.g. an
     !!! initial condition), then the field is also initialized.
-    CLASS(ppm_t_field)                 :: this
+    CLASS(ppm_t_field)                   :: this
     CLASS(ppm_t_particles_d_)            :: part
     !!! mesh onto which this field is to be discretized
     INTEGER,               INTENT(OUT)  :: info
@@ -325,8 +325,8 @@ SUBROUTINE field_discretize_on_part(this,part,info,datatype)
 
     !Create a new property data structure in the particle set to store this field
     p_idx = 0
-    CALL part%create_prop(p_idx,dtype,info,lda=this%lda,&
-        name=this%name,with_ghosts=part%flags(ppm_part_ghosts))
+    CALL part%create_prop(p_idx,dtype,info,this,lda=this%lda,&
+        with_ghosts=part%flags(ppm_part_ghosts))
         or_fail("part%create_prop")
 
 

@@ -21,10 +21,9 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     !!! id where the data is stored
     INTEGER,                            INTENT(   OUT)  :: info
     !!! Return status, on success 0.
-    CHARACTER(LEN=ppm_char)                             :: caller ='prop_check'
     INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
     
-    info = 0
+    start_subroutine(__FUNCNAME)
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
@@ -91,7 +90,7 @@ SUBROUTINE __FUNCNAME(this,wp,Field,info,with_ghosts)
     LOGICAL,OPTIONAL                :: with_ghosts
     INTEGER                         :: ppt_id
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
 
     wp => NULL()
     IF (.NOT.ASSOCIATED(Field%P)) THEN
@@ -175,7 +174,7 @@ SUBROUTINE __FUNCNAME(this,wp,Field,info,read_only,ghosts_ok)
 #endif
     INTEGER                          :: ppt_id
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
 
     IF (.NOT.ASSOCIATED(Field%P)) THEN
         fail("Field%P not associated. Field has not been distretized on this particle set")
@@ -225,7 +224,8 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
 #endif
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
-    CHARACTER (LEN = ppm_char)      :: caller = '__FUNCNAME'
+
+    start_subroutine(__FUNCNAME)
 
     IF (ppt_id .LE. 0) THEN
         write(cbuf,*) 'ERROR: failed to get DATANAME for property ',& 
