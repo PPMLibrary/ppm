@@ -108,7 +108,7 @@ real(mk)                         :: eps
         type(ppm_t_particles_d),pointer :: particles
         integer                         :: i,j
         CHARACTER(LEN=32)                       :: fname
-        npart=10
+        npart=100
         !CALL part_init(xp,npart,min_phys,max_phys,info,&
         !&    ppm_param_part_init_cartesian,0.5_mk)
         allocate(xp(ndim,npart),randnb(npart*ndim),stat=info)
