@@ -78,7 +78,7 @@ END SUBROUTINE __FUNCNAME
 #undef __MYTYPE
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)
-SUBROUTINE __FUNCNAME(this,wp,Field,info,with_ghosts)
+SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts)
     CLASS(DTYPE(ppm_t_particles))   :: this
     CLASS(ppm_t_field_)             :: Field
 #if   __DIM == 1
@@ -161,7 +161,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set_field)
-SUBROUTINE __FUNCNAME(this,wp,Field,info,read_only,ghosts_ok)
+SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: this
     CLASS(ppm_t_field_)              :: Field
     INTEGER                          :: info

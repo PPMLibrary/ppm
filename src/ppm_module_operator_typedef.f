@@ -140,17 +140,16 @@ SUBROUTINE operator_destroy(this,info)
 
     this%nterms = 0
     dealloc_pointer(this%degree)
-    dealloc_pointer(this%order)
     dealloc_pointer(this%coeffs)
     this%name = ""
 
     end_subroutine()
 END SUBROUTINE
 !COMPUTE
-SUBROUTINE operator_discretize_on(this,Discr,op_discr,info,method,&
-        iargs,rargs,largs,with_ghosts,vector,interp,order) 
+SUBROUTINE operator_discretize_on(this,Discr_src,op_discr,info,method,&
+        iargs,rargs,largs,with_ghosts,vector,interp,order,Discr_to) 
     CLASS(ppm_t_operator)                      :: this
-    CLASS(ppm_t_main_abstr),  INTENT(IN)       :: Discr
+    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN):: Discr_src
     CLASS(ppm_t_operator_discr),POINTER        :: op_discr
     INTEGER,                  INTENT(OUT)      :: info
     CHARACTER(LEN=*),    OPTIONAL,INTENT(IN)   :: method
@@ -162,10 +161,20 @@ SUBROUTINE operator_discretize_on(this,Discr,op_discr,info,method,&
     LOGICAL,             OPTIONAL,INTENT(IN)   :: interp
     INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)   :: order
     !!! Order of approximation for each term
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET, INTENT(IN):: Discr_to
+    
+
+    CLASS(ppm_t_discr_kind),POINTER :: Discr2 => NULL()
+
     start_subroutine("operator_discretize_on")
 
+    IF (PRESENT(Discr_to)) THEN
+        Discr2 => Discr_to
+    ELSE
+        Discr2 => Discr_src
+    ENDIF
     
-    SELECT TYPE(Discr)
+    SELECT TYPE(Discr_src)
     CLASS IS (ppm_t_equi_mesh_)
         fail("mesh methods not yet implemented")
     CLASS IS (ppm_t_particles_s_)
@@ -183,7 +192,7 @@ SUBROUTINE operator_discretize_on(this,Discr,op_discr,info,method,&
         SELECT CASE (method)
         CASE ("DC-PSE")
             allocate(ppm_t_dcop_d::op_discr,stat=info)
-            CALL op_discr%create(Discr,info,this%nterms,&
+            CALL op_discr%create(Discr_src,Discr2,info,this%nterms,&
                 with_ghosts,vector,interp,order=order)
 
         CASE ("PSE")

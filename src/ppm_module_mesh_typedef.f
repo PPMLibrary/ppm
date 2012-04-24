@@ -179,11 +179,11 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     end_subroutine()
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create(this,fieldID,datatype,lda,Nmp,info)
+SUBROUTINE subpatch_data_create(this,field,datatype,lda,Nmp,info)
     !!! Constructor for subdomain data data structure
     CLASS(ppm_t_subpatch_data)              :: this
-    INTEGER,                     INTENT(IN) :: fieldID
-    !!! ID of the field that is discretized on this mesh patch
+    CLASS(ppm_t_field_),TARGET,  INTENT(IN) :: field
+    !!! field that is discretized on this mesh patch
     INTEGER,                     INTENT(IN) :: datatype
     !!! data type of the data
     INTEGER,                     INTENT(IN) :: lda
@@ -196,8 +196,10 @@ SUBROUTINE subpatch_data_create(this,fieldID,datatype,lda,Nmp,info)
 
     start_subroutine("subpatch_data_create")
 
-    this%fieldID = fieldID
-    this%datatype = datatype
+    this%data_type = datatype
+    this%lda = lda
+    this%field_ptr => field
+    this%name = field%name
 
     iopt   = ppm_param_alloc_grow
 
@@ -292,7 +294,11 @@ SUBROUTINE subpatch_data_destroy(this,info)
     start_subroutine("patch_data_destroy")
 
     this%fieldID = 0
-    this%datatype = 0
+    this%data_type = 0
+    this%lda = 0
+    this%name = ""
+    this%flags = .FALSE.
+    this%field_ptr => NULL()
 
     iopt = ppm_param_dealloc
     CALL ppm_alloc(this%data_2d_i,ldc,iopt,info)

@@ -1,34 +1,8 @@
 !!----------------------------------------------------------------------
 !! Particle properties
 !!----------------------------------------------------------------------
-TYPE,ABSTRACT:: DTYPE(ppm_t_part_prop)_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data):: DTYPE(ppm_t_part_prop)_
     !!! Data structure for particle properties
-    INTEGER                                        :: data_type
-    !!! type of the property
-    !!! One of:
-    !!!     ppm_param_...
-    !!! 
-    CLASS(ppm_t_field_),POINTER                    :: field_ptr => NULL()
-    !!! Pointer to the field for which this is a discretization
-    CHARACTER(LEN=ppm_char)                        :: name
-    !!! Name for this property
-    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags
-    !!! logical flags
-    !!!    ppm_ppt_ghosts
-    !!!          true if ghost values are up-to-date
-    !!!    ppm_ppt_partial
-    !!!          true if there is a one-to-one mapping with the particles
-    !!!    ppm_ppt_reqput
-    !!!    ppm_ppt_map_parts
-    !!!          true if partial mappings are desired for this property (default)
-    !!!          (if false, the array for this property is not reallocated when
-    !!!           particles move to a different processor or when they are
-    !!!           interpolated from one distribution to another)
-    !!!    ppm_ppt_map_ghosts
-    !!!          true if ghost mappings are desired for this property (default)
-    INTEGER                                        :: lda
-    !!! leading dimension of the data array
-    !!!
     !!! pointers to arrays where the scalar-value properties are stored
     INTEGER, DIMENSION(:), POINTER                 :: data_1d_i =>NULL()
     !!! if the data is 1d integer
@@ -165,7 +139,7 @@ TYPE,ABSTRACT :: DTYPE(particles_stats)_
 END TYPE DTYPE(particles_stats)_
 
 
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! Data structure for a particle set
 
     INTEGER                                         :: ID = 0

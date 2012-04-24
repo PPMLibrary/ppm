@@ -426,7 +426,10 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
     prop => Pc%props%vec(id)%t
     flags = prop%flags
     name2 = prop%name
-    field => prop%field_ptr
+    SELECT TYPE(f => prop%field_ptr)
+    CLASS IS (ppm_t_field_)
+        field => f
+    END SELECT
 
     npart = Pc%Npart
     IF (PRESENT(with_ghosts)) THEN
@@ -1627,9 +1630,9 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 
                         IF(dbg) &
                             write(*,*) 'pushing property ',Pc%props%iter_id,&
-                            TRIM(prop%field_ptr%name)
-                        Pc%stats%nb_ghost_push = &
-                            Pc%stats%nb_ghost_push + 1
+                            TRIM(prop%name)
+                            Pc%stats%nb_ghost_push = &
+                                Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
                         t1 = MPI_WTIME(info)
 #endif
@@ -1648,7 +1651,7 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
                         skip_send = .FALSE.
                     ELSE
                         write(*,*) 'pushing property ',&
-                            Pc%props%iter_id,TRIM(prop%field_ptr%name)
+                            Pc%props%iter_id,TRIM(prop%name)
                         info = ppm_error_error
                         CALL ppm_error(ppm_err_argument,caller,&
                             'getting ghosts for a property thats not mapped',&
@@ -1679,11 +1682,11 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 
                             IF(dbg) &
                                 write(*,*) 'popping property ',Pc%props%iter_id,&
-                                TRIM(prop%field_ptr%name)
+                                TRIM(prop%name)
                             CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
                             IF (info .NE. 0) THEN
                                 write(*,*) 'popping property ',Pc%props%iter_id,&
-                                    TRIM(prop%field_ptr%name)
+                                    TRIM(prop%name)
                                 info = ppm_error_error
                                 CALL ppm_error(ppm_err_sub_failed,caller,&
                                     'ppm_map_part_pop failed',__LINE__,info)
@@ -2614,7 +2617,6 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
 
     !Local variables
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER         :: prop => NULL()
-    INTEGER                                        :: info
 
     start_function("has_ghosts")
 

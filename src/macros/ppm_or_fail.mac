@@ -98,6 +98,7 @@ macro end_subroutine(exit_point=9999)
 end macro
 
 macro start_function(name=default_name)
+% scope.var info: "INTEGER                 :: info"
     CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
 
     info = 0
