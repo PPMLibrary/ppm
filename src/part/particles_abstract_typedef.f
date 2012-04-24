@@ -41,12 +41,12 @@ minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 !! Particle neighbor lists
 !!----------------------------------------------------------------------
 TYPE,ABSTRACT :: DTYPE(ppm_t_neighlist)_
-    CHARACTER(len=ppm_char)                        :: name
+    CHARACTER(len=ppm_char)                         :: name
     !!! name of the neighbour list
     INTEGER                                         :: P_id = 0
     !!! Id of the set of particles that this neighbour list refers to
     !!! The default, 0, stands for "self".
-    CLASS(DTYPE(ppm_t_particles)_),POINTER          :: Part => NULL()
+    CLASS(ppm_t_discr_kind),POINTER                 :: Part => NULL()
     !!! Pointer to the set of particles to which the neighbours 
     !!! (in the neighbor lists) belongs to.
     REAL(MK)                                        :: cutoff 

@@ -501,7 +501,7 @@ SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)
     !!! (like n-1, n-2, etc...).
     CLASS(ppm_t_field)                           :: this
     CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
-    CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data => NULL()
+    CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data
     !!! discretization
     INTEGER,                         INTENT(OUT) :: info
     INTEGER,OPTIONAL,                INTENT(IN ) :: tstep

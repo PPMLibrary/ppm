@@ -17,13 +17,19 @@ FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
     IF (PRESENT(Part)) THEN
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList,Part)) RETURN
+            SELECT TYPE(Part_src => NList%Part)
+            CLASS IS (DTYPE(ppm_t_particles)_)
+                IF (ASSOCIATED(Part_src,Part)) RETURN
+            END SELECT
             NList => this%neighs%next()
         ENDDO
     ELSE
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList,this)) RETURN
+            SELECT TYPE(Part_src => NList%Part)
+            CLASS IS (DTYPE(ppm_t_particles)_)
+                IF (ASSOCIATED(Part_src,this)) RETURN
+            END SELECT
             NList => this%neighs%next()
         ENDDO
     ENDIF
@@ -50,13 +56,19 @@ FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
     IF (PRESENT(Part)) THEN
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList,Part)) RETURN
+            SELECT TYPE(Part_src => NList%Part)
+            CLASS IS (DTYPE(ppm_t_particles)_)
+                IF (ASSOCIATED(Part_src,Part)) RETURN
+            END SELECT
             NList => this%neighs%next()
         ENDDO
     ELSE
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList,this)) RETURN
+            SELECT TYPE(Part_src => NList%Part)
+            CLASS IS (DTYPE(ppm_t_particles)_)
+                IF (ASSOCIATED(Part_src,this)) RETURN
+            END SELECT
             NList => this%neighs%next()
         ENDDO
     ENDIF

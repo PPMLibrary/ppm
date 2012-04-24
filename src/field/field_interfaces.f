@@ -125,7 +125,7 @@ SUBROUTINE field_get_discr_(this,discr_kind,discr_data,info,tstep)
     IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_data
     CLASS(ppm_t_field_)                          :: this
     CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
-    CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data => NULL()
+    CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data
     !!! discretization
     INTEGER,                         INTENT(OUT) :: info
     INTEGER,OPTIONAL,                INTENT(IN ) :: tstep

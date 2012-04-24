@@ -1010,7 +1010,6 @@ FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
     !!! fields that are currently discretized on this mesh
     CLASS(ppm_t_equi_mesh)          :: this
     INTEGER,DIMENSION(:),POINTER    :: fids
-    INTEGER,            INTENT(OUT) :: info
 
     INTEGER                         :: i,j
 
