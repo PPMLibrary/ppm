@@ -324,6 +324,7 @@
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
                patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+                   write(*,*) 'IPATCH = ',ipatch,jsub,i,j
                    SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_g.EQ.patchid)) THEN

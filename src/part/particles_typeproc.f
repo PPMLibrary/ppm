@@ -1,29 +1,34 @@
-SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
+minclude define_collection_procedures(DTYPE(ppm_t_part_prop))
+minclude define_collection_procedures(DTYPE(ppm_t_neighlist))
+minclude define_collection_procedures(DTYPE(ppm_t_particles))
+!minclude define_collection_procedures(DTYPE(ppm_t_sop))
+
+SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,field,zero)
     !!! Constructor for particle property data structure
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_part_prop))      :: prop
     INTEGER,                INTENT(IN) :: datatype
     INTEGER,                INTENT(IN) :: npart
     INTEGER,                INTENT(IN) :: lda
-    CHARACTER(LEN=*)                   :: name
+    CHARACTER(LEN=*),       INTENT(IN) :: name
     !!! name to this property
     LOGICAL, DIMENSION(ppm_param_length_pptflags),INTENT(IN) :: flags
     INTEGER,               INTENT(OUT) :: info
+    CLASS(ppm_t_field_),OPTIONAL,TARGET, INTENT(IN) :: field
     LOGICAL, OPTIONAL,     INTENT( IN) :: zero
     !!! if true, then initialize the data to zero
 
-    REAL(KIND(1.D0))                   :: t0
     INTEGER                            :: iopt
-    CHARACTER(LEN=ppm_char)            :: caller = 'prop_create'
     LOGICAL                            :: is2d
     LOGICAL                            :: zero_data
 
-
-
-    CALL substart(caller,t0,info)
+    start_subroutine("prop_create")
 
     prop%lda       = lda
     prop%data_type = datatype
+    IF (PRESENT(field)) THEN
+        prop%field_ptr => field
+    ENDIF
     prop%name      = name
     prop%flags     = flags
 
@@ -92,46 +97,36 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,zero)
         END SELECT
     ENDIF
 
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,&
-            'allocating property failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+    or_fail_dealloc("allocating property failed")
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(prop_create)
 !DESTROY ENTRY
 SUBROUTINE DTYPE(prop_destroy)(prop,info)
     CLASS(DTYPE(ppm_t_part_prop))      :: prop
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'prop_destroy'
 
+    start_subroutine("prop_destroy")
 
-    CALL substart(caller,t0,info)
-
-    IF(ASSOCIATED(prop%data_1d_i)) DEALLOCATE(prop%data_1d_i,STAT=info)
-    IF(ASSOCIATED(prop%data_2d_i)) DEALLOCATE(prop%data_2d_i,STAT=info)
-    IF(ASSOCIATED(prop%data_1d_li)) DEALLOCATE(prop%data_1d_li,STAT=info)
-    IF(ASSOCIATED(prop%data_2d_li)) DEALLOCATE(prop%data_2d_li,STAT=info)
-    IF(ASSOCIATED(prop%data_1d_r)) DEALLOCATE(prop%data_1d_r,STAT=info)
-    IF(ASSOCIATED(prop%data_2d_r)) DEALLOCATE(prop%data_2d_r,STAT=info)
-    IF(ASSOCIATED(prop%data_1d_c)) DEALLOCATE(prop%data_1d_c,STAT=info)
-    IF(ASSOCIATED(prop%data_2d_c)) DEALLOCATE(prop%data_2d_c,STAT=info)
-    IF(ASSOCIATED(prop%data_1d_l)) DEALLOCATE(prop%data_1d_l,STAT=info)
-    IF(ASSOCIATED(prop%data_2d_l)) DEALLOCATE(prop%data_2d_l,STAT=info)
+    dealloc_pointer(prop%data_1d_i)
+    dealloc_pointer(prop%data_2d_i)
+    dealloc_pointer(prop%data_1d_li)
+    dealloc_pointer(prop%data_2d_li)
+    dealloc_pointer(prop%data_1d_r)
+    dealloc_pointer(prop%data_2d_r)
+    dealloc_pointer(prop%data_1d_c)
+    dealloc_pointer(prop%data_2d_c)
+    dealloc_pointer(prop%data_1d_l)
+    dealloc_pointer(prop%data_2d_l)
 
     prop%data_type = ppm_type_none
     prop%lda = 0
     prop%flags = .FALSE.
+    prop%field_ptr => NULL()
+    prop%name = ""
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(prop_destroy)
 
 SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
@@ -160,13 +155,9 @@ SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER                              :: lev,fileu,id
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'prop_print_info'
     CHARACTER(LEN = ppm_char)            :: myformat
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("prop_print_info")
 
 
     IF (PRESENT(fileunit)) THEN
@@ -187,7 +178,8 @@ SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
 
     WRITE(myformat,'(A,I0,A)') '(',4*lev,'X,A,I0,A,A,A,I0)'
 
-    WRITE(fileu,myformat) 'Property ',id,': ',TRIM(color_print(prop%name,33)),&
+    WRITE(fileu,myformat) 'Property ',id,': ',&
+        TRIM(color_print(prop%name,33)),&
         ' Type: ',prop%data_type
 
     lev = lev + 1
@@ -200,13 +192,8 @@ SUBROUTINE DTYPE(prop_print_info)(prop,info,level,fileunit,propid)
     WRITE(fileu,myformat) 'flags: ',prop%flags
 
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(prop_print_info)
-
-
-
-
 
 !!----------------------------------------------------------------
 !! Procedures for Particle Sets DS
@@ -244,9 +231,9 @@ SUBROUTINE DTYPE(set_xp)(Pc,xp,read_only,ghosts_ok)
     REAL(MK),DIMENSION(:,:),POINTER  :: xp
     INTEGER                          :: i
 
-    TYPE(DTYPE(ppm_t_part_prop)), POINTER :: prop => NULL()
-    TYPE(DTYPE(ppm_t_neighlist)), POINTER :: nl => NULL()
-    TYPE(DTYPE(ppm_t_operator)),  POINTER :: op => NULL()
+    CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
+    CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
+    CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
 
     IF (PRESENT(ghosts_ok)) THEN
         IF (ghosts_ok) THEN
@@ -280,114 +267,54 @@ SUBROUTINE DTYPE(set_xp)(Pc,xp,read_only,ghosts_ok)
         nl => Pc%neighs%next()
     ENDDO
 
-    op => Pc%ops%begin()
-    DO WHILE (ASSOCIATED(op))
-        op%flags(ppm_ops_iscomputed) = .FALSE.
-        op => Pc%ops%next()
-    ENDDO
+    IF (ASSOCIATED(Pc%ops)) THEN
+        op => Pc%ops%begin()
+        DO WHILE (ASSOCIATED(op))
+            op%flags(ppm_ops_iscomputed) = .FALSE.
+            op => Pc%ops%next()
+        ENDDO
+    ENDIF
 
     xp => NULL()
 
 END SUBROUTINE DTYPE(set_xp)
 
 SUBROUTINE DTYPE(part_prop_create)(Pc,id,datatype,info,&
-        lda,name,zero,with_ghosts)
+        field,name,lda,zero,with_ghosts)
     !!! Adds a property to an existing particle set
     CLASS(DTYPE(ppm_t_particles))         :: Pc
     INTEGER,                INTENT(  OUT) :: id
     INTEGER,                INTENT(IN   ) :: datatype
     INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
-    CHARACTER(LEN=*) , OPTIONAL           :: name
+    CLASS(ppm_t_field_),OPTIONAL,INTENT(IN   ) :: field
+    CHARACTER(LEN=*),OPTIONAL,INTENT(IN  ) :: name
     !!! name to this property
     LOGICAL, OPTIONAL                     :: zero
     !!! if true, then initialise the data to zero
     LOGICAL, OPTIONAL                     :: with_ghosts
     !!! if true, then allocate with Mpart instead of the default size of Npart
     INTEGER,               INTENT(OUT)    :: info
-
-    INTEGER                               :: lda2,vec_size,npart,i
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_prop_create'
     CHARACTER(LEN=ppm_char)               :: name2
-    REAL(KIND(1.D0))                      :: t0
-    !TYPE(DTYPE(ppm_t_part_prop)),               POINTER  :: prop => NULL()
-    TYPE(DTYPE(ppm_t_part_prop))          :: prop
+    INTEGER                               :: lda2,vec_size,npart,i
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER:: prop => NULL()
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
 
-    CALL substart(caller,t0,info)
+    start_subroutine("particle_prop_create")
 
-    !Generate a new id (we should use templating here...)
-    !ASSOCIATE (cont => Pc%props )
-        !id = 0
-        !IF (cont%nb.LT.cont%vec_size) THEN
-            !!there is at least one empty slot in the array
-            !! of property pointers
-            !id = id + 1
-            !DO WHILE (ASSOCIATED(cont%vec(id)%t))
-                !id = id + 1
-            !ENDDO
-        !ELSE
-            !IF (.NOT. ASSOCIATED(cont%vec)) THEN
-                !!need to allocate the array of property pointers 
-                !vec_size=20
-                !ALLOCATE(cont%vec(vec_size),STAT=info)
-                !IF (info .NE. 0) THEN
-                    !info = ppm_error_error
-                    !CALL ppm_error(ppm_err_alloc,caller,&
-                        !'allocating property array failed',__LINE__,info)
-                    !GOTO 9999
-                !ENDIF
-                !id = 1
-            !ELSE
-                !!need to resize the array of property pointers 
-                !vec_size=MAX(2*cont%vec_size,20)
-                !ALLOCATE(vec_tmp(vec_size),STAT=info)
-                !IF (info .NE. 0) THEN
-                    !info = ppm_error_error
-                    !CALL ppm_error(ppm_err_alloc,caller,&
-                        !'allocating property array failed',__LINE__,info)
-                    !GOTO 9999
-                !ENDIF
-                !DO i=1,cont%vec_size
-                    !vec_tmp(i)%t => cont%vec(i)%t
-                !ENDDO
-                !DEALLOCATE(cont%vec)
-                !cont%vec => vec_tmp
-            !ENDIF
-            !cont%vec_size = vec_size
-            !id = cont%nb + 1
-        !ENDIF
-        !cont%nb = cont%nb + 1
-            
-
-        !IF (id .GT. cont%max_id) cont%max_id = id
-        !IF (id .LT. cont%min_id) cont%min_id = id
-
-    !END ASSOCIATE
-
-    !IF (.NOT. ASSOCIATED(Pc%props%vec(id)%t)) THEN
-        !ALLOCATE(Pc%props%vec(id)%t,STAT=info)
-        !IF (info .NE. 0) THEN
-            !info = ppm_error_error
-            !CALL ppm_error(ppm_err_alloc,caller,&
-                !'allocating property pointer failed',__LINE__,info)
-            !GOTO 9999
-        !ENDIF
-    !ENDIF
-
-    !prop => Pc%props%vec(id)%t
-
-    !
     lda2 = 1
     IF (PRESENT(lda)) THEN
         IF (lda.GE.2) THEN
             lda2 = lda
         ENDIF
     ENDIF
-
     IF (PRESENT(name)) THEN
         name2 = name
     ELSE
-        name2 = particles_dflt_pptname(id,1)
+        IF (PRESENT(field)) THEN
+            name2 = field%name
+        ELSE
+            name2 = "default_ppt_name"
+        ENDIF
     ENDIF
 
     npart = Pc%Npart
@@ -411,20 +338,16 @@ SUBROUTINE DTYPE(part_prop_create)(Pc,id,datatype,info,&
     flags(ppm_ppt_map_parts) = .TRUE.
 
 
+    ALLOCATE(DTYPE(ppm_t_part_prop)::prop,STAT=info)
+        or_fail_alloc("prop")
     ! Create the property
-    CALL prop%create(datatype,npart,lda2,name2,flags,info,zero)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,caller,&
-            'creating property array failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+    CALL prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
+        or_fail("creating property array failed")
 
-    CALL Pc%props%push(prop,info)
+    CALL Pc%props%push(prop,info,id)
+        or_fail("pushing new property into collection failed")
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_prop_create)
 
 SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
@@ -433,18 +356,11 @@ SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
     INTEGER,                INTENT(INOUT) :: id
     INTEGER,               INTENT(OUT)    :: info
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_prop_destroy'
-    REAL(KIND(1.D0))                      :: t0
-
-    CALL substart(caller,t0,info)
+    start_subroutine("part_prop_destroy")
 
     ASSOCIATE (cont => Pc%props)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                &    'property id larger than size of properties array',&
-                __LINE__,info)
-            GOTO 9999
+            fail("property id larger than size of properties array")
         ENDIF
 
         CALL cont%vec(id)%t%destroy(info)
@@ -468,22 +384,14 @@ SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
                 DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%min_id)%t))
                     cont%min_id = cont%min_id + 1
                     IF (cont%min_id .GT. cont%vec_size) THEN
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_alloc,caller,&
-                            &    'coding error in the data structure',&
-                            __LINE__,info)
-                        GOTO 9999
+                        fail("coding error in the data structure...")
                     ENDIF
                 ENDDO
             ENDIF
         ENDIF
     END ASSOCIATE
 
-
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_prop_destroy)
 
 SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
@@ -502,29 +410,26 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
     !!! deallocate the old data array and allocate a new one,
     !!! possibly of a different dimension
 
-    INTEGER                               :: lda2,vec_size,npart,i,dtype
-    CHARACTER(LEN=ppm_char)               :: caller = 'realloc_prop'
     CHARACTER(LEN=ppm_char)               :: name2
-    REAL(KIND(1.D0))                      :: t0
-    TYPE(DTYPE(ppm_ptr_part_prop)),DIMENSION(:),POINTER  :: vec_tmp => NULL()
-    TYPE(DTYPE(ppm_t_part_prop)),               POINTER  :: prop => NULL()
+    INTEGER                               :: lda2,vec_size,npart,i,dtype
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER:: prop => NULL()
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
+    CLASS(ppm_t_field_),POINTER           :: field => NULL()
 
-    CALL substart(caller,t0,info)
+    start_subroutine("realloc_prop")
 
     IF (.NOT. ASSOCIATED(Pc%props%vec(id)%t)) THEN
-        ALLOCATE(Pc%props%vec(id)%t,STAT=info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                'allocating property pointer failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        ALLOCATE(DTYPE(ppm_t_part_prop)::Pc%props%vec(id)%t,STAT=info)
+            or_fail_alloc("allocating property pointer failed")
     ENDIF
 
     prop => Pc%props%vec(id)%t
     flags = prop%flags
     name2 = prop%name
+    SELECT TYPE(f => prop%field_ptr)
+    CLASS IS (ppm_t_field_)
+        field => f
+    END SELECT
 
     npart = Pc%Npart
     IF (PRESENT(with_ghosts)) THEN
@@ -533,11 +438,7 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
                 npart = Pc%Mpart
                 flags(ppm_ppt_ghosts) = .TRUE.
             ELSE
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,&
-            'trying to init property for ghosts when ghosts are not computed',&
-                    __LINE__,info)
-                GOTO 9999
+    fail("trying to init property for ghosts when ghosts are not computed")
             ENDIF
         ENDIF
     ENDIF
@@ -558,17 +459,10 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
     ENDIF
 
     ! Create the property
-    CALL prop%create(dtype,npart,lda2,name2,flags,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,caller,&
-            'reallocating property array failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+    CALL prop%create(dtype,npart,lda2,name2,flags,info,field)
+        or_fail("reallocating property array failed")
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_prop_realloc)
 
 
@@ -589,79 +483,14 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
     LOGICAL, OPTIONAL                     :: symmetry    
 
     INTEGER                               :: vec_size,i
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_neigh_create'
-    CHARACTER(LEN=ppm_char)               :: name2
-    REAL(KIND(1.D0))                      :: t0
-    TYPE(DTYPE(ppm_ptr_t_neighlist)),DIMENSION(:),POINTER  :: vec_tmp => NULL()
-    TYPE(DTYPE(ppm_t_neighlist)),POINTER  :: Nlist
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist=>NULL()
     REAL(MK), DIMENSION(:), POINTER       :: rcp => NULL()
 
-    CALL substart(caller,t0,info)
+    start_subroutine("particle_neigh_create")
 
-    !Generate a new id (we should use templating here...)
-    ASSOCIATE (cont => Pc%neighs )
-        id = 0
-        IF (cont%nb.LT.cont%vec_size) THEN
-            !there is at least one empty slot in the array
-            ! of property pointers
-            id = id + 1
-            write(*,*) cont%nb, cont%min_id,cont%max_id,cont%vec_size
-            DO WHILE (ASSOCIATED(cont%vec(id)%t))
-                write(*,*) '  id = ',id
-                id = id + 1
-            ENDDO
-        ELSE
-            IF (.NOT. ASSOCIATED(cont%vec)) THEN
-                !need to allocate the array of property pointers 
-                vec_size=20
-                ALLOCATE(cont%vec(vec_size),STAT=info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,&
-                        'allocating property array failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
-                id = 1
-            ELSE
-                !need to resize the array of property pointers 
-                vec_size=MAX(2*cont%vec_size,20)
-                ALLOCATE(vec_tmp(vec_size),STAT=info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,&
-                        'allocating property array failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
-                DO i=1,cont%vec_size
-                    vec_tmp(i)%t => cont%vec(i)%t
-                ENDDO
-                DEALLOCATE(cont%vec)
-                cont%vec => vec_tmp
-            ENDIF
-            cont%vec_size = vec_size
-            id = cont%nb + 1
-        ENDIF
-        cont%nb = cont%nb + 1
-            
-
-        IF (id .GT. cont%max_id) cont%max_id = id
-        IF (id .LT. cont%min_id) cont%min_id = id
-
-    END ASSOCIATE
-        
-    IF (.NOT. ASSOCIATED(Pc%neighs%vec(id)%t)) THEN
-        ALLOCATE(Pc%neighs%vec(id)%t,STAT=info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                'allocating neighlist pointer failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
-
-    Nlist => Pc%neighs%vec(id)%t
-
-    ! Create the property
+    ! Create the neighbour list
+    ALLOCATE(DTYPE(ppm_t_neighlist)::Nlist,STAT=info)
+        or_fail_alloc("Nlist")
 
     IF (PRESENT(name)) THEN
         Nlist%name = name
@@ -720,9 +549,10 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
     Nlist%nneighmin = 0
     Nlist%nneighmax = 0
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
+    CALL Pc%neighs%push(Nlist,info)
+        or_fail("pushing new neighbour list into collection failed")
 
+    end_subroutine()
 END SUBROUTINE DTYPE(part_neigh_create)
 
 SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
@@ -731,10 +561,7 @@ SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
     INTEGER,                INTENT(INOUT) :: id
     INTEGER,               INTENT(OUT)    :: info
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_neigh_destroy'
-    REAL(KIND(1.D0))                      :: t0
-
-    CALL substart(caller,t0,info)
+    start_subroutine("part_neigh_destroy")
 
     ASSOCIATE (cont => Pc%neighs)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
@@ -777,13 +604,8 @@ SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
         ENDIF
     END ASSOCIATE
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_neigh_destroy)
-
-
 
 
 SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
@@ -819,31 +641,30 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
 
     LOGICAL                                         :: lalloc,ldealloc
     INTEGER                                         :: i
-    REAL(KIND(1.D0))                                :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'ppm_create_particles'
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+
+    start_subroutine("part_create")
 
     !-----------------------------------------------------------------
     !  Destroy the DS if it already exists
     !-----------------------------------------------------------------
     IF (ASSOCIATED(Pc%xp)) THEN
         CALL Pc%destroy(info)
+            or_fail_dealloc("Pc%destroy")
     ENDIF
+
+    !dumb way of creating a global ID for this mesh
+    !TODO find something better? (needed if one creates and destroy
+    ! many meshes)
+    ppm_nb_part_sets = ppm_nb_part_sets + 1
+    Pc%ID = ppm_nb_part_sets 
+
     !-----------------------------------------------------------------
     !  Allocate memory for the positions
     !-----------------------------------------------------------------
     ldc(1) = ppm_dim
     ldc(2) = Npart
     CALL ppm_alloc(Pc%xp,ldc(1:2),ppm_param_alloc_fit,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,   &
-            &        'Could not allocate Particles elements',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail_alloc("Pc%xp")
     Pc%Npart = Npart
     Pc%Mpart = Npart
     Pc%flags(ppm_part_ghosts) = .FALSE.
@@ -894,18 +715,39 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
         Pc%anisotropic = .FALSE.
     CLASS DEFAULT
     END SELECT
-    !-------------------------------------------------------------------------
-    !  Finalize
-    !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
 
-    9999 CONTINUE
+    IF (.NOT.ASSOCIATED(Pc%neighs)) THEN
+        ALLOCATE(DTYPE(ppm_c_neighlist)::Pc%neighs,STAT=info)
+        or_fail_alloc("could not allocate Pc%neighs")
+    ELSE
+        fail("neighbour list collection is already allocated. Call destroy() first?")
+    ENDIF
 
+    IF (ASSOCIATED(Pc%ops)) THEN
+        fail("collection of operator pointers is already associated. Call destroy() first?")
+    ENDIF
+
+    IF (.NOT.ASSOCIATED(Pc%props)) THEN
+        ALLOCATE(DTYPE(ppm_c_part_prop)::Pc%props,STAT=info)
+        or_fail_alloc("could not allocate Pc%props")
+    ELSE
+        fail("property collection is already allocated. Call destroy() first?")
+    ENDIF
+
+    IF (.NOT.ALLOCATED(Pc%stats)) THEN
+        ALLOCATE(DTYPE(particles_stats)::Pc%stats,STAT=info)
+        or_fail_alloc("could not allocate Pc%stats")
+    ELSE
+        fail("stats structure is already allocated. Call destroy() first?")
+    ENDIF
+
+
+
+    end_subroutine()
 END SUBROUTINE DTYPE(part_create)
 
 
 SUBROUTINE DTYPE(part_destroy)(Pc,info)
-
     !!! Deallocate a ppm_t_particles data type
 
     !-------------------------------------------------------------------------
@@ -917,57 +759,32 @@ SUBROUTINE DTYPE(part_destroy)(Pc,info)
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
 
-    !-------------------------------------------------------------------------
-    !  Local variables
-    !-------------------------------------------------------------------------
     LOGICAL                                         :: lalloc,ldealloc
     INTEGER                                         :: i
-    REAL(KIND(1.D0))                                :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'ppm_destroy_particles'
-    TYPE(DTYPE(ppm_t_neighlist)), POINTER :: nl => NULL()
-    TYPE(DTYPE(ppm_t_operator)),  POINTER :: op => NULL()
-    TYPE(DTYPE(ppm_t_part_prop)), POINTER :: prop => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
 
-    !-------------------------------------------------------------------------
-    !  Check arguments
-    !-------------------------------------------------------------------------
+    start_subroutine("part_destroy")
 
-    !-------------------------------------------------------------------------
-    !  If reallocating, deallocate old data first
-    !-------------------------------------------------------------------------
-    !----------------------------------------------------------------------
-    !  deallocate
-    !----------------------------------------------------------------------
+    Pc%ID = 0
     ! first deallocate all content of Pc
-    IF (ASSOCIATED(Pc%xp)) THEN 
-        DEALLOCATE(Pc%xp,STAT=info)
-        NULLIFY(Pc%xp)
-    ENDIF
-    IF (ASSOCIATED(Pc%pcost)) THEN
-        DEALLOCATE(Pc%pcost,STAT=info)
-        NULLIFY(Pc%pcost)
-    ENDIF
+    dealloc_pointer(Pc%xp)
+
+    dealloc_pointer(Pc%pcost)
+
+    dealloc_allocatable(Pc%stats)
 
     !Deallocate neighbour lists
-    CALL Pc%neighs%destroy(info)
+    destroy_collection_ptr(Pc%neighs)
 
     !Deallocate properties
-    CALL Pc%props%destroy(info)
+    destroy_collection_ptr(Pc%props)
 
     !Deallocate operators
-    CALL Pc%ops%destroy(info)
+    destroy_collection_ptr(Pc%ops)
 
     !-------------------------------------------------------------------------
     !  Finalize
     !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_destroy)
 
 #define __DIM 2
@@ -1010,6 +827,8 @@ SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
     CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
     !!! name for this set of particles
 
+    start_subroutine("part_initialize")
+
     IF (ppm_dim .eq. 2) THEN
         CALL  DTYPE(particles_initialize2d)(Pc,Npart_global,info,&
             distrib,topoid,minphys,maxphys,cutoff,name=name)
@@ -1017,6 +836,8 @@ SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
         CALL  DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
             distrib,topoid,minphys,maxphys,cutoff,name=name)
     ENDIF
+
+    end_subroutine()
 END SUBROUTINE DTYPE(part_initialize)
 
 SUBROUTINE DTYPE(part_print_info)(Pc,info,level,fileunit)
@@ -1044,14 +865,10 @@ SUBROUTINE DTYPE(part_print_info)(Pc,info,level,fileunit)
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER                              :: lev,fileu
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'part_print_info'
     CHARACTER(LEN = ppm_char)            :: myformat
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER :: prop => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
+
+    start_subroutine("part_print_info")
 
 
     IF (PRESENT(fileunit)) THEN
@@ -1082,12 +899,10 @@ SUBROUTINE DTYPE(part_print_info)(Pc,info,level,fileunit)
         prop => Pc%props%next()
     ENDDO
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_print_info)
 
 SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
-
     !!! remove some particles from a Particle set
     !!! WARNING: this implementation is NOT efficient
     !!! if the number of particles to delete is large.
@@ -1113,20 +928,13 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
     !-------------------------------------------------------------------------
-    !  Optional arguments
-    !-------------------------------------------------------------------------
-    !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
 
     INTEGER                              :: i,ip,Npart,del_part,lda
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'ppm_del_particles'
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER :: prop => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
+
+    start_subroutine("part_del_parts")
 
     !-----------------------------------------------------------------
     !  check arguments
@@ -1218,14 +1026,61 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
     !New number of particles, after deleting some
     Pc%Npart = Npart - del_part
 
-    !-------------------------------------------------------------------------
-    !  Finalize
-    !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_del_parts)
+
+SUBROUTINE DTYPE(part_set_rel)(this,field,info)
+    !!! Create bookkeeping data structure to log the relationship between
+    !!! the particle set and a field
+    CLASS(DTYPE(ppm_t_particles))      :: this
+    CLASS(ppm_t_field_)                :: field
+    INTEGER,               INTENT(OUT) :: info
+    TYPE(ppm_t_field_info),POINTER     :: fdinfo => NULL()
+
+    start_subroutine("part_set_rel")
+
+
+    ALLOCATE(fdinfo,STAT=info)
+        or_fail_alloc("could not allocate new field_info pointer")
+
+
+    CALL fdinfo%create(field,info)
+        or_fail("could not create new field_info object")
+
+    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
+        ALLOCATE(ppm_c_field_info::this%field_ptr,STAT=info)
+            or_fail_alloc("could not allocate field_info collection")
+    ENDIF
+
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        CALL this%field_ptr%grow_size(info)
+            or_fail("could not grow_size this%field_ptr")
+    ENDIF
+    !if the collection is still too small, it means we should consider
+    ! using a hash table for particle set IDs...
+    IF (this%field_ptr%vec_size.LT.field%ID) THEN
+        fail("The id of the partile set that we are trying to store in a Field collection seems to large. Why not implement a hash function?")
+    ENDIF
+
+    IF (this%field_ptr%exists(field%ID)) THEN
+        fail("It seems like this particle set already has a pointer to that field. Are you sure you want to do that a second time?")
+    ELSE
+        !add field_info to the collection, at index fieldID
+        !Update the counters nb,max_id and min_id accordingly
+        !(this is not very clean without hash table)
+        this%field_ptr%vec(field%ID)%t => fdinfo
+        this%field_ptr%nb = this%field_ptr%nb + 1
+        IF (this%field_ptr%nb.EQ.1) THEN
+            this%field_ptr%max_id = field%ID
+            this%field_ptr%min_id = field%ID
+        ELSE
+            this%field_ptr%max_id = MAX(this%field_ptr%max_id,field%ID)
+            this%field_ptr%min_id = MIN(this%field_ptr%min_id,field%ID)
+        ENDIF
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_set_rel)
 
 SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
 
@@ -1250,25 +1105,13 @@ SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
     !!! id of the property to be pushed
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
-    !-------------------------------------------------------------------------
-    !  Optional arguments
-    !-------------------------------------------------------------------------
-    !-------------------------------------------------------------------------
-    !  Local variables
-    !-------------------------------------------------------------------------
 
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'map_part_push'
     INTEGER                              :: lda
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER :: prop => NULL()
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
-
-    !-----------------------------------------------------------------
-    !  Check arguments
-    !-----------------------------------------------------------------
+    start_subroutine("map_part_push")
 
     !-----------------------------------------------------------------
     !  Call ppm_map_part_push
@@ -1322,13 +1165,7 @@ SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
         END SELECT
     ENDIF
 
-    !-------------------------------------------------------------------------
-    !  Finalize
-    !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_prop_push)
 
 SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
@@ -1356,25 +1193,11 @@ SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
     !!! number of particles to pop from the buffer
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
-    !-------------------------------------------------------------------------
-    !  Optional arguments
-    !-------------------------------------------------------------------------
-    !-------------------------------------------------------------------------
-    !  Local variables
-    !-------------------------------------------------------------------------
 
-    REAL(KIND(1.D0))                     :: t0
-    CHARACTER(LEN = ppm_char)            :: caller = 'map_part_push'
-    INTEGER                              :: lda
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER :: prop
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    INTEGER                                :: lda
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
 
-    !-----------------------------------------------------------------
-    !  Check arguments
-    !-----------------------------------------------------------------
+    start_subroutine("map_part_pop")
 
     !-----------------------------------------------------------------
     !  Call ppm_map_part_pop
@@ -1428,50 +1251,9 @@ SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
         END SELECT
     ENDIF
 
-    !-------------------------------------------------------------------------
-    !  Finalize
-    !-------------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_prop_pop)
 
-
-FUNCTION DTYPE(get_dcop)(Pc,eta_id,with_ghosts)
-    CLASS(DTYPE(ppm_t_particles))      :: Pc
-    DEFINE_MK()
-    INTEGER                            :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER    :: DTYPE(get_dcop)
-    LOGICAL,OPTIONAL                   :: with_ghosts
-
-    IF (eta_id .LE. 0 .OR. eta_id .GT. Pc%ops%max_id) THEN
-        write(*,*) 'ERROR: failed to get operator for id ',eta_id
-        DTYPE(get_dcop) => NULL()
-        RETURN
-    ENDIF
-
-    IF (PRESENT(with_ghosts)) THEN
-        IF (with_ghosts) THEN
-            DTYPE(get_dcop) => &
-                Pc%ops%vec(eta_id)%t%ker(:,1:Pc%Mpart)
-            RETURN
-        ENDIF
-    ENDIF
-    DTYPE(get_dcop) => &
-        Pc%ops%vec(eta_id)%t%ker(:,1:Pc%Npart)
-
-END FUNCTION DTYPE(get_dcop)
-
-FUNCTION DTYPE(set_dcop)(Pc,eta_id)
-    CLASS(DTYPE(ppm_t_particles))   :: Pc
-    DEFINE_MK()
-    INTEGER                         :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER :: DTYPE(set_dcop)
-
-    DTYPE(set_dcop) => NULL()
-
-END FUNCTION DTYPE(set_dcop)
 
 SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
 
@@ -1509,16 +1291,14 @@ SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
     !!! new number of particles on this processor
     INTEGER                   :: ltopoid
     !!! index variable
-    CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping'
-    REAL(KIND(1.D0))          :: t0,t1,t2
+    REAL(KIND(1.D0))          :: t1,t2
     LOGICAL                   :: dbg,partial
-    TYPE(DTYPE(ppm_t_part_prop)), POINTER :: prop => NULL()
-    TYPE(DTYPE(ppm_t_neighlist)), POINTER :: nl => NULL()
-    TYPE(DTYPE(ppm_t_operator)),  POINTER :: op => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
+    CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
+    CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+
+    start_subroutine("particles_mapping")
+
 #ifdef __MPI
     t1 = MPI_WTIME(info)
 #endif
@@ -1528,27 +1308,15 @@ SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
     !  Checks
     !-----------------------------------------------------------------
     IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            &  'Pc structure had not been defined. Call allocate first',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("Pc structure had not been defined. Call allocate first")
     ENDIF
     IF (.NOT.Pc%flags(ppm_part_areinside)) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            &  'some Pc may be outside the domain. Apply BC first',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("some Pc may be outside the domain. Apply BC first")
     ENDIF
 
     IF (PRESENT(global)) THEN
         IF(.NOT.PRESENT(topoid)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &  'need the topoid parameter for global mapping',&
-                &  __LINE__,info)
-            GOTO 9999
+            fail("need the topoid parameter for global mapping")
         ENDIF
         IF (global) partial = .FALSE.
     ELSE
@@ -1671,11 +1439,13 @@ SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
         Pc%flags(ppm_part_neighlists) = .FALSE.
 
         ! particles have been re-indexed and operators need be recomputed
-        op => Pc%ops%begin()
-        DO WHILE (ASSOCIATED(op))
-            op%flags(ppm_ops_iscomputed) = .FALSE.
-            op => Pc%ops%next()
-        ENDDO
+        IF (ASSOCIATED(Pc%ops)) THEN
+            op => Pc%ops%begin()
+            DO WHILE (ASSOCIATED(op))
+                op%flags(ppm_ops_iscomputed) = .FALSE.
+                op => Pc%ops%next()
+            ENDDO
+        ENDIF
 
     ENDIF
 
@@ -1688,13 +1458,7 @@ SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
     ENDIF
 #endif
 
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_mapping)
 
 SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
@@ -1731,18 +1495,16 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     REAL(MK)                                  :: cutoff
     !!! cutoff radius
     TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
-    CHARACTER(LEN = ppm_char) :: caller = 'particles_mapping_ghosts'
-    REAL(KIND(1.D0))                          :: t0,t1,t2
+    REAL(KIND(1.D0))                          :: t1,t2
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
     LOGICAL                                   :: skip_send
-    TYPE(DTYPE(ppm_t_part_prop)), POINTER :: prop => NULL()
-    TYPE(DTYPE(ppm_t_neighlist)), POINTER :: nl => NULL()
-    TYPE(DTYPE(ppm_t_operator)),  POINTER :: op => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
+    CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
+    CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+
+    start_subroutine("part_mapping_ghosts")
+
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg=debug
     skip_ghost_get = .FALSE.
@@ -1869,8 +1631,8 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
                         IF(dbg) &
                             write(*,*) 'pushing property ',Pc%props%iter_id,&
                             TRIM(prop%name)
-                        Pc%stats%nb_ghost_push = &
-                            Pc%stats%nb_ghost_push + 1
+                            Pc%stats%nb_ghost_push = &
+                                Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
                         t1 = MPI_WTIME(info)
 #endif
@@ -1888,7 +1650,8 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 #endif
                         skip_send = .FALSE.
                     ELSE
-                        write(*,*) 'pushing property ',Pc%props%iter_id,TRIM(prop%name)
+                        write(*,*) 'pushing property ',&
+                            Pc%props%iter_id,TRIM(prop%name)
                         info = ppm_error_error
                         CALL ppm_error(ppm_err_argument,caller,&
                             'getting ghosts for a property thats not mapped',&
@@ -1972,13 +1735,7 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     Pc%flags(ppm_part_ghosts) = .TRUE.
     ! the states for the properties have already been updated above
 
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_mapping_ghosts)
 
 SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
@@ -2010,14 +1767,11 @@ SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
     INTEGER                                               :: topoid
     INTEGER                                               :: Npart,del_part
     INTEGER,DIMENSION(:),POINTER                          :: list_del_parts
-    REAL(ppm_kind_double)                                 :: t0
-    CHARACTER(LEN = ppm_char)                   :: caller = 'particles_apply_bc'
     REAL(MK)                                              :: almostone
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER                  :: prop => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER                :: prop => NULL()
+
+    start_subroutine("particles_apply_bc")
+
     !-----------------------------------------------------------------
     !  checks
     !-----------------------------------------------------------------
@@ -2120,10 +1874,8 @@ SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
     !-----------------------------------------------------------------------
     xp => NULL()
     topo => NULL()
-    CALL substop(caller,t0,info)
 
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_apply_bc)
 
 SUBROUTINE DTYPE(part_move)(Pc,disp,info)
@@ -2144,16 +1896,13 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    REAL(ppm_kind_double)                                 :: t0
-    INTEGER                                               :: ip
-    CHARACTER(LEN = ppm_char)                 :: caller ='particles_move'
-    REAL(MK),DIMENSION(:,:),POINTER                       :: xp=>NULL()
-    TYPE(DTYPE(ppm_t_part_prop)),POINTER                  :: prop => NULL()
-    TYPE(DTYPE(ppm_t_operator)), POINTER                  :: op => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    INTEGER                                   :: ip
+    REAL(MK),DIMENSION(:,:),       POINTER    :: xp=>NULL()
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER    :: prop => NULL()
+    CLASS(ppm_t_operator_discr_),  POINTER    :: op => NULL()
+
+    start_subroutine("particle_move")
+
     !-----------------------------------------------------------------
     !  checks
     !-----------------------------------------------------------------
@@ -2182,22 +1931,18 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
         prop => Pc%props%next()
     ENDDO
 
-    op => Pc%ops%begin()
-    DO WHILE (ASSOCIATED(op))
-        op%flags(ppm_ops_iscomputed) = .FALSE.
-        op => Pc%ops%next()
-    ENDDO
+    IF (ASSOCIATED(Pc%ops)) THEN
+        op => Pc%ops%begin()
+        DO WHILE (ASSOCIATED(op))
+            op%flags(ppm_ops_iscomputed) = .FALSE.
+            op => Pc%ops%next()
+        ENDDO
+    ENDIF
 
     Pc%flags(ppm_part_partial) = .FALSE.
     Pc%flags(ppm_part_cartesian) = .FALSE.
 
-    !-----------------------------------------------------------------
-    !  Finalize
-    !-----------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_move)
 
 SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
@@ -2255,24 +2000,22 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     !!! uses a neighbour-finding algorithm that finds enough neighbours
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
-    CHARACTER(LEN = ppm_char)                 :: caller = 'part_comp_neighlist'
-    REAL(KIND(1.D0))                          :: t0,t1,t2
-    TYPE(ppm_t_topo), POINTER                 :: topo
+    REAL(KIND(1.D0))                          :: t1,t2
+    TYPE(ppm_t_topo), POINTER                 :: topo => NULL()
 #ifdef __WITH_KDTREE
-    TYPE(DTYPE(kdtree2)),POINTER              :: tree
+    TYPE(DTYPE(kdtree2)),POINTER              :: tree => NULL()
     TYPE(DTYPE(kdtree2_result)),ALLOCATABLE   :: results(:)
 #endif
     INTEGER                                   :: neigh_id,topoid
     INTEGER                                   :: nneighmin,nneighmax
-    TYPE(DTYPE(ppm_t_neighlist)), POINTER      :: Nlist
+    CLASS(DTYPE(ppm_t_neighlist)_), POINTER   :: Nlist => NULL()
     REAL(MK)                                  :: skin
 
     REAL(MK),DIMENSION(:),POINTER             :: rcp  => NULL()
-    TYPE(DTYPE(ppm_t_operator)), POINTER      :: op => NULL()
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    CLASS(ppm_t_operator_discr_),POINTER      :: op => NULL()
+
+    start_subroutine("part_comp_neighlist")
+
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
@@ -2580,13 +2323,15 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
 
         ! DC operators that do not use a xset neighbour list, if they exist, 
         ! are no longer valid (they depend on the neighbour lists)
-        op => Pc%ops%begin()
-        DO WHILE (ASSOCIATED(op))
-            IF (.NOT.op%flags(ppm_ops_interp)) THEN
-                op%flags(ppm_ops_iscomputed) = .FALSE.
-            ENDIF
-            op => Pc%ops%next()
-        ENDDO
+        IF (ASSOCIATED(Pc%ops)) THEN
+            op => Pc%ops%begin()
+            DO WHILE (ASSOCIATED(op))
+                IF (.NOT.op%flags(ppm_ops_interp)) THEN
+                    op%flags(ppm_ops_iscomputed) = .FALSE.
+                ENDIF
+                op => Pc%ops%next()
+            ENDDO
+        ENDIF
 
         
         Nlist => NULL()
@@ -2599,17 +2344,12 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
         ENDIF
 
     ENDIF do_something
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
 
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_neighlist)
 
 
-SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,nlid)
+SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     !!! Set a cutoff radius for a Particle set and update the
     !!! the ghostlayer sizes.
     !!! The cutoff radius concerns the default neighbor list, unless
@@ -2623,34 +2363,32 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,nlid)
     !!! cutoff radius
     INTEGER,                  INTENT(   OUT) :: info
     !!! return status. On success, 0
-    INTEGER,OPTIONAL,         INTENT(IN    ) :: nlid
-    !!! ID of the neighbor list for which this cutoff radius
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
+    !!! Neighbor list for which this cutoff radius
     !!! applies. Default is ppm_param_default_nlID
     
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
-    TYPE(DTYPE(ppm_t_neighlist)),     POINTER :: nl => NULL()
+    CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
     INTEGER                                   :: neigh_id 
-    CHARACTER(LEN = ppm_char)                 :: caller = 'part_set_cutoff'
-    REAL(KIND(1.D0))                          :: t0
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("part_set_cutoff")
 
     !-------------------------------------------------------------------------
     !  Set new cutoff
     !-------------------------------------------------------------------------
-    IF (PRESENT(nlid)) THEN
-        neigh_id = nlid
+    IF (PRESENT(NList)) THEN
+        check_true("Pc%neighs%has(NList)",&
+            "Neighbour list does not concern this particle set")
+        NList%cutoff = cutoff
     ELSE
-        neigh_id = ppm_param_default_nlID
+        nl => Pc%get_neighlist()
+        check_associated(nl,"Compute neighbour lists first")
+        nl%cutoff = cutoff
     ENDIF
-    
-    Pc%neighs%vec(neigh_id)%t%cutoff = cutoff
 
+    
     ! Compute ghostlayer sizes
     IF (cutoff.GT.Pc%ghostlayer) THEN
         !If the new cutoff is larger than the current ghostsize
@@ -2672,13 +2410,7 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,nlid)
         !no need to update states: ghosts are still ok.
     ENDIF
 
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_set_cutoff)
 
 SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
@@ -2699,16 +2431,13 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
-    CHARACTER(LEN = ppm_char)                 :: caller = 'part_global_index'
-    REAL(KIND(1.D0))                          :: t0
-
     INTEGER                        :: offset
     INTEGER                        :: i
     INTEGER, DIMENSION(:), POINTER :: wp
     !-------------------------------------------------------------------------
     !  Initialise
     !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("part_comp_global_index")
 
     IF (.NOT. Pc%flags(ppm_part_global_index)) THEN
         CALL Pc%create_prop(Pc%gi_id,ppm_type_int,info,name="GlobalIndex")
@@ -2724,20 +2453,8 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
     FORALL (i=1:Pc%Npart) wp(i) = offset + i !- 1 !uncomment if index from 0
     CALL Pc%set(wp,Pc%gi_id)
 
-    !-----------------------------------------------------------------------
-    ! Finalize
-    !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_comp_global_index)
-
-
-
-
-
-
 
 
 
@@ -2751,14 +2468,11 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
     INTEGER,               INTENT(OUT)    :: info
 
     INTEGER                               :: vec_size,npart,i
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_map_create'
-    CHARACTER(LEN=ppm_char)               :: name2
-    REAL(KIND(1.D0))                      :: t0
     TYPE(DTYPE(ppm_t_ptr_part_mapping)),DIMENSION(:),POINTER:: vec_tmp => NULL()
-    TYPE(DTYPE(ppm_t_part_mapping)),               POINTER  :: map => NULL()
+    CLASS(DTYPE(ppm_t_part_mapping)_),               POINTER:: map => NULL()
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
 
-    CALL substart(caller,t0,info)
+    start_subroutine("part_map_create")
 
     !Generate a new id (we should use templating here...)
     ASSOCIATE (cont => Pc%maps )
@@ -2810,29 +2524,17 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
     END ASSOCIATE
 
     IF (.NOT. ASSOCIATED(Pc%maps%vec(id)%t)) THEN
-        ALLOCATE(Pc%maps%vec(id)%t,STAT=info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                'allocating mapping pointer failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        ALLOCATE(DTYPE(ppm_t_part_mapping)::Pc%maps%vec(id)%t,STAT=info)
+            or_fail_alloc("Pc%maps%vec(id)%t")
     ENDIF
 
     map => Pc%maps%vec(id)%t
 
     ! Create the mapping
     CALL map%create(source_topoid,target_topoid,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,caller,&
-            'creating mapping failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail("map%create")
 
-    CALL substop(caller,t0,info)
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_map_create)
 
 SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
@@ -2841,10 +2543,7 @@ SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
     INTEGER,                INTENT(INOUT) :: id
     INTEGER,               INTENT(OUT)    :: info
 
-    CHARACTER(LEN=ppm_char)               :: caller = 'particle_map_destroy'
-    REAL(KIND(1.D0))                      :: t0
-
-    CALL substart(caller,t0,info)
+    start_subroutine("part_map_destroy")
 
     ASSOCIATE (cont => Pc%maps)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
@@ -2888,12 +2587,8 @@ SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
     END ASSOCIATE
 
 
-    CALL substop(caller,t0,info)
-
-    9999  CONTINUE
-
+    end_subroutine()
 END SUBROUTINE DTYPE(part_map_destroy)
-
 
 
 !DESTROY ENTRY
@@ -2901,18 +2596,63 @@ SUBROUTINE DTYPE(neigh_destroy)(neigh,info)
     CLASS(DTYPE(ppm_t_neighlist))      :: neigh
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
-    REAL(KIND(1.D0))                   :: t0
-    CHARACTER(LEN=ppm_char)            :: caller = 'neigh_destroy'
 
-    CALL substart(caller,t0,info)
+    start_subroutine("neigh_destroy")
 
     IF(ASSOCIATED(neigh%nvlist)) DEALLOCATE(neigh%nvlist,STAT=info)
     IF(ASSOCIATED(neigh%vlist))  DEALLOCATE(neigh%vlist,STAT=info)
 
-    CALL substop(caller,t0,info)
-
+    end_subroutine()
 END SUBROUTINE DTYPE(neigh_destroy)
 
+FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
+    !!! Returns true if the discretization of the field on this
+    !!! particle set has its ghosts up-to-date.
+    !!! If the Field argument is not present, then the function
+    !!! returns whether the particles themselves have their
+    !!! ghosts up-to-date.
+    CLASS(DTYPE(ppm_t_particles))                  :: this
+    CLASS(ppm_t_field_),OPTIONAL                   :: Field
+    LOGICAL                                        :: res
+
+    !Local variables
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER         :: prop => NULL()
+
+    start_function("has_ghosts")
+
+    IF (PRESENT(Field)) THEN
+        CALL this%get_prop(Field,prop,info)
+            or_fail("this field is not discretized on this particle set")
+        res = prop%flags(ppm_ppt_ghosts)
+    ELSE
+        res = this%flags(ppm_part_ghosts)
+    ENDIF
+
+    end_function()
+
+END FUNCTION
+
+SUBROUTINE DTYPE(get_prop)(this,Field,prop,info)
+    CLASS(DTYPE(ppm_t_particles))                  :: this
+    CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
+    INTEGER,                                INTENT(  OUT)  :: info
+
+    start_subroutine("get_prop")
+    
+    prop => this%props%begin()
+    loop: DO WHILE(ASSOCIATED(prop))
+        IF (ASSOCIATED(prop%field_ptr,Field)) THEN
+            EXIT loop
+        ENDIF
+        prop => this%props%next()
+    ENDDO loop
+
+    check_associated(prop,&
+        "Failed to find a discretization of this field for this particle set")
+
+    end_subroutine()
+END SUBROUTINE
 
 #undef DEFINE_MK
 

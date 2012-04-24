@@ -16,11 +16,11 @@ SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create_(this,fieldID,datatype,lda,Nmp,info)
+SUBROUTINE subpatch_data_create_(this,field,datatype,lda,Nmp,info)
     !!! Constructor for subdomain data 
-    IMPORT ppm_t_subpatch_data_
+    IMPORT ppm_t_subpatch_data_,ppm_t_field_
     CLASS(ppm_t_subpatch_data_)             :: this
-    INTEGER,                     INTENT(IN) :: fieldID
+    CLASS(ppm_t_field_),TARGET,  INTENT(IN) :: field
     INTEGER,                     INTENT(IN) :: datatype
     INTEGER,                     INTENT(IN) :: lda
     !!! number of data components per mesh node
@@ -138,10 +138,10 @@ FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
     !!! Returns status, 0 upon success
 END FUNCTION 
 !CREATE
-SUBROUTINE field_info_create_(this,fieldID,info)
-    IMPORT ppm_t_field_info_
+SUBROUTINE field_info_create_(this,field,info)
+    IMPORT ppm_t_field_info_,ppm_t_main_abstr
     CLASS(ppm_t_field_info_)              :: this
-    INTEGER,                  INTENT(IN ) :: fieldID
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN ) :: field
     INTEGER,                  INTENT(OUT) :: info
 END SUBROUTINE
 !DESTROY

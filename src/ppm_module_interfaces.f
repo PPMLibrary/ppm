@@ -1,5 +1,12 @@
 !minclude ppm_header(ppm_module_interfaces)
 
+#define __REAL 3 
+#define __COMPLEX 4 
+#define __INTEGER 5 
+#define __LONGINT 6 
+#define __LOGICAL 7 
+#define __CHAR 8 
+
 MODULE ppm_module_interfaces
 !!! Declares all data types 
 !!! The derived types are declared as abstract. They contain all the
@@ -61,6 +68,8 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_part_neighlists = 6
 INTEGER,PARAMETER,PUBLIC   :: ppm_part_global_index = 7
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_partflags = 7
 
+INTEGER,PARAMETER,PUBLIC   :: ppm_pdata_lflags = 3
+
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
 INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_ghosts = 1
@@ -70,12 +79,20 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_parts = 4
 INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_ghosts = 5
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_pptflags = 5
 
-!PPM internal parameters for default storage IDs of some DS.
-INTEGER, PARAMETER,PUBLIC :: ppm_param_default_nlID = 1
+!PPM internal parameters used only to access entries in the
+!particle's property data structure.
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_inc_ghosts = 1
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_interp = 2
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_iscomputed = 3
+INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 4
+INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 4
+
 
 !----------------------------------------------------------------------
 ! Global variables 
 !----------------------------------------------------------------------
+INTEGER                            :: ppm_nb_meshes    = 0
+INTEGER                            :: ppm_nb_part_sets = 0
 !----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
@@ -84,25 +101,164 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 !----------------------------------------------------------------------
 ! Type declaration
 !----------------------------------------------------------------------
+
+
+TYPE,ABSTRACT :: ppm_t_main_abstr
+    !!! Generic type for all main PPM types
+END TYPE
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
+    !!! Discretization kinds (Particles and Meshes)
+END TYPE
+
+
+TYPE,ABSTRACT :: ppm_t_discr_data
+    !!! Data (discretized on either Particles or Meshes)
+    INTEGER                                        :: data_type
+    !!! data type for this property
+    !!! One of:
+    !!!     ppm_param_...
+    !!! 
+    CLASS(ppm_t_main_abstr),POINTER                :: field_ptr => NULL()
+    !!! Pointer to the field for which this is a discretization
+    CHARACTER(LEN=ppm_char)                        :: name
+    !!! Name for this property
+    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags
+    !!! logical flags (applicable to either particle data or mesh data or both)
+    !!!    ppm_ppt_ghosts
+    !!!          true if ghost values are up-to-date
+    !!!    ppm_ppt_partial
+    !!!          true if there is a one-to-one mapping with the particles
+    !!!    ppm_ppt_reqput
+    !!!    ppm_ppt_map_parts
+    !!!          true if partial mappings are desired for this property (default)
+    !!!          (if false, the array for this property is not reallocated when
+    !!!           particles move to a different processor or when they are
+    !!!           interpolated from one distribution to another)
+    !!!    ppm_ppt_map_ghosts
+    !!!          true if ghost mappings are desired for this property (default)
+    INTEGER                                        :: lda
+    !!! leading dimension of the data array
+    !!!
+END TYPE
+
+
+TYPE,ABSTRACT ::  ppm_t_field_info_
+    !!! (Contained inside a ppm_t_equi_mesh, or ppm_t_particles_ 
+    !!! so relates to one specific mesh or particle set)
+    !!! Data structure containing info about a given field currently 
+    !!! discretized on this Mesh or Particle Set.
+    !!! 
+    !!! Contains pointers to the field itself as well as some
+    !!!  bookkeeping information 
+
+    INTEGER                               :: fieldID = 0
+    !!! ID of the field
+    CLASS(ppm_t_main_abstr),POINTER       :: field_ptr => NULL()
+    !!! pointer to a field that is discretized on this mesh
+
+    CONTAINS
+    PROCEDURE(field_info_create_), DEFERRED :: create
+    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
+END TYPE
+minclude define_abstract_collection_type(ppm_t_field_info_)
+
+TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
+    CONTAINS
+    PROCEDURE :: create  => field_info_create
+    PROCEDURE :: destroy => field_info_destroy
+END TYPE
+minclude define_collection_type(ppm_t_field_info)
+
+
+
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
+    !!! Generic differential operator
+    !!! (It only contains semantic information on the operator)
+    INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
+    !!! degree of each term in the linear combination of differential ops 
+    REAL(ppm_kind_double), DIMENSION(:), POINTER   :: coeffs =>NULL()
+    !!! array where the coefficients in linear combinations of 
+    !!! differential ops are stored
+    INTEGER                                        :: nterms
+    !!! number of terms
+    CHARACTER(LEN=ppm_char)                        :: name
+    !!! name of the vector-valued property
+
+    CONTAINS
+    PROCEDURE(operator_create_),       DEFERRED :: create
+    PROCEDURE(operator_destroy_),      DEFERRED :: destroy
+    PROCEDURE(operator_discretize_on_),DEFERRED :: discretize_on
+END TYPE
+minclude define_abstract_collection_type(ppm_t_operator_)
+
+
+TYPE,ABSTRACT :: ppm_t_operator_discr_
+    !!! discretized operator
+    CLASS(ppm_t_discr_kind),POINTER                :: discr_src => NULL()
+    !!! Pointer to the discretization (mesh or particles) that this operator
+    !!! takes data from
+    CLASS(ppm_t_discr_kind),POINTER                :: discr_to => NULL()
+    !!! Pointer to the discretization (mesh or particles) that this operator
+    !!! returns values on
+    INTEGER,DIMENSION(:),POINTER                   :: order => NULL()
+    !!! Order of approximation for each term of the differential operator
+    CLASS(ppm_t_operator_),POINTER                 :: op_ptr => NULL()
+
+    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
+    !!! logical flags
+    !!!    ppm_ops_inc_ghosts
+    !!!           true if the operator should be computed for ghost 
+    !!!           particles too.  Note that the resulting values 
+    !!!           will be wrong for the ghost particles
+    !!!           that have some neighbours outside the ghost layers. 
+    !!!           Default is false.
+    !!!    ppm_ops_interp
+    !!!          true if the op interpolates data from one set of particles
+    !!!    ppm_ops_iscomputed
+    !!!          true if the operator has been computed and is uptodate
+    !!!    ppm_ops_vector
+    !!!          true if each term represents a component (ie the result
+    !!!          of the operator should be a vector field, like for gradients)
+    !!!          false if the components are added up (like for the divergence)
+
+    CONTAINS
+    PROCEDURE(operator_discr_destroy_), DEFERRED :: destroy
+    !PROCEDURE(operator_discr_compute_), DEFERRED :: compute
+END TYPE
+minclude define_abstract_collection_type(ppm_t_operator_discr_)
+
+TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
+    CONTAINS
+    PROCEDURE :: create  => operator_discr_create
+    PROCEDURE :: destroy => operator_discr_destroy
+    PROCEDURE :: compute => operator_discr_compute
+END TYPE
+minclude define_collection_type(ppm_t_operator_discr)
+
+
+
 #define  DTYPE(a) a/**/_s
 #define  MK ppm_kind_single
 #define  _MK _ppm_kind_single
 #include "map/mapping_abstract_typedef.f"
+#include "operator/operator_discr_abstract_typedef.f"
+#include "part/particles_abstract_typedef.f"
+#undef  DTYPE
+#undef  MK
+#undef  _MK
+
 
 #define  DTYPE(a) a/**/_d
 #define  MK ppm_kind_double
 #define  _MK _ppm_kind_double
 #include "map/mapping_abstract_typedef.f"
-
-!#define  DTYPE(a) a/**/_s
-!#define  MK ppm_kind_single
-!#define  _MK _ppm_kind_single
-!#include "part/particles_abstract_typedef.f"
-
-!#define  DTYPE(a) a/**/_d
-!#define  MK ppm_kind_double
-!#define  _MK _ppm_kind_double
-!#include "part/particles_abstract_typedef.f"
+#include "operator/operator_discr_abstract_typedef.f"
+#include "part/particles_abstract_typedef.f"
+#undef  DTYPE
+#undef  MK
+#undef  _MK
 
 TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     !!! (Contained inside a ppm_t_field, so relates to one specific
@@ -115,6 +271,10 @@ TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
 
     INTEGER                                          :: meshID = 0
     !!! id of the mesh on which fieldID is discretized
+    CLASS(ppm_t_discr_kind),POINTER                  :: mesh_ptr => NULL()
+    !!! pointer to the mesh
+    CLASS(ppm_t_discr_data),POINTER                  :: discr_data => NULL()
+    !!! pointer to the data
     INTEGER                                          :: lda = 0
     !!! number of components (1 for scalar fields)
     INTEGER                                          :: p_idx = 0
@@ -131,10 +291,40 @@ TYPE,ABSTRACT ::  ppm_t_mesh_discr_info_
     PROCEDURE(mesh_discr_info_create_), DEFERRED :: create
     PROCEDURE(mesh_discr_info_destroy_),DEFERRED :: destroy
 END TYPE
-! Container for mesh_discr_info
 minclude define_abstract_collection_type(ppm_t_mesh_discr_info_)
 
-TYPE,ABSTRACT :: ppm_t_field_
+TYPE,ABSTRACT ::  ppm_t_part_discr_info_
+    !!! (Contained inside a ppm_t_field, so relates to one specific
+    !!!  field, denoted by fieldID)
+    !!! Data structure containing info about the current discretization
+    !!! of fieldID on a given particle set
+    !!! 
+    !!! Contains pointers to the data and bookkeeping information
+    !!! for a particle set on which fieldID has been discretized.
+
+    INTEGER                                          :: partID = 0
+    !!! id of the mesh on which fieldID is discretized
+    CLASS(ppm_t_discr_kind),POINTER                  :: part_ptr => NULL()
+    !!! pointer to the mesh
+    CLASS(ppm_t_discr_data),POINTER                  :: discr_data => NULL()
+    !!! pointer to the discretiztion data
+    INTEGER                                          :: lda = 0
+    !!! number of components (1 for scalar fields)
+    INTEGER                                          :: p_idx = 0
+    !!! Storage index for the property object which contains the data where
+    !!! fieldID has been discretized on this particle set.
+    !!! (A particle set stores data for several fields. Each set of data
+    !!!  is a property object.)
+    LOGICAL,DIMENSION(ppm_pdata_lflags)              :: flags = .FALSE.
+    !!! Booleans used to track the state of this discretization.
+
+    CONTAINS
+    PROCEDURE(part_discr_info_create_), DEFERRED :: create
+    PROCEDURE(part_discr_info_destroy_),DEFERRED :: destroy
+END TYPE
+minclude define_abstract_collection_type(ppm_t_part_discr_info_)
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     !!! Data structure for fields 
     !!! A field represents a mathematical concept (e.g. velocity, or
     !!! vorticity) and links to its discretized representation on meshes 
@@ -144,6 +334,11 @@ TYPE,ABSTRACT :: ppm_t_field_
     !!! global identifier 
     CHARACTER(LEN=ppm_char)                         :: name
     !!! string description
+    INTEGER                                         :: data_type = 0
+    !!! data type
+    !!! One of:
+    !!!     ppm_param_...
+    !!! 
     INTEGER                                         :: lda = 0
     !!! number of components (1 for scalar fields)
     !!!
@@ -151,17 +346,21 @@ TYPE,ABSTRACT :: ppm_t_field_
     CLASS(ppm_c_mesh_discr_info_),POINTER           :: M => NULL()
     !!! Collection of pointers to the data and bookkeeping information
     !!! for each mesh on which this field has been discretized.
-    ! CLASS(ppm_c_part_discr_info_),POINTER           :: P => NULL()
-    !    !!! Collection of pointers to the data and bookkeeping information
-    !    !!! for each particle set on which this field has been discretized.
+    CLASS(ppm_c_part_discr_info_),POINTER           :: P => NULL()
+        !!! Collection of pointers to the data and bookkeeping information
+        !!! for each particle set on which this field has been discretized.
 
     CONTAINS
     PROCEDURE(field_create_),       DEFERRED :: create
     PROCEDURE(field_destroy_),      DEFERRED :: destroy
+    PROCEDURE(field_set_rel_mesh_), DEFERRED :: set_rel_mesh
+    PROCEDURE(field_set_rel_part_), DEFERRED :: set_rel_part
+    GENERIC   :: set_rel => set_rel_mesh,set_rel_part
+    PROCEDURE(field_get_discr_),    DEFERRED :: get_discr
+    PROCEDURE(field_map_ghost_push_),    DEFERRED :: map_ghost_push
+    PROCEDURE(field_map_ghost_pop_),     DEFERRED :: map_ghost_pop
+    PROCEDURE(field_is_discretized_on_), DEFERRED :: is_discretized_on
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
-    PROCEDURE(field_set_rel_),      DEFERRED :: set_rel
-    PROCEDURE(field_map_ghost_push_),DEFERRED:: map_ghost_push
-    PROCEDURE(field_map_ghost_pop_),DEFERRED:: map_ghost_pop
 END TYPE ppm_t_field_
 ! Container for fields
 minclude define_abstract_collection_type(ppm_t_field_)
@@ -169,12 +368,10 @@ minclude define_abstract_collection_type(ppm_t_field_)
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
 !!----------------------------------------------------------------------
-TYPE,ABSTRACT :: ppm_t_subpatch_data_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_subpatch_data_
     !!! pointers to arrays where the data are stored
     INTEGER                                                :: fieldID = 0
     !!! ID of the field that is discretized here
-    INTEGER                                                :: datatype = 0
-    !!! Data type of the data being discretized
     INTEGER, DIMENSION(:,:), POINTER                       :: data_2d_i => NULL()
     !!! if the data is 2d int
     INTEGER, DIMENSION(:,:,:), POINTER                     :: data_3d_i => NULL()
@@ -298,25 +495,6 @@ TYPE ppm_t_mesh_maplist
     !!! recv buffer pointer
 END TYPE
 
-TYPE,ABSTRACT ::  ppm_t_field_info_
-    !!! (Contained inside a ppm_t_equi_mesh, so relates to one specific
-    !!!  field, denoted by meshID)
-    !!! Data structure containing info about a given field currently 
-    !!! discretized this Mesh
-    !!! 
-    !!! Contains pointers to the field itself as well as some
-    !!!  bookkeeping information 
-
-    INTEGER                                 :: fieldID = 0
-    !!! pointer to a field that is discretized on this mesh
-
-    CONTAINS
-    PROCEDURE(field_info_create_), DEFERRED :: create
-    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
-END TYPE
-! Container for field_info
-minclude define_abstract_collection_type(ppm_t_field_info_)
-
 TYPE ppm_t_subpatch_ptr_array
     INTEGER                                       :: size = 0
     INTEGER                                       :: nsubpatch = 0
@@ -324,7 +502,7 @@ TYPE ppm_t_subpatch_ptr_array
 END TYPE
 
 
-TYPE,ABSTRACT :: ppm_t_equi_mesh_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
    
     INTEGER                           :: ID = 0
@@ -451,118 +629,125 @@ INTERFACE
 #define  DTYPE(a) a/**/_d
 #include "map/mapping_interfaces.f"
 
-!#define  DTYPE(a) a/**/_s
-!#define  MK ppm_kind_single
-!#include "part/particles_interfaces.f"
+#define  DTYPE(a) a/**/_s
+#define  MK ppm_kind_single
+#include "operator/dcop_interfaces.f"
+#include "part/particles_interfaces.f"
+#undef  DTYPE
+#undef  MK
 
-!#define  DTYPE(a) a/**/_d
-!#define  MK ppm_kind_double
-!#include "part/particles_interfaces.f"
+#define  DTYPE(a) a/**/_d
+#define  MK ppm_kind_double
+#include "operator/dcop_interfaces.f"
+#include "part/particles_interfaces.f"
+#undef  DTYPE
+#undef  MK
 
-!#define DTYPE(a) a/**/_s
-!#define __KIND __SINGLE_PRECISION
-!#define __DIM 1
-!#define __TYPE INTEGER
-!#define __MYTYPE __INTEGER
-!#define DATANAME data_1d_i
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE INTEGER(ppm_kind_int64)
-!#define __MYTYPE __LONGINT
-!#define DATANAME data_1d_li
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE REAL(ppm_kind_single)
-!#define __MYTYPE __REAL
-!#define DATANAME data_1d_r
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE COMPLEX(ppm_kind_single)
-!#define __MYTYPE __COMPLEX
-!#define DATANAME data_1d_c
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE LOGICAL
-!#define __MYTYPE __LOGICAL
-!#define DATANAME data_1d_l
-!#include "part/particles_get_interfaces.f"
-!#undef  __DIM
+#define DTYPE(a) a/**/_s
+#define __KIND __SINGLE_PRECISION
+#define __DIM 1
+#define __TYPE INTEGER
+#define __MYTYPE __INTEGER
+#define DATANAME data_1d_i
+#include "part/particles_get_interfaces.f"
+#define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
+#define DATANAME data_1d_li
+#include "part/particles_get_interfaces.f"
+#define __TYPE REAL(ppm_kind_single)
+#define __MYTYPE __REAL
+#define DATANAME data_1d_r
+#include "part/particles_get_interfaces.f"
+#define __TYPE COMPLEX(ppm_kind_single)
+#define __MYTYPE __COMPLEX
+#define DATANAME data_1d_c
+#include "part/particles_get_interfaces.f"
+#define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
+#define DATANAME data_1d_l
+#include "part/particles_get_interfaces.f"
+#undef  __DIM
 
-!#define __DIM 2
-!#define __TYPE INTEGER
-!#define __MYTYPE __INTEGER
-!#define DATANAME data_2d_i
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE INTEGER(ppm_kind_int64)
-!#define __MYTYPE __LONGINT
-!#define DATANAME data_2d_li
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE REAL(ppm_kind_single)
-!#define __MYTYPE __REAL
-!#define DATANAME data_2d_r
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE COMPLEX(ppm_kind_single)
-!#define __MYTYPE __COMPLEX
-!#define DATANAME data_2d_c
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE LOGICAL
-!#define __MYTYPE __LOGICAL
-!#define DATANAME data_2d_l
-!#include "part/particles_get_interfaces.f"
-!#undef  __DIM
-!#undef DTYPE
-!#undef __KIND
+#define __DIM 2
+#define __TYPE INTEGER
+#define __MYTYPE __INTEGER
+#define DATANAME data_2d_i
+#include "part/particles_get_interfaces.f"
+#define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
+#define DATANAME data_2d_li
+#include "part/particles_get_interfaces.f"
+#define __TYPE REAL(ppm_kind_single)
+#define __MYTYPE __REAL
+#define DATANAME data_2d_r
+#include "part/particles_get_interfaces.f"
+#define __TYPE COMPLEX(ppm_kind_single)
+#define __MYTYPE __COMPLEX
+#define DATANAME data_2d_c
+#include "part/particles_get_interfaces.f"
+#define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
+#define DATANAME data_2d_l
+#include "part/particles_get_interfaces.f"
+#undef  __DIM
+#undef DTYPE
+#undef __KIND
 
-!#define DTYPE(a) a/**/_d
-!#define __KIND __DOUBLE_PRECISION
-!#define __DIM 1
-!#define __TYPE INTEGER
-!#define __MYTYPE __INTEGER
-!#define DATANAME data_1d_i
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE INTEGER(ppm_kind_int64)
-!#define __MYTYPE __LONGINT
-!#define DATANAME data_1d_li
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE REAL(ppm_kind_double)
-!#define __MYTYPE __REAL
-!#define DATANAME data_1d_r
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE COMPLEX(ppm_kind_double)
-!#define __MYTYPE __COMPLEX
-!#define DATANAME data_1d_c
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE LOGICAL
-!#define __MYTYPE __LOGICAL
-!#define DATANAME data_1d_l
-!#include "part/particles_get_interfaces.f"
-!#undef  __DIM
+#define DTYPE(a) a/**/_d
+#define __KIND __DOUBLE_PRECISION
+#define __DIM 1
+#define __TYPE INTEGER
+#define __MYTYPE __INTEGER
+#define DATANAME data_1d_i
+#include "part/particles_get_interfaces.f"
+#define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
+#define DATANAME data_1d_li
+#include "part/particles_get_interfaces.f"
+#define __TYPE REAL(ppm_kind_double)
+#define __MYTYPE __REAL
+#define DATANAME data_1d_r
+#include "part/particles_get_interfaces.f"
+#define __TYPE COMPLEX(ppm_kind_double)
+#define __MYTYPE __COMPLEX
+#define DATANAME data_1d_c
+#include "part/particles_get_interfaces.f"
+#define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
+#define DATANAME data_1d_l
+#include "part/particles_get_interfaces.f"
+#undef  __DIM
 
-!#define __DIM 2
-!#define __TYPE INTEGER
-!#define __MYTYPE __INTEGER
-!#define DATANAME data_2d_i
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE INTEGER(ppm_kind_int64)
-!#define __MYTYPE __LONGINT
-!#define DATANAME data_2d_li
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE REAL(ppm_kind_double)
-!#define __MYTYPE __REAL
-!#define DATANAME data_2d_r
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE COMPLEX(ppm_kind_double)
-!#define __MYTYPE __COMPLEX
-!#define DATANAME data_2d_c
-!#include "part/particles_get_interfaces.f"
-!#define __TYPE LOGICAL
-!#define __MYTYPE __LOGICAL
-!#define DATANAME data_2d_l
-!#include "part/particles_get_interfaces.f"
-!#undef  __DIM
-!#undef DTYPE
-!#undef __KIND
+#define __DIM 2
+#define __TYPE INTEGER
+#define __MYTYPE __INTEGER
+#define DATANAME data_2d_i
+#include "part/particles_get_interfaces.f"
+#define __TYPE INTEGER(ppm_kind_int64)
+#define __MYTYPE __LONGINT
+#define DATANAME data_2d_li
+#include "part/particles_get_interfaces.f"
+#define __TYPE REAL(ppm_kind_double)
+#define __MYTYPE __REAL
+#define DATANAME data_2d_r
+#include "part/particles_get_interfaces.f"
+#define __TYPE COMPLEX(ppm_kind_double)
+#define __MYTYPE __COMPLEX
+#define DATANAME data_2d_c
+#include "part/particles_get_interfaces.f"
+#define __TYPE LOGICAL
+#define __MYTYPE __LOGICAL
+#define DATANAME data_2d_l
+#include "part/particles_get_interfaces.f"
+#undef  __DIM
+#undef DTYPE
+#undef __KIND
 
 #include "field/field_interfaces.f"
 
 #include "mesh/mesh_interfaces.f"
 
+#include "operator/operator_interfaces.f"
 
 !----------------------------------------------------------------------
 ! Interfaces for collections type-bound procedures
@@ -570,11 +755,84 @@ INTERFACE
 minclude define_abstract_collection_interfaces(ppm_t_equi_mesh_)
 minclude define_abstract_collection_interfaces(ppm_t_A_subpatch_)
 minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_info_)
+minclude define_abstract_collection_interfaces(ppm_t_part_discr_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_)
+minclude define_abstract_collection_interfaces(ppm_t_operator_)
+minclude define_abstract_collection_interfaces(ppm_t_operator_discr_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 
 END INTERFACE
+
+CONTAINS
+minclude define_collection_procedures(ppm_t_field_info)
+minclude define_collection_procedures(ppm_t_operator_discr)
+
+!CREATE
+SUBROUTINE field_info_create(this,field,info)
+    !!! Constructor for subdomain data data structure
+    CLASS(ppm_t_field_info)                    :: this
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)  :: field
+    INTEGER,                  INTENT(OUT)      :: info
+    start_subroutine("field_info_create")
+
+    SELECT TYPE(field)
+    CLASS IS (ppm_t_field_)
+        this%fieldID = field%ID
+        this%field_ptr => field
+    CLASS DEFAULT
+        fail("Wrong type. Argument should be a field")
+    END SELECT
+
+    end_subroutine()
+END SUBROUTINE field_info_create
+!DESTROY
+SUBROUTINE field_info_destroy(this,info)
+    !!! Destructor for subdomain data data structure
+    CLASS(ppm_t_field_info)            :: this
+    INTEGER,               INTENT(OUT) :: info
+    start_subroutine("field_info_destroy")
+
+    this%fieldID = 0
+    this%field_ptr => NULL()
+
+    end_subroutine()
+END SUBROUTINE field_info_destroy
+
+!DESTROY (DUMMY ROUTINE)
+SUBROUTINE operator_discr_create(this,Part_src,Part_to,info,&
+        nterms,with_ghosts,vector,interp,order)
+    CLASS(ppm_t_operator_discr)        :: this
+    CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_src
+    CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_to
+    INTEGER,                INTENT(OUT)   :: info
+    INTEGER,                INTENT(IN)    :: nterms
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: with_ghosts
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: vector
+    LOGICAL,OPTIONAL,       INTENT(IN   ) :: interp
+    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN):: order
+    start_subroutine("operator_discr_create")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
+!DESTROY (DUMMY ROUTINE)
+SUBROUTINE operator_discr_destroy(this,info)
+    CLASS(ppm_t_operator_discr)        :: this
+    INTEGER,               INTENT(OUT) :: info
+    start_subroutine("operator_discr_destroy")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
+!COMPUTE (DUMMY ROUTINE)
+SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
+    CLASS(ppm_t_operator_discr)                  :: this
+    CLASS(ppm_t_field_),TARGET,INTENT(IN)    :: Field_src
+    CLASS(ppm_t_field_),TARGET,INTENT(INOUT) :: Field_to
+    INTEGER,                       INTENT(OUT)   :: info
+    start_subroutine("operator_discr_compute")
+        fail("this dummy routine should not be called")
+    end_subroutine()
+END SUBROUTINE
 
 END MODULE ppm_module_interfaces

@@ -36,20 +36,25 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: destroy => DTYPE(part_destroy)
     PROCEDURE     :: initialize => DTYPE(part_initialize)
     PROCEDURE     :: del_parts => DTYPE(part_del_parts)
+    PROCEDURE     :: set_rel   => DTYPE(part_set_rel)
 
-    PROCEDURE     :: create_prop => DTYPE(part_prop_create)
+    PROCEDURE     :: create_prop  => DTYPE(part_prop_create)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
     PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
+    PROCEDURE     :: get_prop     => DTYPE(get_prop)
 
     PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
     PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
     PROCEDURE     :: destroy_neighlist => DTYPE(part_neigh_destroy)
     PROCEDURE     :: comp_neighlist => DTYPE(part_neighlist)
-!    PROCEDURE     :: get_nvlist => DTYPE(get_nvlist)
-!    PROCEDURE     :: get_vlist => DTYPE(get_vlist)
+    PROCEDURE     :: get_nvlist => DTYPE(get_nvlist)
+    PROCEDURE     :: get_vlist => DTYPE(get_vlist)
+    PROCEDURE     :: get_neighlist => DTYPE(get_neighlist)
+    PROCEDURE     :: has_neighlist => DTYPE(has_neighlist)
+    PROCEDURE     :: has_ghosts => DTYPE(has_ghosts)
 
-!    PROCEDURE     :: create_op => DTYPE(part_op_create)
-!    PROCEDURE     :: destroy_op => DTYPE(part_op_destroy)
+!    PROCEDURE     :: create_op  => DTYPE(part_dcop_create)
+!    PROCEDURE     :: destroy_op => DTYPE(part_dcop_destroy)
 !    PROCEDURE     :: DTYPE(ppm_dcop_compute2d)
 !    PROCEDURE     :: DTYPE(ppm_dcop_compute3d)
 !    PROCEDURE     :: comp_op => DTYPE(part_op_compute)
@@ -71,8 +76,29 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
 
     PROCEDURE     :: get_xp => DTYPE(get_xp)
     PROCEDURE     :: set_xp => DTYPE(set_xp)
-    PROCEDURE     :: get_dcop => DTYPE(get_dcop)
-    PROCEDURE     :: set_dcop => DTYPE(set_dcop)
+
+    PROCEDURE     :: DTYPE(data_1d_i_get_field)
+    PROCEDURE     :: DTYPE(data_2d_i_get_field)
+    PROCEDURE     :: DTYPE(data_1d_li_get_field)
+    PROCEDURE     :: DTYPE(data_2d_li_get_field)
+    PROCEDURE     :: DTYPE(data_1d_r_get_field)
+    PROCEDURE     :: DTYPE(data_2d_r_get_field)
+    PROCEDURE     :: DTYPE(data_1d_c_get_field)
+    PROCEDURE     :: DTYPE(data_2d_c_get_field)
+    PROCEDURE     :: DTYPE(data_1d_l_get_field)
+    PROCEDURE     :: DTYPE(data_2d_l_get_field)
+
+    PROCEDURE     :: DTYPE(data_1d_i_set_field)
+    PROCEDURE     :: DTYPE(data_2d_i_set_field)
+    PROCEDURE     :: DTYPE(data_1d_li_set_field)
+    PROCEDURE     :: DTYPE(data_2d_li_set_field)
+    PROCEDURE     :: DTYPE(data_1d_r_set_field)
+    PROCEDURE     :: DTYPE(data_2d_r_set_field)
+    PROCEDURE     :: DTYPE(data_1d_c_set_field)
+    PROCEDURE     :: DTYPE(data_2d_c_set_field)
+    PROCEDURE     :: DTYPE(data_1d_l_set_field)
+    PROCEDURE     :: DTYPE(data_2d_l_set_field)
+
     PROCEDURE     :: DTYPE(data_1d_i_get)
     PROCEDURE     :: DTYPE(data_2d_i_get)
     PROCEDURE     :: DTYPE(data_1d_li_get)
@@ -94,28 +120,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: DTYPE(data_2d_c_set)
     PROCEDURE     :: DTYPE(data_1d_l_set)
     PROCEDURE     :: DTYPE(data_2d_l_set)
-!    GENERIC       :: get =>  &
-!        DTYPE(data_1d_i_get),&
-!        DTYPE(data_2d_i_get),&
-!        DTYPE(data_1d_li_get),&
-!        DTYPE(data_2d_li_get),&
-!        DTYPE(data_1d_r_get),&
-!        DTYPE(data_2d_r_get),&
-!        DTYPE(data_1d_c_get),&
-!        DTYPE(data_2d_c_get),&
-!        DTYPE(data_1d_l_get),&
-!        DTYPE(data_2d_l_get)
-!    GENERIC       :: set =>  &
-!        DTYPE(data_1d_i_set),&
-!        DTYPE(data_2d_i_set),&
-!        DTYPE(data_1d_li_set),&
-!        DTYPE(data_2d_li_set),&
-!        DTYPE(data_1d_r_set),&
-!        DTYPE(data_2d_r_set),&
-!        DTYPE(data_1d_c_set),&
-!        DTYPE(data_2d_c_set),&
-!        DTYPE(data_1d_l_set),&
-!        DTYPE(data_2d_l_set)
 
     PROCEDURE       :: create_map => DTYPE(part_map_create)
     PROCEDURE       :: destroy_map => DTYPE(part_map_destroy)
@@ -167,22 +171,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: DTYPE(data_2d_c_check)
     PROCEDURE     :: DTYPE(data_1d_l_check)
     PROCEDURE     :: DTYPE(data_2d_l_check)
-    !NOTE: for some reason, this does not work
-    ! (ifort crashes at compile time if there is a call
-    !  to this%checktype(wp,wpid,info) )
-    ! One can call the not-overloaded procedures directly,
-    ! but thats very annoying...
-!    GENERIC       :: checktype => & 
-!        DTYPE(data_1d_i_check),&
-!        DTYPE(data_2d_i_check),&
-!        DTYPE(data_1d_li_check),&
-!        DTYPE(data_2d_li_check),&
-!        DTYPE(data_1d_r_check),&
-!        DTYPE(data_2d_r_check),&
-!        DTYPE(data_1d_c_check),&
-!        DTYPE(data_2d_c_check),&
-!        DTYPE(data_1d_l_check),&
-!        DTYPE(data_2d_l_check)
 
 END TYPE DTYPE(ppm_t_particles)
 !----------------------------------------------------------------------
@@ -191,16 +179,69 @@ END TYPE DTYPE(ppm_t_particles)
 minclude define_collection_type(DTYPE(ppm_t_particles))
 
 
-TYPE,EXTENDS(DTYPE(ppm_t_sop)_) :: DTYPE(ppm_t_sop)
+!TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
+!    !    CONTAINS
+!    !        PRIVATE
+!    !        PROCEDURE     :: create => DTYPE(sop_part_create)
+!END TYPE
+TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
+    !!! an extension of the Particle set data structure
+    !!! for Self-Organizing Particles
+
+    INTEGER                                         :: nn_sq_id
+    !!! index of the wps array where nearest-neighbour distances are stored
+
+    ! Adaptive particles
+    LOGICAL                                         :: adaptive
+    !!! true if the particles have their own cutoff radii
+    !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
+    INTEGER                                         :: rcp_id
+    !!! index of the wps array where the cutoff radius is stored
+    INTEGER                                         :: D_id
+    !!! index of the wps array where D is stored
+    INTEGER                                         :: Dtilde_id
+    !!! index of the wps array where D_tilde is stored
+    INTEGER                                         :: adapt_wpid
+    !!! index of the wps array where is stored the property on 
+    !!! which adaptation is based 
+    !!! default is first 1d property that is not rcp_id (if any)
+    !!! otherwise, it is rcp_id
+    !    INTEGER                                         :: adapt_wpgradid
+    !    !!! index of the wpv array where is stored the gradient of the property 
+    !    !!! on which adaptation is based (if needed)
+    LOGICAL                                         :: level_set
+    !!! true if particles carry a level-set function
+    INTEGER                                         :: level_id
+    !!! index of the wps array where the level-set is stored
+    !    INTEGER                                         :: level_old_id
+    !!! index of the wps array where the level-set is backed up before adapt
+
+    INTEGER                                         :: level_grad_id
+    !!! index of the wps array where the gradient of the level-set is stored
+    !    INTEGER                                         :: level_grad_old_id
+    !!! index of the wps array where the gradient of the level-set 
+    !!! is backed up before adapt
+
+
+    ! List of IDs of other adaptive Particle sets
+    TYPE(idList)                                    :: set_aPc
+
+
+    ! Anisotropic particles
+    LOGICAL                                         :: anisotropic
+    !!! true if the particles have their own cutoff radii
+    !!! in this case, the G tensor will be stored in wpv(G_id)%vec
+    INTEGER                                         :: G_id
+    !!! index where G is stored
+
     !    CONTAINS
     !        PRIVATE
     !        PROCEDURE     :: create => DTYPE(sop_part_create)
-END TYPE
-!----------------------------------------------------------------------
-! Container for adaptive Particle sets
-!----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_sop))
+
+
+END TYPE DTYPE(ppm_t_sop)
 
 #undef   MK
 #undef   _MK
 #undef   DTYPE
+#undef   CTYPE
