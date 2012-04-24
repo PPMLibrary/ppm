@@ -53,10 +53,22 @@ end module #{@suite_name}_mod
     end
 
     def top_wrapper
-      puts <<-TOP
-module #{@suite_name}_fun
+      puts "module #{@suite_name}_fun"
 
- use #{ @wrap_with_module ? @suite_name+'_mod' : @suite_name }
+      #FIXME (we want to check if the .fun file is a ppm module file
+      # in which case we assume that we want to USE that module)
+      # Otherwise, we do nothing and no module is loaded by default.
+      if File.exists?("../../#{@suite_name}.f")
+          puts "use #{ @wrap_with_module ? @suite_name+'_mod' : @suite_name }"
+      end
+
+      funit_contents = @suite_content.split("\n")
+      @funit_total_lines = funit_contents.length
+      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
+        puts line
+      end
+
+      puts <<-TOP
 
  implicit none
 
@@ -81,6 +93,10 @@ module #{@suite_name}_fun
     def expand
       funit_contents = @suite_content.split("\n")
       @funit_total_lines = funit_contents.length
+
+      while (line = funit_contents.shift) && line !~ /^\s*#.*/i
+      end
+      funit_contents.unshift line
 
       while (line = funit_contents.shift) && line !~ KEYWORDS
         puts line

@@ -42,6 +42,7 @@
 #define __VFIELD                   10
 
     MODULE ppm_module_map_field
+#ifdef COMPILEME
       !!! This module contains interfaces to the field mapping routines
       !!! and all data structures and definitions that
       !!! are `PRIVATE` to the mesh routines.
@@ -59,6 +60,7 @@
          USE ppm_module_map_field_global
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_data_mesh
+         USE ppm_module_mesh_typedef
          PRIVATE :: ppm_kind_single,ppm_kind_double
       
          !----------------------------------------------------------------------
@@ -439,4 +441,5 @@
 #include "map/ppm_map_field_send_alltoall.f"
 #endif
 
+#endif
       END MODULE ppm_module_map_field

@@ -38,6 +38,7 @@
 #define __SCA              6
 
       MODULE ppm_module_rmsh
+#ifdef COMPILEME
       !!! This module contains all interfaces to the remeshing routines. For
       !!! convenience all interpolation modules are `USE`d by this module.
       !!! Therefore its not necessary to include `ppm_module_interp_*` in the
@@ -47,6 +48,8 @@
          !----------------------------------------------------------------------
          USE ppm_module_interp_m2p
          USE ppm_module_interp_p2m
+         USE ppm_module_topo_typedef
+         USE ppm_module_mesh_typedef
          
         !-----------------------------------------------------------------------
         !  Define interface ppm_rmsh_comp_weights
@@ -252,4 +255,6 @@
 #undef  __KIND        
 
 
+#endif
       END MODULE ppm_module_rmsh
+

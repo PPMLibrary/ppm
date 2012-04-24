@@ -38,7 +38,8 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
+      USE ppm_module_topo_typedef
+      USE ppm_module_mesh_typedef
       USE ppm_module_mesh_store
       USE ppm_module_alloc
       USE ppm_module_error
@@ -103,7 +104,10 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
       topo => ppm_topo(topoid)%t
-      p_mesh => topo%mesh(template_meshid)
+      SELECT TYPE (t => ppm_mesh%vec(template_meshid)%t)
+      TYPE IS (ppm_t_equi_mesh)
+          p_mesh => t
+      END SELECT
       !-------------------------------------------------------------------------
       !  Allocate memory for existing mesh data
       !-------------------------------------------------------------------------

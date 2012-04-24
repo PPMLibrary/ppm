@@ -43,7 +43,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_typedef
+      USE ppm_module_topo_typedef
       USE ppm_module_topo_alloc
       IMPLICIT NONE
       !-------------------------------------------------------------------------
@@ -111,7 +111,6 @@
       outtopo%nneighproc  = intopo%nneighproc
       outtopo%isoptimized = intopo%isoptimized
       outtopo%ncommseq    = intopo%ncommseq
-      outtopo%max_meshid  = intopo%max_meshid
       
       !-------------------------------------------------------------------------
       !  Copy the boundary conditions
@@ -290,21 +289,6 @@
           ENDDO
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Copy the mesh definitions
-      !-------------------------------------------------------------------------
-      IF (intopo%max_meshid .GT. 0) THEN
-          ALLOCATE(outtopo%mesh(intopo%max_meshid),STAT=info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &
-         &        'mesh definitions OUTTOPO%MESH',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          DO i=1,intopo%max_meshid
-              outtopo%mesh(i) = intopo%mesh(i)
-          ENDDO
-      ENDIF
       
       !-------------------------------------------------------------------------
       !  Set outtopo to defined

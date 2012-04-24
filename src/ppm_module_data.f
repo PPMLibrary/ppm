@@ -38,7 +38,8 @@
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_typedef
+         INCLUDE 'ppm_param.h'
+!         USE ppm_module_typedef
 
          !----------------------------------------------------------------------
          !  Global TYPEs
@@ -117,8 +118,9 @@
          !!! ghost offset factor
          !!!
          !!! This buffer is needed for the special case of symmetric and
-         !!! antisymmetric boundary conditions, because the offset is not a
+         !!! antisymmetric boundary conditions, because the offset is not a 
          !!! simple constant to be added to the particle coordinate
+
          REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd => NULL()
          !!! ghost offset (double precison)
          !!!
@@ -140,7 +142,7 @@
          !!! ghost offset factor
          !!!
          !!! This buffer is needed for the special case of symmetric and
-         !!! antisymmetric boundary conditions, because the offset is not a
+         !!! antisymmetric boundary conditions, because the offset is not a 
          !!! simple constant to be added to the particle coordinate
 
          
@@ -169,20 +171,6 @@
          INTEGER :: ppm_dim
          !!! Dimensionality
 
-         !----------------------------------------------------------------------
-         ! Topologies
-         !----------------------------------------------------------------------
-         TYPE(ppm_ptr_t_topo), DIMENSION(:), POINTER :: ppm_topo => NULL()
-         !!! the PPM topologies array
-
-         INTEGER :: ppm_next_avail_topo
-         !!! ID of the next available topology to be used by
-         !!! ppm_topo_alloc.
-         !!!
-         !!! At initialization this is set to ppm_param_undefined              +
-         !!! If it points within (1,SIZE(ppm_topo)) this slot is (re)used to
-         !!! store the new topology, if it is > SIZE(ppm_topo) then the ppm_topo
-         !!! array must be extended
          
          !----------------------------------------------------------------------
          !  Debugging

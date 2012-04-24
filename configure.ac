@@ -127,8 +127,10 @@ if test "x${use_mpi}" = xyes; then
 fi
 AC_LANG([C])
 
+AC_SUBST(MPI_ENABLED,["false"])
 if test "x${use_mpi}" = xyes; then
     AC_SUBST(FUNIT_FLAGS,["--with-mpi"])
+    AC_SUBST(MPI_ENABLED,["true"])
 fi
 
 # Checks for libraries and set preprocessing flags
@@ -224,6 +226,10 @@ AC_ARG_ENABLE([no-microinstr],[AS_HELP_STRING([--enable-no-microinstr],
   [AC_SUBST(CPPFLAGS,["$CPPFLAGS -D__NOMICROINSTRUCTIONS"])]
 #  [echo "#define __NOMICROINSTRUCTIONS" >> ./src/ppm_define.h]
 )
+    
+if test "x${vendor}" = xgnu; then
+        AC_SUBST(FCFLAGS,["$FCFLAGS -ffree-line-length-none"])
+fi
 
 dev_compile=no
 AC_ARG_ENABLE([dev],[AS_HELP_STRING([--enable-dev],
@@ -255,7 +261,6 @@ else
     if test "x${vendor}" = xintel; then
         AC_SUBST(FCFLAGS,["$FCFLAGS -diag-disable 5462"])
     fi
-
 fi
 
 # set src as the default srcdir
@@ -265,5 +270,5 @@ fi
 
   
 # Generate Makefiles
-AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([Makefile settings])
 AC_OUTPUT

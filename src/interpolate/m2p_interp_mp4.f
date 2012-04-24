@@ -76,7 +76,6 @@
       USE ppm_module_data
       USE ppm_module_data_rmsh
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_write
       IMPLICIT NONE
 
@@ -241,7 +240,10 @@
       CALL substart('m2p_interp_mp4',t0,info)
 
       topo => ppm_topo(topoid)%t
-      mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
+      TYPE IS (ppm_t_equi_mesh)
+          mesh => t
+      END SELECT
 
       istart => mesh%istart
 

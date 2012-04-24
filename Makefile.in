@@ -95,7 +95,7 @@ $(TARGET): $(OBJECTS)
 # Implicit rules
 CPPCMD = $(CPP) $(CPPFLAGS) $(CPPINCLS) -traditional-cpp -P $< $@
 $(OBJ_DIR)/%.f : $(SRC_DIR)/%.f
-	@printf "  CPP  %-42s" $<; \
+	@printf "  PPM  %-42s" $<; \
 	$(RUN) "$(CPPCMD)" $(LOG) "Preprocessing Error"
 
 ENV = CPP="$(CPP)" SED="$(SED)" INC="$(CPPINCLS)" DEFINE="$(CPPFLAGS)" OBJDIR="$(OBJ_DIR)" SRCDIR="$(SRC_DIR)"

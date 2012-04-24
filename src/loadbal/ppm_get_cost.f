@@ -44,7 +44,6 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -228,12 +227,14 @@
         !-------------------------------------------------------------------------
         !  set pointer for mesh
         !-------------------------------------------------------------------------
+        !FIXME: we have to account for the data stored on the mesh, etc...
+        ! should be doable with the new DS
         ndummy(1:3,1) = 0
-        IF (meshid .GT. 0) THEN
-            nnodes => topo%mesh(meshid)%nnodes
-        ELSE
+        !IF (meshid .GT. 0) THEN
+            !nnodes => topo%mesh(meshid)%nnodes
+        !ELSE
             nnodes => ndummy
-        ENDIF
+        !ENDIF
         !-------------------------------------------------------------------------
         !  Determine the subdomain costs either based on particles or mesh
         !  points

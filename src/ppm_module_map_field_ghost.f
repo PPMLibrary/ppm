@@ -28,6 +28,7 @@
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_map_field_ghost
+#ifdef COMPILEME
       !!! This module contains interfaces to the field ghost mapping routines
       !!! and all data structures and definitions that
       !!! are `PRIVATE` to the mesh routines.
@@ -37,6 +38,11 @@
       !!! (the data living on the meshes). Several fields can use the
       !!! same mesh. Meshes are defined as per-topology ppm-internal types,
       !!! whereas fields are user-provided arrays.
+         !----------------------------------------------------------------------
+         !  Modules
+         !----------------------------------------------------------------------
+         USE ppm_module_mesh_typedef
+         USE ppm_module_topo_typedef
          !----------------------------------------------------------------------
          !  Work memory
          !----------------------------------------------------------------------
@@ -85,4 +91,5 @@
 
 #include "map/ppm_map_field_ghost_put.f"
 
+#endif
       END MODULE ppm_module_map_field_ghost

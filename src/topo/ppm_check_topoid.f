@@ -43,6 +43,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_write
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------

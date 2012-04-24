@@ -1,0 +1,14 @@
+
+# basic settings
+
+conf.mpi               = @MPI_ENABLED@
+conf.ppm.build.ldflags = "@LDFLAGS@"
+conf.build.compiler    = "@FC@"
+conf.build.sed         = "@SED@"
+
+conf.ppm.types.all     = [:integer, :long, :real, :double, :logical, :char, :complex, :double_complex]
+conf.ppm.types.real    = [:single, :double]
+conf.ppm.types.integer = [:integer, :long]
+conf.ppm.types.complex = [:complex, :double_complex]
+
+conf.ppm.dims = [2,3]

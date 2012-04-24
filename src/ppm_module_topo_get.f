@@ -35,6 +35,7 @@
 
       MODULE ppm_module_topo_get
       !!! This module provides the routines to read an internally stored topology.
+         USE ppm_module_topo_typedef
          !----------------------------------------------------------------------
          !  Define interfaces to topology store routine
          !----------------------------------------------------------------------
@@ -47,9 +48,9 @@
             MODULE PROCEDURE ppm_topo_get_decomp_d
          END INTERFACE
          
-         INTERFACE ppm_topo_get_meshinfo
-            MODULE PROCEDURE ppm_topo_get_meshinfo
-         END INTERFACE
+!         INTERFACE ppm_topo_get_meshinfo
+!            MODULE PROCEDURE ppm_topo_get_meshinfo
+!         END INTERFACE
 
          !----------------------------------------------------------------------
          !  include the source
@@ -66,6 +67,6 @@
 #include "topo/ppm_topo_get_decomp.f"
 #undef __KIND
 
-#include "topo/ppm_topo_get_meshinfo.f"
+!#include "topo/ppm_topo_get_meshinfo.f"
 
       END MODULE ppm_module_topo_get

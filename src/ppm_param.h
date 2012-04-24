@@ -179,6 +179,20 @@
       INTEGER, PARAMETER :: ppm_kind_int32      = 4
       INTEGER, PARAMETER :: ppm_kind_int64      = 8
       !-------------------------------------------------------------------------
+      !  Define the supported types
+      !-------------------------------------------------------------------------
+      INTEGER, PARAMETER :: ppm_type_none                 = 0
+      INTEGER, PARAMETER :: ppm_type_int                  = 1
+      INTEGER, PARAMETER :: ppm_type_longint              = 2
+      INTEGER, PARAMETER :: ppm_type_real                 = 3
+      INTEGER, PARAMETER :: ppm_type_real_single          = 4
+      INTEGER, PARAMETER :: ppm_type_real_double          = 5
+      INTEGER, PARAMETER :: ppm_type_comp                 = 6
+      INTEGER, PARAMETER :: ppm_type_comp_single          = 7
+      INTEGER, PARAMETER :: ppm_type_comp_double          = 8
+      INTEGER, PARAMETER :: ppm_type_logical              = 9
+      INTEGER, PARAMETER :: ppm_type_char                 = 10
+      !-------------------------------------------------------------------------
       !  Mapping options
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_map_pop             = 1
@@ -321,6 +335,7 @@
       INTEGER, PARAMETER :: ppm_param_io_concat           = 14
       INTEGER, PARAMETER :: ppm_param_io_single           = 15
       INTEGER, PARAMETER :: ppm_param_io_double           = 16
+      INTEGER, PARAMETER :: ppm_param_io_hdf5             = 17
 
       !-------------------------------------------------------------------------
       !  error severity levels

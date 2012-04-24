@@ -100,7 +100,6 @@
       !-------------------------------------------------------------------------
       !  Modules 
       !-------------------------------------------------------------------------
-      USE ppm_module_typedef
       USE ppm_module_data
       USE ppm_module_substart
       USE ppm_module_substop
@@ -109,6 +108,7 @@
       USE ppm_module_write
       USE ppm_module_check_id
       USE ppm_module_util_commopt
+      USE ppm_module_topo_typedef
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION  | __KIND_AUX == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single

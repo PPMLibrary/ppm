@@ -30,7 +30,7 @@ real(mk)                         :: eps
 
     init
 
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_init
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
@@ -88,7 +88,7 @@ real(mk)                         :: eps
     end teardown
     
     test vtkparticles
-        use ppm_module_typedef
+        use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_map
         use ppm_module_topo_check

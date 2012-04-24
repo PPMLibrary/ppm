@@ -57,7 +57,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -121,7 +120,10 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
-      mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
+      TYPE IS (ppm_t_equi_mesh)
+          mesh => t
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  check if the optimal communication protocol is known for this

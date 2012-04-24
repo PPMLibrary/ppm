@@ -40,7 +40,7 @@
          !----------------------------------------------------------------------
 
          USE ppm_module_map_connect
-         USE ppm_module_map_field
+      !   USE ppm_module_map_field
          USE ppm_module_map_part
          USE ppm_module_impose_part_bc
       CONTAINS

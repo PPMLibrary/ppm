@@ -41,6 +41,6 @@
          USE ppm_module_neighlist
          USE ppm_module_tree
          USE ppm_module_mesh
-         USE ppm_module_rmsh
+      !   USE ppm_module_rmsh
 
       END MODULE ppm_module_core

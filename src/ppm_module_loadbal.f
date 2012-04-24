@@ -39,6 +39,7 @@
       !!! heuristic to estimate the time when the domain needs to be
       !!! redecomposed.
 
+         USE ppm_module_topo_typedef
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------

@@ -79,7 +79,7 @@
      LOGICAL                                             :: min_set       = .FALSE.
      LOGICAL                                             :: max_set       = .FALSE.
 #if defined(__LOGICAL) && !defined(ARRAY)
-     LOGICAL                                             :: type          = .TRUE. ! enable
+     LOGICAL                                             :: vtype          = .TRUE. ! enable
 #endif
      LOGICAL                                             :: default_set   = .FALSE.
      CHARACTER(LEN=256)                                  :: name

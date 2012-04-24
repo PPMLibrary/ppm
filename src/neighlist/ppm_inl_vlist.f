@@ -343,6 +343,8 @@
       !<<<<<<<<<<<<<<<<<<<<<<<<< Start of the code >>>>>>>>>>>>>>>>>>>>>>>>>!
           CALL substart('ppm_neighlist_clist',t0,info)
 
+          max_size = 0._MK
+
           IF(lsymm .EQV. .TRUE.)  THEN
               DO i = 1, ppm_dim
                   whole_domain(2*i-1) = actual_domain(2*i-1)

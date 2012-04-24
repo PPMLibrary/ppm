@@ -93,7 +93,6 @@
       USE ppm_module_data
       USE ppm_module_data_rmsh
       USE ppm_module_data_mesh
-      USE ppm_module_typedef
       USE ppm_module_write
       USE ppm_module_map
       USE ppm_module_check_id
@@ -223,7 +222,10 @@
       !-------------------------------------------------------------------------
       !  Get the meshid
       !-------------------------------------------------------------------------
-      p_mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
+      TYPE IS (ppm_t_equi_mesh)
+          p_mesh => t
+      END SELECT
       !-------------------------------------------------------------------------
       !  Get istart
       !-------------------------------------------------------------------------
@@ -1306,13 +1308,13 @@
      &                 'topo_id is invalid!',__LINE__,info)
            GOTO 8888
         ENDIF
-        CALL ppm_check_meshid(topoid,meshid,lok,info)
-        IF (.NOT.lok) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
-     &                 'mesh_id is invalid!',__LINE__,info)
-           GOTO 8888
-        ENDIF
+        !CALL ppm_check_meshid(topoid,meshid,lok,info)
+        !IF (.NOT.lok) THEN
+           !info = ppm_error_error
+           !CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+     !&                 'mesh_id is invalid!',__LINE__,info)
+           !GOTO 8888
+        !ENDIF
  8888   CONTINUE
       END SUBROUTINE check
 

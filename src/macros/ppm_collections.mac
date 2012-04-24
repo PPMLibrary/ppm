@@ -1,0 +1,439 @@
+include macro overload_function(func_name)
+%conf.ppm.type.all.each do |type_name| 
+            SUBROUTINE <%=func_name%>_<%= type_name %>
+% end 
+end macro
+
+
+
+
+include macro define_collection_type(element_type)
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
+TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
+        CONTAINS
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
+            PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
+<% end %>
+END TYPE
+end macro
+
+
+include macro define_pointer_collection_type(element_type)
+!collection of pointers to objects (removing an element does not delete the object
+!itself, just the pointer to the object)
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_pc") %>
+TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
+        CONTAINS
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
+            PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
+<% end %>
+END TYPE
+end macro
+
+
+
+
+
+include macro define_abstract_collection_type(element_type)
+<% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr").chop%>
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
+TYPE  <%= element_ptr_type %>
+    CLASS(<%= element_type %>),                  POINTER :: t => NULL()
+END TYPE 
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
+    TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
+    CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
+    CONTAINS
+<%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name| %>
+    PROCEDURE(<%= collection_type %>_<%=func_name%>),  DEFERRED :: <%=func_name%>
+<% end %>
+END TYPE 
+end macro
+
+
+
+
+include macro define_abstract_collection_interfaces(element_type)
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
+!FIRST ELEMENT
+FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>),POINTER             :: iterator
+END FUNCTION
+!NEXT ELEMENT
+FUNCTION <%= collection_type %>_next(this) RESULT (iterator)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>),POINTER             :: iterator
+END FUNCTION
+!PREVIOUS ELEMENT
+FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>),POINTER             :: iterator
+END FUNCTION
+!LAST ELEMENT
+FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>),POINTER             :: iterator
+END FUNCTION
+!DESTROY COLLECTION
+SUBROUTINE <%= collection_type %>_destroy(this,info)
+    IMPORT <%= collection_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(OUT  )   :: info
+END SUBROUTINE
+!EXISTS
+FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
+    IMPORT <%= collection_type %>
+    CLASS(<%= collection_type %>)                  :: this
+    LOGICAL                                        :: exists
+    INTEGER,                       INTENT(IN   )   :: id
+END FUNCTION
+!HAS
+FUNCTION <%= collection_type %>_has(this,object) RESULT(has)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>)                  :: this
+    LOGICAL                                        :: has
+    CLASS(<%= element_type %>),TARGET,INTENT(IN)   :: object
+END FUNCTION
+!PUSH ELEMENT INTO COLLECTION
+SUBROUTINE <%= collection_type %>_push(this,element,info,id)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>)      :: this
+    CLASS(<%= element_type %>),POINTER :: element
+    INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(OUT) :: id
+END SUBROUTINE
+!REMOVE ELEMENT FROM COLLECTION
+SUBROUTINE <%= collection_type %>_remove(this,info,id)
+    IMPORT <%= collection_type %>
+    CLASS(<%= collection_type %>)      :: this
+    INTEGER,          INTENT(  OUT)    :: info
+    INTEGER,OPTIONAL, INTENT(IN   )    :: id
+END SUBROUTINE
+!GROW COLLECTION SIZE
+SUBROUTINE <%= collection_type %>_grow_size(this,info)
+    IMPORT <%= collection_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(OUT  )   :: info
+END SUBROUTINE
+end macro
+
+
+
+
+
+
+include macro define_collection_procedures(element_type)
+<% element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr") %>
+<% collection_type    = element_type.to_s.sub("ppm_t","ppm_c") %>
+!BEGIN
+FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>_),POINTER   :: iterator
+
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%min_id
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%min_id)%t)
+            TYPE IS (<%= element_type %>)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
+    ENDIF
+    iterator => NULL()
+END FUNCTION
+!NEXT
+FUNCTION <%= collection_type %>_next(this) RESULT (iterator)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>_),POINTER   :: iterator
+
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%iter_id + 1
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%iter_id)%t)
+            TYPE IS (<%= element_type %>)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
+    ENDIF
+    iterator => NULL()
+END FUNCTION
+!PREVIOUS
+FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>_),POINTER   :: iterator
+
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%iter_id - 1
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%iter_id)%t)
+            TYPE IS (<%= element_type %>)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
+    ENDIF
+    iterator => NULL()
+END FUNCTION
+!LAST
+FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>_),POINTER   :: iterator
+
+    IF (this%nb.GT.0) THEN
+        this%iter_id = this%max_id
+        IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+            SELECT TYPE (t => this%vec(this%max_id)%t)
+            TYPE IS (<%= element_type %>)
+                iterator => t
+                RETURN
+            END SELECT
+        ENDIF
+    ENDIF
+    iterator => NULL()
+
+END FUNCTION
+
+!DESTROY CONTAINER
+SUBROUTINE <%= collection_type %>_destroy(this,info)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    CLASS(<%= element_type %>_),POINTER :: p => NULL()
+    INTEGER, INTENT(OUT) :: info
+
+    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_destroy"
+    REAL(KIND(1.D0))                   :: t0
+
+    CALL substart(caller,t0,info)
+
+    p => this%begin()
+    DO WHILE(ASSOCIATED(p))
+        CALL p%destroy(info)
+        $or_fail_dealloc("Could not deallocate collection element")
+        p => this%next()
+    ENDDO
+    IF (ASSOCIATED(this%vec))  DEALLOCATE(this%vec,STAT=info)
+    $or_fail_dealloc("Could not deallocate collection array")
+    this%iter_id = 0
+    this%min_id = 0
+    this%max_id = 0
+    this%nb = 0
+    this%vec_size=0
+
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
+END SUBROUTINE
+
+!EXISTS
+FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
+    !!! Check whether an element exists and can be accessed at this id
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(<%= collection_type %>)                  :: this
+    !!! Data structure containing the particles
+    INTEGER,                       INTENT(IN   )   :: id
+    !!! id where the data is stored
+    LOGICAL                                        :: exists
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                 :: info
+
+    !-------------------------------------------------------------------------
+    ! Check arguments
+    !-------------------------------------------------------------------------
+    IF (id.LE.0 .OR. id.LT.this%min_id .OR. id.GT.this%max_id) THEN
+        exists = .FALSE.
+        RETURN
+    ENDIF
+    IF (.NOT.ASSOCIATED(this%vec)) THEN
+        exists = .FALSE.
+        RETURN
+    ENDIF
+    IF (.NOT.ASSOCIATED(this%vec(id)%t)) THEN
+        exists = .FALSE.
+        RETURN
+    ENDIF
+    exists = .TRUE.
+
+    9999 CONTINUE
+    RETURN
+
+END FUNCTION
+
+!HAS
+FUNCTION <%= collection_type %>_has(this,object) RESULT(has)
+    !!! Check whether an element is present in the collection
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(<%= collection_type %>)                  :: this
+    !!! Data structure containing the particles
+    LOGICAL                                        :: has
+    !!! id where the data is stored
+    CLASS(<%= element_type %>_),TARGET,INTENT(IN)  :: object
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                 :: info
+    CLASS(<%= element_type %>_),POINTER     :: p
+
+    has = .TRUE.
+
+    p => this%begin()
+    DO WHILE(ASSOCIATED(p))
+        IF (ASSOCIATED(p,object)) RETURN
+        p => this%next()
+    ENDDO
+
+    has = .FALSE.
+    RETURN
+
+END FUNCTION
+
+!PUSH
+SUBROUTINE <%= collection_type %>_push(this,element,info,id)
+    !!! add an element into the collection
+    CLASS(<%= collection_type %>)      :: this
+    CLASS(<%= element_type %>_),POINTER     :: element
+    INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(OUT) :: id
+    !!! index of the element in the collection
+
+    TYPE(<%= element_ptr_type %>),DIMENSION(:),POINTER :: vec_temp => NULL()
+    INTEGER                            :: i
+    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_push"
+    REAL(KIND(1.D0))                   :: t0
+
+    CALL substart(caller,t0,info)
+
+    !add the element at the end of the array
+    this%min_id = 1
+    this%max_id = this%max_id + 1
+    this%nb = this%nb + 1
+    IF (PRESENT(id)) id = this%max_id
+
+    IF (this%max_id.GT.this%vec_size) THEN
+        CALL this%grow_size(info)
+            $or_fail("could not grow <%= collection_type %> to a larger size")
+    ENDIF
+
+    IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
+        $fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
+    ENDIF
+
+    SELECT TYPE (e => element)
+    TYPE IS (<%= element_type %>)
+        this%vec(this%max_id)%t => e
+    END SELECT
+
+    IF (.NOT.ASSOCIATED(this%vec(this%max_id)%t)) THEN
+       $fail("Pushing element into collection failed unexpectedly")
+    ENDIF
+
+    element => NULL()
+
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
+
+END SUBROUTINE
+!REMOVE
+SUBROUTINE <%= collection_type %>_remove(this,info,id)
+    !!! remove the current element (as defined by the iterator pointer)
+    !!! from the collection
+    CLASS(<%= collection_type %>)      :: this
+    INTEGER,          INTENT(  OUT)    :: info
+    INTEGER,OPTIONAL, INTENT(IN   )    :: id
+
+    INTEGER                            :: del_id
+    !deallocate the element
+    !CALL this%vec(id)%destroy(info)
+    IF (PRESENT(id)) THEN
+        del_id = id
+    ELSE
+        del_id = this%iter_id
+    ENDIF
+    SELECT TYPE (t => this%vec(del_id)%t)
+    TYPE IS (<%= element_type %>)
+        CALL t%destroy(info)
+    END SELECT
+    !swap with the last non-empty element of the collection
+    IF (this%max_id.GT.this%min_id) THEN
+        SELECT TYPE(t_last => this%vec(this%max_id)%t)
+        TYPE IS (<%= element_type %>)
+            SELECT TYPE(t_del => this%vec(del_id)%t)
+            TYPE IS (<%= element_type %>)
+                t_del= t_last
+            END SELECT
+        END SELECT
+    ENDIF
+
+    this%nb = this%nb - 1
+    this%max_id = this%max_id - 1
+    this%iter_id = this%iter_id - 1
+    IF (this%nb.EQ.0 .OR. this%max_id.EQ.0) this%min_id = 0
+
+END SUBROUTINE
+!GROW COLLECTION SIZE
+SUBROUTINE <%= collection_type %>_grow_size(this,info)
+    !!! Reallocate collection to a larger size
+    !!! (twice the size seems good)
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(OUT  )   :: info
+
+    TYPE(<%= element_ptr_type %>),DIMENSION(:),POINTER :: vec_temp => NULL()
+    INTEGER                            :: i
+    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_push"
+    REAL(KIND(1.D0))                   :: t0
+
+    CALL substart(caller,t0,info)
+
+    IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
+        !if the array is empty, allocate with a reasonable size
+        this%vec_size = 10
+        ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
+    ELSE
+        !if the array is full, double its size
+        ! allocate a temporary array to store the current element
+        ALLOCATE(vec_temp(this%vec_size),STAT=info)
+        $or_fail_alloc("could not allocate temporary array")
+
+        ! copy the elements to the temporary array
+        DO i=1,this%vec_size
+            SELECT TYPE (t => this%vec(i)%t)
+            TYPE IS (<%= element_type %>)
+                vec_temp(i)%t => t
+            END SELECT
+        ENDDO
+
+        !reallocate the collection to a larger size
+        DEALLOCATE(this%vec,STAT=info)
+        $or_fail_dealloc("could not deallocate collection array")
+        ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
+        $or_fail_alloc("could not allocate collection array")
+
+        !copy the elements back from the temporary array to the collection
+        DO i=1,this%vec_size
+             SELECT TYPE (tmp => vec_temp(i)%t)
+             TYPE IS (<%= element_type %>)
+                 this%vec(i)%t => tmp
+             END SELECT
+        ENDDO
+        this%vec_size = 2 * this%vec_size
+        DEALLOCATE(vec_temp,STAT=info)
+        $or_fail_dealloc("could not deallocate temporary array")
+    ENDIF
+
+    CALL substop(caller,t0,info)
+    9999 CONTINUE
+END SUBROUTINE
+end macro

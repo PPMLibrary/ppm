@@ -35,20 +35,22 @@
 #define __SCA              6
 
       MODULE ppm_module_io_vtk
-         USE ppm_module_typedef,   ONLY: ppm_char, ppm_error_fatal, &
-                                         ppm_kind_single, ppm_kind_double
+         USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
+                                         ppm_kind_single, ppm_kind_double,&
+                                         ppm_error_error
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
          USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm
-         USE ppm_module_typedef,   ONLY: ppm_error_error
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
+         USE ppm_module_interfaces
+         USE ppm_module_topo_typedef
+         USE ppm_module_mesh_typedef
+         USE ppm_module_particles_typedef
 
          IMPLICIT NONE
 
          PUBLIC :: ppm_vtk_particles, ppm_vtk_fields, &
-              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd, &
-              ppm_t_particles_s,ppm_t_particles_d, &
-              ppm_t_prop_s,ppm_t_prop_d,ppm_t_prop_i
+              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
@@ -77,38 +79,6 @@
          TYPE ppm_t_field_3ds
              REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
              CHARACTER(LEN=ppm_char)                            :: fname
-         END TYPE
-
-         TYPE ppm_t_particles_s
-             REAL(ppm_kind_single), DIMENSION(:,:), POINTER     :: xp => NULL()
-             INTEGER                                            :: np = 0
-             INTEGER                                            :: mp = 0
-             TYPE(ppm_t_prop_s),    DIMENSiON(:)  , POINTER     :: prop => NULL()
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
-             INTEGER                                            :: nprop = 0
-             INTEGER                                            :: niprop = 0
-         END TYPE
-         TYPE ppm_t_particles_d
-             REAL(ppm_kind_double), DIMENSION(:,:), POINTER     :: xp => NULL()
-             INTEGER                                            :: np = 0
-             INTEGER                                            :: mp = 0
-             TYPE(ppm_t_prop_d),    DIMENSiON(:)  , POINTER     :: prop => NULL()
-             TYPE(ppm_t_prop_i),    DIMENSION(:)  , POINTER     :: iprop => NULL()
-             INTEGER                                            :: nprop = 0
-             INTEGER                                            :: niprop = 0
-         END TYPE
-
-         TYPE ppm_t_prop_s
-             REAL(ppm_kind_single), DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
-         END TYPE
-         TYPE ppm_t_prop_d
-             REAL(ppm_kind_double), DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
-         END TYPE
-         TYPE ppm_t_prop_i
-             INTEGER              , DIMENSION(:)  , POINTER     :: wp => NULL()
-             CHARACTER(LEN=ppm_char)                            :: name
          END TYPE
 
          !----------------------------------------------------------------------
@@ -145,26 +115,30 @@
          !  New Interface
          !----------------------------------------------------------------------
 
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
+#define  DTYPE(a) a/**/_s
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "vtk/ppm_vtk_particles.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
+#define  DTYPE(a) a/**/_d
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "vtk/ppm_vtk_particles.f"
 #undef __KIND
 
 #define __DIM __2D
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
 #undef __DIM
 #define __DIM __3D
-#define __KIND __DOUBLE_PRECISION
+#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
-#define __KIND __SINGLE_PRECISION
+#define __KIND __DOUBLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
 #undef __KIND
 #undef __DIM
@@ -177,13 +151,13 @@
          !  Ugly interface
          !----------------------------------------------------------------------
 
-         SUBROUTINE ppm_vtk_init(filename, type, info,              &
+         SUBROUTINE ppm_vtk_init(filename, vtype, info,             &
                                  version, byte_order, whole_extent, &
                                  origin, spacing, extent,           &
                                  npoints, nverts, nlines, nstrips, npolys)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: filename
-           CHARACTER(LEN=*),                              INTENT(IN   ) :: type
+           CHARACTER(LEN=*),                              INTENT(IN   ) :: vtype
            INTEGER,                                       INTENT(  OUT) :: info
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: version
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: byte_order
@@ -213,7 +187,7 @@
               ibyte_order = byte_order
            END IF
            ! save type for ppm_vtk_close and reset current_section
-           vtk_type = type
+           vtk_type = vtype
            current_section = 0
            ! open output file
            OPEN(iUnit, FILE=filename, IOSTAT=info, ACTION='WRITE')
@@ -225,10 +199,10 @@
               GOTO 9999
            END IF
            WRITE(iUnit,'(A)')  "<?xml version='1.0' ?>"
-           WRITE(iUnit,'(7A)') "<VTKFile type='", type, &
+           WRITE(iUnit,'(7A)') "<VTKFile type='", vtype, &
                                "' version='",     iversion(1:LEN_TRIM(iversion)),  &
                                "' byte_order='",  ibyte_order(1:LEN_TRIM(ibyte_order)), "'>"
-           WRITE(iUnit,'(2A)',advance='no') "  <", type
+           WRITE(iUnit,'(2A)',advance='no') "  <", vtype
            IF (PRESENT(whole_extent)) THEN
               WRITE(iUnit, '(A)', advance='no') " WholeExtent='"
               DO i=LBOUND(whole_extent,1),UBOUND(whole_extent,1)
@@ -332,13 +306,13 @@
          END SUBROUTINE ppm_vtk_section
 
          SUBROUTINE ppm_vtk_data(name, data, info, &
-                                 format, type, ncomponents, offset)
+                                 format, vtype, ncomponents, offset)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: name
            REAL(ppm_kind_single), DIMENSION(:),           INTENT(IN   ) :: data
            INTEGER,                                       INTENT(  OUT) :: info
            CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: format
-           CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: type
+           CHARACTER(LEN=*),                    OPTIONAL, INTENT(IN   ) :: vtype
            INTEGER,                             OPTIONAL, INTENT(IN   ) :: ncomponents
            INTEGER,                             OPTIONAL, INTENT(IN   ) :: offset
            ! vars
@@ -358,8 +332,8 @@
               GOTO 9999
            END IF
            WRITE(iUnit,'(A)',advance='no') "        <DataArray"
-           IF (PRESENT(type)) THEN
-              WRITE(iUnit,'(3A)',advance='no') " type='", type(1:LEN_TRIM(type)), "'"
+           IF (PRESENT(vtype)) THEN
+              WRITE(iUnit,'(3A)',advance='no') " type='", vtype(1:LEN_TRIM(vtype)), "'"
            END IF
            WRITE(iUnit,'(3A)',advance='no') " Name='", name(1:LEN_TRIM(name)), "'"
            IF (PRESENT(ncomponents)) THEN

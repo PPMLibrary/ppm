@@ -190,7 +190,7 @@
      &             'topoid not pointing to a valid topology',__LINE__,info)
                GOTO 9999
          ENDIF
-         IF (meshid .GT. ppm_topo(topoid)%t%max_meshid) THEN
+         IF (.NOT. ppm_mesh%exists(meshid)) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_rmsh_comp_weights', &
                  'mesh_id is invalid',__LINE__,info)
@@ -198,7 +198,10 @@
         ENDIF
       ENDIF
       topo => ppm_topo(topoid)%t
-      p_mesh => topo%mesh(meshid)
+      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
+      TYPE IS (ppm_t_equi_mesh)
+          p_mesh => t
+      END SELECT
       !--------------------------------------------------------------------------
       !  Get istart
       !--------------------------------------------------------------------------
