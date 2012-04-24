@@ -113,6 +113,12 @@
          !!! `ppm_ghost_offset(ibuffer+0) = xp_offset(1,)`                     +
          !!! `ppm_ghost_offset(ibuffer+1) = xp_offset(2,)`                     +
          !!! `ppm_ghost_offset(ibuffer+2) = xp_offset(3,)`
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_ghost_offset_facs => NULL()
+         !!! ghost offset factor
+         !!!
+         !!! This buffer is needed for the special case of symmetric and
+         !!! antisymmetric boundary conditions, because the offset is not a
+         !!! simple constant to be added to the particle coordinate
          REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offsetd => NULL()
          !!! ghost offset (double precison)
          !!!
@@ -130,6 +136,12 @@
          !!! `ppm_ghost_offset(ibuffer+0) = xp_offset(1,)`                     +
          !!! `ppm_ghost_offset(ibuffer+1) = xp_offset(2,)`                     +
          !!! `ppm_ghost_offset(ibuffer+2) = xp_offset(3,)`
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_ghost_offset_facd => NULL()
+         !!! ghost offset factor
+         !!!
+         !!! This buffer is needed for the special case of symmetric and
+         !!! antisymmetric boundary conditions, because the offset is not a
+         !!! simple constant to be added to the particle coordinate
 
          
 

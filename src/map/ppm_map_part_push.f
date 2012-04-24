@@ -1324,11 +1324,13 @@
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = ppm_sendbufferd(ibuffer) &
+     &                                        * ppm_ghost_offset_facd(icount) &
      &                                        + ppm_ghost_offsetd(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = ppm_sendbufferd(ibuffer) &
+     &                                        * ppm_ghost_offset_facd(icount) &
      &                                        + ppm_ghost_offsetd(icount) 
                   ENDDO
                ELSEIF (lda.EQ.3) THEN
@@ -1342,16 +1344,19 @@
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = ppm_sendbufferd(ibuffer) &
+     &                                        * ppm_ghost_offset_facd(icount) &
      &                                        + ppm_ghost_offsetd(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = ppm_sendbufferd(ibuffer) & 
+     &                                        * ppm_ghost_offset_facd(icount) &
      &                                        + ppm_ghost_offsetd(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbufferd(ibuffer) = ppm_sendbufferd(ibuffer) & 
+     &                                        * ppm_ghost_offset_facd(icount) &
      &                                        + ppm_ghost_offsetd(icount) 
                   ENDDO
                ENDIF ! end of lda = 3
@@ -1369,11 +1374,13 @@
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = ppm_sendbuffers(ibuffer) &
+     &                                        * ppm_ghost_offset_facs(icount) &
      &                                        + ppm_ghost_offsets(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = ppm_sendbuffers(ibuffer) &
+     &                                        * ppm_ghost_offset_facs(icount) &
      &                                        + ppm_ghost_offsets(icount) 
                   ENDDO
                ELSEIF (lda.EQ.3) THEN
@@ -1387,16 +1394,19 @@
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = ppm_sendbuffers(ibuffer) &
+     &                                        * ppm_ghost_offset_facs(icount) &
      &                                        + ppm_ghost_offsets(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = ppm_sendbuffers(ibuffer) & 
+     &                                        * ppm_ghost_offset_facs(icount) &
      &                                        + ppm_ghost_offsets(icount) 
 
                      ibuffer = ibuffer + 1
                      icount  = icount  + 1
                      ppm_sendbuffers(ibuffer) = ppm_sendbuffers(ibuffer) & 
+     &                                        * ppm_ghost_offset_facs(icount) &
      &                                        + ppm_ghost_offsets(icount) 
                   ENDDO
                ENDIF ! end of lda = 3

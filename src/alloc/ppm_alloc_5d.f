@@ -126,7 +126,11 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
+#ifdef __DEBUG
       CALL substart('ppm_alloc_5d',t0,info)
+#else
+      info = 0
+#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -483,7 +487,9 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
+#ifdef __DEBUG
       CALL substop('ppm_alloc_5d',t0,info)
+#endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE alloc_5d_s
