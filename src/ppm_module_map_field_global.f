@@ -28,6 +28,7 @@
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_map_field_global
+#ifdef COMPILEME
       !!! This module contains the interface and the needed work arrays for the
       !!! field global mappings.
       !!!
@@ -94,4 +95,5 @@
 
 #include "map/ppm_map_field_globalstored.f"
 
+#endif
       END MODULE ppm_module_map_field_global

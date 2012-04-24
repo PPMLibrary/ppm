@@ -28,6 +28,7 @@
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_map_field_ghost
+#ifdef COMPILEME
       !!! This module contains interfaces to the field ghost mapping routines
       !!! and all data structures and definitions that
       !!! are `PRIVATE` to the mesh routines.
@@ -90,4 +91,5 @@
 
 #include "map/ppm_map_field_ghost_put.f"
 
+#endif
       END MODULE ppm_module_map_field_ghost

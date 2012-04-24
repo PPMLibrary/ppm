@@ -38,6 +38,7 @@
 #define __SCA              6
 
       MODULE ppm_module_rmsh
+#ifdef COMPILEME
       !!! This module contains all interfaces to the remeshing routines. For
       !!! convenience all interpolation modules are `USE`d by this module.
       !!! Therefore its not necessary to include `ppm_module_interp_*` in the
@@ -254,4 +255,6 @@
 #undef  __KIND        
 
 
+#endif
       END MODULE ppm_module_rmsh
+

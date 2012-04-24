@@ -35,6 +35,7 @@
 #define __SCA              6
 
       MODULE ppm_module_interp_m2p
+#ifdef COMPILEME
       !!! Contains the mesh to particle interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
         USE ppm_module_topo_typedef
@@ -161,5 +162,6 @@
 #undef __VEC              
 #undef __SCA              
         
+#endif
       END MODULE ppm_module_interp_m2p
 
