@@ -46,6 +46,7 @@ LIB_PPM := libppm.a
 TARGET  := $(builddir)/lib/$(LIB_PPM)
 SHELL := /bin/sh
 CPP = cpp
+CG = ppm pp -M $(srcdir)/macros/
 FUNIT := ./utils/funit/bin/funit
 DEPS := ./utils/deps.sh
 LOG := compile.log
@@ -93,7 +94,7 @@ $(TARGET): $(OBJECTS)
 .SECONDARY: #$(DEPENDENCIES)
 
 # Implicit rules
-CPPCMD = $(CPP) $(CPPFLAGS) $(CPPINCLS) -traditional-cpp -P $< $@
+CPPCMD = $(CPP) $(CPPFLAGS) $(CPPINCLS) -traditional-cpp -P $< | $(CG) > $@
 $(OBJ_DIR)/%.f : $(SRC_DIR)/%.f
 	@printf "  PPM  %-42s" $<; \
 	$(RUN) "$(CPPCMD)" $(LOG) "Preprocessing Error"
@@ -132,7 +133,7 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
-	CPP=$(CPP) DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
+	CPP=$(CPP) CG="$(CG)" DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
 
 test: all
 	make --directory=$(SRC_DIR)/map/test FC=$(FC) CPP="$(CPP)" \
