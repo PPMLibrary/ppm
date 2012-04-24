@@ -18,7 +18,7 @@
 
 # Initialization
 AC_PREREQ(2.61)
-AC_INIT(PPM, 1.2.1)
+AC_INIT(PPM, 1.2.2)
 
 # Reset existing preprocessing flags
 #touch ./src/ppm_define.h
