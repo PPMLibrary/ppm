@@ -14,25 +14,6 @@ END TYPE
 minclude define_collection_type(DTYPE(ppm_t_part_prop))
 
 !!----------------------------------------------------------------------
-!! DC operators
-!!----------------------------------------------------------------------
-TYPE,EXTENDS(DTYPE(ppm_t_opdesc)_) :: DTYPE(ppm_t_opdesc)
-    !!! Data structure to describe differential operator
-    !!!  It only contains semantic information on the operator
-    CONTAINS
-    PROCEDURE :: create => DTYPE(desc_create)
-    PROCEDURE :: destroy => DTYPE(desc_destroy)
-END TYPE 
-
-TYPE,EXTENDS(DTYPE(ppm_t_operator)_) :: DTYPE(ppm_t_operator)
-    !!! Data structure containing all diff operators for a particle set
-    CONTAINS
-    PROCEDURE :: create => DTYPE(op_create)
-    PROCEDURE :: destroy => DTYPE(op_destroy)
-END TYPE 
-minclude define_collection_type(DTYPE(ppm_t_operator))
-
-!!----------------------------------------------------------------------
 !! Particle neighbor lists
 !!----------------------------------------------------------------------
 TYPE,EXTENDS(DTYPE(ppm_t_neighlist)_) :: DTYPE(ppm_t_neighlist)
@@ -57,9 +38,10 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: del_parts => DTYPE(part_del_parts)
     PROCEDURE     :: set_rel   => DTYPE(part_set_rel)
 
-    PROCEDURE     :: create_prop => DTYPE(part_prop_create)
+    PROCEDURE     :: create_prop  => DTYPE(part_prop_create)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
     PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
+    PROCEDURE     :: get_prop     => DTYPE(get_prop)
 
     PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
     PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
@@ -67,9 +49,12 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: comp_neighlist => DTYPE(part_neighlist)
     PROCEDURE     :: get_nvlist => DTYPE(get_nvlist)
     PROCEDURE     :: get_vlist => DTYPE(get_vlist)
+    PROCEDURE     :: get_neighlist => DTYPE(get_neighlist)
+    PROCEDURE     :: has_neighlist => DTYPE(has_neighlist)
+    PROCEDURE     :: has_ghosts => DTYPE(has_ghosts)
 
-!    PROCEDURE     :: create_op => DTYPE(part_op_create)
-!    PROCEDURE     :: destroy_op => DTYPE(part_op_destroy)
+!    PROCEDURE     :: create_op  => DTYPE(part_dcop_create)
+!    PROCEDURE     :: destroy_op => DTYPE(part_dcop_destroy)
 !    PROCEDURE     :: DTYPE(ppm_dcop_compute2d)
 !    PROCEDURE     :: DTYPE(ppm_dcop_compute3d)
 !    PROCEDURE     :: comp_op => DTYPE(part_op_compute)
@@ -91,8 +76,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
 
     PROCEDURE     :: get_xp => DTYPE(get_xp)
     PROCEDURE     :: set_xp => DTYPE(set_xp)
-    PROCEDURE     :: get_dcop => DTYPE(get_dcop)
-    PROCEDURE     :: set_dcop => DTYPE(set_dcop)
 
     PROCEDURE     :: DTYPE(data_1d_i_get_field)
     PROCEDURE     :: DTYPE(data_2d_i_get_field)

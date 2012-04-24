@@ -1,21 +1,20 @@
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_part_prop)_)
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_operator)_)
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_neighlist)_)
 minclude define_abstract_collection_interfaces(DTYPE(ppm_t_particles)_)
 !minclude define_abstract_collection_interfaces(DTYPE(ppm_t_sop)_)
 
 !CREATE ENTRY
-SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,zero)
+SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,field,zero)
     !!! Constructor for particle property data structure
-    IMPORT DTYPE(ppm_t_part_prop)_,ppm_param_length_pptflags
+    IMPORT DTYPE(ppm_t_part_prop)_,ppm_param_length_pptflags,ppm_t_field_
     CLASS(DTYPE(ppm_t_part_prop)_)      :: prop
     INTEGER,                INTENT(IN) :: datatype
     INTEGER,                INTENT(IN) :: npart
     INTEGER,                INTENT(IN) :: lda
-    CHARACTER(LEN=*)                   :: name
-    !!! name to this property
+    CHARACTER(LEN=*),       INTENT(IN) :: name
     LOGICAL, DIMENSION(ppm_param_length_pptflags),INTENT(IN) :: flags
     INTEGER,               INTENT(OUT) :: info
+    CLASS(ppm_t_field_),OPTIONAL,TARGET, INTENT(IN) :: field
     LOGICAL, OPTIONAL,     INTENT( IN) :: zero
     !!! if true, then initialize the data to zero
 END SUBROUTINE
@@ -64,17 +63,16 @@ SUBROUTINE DTYPE(set_xp)_(Pc,xp,read_only,ghosts_ok)
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_prop_create)_(Pc,id,datatype,info,&
-        lda,name,zero,with_ghosts)
-    IMPORT DTYPE(ppm_t_particles)_
+        field,name,lda,zero,with_ghosts)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
     !!! Adds a property to an existing particle set
     CLASS(DTYPE(ppm_t_particles)_)         :: Pc
     INTEGER,                INTENT(  OUT) :: id
     INTEGER,                INTENT(IN   ) :: datatype
     INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
-    CHARACTER(LEN=*) , OPTIONAL           :: name
-    !!! name to this property
+    CLASS(ppm_t_field_),OPTIONAL,INTENT(IN   ) :: field
+    CHARACTER(LEN=*),OPTIONAL,INTENT(IN  ) :: name
     LOGICAL, OPTIONAL                     :: zero
-    !!! if true, then initialise the data to zero
     LOGICAL, OPTIONAL                     :: with_ghosts
     !!! if true, then allocate with Mpart instead of the default size of Npart
     INTEGER,               INTENT(OUT)    :: info
@@ -291,37 +289,35 @@ SUBROUTINE DTYPE(part_prop_pop)_(Pc,prop_id,Npart_new,info)
     !!! Returns status, 0 upon success.
 END SUBROUTINE
 
-
-FUNCTION DTYPE(get_dcop)_(Pc,eta_id,with_ghosts)
-    IMPORT DTYPE(ppm_t_particles)_, MK
-    CLASS(DTYPE(ppm_t_particles)_)      :: Pc
-    INTEGER                            :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER    :: DTYPE(get_dcop)_
-    LOGICAL,OPTIONAL                   :: with_ghosts
+FUNCTION DTYPE(has_neighlist)_(this,Part) RESULT(res)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
+    CLASS(DTYPE(ppm_t_particles)_),TARGET          :: this
+    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    LOGICAL                                        :: res
 END FUNCTION
 
-FUNCTION DTYPE(set_dcop)_(Pc,eta_id)
-    IMPORT DTYPE(ppm_t_particles)_, MK
-    CLASS(DTYPE(ppm_t_particles)_)   :: Pc
-    INTEGER                         :: eta_id
-    REAL(MK),DIMENSION(:,:),POINTER :: DTYPE(set_dcop)_
+FUNCTION DTYPE(get_neighlist)_(this,Part) RESULT(NList)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
+    CLASS(DTYPE(ppm_t_particles)_),TARGET          :: this
+    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
 END FUNCTION
 
-SUBROUTINE DTYPE(get_vlist)_(Pc,nvlist,vlist,nlid)
-    IMPORT DTYPE(ppm_t_particles)_
-    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
-    INTEGER,DIMENSION(:),        POINTER  :: nvlist
-    INTEGER,DIMENSION(:,:),      POINTER  :: vlist
-    INTEGER                               :: nlid
-    INTEGER                               :: info
+SUBROUTINE DTYPE(get_vlist)_(this,nvlist,vlist,info,NList)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
+    CLASS(DTYPE(ppm_t_particles)_)               :: this
+    INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
+    INTEGER,DIMENSION(:,:),POINTER,INTENT( OUT)  :: vlist
+    INTEGER,                       INTENT(INOUT) :: info
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
 END SUBROUTINE
 
-SUBROUTINE DTYPE(get_nvlist)_(Pc,nvlist,nlid)
-    IMPORT DTYPE(ppm_t_particles)_
-    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
-    INTEGER,DIMENSION(:),        POINTER  :: nvlist
-    INTEGER                               :: nlid
-    INTEGER                               :: info
+SUBROUTINE DTYPE(get_nvlist)_(this,nvlist,info,NList)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
+    CLASS(DTYPE(ppm_t_particles)_)               :: this
+    INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
+    INTEGER,                       INTENT(INOUT) :: info
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_mapping)_(Pc,info,debug,global,topoid)
@@ -386,14 +382,14 @@ SUBROUTINE DTYPE(part_neighlist)_(Pc,info,nlid,lstore,incl_ghosts,knn)
     !!! has at least knn neighbours.
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,nlid)
-    IMPORT DTYPE(ppm_t_particles)_, MK
+SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,Nlist)
+    IMPORT DTYPE(ppm_t_particles)_,MK,DTYPE(ppm_t_neighlist)_
     CLASS(DTYPE(ppm_t_particles)_)            :: Pc
     REAL(MK),                 INTENT(IN   )  :: cutoff
     !!! cutoff radius
     INTEGER,                  INTENT(   OUT) :: info
     !!! return status. On success, 0
-    INTEGER,OPTIONAL,         INTENT(IN    ) :: nlid
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: Nlist
     !!! ID of the neighbor list for which this cutoff radius
     !!! applies. Default is ppm_param_default_nlID
 END SUBROUTINE
@@ -419,9 +415,9 @@ END SUBROUTINE
 
 SUBROUTINE DTYPE(part_map_destroy)_(Pc,id,info)
     IMPORT DTYPE(ppm_t_particles)_
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
+    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
     INTEGER,                INTENT(INOUT) :: id
-    INTEGER,               INTENT(OUT)    :: info
+    INTEGER,                INTENT(  OUT) :: info
 
 END SUBROUTINE
 
@@ -429,81 +425,20 @@ END SUBROUTINE
 SUBROUTINE DTYPE(neigh_destroy)_(neigh,info)
     IMPORT DTYPE(ppm_t_neighlist)_
     CLASS(DTYPE(ppm_t_neighlist)_)      :: neigh
+    INTEGER,             INTENT(  OUT)  :: info
+END SUBROUTINE
+
+FUNCTION DTYPE(has_ghosts)_(this,Field) RESULT(res)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)                 :: this
+    CLASS(ppm_t_field_),OPTIONAL                   :: Field
+    LOGICAL                                        :: res
+END FUNCTION
+
+SUBROUTINE DTYPE(get_prop)_(this,Field,prop,info)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_,DTYPE(ppm_t_part_prop)_
+    CLASS(DTYPE(ppm_t_particles)_)                         :: this
+    CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
     INTEGER,                                INTENT(  OUT)  :: info
 END SUBROUTINE
-
-SUBROUTINE DTYPE(desc_create)_(desc,nterms,coeffs,degree,order,name,info)
-    !!! Create a description for a differential operator
-    IMPORT DTYPE(ppm_t_opdesc)_,MK
-    CLASS(DTYPE(ppm_t_opdesc)_)           :: desc
-    INTEGER,                INTENT(IN   ) :: nterms
-    !!! Number of terms in the linear combination
-    REAL(MK),DIMENSION(:),  INTENT(IN   ) :: coeffs
-    !!! Multiplicative coefficients of each term in the linear combination of
-    !!! differential operators
-    INTEGER,DIMENSION(:),   INTENT(IN   ) :: degree
-    !!! Degree of differentiation of each term
-    INTEGER,DIMENSION(:),   INTENT(IN   ) :: order
-    !!! Order of approxmiation for each term
-    CHARACTER(LEN=*)                      :: name
-    !!! name for this operator
-    INTEGER,                INTENT(OUT)   :: info
-    !!! Returns status, 0 upon success.
-END SUBROUTINE
-
-SUBROUTINE DTYPE(desc_destroy)_(desc,info)
-    IMPORT DTYPE(ppm_t_opdesc)_,MK
-    CLASS(DTYPE(ppm_t_opdesc)_)             :: desc
-    INTEGER,                 INTENT(  OUT)  :: info
-END SUBROUTINE
-
-SUBROUTINE DTYPE(op_create)_(op,nterms,coeffs,degree,order,&
-        name,with_ghosts,vector,interp,pid,nlid,info)
-    !!! Create a differential operator
-    IMPORT DTYPE(ppm_t_operator)_,MK
-    CLASS(DTYPE(ppm_t_operator)_)         :: op
-    INTEGER,                INTENT(IN   ) :: nterms
-    !!! Number of terms in the linear combination
-    REAL(MK),DIMENSION(:),  INTENT(IN   ) :: coeffs
-    !!! Multiplicative coefficients of each term in the linear combination of
-    !!! differential operators
-    INTEGER,DIMENSION(:),   INTENT(IN   ) :: degree
-    !!! Degree of differentiation of each term
-    INTEGER,DIMENSION(:),   INTENT(IN   ) :: order
-    !!! Order of approxmiation for each term
-    LOGICAL,                INTENT(IN   ) :: with_ghosts
-    !!! True if the operator should be computed for ghost particles too. 
-    !!! Note that the resulting values will be wrong for the ghost particles
-    !!! that have some neighbours outside the ghost layers. Default is false.
-    LOGICAL,                INTENT(IN   ) :: vector
-    !!! True if the operator is a vector field. Default is false.
-    LOGICAL,                INTENT(IN   ) :: interp
-    !!! True if the operator interpolates data from one set of particles to
-    !!! another. Default is false.
-    INTEGER,                INTENT(IN   ) :: pid
-    !!! Id of the set of particles that this operator takes data from.
-    !!! The default, 0, stands for "self" (the operator is computed
-    !!! on the same set of particles than the one which contains the data).
-    INTEGER,                INTENT(IN   ) :: nlid
-    !!! Id of the neighbour list that should be used
-    !!! The default, 1, refers to "self": the list of neighbours within
-    !!! the same set of particles. 
-    CHARACTER(LEN=*)                      :: name
-    !!! name for this operator
-    INTEGER,                INTENT(OUT)   :: info
-    !!! Returns status, 0 upon success.
-END SUBROUTINE
-!DESTROY ENTRY
-SUBROUTINE DTYPE(op_destroy)_(op,info)
-    !!! Destroy the description for a differential operator
-    IMPORT DTYPE(ppm_t_operator)_
-    CLASS(DTYPE(ppm_t_operator)_)              :: op
-    INTEGER                                   :: i
-    INTEGER,                   INTENT(  OUT)  :: info
-    !!! Returns status, 0 upon success.
-END SUBROUTINE
-
-#undef DTYPE
-#undef MK
-
-

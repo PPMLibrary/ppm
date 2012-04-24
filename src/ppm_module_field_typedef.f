@@ -57,8 +57,9 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: map_ghost_push => field_map_ghost_push
     PROCEDURE :: map_ghost_pop  => field_map_ghost_pop
 
-    PROCEDURE :: field_discretize_on_mesh
-    PROCEDURE :: field_discretize_on_part
+    PROCEDURE :: is_discretized_on => field_is_discretized_on
+    PROCEDURE :: discretize_on     => field_discretize_on
+    PROCEDURE :: get_discr => field_get_discr
 END TYPE ppm_t_field
 minclude define_collection_type(ppm_t_field)
 
@@ -123,7 +124,7 @@ END SUBROUTINE field_destroy
 SUBROUTINE mesh_discr_info_create(this,mesh,lda,p_idx,flags,info)
     !!! Constructor for subdomain data data structure
     CLASS(ppm_t_mesh_discr_info)             :: this
-    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN) :: mesh
+    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN):: mesh
     INTEGER,                      INTENT(IN) :: lda
     !!! number of components
     INTEGER,                      INTENT(IN) :: p_idx
@@ -167,7 +168,7 @@ END SUBROUTINE mesh_discr_info_destroy
 SUBROUTINE part_discr_info_create(this,part,lda,p_idx,flags,info)
     !!! Constructor for subdomain data data structure
     CLASS(ppm_t_part_discr_info)              :: this
-    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN) :: part
+    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: part
     INTEGER,                       INTENT(IN) :: lda
     !!! number of components
     INTEGER,                       INTENT(IN) :: p_idx
@@ -208,7 +209,7 @@ SUBROUTINE part_discr_info_destroy(this,info)
 END SUBROUTINE part_discr_info_destroy
 
 
-SUBROUTINE field_discretize_on_mesh(this,mesh,info,datatype)
+SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     !!! Allocate field on a mesh
     !!! If the field has a procedure for initialization (e.g. an
     !!! initial condition), then the field is also initialized.
@@ -217,23 +218,30 @@ SUBROUTINE field_discretize_on_mesh(this,mesh,info,datatype)
     !!! that the user expects the field to be allocated on the whole domain.
     !!! A single patch is then defined, covering all the subdomains.
     CLASS(ppm_t_field)                 :: this
-    CLASS(ppm_t_equi_mesh_)            :: mesh
-    !!! mesh onto which this field is to be discretized
+    CLASS(ppm_t_discr_kind),TARGET     :: discr
+    !!! mesh or Particle set onto which this field is to be discretized
     INTEGER,               INTENT(OUT)  :: info
     INTEGER, OPTIONAL                   :: datatype
     !!! By default, the type is assumed to be real, double-precision.
+    LOGICAL, OPTIONAL                   :: with_ghosts
+    !!! By default, the data arrays are allocated with Mpart iif the ghost
+    !!! particles are up-to-date. Otherwise, they are allocated with size Npart.
+    !!! Setting with_ghosts to true or false forces the allocation to be done
+    !!! with size Mpart or Npart, respectively.
 
     CLASS(ppm_t_mesh_discr_info_),    POINTER :: mdinfo => NULL()
     CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
     CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
     INTEGER                             :: dtype,p_idx
+    LOGICAL                             :: lghosts
 
-    start_subroutine("field_discretize_on_mesh")
+    start_subroutine("field_discretize_on")
 
     IF (PRESENT(datatype)) THEN
         dtype = datatype
     ELSE
-        dtype = ppm_type_real_double
+        dtype = this%data_type
+        check_true("this%data_type .NE. 0","field data type has not been initialized. Fix constructor.")
     END IF
 
     !Check whether this field has already been initialized
@@ -241,105 +249,99 @@ SUBROUTINE field_discretize_on_mesh(this,mesh,info,datatype)
         fail("Field needs to be initialized before calling discretized. Call ThisField%create() first")
     ENDIF
 
-    !Check that the mesh contains patches onto which the data
-    ! should be allocated. If not, create a single patch that
-    ! covers the whole domain.
-    IF (.NOT.ASSOCIATED(mesh%subpatch)) THEN
-        fail("Mesh not allocated. Use mesh%create() first.")
-    ELSE
-        IF (mesh%subpatch%nb.LE.0) THEN
-            CALL mesh%def_uniform(info)
-                or_fail("failed to create a uniform patch data structure")
-        ENDIF
+    IF (this%is_discretized_on(discr,info)) THEN
+        fail("Method to re-discretized a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
     ENDIF
 
-    !Create a new data array on the mesh to store this field
-    p => mesh%subpatch%begin()
-    DO WHILE (ASSOCIATED(p))
-        ! create a new subpatch_data object
-        !ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
-        subpdat => mesh%new_subpatch_data_ptr(info)
-            or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
-
-        CALL subpdat%create(this%ID,dtype,this%lda,p%nnodes,info)
-            or_fail("could not create new subpatch_data")
-
-        IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
-           fail("p%subpatch_data not allocated")
+    SELECT TYPE(discr)
+    CLASS IS (ppm_t_equi_mesh_)
+        IF (PRESENT(with_ghosts)) THEN
+            lghosts = with_ghosts
+        ELSE
+            lghosts = .TRUE.
         ENDIF
 
-        CALL p%subpatch_data%push(subpdat,info)
-            or_fail("could not add new subpatch_data to subpatch collection")
+        !Check that the mesh contains patches onto which the data
+        ! should be allocated. If not, create a single patch that
+        ! covers the whole domain.
+        IF (.NOT.ASSOCIATED(discr%subpatch)) THEN
+            fail("Mesh not allocated. Use mesh%create() first.")
+        ELSE
+            IF (discr%subpatch%nb.LE.0) THEN
+                CALL discr%def_uniform(info)
+                    or_fail("failed to create a uniform patch data structure")
+            ENDIF
+        ENDIF
 
-        p => mesh%subpatch%next()
-    ENDDO
+        !Create a new data array on the mesh to store this field
+        p => discr%subpatch%begin()
+        DO WHILE (ASSOCIATED(p))
+            ! create a new subpatch_data object
+            !ALLOCATE(ppm_t_subpatch_data::subpdat,STAT=info)
+            subpdat => discr%new_subpatch_data_ptr(info)
+                or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
 
-    !on each subpatch, the new data is the last element of 
-    !the subpatch_data collection
-    p => mesh%subpatch%begin()
-    IF (ASSOCIATED(p)) THEN
-        p_idx = p%subpatch_data%max_id
-    ELSE
-        !this proc has no subpatches for this mesh
-        p_idx = -1
-    ENDIF
+            CALL subpdat%create(this,dtype,this%lda,p%nnodes,info)
+                or_fail("could not create new subpatch_data")
+
+            IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
+               fail("p%subpatch_data not allocated")
+            ENDIF
+
+            CALL p%subpatch_data%push(subpdat,info)
+                or_fail("could not add new subpatch_data to subpatch collection")
+
+            p => discr%subpatch%next()
+        ENDDO
+
+        !on each subpatch, the new data is the last element of 
+        !the subpatch_data collection
+        p => discr%subpatch%begin()
+        IF (ASSOCIATED(p)) THEN
+            p_idx = p%subpatch_data%max_id
+        ELSE
+            !this proc has no subpatches for this mesh
+            p_idx = -1
+        ENDIF
 
 
-    !Update the bookkeeping table to store the relationship between
-    ! the mesh and the field.
-    CALL this%set_rel(mesh,p_idx,info)
-        or_fail("failed to log the relationship between this field and that mesh")
+        !Update the bookkeeping table to store the relationship between
+        ! the mesh and the field.
+        CALL this%set_rel(discr,p_idx,info)
+            or_fail("failed to log the relationship between this field and that mesh")
 
-    CALL mesh%set_rel(this,info)
-        or_fail("failed to log the relationship between this mesh and that field")
+        CALL discr%set_rel(this,info)
+            or_fail("failed to log the relationship between this mesh and that field")
+
+    CLASS IS (ppm_t_particles_d_)
+
+        IF (PRESENT(with_ghosts)) THEN
+            lghosts = with_ghosts
+        ELSE
+            lghosts = discr%flags(ppm_part_ghosts)
+        ENDIF
+        !Create a new property data structure in the particle set to store this field
+        p_idx = 0
+        CALL discr%create_prop(p_idx,dtype,info,this,lda=this%lda,&
+            with_ghosts=lghosts)
+            or_fail("discr%create_prop")
+
+
+        !Update the bookkeeping table to store the relationship between
+        ! the mesh and the field.
+        CALL this%set_rel(discr,p_idx,info)
+            or_fail("failed to log the relationship between this field and that particle set")
+
+    !    CALL discr%set_rel(this,info)
+    !        or_fail("failed to log the relationship between this particle set and that field")
+
+    CLASS DEFAULT
+        fail("support for this discretization type is missing")
+    END SELECT
 
     end_subroutine()
-END SUBROUTINE field_discretize_on_mesh
+END SUBROUTINE field_discretize_on
 
-SUBROUTINE field_discretize_on_part(this,part,info,datatype)
-    !!! Allocate field on a particle set
-    !!! If the field has a procedure for initialization (e.g. an
-    !!! initial condition), then the field is also initialized.
-    CLASS(ppm_t_field)                 :: this
-    CLASS(ppm_t_particles_d_)            :: part
-    !!! mesh onto which this field is to be discretized
-    INTEGER,               INTENT(OUT)  :: info
-    INTEGER, OPTIONAL                   :: datatype
-    !!! By default, the type is assumed to be real, double-precision.
-
-    !CLASS(ppm_t_mesh_discr_info_),    POINTER :: mdinfo => NULL()
-    INTEGER                             :: dtype,p_idx
-
-    start_subroutine("field_discretize_on_part")
-
-    IF (PRESENT(datatype)) THEN
-        dtype = datatype
-    ELSE
-        dtype = ppm_type_real
-    END IF
-
-    !Check whether this field has already been initialized
-    IF (this%ID.LE.0 .OR. this%lda.LE.0) THEN
-        fail("Field needs to be initialized before calling discretized. Call ThisField%create() first")
-    ENDIF
-
-    !Create a new property data structure in the particle set to store this field
-    p_idx = 0
-    CALL part%create_prop(p_idx,dtype,info,lda=this%lda,&
-        name=this%name,with_ghosts=part%flags(ppm_part_ghosts))
-        or_fail("part%create_prop")
-
-
-    !Update the bookkeeping table to store the relationship between
-    ! the mesh and the field.
-    CALL this%set_rel(part,p_idx,info)
-        or_fail("failed to log the relationship between this field and that particle set")
-
-!    CALL part%set_rel(this,info)
-!        or_fail("failed to log the relationship between this particle set and that field")
-
-    end_subroutine()
-END SUBROUTINE field_discretize_on_part
 
 SUBROUTINE field_set_rel_mesh(this,mesh,p_idx,info)
     !!! Create bookkeeping data structure to log the relationship between
@@ -491,5 +493,119 @@ SUBROUTINE field_map_ghost_pop(this,mesh,info)
 
     end_subroutine()
 END SUBROUTINE field_map_ghost_pop
+
+SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)
+    !!! Returns a pointer to the discretization (mesh or particles) 
+    !!! on which the field is discretized.
+    !!! TODO: Optionally, can retrieve discretizations at different time points
+    !!! (like n-1, n-2, etc...).
+    CLASS(ppm_t_field)                           :: this
+    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
+    CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data => NULL()
+    !!! discretization
+    INTEGER,                         INTENT(OUT) :: info
+    INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+    !!! If the current time step is n, discretizations at previous times
+    !!! can be accessed using the tstep argument
+    !!!     (tstep =  0, default) => step n
+    !!!     (tstep = -1         ) => step n-1
+    !!!     (tstep = -2         ) => step n-2
+    !!!     etc...
+    !!! The number of steps that are stored is set when a field is first
+    !!! discretized on a mesh or on a particle set.
+    !!! The data management and book-keeping between the data of different
+    !!! time steps are done by the time integrator.
+    !!! TODO
+    CLASS(ppm_t_part_discr_info_),POINTER        :: p => NULL()
+    CLASS(ppm_t_mesh_discr_info_),POINTER        :: m => NULL()
+
+    start_subroutine("field_get_discr")
+
+
+    SELECT TYPE(discr_kind)
+    CLASS IS (ppm_t_equi_mesh_)
+        m => this%M%begin()
+        m_loop: DO WHILE(ASSOCIATED(m))
+            IF (ASSOCIATED(m%mesh_ptr,discr_kind)) THEN
+                discr_data => m%discr_data
+                EXIT m_loop
+            ENDIF
+            m => this%M%next()
+        ENDDO m_loop
+    CLASS IS (ppm_t_particles_d_)
+        p => this%P%begin()
+        p_loop: DO WHILE(ASSOCIATED(p))
+            IF (ASSOCIATED(p%part_ptr,discr_kind)) THEN
+                discr_data => p%discr_data
+                EXIT p_loop
+            ENDIF
+            p => this%P%next()
+        ENDDO p_loop
+    CLASS IS (ppm_t_particles_s_)
+        fail("Support for single precision particles not finished")
+    CLASS DEFAULT
+        fail("Discretization kind should be either mesh or particles")
+    END SELECT
+
+    end_subroutine()
+END SUBROUTINE field_get_discr
+
+FUNCTION field_is_discretized_on(this,discr_kind,tstep) RESULT(res)
+    !!! Check if this field has been discretized on this
+    !!! discretization kind (mesh or particles) 
+    !!! TODO: Optionally, check for discretizations at different time points
+    !!! (like n-1, n-2, etc...).
+    CLASS(ppm_t_field)                           :: this
+    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
+    !!! discretization
+    LOGICAL                                      :: res
+    INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+    !!! If the current time step is n, discretizations at previous times
+    !!! can be accessed using the tstep argument
+    !!!     (tstep =  0, default) => step n
+    !!!     (tstep = -1         ) => step n-1
+    !!!     (tstep = -2         ) => step n-2
+    !!!     etc...
+    !!! The number of steps that are stored is set when a field is first
+    !!! discretized on a mesh or on a particle set.
+    !!! The data management and book-keeping between the data of different
+    !!! time steps are done by the time integrator.
+    !!! TODO
+    CLASS(ppm_t_part_discr_info_),POINTER        :: p => NULL()
+    CLASS(ppm_t_mesh_discr_info_),POINTER        :: m => NULL()
+
+    start_function("field_is_discretized_on")
+
+
+    SELECT TYPE(discr_kind)
+    CLASS IS (ppm_t_equi_mesh_)
+        m => this%M%begin()
+        DO WHILE(ASSOCIATED(m))
+            IF (ASSOCIATED(m%mesh_ptr,discr_kind)) THEN
+                res = .TRUE.
+                RETURN
+            ENDIF
+            m => this%M%next()
+        ENDDO
+    CLASS IS (ppm_t_particles_d_)
+        p => this%P%begin()
+        DO WHILE(ASSOCIATED(p))
+            IF (ASSOCIATED(p%part_ptr,discr_kind)) THEN
+                res = .TRUE.
+                RETURN
+            ENDIF
+            p => this%P%next()
+        ENDDO
+    CLASS IS (ppm_t_particles_s_)
+        fail("Support for single precision particles not finished")
+    CLASS DEFAULT
+        fail("Discretization kind should be either mesh or particles")
+    END SELECT
+
+    res = .FALSE.
+    RETURN
+
+    end_function()
+END FUNCTION field_is_discretized_on
 
 END MODULE ppm_module_field_typedef

@@ -132,6 +132,3 @@ TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_mesh_mapping)_
     !                    ppm_map_mesh_push_2di,&
     !                    ppm_map_mesh_push_2dl
 END TYPE DTYPE(ppm_t_mesh_mapping)_
-#undef   MK
-#undef   _MK
-#undef   DTYPE

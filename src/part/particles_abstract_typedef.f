@@ -1,32 +1,8 @@
 !!----------------------------------------------------------------------
 !! Particle properties
 !!----------------------------------------------------------------------
-TYPE,ABSTRACT:: DTYPE(ppm_t_part_prop)_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data):: DTYPE(ppm_t_part_prop)_
     !!! Data structure for particle properties
-    INTEGER                                        :: data_type
-    !!! type of the property
-    !!! One of:
-    !!!     ppm_param_...
-    !!! 
-    CHARACTER(len=ppm_char)                        :: name
-    !!! name of the property
-    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags
-    !!! logical flags
-    !!!    ppm_ppt_ghosts
-    !!!          true if ghost values are up-to-date
-    !!!    ppm_ppt_partial
-    !!!          true if there is a one-to-one mapping with the particles
-    !!!    ppm_ppt_reqput
-    !!!    ppm_ppt_map_parts
-    !!!          true if partial mappings are desired for this property (default)
-    !!!          (if false, the array for this property is not reallocated when
-    !!!           particles move to a different processor or when they are
-    !!!           interpolated from one distribution to another)
-    !!!    ppm_ppt_map_ghosts
-    !!!          true if ghost mappings are desired for this property (default)
-    INTEGER                                        :: lda
-    !!! leading dimension of the data array
-    !!!
     !!! pointers to arrays where the scalar-value properties are stored
     INTEGER, DIMENSION(:), POINTER                 :: data_1d_i =>NULL()
     !!! if the data is 1d integer
@@ -60,70 +36,6 @@ END TYPE DTYPE(ppm_t_part_prop)_
 !----------------------------------------------------------------------
 minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 
-!!----------------------------------------------------------------------
-!! DC operators
-!!----------------------------------------------------------------------
-TYPE,ABSTRACT :: DTYPE(ppm_t_opdesc)_
-    !!! Data structure to describe differential operator
-    !!!  It only contains semantic information on the operator
-    INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
-    !!! degree of each term in the linear combination of differential ops 
-    INTEGER, DIMENSION(:), POINTER                 :: order =>NULL()
-    !!! approximation order of each term 
-    REAL(MK), DIMENSION(:), POINTER                :: coeffs =>NULL()
-    !!! array where the coefficients in linear combinations of 
-    !!! differential ops are stored
-    INTEGER                                        :: nterms
-    !!! number of terms
-    CHARACTER(LEN=ppm_char)                        :: name
-    !!! name of the vector-valued property
-
-    CONTAINS
-    PROCEDURE(DTYPE(desc_create)_),  DEFERRED :: create
-    PROCEDURE(DTYPE(desc_destroy)_), DEFERRED :: destroy
-END TYPE DTYPE(ppm_t_opdesc)_
-
-TYPE,ABSTRACT :: DTYPE(ppm_t_operator)_
-    !!! Data structure containing all diff operators for a particle set
-    !!! 
-    REAL(MK),DIMENSION(:,:),               POINTER :: ker => NULL()
-    !!! where the operators are stored
-    CLASS(DTYPE(ppm_t_opdesc)_),           POINTER :: desc => NULL()
-    !!! small matrices that describe what each operator does
-    INTEGER                                        :: P_id = 0
-    !!! Id of the set of particles that this operator takes data from.
-    !!! The default, 0, stands for "self" (the operator is computed
-    !!! on the same set of particles than the one which contains the data).
-    INTEGER                                        :: neigh_id = 1
-    !!! Id of the neighbour list that should be used
-    !!! The default, 1, refers to "self": the list of neighbours within
-    !!! the same set of particles. 
-
-    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
-    !!! logical flags
-    !!!    ppm_ops_inc_ghosts
-    !!!           true if the operator should be computed for ghost 
-    !!!           particles too.  Note that the resulting values 
-    !!!           will be wrong for the ghost particles
-    !!!           that have some neighbours outside the ghost layers. 
-    !!!           Default is false.
-    !!!    ppm_ops_interp
-    !!!          true if the op interpolates data from one set of particles
-    !!!    ppm_ops_iscomputed
-    !!!          true if the operator has been computed and is uptodate
-    !!!    ppm_ops_isdefined
-    !!!          true if the operator has been defined 
-    !!!    ppm_ops_vector
-    !!!          true if each term represents a component (ie the result
-    !!!          of the operator should be a vector field, like for gradients)
-    !!!          false if the components are added up (like for the divergence)
-
-    CONTAINS
-    PROCEDURE(DTYPE(op_create)_),  DEFERRED :: create
-    PROCEDURE(DTYPE(op_destroy)_), DEFERRED :: destroy
-
-END TYPE DTYPE(ppm_t_operator)_
-minclude define_abstract_collection_type(DTYPE(ppm_t_operator)_)
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -134,6 +46,9 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_neighlist)_
     INTEGER                                         :: P_id = 0
     !!! Id of the set of particles that this neighbour list refers to
     !!! The default, 0, stands for "self".
+    CLASS(DTYPE(ppm_t_particles)_),POINTER          :: Part => NULL()
+    !!! Pointer to the set of particles to which the neighbours 
+    !!! (in the neighbor lists) belongs to.
     REAL(MK)                                        :: cutoff 
     !!! cutoff radius
     REAL(MK)                                        :: skin
@@ -224,7 +139,7 @@ TYPE,ABSTRACT :: DTYPE(particles_stats)_
 END TYPE DTYPE(particles_stats)_
 
 
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
+TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! Data structure for a particle set
 
     INTEGER                                         :: ID = 0
@@ -279,9 +194,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     CLASS(DTYPE(ppm_c_neighlist)_),POINTER          :: neighs => NULL()
 
 
-    ! Container for differential operators
-    CLASS(DTYPE(ppm_c_operator)_),POINTER           :: ops => NULL()
-
 
     ! Container for particle mappings
     CLASS(DTYPE(ppm_c_part_mapping)_),POINTER       :: maps => NULL()
@@ -298,6 +210,11 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     CLASS(ppm_c_field_info_),POINTER                :: field_ptr => NULL()
     !!! Pointers to the fields that are currently discretized on this 
     !!! Particle set
+
+    CLASS(ppm_c_operator_discr_),POINTER            :: ops => NULL()
+    !!! Pointers to the operators that are currently discretized for this 
+    !!! Particle set
+
 
     ! stats
     CLASS(DTYPE(particles_stats)_),ALLOCATABLE      :: stats
@@ -329,6 +246,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_prop_create)_), DEFERRED :: create_prop 
     PROCEDURE(DTYPE(part_prop_destroy)_),DEFERRED :: destroy_prop 
     PROCEDURE(DTYPE(part_prop_realloc)_),DEFERRED :: realloc_prop 
+    PROCEDURE(DTYPE(get_prop)_),         DEFERRED :: get_prop 
 
     PROCEDURE(DTYPE(part_neigh_create)_),DEFERRED :: create_neighlist 
     PROCEDURE(DTYPE(part_set_cutoff)_),  DEFERRED :: set_cutoff 
@@ -336,9 +254,12 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_neighlist)_),   DEFERRED :: comp_neighlist 
     PROCEDURE(DTYPE(get_nvlist)_),       DEFERRED :: get_nvlist 
     PROCEDURE(DTYPE(get_vlist)_),        DEFERRED :: get_vlist 
+    PROCEDURE(DTYPE(get_neighlist)_),    DEFERRED :: get_neighlist
+    PROCEDURE(DTYPE(has_neighlist)_),    DEFERRED :: has_neighlist
+    PROCEDURE(DTYPE(has_ghosts)_),       DEFERRED :: has_ghosts
 
-!    PROCEDURE(DTYPE(part_op_create)_),DEFERRED :: create_op 
-!    PROCEDURE(DTYPE(part_op_destroy)_),DEFERRED :: destroy_op 
+!    PROCEDURE(DTYPE(part_dcop_create)_),DEFERRED :: create_op 
+!    PROCEDURE(DTYPE(part_dcop_destroy)_),DEFERRED :: destroy_op 
 !    PROCEDURE(DTYPE(ppm_dcop_compute2d)_),DEFERRED :: DTYPE(ppm_dcop_compute2d)
 !    PROCEDURE(DTYPE(ppm_dcop_compute3d)_),DEFERRED :: DTYPE(ppm_dcop_compute3d)
 !    PROCEDURE(DTYPE(part_op_compute)_),DEFERRED :: comp_op 
@@ -360,8 +281,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: DTYPE(ppm_t_particles)_
 
     PROCEDURE(DTYPE(get_xp)_),DEFERRED :: get_xp 
     PROCEDURE(DTYPE(set_xp)_),DEFERRED :: set_xp 
-    PROCEDURE(DTYPE(get_dcop)_),DEFERRED :: get_dcop 
-    PROCEDURE(DTYPE(set_dcop)_),DEFERRED :: set_dcop 
 
     PROCEDURE(DTYPE(data_1d_i_get_field)_),DEFERRED :: DTYPE(data_1d_i_get_field)
     PROCEDURE(DTYPE(data_2d_i_get_field)_),DEFERRED :: DTYPE(data_2d_i_get_field)
@@ -588,6 +507,3 @@ minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 !!----------------------------------------------------------------------
 !minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
 
-#undef   MK
-#undef   _MK
-#undef   DTYPE

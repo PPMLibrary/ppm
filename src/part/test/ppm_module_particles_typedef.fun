@@ -2,6 +2,7 @@ test_suite ppm_module_particles_typedef
 
 use ppm_module_topo_typedef
 use ppm_module_field_typedef
+use ppm_module_operator_typedef
 use ppm_module_interfaces
 use ppm_module_data
 
@@ -58,6 +59,9 @@ complex(mk), dimension(:),   pointer           :: wp_1c => NULL()
 complex(mk), dimension(:,:), pointer           :: wp_2c => NULL()
 logical, dimension(:),   pointer               :: wp_1l => NULL()
 
+integer, dimension(:),allocatable:: degree,order
+real(ppm_kind_double),dimension(:),allocatable :: coeffs
+integer                          :: nterms
     init
 
         use ppm_module_init
@@ -375,6 +379,10 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
     test PSE_client
         type(ppm_t_particles_d)         :: Part1
         type(ppm_t_field)               :: Field1
+        type(ppm_t_field)               :: Field2
+        type(ppm_t_operator)            :: Laplacian
+        CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
+        CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
         !--------------------------
         !Define Fields
         !--------------------------
@@ -413,11 +421,38 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         !call Part1%print_info(info)
 
+        nterms=ndim
+        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
+        if (ndim .eq. 2) then
+               degree =  (/2,0,   0,2/)
+        else 
+               degree =  (/2,0,0, 0,2,0, 0,0,2/)
+        endif
+        coeffs = 1.0_mk
 
+        call Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
+        Assert_Equal(info,0)
+
+        call Laplacian%discretize_on(Part1,DCop,info,method="DC-PSE")
+        Assert_Equal(info,0)
+        Assert_True(associated(DCop))
+        !call Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
+        !Assert_Equal(info,0)
+        !Assert_True(associated(PSEop))
+
+        call DCop%compute(Field1,Field2,info)
+        Assert_Equal(info,0)
+
+
+        call DCop%destroy(info)
+        Assert_Equal(info,0)
+        call Laplacian%destroy(info)
+        Assert_Equal(info,0)
         call Part1%destroy(info)
         Assert_Equal(info,0)
         call Field1%destroy(info)
         Assert_Equal(info,0)
+        deallocate(degree,coeffs,order)
     end test
 !-------------------------------------------------------------
 ! test function
