@@ -58,9 +58,9 @@
 TYPE,EXTENDS(ppm_t_operator_) :: ppm_t_operator
     !!! generic operator type
     CONTAINS
-    PROCEDURE create        => operator_create
-    PROCEDURE destroy       => operator_destroy
-    PROCEDURE discretize_on => operator_discretize_on
+    PROCEDURE :: create        => operator_create
+    PROCEDURE :: destroy       => operator_destroy
+    PROCEDURE :: discretize_on => operator_discretize_on
 END TYPE
 minclude define_collection_type(ppm_t_operator)
 
