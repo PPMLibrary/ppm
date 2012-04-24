@@ -231,9 +231,9 @@ minclude define_abstract_collection_type(ppm_t_operator_discr_)
 
 TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
     CONTAINS
-    PROCEDURE create  => operator_discr_create
-    PROCEDURE destroy => operator_discr_destroy
-    PROCEDURE compute => operator_discr_compute
+    PROCEDURE :: create  => operator_discr_create
+    PROCEDURE :: destroy => operator_discr_destroy
+    PROCEDURE :: compute => operator_discr_compute
 END TYPE
 minclude define_collection_type(ppm_t_operator_discr)
 
