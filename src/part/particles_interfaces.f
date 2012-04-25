@@ -292,14 +292,14 @@ END SUBROUTINE
 FUNCTION DTYPE(has_neighlist)_(this,Part) RESULT(res)
     IMPORT DTYPE(ppm_t_particles)_,ppm_t_discr_kind
     CLASS(DTYPE(ppm_t_particles)_),TARGET          :: this
-    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
     LOGICAL                                        :: res
 END FUNCTION
 
 FUNCTION DTYPE(get_neighlist)_(this,Part) RESULT(NList)
     IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_,ppm_t_discr_kind
     CLASS(DTYPE(ppm_t_particles)_),TARGET          :: this
-    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
 END FUNCTION
 

@@ -4,7 +4,7 @@ FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
     !!! (default is that the two sets are the same)
     CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
     !!! particle set
-    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
     !!! particle set within which the neighbours are sought
     LOGICAL                                        :: res
     !!! Neighbour list
@@ -17,21 +17,13 @@ FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
     IF (PRESENT(Part)) THEN
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            !TODO FIXME
-                !SELECT TYPE(Part_src => NList%Part)
-                !CLASS IS (DTYPE(ppm_t_particles)_)
-                    !IF (ASSOCIATED(Part_src,Part)) RETURN
-                !END SELECT
+            IF (ASSOCIATED(NList%Part,Part)) RETURN
             NList => this%neighs%next()
         ENDDO
     ELSE
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            !TODO FIXME
-            !SELECT TYPE(Part_src => NList%Part)
-            !CLASS IS (DTYPE(ppm_t_particles)_)
-                !IF (ASSOCIATED(Part_src,this)) RETURN
-            !END SELECT
+            IF (ASSOCIATED(NList%Part,this)) RETURN
             NList => this%neighs%next()
         ENDDO
     ENDIF
@@ -47,7 +39,7 @@ FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
     !!! are the same)
     CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
     !!! particle set
-    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET :: Part
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
     !!! particle set within which the neighbours are sought
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
     !!! Neighbour list
@@ -58,21 +50,13 @@ FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
     IF (PRESENT(Part)) THEN
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            !TODO FIXME
-            !SELECT TYPE(Part_src => NList%Part)
-            !CLASS IS (DTYPE(ppm_t_particles)_)
-                !IF (ASSOCIATED(Part_src,Part)) RETURN
-            !END SELECT
+            IF (ASSOCIATED(NList%Part,Part)) RETURN
             NList => this%neighs%next()
         ENDDO
     ELSE
         NList => this%neighs%begin()
         DO WHILE(ASSOCIATED(NList))
-            !TODO FIXME
-            !SELECT TYPE(Part_src => NList%Part)
-            !CLASS IS (DTYPE(ppm_t_particles)_)
-                !IF (ASSOCIATED(Part_src,this)) RETURN
-            !END SELECT
+            IF (ASSOCIATED(NList%Part,this)) RETURN
             NList => this%neighs%next()
         ENDDO
     ENDIF
