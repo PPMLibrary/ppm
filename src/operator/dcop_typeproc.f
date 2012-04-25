@@ -72,6 +72,44 @@ END SUBROUTINE DTYPE(dcop_destroy)
 
 
 
+!DESTROY ENTRY
+SUBROUTINE DTYPE(dcop_comp_weights)(this,info,c,min_sv)
+    !!! Compute the weights for a DC-PSE operator 
+    !!! (this is an expensive step and has to
+    !!! be re-done everytime the particles move)
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_dcop))                  :: this
+    INTEGER,                   INTENT(  OUT)  :: info
+    !!! Returns status, 0 upon success.
+    !---------------------------------------------------------
+    ! Optional arguments
+    !---------------------------------------------------------
+    REAL(MK),                  OPTIONAL, INTENT(IN   )   :: c
+    !!! ratio h/epsilon
+    REAL(MK),                  OPTIONAL, INTENT(  OUT)   :: min_sv
+    !!! if present, compute the singular value decomposition of the 
+    !!! vandermonde matrix for each operator and return the smallest one
+    start_subroutine("op_comp_weights")
+
+    IF (ppm_dim .EQ. 2) THEN
+        CALL this%comp_weights_2d(info,c,min_sv)
+    ELSE
+        CALL this%comp_weights_3d(info,c,min_sv)
+    ENDIF
+        or_fail("Failed to compute weights for DC operator")
+
+    SELECT TYPE(P => this%discr_src)
+    CLASS IS (DTYPE(ppm_t_particles))
+        P%stats%nb_dc_comp = P%stats%nb_dc_comp + 1
+    END SELECT
+
+    this%flags(ppm_ops_iscomputed) = .TRUE.
+
+    end_subroutine()
+END SUBROUTINE DTYPE(dcop_comp_weights)
+
+
+
 !COMPUTE DC OPERATOR ON A PARTICLE SET
 SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 #ifdef __MPI

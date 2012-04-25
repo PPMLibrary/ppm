@@ -316,7 +316,11 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     INTEGER                                         :: data_type = 0
     !!! data type
     !!! One of:
-    !!!     ppm_param_...
+    !!!     ppm_type_int
+    !!!     ppm_type_longint
+    !!!     ppm_type_real
+    !!!     ppm_type_comp
+    !!!     ppm_type_logical
     !!! 
     INTEGER                                         :: lda = 0
     !!! number of components (1 for scalar fields)

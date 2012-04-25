@@ -83,7 +83,7 @@ macro check_true(a,message,info=info,exit_point=9999)
 IF (.NOT.<%= a_s %>) THEN
    WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
-       & "    <%= a_s %> is not true",&
+       & "    <%= a_s %> is not true. ",&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
 ENDIF

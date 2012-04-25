@@ -1,16 +1,16 @@
 #if   __DIM == 2
-SUBROUTINE DTYPE(ppm_dcop_compute2d)(Pc,op_id,info,c,min_sv)
+SUBROUTINE DTYPE(dcop_comp_weights_2d)(this,info,c,min_sv)
 #elif __DIM == 3
-SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
+SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
 #endif
     !!! Computes generalized DC operators
     !!! if the optional argument interp is true, the routine uses
-    !!! one set of particles (Pc2) as input data and
+    !!! one set of particles (Part_src) as input data and
     !!! compute the differential opearator on the new set
     !!! If it has to do be interpolating (if the quantity to be computed
     !!! is the field itself, ie. if the degree of one term of the 
     !!! differential operator is zero), then the nearest-neighbour 
-    !!! distances within Pc2 must have been already computed.
+    !!! distances within Part_src must have been already computed.
     USE ppm_module_error
     IMPLICIT NONE
 
@@ -18,10 +18,8 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     !---------------------------------------------------------
     ! arguments
     !---------------------------------------------------------
-    CLASS(DTYPE(ppm_t_particles))                        :: Pc
+    CLASS(DTYPE(ppm_t_dcop))                             :: this
     !!! particles
-    INTEGER,                             INTENT(IN   )   :: op_id
-    !!! id of the operator kernel
     INTEGER,                             INTENT(  OUT)   :: info
     !!! non-zero on output if some error occurred
     !---------------------------------------------------------
@@ -38,10 +36,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     !---------------------------------------------------------
     INTEGER                               :: i,j,k,ip,iq,beta(ppm_dim),ineigh
     INTEGER                               :: ncoeff,n_odd,np_target
-    CHARACTER(LEN = 256)                  :: caller='ppm_dcop_compute'
-    CHARACTER(LEN = 256)                  :: cbuf
     CHARACTER(LEN = 32)                   :: myformat
-    REAL(KIND(1.D0))                      :: t0
     REAL(MK)                              :: expo,byh
     REAL(MK),DIMENSION(:),ALLOCATABLE     :: byh0powerbeta
     REAL(MK)                              :: sv,dist2
@@ -55,7 +50,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     INTEGER                               :: order_a
     INTEGER,DIMENSION(ppm_dim)            :: degree
     INTEGER,DIMENSION(:),ALLOCATABLE      :: sum_degree
-    REAL(MK),DIMENSION(:),POINTER         :: coeffs=>NULL()
+    REAL(MK),DIMENSION(:),ALLOCATABLE     :: coeffs
     INTEGER,DIMENSION(3)                  :: ldc
     INTEGER                               :: degree_poly
     LOGICAL                               :: cartesian,isinterp,adaptive,vector
@@ -76,15 +71,30 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     REAL(MK)                              :: c_value
     REAL(MK)                              :: min_sv_p
 
-    TYPE(DTYPE(ppm_t_sop)),POINTER  :: Pc2 => NULL()
-    TYPE(DTYPE(ppm_t_operator)),POINTER   :: op  => NULL()
-    TYPE(DTYPE(ppm_t_neighlist)),POINTER  :: Nlist => NULL()
+    CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_to => NULL()
+    CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_src => NULL()
 
-    !!---------------------------------------------------------------------!
-    !! Initialize
-    !!---------------------------------------------------------------------!
-    info = 0 ! change if error occurs
-    CALL substart(caller,t0,info)
+    TYPE(DTYPE(ppm_t_sop)),        POINTER :: Pc2 => NULL()
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist => NULL()
+    CLASS(ppm_t_operator_),        POINTER :: op => NULL()
+
+#if   __DIM == 2
+    start_subroutine("op_comp_weights_2d")
+#elif __DIM == 3
+    start_subroutine("op_comp_weights_3d")
+#endif
+
+    check_associated("this%discr_src",&
+        "Operator first needs to be discretized on a particle set")
+
+    SELECT TYPE(ds => this%discr_src)
+    CLASS IS(DTYPE(ppm_t_particles)_)
+        Part_to => ds
+    END SELECT
+    SELECT TYPE(dt => this%discr_to)
+    CLASS IS(DTYPE(ppm_t_particles)_)
+        Part_src => dt
+    END SELECT
 
     IF (PRESENT(c)) THEN
         c_value=c
@@ -92,15 +102,21 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
         c_value=1._MK
     ENDIF
 
-    op => Pc%ops%vec(op_id)%t
+    check_associated("this%op_ptr",&
+        "Discretized operator does not contain a pointer to a generic differential operator. Something is wrong.")
 
-    isinterp = op%flags(ppm_ops_interp)
-    vector = op%flags(ppm_ops_vector)
+    !Pointer to the mathematical description of the operator (as opposed
+    !to its discretization, which is stored in the variable this)
+    op => this%op_ptr
+
+
+    isinterp = this%flags(ppm_ops_interp)
+    vector = this%flags(ppm_ops_vector)
     !if true, then each term of the differential opearator is stored as one
     !component in eta. This is used when computing e.g. the gradient opearator.
     !if false, the same input parameters would yield an operator approximating
     ! the divergence operator.
-    with_ghosts = op%flags(ppm_ops_inc_ghosts)
+    with_ghosts = this%flags(ppm_ops_inc_ghosts)
     !if true, then the operator should be computed for ghost particles too. 
     !Note that the resulting values will be wrong for the ghost particles
     !that have some neighbours outside the ghost layers. Some of these particles
@@ -108,77 +124,46 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     !invertible. These particles will be skipped without raising a warning.
 
 
-    Nlist => Pc%neighs%vec(op%neigh_id)%t
-    IF (.NOT. Nlist%uptodate) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,&
-            'Need to specify which set of particles &
-            &   (Pc2) should be used for interpolation',&
-            & __LINE__,info)
-        GOTO 9999
-    ENDIF
+    Nlist => Part_to%get_neighlist(Part_src)
+    check_true("Nlist%uptodate","The neighbour list is not up-to-date")
 
-    nterms = op%desc%nterms
-    ALLOCATE(sum_degree(nterms),byh0powerbeta(nterms))
+    nterms = op%nterms
+    ALLOCATE(sum_degree(nterms),byh0powerbeta(nterms),STAT=info)
+        or_fail_alloc("sum_degree")
 
-    cartesian=Pc%flags(ppm_part_cartesian)
+    cartesian=Part_to%flags(ppm_part_cartesian)
     IF (cartesian .AND. nterms .GT. 1) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,&
-            'Case where nterms>1 is not yet implemented for Cartesian particles',&
-            __LINE__,info)
-        GOTO 9999
+        fail("Case where nterms>1 is not yet implemented for Cartesian particles")
     ENDIF
 
-    !IF (Pc%adaptive) THEN
-        !adaptive = .TRUE.
-    !ELSE
-        !adaptive = .FALSE.
-    !ENDIF
-
-    SELECT TYPE(Pc)
+    SELECT TYPE(Part_to)
     TYPE IS (DTYPE(ppm_t_sop))
-        CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=with_ghosts)
+        !CALL Part_to%get(rcp,Part_to%rcp_id,with_ghosts=with_ghosts)
+        CALL Part_to%get(rcp,Part_to%rcp_id,with_ghosts=with_ghosts)
         adaptive = .TRUE.
-        IF (isinterp) THEN
-            Pc2 => Pc%set_aPc%vec(op%P_id)%t
-        ENDIF
-
-        IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-            CALL Pc2%get(nn_sq,Pc2%nn_sq_id,with_ghosts=.TRUE.)
-            !!! nearest-neighbour distances within Pc2 
-            !!! (they must have been already computed)
-        ENDIF
     CLASS DEFAULT
-        byh = 1._MK/Pc%h_avg
+        byh = 1._MK/Part_to%h_avg
         adaptive = .FALSE.
     END SELECT
 
 
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-        IF (Pc2%nn_sq_id .EQ. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                & 'need to call particles_nearest_neighbors first',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        !!! nearest-neighbour distances within Part_src 
+        !!! (they must have been already computed)
+        CALL Part_src%get(nn_sq,this%nn_sq,with_ghosts=.TRUE.)
+            or_fail("need to call particles_nearest_neighbors first")
     ENDIF
 
 
     !Determine number of coefficients needed for this operator
     DO i=1,nterms
-        degree = op%desc%degree(1+(i-1)*ppm_dim:i*ppm_dim)
+        degree = op%degree(1+(i-1)*ppm_dim:i*ppm_dim)
         sum_degree(i) = SUM(degree)
-        order_a=op%desc%order(i)
+        order_a=this%order(i)
 
         degree_poly = sum_degree(i) + order_a - 1
 
-        IF (degree_poly .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,&
-                'Negative degree for polynomial basis',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        check_true("degree_poly .GE. 0","Negative degree for polynomial basis")
 
         IF (cartesian) THEN
             n_odd = 0
@@ -190,24 +175,13 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
         ELSE 
             ncoeff = binomial(degree_poly+ppm_dim,ppm_dim)
         ENDIF
-
-        !write(*,*) 'degree: ',degree, sum_degree(i)
-        !write(*,*) 'degree_poly: ',degree_poly, ncoeff
     ENDDO
 
-    IF (ncoeff.LE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,&
-            'Could not compute number of coefficients',__LINE__,info)
-        GOTO 9999
-    ENDIF
+    check_true("ncoeff.GT.0","Could not compute number of coefficient")
 
     ALLOCATE(gamma(ppm_dim,ncoeff),alpha(ppm_dim,ncoeff),STAT=info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
-        GOTO 9999
-    ENDIF ! Generate the polynomial basis for particle approximation
+        or_fail_alloc("Local variables")
+    ! Generate the polynomial basis for particle approximation
     !   alpha is the approximation basis
     !   gamma is the template for DC operators
     ip = 0
@@ -259,22 +233,15 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     gamma = alpha
 
     IF (Nlist%nneighmin .LT. ncoeff) THEN
-        CALL ppm_write(ppm_rank,caller,'Not enough neighbours',info)
         WRITE(cbuf,*) 'For this DC-operator, we need ',&
             ncoeff,' neighbours. We have ',Nlist%nneighmin
-        CALL ppm_write(ppm_rank,caller,cbuf,info)
-        info = -1
-        GOTO 9999
+        fail("Not enough neighbours")
     ENDIF
 
 
     ALLOCATE(d2_one2all(Nlist%nneighmax),dx(ppm_dim,Nlist%nneighmax),&
         Z(ncoeff,ncoeff),b(ncoeff,nterms),b_0(ncoeff,nterms),STAT=info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail_alloc("local variables")
 
     !only used to compute the SVD, mainly for debugging.
     IF(PRESENT(min_sv)) THEN
@@ -288,18 +255,16 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
         ldc(1) = Nlist%nneighmax; 
     ENDIF
     IF (with_ghosts) THEN
-        np_target = Pc%Mpart
+        np_target = Part_to%Mpart
     ELSE
-        np_target = Pc%Npart
+        np_target = Part_to%Npart
     ENDIF
     ldc(2) = np_target
-    CALL ppm_alloc(op%ker,ldc,ppm_param_alloc_grow,info)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,'Allocation failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
-    eta => Pc%get_dcop(op_id,with_ghosts=with_ghosts)
+    CALL ppm_alloc(this%ker,ldc,ppm_param_alloc_grow,info)
+        or_fail_alloc("this%ker")
+
+    eta => this%ker(1:ldc(1),1:np_target)
+
     FORALL(i=1:ldc(1),j=1:np_target) eta(i,j)=0._MK
 
     !----------------------------------------------------------------------!
@@ -308,7 +273,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     b_0 = 0._MK
 
     DO i=1,nterms
-        degree = op%desc%degree(1+(i-1)*ppm_dim:i*ppm_dim)
+        degree = op%degree(1+(i-1)*ppm_dim:i*ppm_dim)
         DO j=1,ncoeff
             IF (MAXVAL(ABS(alpha(:,j)-degree)).EQ.0) THEN
                 b_0(j,i)=(-1)**(sum_degree(i))*factorial_m(degree,ppm_dim)
@@ -323,19 +288,21 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
     ENDDO
     
     IF (isinterp) THEN
-        CALL Pc%get_xp(xp1,with_ghosts=with_ghosts)
-        CALL Pc2%get_xp(xp2,with_ghosts=.TRUE.)
+        CALL Part_to%get_xp(xp1,with_ghosts=with_ghosts)
+        CALL Part_src%get_xp(xp2,with_ghosts=.TRUE.)
     ELSE
-        CALL Pc%get_xp(xp1,with_ghosts=.TRUE.)
+        CALL Part_to%get_xp(xp1,with_ghosts=.TRUE.)
         xp2 => xp1
     ENDIF
     nvlist => Nlist%nvlist
     vlist => Nlist%vlist
-    coeffs => op%desc%coeffs(1:nterms)
+    ALLOCATE(coeffs(nterms),STAT=info)
+        or_fail_alloc("coeffs")
+    coeffs = REAL(op%coeffs(1:nterms),MK)
 
     particle_loop: DO ip = 1,np_target ! loop over all target particles
 
-        IF (ip .GT. Pc%Npart .AND. nvlist(ip).LT.ncoeff) THEN
+        IF (ip .GT. Part_to%Npart .AND. nvlist(ip).LT.ncoeff) THEN
             !not enough neigbours for this ghost particle - skip it
             CYCLE particle_loop
         ENDIF
@@ -443,7 +410,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
         CALL DTYPE(solveLSE_n)(Z,b,nterms,info)
         ! now b contain the solutions to the LSEs A*x_i=b_i for i=1:nterms
         IF (info .NE. 0) THEN
-            IF (ip .GT. Pc%Npart) THEN
+            IF (ip .GT. Part_to%Npart) THEN
                 !ignore error in matrix inversion for ghost particles
                 ! simply skip it
                 CYCLE particle_loop
@@ -467,10 +434,7 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
             ENDDO
             CALL ppm_write(ppm_rank,caller,&
                 'h-scaled stencil written in file fort.9003',info)
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,&
-                'Failed to solve the LSE', __LINE__,info)
-            GOTO 9999
+            fail("Failed to solve the LSE")
         ENDIF
 
         DO i=1,nterms 
@@ -545,40 +509,40 @@ SUBROUTINE DTYPE(ppm_dcop_compute3d)(Pc,op_id,info,c,min_sv)
 
     ENDDO particle_loop
 
-    coeffs=> NULL()
-    CALL Pc%set_xp(xp1,read_only=.TRUE.)
+    CALL Part_to%set_xp(xp1,read_only=.TRUE.)
     IF (isinterp) THEN
-        CALL Pc2%set_xp(xp2,read_only=.TRUE.)
+        CALL Part_src%set_xp(xp2,read_only=.TRUE.)
     ELSE
         xp2 => NULL()
     ENDIF
-    eta => Pc%set_dcop(op_id)
+    eta => NULL()
 
-    SELECT TYPE (Pc)
+    SELECT TYPE (Part_to)
     TYPE IS (DTYPE(ppm_t_sop))
-        CALL Pc%set(rcp,Pc%rcp_id,read_only=.TRUE.)
+        CALL Part_to%set(rcp,Part_to%rcp_id,read_only=.TRUE.)
         IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-            CALL Pc2%set(nn_sq,Pc2%nn_sq_id,read_only=.TRUE.)
+            CALL Part_src%set(nn_sq,this%nn_sq,read_only=.TRUE.)
         ENDIF
     END SELECT
 
     !!---------------------------------------------------------------------!
     !! Finalize
     !!---------------------------------------------------------------------!
-    DEALLOCATE(Z,b,b_0,d2_one2all,dx,gamma,alpha,sum_degree,byh0powerbeta)
+    DEALLOCATE(Z,b,b_0,coeffs,d2_one2all,dx,gamma,alpha,sum_degree,&
+        byh0powerbeta,STAT=info)
+        or_fail_dealloc("Z,b,b_0...")
 
     IF(PRESENT(min_sv)) THEN
-        DEALLOCATE(Z_copy)
+        DEALLOCATE(Z_copy,STAT=info)
+            or_fail_dealloc("Z_copy")
     ENDIF
 
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
+    end_subroutine()
 
 #if   __DIM == 2
-END SUBROUTINE DTYPE(ppm_dcop_compute2d)
+END SUBROUTINE DTYPE(dcop_comp_weights_2d)
 #elif __DIM == 3
-END SUBROUTINE DTYPE(ppm_dcop_compute3d)
+END SUBROUTINE DTYPE(dcop_comp_weights_3d)
 #endif
 
 #undef __DIM

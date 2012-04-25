@@ -222,8 +222,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     ! Container for particle mappings
     CLASS(DTYPE(ppm_c_part_mapping)_),POINTER       :: maps => NULL()
 
-    ! List of IDs of other Particle sets
-    TYPE(idList)                                    :: set_Pc
+    !! List of IDs of other Particle sets
+    !TYPE(idList)                                    :: set_Pc
 
 
     ! Load balancing

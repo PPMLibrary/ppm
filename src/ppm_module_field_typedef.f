@@ -119,6 +119,7 @@ SUBROUTINE field_destroy(this,info)
     this%ID = 0
     this%name = ''
     this%lda = 0
+    this%data_type = 0
 
     !Destroy the bookkeeping entries in the fields that are
     !discretized on this mesh
