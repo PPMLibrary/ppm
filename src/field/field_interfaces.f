@@ -27,12 +27,13 @@
 ! CH-8092 Zurich, Switzerland
 !-------------------------------------------------------------------------
 !CREATE
-SUBROUTINE field_create_(this,lda,name,info,init_func)
+SUBROUTINE field_create_(this,lda,info,dtype,name,init_func)
     IMPORT ppm_t_field_,ppm_kind_double
     CLASS(ppm_t_field_)                     :: this
     INTEGER,                     INTENT(IN) :: lda
-    CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
+    INTEGER,OPTIONAL,            INTENT(IN) :: dtype
+    CHARACTER(LEN=*),OPTIONAL,   INTENT(IN) :: name
     REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
 END SUBROUTINE
 !DESTROY

@@ -250,7 +250,7 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         call Mesh1%def_uniform(info)
             Assert_Equal(info,0)
 
-        call Field1%create(3,'testField',info,init_func=my_init_function) 
+        call Field1%create(3,info,name='testField',init_func=my_init_function) 
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)

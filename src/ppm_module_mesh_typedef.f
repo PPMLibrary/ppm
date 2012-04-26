@@ -144,7 +144,7 @@ minclude define_collection_procedures(ppm_t_A_subpatch)
 minclude define_collection_procedures(ppm_t_mesh_discr_data)
 
 SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
-    !!! Constructor for subdomain data data structure
+    !!! Returns a pointer to the data array for a given field on this subpatch
     CLASS(ppm_t_subpatch)                :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
@@ -166,7 +166,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
 END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
-    !!! Constructor for subdomain data data structure
+    !!! Returns a pointer to the data array for a given field on this subpatch
     CLASS(ppm_t_subpatch)                :: this
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
@@ -190,7 +190,7 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
 END SUBROUTINE
 
 SUBROUTINE subpatch_data_create(this,discr_data,Nmp,info)
-    !!! Constructor for subdomain data data structure
+    !!! Constructor for subdomain_data data structure
     CLASS(ppm_t_subpatch_data)              :: this
     CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN) :: discr_data
     !!! field that is discretized on this mesh patch

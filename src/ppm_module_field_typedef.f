@@ -67,28 +67,42 @@ minclude define_collection_procedures(ppm_t_discr_info)
 minclude define_collection_procedures(ppm_t_field)
 
 !CREATE
-SUBROUTINE field_create(this,lda,name,info,init_func)
-    !!! Constructor for subdomain data data structure
+SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
+    !!! Constructor for fields
     CLASS(ppm_t_field)                      :: this
     INTEGER,                     INTENT(IN) :: lda
     !!! number of components
-    CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
+    !!!
+    INTEGER,OPTIONAL,            INTENT(IN) :: dtype
+    !!! data type (ppm_type_int, ppm_type_real, ppm_type_comp, ppm_type_logical)
+    CHARACTER(LEN=*),OPTIONAL,   INTENT(IN) :: name
+    !!!
     REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
     !!! support for initialisation function not finished (need to think
     !!! about data types...)
 
     start_subroutine("field_create")
 
+    !Use a global ID (this may not be needed, after all...)
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
-    this%name = TRIM(ADJUSTL(name))
+
     this%lda = lda
-    IF (ASSOCIATED(this%discr_info)) THEN
-        fail("Seems like this field was alrady allocated - Call destroy() first?")
+    IF (PRESENT(name)) THEN
+        this%name = TRIM(ADJUSTL(name))
+    ELSE
+        this%name = "default_field_name"
     ENDIF
+    IF (PRESENT(dtype)) THEN
+        this%data_type = dtype
+    ELSE   
+        this%data_type = ppm_type_real
+    ENDIF
+    check_false("ASSOCIATED(this%discr_info)",&
+        "Seems like this field was alrady allocated - Call destroy() first?")
     ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
-    or_fail_alloc("this%discr_info")
+        or_fail_alloc("this%discr_info")
 
     end_subroutine()
 END SUBROUTINE field_create
