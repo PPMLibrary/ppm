@@ -238,7 +238,7 @@ if test "x${dev_compile}" = xyes; then
     if test "x${vendor}" = xintel; then
         AC_SUBST(DEBUG,["-g -O0 -check pointers -check bounds -traceback -diag-disable 10120"])
     elif test "x${vendor}" = xgnu; then
-      AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace"])
+      AC_SUBST(DEBUG,["-g -O0 -fbounds-check -fbacktrace -ffree-line-length-none"])
     else
       AC_SUBST(DEBUG,["-g"])
     fi
@@ -253,13 +253,15 @@ if test "x${debug_compile}" = xyes; then
     if test "x${vendor}" = xintel; then
         AC_SUBST(DEBUG,["-O0 -g -debug all -check all -fp-stack-check -heap-arrays -ftrapuv -check pointers -check bounds -check uninit -traceback -diag-disable 10120"])
     elif test "x${vendor}" = xgnu; then
-      AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic"])
+      AC_SUBST(DEBUG,["-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none"])
     else
       AC_SUBST(DEBUG,["-O0 -g"])
     fi
 else
     if test "x${vendor}" = xintel; then
         AC_SUBST(FCFLAGS,["$FCFLAGS -diag-disable 5462"])
+    elif test "x${vendor}" = xgnu; then
+	AC_SUBST(FCFLAGS,["$FCFLAGS -ffree-line-length-none"])
     fi
 fi
 

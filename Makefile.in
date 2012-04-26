@@ -106,7 +106,7 @@ $(OBJ_DIR)/%.d : $(SRC_DIR)/%.f $(OBJ_DIR)/%.f
 	$(ENV) $(RUN) "$(DEPCMD)" $(LOG) "Dependency Error"
 
 COMPILECMD = $(FC) $(INCLS) $(LDFLAGS) $(FCFLAGS) $(LIBS) $(DEBUG) -Llib -c -o $@ $<
-$(OBJ_DIR)/%.o : $(OBJ_DIR)/%.f
+$(OBJ_DIR)/%.o : $(OBJ_DIR)/%.f $(OBJ_DIR)/%.d
 	@printf "  FC   %-42s" $<; \
 	$(RUN) "$(COMPILECMD)" $(LOG) "Compile Error" \
 	&& mv $(builddir)/*.mod $(MODULES_DIR)

@@ -11,7 +11,13 @@ PPM=0
 NUM=0
 
 # extended regexp flag
-ef=$(echo 'aaa' | $SED -E 's/a+/b/' 2>&1 )
+ef=$(echo 'aaa' | $SED -E 's/a+/b/I' 2>&1 )
+
+if [[ $? != 0 ]]
+then
+    echo "Your sed doesn't want to do a case-insensitive replace. Install GNU sed, reconfigure and try again."
+    exit 1
+fi
 
 if [[ $ef == b ]]
 then
