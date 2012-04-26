@@ -279,57 +279,61 @@ SUBROUTINE DTYPE(set_xp)(Pc,xp,read_only,ghosts_ok)
 
 END SUBROUTINE DTYPE(set_xp)
 
-SUBROUTINE DTYPE(part_prop_create)(Pc,id,datatype,info,&
-        field,name,lda,zero,with_ghosts)
+SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
+        dtype,name,lda,zero,with_ghosts)
     !!! Adds a property to an existing particle set
-    CLASS(DTYPE(ppm_t_particles))         :: Pc
-    INTEGER,                INTENT(  OUT) :: id
-    INTEGER,                INTENT(IN   ) :: datatype
-    INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
+    CLASS(DTYPE(ppm_t_particles))         :: this
+    INTEGER,               INTENT(OUT)    :: info
     CLASS(ppm_t_field_),OPTIONAL,INTENT(IN   ) :: field
-    CHARACTER(LEN=*),OPTIONAL,INTENT(IN  ) :: name
+    CLASS(DTYPE(ppm_t_part_prop)_),OPTIONAL,POINTER,INTENT(OUT):: discr_data
+    INTEGER, OPTIONAL,      INTENT(IN   ) :: dtype
+    CHARACTER(LEN=*),OPTIONAL,INTENT(IN ) :: name
+    INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
     !!! name to this property
     LOGICAL, OPTIONAL                     :: zero
     !!! if true, then initialise the data to zero
     LOGICAL, OPTIONAL                     :: with_ghosts
     !!! if true, then allocate with Mpart instead of the default size of Npart
-    INTEGER,               INTENT(OUT)    :: info
+
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: part_prop => NULL()
     CHARACTER(LEN=ppm_char)               :: name2
-    INTEGER                               :: lda2,vec_size,npart,i
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER:: prop => NULL()
+    INTEGER                               :: lda2,vec_size,npart,i,datatype
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
 
     start_subroutine("particle_prop_create")
 
-    lda2 = 1
-    IF (PRESENT(lda)) THEN
-        IF (lda.GE.2) THEN
-            lda2 = lda
-        ENDIF
-    ENDIF
-    IF (PRESENT(name)) THEN
-        name2 = name
+    IF (PRESENT(field)) THEN
+        lda2 = field%lda
+        name2 = field%name
+        datatype = field%data_type
     ELSE
-        IF (PRESENT(field)) THEN
-            name2 = field%name
+        lda2 = 1
+        IF (PRESENT(lda)) THEN
+            IF (lda.GE.2) THEN
+                lda2 = lda
+            ENDIF
+        ENDIF
+        IF (PRESENT(name)) THEN
+            name2 = name
         ELSE
             name2 = "default_ppt_name"
         ENDIF
+        IF (PRESENt(dtype)) THEN
+            datatype = dtype
+        ELSE
+            datatype = ppm_type_real
+        ENDIF
     ENDIF
 
-    npart = Pc%Npart
+    npart = this%Npart
     flags = .FALSE.
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
-            IF (Pc%flags(ppm_part_ghosts)) THEN
-                npart = Pc%Mpart
+            IF (this%flags(ppm_part_ghosts)) THEN
+                npart = this%Mpart
                 flags(ppm_ppt_ghosts) = .TRUE.
             ELSE
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,&
-            'trying to init property for ghosts when ghosts are not computed',&
-                    __LINE__,info)
-                GOTO 9999
+        fail("trying to init property for ghosts when ghosts are not computed")
             ENDIF
         ENDIF
     ENDIF
@@ -338,14 +342,18 @@ SUBROUTINE DTYPE(part_prop_create)(Pc,id,datatype,info,&
     flags(ppm_ppt_map_parts) = .TRUE.
 
 
-    ALLOCATE(DTYPE(ppm_t_part_prop)::prop,STAT=info)
+    ALLOCATE(DTYPE(ppm_t_part_prop)::part_prop,STAT=info)
         or_fail_alloc("prop")
     ! Create the property
-    CALL prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
+    CALL part_prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
         or_fail("creating property array failed")
 
-    CALL Pc%props%push(prop,info,id)
+    CALL this%props%push(part_prop,info)
         or_fail("pushing new property into collection failed")
+
+    IF (PRESENT(discr_data)) THEN
+        discr_data => part_prop
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_prop_create)
@@ -507,17 +515,17 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
     SELECT TYPE(Pc)
     TYPE IS (DTYPE(ppm_t_sop))
         ASSOCIATE (ghosts => Pc%flags(ppm_part_ghosts))
-            IF (Pc%rcp_id.LE.0) THEN
-                CALL Pc%create_prop(Pc%rcp_id,ppm_type_real,info,&
+            IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
+                CALL Pc%create_prop(info,discr_data=Pc%rcp,dtype=ppm_type_real,&
                     name='rcp',with_ghosts=ghosts) 
             ENDIF
-            CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=ghosts)
+            CALL Pc%get(Pc%rcp,rcp,info,with_ghosts=ghosts)
             IF (PRESENT(cutoff)) THEN
                 rcp = cutoff
             ELSE
                 rcp = Pc%ghostlayer
             ENDIF
-            CALL Pc%set(rcp,Pc%rcp_id,ghosts_ok=ghosts)
+            CALL Pc%set(Pc%rcp,rcp,info,ghosts_ok=ghosts)
         END ASSOCIATE
         Nlist%cutoff = -1._MK 
         !this field should not be used with adaptive particles
@@ -691,7 +699,7 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
     Pc%time = 0._MK
     Pc%itime = 0
 
-    Pc%gi_id = 0
+    Pc%gi => NULL()
 
     SELECT TYPE(Pc)
     CLASS IS (DTYPE(ppm_t_sop))
@@ -700,16 +708,15 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
         !-----------------------------------------------------------------
         ! Particles are by default not adaptive
         Pc%adaptive = .FALSE.
-        Pc%adapt_wpid = 0
-        Pc%rcp_id = 0
-        Pc%D_id = 0
-        Pc%Dtilde_id = 0
-        Pc%nn_sq_id = 0
+        Pc%adapt_wp => NULL()
+        Pc%rcp => NULL()
+        Pc%D => NULL()
+        Pc%Dtilde => NULL()
         ! Particles do not represent a level-set function
         Pc%level_set = .FALSE.
-        Pc%level_id = 0
+        Pc%level => NULL()
         !        Pc%level_old_id = 0
-        Pc%level_grad_id = 0
+        Pc%level_grad => NULL()
         !        Pc%level_grad_old_id = 0
         ! Particles are by default isotropic
         Pc%anisotropic = .FALSE.
@@ -2087,29 +2094,13 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     !check that we have a cutoff radius
     SELECT TYPE (Pc)
     CLASS IS (DTYPE(ppm_t_sop))
-        IF (Pc%rcp_id.LE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &  'cutoff radii for adaptive particles have not been defined',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
-        CALL Pc%get(rcp,Pc%rcp_id,with_ghosts=.TRUE.)
-        IF (.NOT.ASSOCIATED(rcp)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &  'DS for cutoff radii is not associated',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
+        check_associated("Pc%rcp",&
+            "cutoff radii for adaptive particles have not been defined")
+        CALL Pc%get(Pc%rcp,rcp,info,with_ghosts=.TRUE.)
+            or_fail("could not access cutoff radii")
     CLASS DEFAULT
-        IF (Nlist%cutoff.LE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-            &  'cutoff is negative or zero - do we really want neighbour lists?',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
+        check_true("Nlist%cutoff.GT.0",&
+            "cutoff is negative or zero - do we really want neighbour lists?")
     END SELECT
 
     IF (Nlist%isymm.EQ.1) THEN
@@ -2440,7 +2431,8 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
     start_subroutine("part_comp_global_index")
 
     IF (.NOT. Pc%flags(ppm_part_global_index)) THEN
-        CALL Pc%create_prop(Pc%gi_id,ppm_type_int,info,name="GlobalIndex")
+        CALL Pc%create_prop(info,discr_data=Pc%gi,dtype=ppm_type_int,&
+            name="GlobalIndex")
         Pc%flags(ppm_part_global_index) = .TRUE.
     END IF
 #ifdef __MPI
@@ -2449,9 +2441,9 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
 #else
     offset = 0
 #endif
-    CALL Pc%get(wp,Pc%gi_id)
+    CALL Pc%get(Pc%gi,wp,info)
     FORALL (i=1:Pc%Npart) wp(i) = offset + i !- 1 !uncomment if index from 0
-    CALL Pc%set(wp,Pc%gi_id)
+    CALL Pc%set(Pc%gi,wp,info)
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_comp_global_index)
@@ -2621,7 +2613,7 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
     start_function("has_ghosts")
 
     IF (PRESENT(Field)) THEN
-        CALL this%get_prop(Field,prop,info)
+        CALL this%get_discr(Field,prop,info)
             or_fail("this field is not discretized on this particle set")
         res = prop%flags(ppm_ppt_ghosts)
     ELSE
@@ -2632,13 +2624,13 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
 
 END FUNCTION
 
-SUBROUTINE DTYPE(get_prop)(this,Field,prop,info)
+SUBROUTINE DTYPE(part_get_discr)(this,Field,prop,info)
     CLASS(DTYPE(ppm_t_particles))                  :: this
     CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
     INTEGER,                                INTENT(  OUT)  :: info
 
-    start_subroutine("get_prop")
+    start_subroutine("part_get_discr")
     
     prop => this%props%begin()
     loop: DO WHILE(ASSOCIATED(prop))

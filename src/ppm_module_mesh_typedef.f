@@ -43,6 +43,13 @@ TYPE,EXTENDS(ppm_t_subpatch_data_) :: ppm_t_subpatch_data
 END TYPE
 minclude define_collection_type(ppm_t_subpatch_data)
 
+TYPE,EXTENDS(ppm_t_mesh_discr_data_) :: ppm_t_mesh_discr_data
+    CONTAINS
+    PROCEDURE :: create    => mesh_discr_data_create
+    PROCEDURE :: destroy   => mesh_discr_data_destroy
+END TYPE
+minclude define_collection_type(ppm_t_mesh_discr_data)
+
 TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
@@ -50,9 +57,6 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
-!    GENERIC    :: get_field => subpatch_get_field_3d_rd,&
-!        &                   subpatch_get_field_2d_rd
-    !PROCEDURE  :: get => subpatch_get
 END TYPE
 minclude define_collection_type(ppm_t_subpatch)
 
@@ -69,6 +73,7 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
     PROCEDURE  :: create                => equi_mesh_create
     PROCEDURE  :: destroy               => equi_mesh_destroy
+    PROCEDURE  :: create_prop           => equi_mesh_create_prop
     PROCEDURE  :: def_patch             => equi_mesh_def_patch
     PROCEDURE  :: set_rel               => equi_mesh_set_rel
     PROCEDURE  :: def_uniform           => equi_mesh_def_uniform
@@ -136,6 +141,7 @@ minclude define_collection_procedures(ppm_t_equi_mesh)
 minclude define_collection_procedures(ppm_t_subpatch_data)
 minclude define_collection_procedures(ppm_t_subpatch)
 minclude define_collection_procedures(ppm_t_A_subpatch)
+minclude define_collection_procedures(ppm_t_mesh_discr_data)
 
 SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     !!! Constructor for subdomain data data structure
@@ -143,16 +149,18 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
+    INTEGER                              :: p_idx
 
     start_subroutine("subpatch_data_create")
 
+    check_true("Field%lda+ppm_dim.GT.3",&
+        "wrong dimensions for pointer arg wp")
+
     !Direct access to the data arrays 
-    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_3d_rd
-    IF (.NOT.ASSOCIATED(wp)) THEN
-        IF (Field%lda+ppm_dim.NE.3) THEN
-            fail("wrong dimensions for pointer arg wp")
-        ENDIF
-    ENDIF
+    p_idx = Field%get_pid(this%mesh)
+    wp => this%subpatch_data%vec(p_idx)%t%data_3d_rd
+
+    check_associated(wp)
 
     end_subroutine()
 END SUBROUTINE
@@ -163,43 +171,39 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
+    INTEGER                              :: p_idx
 
     INTEGER                            :: iopt, ndim
 
     start_subroutine("subpatch_data_create")
 
+    check_true("Field%lda+ppm_dim.GT.2",&
+        "wrong dimensions for pointer arg wp")
+
     !Direct access to the data arrays 
-    wp => this%subpatch_data%vec(Field%M%vec(this%meshID)%t%p_idx)%t%data_2d_rd
-    IF (.NOT.ASSOCIATED(wp)) THEN
-        IF (Field%lda+ppm_dim.NE.2) THEN
-            fail("wrong dimensions for pointer arg wp")
-        ENDIF
-    ENDIF
+    p_idx = Field%get_pid(this%mesh)
+    wp => this%subpatch_data%vec(p_idx)%t%data_2d_rd
+
+    check_associated(wp)
 
     end_subroutine()
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create(this,field,datatype,lda,Nmp,info)
+SUBROUTINE subpatch_data_create(this,discr_data,Nmp,info)
     !!! Constructor for subdomain data data structure
     CLASS(ppm_t_subpatch_data)              :: this
-    CLASS(ppm_t_field_),TARGET,  INTENT(IN) :: field
+    CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN) :: discr_data
     !!! field that is discretized on this mesh patch
-    INTEGER,                     INTENT(IN) :: datatype
-    !!! data type of the data
-    INTEGER,                     INTENT(IN) :: lda
-    !!! number of data components per mesh node
     INTEGER,DIMENSION(:),POINTER,INTENT(IN) :: Nmp
     !!! number of mesh nodes in each dimension on this patch
     INTEGER,                    INTENT(OUT) :: info
 
-    INTEGER                            :: iopt, ndim
+    INTEGER                            :: iopt, ndim, datatype
 
     start_subroutine("subpatch_data_create")
 
-    this%data_type = datatype
-    this%lda = lda
-    this%field_ptr => field
-    this%name = field%name
+    datatype =  discr_data%data_type
+    this%discr_data => discr_data
 
     iopt   = ppm_param_alloc_grow
 
@@ -210,11 +214,11 @@ SUBROUTINE subpatch_data_create(this,field,datatype,lda,Nmp,info)
 
 
     ndim = ppm_dim
-    IF (lda.LT.2) THEN
+    IF (discr_data%lda.LT.2) THEN
         ldc(1:ppm_dim) = Nmp(1:ppm_dim)
     ELSE
         ndim = ndim +1
-        ldc(1) = lda
+        ldc(1) = discr_data%lda
         ldc(2:ndim) = Nmp(1:ppm_dim)
     ENDIF
 
@@ -294,11 +298,7 @@ SUBROUTINE subpatch_data_destroy(this,info)
     start_subroutine("patch_data_destroy")
 
     this%fieldID = 0
-    this%data_type = 0
-    this%lda = 0
-    this%name = ""
-    this%flags = .FALSE.
-    this%field_ptr => NULL()
+    this%discr_data => NULL()
 
     iopt = ppm_param_dealloc
     CALL ppm_alloc(this%data_2d_i,ldc,iopt,info)
@@ -1110,7 +1110,8 @@ SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
     start_subroutine("equi_mesh_map_ghost_push")
 
 
-    p_idx = field%M%vec(this%ID)%t%p_idx
+    !p_idx = field%M%vec(this%ID)%t%p_idx
+    p_idx = field%get_pid(this)
 
     CALL ppm_map_field_push_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
         or_fail("map_field_push_2d")
@@ -1132,13 +1133,85 @@ SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
     start_subroutine("equi_mesh_map_ghost_pop")
 
 
-    p_idx = field%M%vec(this%ID)%t%p_idx
+    !p_idx = field%M%vec(this%ID)%t%p_idx
+    p_idx = field%get_pid(this)
 
     CALL ppm_map_field_pop_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
         or_fail("map_field_pop_2d")
 
     end_subroutine()
 END SUBROUTINE equi_mesh_map_ghost_pop
+
+SUBROUTINE mesh_discr_data_create(this,field,info)
+    CLASS(ppm_t_mesh_discr_data)        :: this
+    CLASS(ppm_t_field_),    INTENT(IN)  :: field
+    INTEGER,                INTENT(OUT) :: info
+    start_subroutine("mesh_discr_data_create")
+
+
+
+    end_subroutine()
+END SUBROUTINE
+SUBROUTINE mesh_discr_data_destroy(this,info)
+    CLASS(ppm_t_mesh_discr_data)        :: this
+    INTEGER,                INTENT(OUT) :: info
+    start_subroutine("mesh_discr_data_destroy")
+
+    end_subroutine()
+END SUBROUTINE
+
+SUBROUTINE equi_mesh_create_prop(this,field,info,discr_data)
+    CLASS(ppm_t_equi_mesh)                            :: this
+    CLASS(ppm_t_field_),                  INTENT(IN)  :: field
+    INTEGER,                              INTENT(OUT) :: info
+    CLASS(ppm_t_mesh_discr_data_),POINTER,INTENT(OUT) :: discr_data
+
+    CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
+    CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
+
+    start_subroutine("equi_mesh_create_prop")
+
+
+    IF (.NOT.ASSOCIATED(this%mdata)) THEN
+        ALLOCATE(ppm_c_mesh_discr_data::this%mdata,STAT=info)
+        or_fail_alloc("mdata")
+    ENDIF
+
+
+    ALLOCATE(ppm_t_mesh_discr_data::discr_data,STAT=info)
+            or_fail_alloc("discr_data")
+    CALL discr_data%create(field,info)
+            or_fail("discr_data%create()")
+
+    !Create a new data array on the mesh to store this field
+    p => this%subpatch%begin()
+    DO WHILE (ASSOCIATED(p))
+        ! create a new subpatch_data object
+        subpdat => this%new_subpatch_data_ptr(info)
+        or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
+
+        CALL subpdat%create(discr_data,p%nnodes,info)
+        or_fail("could not create new subpatch_data")
+
+        check_associated("p%subpatch_data")
+
+        CALL discr_data%subpatch%push(subpdat,info)
+        or_fail("could not add new subpatch_data to discr_data")
+
+        CALL p%subpatch_data%push(subpdat,info)
+        or_fail("could not add new subpatch_data to subpatch collection")
+
+        p => this%subpatch%next()
+    ENDDO
+
+    CALL this%mdata%push(discr_data,info)
+        or_fail("could not add new discr_data to discr%mdata")
+
+    check_associated("discr_data")
+
+
+    end_subroutine()
+END SUBROUTINE
 
 
 #include "mesh/mesh_block_intersect.f"

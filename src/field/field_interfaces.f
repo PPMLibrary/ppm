@@ -42,35 +42,19 @@ SUBROUTINE field_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !CREATE
-SUBROUTINE mesh_discr_info_create_(this,mesh,lda,p_idx,flags,info)
-    IMPORT ppm_t_mesh_discr_info_,ppm_mdata_lflags,ppm_t_discr_kind
-    CLASS(ppm_t_mesh_discr_info_)           :: this
-    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN)::mesh
-    INTEGER,                     INTENT(IN) :: lda
-    INTEGER,                     INTENT(IN) :: p_idx
-    LOGICAL,DIMENSION(ppm_mdata_lflags)     :: flags
-    INTEGER,                    INTENT(OUT) :: info
-END SUBROUTINE
-!DESTROY
-SUBROUTINE mesh_discr_info_destroy_(this,info)
-    IMPORT ppm_t_mesh_discr_info_
-    CLASS(ppm_t_mesh_discr_info_)             :: this
-    INTEGER,               INTENT(OUT) :: info
-END SUBROUTINE
-!CREATE
-SUBROUTINE part_discr_info_create_(this,part,lda,p_idx,flags,info)
-    IMPORT ppm_t_part_discr_info_,ppm_pdata_lflags,ppm_t_discr_kind
-    CLASS(ppm_t_part_discr_info_)             :: this
-    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: part
+SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info)
+    IMPORT ppm_t_discr_info_,ppm_t_discr_kind,ppm_t_discr_data,ppm_mdata_lflags
+    CLASS(ppm_t_discr_info_)                  :: this
+    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: discr
+    CLASS(ppm_t_discr_data),TARGET,INTENT(IN) :: discr_data
     INTEGER,                       INTENT(IN) :: lda
-    INTEGER,                       INTENT(IN) :: p_idx
-    LOGICAL,DIMENSION(ppm_pdata_lflags)       :: flags
+    LOGICAL,DIMENSION(ppm_mdata_lflags)       :: flags
     INTEGER,                       INTENT(OUT):: info
 END SUBROUTINE
 !DESTROY
-SUBROUTINE part_discr_info_destroy_(this,info)
-    IMPORT ppm_t_part_discr_info_
-    CLASS(ppm_t_part_discr_info_)      :: this
+SUBROUTINE discr_info_destroy_(this,info)
+    IMPORT ppm_t_discr_info_
+    CLASS(ppm_t_discr_info_)           :: this
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !DISCRETIZE FIELD ON MESH OR PARTICLES
@@ -85,25 +69,13 @@ SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts)
     INTEGER, OPTIONAL                  :: datatype
     LOGICAL, OPTIONAL                  :: with_ghosts
 END SUBROUTINE 
-!ESTABLISH RELATIONSHIP BETWEEN FIELD AND MESH
-SUBROUTINE field_set_rel_mesh_(this,mesh,p_idx,info)
-    IMPORT ppm_t_field_,ppm_t_equi_mesh_
+!ESTABLISH RELATIONSHIP BETWEEN FIELD AND DISCRETIZATION
+SUBROUTINE field_set_rel_discr_(this,discr,discr_data,info)
+    IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_data
     CLASS(ppm_t_field_)                :: this
-    CLASS(ppm_t_equi_mesh_)            :: mesh
-    !!! mesh that this field is discretized on
-    INTEGER,               INTENT(IN )  :: p_idx
-    !!! index in the mesh data structure where the data for this field is stored
-    INTEGER,               INTENT(OUT)  :: info
-END SUBROUTINE
-!ESTABLISH RELATIONSHIP BETWEEN FIELD AND PARTICLE SET
-SUBROUTINE field_set_rel_part_(this,part,p_idx,info)
-    IMPORT ppm_t_field_,ppm_t_particles_d_
-    CLASS(ppm_t_field_)                :: this
-    CLASS(ppm_t_particles_d_)          :: part
-    !!! particle set that this field is discretized on
-    INTEGER,               INTENT(IN )  :: p_idx
-    !!! index in the particle data structure where the data for this field is stored
-    INTEGER,               INTENT(OUT)  :: info
+    CLASS(ppm_t_discr_kind)            :: discr
+    CLASS(ppm_t_discr_data)            :: discr_data
+    INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !PUSH FIELD DATA ON A MESH GHOST MAPPING BUFFERS
 SUBROUTINE field_map_ghost_push_(this,mesh,info)
@@ -130,6 +102,15 @@ SUBROUTINE field_get_discr_(this,discr_kind,discr_data,info,tstep)
     INTEGER,                         INTENT(OUT) :: info
     INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
 END SUBROUTINE
+
+FUNCTION field_get_pid_(this,discr_kind,tstep) RESULT(p_idx)
+    IMPORT ppm_t_field_,ppm_t_discr_kind
+    CLASS(ppm_t_field_)                          :: this
+    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
+    !!! discretization
+    INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+    INTEGER                                      :: p_idx
+END FUNCTION
 
 FUNCTION field_is_discretized_on_(this,discr_kind,tstep) RESULT(res)
     IMPORT ppm_t_field_,ppm_t_discr_kind

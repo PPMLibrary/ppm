@@ -142,8 +142,6 @@ END TYPE DTYPE(particles_stats)_
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! Data structure for a particle set
 
-    INTEGER                                         :: ID = 0
-    !!! ID
     CHARACTER(LEN=ppm_char)                         :: name
     !!! name for this particle set
     REAL(MK), DIMENSION(:,:), POINTER               :: xp => NULL()
@@ -175,7 +173,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! Topology on which particles are currently mapped
 
     ! Special data IDs
-    INTEGER                                         :: gi_ID
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: gi => NULL()
     !!! Global index
 
 
@@ -246,7 +244,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_prop_create)_), DEFERRED :: create_prop 
     PROCEDURE(DTYPE(part_prop_destroy)_),DEFERRED :: destroy_prop 
     PROCEDURE(DTYPE(part_prop_realloc)_),DEFERRED :: realloc_prop 
-    PROCEDURE(DTYPE(get_prop)_),         DEFERRED :: get_prop 
+    PROCEDURE(DTYPE(part_get_discr)_),   DEFERRED :: get_discr
 
     PROCEDURE(DTYPE(part_neigh_create)_),DEFERRED :: create_neighlist 
     PROCEDURE(DTYPE(part_set_cutoff)_),  DEFERRED :: set_cutoff 
@@ -281,6 +279,54 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
 
     PROCEDURE(DTYPE(get_xp)_),DEFERRED :: get_xp 
     PROCEDURE(DTYPE(set_xp)_),DEFERRED :: set_xp 
+
+    PROCEDURE(DTYPE(data_1d_i_get_prop)_),DEFERRED :: DTYPE(data_1d_i_get_prop)
+    PROCEDURE(DTYPE(data_2d_i_get_prop)_),DEFERRED :: DTYPE(data_2d_i_get_prop)
+    PROCEDURE(DTYPE(data_1d_li_get_prop)_),DEFERRED :: &
+        DTYPE(data_1d_li_get_prop)
+    PROCEDURE(DTYPE(data_2d_li_get_prop)_),DEFERRED :: &
+        DTYPE(data_2d_li_get_prop)
+    PROCEDURE(DTYPE(data_1d_r_get_prop)_),DEFERRED :: DTYPE(data_1d_r_get_prop)
+    PROCEDURE(DTYPE(data_2d_r_get_prop)_),DEFERRED :: DTYPE(data_2d_r_get_prop)
+    PROCEDURE(DTYPE(data_1d_c_get_prop)_),DEFERRED :: DTYPE(data_1d_c_get_prop)
+    PROCEDURE(DTYPE(data_2d_c_get_prop)_),DEFERRED :: DTYPE(data_2d_c_get_prop)
+    PROCEDURE(DTYPE(data_1d_l_get_prop)_),DEFERRED :: DTYPE(data_1d_l_get_prop)
+    PROCEDURE(DTYPE(data_2d_l_get_prop)_),DEFERRED :: DTYPE(data_2d_l_get_prop)
+    !GENERIC       :: get_prop =>  &
+        !DTYPE(data_1d_i_get_prop),&
+        !DTYPE(data_2d_i_get_prop),&
+        !DTYPE(data_1d_li_get_prop),&
+        !DTYPE(data_2d_li_get_prop),&
+        !DTYPE(data_1d_r_get_prop),&
+        !DTYPE(data_2d_r_get_prop),&
+        !DTYPE(data_1d_c_get_prop),&
+        !DTYPE(data_2d_c_get_prop),&
+        !DTYPE(data_1d_l_get_prop),&
+        !DTYPE(data_2d_l_get_prop)
+
+    PROCEDURE(DTYPE(data_1d_i_set_prop)_),DEFERRED :: DTYPE(data_1d_i_set_prop)
+    PROCEDURE(DTYPE(data_2d_i_set_prop)_),DEFERRED :: DTYPE(data_2d_i_set_prop)
+    PROCEDURE(DTYPE(data_1d_li_set_prop)_),DEFERRED :: &
+        DTYPE(data_1d_li_set_prop)
+    PROCEDURE(DTYPE(data_2d_li_set_prop)_),DEFERRED :: &
+        DTYPE(data_2d_li_set_prop)
+    PROCEDURE(DTYPE(data_1d_r_set_prop)_),DEFERRED :: DTYPE(data_1d_r_set_prop)
+    PROCEDURE(DTYPE(data_2d_r_set_prop)_),DEFERRED :: DTYPE(data_2d_r_set_prop)
+    PROCEDURE(DTYPE(data_1d_c_set_prop)_),DEFERRED :: DTYPE(data_1d_c_set_prop)
+    PROCEDURE(DTYPE(data_2d_c_set_prop)_),DEFERRED :: DTYPE(data_2d_c_set_prop)
+    PROCEDURE(DTYPE(data_1d_l_set_prop)_),DEFERRED :: DTYPE(data_1d_l_set_prop)
+    PROCEDURE(DTYPE(data_2d_l_set_prop)_),DEFERRED :: DTYPE(data_2d_l_set_prop)
+    !GENERIC       :: set_prop =>  &
+        !DTYPE(data_1d_i_set_prop),&
+        !DTYPE(data_2d_i_set_prop),&
+        !DTYPE(data_1d_li_set_prop),&
+        !DTYPE(data_2d_li_set_prop),&
+        !DTYPE(data_1d_r_set_prop),&
+        !DTYPE(data_2d_r_set_prop),&
+        !DTYPE(data_1d_c_set_prop),&
+        !DTYPE(data_2d_c_set_prop),&
+        !DTYPE(data_1d_l_set_prop),&
+        !DTYPE(data_2d_l_set_prop)
 
     PROCEDURE(DTYPE(data_1d_i_get_field)_),DEFERRED :: DTYPE(data_1d_i_get_field)
     PROCEDURE(DTYPE(data_2d_i_get_field)_),DEFERRED :: DTYPE(data_2d_i_get_field)
@@ -350,7 +396,18 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_c_get),&
         DTYPE(data_2d_c_get),&
         DTYPE(data_1d_l_get),&
-        DTYPE(data_2d_l_get)
+        DTYPE(data_2d_l_get),&
+        DTYPE(data_1d_i_get_prop),&
+        DTYPE(data_2d_i_get_prop),&
+        DTYPE(data_1d_li_get_prop),&
+        DTYPE(data_2d_li_get_prop),&
+        DTYPE(data_1d_r_get_prop),&
+        DTYPE(data_2d_r_get_prop),&
+        DTYPE(data_1d_c_get_prop),&
+        DTYPE(data_2d_c_get_prop),&
+        DTYPE(data_1d_l_get_prop),&
+        DTYPE(data_2d_l_get_prop)
+
 
     PROCEDURE(DTYPE(data_1d_i_set)_),DEFERRED :: DTYPE(data_1d_i_set)
     PROCEDURE(DTYPE(data_2d_i_set)_),DEFERRED :: DTYPE(data_2d_i_set)
@@ -372,7 +429,17 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_c_set),&
         DTYPE(data_2d_c_set),&
         DTYPE(data_1d_l_set),&
-        DTYPE(data_2d_l_set)
+        DTYPE(data_2d_l_set),&
+        DTYPE(data_1d_i_set_prop),&
+        DTYPE(data_2d_i_set_prop),&
+        DTYPE(data_1d_li_set_prop),&
+        DTYPE(data_2d_li_set_prop),&
+        DTYPE(data_1d_r_set_prop),&
+        DTYPE(data_2d_r_set_prop),&
+        DTYPE(data_1d_c_set_prop),&
+        DTYPE(data_2d_c_set_prop),&
+        DTYPE(data_1d_l_set_prop),&
+        DTYPE(data_2d_l_set_prop)
 
     PROCEDURE(DTYPE(part_map_create)_),DEFERRED :: create_map 
     PROCEDURE(DTYPE(part_map_destroy)_),DEFERRED :: destroy_map 

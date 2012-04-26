@@ -62,20 +62,19 @@ SUBROUTINE DTYPE(set_xp)_(Pc,xp,read_only,ghosts_ok)
 
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_prop_create)_(Pc,id,datatype,info,&
-        field,name,lda,zero,with_ghosts)
-    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+SUBROUTINE DTYPE(part_prop_create)_(this,info,field,discr_data,&
+        dtype,name,lda,zero,with_ghosts)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_,DTYPE(ppm_t_part_prop)_
     !!! Adds a property to an existing particle set
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
-    INTEGER,                INTENT(  OUT) :: id
-    INTEGER,                INTENT(IN   ) :: datatype
-    INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
+    CLASS(DTYPE(ppm_t_particles)_)        :: this
+    INTEGER,               INTENT(OUT)    :: info
     CLASS(ppm_t_field_),OPTIONAL,INTENT(IN   ) :: field
-    CHARACTER(LEN=*),OPTIONAL,INTENT(IN  ) :: name
+    CLASS(DTYPE(ppm_t_part_prop)_),OPTIONAL,POINTER,INTENT(OUT):: discr_data
+    INTEGER, OPTIONAL,      INTENT(IN   ) :: dtype
+    CHARACTER(LEN=*),OPTIONAL,INTENT(IN ) :: name
+    INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
     LOGICAL, OPTIONAL                     :: zero
     LOGICAL, OPTIONAL                     :: with_ghosts
-    !!! if true, then allocate with Mpart instead of the default size of Npart
-    INTEGER,               INTENT(OUT)    :: info
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_prop_destroy)_(Pc,id,info)
@@ -435,7 +434,7 @@ FUNCTION DTYPE(has_ghosts)_(this,Field) RESULT(res)
     LOGICAL                                        :: res
 END FUNCTION
 
-SUBROUTINE DTYPE(get_prop)_(this,Field,prop,info)
+SUBROUTINE DTYPE(part_get_discr)_(this,Field,prop,info)
     IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_,DTYPE(ppm_t_part_prop)_
     CLASS(DTYPE(ppm_t_particles)_)                         :: this
     CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field

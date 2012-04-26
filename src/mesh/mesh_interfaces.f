@@ -16,16 +16,12 @@ SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create_(this,field,datatype,lda,Nmp,info)
+SUBROUTINE subpatch_data_create_(this,discr_data,Nmp,info)
     !!! Constructor for subdomain data 
-    IMPORT ppm_t_subpatch_data_,ppm_t_field_
+    IMPORT ppm_t_subpatch_data_,ppm_t_mesh_discr_data_
     CLASS(ppm_t_subpatch_data_)             :: this
-    CLASS(ppm_t_field_),TARGET,  INTENT(IN) :: field
-    INTEGER,                     INTENT(IN) :: datatype
-    INTEGER,                     INTENT(IN) :: lda
-    !!! number of data components per mesh node
+    CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN) :: discr_data
     INTEGER,DIMENSION(:),POINTER,INTENT(IN) :: Nmp
-    !!! number of mesh nodes in each dimension on this patch
     INTEGER,                    INTENT(OUT) :: info
 END SUBROUTINE
 !DESTROY
@@ -215,3 +211,21 @@ SUBROUTINE equi_mesh_map_ghost_pop_(this,field,info)
     CLASS(ppm_t_field_)                :: field
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE 
+SUBROUTINE mesh_discr_data_create_(this,field,info)
+    IMPORT ppm_t_mesh_discr_data_,ppm_t_field_
+    CLASS(ppm_t_mesh_discr_data_)       :: this
+    CLASS(ppm_t_field_),    INTENT(IN)  :: field
+    INTEGER,                INTENT(OUT) :: info
+END SUBROUTINE
+SUBROUTINE mesh_discr_data_destroy_(this,info)
+    IMPORT ppm_t_mesh_discr_data_
+    CLASS(ppm_t_mesh_discr_data_)       :: this
+    INTEGER,                INTENT(OUT) :: info
+END SUBROUTINE
+SUBROUTINE equi_mesh_create_prop_(this,field,info,discr_data)
+    IMPORT ppm_t_equi_mesh_,ppm_t_mesh_discr_data_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)                           :: this
+    CLASS(ppm_t_field_),                  INTENT(IN)  :: field
+    INTEGER,                              INTENT(OUT) :: info
+    CLASS(ppm_t_mesh_discr_data_),POINTER,INTENT(OUT) :: discr_data
+END SUBROUTINE

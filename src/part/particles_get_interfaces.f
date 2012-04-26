@@ -86,6 +86,40 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
 END SUBROUTINE
 #undef __FUNCNAME
 
+#define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)_
+SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
+    IMPORT DTYPE(ppm_t_particles)_, ppm_kind_single,ppm_kind_double,&
+           DTYPE(ppm_t_part_prop)_, ppm_kind_int64,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)  :: this
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
+#if   __DIM == 1
+    __TYPE,DIMENSION(:),POINTER     :: wp
+#elif __DIM == 2
+    __TYPE,DIMENSION(:,:),POINTER   :: wp
+#endif
+    INTEGER                         :: info
+    LOGICAL,OPTIONAL                :: with_ghosts
+END SUBROUTINE
+#undef __FUNCNAME
+
+
+#define __FUNCNAME DTYPE(WRAP(DATANAME)_set_prop)_
+SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_kind_single,ppm_kind_double,&
+           DTYPE(ppm_t_part_prop)_, ppm_kind_int64,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)   :: this
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
+    INTEGER                          :: info
+    LOGICAL,OPTIONAL                 :: read_only
+    LOGICAL,OPTIONAL                 :: ghosts_ok
+#if   __DIM == 1
+    __TYPE,DIMENSION(:),POINTER      :: wp
+#elif __DIM == 2
+    __TYPE,DIMENSION(:,:),POINTER    :: wp
+#endif
+END SUBROUTINE
+#undef __FUNCNAME
+
 
 #undef DATANAME
 #undef __TYPE

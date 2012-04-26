@@ -41,7 +41,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: create_prop  => DTYPE(part_prop_create)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
     PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
-    PROCEDURE     :: get_prop     => DTYPE(get_prop)
+    PROCEDURE     :: get_discr    => DTYPE(part_get_discr)
 
     PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
     PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
@@ -76,6 +76,28 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
 
     PROCEDURE     :: get_xp => DTYPE(get_xp)
     PROCEDURE     :: set_xp => DTYPE(set_xp)
+
+    PROCEDURE     :: DTYPE(data_1d_i_get_prop)
+    PROCEDURE     :: DTYPE(data_2d_i_get_prop)
+    PROCEDURE     :: DTYPE(data_1d_li_get_prop)
+    PROCEDURE     :: DTYPE(data_2d_li_get_prop)
+    PROCEDURE     :: DTYPE(data_1d_r_get_prop)
+    PROCEDURE     :: DTYPE(data_2d_r_get_prop)
+    PROCEDURE     :: DTYPE(data_1d_c_get_prop)
+    PROCEDURE     :: DTYPE(data_2d_c_get_prop)
+    PROCEDURE     :: DTYPE(data_1d_l_get_prop)
+    PROCEDURE     :: DTYPE(data_2d_l_get_prop)
+
+    PROCEDURE     :: DTYPE(data_1d_i_set_prop)
+    PROCEDURE     :: DTYPE(data_2d_i_set_prop)
+    PROCEDURE     :: DTYPE(data_1d_li_set_prop)
+    PROCEDURE     :: DTYPE(data_2d_li_set_prop)
+    PROCEDURE     :: DTYPE(data_1d_r_set_prop)
+    PROCEDURE     :: DTYPE(data_2d_r_set_prop)
+    PROCEDURE     :: DTYPE(data_1d_c_set_prop)
+    PROCEDURE     :: DTYPE(data_2d_c_set_prop)
+    PROCEDURE     :: DTYPE(data_1d_l_set_prop)
+    PROCEDURE     :: DTYPE(data_2d_l_set_prop)
 
     PROCEDURE     :: DTYPE(data_1d_i_get_field)
     PROCEDURE     :: DTYPE(data_2d_i_get_field)
@@ -188,20 +210,20 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     !!! an extension of the Particle set data structure
     !!! for Self-Organizing Particles
 
-    INTEGER                                         :: nn_sq_id
+    !INTEGER                                         :: nn_sq_id
     !!! index of the wps array where nearest-neighbour distances are stored
 
     ! Adaptive particles
     LOGICAL                                         :: adaptive
     !!! true if the particles have their own cutoff radii
     !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
-    INTEGER                                         :: rcp_id
-    !!! index of the wps array where the cutoff radius is stored
-    INTEGER                                         :: D_id
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: rcp => NULL()
+    !!! pointer to the array where the cutoff radius is stored
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: D => NULL()
     !!! index of the wps array where D is stored
-    INTEGER                                         :: Dtilde_id
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: Dtilde => NULL()
     !!! index of the wps array where D_tilde is stored
-    INTEGER                                         :: adapt_wpid
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: adapt_wp => NULL()
     !!! index of the wps array where is stored the property on 
     !!! which adaptation is based 
     !!! default is first 1d property that is not rcp_id (if any)
@@ -211,12 +233,12 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     !    !!! on which adaptation is based (if needed)
     LOGICAL                                         :: level_set
     !!! true if particles carry a level-set function
-    INTEGER                                         :: level_id
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: level => NULL()
     !!! index of the wps array where the level-set is stored
     !    INTEGER                                         :: level_old_id
     !!! index of the wps array where the level-set is backed up before adapt
 
-    INTEGER                                         :: level_grad_id
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: level_grad => NULL()
     !!! index of the wps array where the gradient of the level-set is stored
     !    INTEGER                                         :: level_grad_old_id
     !!! index of the wps array where the gradient of the level-set 
@@ -224,14 +246,14 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
 
 
     ! List of IDs of other adaptive Particle sets
-    TYPE(idList)                                    :: set_aPc
+    !TYPE(idList)                                    :: set_aPc
 
 
     ! Anisotropic particles
     LOGICAL                                         :: anisotropic
     !!! true if the particles have their own cutoff radii
     !!! in this case, the G tensor will be stored in wpv(G_id)%vec
-    INTEGER                                         :: G_id
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: G => NULL()
     !!! index where G is stored
 
     !    CONTAINS
