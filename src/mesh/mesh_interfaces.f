@@ -155,7 +155,7 @@ FUNCTION equi_mesh_list_of_fields_(this,info) RESULT(fids)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)         :: this
     INTEGER,DIMENSION(:),POINTER    :: fids
-    INTEGER,            INTENT(OUT) :: info
+    INTEGER                         :: info
 END FUNCTION
 !ESTABLISH RELATIONSHIP BETWEEN MESH AND FIELD
 SUBROUTINE equi_mesh_set_rel_(this,field,info)
