@@ -82,6 +82,18 @@ IF (.NOT.<%= a_s %>) THEN
 ENDIF
 end macro
 
+macro check_false(a,message,info=info,exit_point=9999)
+% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+IF (<%= a_s %>) THEN
+   WRITE(cbuf,*) &
+       & "check failed:",   CHAR(10),&
+       & "    <%= a_s %> is not true",&
+       & <%= message %> 
+   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+ENDIF
+end macro
+
 macro start_subroutine(name=default_name)
 REAL(KIND(1.D0))                   :: t0
 CHARACTER(LEN=ppm_char)            :: caller = "<%= name.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )%>"
