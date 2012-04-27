@@ -46,13 +46,20 @@ end macro
 
 macro check_associated(p,message="default",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 % scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
-    <% p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )%>
+% p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
     WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
        & "    <%= p_s %> is not associated",&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
+ENDIF
+end macro
+
+macro check_associated_noscope(p,message="default",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+% p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
+   $fail("<%=p_s%> is not associated. ",ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
 ENDIF
 end macro
 

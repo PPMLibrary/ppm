@@ -7,21 +7,17 @@ end macro
 
 
 
-include macro define_collection_type(element_type)
+include macro define_collection_type(element_type,vec=false)
+% vector = vec.to_s.match(/(true|t|yes|y|1)$/i) != nil
+% if !vector
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_c")
-TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
-        CONTAINS
-%['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name|
-            PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
-% end
-END TYPE
-end macro
-
-
-include macro define_pointer_collection_type(element_type)
+!collection of objects (stored as pointers, but removing an element also 
+! deletes the object itself)
+% else
 !collection of pointers to objects (removing an element does not delete the object
 !itself, just the pointer to the object)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_v")
+% end
 TYPE, EXTENDS(<%= collection_type %>_) ::  <%= collection_type %>
         CONTAINS
 %['begin','next','last','prev','destroy','exists','has','push','remove','grow_size'].each do |func_name|
@@ -32,11 +28,18 @@ end macro
 
 
 
-
-
-include macro define_abstract_collection_type(element_type)
+include macro define_abstract_collection_type(element_type,vec=false)
+% vector = vec.to_s.match(/(true|t|yes|y|1)$/i) != nil
 % element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr").chop
+% if !vector
+!collection of objects (stored as pointers, but removing an element also 
+! deletes the object itself)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_c")
+% else
+!collection of pointers to objects (removing an element does not delete the object
+!itself, just the pointer to the object)
+% collection_type    = element_type.to_s.sub("ppm_t","ppm_v")
+% end
 TYPE  <%= element_ptr_type %>
     CLASS(<%= element_type %>),                  POINTER :: t => NULL()
 END TYPE 
@@ -54,8 +57,17 @@ end macro
 
 
 
-include macro define_abstract_collection_interfaces(element_type)
+include macro define_abstract_collection_interfaces(element_type,vec=false)
+% vector = vec.to_s.match(/(true|t|yes|y|1)$/i) != nil
+% if !vector
+!collection of objects (stored as pointers, but removing an element also 
+! deletes the object itself)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_c")
+% else
+!collection of pointers to objects (removing an element does not delete the object
+!itself, just the pointer to the object)
+% collection_type    = element_type.to_s.sub("ppm_t","ppm_v")
+% end
 !FIRST ELEMENT
 FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
     IMPORT <%= collection_type %>,<%= element_type %>
@@ -128,9 +140,18 @@ end macro
 
 
 
-include macro define_collection_procedures(element_type)
+include macro define_collection_procedures(element_type,vec=false)
+% vector = vec.to_s.match(/(true|t|yes|y|1)$/i) != nil
 % element_ptr_type   = element_type.to_s.sub("ppm_t","ppm_t_ptr")
+% if !vector
+!collection of objects (stored as pointers, but removing an element also 
+! deletes the object itself)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_c")
+% else
+!collection of pointers to objects (removing an element does not delete the object
+!itself, just the pointer to the object)
+% collection_type    = element_type.to_s.sub("ppm_t","ppm_v")
+% end
 !BEGIN
 FUNCTION <%= collection_type %>_begin(this) RESULT (iterator)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
@@ -207,17 +228,15 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
     CLASS(<%= element_type %>_),POINTER :: p => NULL()
     INTEGER, INTENT(OUT) :: info
 
-    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_destroy"
-    REAL(KIND(1.D0))                   :: t0
+    $start_subroutine("<%= collection_type %>_destroy")
 
-    CALL substart(caller,t0,info)
-
+%if !vector
     p => this%begin()
     DO WHILE(ASSOCIATED(p))
-        CALL p%destroy(info)
         $or_fail_dealloc("Could not deallocate collection element")
         p => this%next()
     ENDDO
+%end 
     IF (ASSOCIATED(this%vec))  DEALLOCATE(this%vec,STAT=info)
     $or_fail_dealloc("Could not deallocate collection array")
     this%iter_id = 0
@@ -226,8 +245,7 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
     this%nb = 0
     this%vec_size=0
 
-    CALL substop(caller,t0,info)
-    9999 CONTINUE
+    $end_subroutine()
 END SUBROUTINE
 
 !EXISTS
@@ -311,10 +329,8 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
 
     TYPE(<%= element_ptr_type %>),DIMENSION(:),POINTER :: vec_temp => NULL()
     INTEGER                            :: i
-    CHARACTER(LEN=ppm_char)            :: caller = "<%= collection_type %>_push"
-    REAL(KIND(1.D0))                   :: t0
 
-    CALL substart(caller,t0,info)
+    $start_subroutine("<%= collection_type %>_push")
 
     !add the element at the end of the array
     this%min_id = 1
@@ -336,15 +352,13 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
         this%vec(this%max_id)%t => e
     END SELECT
 
-    IF (.NOT.ASSOCIATED(this%vec(this%max_id)%t)) THEN
-       $fail("Pushing element into collection failed unexpectedly")
-    ENDIF
+    $check_associated_noscope("this%vec(this%max_id)%t","Pushing element into collection failed unexpectedly")
 
+%if !vector
     element => NULL()
+%end
 
-    CALL substop(caller,t0,info)
-    9999 CONTINUE
-
+    $end_subroutine()
 END SUBROUTINE
 !REMOVE
 SUBROUTINE <%= collection_type %>_remove(this,info,id)
