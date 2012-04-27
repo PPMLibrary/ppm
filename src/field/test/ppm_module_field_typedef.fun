@@ -164,9 +164,9 @@ use ppm_module_interfaces
         !--------------------------
         !Define Fields
         !--------------------------
-        call Vort%create(1,"Vorticity",info) !scalar field
+        call Vort%create(1,info,name="Vorticity") !scalar field
         Assert_Equal(info,0)
-        call Veloc%create(ndim,"Velocity",info) !vector field
+        call Veloc%create(ndim,info,name="Velocity") !vector field
         Assert_Equal(info,0)
 
         !--------------------------
@@ -286,9 +286,9 @@ use ppm_module_interfaces
         !--------------------------
         !Define Fields
         !--------------------------
-        call Vort%create(1,"Vorticity",info)
+        call Vort%create(1,info,name="Vorticity")
         Assert_Equal(info,0)
-        call Veloc%create(ndim,"Velocity",info)
+        call Veloc%create(ndim,info,name="Velocity")
         Assert_Equal(info,0)
 
         !--------------------------
