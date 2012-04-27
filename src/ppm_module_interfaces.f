@@ -125,7 +125,7 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     !!! Pointer to the field for which this is a discretization
     CHARACTER(LEN=ppm_char)                        :: name
     !!! Name for this property
-    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags
+    LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags = .FALSE.
     !!! logical flags (applicable to either particle data or mesh data or both)
     !!!    ppm_ppt_ghosts
     !!!          true if ghost values are up-to-date
@@ -139,7 +139,7 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     !!!           interpolated from one distribution to another)
     !!!    ppm_ppt_map_ghosts
     !!!          true if ghost mappings are desired for this property (default)
-    INTEGER                                        :: lda
+    INTEGER                                        :: lda = 0
     !!! leading dimension of the data array
     !!!
 END TYPE
@@ -183,7 +183,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     REAL(ppm_kind_double), DIMENSION(:), POINTER   :: coeffs =>NULL()
     !!! array where the coefficients in linear combinations of 
     !!! differential ops are stored
-    INTEGER                                        :: nterms
+    INTEGER                                        :: nterms = 0
     !!! number of terms
     CHARACTER(LEN=ppm_char)                        :: name
     !!! name of the vector-valued property
@@ -208,7 +208,7 @@ TYPE,ABSTRACT :: ppm_t_operator_discr_
     !!! Order of approximation for each term of the differential operator
     CLASS(ppm_t_operator_),POINTER                 :: op_ptr => NULL()
 
-    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags
+    LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags = .FALSE.
     !!! logical flags
     !!!    ppm_ops_inc_ghosts
     !!!           true if the operator should be computed for ghost 
@@ -342,7 +342,7 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
     !!! pointers to arrays where the data are stored
     INTEGER                                                :: fieldID = 0
     !!! ID of the field that is discretized here
-    CLASS(ppm_t_mesh_discr_data_),POINTER                :: discr_data => NULL()
+    CLASS(ppm_t_discr_data),POINTER                        :: discr_data => NULL()
     !!! Pointer to a data structure that contains all information about
     !!! the discretization of a given field on this mesh (it has pointers to all
     !!! subpatches, for example)
@@ -389,16 +389,18 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
 END TYPE
 ! Container for lists of (pointers to) subpatch_data
 minclude define_abstract_collection_type(ppm_t_subpatch_data_)
+minclude define_abstract_collection_type(ppm_t_subpatch_data_,vec=true)
 
 
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
-    CLASS(ppm_c_subpatch_data_),POINTER     :: subpatch => NULL()
+    CLASS(ppm_v_subpatch_data_),POINTER     :: subpatch => NULL()
     CONTAINS
     PROCEDURE(mesh_discr_data_create_), DEFERRED :: create
     PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy 
 END TYPE
 minclude define_abstract_collection_type(ppm_t_mesh_discr_data_)
+minclude define_abstract_collection_type(ppm_t_mesh_discr_data_,vec=true)
 
 
 
@@ -518,7 +520,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     !!! container for subdomains patches (these contain all the data 
     !!! discretized on this mesh)
 
-    CLASS(ppm_c_mesh_discr_data_),POINTER      :: mdata => NULL()
+    CLASS(ppm_v_mesh_discr_data_),POINTER      :: mdata => NULL()
     !!! pointers to the discretized data on this mesh, stored by field.
     !!! (for each field corresponds a ppm_t_mesh_discr_data object, which
     !!! contains pointers to the data stored on each subpatch)
@@ -752,8 +754,10 @@ minclude define_abstract_collection_interfaces(ppm_t_field_)
 minclude define_abstract_collection_interfaces(ppm_t_operator_)
 minclude define_abstract_collection_interfaces(ppm_t_operator_discr_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
+minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_,vec=true)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_)
+minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_,vec=true)
 
 END INTERFACE
 

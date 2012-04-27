@@ -222,10 +222,11 @@ SUBROUTINE mesh_discr_data_destroy_(this,info)
     CLASS(ppm_t_mesh_discr_data_)       :: this
     INTEGER,                INTENT(OUT) :: info
 END SUBROUTINE
-SUBROUTINE equi_mesh_create_prop_(this,field,info,discr_data)
+SUBROUTINE equi_mesh_create_prop_(this,field,discr_data,info,p_idx)
     IMPORT ppm_t_equi_mesh_,ppm_t_mesh_discr_data_,ppm_t_field_
     CLASS(ppm_t_equi_mesh_)                           :: this
     CLASS(ppm_t_field_),                  INTENT(IN)  :: field
-    INTEGER,                              INTENT(OUT) :: info
     CLASS(ppm_t_mesh_discr_data_),POINTER,INTENT(OUT) :: discr_data
+    INTEGER,                              INTENT(OUT) :: info
+    INTEGER, OPTIONAL,                    INTENT(OUT) :: p_idx
 END SUBROUTINE

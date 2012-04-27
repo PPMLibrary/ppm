@@ -43,7 +43,7 @@ SUBROUTINE field_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !CREATE
-SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info)
+SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info,p_idx)
     IMPORT ppm_t_discr_info_,ppm_t_discr_kind,ppm_t_discr_data,ppm_mdata_lflags
     CLASS(ppm_t_discr_info_)                  :: this
     CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: discr
@@ -51,6 +51,7 @@ SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info)
     INTEGER,                       INTENT(IN) :: lda
     LOGICAL,DIMENSION(ppm_mdata_lflags)       :: flags
     INTEGER,                       INTENT(OUT):: info
+    INTEGER,OPTIONAL,              INTENT(IN) :: p_idx
 END SUBROUTINE
 !DESTROY
 SUBROUTINE discr_info_destroy_(this,info)
@@ -71,12 +72,13 @@ SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts)
     LOGICAL, OPTIONAL                  :: with_ghosts
 END SUBROUTINE 
 !ESTABLISH RELATIONSHIP BETWEEN FIELD AND DISCRETIZATION
-SUBROUTINE field_set_rel_discr_(this,discr,discr_data,info)
+SUBROUTINE field_set_rel_discr_(this,discr,discr_data,info,p_idx)
     IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_data
     CLASS(ppm_t_field_)                :: this
     CLASS(ppm_t_discr_kind)            :: discr
     CLASS(ppm_t_discr_data)            :: discr_data
     INTEGER,               INTENT(OUT) :: info
+    INTEGER,OPTIONAL,      INTENT(IN)  :: p_idx
 END SUBROUTINE
 !PUSH FIELD DATA ON A MESH GHOST MAPPING BUFFERS
 SUBROUTINE field_map_ghost_push_(this,mesh,info)

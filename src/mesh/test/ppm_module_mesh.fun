@@ -9,7 +9,7 @@ use ppm_module_mktopo
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 2
+integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
 integer,parameter               :: ndim=2
