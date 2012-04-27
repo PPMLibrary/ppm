@@ -35,14 +35,14 @@ include macro define_abstract_collection_type(element_type,vec=false)
 !collection of objects (stored as pointers, but removing an element also 
 ! deletes the object itself)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_c")
+TYPE  <%= element_ptr_type %>
+    CLASS(<%= element_type %>),                  POINTER :: t => NULL()
+END TYPE 
 % else
 !collection of pointers to objects (removing an element does not delete the object
 !itself, just the pointer to the object)
 % collection_type    = element_type.to_s.sub("ppm_t","ppm_v")
 % end
-TYPE  <%= element_ptr_type %>
-    CLASS(<%= element_type %>),                  POINTER :: t => NULL()
-END TYPE 
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
