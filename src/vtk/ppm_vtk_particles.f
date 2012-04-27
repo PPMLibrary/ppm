@@ -404,14 +404,16 @@
 
            ! print point coordinates
            WRITE(iUnit,'(A)') "      <Points>"
-           CALL Pc%get_xp(xp,with_ghosts=ghosts)
+           CALL Pc%get_xp(xp,info,with_ghosts=ghosts)
+                or_fail("get_xp")
            nd = SIZE(xp,1)
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
 #define VTK_VECTOR xp
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
-           CALL Pc%set_xp(xp,read_only=.TRUE.)
+           CALL Pc%set_xp(xp,info,read_only=.TRUE.)
+                or_fail("set_xp")
            WRITE(iUnit,'(A)') "      </Points>"
 
            ! create a vertex for every point

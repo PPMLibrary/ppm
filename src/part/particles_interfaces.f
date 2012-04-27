@@ -45,20 +45,21 @@ END SUBROUTINE
 !!----------------------------------------------------------------
 !! Procedures for Particle Sets DS
 !!----------------------------------------------------------------
-SUBROUTINE DTYPE(get_xp)_(Pc,xp,with_ghosts)
+SUBROUTINE DTYPE(get_xp)_(this,xp,info,with_ghosts)
     IMPORT DTYPE(ppm_t_particles)_, MK
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
-    LOGICAL,OPTIONAL                      :: with_ghosts
-    REAL(MK),DIMENSION(:,:),     POINTER  :: xp
-    INTEGER                               :: info
+    CLASS(DTYPE(ppm_t_particles)_)               :: this
+    REAL(MK),DIMENSION(:,:),POINTER,INTENT(OUT)  :: xp
+    INTEGER,                        INTENT(OUT)  :: info
+    LOGICAL,OPTIONAL                             :: with_ghosts
 END SUBROUTINE
 
-SUBROUTINE DTYPE(set_xp)_(Pc,xp,read_only,ghosts_ok)
+SUBROUTINE DTYPE(set_xp)_(this,xp,info,read_only,ghosts_ok)
     IMPORT DTYPE(ppm_t_particles)_, MK
-    CLASS(DTYPE(ppm_t_particles)_)    :: Pc
+    CLASS(DTYPE(ppm_t_particles)_)   :: this
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
     REAL(MK),DIMENSION(:,:),POINTER  :: xp
+    INTEGER,            INTENT(OUT)  :: info
 
 END SUBROUTINE
 

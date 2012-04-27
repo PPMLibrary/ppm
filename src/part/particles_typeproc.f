@@ -198,17 +198,20 @@ END SUBROUTINE DTYPE(prop_print_info)
 !!----------------------------------------------------------------
 !! Procedures for Particle Sets DS
 !!----------------------------------------------------------------
-SUBROUTINE DTYPE(get_xp)(Pc,xp,with_ghosts)
+SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_particles))         :: Pc
-    LOGICAL,OPTIONAL                      :: with_ghosts
-    REAL(MK),DIMENSION(:,:),     POINTER  :: xp
-    INTEGER                               :: info
+    CLASS(DTYPE(ppm_t_particles))                :: this
+    REAL(MK),DIMENSION(:,:),POINTER,INTENT(OUT)  :: xp
+    INTEGER,                        INTENT(OUT)  :: info
+    LOGICAL,OPTIONAL                             :: with_ghosts
 
+    start_subroutine("get_xp")
+
+    check_associated(xp)
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
-            IF (Pc%flags(ppm_part_ghosts)) THEN
-                xp => Pc%xp(1:ppm_dim,1:Pc%Mpart)
+            IF (this%flags(ppm_part_ghosts)) THEN
+                xp => this%xp(1:ppm_dim,1:this%Mpart)
             ELSE
                 write(cbuf,*) 'WARNING: tried to get xp with ghosts ',&
                     'when ghosts are not up-to-date'
@@ -219,21 +222,25 @@ SUBROUTINE DTYPE(get_xp)(Pc,xp,with_ghosts)
         ENDIF
     ENDIF
 
-    xp => Pc%xp(1:ppm_dim,1:Pc%Npart)
+    xp => this%xp(1:ppm_dim,1:this%Npart)
 
+    end_subroutine()
 END SUBROUTINE DTYPE(get_xp)
 
-SUBROUTINE DTYPE(set_xp)(Pc,xp,read_only,ghosts_ok)
+SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_particles))    :: Pc
+    CLASS(DTYPE(ppm_t_particles))    :: this
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
     REAL(MK),DIMENSION(:,:),POINTER  :: xp
-    INTEGER                          :: i
+    INTEGER,            INTENT(OUT)  :: info
 
+    INTEGER                          :: i
     CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
     CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
     CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+
+    start_subroutine("set_xp") 
 
     IF (PRESENT(ghosts_ok)) THEN
         IF (ghosts_ok) THEN
@@ -249,34 +256,35 @@ SUBROUTINE DTYPE(set_xp)(Pc,xp,read_only,ghosts_ok)
         ENDIF
     ENDIF
 
-    Pc%flags(ppm_part_areinside) = .FALSE.
-    Pc%flags(ppm_part_partial) = .FALSE.
-    Pc%flags(ppm_part_ghosts) = .FALSE.
-    Pc%flags(ppm_part_cartesian) = .FALSE.
+    this%flags(ppm_part_areinside) = .FALSE.
+    this%flags(ppm_part_partial) = .FALSE.
+    this%flags(ppm_part_ghosts) = .FALSE.
+    this%flags(ppm_part_cartesian) = .FALSE.
 
-    prop => Pc%props%begin()
+    prop => this%props%begin()
     DO WHILE (ASSOCIATED(prop))
         prop%flags(ppm_ppt_ghosts) = .FALSE.
         prop%flags(ppm_ppt_partial) = .FALSE.
-        prop => Pc%props%next()
+        prop => this%props%next()
     ENDDO
 
-    nl => Pc%neighs%begin()
+    nl => this%neighs%begin()
     DO WHILE (ASSOCIATED(nl))
         nl%uptodate = .FALSE.
-        nl => Pc%neighs%next()
+        nl => this%neighs%next()
     ENDDO
 
-    IF (ASSOCIATED(Pc%ops)) THEN
-        op => Pc%ops%begin()
+    IF (ASSOCIATED(this%ops)) THEN
+        op => this%ops%begin()
         DO WHILE (ASSOCIATED(op))
             op%flags(ppm_ops_iscomputed) = .FALSE.
-            op => Pc%ops%next()
+            op => this%ops%next()
         ENDDO
     ENDIF
 
     xp => NULL()
 
+    end_subroutine()
 END SUBROUTINE DTYPE(set_xp)
 
 SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
@@ -1922,10 +1930,12 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
     ENDIF
 
 
-    CALL Pc%get_xp(xp)
+    CALL Pc%get_xp(xp,info)
+        or_fail("get_xp")
     FORALL (ip=1:Pc%Npart) &
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
-    CALL Pc%set_xp(xp)
+    CALL Pc%set_xp(xp,info)
+        or_fail("set_xp")
 
     !-----------------------------------------------------------------
     !  update states
