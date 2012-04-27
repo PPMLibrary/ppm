@@ -33,11 +33,11 @@ SUBROUTINE subpatch_data_destroy_(this,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_create_(p,meshID,istart,iend,istart_g,iend_g,info)
+SUBROUTINE subpatch_create_(p,mesh,istart,iend,istart_g,iend_g,info)
     !!! Constructor for subpatch
-    IMPORT ppm_t_subpatch_,ppm_kind_double
+    IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_t_equi_mesh_
     CLASS(ppm_t_subpatch_)             :: p
-    INTEGER                            :: meshID
+    CLASS(ppm_t_equi_mesh_),TARGET     :: mesh
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
     INTEGER,DIMENSION(:)               :: istart_g
@@ -213,9 +213,9 @@ SUBROUTINE equi_mesh_map_ghost_pop_(this,field,info)
 END SUBROUTINE 
 SUBROUTINE mesh_discr_data_create_(this,field,info)
     IMPORT ppm_t_mesh_discr_data_,ppm_t_field_
-    CLASS(ppm_t_mesh_discr_data_)       :: this
-    CLASS(ppm_t_field_),    INTENT(IN)  :: field
-    INTEGER,                INTENT(OUT) :: info
+    CLASS(ppm_t_mesh_discr_data_)          :: this
+    CLASS(ppm_t_field_),TARGET,INTENT(IN)  :: field
+    INTEGER,                   INTENT(OUT) :: info
 END SUBROUTINE
 SUBROUTINE mesh_discr_data_destroy_(this,info)
     IMPORT ppm_t_mesh_discr_data_

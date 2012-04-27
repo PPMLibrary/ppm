@@ -151,7 +151,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
     INTEGER                              :: p_idx
 
-    start_subroutine("subpatch_data_create")
+    start_subroutine("subpatch_get_field_3d")
 
     check_true("Field%lda+ppm_dim.GT.3",&
         "wrong dimensions for pointer arg wp")
@@ -175,7 +175,7 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
 
     INTEGER                            :: iopt, ndim
 
-    start_subroutine("subpatch_data_create")
+    start_subroutine("subpget_field_2d")
 
     check_true("Field%lda+ppm_dim.GT.2",&
         "wrong dimensions for pointer arg wp")
@@ -335,10 +335,10 @@ SUBROUTINE subpatch_data_destroy(this,info)
 END SUBROUTINE subpatch_data_destroy
 
 !CREATE
-SUBROUTINE subpatch_create(p,meshID,istart,iend,istart_g,iend_g,info)
+SUBROUTINE subpatch_create(p,mesh,istart,iend,istart_g,iend_g,info)
     !!! Constructor for subpatch data structure
     CLASS(ppm_t_subpatch)              :: p
-    INTEGER                            :: meshID
+    CLASS(ppm_t_equi_mesh_),TARGET     :: mesh
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
     INTEGER,DIMENSION(:)               :: istart_g
@@ -370,7 +370,8 @@ SUBROUTINE subpatch_create(p,meshID,istart,iend,istart_g,iend_g,info)
             or_fail_alloc("could not allocate p%nnodes")
     ENDIF
 
-    p%meshID = meshID
+    p%meshID = mesh%ID
+    p%mesh   => mesh
     p%istart = istart
     p%iend   = iend
     p%istart_g = istart_g
@@ -405,6 +406,9 @@ SUBROUTINE subpatch_destroy(p,info)
         or_fail_dealloc("p%istart_g")
     CALL ppm_alloc(p%iend_g,ldc,iopt,info)
         or_fail_dealloc("p%iend_g")
+
+    p%meshID = 0
+    p%mesh => NULL()
 
     destroy_collection_ptr(p%subpatch_data)
 
@@ -479,7 +483,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     !  Local variables
     !-------------------------------------------------------------------------
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    INTEGER                   :: i,j,isub,id,pid,meshID
+    INTEGER                   :: i,j,isub,id,pid
     INTEGER                   :: size2,size_tmp,nsubpatch,nsubpatchi
     CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
     CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
@@ -503,7 +507,6 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     !-------------------------------------------------------------------------
     h = this%h
     Offset = this%Offset
-    meshID = this%ID
     topo => ppm_topo(this%topoid)%t
 
     !-------------------------------------------------------------------------
@@ -604,7 +607,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
             ALLOCATE(ppm_t_subpatch::p,STAT=info)
                 or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
-            CALL p%create(meshID,istart,iend,istart_g,iend_g,info)
+            CALL p%create(this,istart,iend,istart_g,iend_g,info)
                 or_fail("could not create new subpatch")
 
             nsubpatch = nsubpatch+1
