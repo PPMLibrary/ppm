@@ -129,3 +129,16 @@ IF (ASSOCIATED(<%= coll_ptr %>)) THEN
         $or_fail_dealloc("<%= coll_ptr %> pointer")
 ENDIF
 end macro
+
+macro stdout(a="",b="",c="",d="",e="",f="",g="",h="",i="",j="",k="",l="",m="",n="",o="",p="",q="",r="",s="",t="",u="",v="",w="",x="",y="",z="")
+% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+    WRITE(cbuf,*) <%=a%>,<%=b%>,<%=c%>,<%=d%>,&
+                  <%=e%>,<%=f%>,<%=g%>,&
+                  <%=h%>,<%=i%>,<%=j%>,&
+                  <%=k%>,<%=l%>,<%=m%>,&
+                  <%=n%>,<%=o%>,<%=p%>,&
+                  <%=q%>,<%=r%>,<%=s%>,&
+                  <%=t%>,<%=u%>,<%=v%>,&
+                  <%=w%>,<%=x%>,<%=y%>,<%=z%>
+    CALL ppm_write(ppm_rank,caller,cbuf,info)
+end macro
