@@ -68,7 +68,7 @@ minclude define_collection_procedures(ppm_t_field)
 
 !CREATE
 SUBROUTINE field_create(this,lda,name,info,init_func)
-    !!! Constructor for subdomain data data structure
+    !!! Constructor for subdomain data structure
     CLASS(ppm_t_field)                      :: this
     INTEGER,                     INTENT(IN) :: lda
     !!! number of components
@@ -82,6 +82,7 @@ SUBROUTINE field_create(this,lda,name,info,init_func)
 
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
+    
     this%name = TRIM(ADJUSTL(name))
     this%lda = lda
     IF (ASSOCIATED(this%discr_info)) THEN
@@ -130,7 +131,7 @@ SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info)
     this%discr_data => discr_data
     this%lda    = lda
     this%flags  = flags
-
+    
     end_subroutine()
 END SUBROUTINE discr_info_create
 !DESTROY
@@ -219,7 +220,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
 
         !Update the bookkeeping table to store the relationship between
         ! the mesh and the field.
-        CALL this%set_rel_discr(discr,mddata,info)
+        CALL this%set_rel_discr(discr,info,mddata)
             or_fail("failed to log the relationship between this field and that mesh")
 
         CALL discr%set_rel(this,info)
@@ -264,7 +265,7 @@ SUBROUTINE field_set_rel_discr(this,discr,discr_data,info)
     !!! data (or mesh or on particle set) for this discretization
 
     INTEGER,                INTENT(OUT) :: info
-
+    
     CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
     LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
 
