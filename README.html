@@ -3,7 +3,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 <head>
 <meta http-equiv="Content-Type" content="application/xhtml+xml; charset=UTF-8" />
-<meta name="generator" content="AsciiDoc 8.6.3" />
+<meta name="generator" content="AsciiDoc 8.6.4" />
 <title>PPM core package README</title>
 <style type="text/css">
 /* Sans-serif font. */
@@ -394,6 +394,42 @@ div.toclevel4 {
   font-size: 0.9em;
 }
 
+span.aqua { color: aqua; }
+span.black { color: black; }
+span.blue { color: blue; }
+span.fuchsia { color: fuchsia; }
+span.gray { color: gray; }
+span.green { color: green; }
+span.lime { color: lime; }
+span.maroon { color: maroon; }
+span.navy { color: navy; }
+span.olive { color: olive; }
+span.purple { color: purple; }
+span.red { color: red; }
+span.silver { color: silver; }
+span.teal { color: teal; }
+span.white { color: white; }
+span.yellow { color: yellow; }
+
+span.aqua-background { background: aqua; }
+span.black-background { background: black; }
+span.blue-background { background: blue; }
+span.fuchsia-background { background: fuchsia; }
+span.gray-background { background: gray; }
+span.green-background { background: green; }
+span.lime-background { background: lime; }
+span.maroon-background { background: maroon; }
+span.navy-background { background: navy; }
+span.olive-background { background: olive; }
+span.purple-background { background: purple; }
+span.red-background { background: red; }
+span.silver-background { background: silver; }
+span.teal-background { background: teal; }
+span.white-background { background: white; }
+span.yellow-background { background: yellow; }
+
+span.big { font-size: 2em; }
+span.small { font-size: 0.6em; }
 </style>
 <script type="text/javascript">
 /*<![CDATA[*/
@@ -532,7 +568,7 @@ footnotes: function () {
 <body class="article">
 <div id="header">
 <h1>PPM core package README</h1>
-<span id="author">v1.2.1, August 2011</span><br />
+<span id="author">v1.2.2, May 2012</span><br />
 </div>
 <div id="content">
 <div class="sect1">
@@ -544,6 +580,54 @@ footnotes: function () {
 <div class="sect1">
 <h2 id="_changes">Changes</h2>
 <div class="sectionbody">
+<div class="sidebarblock">
+<div class="content">
+<div class="title">1.2.2p2</div>
+<div class="paragraph"><p>This is the last release of PPM core before introducing the new PPM core
+abstraction types. Several new features and a number of critical fixes are
+hereby made available the PPM users.</p></div>
+<div class="ulist"><div class="title">New features:</div><ul>
+<li>
+<p>
+Added support for adaptive resolution neighbor liists
+  (<a href="http://dx.doi.org/10.1016/j.cpc.2012.01.003">http://dx.doi.org/10.1016/j.cpc.2012.01.003</a>).
+</p>
+</li>
+<li>
+<p>
+Added support for VTK file format writing for particles and meshes.
+</p>
+</li>
+<li>
+<p>
+Updated the PPM build system to include a more robust file dependency
+  checking.
+</p>
+</li>
+</ul></div>
+<div class="ulist"><div class="title">Fixes</div><ul>
+<li>
+<p>
+Fixed more critical bugs in the ghost mapping routines.
+</p>
+</li>
+<li>
+<p>
+Fixed a critical bug in the communication scheduling routine.
+</p>
+</li>
+<li>
+<p>
+Fixed bugs in the homogeneous symmetric boundary condition code.
+</p>
+</li>
+<li>
+<p>
+Fixed <tt>make</tt> to copy the ppm_param.h to the include folder
+</p>
+</li>
+</ul></div>
+</div></div>
 <div class="sidebarblock">
 <div class="content">
 <div class="title">1.2.1</div>
@@ -725,7 +809,7 @@ will be using to build PPM core.</p></div>
 <div class="sectionbody">
 <div class="paragraph"><p>PPM core is built in 3 simple steps:</p></div>
 <div class="sect2">
-<h3 id="_step_1_confuring_ppm_core">Step 1: Confuring PPM core</h3>
+<h3 id="_step_1_confguring_ppm_core">Step 1: Confguring PPM core</h3>
 <div class="paragraph"><p>Run the <tt>configure</tt> script to allow the build system to determine the correct
 options to compile PPM core.</p></div>
 <div class="paragraph"><p>It is very important to give <tt>configure</tt> the correct settings to make sure PPM
@@ -737,7 +821,7 @@ core is compiled correctly. To find out which settings are supported type</p></d
 <div class="paragraph"><p>This is what will be returned:</p></div>
 <div class="listingblock">
 <div class="content">
-<pre><tt>`configure' configures PPM 1.2.1 to adapt to many kinds of systems.
+<pre><tt>`configure' configures PPM 1.2.2 to adapt to many kinds of systems.
 
 Usage: ./configure [OPTION]... [VAR=VALUE]...
 
@@ -938,7 +1022,7 @@ use in this case the sudo command to override this security setting.</p></div>
 <div class="ulist"><ul>
 <li>
 <p>
-in <tt>include/</tt> relative to this directory. Check which compiler flag needs to
+in <tt>include/ppm/</tt> relative to this directory. Check which compiler flag needs to
   be used to include Fortran module directories.
 </p>
 </li>
@@ -969,7 +1053,7 @@ Professor Jens Walther).</p></div>
 <div id="footnotes"><hr /></div>
 <div id="footer">
 <div id="footer-text">
-Last updated 2011-08-04 12:17:49 CEST
+Last updated 2012-04-30 20:27:59 CEST
 </div>
 </div>
 </body>
