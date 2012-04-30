@@ -1,7 +1,7 @@
 !-------------------------------------------------------------------------
 !     test case   :                   ppm_test_xset
 !-------------------------------------------------------------------------
-! copyright (c) 2010 cse lab (eth zurich), mosaic group (eth zurich), 
+! copyright (c) 2012 cse lab (eth zurich), mosaic group (eth zurich), 
 !                    center for fluid dynamics (dtu)
 !
 !
