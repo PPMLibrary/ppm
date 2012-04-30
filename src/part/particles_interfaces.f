@@ -78,12 +78,12 @@ SUBROUTINE DTYPE(part_prop_create)_(this,info,field,discr_data,&
     LOGICAL, OPTIONAL                     :: with_ghosts
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_prop_destroy)_(Pc,id,info)
-    IMPORT DTYPE(ppm_t_particles)_
+SUBROUTINE DTYPE(part_prop_destroy)_(this,prop,info)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_discr_data
     !!! Destroy a property from an existing particle set
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
-    INTEGER,                INTENT(INOUT) :: id
-    INTEGER,               INTENT(OUT)    :: info
+    CLASS(DTYPE(ppm_t_particles)_)         :: this
+    CLASS(ppm_t_discr_data), INTENT(INOUT) :: prop
+    INTEGER,                INTENT(OUT)    :: info
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_prop_realloc)_(Pc,id,info,with_ghosts,datatype,lda)

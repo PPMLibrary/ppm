@@ -207,7 +207,8 @@ SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
 
     start_subroutine("get_xp")
 
-    check_associated(xp)
+    check_associated("this%xp")
+
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             IF (this%flags(ppm_part_ghosts)) THEN
@@ -356,56 +357,36 @@ SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
     CALL part_prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
         or_fail("creating property array failed")
 
-    CALL this%props%push(part_prop,info)
-        or_fail("pushing new property into collection failed")
-
     IF (PRESENT(discr_data)) THEN
         discr_data => part_prop
     ENDIF
 
+    CALL this%props%push(part_prop,info)
+        or_fail("pushing new property into collection failed")
+
     end_subroutine()
 END SUBROUTINE DTYPE(part_prop_create)
 
-SUBROUTINE DTYPE(part_prop_destroy)(Pc,id,info)
+SUBROUTINE DTYPE(part_prop_destroy)(this,prop,info)
     !!! Destroy a property from an existing particle set
-    CLASS(DTYPE(ppm_t_particles))         :: Pc
-    INTEGER,                INTENT(INOUT) :: id
+    CLASS(DTYPE(ppm_t_particles))         :: this
+    CLASS(ppm_t_discr_data),INTENT(INOUT) :: prop
     INTEGER,               INTENT(OUT)    :: info
 
     start_subroutine("part_prop_destroy")
 
-    ASSOCIATE (cont => Pc%props)
-        IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
-            fail("property id larger than size of properties array")
-        ENDIF
+    check_associated("this%props",&
+        "Particle set does not contain any discretized data")
 
-        CALL cont%vec(id)%t%destroy(info)
-        NULLIFY(cont%vec(id)%t)
+    SELECT TYPE(prop)
+    CLASS IS (DTYPE(ppm_t_part_prop))
+        CALL this%props%remove(info,prop)
+            or_fail("could not remove property from its container")
+    CLASS DEFAULT
+        fail("discretization data has to be of class ppm_t_part_prop")
+    END SELECT
 
-        cont%nb = cont%nb - 1
-        IF (id .EQ. cont%max_id) THEN
-            cont%max_id = cont%max_id - 1
-            IF (cont%max_id .GT. 0) THEN
-                DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%max_id)%t))
-                    cont%max_id = cont%max_id - 1
-                    IF (cont%max_id .EQ. 0) EXIT
-                ENDDO
-            ENDIF
-        ENDIF
-        IF (cont%nb.EQ.0) THEN
-            cont%min_id = HUGE(1)
-        ELSE IF (id .EQ. cont%min_id) THEN
-            cont%min_id = cont%min_id + 1
-            IF (cont%min_id .LE. cont%vec_size) THEN
-                DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%min_id)%t))
-                    cont%min_id = cont%min_id + 1
-                    IF (cont%min_id .GT. cont%vec_size) THEN
-                        fail("coding error in the data structure...")
-                    ENDIF
-                ENDDO
-            ENDIF
-        ENDIF
-    END ASSOCIATE
+    
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_prop_destroy)
@@ -1921,17 +1902,8 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
     !-----------------------------------------------------------------
     !  checks
     !-----------------------------------------------------------------
-    IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-        info = ppm_error_error
-        CALL ppm_error(999,caller,   &
-            &  'Particles structure had not been defined. Call allocate first',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-
-
     CALL Pc%get_xp(xp,info)
-        or_fail("get_xp")
+        or_fail("Particle positions cannot be accessed")
     FORALL (ip=1:Pc%Npart) &
             xp(1:ppm_dim,ip) = xp(1:ppm_dim,ip) + disp(1:ppm_dim,ip)
     CALL Pc%set_xp(xp,info)

@@ -44,13 +44,13 @@ $dealloc_pointer(<%= ptr %>)
 % end
 end macro
 
-macro check_associated(p,message="default",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
+macro check_associated(p,message="",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 % scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
     WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
-       & "    <%= p_s %> is not associated",&
+       & "    <%= p_s %> is not associated.", CHAR(10),&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
 ENDIF
@@ -149,3 +149,12 @@ macro stdout(a="",b="",c="",d="",e="",f="",g="",h="",i="",j="",k="",l="",m="",n=
                   <%=w%>,<%=x%>,<%=y%>,<%=z%>
     CALL ppm_write(ppm_rank,caller,cbuf,info)
 end macro
+
+!macro stdout(*message)
+!% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+!% if message.is_a? Array %>
+!    WRITE(cbuf,*) <%=message%>
+!% end
+!    CALL ppm_write(ppm_rank,caller,cbuf,info)
+!end macro
+

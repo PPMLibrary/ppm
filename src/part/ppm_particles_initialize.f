@@ -42,10 +42,8 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     INTEGER                               :: ip,i,j,k,Npart,iopt
     INTEGER                               :: nijk(ppm_dim),nijk_global(ppm_dim)
-    CHARACTER(LEN = ppm_char)             :: filename,cbuf
-    CHARACTER(LEN = ppm_char)             :: caller = 'particles_initialize'
+    CHARACTER(LEN = ppm_char)             :: filename
     REAL(MK)                              :: y,z,h
-    REAL(KIND(1.D0))                      :: t0
     INTEGER                               :: remaining_rows
 
     REAL(MK)                              :: shift
@@ -57,10 +55,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     REAL(MK), DIMENSION(:  ), POINTER     :: randnb
 
 
-    !-------------------------------------------------------------------------
-    !  Initialise
-    !-------------------------------------------------------------------------
-    CALL substart(caller,t0,info)
+    start_subroutine("particles_initialize")
 
     IF(PRESENT(distrib)) THEN
         distribution=distrib
@@ -130,21 +125,12 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     !Deallocate Particles if already allocated
     IF (ASSOCIATED(Pc%xp)) THEN
         CALL Pc%destroy(info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,caller,&
-                'destroying Particle set failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+            or_fail("Failed to destroy particle set")
     ENDIF
 
     CALL Pc%create(Npart,info,name=name)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,caller,&
-            'creating Particle set failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+            or_fail("Failed to create particle set")
+    check_associated("Pc%xp")
 
     !use a shortcut, for convenience
     xp => Pc%xp
@@ -236,22 +222,12 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         ldc(1) = ppm_dim*Npart
 #endif
         CALL ppm_alloc(randnb,ldc(1:1),iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,   &
-                &            'allocation failed',__LINE__,info)
-            GOTO 9999
-        ENDIF
+            or_fail_alloc("randnb")
         IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
             CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
             ldc(1) = ppm_particles_seedsize
             CALL ppm_alloc(ppm_particles_seed,ldc(1:1),iopt,info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,   &
-                    &            'allocation failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+                or_fail_alloc("ppm_particles_seed")
             DO i=1,ppm_particles_seedsize
                 ppm_particles_seed(i)=i*i*i*i
             ENDDO
@@ -385,18 +361,12 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     CALL Pc%create_neighlist(neigh_id,info,name='self',&
         skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
-    IF (info .NE. 0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,caller,&
-            'creating neighbour list failed',__LINE__,info)
-        GOTO 9999
-    ENDIF
+        or_fail("failed to create neighbour list")
+
     !-----------------------------------------------------------------------
     ! Finalize
     !-----------------------------------------------------------------------
-    CALL substop(caller,t0,info)
-
-    9999 CONTINUE ! jump here upon error
+    end_subroutine()
 
 #if __DIM == 2
 END SUBROUTINE DTYPE(particles_initialize2d)

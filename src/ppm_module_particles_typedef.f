@@ -48,7 +48,8 @@ CHARACTER(LEN=ppm_char)         :: line_of_stars='**************************'
 INTEGER, PRIVATE, DIMENSION(3)    :: ldc
 !!! Number of elements in all dimensions for allocation
 
-PUBLIC :: ppm_t_particles_s, ppm_t_particles_d, ppm_t_sop_s, ppm_t_sop_d
+PUBLIC :: ppm_t_particles_s, ppm_t_particles_d, ppm_t_sop_s, ppm_t_sop_d,&
+          ppm_t_part_prop_s, ppm_t_part_prop_d
 
 
 CONTAINS
