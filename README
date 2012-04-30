@@ -13,7 +13,9 @@ Changes
 
 .1.2.2p2
 ************************************************************************
-This versions brings many bug fixes and several new features
+This is the last release of PPM core before introducing the new PPM core
+abstraction types. Several new features and a number of critical fixes are
+hereby made available the PPM users.
 
 .New features:
 - Added support for adaptive resolution neighbor liists
