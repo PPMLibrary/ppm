@@ -172,7 +172,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     INTEGER                                         :: active_topoid
     !!! Topology on which particles are currently mapped
 
-    ! Special data IDs
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: gi => NULL()
     !!! Global index
 
@@ -183,7 +182,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! (note: could in principle be different from the cutoff used to 
     !!!  compute the neighbour lists)
     INTEGER                                         :: isymm
-
+    !!! Symmetric interactions
     ! Container for Particles properties
     CLASS(DTYPE(ppm_c_part_prop)_),POINTER          :: props => NULL()
 
