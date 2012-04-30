@@ -1,6 +1,6 @@
 PPM core package README
 =======================
-v1.2.1, August 2011
+v1.2.2, May 2012
 
 
 Introduction
@@ -10,6 +10,24 @@ This is the PPM core source package.
 
 Changes
 -------
+
+.1.2.2p2
+************************************************************************
+This versions brings many bug fixes and several new features
+
+.New features:
+- Added support for adaptive resolution neighbor liists
+  (http://dx.doi.org/10.1016/j.cpc.2012.01.003).
+- Added support for VTK file format writing for particles and meshes.
+- Updated the PPM build system to include a more robust file dependency
+  checking.
+
+.Fixes
+- Fixed more critical bugs in the ghost mapping routines.
+- Fixed a critical bug in the communication scheduling routine.
+- Fixed bugs in the homogeneous symmetric boundary condition code.
+- Fixed `make` to copy the ppm_param.h to the include folder
+************************************************************************
 
 .1.2.1
 ************************************************************************
@@ -110,8 +128,8 @@ Building PPM core
 
 PPM core is built in 3 simple steps:
 
-Step 1: Confuring PPM core
-~~~~~~~~~~~~~~~~~~~~~~~~~~
+Step 1: Confguring PPM core
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Run the `configure` script to allow the build system to determine the correct
 options to compile PPM core.
@@ -126,7 +144,7 @@ $ ./configure --help
 This is what will be returned:
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-`configure' configures PPM 1.2.1 to adapt to many kinds of systems.
+`configure' configures PPM 1.2.2 to adapt to many kinds of systems.
 
 Usage: ./configure [OPTION]... [VAR=VALUE]...
 
@@ -312,7 +330,7 @@ Compiling PPM client code against PPM core
 ------------------------------------------
 When compiling your PPM client code you need to first include the PPM core modules: 
 
-- in `include/` relative to this directory. Check which compiler flag needs to
+- in `include/ppm/` relative to this directory. Check which compiler flag needs to
   be used to include Fortran module directories.
 
 and link against libppm.a:

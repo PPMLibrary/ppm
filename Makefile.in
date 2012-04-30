@@ -84,9 +84,12 @@ all: $(TARGET)
 
 # This archives all of the objects in the PPM library
 ARCMD = ar crus $@ $(OBJECTS)
+HCPCMD = cp $(SRC_DIR)/ppm_param.h $(MODULES_DIR)/ppm_param.h
 $(TARGET): $(OBJECTS)
 	@printf "  AR   %-42s" "Creating library archive"; \
 	$(RUN) "$(ARCMD)" $(LOG) "Error Creating Archive"; \
+	printf "  CP   %-42s" "Copying headers"; \
+	$(RUN) "$(HCPCMD)" $(LOG) "Error Copying Headers"; \
 	printf "\033[0;32mDone\033[0m.\n"
 
 # Dont delete the given intermediate files
