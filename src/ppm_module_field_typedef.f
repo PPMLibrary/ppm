@@ -67,29 +67,42 @@ minclude define_collection_procedures(ppm_t_discr_info)
 minclude define_collection_procedures(ppm_t_field)
 
 !CREATE
-SUBROUTINE field_create(this,lda,name,info,init_func)
-    !!! Constructor for subdomain data structure
+SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
+    !!! Constructor for fields
     CLASS(ppm_t_field)                      :: this
     INTEGER,                     INTENT(IN) :: lda
     !!! number of components
-    CHARACTER(LEN=*),            INTENT(IN) :: name
     INTEGER,                    INTENT(OUT) :: info
+    !!!
+    INTEGER,OPTIONAL,            INTENT(IN) :: dtype
+    !!! data type (ppm_type_int, ppm_type_real, ppm_type_comp, ppm_type_logical)
+    CHARACTER(LEN=*),OPTIONAL,   INTENT(IN) :: name
+    !!!
     REAL(ppm_kind_double),EXTERNAL,POINTER,OPTIONAL,INTENT(IN) :: init_func
     !!! support for initialisation function not finished (need to think
     !!! about data types...)
 
     start_subroutine("field_create")
 
+    !Use a global ID (this may not be needed, after all...)
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
-    
-    this%name = TRIM(ADJUSTL(name))
+
     this%lda = lda
-    IF (ASSOCIATED(this%discr_info)) THEN
-        fail("Seems like this field was already allocated - Call destroy() first?")
+    IF (PRESENT(name)) THEN
+        this%name = TRIM(ADJUSTL(name))
+    ELSE
+        this%name = "default_field_name"
     ENDIF
+    IF (PRESENT(dtype)) THEN
+        this%data_type = dtype
+    ELSE   
+        this%data_type = ppm_type_real
+    ENDIF
+    check_false("ASSOCIATED(this%discr_info)",&
+        "Seems like this field was alrady allocated - Call destroy() first?")
     ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
-    or_fail_alloc("this%discr_info")
+        or_fail_alloc("this%discr_info")
 
     end_subroutine()
 END SUBROUTINE field_create
@@ -115,7 +128,7 @@ SUBROUTINE field_destroy(this,info)
 END SUBROUTINE field_destroy
 !CREATE
 !CREATE
-SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info)
+SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
     CLASS(ppm_t_discr_info)                   :: this
     CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: discr
     CLASS(ppm_t_discr_data),TARGET,INTENT(IN) :: discr_data
@@ -123,6 +136,7 @@ SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info)
     !!! number of components
     LOGICAL,DIMENSION(ppm_mdata_lflags)       :: flags
     INTEGER,                       INTENT(OUT):: info
+    INTEGER,OPTIONAL,              INTENT(IN) :: p_idx
 
     start_subroutine("part_discr_info_create")
 
@@ -131,7 +145,8 @@ SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info)
     this%discr_data => discr_data
     this%lda    = lda
     this%flags  = flags
-    
+    IF (PRESENT(p_idx))  this%p_idx  = p_idx
+
     end_subroutine()
 END SUBROUTINE discr_info_create
 !DESTROY
@@ -215,12 +230,12 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
             ENDIF
         ENDIF
 
-        CALL discr%create_prop(this,info,mddata)
+        CALL discr%create_prop(this,mddata,info,p_idx)
             or_fail("discr%create_prop()")
 
         !Update the bookkeeping table to store the relationship between
         ! the mesh and the field.
-        CALL this%set_rel_discr(discr,info,mddata)
+        CALL this%set_rel_discr(discr,mddata,info,p_idx)
             or_fail("failed to log the relationship between this field and that mesh")
 
         CALL discr%set_rel(this,info)
@@ -255,7 +270,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
 END SUBROUTINE field_discretize_on
 
 
-SUBROUTINE field_set_rel_discr(this,discr,discr_data,info)
+SUBROUTINE field_set_rel_discr(this,discr,discr_data,info,p_idx)
     !!! Create bookkeeping data structure to log the relationship between
     !!! the field and a particle set
     CLASS(ppm_t_field)                  :: this
@@ -265,7 +280,9 @@ SUBROUTINE field_set_rel_discr(this,discr,discr_data,info)
     !!! data (or mesh or on particle set) for this discretization
 
     INTEGER,                INTENT(OUT) :: info
-    
+    INTEGER,OPTIONAL,       INTENT(IN)  :: p_idx
+    !!! storage index in the collection of discretization
+
     CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
     LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
 
@@ -279,7 +296,7 @@ SUBROUTINE field_set_rel_discr(this,discr,discr_data,info)
     ALLOCATE(ppm_t_discr_info::dinfo,STAT=info)
         or_fail_alloc("could not allocate new discr_info pointer")
 
-    CALL dinfo%create(discr,discr_data,this%lda,flags,info)
+    CALL dinfo%create(discr,discr_data,this%lda,flags,info,p_idx)
         or_fail("could not create new discr_info object")
 
     IF (.NOT.ASSOCIATED(this%discr_info)) THEN
@@ -362,7 +379,7 @@ FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
         dinfo => this%discr_info%next()
     ENDDO loop
 
-    p_idx = 0
+    p_idx = -1
 
 END FUNCTION field_get_pid
 
