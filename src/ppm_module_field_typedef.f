@@ -55,6 +55,7 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: get_pid => field_get_pid
 END TYPE ppm_t_field
 minclude define_collection_type(ppm_t_field)
+minclude define_collection_type(ppm_t_field,vec=true)
 
 
 
@@ -65,6 +66,7 @@ CONTAINS
 
 minclude define_collection_procedures(ppm_t_discr_info)
 minclude define_collection_procedures(ppm_t_field)
+minclude define_collection_procedures(ppm_t_field,vec=true)
 
 !CREATE
 SUBROUTINE field_create(this,lda,info,dtype,name,init_func)

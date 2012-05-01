@@ -107,11 +107,16 @@ TYPE,ABSTRACT :: ppm_t_main_abstr
     !!! Generic type for all main PPM types
 END TYPE
 
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind_
     !!! Discretization kinds (Particles and Meshes)
     INTEGER                           :: ID = 0
     !!! ID of the mesh or particle set in the belonging topology
 END TYPE
+minclude define_abstract_collection_type(ppm_t_discr_kind_,vec=true,def_ptr=true)
+
+TYPE,EXTENDS(ppm_t_discr_kind_) :: ppm_t_discr_kind
+END TYPE
+minclude define_collection_type(ppm_t_discr_kind,vec=true)
 
 
 TYPE,ABSTRACT :: ppm_t_discr_data
@@ -334,6 +339,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
 END TYPE ppm_t_field_
 ! Container for fields
 minclude define_abstract_collection_type(ppm_t_field_)
+minclude define_abstract_collection_type(ppm_t_field_,vec=true)
 
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
@@ -751,6 +757,7 @@ minclude define_abstract_collection_interfaces(ppm_t_A_subpatch_)
 minclude define_abstract_collection_interfaces(ppm_t_discr_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_info_)
 minclude define_abstract_collection_interfaces(ppm_t_field_)
+minclude define_abstract_collection_interfaces(ppm_t_field_,vec=true)
 minclude define_abstract_collection_interfaces(ppm_t_operator_)
 minclude define_abstract_collection_interfaces(ppm_t_operator_discr_)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
@@ -758,6 +765,7 @@ minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_,vec=true)
 minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
 minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_)
 minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_,vec=true)
+minclude define_abstract_collection_interfaces(ppm_t_discr_kind_,vec=true)
 
 END INTERFACE
 
@@ -765,6 +773,7 @@ CONTAINS
 
 minclude define_collection_procedures(ppm_t_field_info)
 minclude define_collection_procedures(ppm_t_operator_discr)
+minclude define_collection_procedures(ppm_t_discr_kind,vec=true)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)
