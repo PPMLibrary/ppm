@@ -508,7 +508,10 @@ SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
                 CALL Pc%create_prop(info,discr_data=Pc%rcp,dtype=ppm_type_real,&
                     name='rcp',with_ghosts=ghosts) 
             ENDIF
+
             CALL Pc%get(Pc%rcp,rcp,info,with_ghosts=ghosts)
+                or_fail("Cannot access Pc%rcp")
+
             IF (PRESENT(cutoff)) THEN
                 rcp = cutoff
             ELSE

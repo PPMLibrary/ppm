@@ -2,7 +2,7 @@
 
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,id,info) 
+SUBROUTINE __FUNCNAME(this,wp,info) 
     !!!------------------------------------------------------------------------!
     !!! Check whether a Data Structure exists and can be accessed at this id
     !!!------------------------------------------------------------------------!
@@ -10,15 +10,13 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    CLASS(DTYPE(ppm_t_part_prop))                       :: this
     !!! Data structure containing the particles
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER,        INTENT(IN   )   :: wp
 #elif __DIM == 2
     __TYPE,DIMENSION(:,:),POINTER,      INTENT(IN   )   :: wp
 #endif
-    INTEGER,                            INTENT(IN   )   :: id
-    !!! id where the data is stored
     INTEGER,                            INTENT(   OUT)  :: info
     !!! Return status, on success 0.
     INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
@@ -27,29 +25,16 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
-    IF (.NOT.Pc%props%exists(id)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            & 'This property id does not exist.',&
-            __LINE__,info)
-        RETURN
-    ENDIF
 
 #if   __DIM == 1
-    IF (Pc%props%vec(id)%t%lda.NE.1) THEN
+    IF (this%lda.NE.1) THEN
 #elif __DIM == 2
-    IF (Pc%props%vec(id)%t%lda.LT.2) THEN
+    IF (this%lda.LT.2) THEN
 #endif
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            & 'Argument has wrong dimension for this property id',&
-            __LINE__,info)
-        info = nullv(1)
-        RETURN
+        fail ("Argument has wrong dimension for this property")
     ENDIF
 
-
-    IF (Pc%props%vec(id)%t%data_type.NE. &
+    IF (this%data_type.NE. &
 #if   __MYTYPE == __INTEGER
         ppm_type_int&
 #elif __MYTYPE == __LONGINT
@@ -65,17 +50,13 @@ SUBROUTINE __FUNCNAME(Pc,wp,id,info)
 #endif
        &  ) THEN
 
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            & 'Argument has the wrong type for this property id',&
-            __LINE__,info)
-        info = nullv(1)
-        RETURN
+       fail ("Argument has wrong dimension for this property")
     ENDIF
+
+    end_subroutine()
 
 END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
-#undef __MYTYPE
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)
 SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
@@ -89,59 +70,51 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
 
+    INTEGER                         :: np
+
     start_subroutine(__FUNCNAME)
 
     wp => NULL()
 
     check_associated("discr_data")
 
-        IF (discr_data%flags(ppm_ppt_partial)) THEN
-            IF (PRESENT(with_ghosts)) THEN
-                IF (with_ghosts) THEN
-                    IF (discr_data%flags(ppm_ppt_ghosts)) THEN
-                        wp => &
-#if   __DIM == 1
-                            discr_data%WRAP(DATANAME)(1:this%Mpart)
-#elif __DIM == 2
-                            discr_data%WRAP(DATANAME)(:,1:this%Mpart)
-#endif
-                    ELSE
-                        write(*,*) line_of_stars
-                        write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-                            & TRIM(ADJUSTL(discr_data%name)),&
-                            & ') with ghosts when ghosts are not up-to-date. ',&
-                            & 'Returning NULL pointer'
-                        write(*,*) 'Run with traceback option to debug'
-                        write(*,*) line_of_stars
-#ifdef __crash_on_null_pointers
-                        !segfault the program. Compile with appropriate compiler
-                        !options to check for array bounds and provide traceback
-#if   __DIM == 1
-                        write(*,*) discr_data%WRAP(DATANAME)(1)
-#elif   __DIM == 2
-                        write(*,*) discr_data%WRAP(DATANAME)(1,1)
-#endif
-#endif
-                        fail("ghosts not up-to-date")
-                    ENDIF
-                ENDIF
+    IF (ppm_debug.GE.1) THEN
+        CALL discr_data%checktype(wp,info)
+        or_fail("Argument has the wrong type for this property")
+    ENDIF
+
+    np = this%Npart
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) THEN
+            IF (discr_data%flags(ppm_ppt_ghosts)) THEN
+                np = this%Mpart
             ELSE
-                wp => &
-#if   __DIM == 1
-                    discr_data%WRAP(DATANAME)(1:this%Npart)
-#elif __DIM == 2
-                    discr_data%WRAP(DATANAME)(:,1:this%Npart)
-#endif
+                WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
+                    & TRIM(ADJUSTL(discr_data%name)),&
+                    & ") with ghosts when ghosts are not up-to-date. ",&
+                    & "Returning NULL pointer"
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                    fail("ghosts are not up-to-date")
             ENDIF
-        ELSE
-            write(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-                & TRIM(ADJUSTL(discr_data%name)),&
-                & ') when mapping is not up-to-date. ',&
-                & 'Returning NULL pointer', &
-                'Run with traceback option to debug'
-            CALL ppm_write(ppm_rank,cbuf,caller,info)
-            fail("unmapped particles")
         ENDIF
+    ENDIF
+
+    IF (discr_data%flags(ppm_ppt_partial)) THEN
+        wp => &
+#if   __DIM == 1
+            discr_data%WRAP(DATANAME)(1:np)
+#elif __DIM == 2
+            discr_data%WRAP(DATANAME)(:,1:np)
+#endif
+    ELSE
+        WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
+            & TRIM(ADJUSTL(discr_data%name)),&
+            & ') when mapping is not up-to-date. ',&
+            & 'Returning NULL pointer', &
+            'Run with traceback option to debug'
+        CALL ppm_write(ppm_rank,cbuf,caller,info)
+            fail("unmapped particles")
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE __FUNCNAME
@@ -199,65 +172,57 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts)
 #endif
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
-    INTEGER                         :: ppt_id
+
+    INTEGER                         :: np
+    CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
 
     start_subroutine(__FUNCNAME)
 
     wp => NULL()
 
-    ppt_id = Field%get_pid(this)
-    check_true("ppt_id.NE.0",&
-        "Field seems to not be distretized on this particle set")
+    CALL Field%get_discr(this,discr_data,info)
+        or_fail("could not get discr data for this field on that particle set")
 
-    ASSOCIATE (prop => this%props%vec(ppt_id)%t)
-        IF (prop%flags(ppm_ppt_partial)) THEN
-            IF (PRESENT(with_ghosts)) THEN
-                IF (with_ghosts) THEN
-                    IF (prop%flags(ppm_ppt_ghosts)) THEN
-                        wp => &
-#if   __DIM == 1
-                            prop%WRAP(DATANAME)(1:this%Mpart)
-#elif __DIM == 2
-                            prop%WRAP(DATANAME)(:,1:this%Mpart)
-#endif
-                    ELSE
-                        write(*,*) line_of_stars
-                        write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-                            & TRIM(ADJUSTL(prop%name)),&
-                            & ') with ghosts when ghosts are not up-to-date. ',&
-                            & 'Returning NULL pointer'
-                        write(*,*) 'Run with traceback option to debug'
-                        write(*,*) line_of_stars
-#ifdef __crash_on_null_pointers
-                        !segfault the program. Compile with appropriate compiler
-                        !options to check for array bounds and provide traceback
-#if   __DIM == 1
-                        write(*,*) prop%WRAP(DATANAME)(1)
-#elif   __DIM == 2
-                        write(*,*) prop%WRAP(DATANAME)(1,1)
-#endif
-#endif
-                        fail("ghosts not up-to-date")
-                    ENDIF
-                ENDIF
+    SELECT TYPE(prop => discr_data)
+    CLASS IS (DTYPE(ppm_t_part_prop))
+    IF (ppm_debug.GE.1) THEN
+        CALL prop%checktype(wp,info)
+        or_fail("Argument has the wrong type for this property")
+    ENDIF
+
+    np = this%Npart
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) THEN
+            IF (prop%flags(ppm_ppt_ghosts)) THEN
+                np = this%Mpart
             ELSE
-                wp => &
-#if   __DIM == 1
-                    prop%WRAP(DATANAME)(1:this%Npart)
-#elif __DIM == 2
-                    prop%WRAP(DATANAME)(:,1:this%Npart)
-#endif
+                WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
+                    & TRIM(ADJUSTL(prop%name)),&
+                    & ") with ghosts when ghosts are not up-to-date. ",&
+                    & "Returning NULL pointer"
+                CALL ppm_write(ppm_rank,caller,cbuf,info)
+                fail("ghosts are not up-to-date")
             ENDIF
-        ELSE
-            write(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-                & TRIM(ADJUSTL(this%props%vec(ppt_id)%t%name)),&
-                & ') when mapping is not up-to-date. ',&
-                & 'Returning NULL pointer', &
-                'Run with traceback option to debug'
-            CALL ppm_write(ppm_rank,cbuf,caller,info)
-            fail("unmapped particles")
         ENDIF
-    END ASSOCIATE
+    ENDIF
+
+    IF (prop%flags(ppm_ppt_partial)) THEN
+        wp => &
+#if   __DIM == 1
+            prop%WRAP(DATANAME)(1:np)
+#elif __DIM == 2
+            prop%WRAP(DATANAME)(:,1:np)
+#endif
+    ELSE
+        WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
+            & TRIM(ADJUSTL(prop%name)),&
+            & ') when mapping is not up-to-date. ',&
+            & 'Returning NULL pointer', &
+            'Run with traceback option to debug'
+        CALL ppm_write(ppm_rank,cbuf,caller,info)
+        fail("unmapped particles")
+    ENDIF
+    END SELECT
 
     end_subroutine()
 END SUBROUTINE __FUNCNAME
@@ -275,14 +240,16 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
 #elif __DIM == 2
     __TYPE,DIMENSION(:,:),POINTER    :: wp
 #endif
-    INTEGER                          :: ppt_id
+
+    CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
 
     start_subroutine(__FUNCNAME)
 
-    !ppt_id = Field%P%vec(this%ID)%t%p_idx
-    ppt_id = Field%get_pid(this)
-    check_true("ppt_id.NE.0",&
-        "Field seems to not be distretized on this particle set")
+    CALL Field%get_discr(this,discr_data,info)
+        or_fail("could not get discr data for this field on that particle set")
+
+    SELECT TYPE(prop => discr_data)
+    CLASS IS (DTYPE(ppm_t_part_prop))
 
     !If read_only was not explicitely set to true, then assume
     !that ghosts are no longer up to date, unless ghosts_ok was
@@ -290,16 +257,17 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
     IF (PRESENT(ghosts_ok)) THEN
         IF (.NOT.ghosts_ok) THEN
             !Assume that the ghost values are now incorrect
-            this%props%vec(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
+            prop%flags(ppm_ppt_ghosts) = .FALSE.
         ENDIF
     ENDIF
 
     IF (PRESENT(read_only)) THEN
         IF (.NOT.read_only) THEN
             !Assume that the ghost values are now incorrect
-            this%props%vec(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
+            prop%flags(ppm_ppt_ghosts) = .FALSE.
         ENDIF
     ENDIF
+    END SELECT
 
     wp => NULL()
 
@@ -329,18 +297,6 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
         wp => NULL()
         RETURN
     ENDIF
-
-    !CALL Pc%props%checktype(wp,ppt_id,info)
-    CALL Pc%__CHECKTYPE(wp,ppt_id,info)
-    !IF (info.NE.0) THEN
-        !info = ppm_error_error
-        !WRITE(cbuf,'(A,I0,A)') & 
-            !'Type conflict between the requested property id:',ppt_id,&
-            !& ' and the target array (1st argument)'  
-        !CALL ppm_error(ppm_err_alloc,caller,cbuf,__LINE__,info)
-        !wp => NULL()
-        !RETURN
-    !ENDIF
 
     IF (ppt_id .LE. Pc%props%max_id) THEN
         ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)

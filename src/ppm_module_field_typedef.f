@@ -421,6 +421,9 @@ SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)
         dinfo => this%discr_info%next()
     ENDDO loop
 
+    check_associated(discr_data,&
+        "Field seems to not be distretized on this particle set")
+
     end_subroutine()
 END SUBROUTINE field_get_discr
 

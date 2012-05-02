@@ -30,6 +30,33 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data):: DTYPE(ppm_t_part_prop)_
     PROCEDURE(DTYPE(prop_destroy)_),   DEFERRED :: destroy 
     PROCEDURE(DTYPE(prop_print_info)_),DEFERRED :: print_info
 
+    PROCEDURE(DTYPE(data_1d_i_check)_),DEFERRED :: DTYPE(data_1d_i_check)
+    PROCEDURE(DTYPE(data_2d_i_check)_),DEFERRED :: DTYPE(data_2d_i_check)
+    PROCEDURE(DTYPE(data_1d_li_check)_),DEFERRED :: DTYPE(data_1d_li_check)
+    PROCEDURE(DTYPE(data_2d_li_check)_),DEFERRED :: DTYPE(data_2d_li_check)
+    PROCEDURE(DTYPE(data_1d_r_check)_),DEFERRED :: DTYPE(data_1d_r_check)
+    PROCEDURE(DTYPE(data_2d_r_check)_),DEFERRED :: DTYPE(data_2d_r_check)
+    PROCEDURE(DTYPE(data_1d_c_check)_),DEFERRED :: DTYPE(data_1d_c_check)
+    PROCEDURE(DTYPE(data_2d_c_check)_),DEFERRED :: DTYPE(data_2d_c_check)
+    PROCEDURE(DTYPE(data_1d_l_check)_),DEFERRED :: DTYPE(data_1d_l_check)
+    PROCEDURE(DTYPE(data_2d_l_check)_),DEFERRED :: DTYPE(data_2d_l_check)
+    !NOTE: for some reason, this does not work
+    ! (ifort crashes at compile time if there is a call
+    !  to this%checktype(wp,wpid,info) )
+    ! One can call the not-overloaded procedures directly,
+    ! but thats very annoying...
+    GENERIC       :: checktype => & 
+        DTYPE(data_1d_i_check),&
+        DTYPE(data_2d_i_check),&
+        DTYPE(data_1d_li_check),&
+        DTYPE(data_2d_li_check),&
+        DTYPE(data_1d_r_check),&
+        DTYPE(data_2d_r_check),&
+        DTYPE(data_1d_c_check),&
+        DTYPE(data_2d_c_check),&
+        DTYPE(data_1d_l_check),&
+        DTYPE(data_2d_l_check)
+
 END TYPE DTYPE(ppm_t_part_prop)_
 !----------------------------------------------------------------------
 ! Container for properties
@@ -482,32 +509,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         !DTYPE(map_part_push_2dl)
 
 
-    PROCEDURE(DTYPE(data_1d_i_check)_),DEFERRED :: DTYPE(data_1d_i_check)
-    PROCEDURE(DTYPE(data_2d_i_check)_),DEFERRED :: DTYPE(data_2d_i_check)
-    PROCEDURE(DTYPE(data_1d_li_check)_),DEFERRED :: DTYPE(data_1d_li_check)
-    PROCEDURE(DTYPE(data_2d_li_check)_),DEFERRED :: DTYPE(data_2d_li_check)
-    PROCEDURE(DTYPE(data_1d_r_check)_),DEFERRED :: DTYPE(data_1d_r_check)
-    PROCEDURE(DTYPE(data_2d_r_check)_),DEFERRED :: DTYPE(data_2d_r_check)
-    PROCEDURE(DTYPE(data_1d_c_check)_),DEFERRED :: DTYPE(data_1d_c_check)
-    PROCEDURE(DTYPE(data_2d_c_check)_),DEFERRED :: DTYPE(data_2d_c_check)
-    PROCEDURE(DTYPE(data_1d_l_check)_),DEFERRED :: DTYPE(data_1d_l_check)
-    PROCEDURE(DTYPE(data_2d_l_check)_),DEFERRED :: DTYPE(data_2d_l_check)
-    !NOTE: for some reason, this does not work
-    ! (ifort crashes at compile time if there is a call
-    !  to this%checktype(wp,wpid,info) )
-    ! One can call the not-overloaded procedures directly,
-    ! but thats very annoying...
-    GENERIC       :: checktype => & 
-        DTYPE(data_1d_i_check),&
-        DTYPE(data_2d_i_check),&
-        DTYPE(data_1d_li_check),&
-        DTYPE(data_2d_li_check),&
-        DTYPE(data_1d_r_check),&
-        DTYPE(data_2d_r_check),&
-        DTYPE(data_1d_c_check),&
-        DTYPE(data_2d_c_check),&
-        DTYPE(data_1d_l_check),&
-        DTYPE(data_2d_l_check)
 END TYPE DTYPE(ppm_t_particles)_
 minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 

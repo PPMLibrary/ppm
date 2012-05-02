@@ -7,6 +7,18 @@ TYPE,EXTENDS(DTYPE(ppm_t_part_prop)_) :: DTYPE(ppm_t_part_prop)
     PROCEDURE :: create => DTYPE(prop_create)
     PROCEDURE :: destroy => DTYPE(prop_destroy)
     PROCEDURE :: print_info => DTYPE(prop_print_info)
+
+    PROCEDURE :: DTYPE(data_1d_i_check)
+    PROCEDURE :: DTYPE(data_2d_i_check)
+    PROCEDURE :: DTYPE(data_1d_li_check)
+    PROCEDURE :: DTYPE(data_2d_li_check)
+    PROCEDURE :: DTYPE(data_1d_r_check)
+    PROCEDURE :: DTYPE(data_2d_r_check)
+    PROCEDURE :: DTYPE(data_1d_c_check)
+    PROCEDURE :: DTYPE(data_2d_c_check)
+    PROCEDURE :: DTYPE(data_1d_l_check)
+    PROCEDURE :: DTYPE(data_2d_l_check)
+
 END TYPE
 !----------------------------------------------------------------------
 ! Container for properties
@@ -182,17 +194,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
 !        DTYPE(map_part_push_2dc),&
 !        DTYPE(map_part_push_2di),&
 !        DTYPE(map_part_push_2dl)
-
-    PROCEDURE     :: DTYPE(data_1d_i_check)
-    PROCEDURE     :: DTYPE(data_2d_i_check)
-    PROCEDURE     :: DTYPE(data_1d_li_check)
-    PROCEDURE     :: DTYPE(data_2d_li_check)
-    PROCEDURE     :: DTYPE(data_1d_r_check)
-    PROCEDURE     :: DTYPE(data_2d_r_check)
-    PROCEDURE     :: DTYPE(data_1d_c_check)
-    PROCEDURE     :: DTYPE(data_2d_c_check)
-    PROCEDURE     :: DTYPE(data_1d_l_check)
-    PROCEDURE     :: DTYPE(data_2d_l_check)
 
 END TYPE DTYPE(ppm_t_particles)
 !----------------------------------------------------------------------

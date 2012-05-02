@@ -2,17 +2,15 @@
 
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_check)_
-SUBROUTINE __FUNCNAME(Pc,wp,id,info) 
-    IMPORT DTYPE(ppm_t_particles)_,ppm_kind_single,ppm_kind_double,&
+SUBROUTINE __FUNCNAME(this,wp,info) 
+    IMPORT DTYPE(ppm_t_part_prop)_,ppm_kind_single,ppm_kind_double,&
                                     ppm_kind_int64
-    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    CLASS(DTYPE(ppm_t_part_prop)_)                      :: this
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER,        INTENT(IN   )   :: wp
 #elif __DIM == 2
     __TYPE,DIMENSION(:,:),POINTER,      INTENT(IN   )   :: wp
 #endif
-    INTEGER,                            INTENT(IN   )   :: id
-    !!! id where the data is stored
     INTEGER,                            INTENT(   OUT)  :: info
 END SUBROUTINE
 #undef __FUNCNAME
