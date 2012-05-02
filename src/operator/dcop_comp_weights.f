@@ -123,8 +123,8 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     !may also not have enough neighbours for the Vandermonde matrix to be
     !invertible. These particles will be skipped without raising a warning.
 
-
     Nlist => Part_to%get_neighlist(Part_src)
+    check_associated("Nlist","failed to access neighbour list")
     check_true("Nlist%uptodate","The neighbour list is not up-to-date")
 
     nterms = op%nterms

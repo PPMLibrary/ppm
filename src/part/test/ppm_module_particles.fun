@@ -11,7 +11,7 @@ use ppm_module_data
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 0
+integer, parameter              :: debug = 2
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = ACOS(-1._mk)
@@ -121,13 +121,27 @@ integer                                        :: nterms
         type(ppm_t_operator)            :: Laplacian
         CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
         CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
+        class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
+
         !--------------------------
         !Define Fields
         !--------------------------
         call Field1%create(5,info,name="Concentration") !vector field
         Assert_Equal(info,0)
 
-        call Part1%initialize(np_global,info,topoid=topoid)
+        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+        Assert_Equal(info,0)
+
+        allocate(wp_2r(ndim,Part1%Npart))
+        call random_number(wp_2r)
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.05_mk
+        call Part1%move(wp_2r,info)
+        Assert_Equal(info,0)
+        deallocate(wp_2r)
+
+        Assert_true(Part1%has_neighlist(Part1))
+
+        call Part1%apply_bc(info)
         Assert_Equal(info,0)
 
         call Part1%map(info,global=.true.,topoid=topoid)
