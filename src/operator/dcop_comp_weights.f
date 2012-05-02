@@ -138,8 +138,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
 
     SELECT TYPE(Part_to)
     TYPE IS (DTYPE(ppm_t_sop))
-        !CALL Part_to%get(rcp,Part_to%rcp_id,with_ghosts=with_ghosts)
-        CALL Part_to%get(rcp,Part_to%rcp_id,with_ghosts=with_ghosts)
+        CALL Part_to%get(Part_to%rcp,rcp,info,with_ghosts=with_ghosts)
         adaptive = .TRUE.
     CLASS DEFAULT
         byh = 1._MK/Part_to%h_avg
@@ -150,7 +149,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
         !!! nearest-neighbour distances within Part_src 
         !!! (they must have been already computed)
-        CALL Part_src%get(nn_sq,this%nn_sq,with_ghosts=.TRUE.)
+        CALL Part_src%get(this%nn_sq,nn_sq,info,with_ghosts=.TRUE.)
             or_fail("need to call particles_nearest_neighbors first")
     ENDIF
 
@@ -288,10 +287,10 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     ENDDO
     
     IF (isinterp) THEN
-        CALL Part_to%get_xp(xp1,with_ghosts=with_ghosts)
-        CALL Part_src%get_xp(xp2,with_ghosts=.TRUE.)
+        CALL Part_to%get_xp(xp1,info,with_ghosts=with_ghosts)
+        CALL Part_src%get_xp(xp2,info,with_ghosts=.TRUE.)
     ELSE
-        CALL Part_to%get_xp(xp1,with_ghosts=.TRUE.)
+        CALL Part_to%get_xp(xp1,info,with_ghosts=.TRUE.)
         xp2 => xp1
     ENDIF
     nvlist => Nlist%nvlist
@@ -509,9 +508,9 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
 
     ENDDO particle_loop
 
-    CALL Part_to%set_xp(xp1,read_only=.TRUE.)
+    CALL Part_to%set_xp(xp1,info,read_only=.TRUE.)
     IF (isinterp) THEN
-        CALL Part_src%set_xp(xp2,read_only=.TRUE.)
+        CALL Part_src%set_xp(xp2,info,read_only=.TRUE.)
     ELSE
         xp2 => NULL()
     ENDIF
@@ -519,9 +518,9 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
 
     SELECT TYPE (Part_to)
     TYPE IS (DTYPE(ppm_t_sop))
-        CALL Part_to%set(rcp,Part_to%rcp_id,read_only=.TRUE.)
+        CALL Part_to%set(Part_to%rcp,rcp,info,read_only=.TRUE.)
         IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-            CALL Part_src%set(nn_sq,this%nn_sq,read_only=.TRUE.)
+            CALL Part_src%set(this%nn_sq,nn_sq,info,read_only=.TRUE.)
         ENDIF
     END SELECT
 

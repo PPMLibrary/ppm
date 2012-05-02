@@ -811,13 +811,13 @@ SUBROUTINE field_info_destroy(this,info)
 END SUBROUTINE field_info_destroy
 
 !CREATE (DUMMY ROUTINE)
-SUBROUTINE operator_discr_create(this,Part_src,Part_to,info,&
-        nterms,with_ghosts,vector,interp,order)
+SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
+        with_ghosts,vector,interp,order)
     CLASS(ppm_t_operator_discr)        :: this
+    CLASS(ppm_t_operator_), INTENT(IN),TARGET :: Op
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_src
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_to
     INTEGER,                INTENT(OUT)   :: info
-    INTEGER,                INTENT(IN)    :: nterms
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: with_ghosts
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: vector
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: interp

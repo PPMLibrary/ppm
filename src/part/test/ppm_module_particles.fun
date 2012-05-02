@@ -146,8 +146,6 @@ integer                                        :: nterms
         call Part1%get_xp(xp,info)
         Assert_Equal(info,0)
 
-        write(*,*) 'get_pid = ',Field1%get_pid(Part1)
-
         call Part1%get_field(Field1,wp_2r,info)
         Assert_Equal(info,0)
 

@@ -432,7 +432,17 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_c_get_prop),&
         DTYPE(data_2d_c_get_prop),&
         DTYPE(data_1d_l_get_prop),&
-        DTYPE(data_2d_l_get_prop)
+        DTYPE(data_2d_l_get_prop),&
+        DTYPE(data_1d_i_get_field),&
+        DTYPE(data_2d_i_get_field),&
+        DTYPE(data_1d_li_get_field),&
+        DTYPE(data_2d_li_get_field),&
+        DTYPE(data_1d_r_get_field),&
+        DTYPE(data_2d_r_get_field),&
+        DTYPE(data_1d_c_get_field),&
+        DTYPE(data_2d_c_get_field),&
+        DTYPE(data_1d_l_get_field),&
+        DTYPE(data_2d_l_get_field)
 
 
     PROCEDURE(DTYPE(data_1d_i_set)_),DEFERRED :: DTYPE(data_1d_i_set)

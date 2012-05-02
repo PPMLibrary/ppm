@@ -206,7 +206,7 @@ SUBROUTINE operator_discretize_on(this,Discr_src,op_discr,info,method,&
             allocate(ppm_t_dcop_d::op_discr,stat=info)
             SELECT TYPE(op_discr)
             TYPE IS (ppm_t_dcop_d)
-                CALL op_discr%create(Discr_src,Discr2,info,this%nterms,&
+                CALL op_discr%create(this,Discr_src,Discr2,info,&
                     with_ghosts,vector,interp,order=order)
                     or_fail("op_discr%create failed")
                 CALL op_discr%comp_weights(info)
