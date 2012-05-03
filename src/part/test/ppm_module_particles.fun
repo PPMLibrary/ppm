@@ -11,7 +11,7 @@ use ppm_module_data
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 2
+integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = ACOS(-1._mk)
@@ -132,15 +132,17 @@ integer                                        :: nterms
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
         Assert_Equal(info,0)
 
+        call Part1%set_cutoff(0.08_mk,info)
+        Assert_Equal(info,0)
+
         allocate(wp_2r(ndim,Part1%Npart))
         call random_number(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.05_mk
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         deallocate(wp_2r)
 
         Assert_true(Part1%has_neighlist(Part1))
-
         call Part1%apply_bc(info)
         Assert_Equal(info,0)
 
@@ -155,6 +157,12 @@ integer                                        :: nterms
 
         call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
+
+        Nlist => Part1%get_neighlist(Part1)
+        Assert_true(associated(Nlist))
+        write(*,*) Nlist%cutoff
+        write(*,*) Nlist%nneighmin
+        write(*,*) Nlist%nneighmax
 
         !Compare values and check that they are still the same
         call Part1%get_xp(xp,info)

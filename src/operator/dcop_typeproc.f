@@ -53,7 +53,7 @@ END SUBROUTINE DTYPE(dcop_create)
 
 !DESTROY ENTRY
 SUBROUTINE DTYPE(dcop_destroy)(this,info)
-    !!! Destroy the description for a differential operator
+    !!! Destroy the discretized differential operator
     CLASS(DTYPE(ppm_t_dcop))                  :: this
     INTEGER,                   INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
@@ -114,15 +114,25 @@ END SUBROUTINE DTYPE(dcop_comp_weights)
 
 !COMPUTE DC OPERATOR ON A PARTICLE SET
 SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
+    !!! Evaluate a discretized operator (DC-PSE) on a field
+    !!! (Field_src) and put the result in another field (Field_to)
+    !!! The weights of the operator must have been previously computed.
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_dcop))                     :: this
-    CLASS(ppm_t_field_),TARGET,INTENT(IN)    :: Field_src
-    CLASS(ppm_t_field_),TARGET,INTENT(INOUT) :: Field_to
-    INTEGER,                       INTENT(OUT)   :: info
+    CLASS(DTYPE(ppm_t_dcop))                   :: this
+    !!! Discretized DC-PSE operator, with pre-computed weights
+    CLASS(ppm_t_field_),TARGET,INTENT(IN)      :: Field_src
+    !!! Input field
+    CLASS(ppm_t_field_),TARGET,INTENT(INOUT)   :: Field_to
+    !!! Output field
+    INTEGER,                       INTENT(OUT) :: info
+    !!! Return status, on success 0.
 
+    !-------------------------------------------------------------------------
+    ! Local variables
+    !-------------------------------------------------------------------------
     INTEGER                                    :: ip,iq,j,ineigh,lda,np_target
     REAL(KIND(1.D0))                           :: t1,t2
     REAL(MK),DIMENSION(:,:),POINTER            :: eta => NULL()
@@ -139,6 +149,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 
     CLASS(ppm_t_discr_data),POINTER            :: data_src => NULL()
     CLASS(ppm_t_discr_data),POINTER            :: data_to  => NULL()
+
     start_subroutine("dcop_compute")
 
     !-------------------------------------------------------------------------
