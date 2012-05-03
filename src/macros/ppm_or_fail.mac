@@ -10,7 +10,7 @@ macro fail(message, type=ppm_err_argument,info=info,exit_point=9999,caller=calle
 $ppm_fail(<%=message%>,<%=type%>,<%=info%>,<%=exit_point%>,<%=caller%>)
 end macro
 
-macro or_fail(message, type=ppm_err_argument,info=info)
+macro or_fail(message, type=ppm_err_sub_failed,info=info)
 IF (<%= info %>.NE.0) THEN
   $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
@@ -137,24 +137,11 @@ IF (ASSOCIATED(<%= coll_ptr %>)) THEN
 ENDIF
 end macro
 
-macro stdout(a="",b="",c="",d="",e="",f="",g="",h="",i="",j="",k="",l="",m="",n="",o="",p="",q="",r="",s="",t="",u="",v="",w="",x="",y="",z="")
+macro stdout(*message)
 % scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
-    WRITE(cbuf,*) <%=a%>,<%=b%>,<%=c%>,<%=d%>,&
-                  <%=e%>,<%=f%>,<%=g%>,&
-                  <%=h%>,<%=i%>,<%=j%>,&
-                  <%=k%>,<%=l%>,<%=m%>,&
-                  <%=n%>,<%=o%>,<%=p%>,&
-                  <%=q%>,<%=r%>,<%=s%>,&
-                  <%=t%>,<%=u%>,<%=v%>,&
-                  <%=w%>,<%=x%>,<%=y%>,<%=z%>
+% if message.is_a? Array
+    WRITE(cbuf,*) <%=message.join(",&\n")%>
+% end
     CALL ppm_write(ppm_rank,caller,cbuf,info)
 end macro
-
-!macro stdout(*message)
-!% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
-!% if message.is_a? Array %>
-!    WRITE(cbuf,*) <%=message%>
-!% end
-!    CALL ppm_write(ppm_rank,caller,cbuf,info)
-!end macro
 
