@@ -59,7 +59,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)
-SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
+SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
     CLASS(DTYPE(ppm_t_particles))   :: this
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
 #if   __DIM == 1
@@ -68,7 +68,15 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
     __TYPE,DIMENSION(:,:),POINTER   :: wp
 #endif
     INTEGER                         :: info
+    !!! Return status, on success 0.
     LOGICAL,OPTIONAL                :: with_ghosts
+    !!! returns array between 1:Mpart (default is 1:Npart)
+    LOGICAL,OPTIONAL                :: read_only
+    !!! swear on your favourite book that you will not modify the data
+    !!! that you access. Default is false (which implies that the state
+    !!! variables will be modify with the assumption that the data
+    !!! accessed has been changed, e.g. so that a subsequent ghost update
+    !!! will also update this property)
 
     INTEGER                         :: np
 
@@ -116,6 +124,16 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts)
             fail("unmapped particles")
     ENDIF
 
+    !Assume that the ghost values are now incorrect, unless explicitely
+    !told otherwise
+    IF (PRESENT(read_only)) THEN
+        IF (.NOT.read_only) THEN
+            discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+        ENDIF
+    ELSE
+        discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+    ENDIF
+
     end_subroutine()
 END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
@@ -125,6 +143,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: this
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: discr_data
     INTEGER                          :: info
+    !!! Return status, on success 0.
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
 #if   __DIM == 1
@@ -162,7 +181,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)
-SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts)
+SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
     CLASS(DTYPE(ppm_t_particles))   :: this
     CLASS(ppm_t_field_)             :: Field
 #if   __DIM == 1
@@ -171,7 +190,15 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts)
     __TYPE,DIMENSION(:,:),POINTER   :: wp
 #endif
     INTEGER                         :: info
+    !!! Return status, on success 0.
     LOGICAL,OPTIONAL                :: with_ghosts
+    !!! returns array between 1:Mpart (default is 1:Npart)
+    LOGICAL,OPTIONAL                :: read_only
+    !!! swear on your favourite book that you will not modify the data
+    !!! that you access. Default is false (which implies that the state
+    !!! variables will be modify with the assumption that the data
+    !!! accessed has been changed, e.g. so that a subsequent ghost update
+    !!! will also update this property)
 
     INTEGER                         :: np
     CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
@@ -185,43 +212,52 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts)
 
     SELECT TYPE(prop => discr_data)
     CLASS IS (DTYPE(ppm_t_part_prop))
-    IF (ppm_debug.GE.1) THEN
-        CALL prop%checktype(wp,info)
-        or_fail("Argument has the wrong type for this property")
-    ENDIF
+        IF (ppm_debug.GE.1) THEN
+            CALL prop%checktype(wp,info)
+            or_fail("Argument has the wrong type for this property")
+        ENDIF
 
-    np = this%Npart
-    IF (PRESENT(with_ghosts)) THEN
-        IF (with_ghosts) THEN
-            IF (prop%flags(ppm_ppt_ghosts)) THEN
-                np = this%Mpart
-            ELSE
-                WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
-                    & TRIM(ADJUSTL(prop%name)),&
-                    & ") with ghosts when ghosts are not up-to-date. ",&
-                    & "Returning NULL pointer"
-                CALL ppm_write(ppm_rank,caller,cbuf,info)
-                fail("ghosts are not up-to-date")
+        np = this%Npart
+        IF (PRESENT(with_ghosts)) THEN
+            IF (with_ghosts) THEN
+                IF (prop%flags(ppm_ppt_ghosts)) THEN
+                    np = this%Mpart
+                ELSE
+                    WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
+                        & TRIM(ADJUSTL(prop%name)),&
+                        & ") with ghosts when ghosts are not up-to-date. ",&
+                        & "Returning NULL pointer"
+                    CALL ppm_write(ppm_rank,caller,cbuf,info)
+                    fail("ghosts are not up-to-date")
+                ENDIF
             ENDIF
         ENDIF
-    ENDIF
 
-    IF (prop%flags(ppm_ppt_partial)) THEN
-        wp => &
+        IF (prop%flags(ppm_ppt_partial)) THEN
+            wp => &
 #if   __DIM == 1
-            prop%WRAP(DATANAME)(1:np)
+                prop%WRAP(DATANAME)(1:np)
 #elif __DIM == 2
-            prop%WRAP(DATANAME)(:,1:np)
+                prop%WRAP(DATANAME)(:,1:np)
 #endif
-    ELSE
-        WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-            & TRIM(ADJUSTL(prop%name)),&
-            & ') when mapping is not up-to-date. ',&
-            & 'Returning NULL pointer', &
-            'Run with traceback option to debug'
-        CALL ppm_write(ppm_rank,cbuf,caller,info)
-        fail("unmapped particles")
-    ENDIF
+        ELSE
+            WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
+                & TRIM(ADJUSTL(prop%name)),&
+                & ') when mapping is not up-to-date. ',&
+                & 'Returning NULL pointer', &
+                'Run with traceback option to debug'
+            CALL ppm_write(ppm_rank,cbuf,caller,info)
+            fail("unmapped particles")
+        ENDIF
+        !Assume that the ghost values are now incorrect, unless explicitely
+        !told otherwise
+        IF (PRESENT(read_only)) THEN
+            IF (.NOT.read_only) THEN
+                prop%flags(ppm_ppt_ghosts) = .FALSE.
+            ENDIF
+        ELSE
+            prop%flags(ppm_ppt_ghosts) = .FALSE.
+        ENDIF
     END SELECT
 
     end_subroutine()
@@ -233,6 +269,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: this
     CLASS(ppm_t_field_)              :: Field
     INTEGER                          :: info
+    !!! Return status, on success 0.
     LOGICAL,OPTIONAL                 :: read_only
     LOGICAL,OPTIONAL                 :: ghosts_ok
 #if   __DIM == 1
@@ -286,6 +323,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
     __TYPE,DIMENSION(:,:),POINTER   :: wp
 #endif
     INTEGER                         :: info
+    !!! Return status, on success 0.
     LOGICAL,OPTIONAL                :: with_ghosts
 
     start_subroutine(__FUNCNAME)

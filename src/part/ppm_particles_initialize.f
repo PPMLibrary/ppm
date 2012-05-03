@@ -47,7 +47,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     INTEGER                               :: remaining_rows
 
     REAL(MK)                              :: shift
-    INTEGER                               :: distribution,neigh_id
+    INTEGER                               :: distribution
     TYPE(ppm_t_topo),POINTER              :: topo => NULL()
     REAL(MK), DIMENSION(ppm_dim)          :: min_phys,max_phys,len_phys
 
@@ -359,7 +359,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         Pc%active_topoid = topoid
     ENDIF
 
-    CALL Pc%create_neighlist(neigh_id,info,name='self',&
+    CALL Pc%create_neighlist(Pc,info,name='self',&
         skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
         or_fail("failed to create neighbour list")
 

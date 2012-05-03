@@ -1,10 +1,9 @@
-#ifdef REMOVEME
 !-------------------------------------------------------------
 ! Primitive function as defined in Chen et al., 
 !             Int. J. Numer. Meth. Engng 2003; 56:935-960.
 ! (here, the quartic spline)
 !-------------------------------------------------------------
-#endif
+
 FUNCTION DTYPE(primitive)(x)
 
     IMPLICIT NONE

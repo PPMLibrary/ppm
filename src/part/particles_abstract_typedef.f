@@ -70,9 +70,6 @@ minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
 TYPE,ABSTRACT :: DTYPE(ppm_t_neighlist)_
     CHARACTER(len=ppm_char)                         :: name
     !!! name of the neighbour list
-    INTEGER                                         :: P_id = 0
-    !!! Id of the set of particles that this neighbour list refers to
-    !!! The default, 0, stands for "self".
     CLASS(ppm_t_discr_kind),POINTER                 :: Part => NULL()
     !!! Pointer to the set of particles to which the neighbours 
     !!! (in the neighbor lists) belongs to.
@@ -222,8 +219,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     ! Container for particle mappings
     CLASS(DTYPE(ppm_c_part_mapping)_),POINTER       :: maps => NULL()
 
-    ! List of IDs of other Particle sets
-    TYPE(idList)                                    :: set_Pc
+    !! List of IDs of other Particle sets
+    !TYPE(idList)                                    :: set_Pc
 
 
     ! Load balancing
@@ -432,7 +429,17 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_c_get_prop),&
         DTYPE(data_2d_c_get_prop),&
         DTYPE(data_1d_l_get_prop),&
-        DTYPE(data_2d_l_get_prop)
+        DTYPE(data_2d_l_get_prop),&
+        DTYPE(data_1d_i_get_field),&
+        DTYPE(data_2d_i_get_field),&
+        DTYPE(data_1d_li_get_field),&
+        DTYPE(data_2d_li_get_field),&
+        DTYPE(data_1d_r_get_field),&
+        DTYPE(data_2d_r_get_field),&
+        DTYPE(data_1d_c_get_field),&
+        DTYPE(data_2d_c_get_field),&
+        DTYPE(data_1d_l_get_field),&
+        DTYPE(data_2d_l_get_field)
 
 
     PROCEDURE(DTYPE(data_1d_i_set)_),DEFERRED :: DTYPE(data_1d_i_set)

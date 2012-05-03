@@ -202,11 +202,6 @@ END TYPE DTYPE(ppm_t_particles)
 minclude define_collection_type(DTYPE(ppm_t_particles))
 
 
-!TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
-!    !    CONTAINS
-!    !        PRIVATE
-!    !        PROCEDURE     :: create => DTYPE(sop_part_create)
-!END TYPE
 TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     !!! an extension of the Particle set data structure
     !!! for Self-Organizing Particles
