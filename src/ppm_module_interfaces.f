@@ -106,6 +106,8 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 TYPE,ABSTRACT :: ppm_t_main_abstr
     !!! Generic type for all main PPM types
 END TYPE
+minclude def_collection_type_from_abstract(ppm_v_main_abstr,&
+    ppm_t_main_abstr,vec=true)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind_
     !!! Discretization kinds (Particles and Meshes)
@@ -778,6 +780,7 @@ CONTAINS
 minclude define_collection_procedures(ppm_t_field_info)
 minclude define_collection_procedures(ppm_t_operator_discr)
 minclude define_collection_procedures(ppm_t_discr_kind,vec=true)
+minclude def_collection_proc_from_abstract(ppm_v_main_abstr,ppm_t_main_abstr,vec=true)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)
