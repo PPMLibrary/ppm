@@ -617,6 +617,12 @@ END TYPE
 ! Container for meshes
 minclude define_abstract_collection_type(ppm_t_equi_mesh_)
 
+TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair_
+  CLASS(ppm_t_field_), POINTER        :: field
+  CLASS(ppm_t_discr_kind_), POINTER   :: discretization
+END TYPE
+TYPE, EXTENDS(ppm_t_field_discr_pair_) ::  ppm_t_field_discr_pair
+END TYPE
 
 !----------------------------------------------------------------------
 !  INTERFACES
