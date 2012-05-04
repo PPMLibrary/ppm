@@ -149,9 +149,13 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 
     CLASS(ppm_t_discr_data),POINTER            :: data_src => NULL()
     CLASS(ppm_t_discr_data),POINTER            :: data_to  => NULL()
+    CLASS(ppm_t_discr_kind),POINTER            :: null_discr  => NULL()
 
     start_subroutine("dcop_compute")
 
+#ifdef __MPI
+    t1 = MPI_WTIME(info)
+#endif
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
@@ -172,8 +176,23 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     vector_output = this%flags(ppm_ops_vector)
     vector_input = (data_src%lda .NE. 1)
 
+    !set lda, the leading dimension of the output data
+    IF (vector_output) THEN
+        !output is a vector
+        lda = this%op_ptr%nterms
+        ! check for compatibility with the input
+        IF (vector_input) THEN
+            check_true("lda.EQ.data_src%lda",&
+                "Leading dimension of input field does not match nterms of operator")
+        ENDIF
+    ELSE
+        !output is a scalar. Each component of the input field will be fed
+        ! to the operator.
+        lda = data_src%lda
+    ENDIF
+
     check_true("Part_src%has_neighlist(Part_to)",&
-        "Please compute xset neighbor lists first")
+        "Please compute (maybe xset?) neighbor lists first")
 
     check_true("Part_src%has_ghosts(Field_src)",&
         "Ghost for source field need to be updated")
@@ -189,6 +208,12 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     ENDIF
 
 
+    IF (.NOT. ASSOCIATED(Field_to%discr_info)) THEN
+        CALL Field_to%create(lda,info,name=this%op_ptr%name,&
+            dtype=Field_src%data_type)
+            or_fail("Failed to create field for the output of the operator")
+    ENDIF
+
     !allocate output field if needed
     !otherwise simply check that the output array had been allocated
     !to the right size
@@ -197,8 +222,10 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             or_fail("Failed to initialize destination field discretization")
     ENDIF
 
+
     CALL Field_to%get_discr(this%discr_to,data_to,info)
         or_fail("Field_to%get_to failed")
+
 
     IF (.NOT. data_to%flags(ppm_ppt_partial) .OR. &
             &       with_ghosts .AND. .NOT. data_to%flags(ppm_ppt_ghosts)) THEN
@@ -208,15 +235,17 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             or_fail("Field_to%get_to failed")
     ENDIF
 
-    IF (vector_output) THEN
+    IF (lda.GT.1) THEN
         CALL Part_to%get(field_to,dwpv,info,with_ghosts=with_ghosts)
+            or_fail("Cannot access Field_to on this particle set") 
         DO ip = 1,np_target
-            DO j=1,this%op_ptr%nterms
-                dwpv(1:lda,ip) = 0._MK
+            DO j=1,lda
+                dwpv(j,ip) = 0._MK
             ENDDO
         ENDDO
     ELSE
         CALL Part_to%get(field_to,dwps,info,with_ghosts=with_ghosts)
+            or_fail("Cannot access Field_to on this particle set") 
         DO ip = 1,np_target
             dwps(ip) = 0._MK
         ENDDO
@@ -230,35 +259,56 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             or_fail("could not access neighbour lists")
         IF (vector_output) THEN
             IF(vector_input) THEN
-                CALL Part_src%get(field_src,wpv2,info,with_ghosts=.TRUE.)
+                CALL Part_src%get(field_src,wpv2,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                    or_fail("could not access wpv2")
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
-                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                            wpv2(1:lda,iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + &
+                                wpv2(j,iq) * eta(j+(ineigh-1)*lda,ip)
+                        ENDDO
                     ENDDO
                 ENDDO
-                CALL Part_src%set_field(field_src,wpv2,info,read_only=.TRUE.)
             ELSE
-                CALL Part_src%get(field_src,wps2,info,with_ghosts=.TRUE.)
+                CALL Part_src%get(field_src,wps2,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                    or_fail("could not access wps2")
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
-                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                            wps2(iq) * eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + &
+                                wps2(iq) * eta(j+(ineigh-1)*lda,ip)
+                        ENDDO
                     ENDDO
                 ENDDO
-                CALL Part_src%set_field(field_src,wps2,info,read_only=.TRUE.)
             ENDIF
         ELSE
-            CALL Part_src%get(field_src,wps2,info,with_ghosts=.TRUE.)
-            DO ip = 1,np_target
-                DO ineigh = 1,nvlist(ip)
-                    iq = vlist(ineigh,ip)
-                    dwps(ip) = dwps(ip) + wps2(iq) * eta(ineigh,ip)
+            IF(vector_input) THEN
+                CALL Part_src%get(field_src,wpv2,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                or_fail("could not access wpv2")
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + wpv2(j,iq) * eta(ineigh,ip)
+                        ENDDO
+                    ENDDO
                 ENDDO
-            ENDDO
-            CALL Part_src%set_field(field_src,wps2,info,read_only=.TRUE.)
+            ELSE
+                CALL Part_src%get(field_src,wps2,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                or_fail("could not access wps2")
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwps(ip) = dwps(ip) + wps2(iq) * eta(ineigh,ip)
+                    ENDDO
+                ENDDO
+            ENDIF
         ENDIF
     ELSE
         CALL Part_src%get_vlist(nvlist,vlist,info)
@@ -266,44 +316,66 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         sig = -1._mk !TODO FIXME
         IF (vector_output) THEN
             IF(vector_input) THEN
-                CALL Part_src%get(field_src,wpv1,info,with_ghosts=.TRUE.)
+                CALL Part_src%get(field_src,wpv1,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                    or_fail("could not access wpv1")
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
-                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                            (wpv1(1:lda,iq) + sig*(wpv1(1:lda,ip)))* &
-                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + &
+                                (wpv1(j,iq) + sig*(wpv1(j,ip)))* &
+                                eta(j+(ineigh-1)*lda,ip)
+                        ENDDO
                     ENDDO
                 ENDDO
-                CALL Part_src%set_field(field_src,wpv1,info,read_only=.TRUE.)
             ELSE
-                CALL Part_src%get(field_src,wps1,info,with_ghosts=.TRUE.)
+                CALL Part_src%get(field_src,wps1,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                    or_fail("could not access wps1")
                 DO ip = 1,np_target
                     DO ineigh = 1,nvlist(ip)
                         iq = vlist(ineigh,ip)
-                        dwpv(1:lda,ip) = dwpv(1:lda,ip) + &
-                            (wps1(iq) + sig*(wps1(ip)))* &
-                            eta(1+(ineigh-1)*lda:ineigh*lda,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + &
+                                (wps1(iq) + sig*(wps1(ip)))* &
+                                eta(j+(ineigh-1)*lda,ip)
+                        ENDDO
                     ENDDO
                 ENDDO
-                CALL Part_src%set_field(field_src,wps1,info,read_only=.TRUE.)
             ENDIF
         ELSE
-            CALL Part_src%get(field_src,wps1,info,with_ghosts=.TRUE.)
-            DO ip = 1,np_target
-                DO ineigh = 1,nvlist(ip)
-                    iq = vlist(ineigh,ip)
-                    dwps(ip) = dwps(ip) + &
-                        (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
+            IF(vector_input) THEN
+                CALL Part_src%get(field_src,wpv1,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                or_fail("could not access wpv1")
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        DO j=1,lda
+                            dwpv(j,ip) = dwpv(j,ip) + &
+                                (wpv1(j,iq)+sig*(wpv1(j,ip))) * eta(ineigh,ip)
+                        ENDDO
+                    ENDDO
                 ENDDO
-            ENDDO
-            CALL Part_src%set_field(field_src,wps1,info,read_only=.TRUE.)
+            ELSE
+                CALL Part_src%get(field_src,wps1,info,&
+                    with_ghosts=.TRUE.,read_only=.TRUE.)
+                or_fail("could not access wps1")
+                DO ip = 1,np_target
+                    DO ineigh = 1,nvlist(ip)
+                        iq = vlist(ineigh,ip)
+                        dwps(ip) = dwps(ip) + &
+                            (wps1(iq)+sig*(wps1(ip))) * eta(ineigh,ip)
+                    ENDDO
+                ENDDO
+            ENDIF
         ENDIF
     ENDIF
 
     eta => NULL()
 
-    IF (vector_output) THEN
+    IF (lda.GT.1) THEN
         IF (with_ghosts) THEN
             !we assume that the ghosts are up-to-date even though
             !they clearly are not. we assume you know what you are
@@ -327,7 +399,6 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     t2 = MPI_WTIME(info)
     Part_src%stats%t_dc_apply = Part_src%stats%t_dc_apply+(t2-t1)
 #endif
-
 
     CLASS DEFAULT
         fail("Wrong type. Operator should be discretized on a particle set")

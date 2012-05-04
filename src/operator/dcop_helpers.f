@@ -756,54 +756,27 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
     INTEGER                              :: n,nnew
     INTEGER                              :: i,j,k,inew,jnew,itemp
     LOGICAL                              :: check = .TRUE.
-    CHARACTER(LEN = 256),PARAMETER       :: caller = 'solveLSE_n'
     CHARACTER(LEN = 256)                 :: cbuf
     REAL(MK)                             :: closetozero
 
-    !=======================================================================!
-    ! init
-    info = 0
+    start_subroutine("solveLSE_n")
+
+        
     n = SIZE(A,1)
     !closetozero = SQRT(EPSILON(closetozero))
     closetozero = 100._MK*(EPSILON(closetozero))
 
-    ALLOCATE(indx(n),STAT=info)
-    IF (info .NE. 0) THEN
-        WRITE(*,*)caller,': allocation failed.'
-        info = -1
-        GOTO 9999
-    ENDIF
+    ALLOCATE(indx(n),valid(n),Acopy(n,n),STAT=info)
+        or_fail_alloc("local variables")
 
-    ALLOCATE(valid(n),STAT=info)
-    IF (info .NE. 0) THEN
-        WRITE(*,*)caller,': allocation failed.'
-        info = -1
-        GOTO 9999
-    ENDIF
-
-    ALLOCATE(Acopy(n,n),STAT=info)
-    IF (info .NE. 0) THEN
-        WRITE(*,*)caller,': allocation failed.'
-        info = -1
-        GOTO 9999
-    ENDIF
     Acopy = A
 
     IF (check) THEN
         ALLOCATE(exact_b_n(n,n_eq),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
+            or_fail_alloc("exact_b_n")
         exact_b_n = x_or_b
-
         ALLOCATE(real_b(n),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
+            or_fail_alloc("real_b")
     ENDIF
 
     !=======================================================================!
@@ -843,11 +816,7 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
     IF (nnew .NE. n) THEN
 
         ALLOCATE(roworder(n),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
+            or_fail_alloc("roworder")
 
         DO i= 1,n
             roworder(i) = i
@@ -862,24 +831,8 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
         ! create new LSE
 
         ! allocation
-        ALLOCATE(bnew_n(nnew,n_eq),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
-        ALLOCATE(indxnew(nnew),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
-        ALLOCATE(Anew(nnew,nnew),STAT=info)
-        IF (info .NE. 0) THEN
-            WRITE(*,*)caller,': allocation failed.'
-            info = -1
-            GOTO 9999
-        ENDIF
+        ALLOCATE(bnew_n(nnew,n_eq),indxnew(nnew),Anew(nnew,nnew),STAT=info)
+            or_fail_alloc("bnew_n,indexnew,Anew")
 
         ! delete singular rows/columns in A
         ! delete corresponding entries in b
@@ -970,10 +923,8 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
 
         ENDDO
 
-        DEALLOCATE(roworder)
-        DEALLOCATE(indxnew)
-        DEALLOCATE(bnew_n)
-        DEALLOCATE(Anew)
+        DEALLOCATE(roworder,indxnew,bnew_n,Anew,STAT=info)
+            or_fail_dealloc("local variables")
 
     ELSE ! no singularities
 
@@ -1020,9 +971,13 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
                 WRITE(*,*)'WARNING from ', TRIM(caller),': no solution!'
                 CALL ppm_write(ppm_rank,caller,&
                     'Error in moment conditions 1 too large.',info)
-                WRITE(cbuf,'(A,E12.3)')'The l1-norm of the error is ',&
-                    SUM(ABS(real_b - exact_b_n(:,k)))
+                WRITE(cbuf,'(A,E12.3,A,I0)')'The l1-norm of the error is ',&
+                    SUM(ABS(real_b - exact_b_n(:,k))),' for k=',k
                 CALL ppm_write(ppm_rank,caller,cbuf,info)
+                DO i=1,n
+                    WRITE(9004,'(1(E30.22))') x_or_b(i,k)
+                    WRITE(9005,'(1(E30.22))') real_b(i)
+                ENDDO
                 DO i=1,n
                     DO j=1,n
                         WRITE(9001,'(1(E30.22))') A(i,j)
@@ -1030,6 +985,10 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
                 ENDDO
                 CALL ppm_write(ppm_rank,caller,&
                     'moment matrix written in file fort.9001',info)
+                CALL ppm_write(ppm_rank,caller,&
+                    'x_or_b written in file fort.9004',info)
+                CALL ppm_write(ppm_rank,caller,&
+                    'real_b written in file fort.9005',info)
                 info = -1
                 GOTO 9999
             ENDIF
@@ -1038,16 +997,16 @@ SUBROUTINE DTYPE(solveLSE_n)(A,x_or_b,n_eq,info)
 
     !=======================================================================!
     ! dealloc
-    DEALLOCATE(valid)
-    DEALLOCATE(indx)
-    DEALLOCATE(Acopy)
+    DEALLOCATE(valid,indx,Acopy,STAT=info)
+        or_fail_dealloc("local variables")
     IF (check) THEN
-        DEALLOCATE(exact_b_n)
-        DEALLOCATE(real_b)
+        DEALLOCATE(exact_b_n,STAT=info)
+        or_fail_dealloc("exact_b_n")
+        DEALLOCATE(real_b,STAT=info)
+        or_fail_dealloc("real_b")
     ENDIF
 
-    9999 CONTINUE ! jump here upon error
-
+    end_subroutine()
 END SUBROUTINE DTYPE(solveLSE_n)
 
 SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
@@ -1084,38 +1043,10 @@ SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
 
     mm = m
     nnn = n
-    ALLOCATE(offdiag(nnn-1),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
-    ALLOCATE(diag(nnn),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
-    
-    ALLOCATE(taup(mm,nnn),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
-    ALLOCATE(tauq(mm,nnn),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
     lwork= -1
-    ALLOCATE(work(1),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
+    ALLOCATE(offdiag(nnn-1),diag(nnn),taup(mm,nnn),tauq(mm,nnn),&
+        work(1),STAT=info)
+    or_fail_alloc("local variables")
 
     !get the size for lwork
 #ifdef __MKL
@@ -1125,20 +1056,12 @@ SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
     CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
 #endif
 #endif
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'dgebrd failed on workspace query',info)
-        info=-1
-        GOTO 9999
-    ENDIF
+    or_fail("dgebrd failed on workspace query")
 
     lwork= work(1)
     DEALLOCATE(work)
     ALLOCATE(work(lwork),STAT=info)
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'allocation failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
+    or_fail_alloc("work array")
 
     !decomposition
 #ifdef __MKL
@@ -1148,11 +1071,7 @@ SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
     CALL dgebrd(mm,nnn,Z,mm,diag,offdiag,tauq,taup,work,lwork,info)
 #endif
 #endif
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'dgebrd failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
+    or_fail("dgebrd failed")
 
     !get singular values
 #ifdef __MKL
@@ -1162,15 +1081,10 @@ SUBROUTINE DTYPE(ppm_matrix_svd)(Z,n,m,info,min_sv)
     CALL bdsqr(diag,offdiag)
 #endif
 #endif
-    IF (info.NE.0) THEN
-        CALL ppm_write(ppm_rank,caller,'bdsqr failed',info)
-        info=-1
-        GOTO 9999
-    ENDIF
+    or_fail("bdsqr failed")
 
-    DEALLOCATE(taup)
-    DEALLOCATE(tauq)
-    DEALLOCATE(work)
+    DEALLOCATE(taup,tauq,work,STAT=info)
+        or_fail_dealloc("taup,tauq,work")
 
     !!----------------------------------------------------------------------
     !! Raise an error if the singular value is below a threshold

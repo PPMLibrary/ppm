@@ -132,7 +132,7 @@ integer                                        :: nterms
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
         Assert_Equal(info,0)
 
-        call Part1%set_cutoff(0.08_mk,info)
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         allocate(wp_2r(ndim,Part1%Npart))
@@ -160,9 +160,11 @@ integer                                        :: nterms
 
         Nlist => Part1%get_neighlist(Part1)
         Assert_true(associated(Nlist))
+
         write(*,*) Nlist%cutoff
         write(*,*) Nlist%nneighmin
         write(*,*) Nlist%nneighmax
+        Nlist => NULL()
 
         !Compare values and check that they are still the same
         call Part1%get_xp(xp,info)
@@ -181,6 +183,9 @@ integer                                        :: nterms
         call Part1%set_xp(xp,info,read_only=.true.)
         Assert_Equal(info,0)
         call Part1%set_field(Field1,wp_2r,info,read_only=.false.)
+        Assert_Equal(info,0)
+
+        call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
         !call Part1%print_info(info)

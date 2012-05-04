@@ -77,22 +77,26 @@ minclude define_collection_procedures(ppm_t_operator)
 
 #define DTYPE(a) a/**/_s
 #define DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#define __KIND __SINGLE_PRECISION
 #include "operator/dcop_helpers.f"
 #define __DIM 2
 #include "operator/dcop_comp_weights.f"
 #define __DIM 3
 #include "operator/dcop_comp_weights.f"
 #include "operator/dcop_typeproc.f"
+#undef __KIND
 
 
 #define DTYPE(a) a/**/_d
 #define DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#define __KIND __DOUBLE_PRECISION
 #include "operator/dcop_helpers.f"
 #define __DIM 2
 #include "operator/dcop_comp_weights.f"
 #define __DIM 3
 #include "operator/dcop_comp_weights.f"
 #include "operator/dcop_typeproc.f"
+#undef __KIND
 
 
 !CREATE
@@ -209,7 +213,7 @@ SUBROUTINE operator_discretize_on(this,Discr_src,op_discr,info,method,&
                 CALL op_discr%create(this,Discr_src,Discr2,info,&
                     with_ghosts,vector,interp,order=order)
                     or_fail("op_discr%create failed")
-                CALL op_discr%comp_weights(info)
+                CALL op_discr%comp_weights(info,c=0.5D0)
                     or_fail("Failed to compute the weights of the DC-PSE operator")
             END SELECT
 

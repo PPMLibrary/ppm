@@ -210,7 +210,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     check_true("this%ID.GT.0 .AND. this%lda.GT.0",&
         "Field needs to be initialized before calling discretized. Call ThisField%create() first")
 
-    check_false("this%is_discretized_on(discr,info)",&
+    check_false("this%is_discretized_on(discr)",&
         "Method to re-discretize a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
 
     SELECT TYPE(discr)
