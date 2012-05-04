@@ -420,7 +420,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
     INTEGER                       :: meshID = 0
     !!! ID of the mesh to which this subpatch belongs
-    CLASS(ppm_t_equi_mesh_),POINTER:: mesh => NULL()
+    CLASS(ppm_t_discr_kind),POINTER:: mesh => NULL()
     !!! Pointer to the mesh to which this subpatch belongs
     INTEGER, DIMENSION(:),POINTER :: istart   => NULL()
     !!! Lower-left coordinates
