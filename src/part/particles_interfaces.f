@@ -91,7 +91,7 @@ SUBROUTINE DTYPE(part_prop_realloc)_(Pc,id,info,with_ghosts,datatype,lda)
     !!! Reallocate the property array to the correct size
     !!! (e.g. if the number of particles has changed or if the type
     !!! of the data changes)
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
+    CLASS(DTYPE(ppm_t_particles)_)        :: Pc
     INTEGER,                INTENT(IN   ) :: id
     INTEGER,               INTENT(OUT)    :: info
     LOGICAL, OPTIONAL                     :: with_ghosts
@@ -105,29 +105,26 @@ SUBROUTINE DTYPE(part_prop_realloc)_(Pc,id,info,with_ghosts,datatype,lda)
 END SUBROUTINE
 
 
-SUBROUTINE DTYPE(part_neigh_create)_(Pc,id,info,&
-        P_id,name,skin,symmetry,cutoff)
-    IMPORT DTYPE(ppm_t_particles)_, MK
-    !!! Create a data structure to store a neighbour list
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
-    INTEGER,               INTENT(  OUT)  :: id
-    INTEGER,               INTENT(OUT)    :: info
-    INTEGER, OPTIONAL                     :: P_id    
-    !!! Id of the set of particles that this neighbor list refers to
-    !!! The default, 0, stands for "self"
-    CHARACTER(LEN=*) , OPTIONAL           :: name
+SUBROUTINE DTYPE(part_neigh_create)_(this,Part_src,info,&
+        name,skin,symmetry,cutoff,Nlist)
+    IMPORT DTYPE(ppm_t_particles)_,MK,DTYPE(ppm_t_neighlist)_
+    CLASS(DTYPE(ppm_t_particles)_)                     :: this
+    CLASS(DTYPE(ppm_t_particles)_),TARGET, INTENT(IN)  :: Part_src
+    INTEGER,               INTENT(OUT)                 :: info
+    CHARACTER(LEN=*) , OPTIONAL                        :: name
     !!! name of this neighbour list
-    REAL(MK), OPTIONAL                    :: skin
-    REAL(MK), OPTIONAL                    :: cutoff
-    LOGICAL, OPTIONAL                     :: symmetry    
+    REAL(MK), OPTIONAL                                 :: skin
+    REAL(MK), OPTIONAL                                 :: cutoff
+    LOGICAL, OPTIONAL                                  :: symmetry    
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER,OPTIONAL,INTENT(OUT) :: Nlist
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_neigh_destroy)_(Pc,id,info)
-    IMPORT DTYPE(ppm_t_particles)_
+SUBROUTINE DTYPE(part_neigh_destroy)_(this,Nlist,info)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
     !!! Destroy a property from an existing particle set
-    CLASS(DTYPE(ppm_t_particles)_)         :: Pc
-    INTEGER,                INTENT(INOUT) :: id
-    INTEGER,               INTENT(OUT)    :: info
+    CLASS(DTYPE(ppm_t_particles)_)                       :: this
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER,INTENT(INOUT) :: Nlist
+    INTEGER,                               INTENT(OUT)   :: info
 END SUBROUTINE
 
 
@@ -136,7 +133,7 @@ SUBROUTINE DTYPE(part_create)_(Pc,Npart,info,name)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
+    CLASS(DTYPE(ppm_t_particles)_)                         :: Pc
     !!! Data structure containing the particles
     INTEGER,                                INTENT(IN   )  :: Npart
     !!! Number of particles 
@@ -364,22 +361,19 @@ SUBROUTINE DTYPE(part_move)_(Pc,disp,info)
     !!! Return status, on success 0.
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_neighlist)_(Pc,info,nlid,lstore,incl_ghosts,knn)
-    IMPORT DTYPE(ppm_t_particles)_
-    CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
-    !!! Data structure containing the particles
+SUBROUTINE DTYPE(part_neighlist)_(this,info,P_xset,skin,symmetry,cutoff,name,&
+        lstore,incl_ghosts,knn)
+    IMPORT DTYPE(ppm_t_particles)_,MK
+    CLASS(DTYPE(ppm_t_particles)_),TARGET                  :: this
     INTEGER,                            INTENT(  OUT)      :: info
-    !!! Return status, on success 0.
-    INTEGER, OPTIONAL,                  INTENT(INOUT)      :: nlid
-    !!! which neighbour list are we computing. Default is 1
+    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET         :: P_xset
+    REAL(MK), OPTIONAL                                     :: skin
+    LOGICAL, OPTIONAL                                      :: symmetry    
+    REAL(MK), OPTIONAL                                     :: cutoff
+    CHARACTER(LEN=*) , OPTIONAL                            :: name
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
-    !!! store verlet lists
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
-    !!! if true, then verlet lists are computed for all particles, incl. ghosts.
-    !!! Default is false.
     INTEGER, OPTIONAL,                  INTENT(IN   )      :: knn
-    !!! if present, neighbour lists are constructed such that each particle
-    !!! has at least knn neighbours.
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_set_cutoff)_(Pc,cutoff,info,Nlist)

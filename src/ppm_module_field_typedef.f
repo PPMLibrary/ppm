@@ -119,6 +119,7 @@ SUBROUTINE field_destroy(this,info)
     this%ID = 0
     this%name = ''
     this%lda = 0
+    this%data_type = 0
 
     !Destroy the bookkeeping entries in the fields that are
     !discretized on this mesh
@@ -209,7 +210,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     check_true("this%ID.GT.0 .AND. this%lda.GT.0",&
         "Field needs to be initialized before calling discretized. Call ThisField%create() first")
 
-    check_false("this%is_discretized_on(discr,info)",&
+    check_false("this%is_discretized_on(discr)",&
         "Method to re-discretize a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
 
     SELECT TYPE(discr)
@@ -420,6 +421,9 @@ SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)
         ENDIF
         dinfo => this%discr_info%next()
     ENDDO loop
+
+    check_associated(discr_data,&
+        "Field seems to not be distretized on this particle set")
 
     end_subroutine()
 END SUBROUTINE field_get_discr

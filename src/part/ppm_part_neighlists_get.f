@@ -41,6 +41,7 @@ FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
     !!! particle set
     CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
     !!! particle set within which the neighbours are sought
+    !!! default is the same particle set as "this"
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
     !!! Neighbour list
 

@@ -24,12 +24,13 @@
          !----------------------------------------------------------------------
          USE ppm_module_alloc
          USE ppm_module_data
-         USE ppm_module_container_typedef
          USE ppm_module_interfaces
          USE ppm_module_error
          USE ppm_module_write
          USE ppm_module_substart
          USE ppm_module_substop
+         USE ppm_module_container_typedef
+         USE ppm_module_particles_typedef
 
          IMPLICIT NONE
          !----------------------------------------------------------------------
@@ -75,12 +76,27 @@ minclude define_collection_type(ppm_t_operator)
 minclude define_collection_procedures(ppm_t_operator)
 
 #define DTYPE(a) a/**/_s
-#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#define DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#define __KIND __SINGLE_PRECISION
+#include "operator/dcop_helpers.f"
+#define __DIM 2
+#include "operator/dcop_comp_weights.f"
+#define __DIM 3
+#include "operator/dcop_comp_weights.f"
 #include "operator/dcop_typeproc.f"
+#undef __KIND
+
 
 #define DTYPE(a) a/**/_d
-#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#define DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#define __KIND __DOUBLE_PRECISION
+#include "operator/dcop_helpers.f"
+#define __DIM 2
+#include "operator/dcop_comp_weights.f"
+#define __DIM 3
+#include "operator/dcop_comp_weights.f"
 #include "operator/dcop_typeproc.f"
+#undef __KIND
 
 
 !CREATE
@@ -192,8 +208,14 @@ SUBROUTINE operator_discretize_on(this,Discr_src,op_discr,info,method,&
         SELECT CASE (method)
         CASE ("DC-PSE")
             allocate(ppm_t_dcop_d::op_discr,stat=info)
-            CALL op_discr%create(Discr_src,Discr2,info,this%nterms,&
-                with_ghosts,vector,interp,order=order)
+            SELECT TYPE(op_discr)
+            TYPE IS (ppm_t_dcop_d)
+                CALL op_discr%create(this,Discr_src,Discr2,info,&
+                    with_ghosts,vector,interp,order=order)
+                    or_fail("op_discr%create failed")
+                CALL op_discr%comp_weights(info,c=0.5D0)
+                    or_fail("Failed to compute the weights of the DC-PSE operator")
+            END SELECT
 
         CASE ("PSE")
             !allocate(ppm_t_pseop::op_discr,stat=info)

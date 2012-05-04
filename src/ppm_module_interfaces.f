@@ -106,6 +106,8 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 TYPE,ABSTRACT :: ppm_t_main_abstr
     !!! Generic type for all main PPM types
 END TYPE
+minclude def_collection_type_from_abstract(ppm_v_main_abstr,&
+    ppm_t_main_abstr,vec=true)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind_
     !!! Discretization kinds (Particles and Meshes)
@@ -316,7 +318,11 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     INTEGER                                         :: data_type = 0
     !!! data type
     !!! One of:
-    !!!     ppm_param_...
+    !!!     ppm_type_int
+    !!!     ppm_type_longint
+    !!!     ppm_type_real
+    !!!     ppm_type_comp
+    !!!     ppm_type_logical
     !!! 
     INTEGER                                         :: lda = 0
     !!! number of components (1 for scalar fields)
@@ -780,6 +786,7 @@ CONTAINS
 minclude define_collection_procedures(ppm_t_field_info)
 minclude define_collection_procedures(ppm_t_operator_discr)
 minclude define_collection_procedures(ppm_t_discr_kind,vec=true)
+minclude def_collection_proc_from_abstract(ppm_v_main_abstr,ppm_t_main_abstr,vec=true)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)
@@ -813,13 +820,13 @@ SUBROUTINE field_info_destroy(this,info)
 END SUBROUTINE field_info_destroy
 
 !CREATE (DUMMY ROUTINE)
-SUBROUTINE operator_discr_create(this,Part_src,Part_to,info,&
-        nterms,with_ghosts,vector,interp,order)
+SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
+        with_ghosts,vector,interp,order)
     CLASS(ppm_t_operator_discr)        :: this
+    CLASS(ppm_t_operator_), INTENT(IN),TARGET :: Op
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_src
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_to
     INTEGER,                INTENT(OUT)   :: info
-    INTEGER,                INTENT(IN)    :: nterms
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: with_ghosts
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: vector
     LOGICAL,OPTIONAL,       INTENT(IN   ) :: interp

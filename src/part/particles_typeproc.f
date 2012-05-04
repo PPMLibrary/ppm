@@ -463,143 +463,111 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,id,info,with_ghosts,datatype,lda)
 END SUBROUTINE DTYPE(part_prop_realloc)
 
 
-SUBROUTINE DTYPE(part_neigh_create)(Pc,id,info,&
-        P_id,name,skin,symmetry,cutoff)
+SUBROUTINE DTYPE(part_neigh_create)(this,Part_src,info,&
+        name,skin,symmetry,cutoff,Nlist)
     !!! Create a data structure to store a neighbour list
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_particles))         :: Pc
-    INTEGER,               INTENT(  OUT)  :: id
-    INTEGER,               INTENT(OUT)    :: info
-    INTEGER, OPTIONAL                     :: P_id    
-    !!! Id of the set of particles that this neighbor list refers to
-    !!! The default, 0, stands for "self"
-    CHARACTER(LEN=*) , OPTIONAL           :: name
+    CLASS(DTYPE(ppm_t_particles))                      :: this
+    CLASS(DTYPE(ppm_t_particles)_),TARGET, INTENT(IN)  :: Part_src
+    !!! Particle set to which the neighbours belong (can be the same as this)
+    INTEGER,                               INTENT(OUT) :: info
+    CHARACTER(LEN=*) , OPTIONAL                                 :: name
     !!! name of this neighbour list
-    REAL(MK), OPTIONAL                    :: skin
-    REAL(MK), OPTIONAL                    :: cutoff
-    LOGICAL, OPTIONAL                     :: symmetry    
+    REAL(MK), OPTIONAL                                          :: skin
+    REAL(MK), OPTIONAL                                          :: cutoff
+    LOGICAL, OPTIONAL                                           :: symmetry    
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER,OPTIONAL,INTENT(OUT) :: Nlist
+    !!! returns a pointer to the newly created verlet list
 
-    INTEGER                               :: vec_size,i
-    CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist=>NULL()
-    REAL(MK), DIMENSION(:), POINTER       :: rcp => NULL()
+    INTEGER                                :: vec_size,i
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nl=>NULL()
+    REAL(MK), DIMENSION(:),        POINTER :: rcp => NULL()
 
     start_subroutine("particle_neigh_create")
 
     ! Create the neighbour list
-    ALLOCATE(DTYPE(ppm_t_neighlist)::Nlist,STAT=info)
-        or_fail_alloc("Nlist")
+    ALLOCATE(DTYPE(ppm_t_neighlist)::Nl,STAT=info)
+        or_fail_alloc("Nl")
 
     IF (PRESENT(name)) THEN
-        Nlist%name = name
+        Nl%name = name
     ELSE
-        Nlist%name = particles_dflt_nlname(id)
+        WRITE(Nl%name,*) 'Nl',TRIM(ADJUSTL(this%name)),'_',&
+            TRIM(ADJUSTL(Part_src%name))
     ENDIF
 
-    IF (PRESENT(P_id)) THEN
-        Nlist%P_id = P_id
-    ELSE
-        Nlist%P_id = 0
-    ENDIF
+    check_associated("Part_src%xp","Invalid particle set Part_src")
 
-    SELECT TYPE(Pc)
+    Nl%Part => Part_src
+
+    SELECT TYPE(this)
     TYPE IS (DTYPE(ppm_t_sop))
-        ASSOCIATE (ghosts => Pc%flags(ppm_part_ghosts))
-            IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
-                CALL Pc%create_prop(info,discr_data=Pc%rcp,dtype=ppm_type_real,&
+        ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
+            IF (.NOT.ASSOCIATED(this%rcp)) THEN
+                CALL this%create_prop(info,discr_data=this%rcp,dtype=ppm_type_real,&
                     name='rcp',with_ghosts=ghosts) 
             ENDIF
-            CALL Pc%get(Pc%rcp,rcp,info,with_ghosts=ghosts)
+
+            CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts)
+                or_fail("Cannot access this%rcp")
+
             IF (PRESENT(cutoff)) THEN
                 rcp = cutoff
             ELSE
-                rcp = Pc%ghostlayer
+                rcp = this%ghostlayer
             ENDIF
-            CALL Pc%set(Pc%rcp,rcp,info,ghosts_ok=ghosts)
+            CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts)
         END ASSOCIATE
-        Nlist%cutoff = -1._MK 
+        Nl%cutoff = -1._MK 
         !this field should not be used with adaptive particles
     CLASS DEFAULT
         IF (PRESENT(cutoff)) THEN
-            Nlist%cutoff = cutoff
+            Nl%cutoff = cutoff
         ELSE
-            Nlist%cutoff = Pc%ghostlayer
+            Nl%cutoff = this%ghostlayer
         ENDIF
     END SELECT
 
     IF (PRESENT(skin)) THEN
-        Nlist%skin = skin
+        Nl%skin = skin
     ELSE
-        Nlist%skin = 0._mk
+        Nl%skin = 0._mk
     ENDIF
 
     IF (PRESENT(symmetry)) THEN
         IF (symmetry) THEN
-            Nlist%isymm = 1
+            Nl%isymm = 1
         ELSE
-            Nlist%isymm = 0
+            Nl%isymm = 0
         ENDIF
     ELSE
-        Nlist%isymm = 0
+        Nl%isymm = 0
     ENDIF
 
-    Nlist%uptodate = .FALSE.
-    Nlist%nneighmin = 0
-    Nlist%nneighmax = 0
+    Nl%uptodate = .FALSE.
+    Nl%nneighmin = 0
+    Nl%nneighmax = 0
 
-    CALL Pc%neighs%push(Nlist,info)
+    !returning a pointer to the neighbour list, before it is pushed
+    ! into the collection.
+    IF (PRESENT(Nlist)) Nlist => Nl
+
+    CALL this%neighs%push(Nl,info)
         or_fail("pushing new neighbour list into collection failed")
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_neigh_create)
 
-SUBROUTINE DTYPE(part_neigh_destroy)(Pc,id,info)
+SUBROUTINE DTYPE(part_neigh_destroy)(this,Nlist,info)
     !!! Destroy a property from an existing particle set
-    CLASS(DTYPE(ppm_t_particles))         :: Pc
-    INTEGER,                INTENT(INOUT) :: id
-    INTEGER,               INTENT(OUT)    :: info
+    CLASS(DTYPE(ppm_t_particles))                        :: this
+    CLASS(DTYPE(ppm_t_neighlist)_),POINTER,INTENT(INOUT) :: Nlist
+    INTEGER,                               INTENT(OUT)   :: info
 
     start_subroutine("part_neigh_destroy")
 
-    ASSOCIATE (cont => Pc%neighs)
-        IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                &    'property id larger than size of properties array',&
-                __LINE__,info)
-            GOTO 9999
-        ENDIF
-
-        CALL cont%vec(id)%t%destroy(info)
-        NULLIFY(cont%vec(id)%t)
-
-        cont%nb = cont%nb - 1
-        IF (id .EQ. cont%max_id) THEN
-            cont%max_id = cont%max_id - 1
-            IF (cont%max_id .GT. 0) THEN
-                DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%max_id)%t))
-                    cont%max_id = cont%max_id - 1
-                    IF (cont%max_id .EQ. 0) EXIT
-                ENDDO
-            ENDIF
-        ENDIF
-        IF (cont%nb.EQ.0) THEN
-            cont%min_id = HUGE(1)
-        ELSE IF (id .EQ. cont%min_id) THEN
-            cont%min_id = cont%min_id + 1
-            IF (cont%min_id .LE. cont%vec_size) THEN
-                DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%min_id)%t))
-                    cont%min_id = cont%min_id + 1
-                    IF (cont%min_id .GT. cont%vec_size) THEN
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_alloc,caller,&
-                            &    'coding error in the data structure',&
-                            __LINE__,info)
-                        GOTO 9999
-                    ENDIF
-                ENDDO
-            ENDIF
-        ENDIF
-    END ASSOCIATE
+    CALL this%neighs%remove(info,Nlist)
+        or_fail("could not remove Nlist from its collection")
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_neigh_destroy)
@@ -1934,19 +1902,22 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
     end_subroutine()
 END SUBROUTINE DTYPE(part_move)
 
-SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
-    !-----------------------------------------------------------------
-    !  Neighbor lists for particles
-    !-----------------------------------------------------------------
-    !  Assumptions:
-    ! * Particles positions need to have been mapped onto the topology
-    ! * Ghost positions have been computed
-    !
+SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,skin,symmetry,cutoff,name,&
+        lstore,incl_ghosts,knn)
+    !!!  Neighbor lists for particles
+    !!!  Compute the Verlet lists for the target particles, using neighbours
+    !!!  from the particle set P_set (the default is that P_xset is the
+    !!!  same set as the target particles)
+    !!!-----------------------------------------------------------------
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!! * Ghost positions have been computed
     USE ppm_module_neighlist
 #ifdef __WITH_CNL
     USE ppm_module_cnl
 #endif
     USE ppm_module_inl_vlist
+    USE ppm_module_inl_xset_vlist
 #ifdef __WITH_KDTREE
     USE ppm_module_inl_k_vlist
     USE ppm_module_kdtree
@@ -1959,7 +1930,7 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    CLASS(DTYPE(ppm_t_particles))                          :: Pc
+    CLASS(DTYPE(ppm_t_particles)),TARGET                   :: this
     DEFINE_MK()
     !!! Data structure containing the particles
     INTEGER,                            INTENT(  OUT)      :: info
@@ -1967,8 +1938,16 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     !-------------------------------------------------------------------------
     !  Optional arguments
     !-------------------------------------------------------------------------
-    INTEGER, OPTIONAL,                  INTENT(INOUT)      :: nlid
-    !!! which neighbour list are we computing. Default is 1
+    CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET         :: P_xset
+    !!! Particle set from which the neighbours are sought
+    REAL(MK), OPTIONAL                                     :: skin
+    !!! skin
+    LOGICAL, OPTIONAL                                      :: symmetry    
+    !!! if using symmetry
+    REAL(MK), OPTIONAL                                     :: cutoff
+    !!! cutoff radius
+    CHARACTER(LEN=*) , OPTIONAL                            :: name
+    !!! name of this neighbour list
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
     !!! store verlet lists
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
@@ -1983,9 +1962,7 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     INTEGER                                   :: op_id,np_target,i
     INTEGER                                   :: ip,ineigh
     !!! index variable
-    LOGICAL                                   :: symmetry
-    !!! backward compatibility
-    LOGICAL                                   :: ensure_knn
+    LOGICAL                                   :: ensure_knn,lsymm
     !!! uses a neighbour-finding algorithm that finds enough neighbours
     REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
     !!!
@@ -1995,90 +1972,72 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     TYPE(DTYPE(kdtree2)),POINTER              :: tree => NULL()
     TYPE(DTYPE(kdtree2_result)),ALLOCATABLE   :: results(:)
 #endif
-    INTEGER                                   :: neigh_id,topoid
+    INTEGER                                   :: topoid
     INTEGER                                   :: nneighmin,nneighmax
     CLASS(DTYPE(ppm_t_neighlist)_), POINTER   :: Nlist => NULL()
-    REAL(MK)                                  :: skin
+    REAL(MK)                                  :: lskin
 
     REAL(MK),DIMENSION(:),POINTER             :: rcp  => NULL()
     CLASS(ppm_t_operator_discr_),POINTER      :: op => NULL()
+    CLASS(DTYPE(ppm_t_particles)_), POINTER   :: Part_src => NULL()
+    LOGICAL                                   :: xset_neighlists
 
     start_subroutine("part_comp_neighlist")
 
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
-    IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Particles structure had not been defined. Call allocate first',&
-            &  __LINE__,info)
-        GOTO 9999
+    check_associated("this%xp",&
+        "Particles structure had not been defined. Call allocate first")
+
+    check_true("this%flags(ppm_part_partial)",&
+        "Particles not mapped. Do a partial/global mapping")
+
+    xset_neighlists = .FALSE.
+    IF (PRESENT(P_xset)) THEN
+        Part_src => P_xset
+        check_associated("Part_src%xp",&
+            "Cross-Set particles have not been defined. Call allocate first")
+        check_true("Part_src%flags(ppm_part_partial)",&
+            "Particles not mapped. Do a partial/global mapping")
+        IF (.NOT.ASSOCIATED(Part_src,this)) THEN
+            xset_neighlists = .TRUE.
+        ENDIF
+    ELSE    
+        Part_src => this
     ENDIF
 
-    IF (.NOT.Pc%flags(ppm_part_partial)) THEN
-        !Particles have not been mapped onto this topology
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Do a partial/global mapping before',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
 
-    IF (.NOT.Pc%flags(ppm_part_ghosts)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Ghosts have not been updated. They are needed for neighlists',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
+    check_true("Part_src%flags(ppm_part_ghosts)",&
+            "Ghosts have not been updated. They are needed for neighlists")
 
-    IF (Pc%neighs%vec_size.LE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighlist DS not allocated. Call create_neighlist() first',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
 
-    !checks that the data structure for the neighbour list has been
-    !defined already
-    IF (PRESENT(nlid)) THEN
-        neigh_id = nlid
-        IF (.NOT. Pc%neighs%exists(neigh_id)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &  'invalid id for neighbour list.',&
-                &  __LINE__,info)
-            GOTO 9999
+    check_associated("this%neighs")
+
+    !check whether the neighbour list already exists
+    IF (this%has_neighlist(Part_src)) THEN
+        Nlist => this%get_neighlist(Part_src)
+        IF (PRESENT(skin).OR.PRESENT(symmetry).OR.PRESENT(cutoff)) THEN
+            stdout("the optional arguments skin,",&
+            "symmetry or cutoff will not be used",&
+            " because the neighbour list already exists. We",&
+            " should perhaps change the API?  ")
+            fail("Need to destroy/re-create this neighbour list first")
         ENDIF
     ELSE
-        neigh_id = 1
-        IF (Pc%neighs%vec(neigh_id)%t%P_id.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-        &  'We assumed default neighlist, but the P_id is not default',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
+        CALL this%create_neighlist(Part_src,info,name=name,skin=skin,&
+            symmetry=symmetry,cutoff=cutoff,Nlist=Nlist)
+            or_fail("failed to create neighbour list")
     ENDIF
 
-    !define an alias for the neighbour list DS
-    Nlist => Pc%neighs%vec(neigh_id)%t
-    IF (.NOT.ASSOCIATED(Nlist)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'neighbour list not allocated. ',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
+    check_associated(Nlist)
 
     !check that we have a cutoff radius
-    SELECT TYPE (Pc)
+    SELECT TYPE (this)
     CLASS IS (DTYPE(ppm_t_sop))
-        check_associated("Pc%rcp",&
+        check_associated("this%rcp",&
             "cutoff radii for adaptive particles have not been defined")
-        CALL Pc%get(Pc%rcp,rcp,info,with_ghosts=.TRUE.)
+        CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.true.)
             or_fail("could not access cutoff radii")
     CLASS DEFAULT
         check_true("Nlist%cutoff.GT.0",&
@@ -2086,19 +2045,21 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     END SELECT
 
     IF (Nlist%isymm.EQ.1) THEN
-        symmetry =.TRUE.
+        lsymm =.TRUE.
     ELSE
-        symmetry = .FALSE.
+        lsymm = .FALSE.
     ENDIF
+
     IF (PRESENT(knn)) THEN
         ensure_knn = .TRUE.
     ELSE
         ensure_knn = .FALSE.
     ENDIF
-    skin = Nlist%skin
-    topoid = Pc%active_topoid
 
-    do_something: IF (Nlist%uptodate .OR. Pc%Npart.EQ.0) THEN
+    lskin = Nlist%skin
+    topoid = this%active_topoid
+
+    do_something: IF (Nlist%uptodate .OR. this%Npart.EQ.0) THEN
         !neighbor lists are already up-to-date, or no particles on this proc
         !nothing to do
         IF (Nlist%uptodate) THEN
@@ -2114,10 +2075,10 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
     ELSE
         !hack to build (potentially incomplete) neighbour lists even 
         !for ghost particles
-        np_target = Pc%Npart
+        np_target = this%Npart
         IF (PRESENT(incl_ghosts)) THEN
             IF (incl_ghosts) THEN
-                np_target = Pc%Mpart
+                np_target = this%Mpart
                 topo => ppm_topo(topoid)%t
                 IF (MK.EQ.ppm_kind_single) THEN
                     topo%min_subs(:,:) = topo%min_subs(:,:) - topo%ghostsizes
@@ -2132,33 +2093,24 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
         IF (ensure_knn) THEN
 #ifdef __WITH_KDTREE
 
-                Pc%stats%nb_kdtree = Pc%stats%nb_kdtree+1
+                this%stats%nb_kdtree = this%stats%nb_kdtree+1
 #ifdef __MPI
                 t1 = MPI_WTIME(info)
 #endif
 
-                tree => kdtree2_create(Pc%xp(1:ppm_dim,1:Pc%Mpart),&
+                tree => kdtree2_create(Part_src%xp(1:ppm_dim,1:Part_src%Mpart),&
                     sort=.true.,rearrange=.true.)
-                allocate(results(knn+1))
+                allocate(results(knn+1),STAT=info)
+                    or_fail_alloc("results")
                 ldc(1) = knn
-                ldc(2) = Pc%Npart
+                ldc(2) = this%Npart
                 CALL ppm_alloc(Nlist%vlist,ldc,ppm_param_alloc_grow,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,   &
-                        &            'failed to allocate vlist',__LINE__,info)
-                    GOTO 9999
-                ENDIF
-                ldc(1) = Pc%Npart
+                    or_fail_alloc("Nlist%vlist")
+                ldc(1) = this%Npart
                 CALL ppm_alloc(Nlist%nvlist,ldc,ppm_param_alloc_grow,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,   &
-                        &            'failed to allocate vlist',__LINE__,info)
-                    GOTO 9999
-                ENDIF
-                DO ip=1,Pc%Npart
-                    call kdtree2_n_nearest(tp=tree,qv=Pc%xp(1:ppm_dim,ip),&
+                    or_fail_alloc("Nlist%nvlist")
+                DO ip=1,this%Npart
+                    call kdtree2_n_nearest(tp=tree,qv=this%xp(1:ppm_dim,ip),&
                         nn=knn+1,results=results)
                     !remove ip from the list
                     ineigh=0
@@ -2171,29 +2123,27 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
                     Nlist%nvlist(ip)=knn
                 ENDDO
                 call kdtree2_destroy(tree)
-                deallocate(results)
+                deallocate(results,STAT=info)
+                    or_fail_dealloc("results")
 #ifdef __MPI
                 t2 = MPI_WTIME(info)
-                Pc%stats%t_kdtree = Pc%stats%t_kdtree+(t2-t1)
+                this%stats%t_kdtree = this%stats%t_kdtree+(t2-t1)
 #endif
 #else
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_alloc,caller,   &
-                    &   'option required the kdtree module.',__LINE__,info)
-                GOTO 9999
+                fail("option required the kdtree module.")
 #endif
 !__WITH_KDTREE
         ELSE  
 
-            SELECT TYPE (Pc)
+            SELECT TYPE (this)
             CLASS IS (DTYPE(ppm_t_sop))
 
                 !FIXME: when adaptive ghost layers are available
-                ghostlayer(1:2*ppm_dim)=Pc%ghostlayer
+                ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
 
 #ifdef __WITH_CNL
-                conventionalinl: IF (Pc%conventionalinl) THEN
-                    Pc%stats%nb_cinl = Pc%stats%nb_cinl+1
+                conventionalinl: IF (this%conventionalinl) THEN
+                    this%stats%nb_cinl = this%stats%nb_cinl+1
 
 #ifdef __MPI
                     t1 = MPI_WTIME(info)
@@ -2201,74 +2151,93 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
                     !HUGLY HACK to make CNL routines work on a topology with
                     !several subdomains
 #if   __KIND == __SINGLE_PRECISION
-                    CALL cnl_vlist(Pc%xp,&
-                        rcp,Pc%Npart,Pc%Mpart,&
-                        ppm_topo(topoid)%t%min_subs(:,1)-Pc%ghostlayer,&
-                        ppm_topo(topoid)%t%max_subs(:,1)+Pc%ghostlayer,&
-                        Pc%nvlist,Pc%vlist,ppm_dim,info)
+                    CALL cnl_vlist(this%xp,&
+                        rcp,this%Npart,this%Mpart,&
+                        ppm_topo(topoid)%t%min_subs(:,1)-this%ghostlayer,&
+                        ppm_topo(topoid)%t%max_subs(:,1)+this%ghostlayer,&
+                        this%nvlist,this%vlist,ppm_dim,info)
 #elif __KIND == __DOUBLE_PRECISION
-                    CALL cnl_vlist(Pc%xp,&
-                        rcp,Pc%Npart,Pc%Mpart,&
-                        ppm_topo(topoid)%t%min_subd(:,1)-Pc%ghostlayer,&
-                        ppm_topo(topoid)%t%max_subd(:,1)+Pc%ghostlayer,&
-                        Pc%nvlist,Pc%vlist,ppm_dim,info)
+                    CALL cnl_vlist(this%xp,&
+                        rcp,this%Npart,this%Mpart,&
+                        ppm_topo(topoid)%t%min_subd(:,1)-this%ghostlayer,&
+                        ppm_topo(topoid)%t%max_subd(:,1)+this%ghostlayer,&
+                        this%nvlist,this%vlist,ppm_dim,info)
 #endif
-                    IF (info .NE. 0) THEN
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_sub_failed,caller,&
-                            'ppm_cinl_vlist failed',__LINE__,info)
-                        GOTO 9999
-                    ENDIF
+                    or_fail("ppm_cinl_vlist failed")
                     !end HUGLY HACK
 #ifdef __MPI
                     t2 = MPI_WTIME(info)
-                    Pc%stats%t_cinl = Pc%stats%t_cinl + (t2 - t1)
+                    this%stats%t_cinl = this%stats%t_cinl + (t2 - t1)
 #endif
                 ELSE
 #endif
 !__WITH_CNL
-                    Pc%stats%nb_inl = Pc%stats%nb_inl+1
+                IF (xset_neighlists) THEN
 
+                    this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
 #ifdef __MPI
                     t1 = MPI_WTIME(info)
 #endif
-                    CALL ppm_inl_vlist(topoid,Pc%xp,np_target,&
-                        Pc%Mpart,rcp,skin,symmetry,ghostlayer,info,&
-                        Nlist%vlist,Nlist%nvlist)
-                    IF (info .NE. 0) THEN
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_sub_failed,caller,&
-                            'ppm_inl_vlist failed',__LINE__,info)
-                        GOTO 9999
-                    ENDIF
+                    CALL ppm_inl_xset_vlist(topoid,this%xp,&
+                        this%Npart,this%Mpart,Part_src%xp,Part_src%Npart,&
+                        Part_src%Mpart,rcp,&
+                        lskin,ghostlayer,info,Nlist%vlist,&
+                        Nlist%nvlist,lstore)
+                        or_fail("ppm_inl_xset_vlist failed")
 #ifdef __MPI
                     t2 = MPI_WTIME(info)
-                    Pc%stats%t_inl = Pc%stats%t_inl + (t2 - t1)
+                    this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
 #endif
+                ELSE
+                    this%stats%nb_inl = this%stats%nb_inl+1
+#ifdef __MPI
+                    t1 = MPI_WTIME(info)
+#endif
+                    CALL ppm_inl_vlist(topoid,this%xp,np_target,&
+                        this%Mpart,rcp,lskin,lsymm,ghostlayer,info,&
+                        Nlist%vlist,Nlist%nvlist)
+                        or_fail("ppm_inl_vlist failed")
+#ifdef __MPI
+                    t2 = MPI_WTIME(info)
+                    this%stats%t_inl = this%stats%t_inl + (t2 - t1)
+#endif
+                ENDIF ! XSET
 #ifdef __WITH_CNL
                 ENDIF conventionalinl
 #endif
 
             CLASS DEFAULT
+                IF (xset_neighlists) THEN
 
-                Pc%stats%nb_nl = Pc%stats%nb_nl+1
+                    this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
+#ifdef __MPI
+                    t1 = MPI_WTIME(info)
+#endif
+                    CALL ppm_inl_xset_vlist(topoid,this%xp,&
+                        this%Npart,this%Mpart,Part_src%xp,Part_src%Npart,&
+                        Part_src%Mpart,Nlist%cutoff,&
+                        lskin,ghostlayer,info,Nlist%vlist,&
+                        Nlist%nvlist,lstore)
+                        or_fail("ppm_inl_xset_vlist failed")
+#ifdef __MPI
+                    t2 = MPI_WTIME(info)
+                    this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
+#endif
+                ELSE
+                    this%stats%nb_nl = this%stats%nb_nl+1
 
 #ifdef __MPI
-                t1 = MPI_WTIME(info)
+                    t1 = MPI_WTIME(info)
 #endif
-                CALL ppm_neighlist_vlist(topoid,Pc%xp,Pc%Mpart,&
-                    Nlist%cutoff,skin,symmetry,Nlist%vlist,&
-                    Nlist%nvlist,info,lstore=lstore)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_sub_failed,caller,&
-                        'ppm_neighlist_vlist failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
+                    CALL ppm_neighlist_vlist(topoid,this%xp,this%Mpart,&
+                        Nlist%cutoff,lskin,lsymm,Nlist%vlist,&
+                        Nlist%nvlist,info,lstore=lstore)
+                    or_fail("ppm_neighlist_vlist failed")
 #ifdef __MPI
-                t2 = MPI_WTIME(info)
-                Pc%stats%t_nl = Pc%stats%t_nl + (t2 - t1)
+                    t2 = MPI_WTIME(info)
+                    this%stats%t_nl = this%stats%t_nl + (t2 - t1)
 #endif
+                ENDIF ! XSET
             END SELECT
         ENDIF
 
@@ -2291,30 +2260,29 @@ SUBROUTINE DTYPE(part_neighlist)(Pc,info,nlid,lstore,incl_ghosts,knn)
         !-----------------------------------------------------------------------
         Nlist%uptodate = .TRUE.
 
-        Nlist%nneighmin = MINVAL(Nlist%nvlist(1:Pc%Npart))
+        Nlist%nneighmin = MINVAL(Nlist%nvlist(1:this%Npart))
         Nlist%nneighmax = MAXVAL(Nlist%nvlist(1:np_target))
 
         ! DC operators that do not use a xset neighbour list, if they exist, 
         ! are no longer valid (they depend on the neighbour lists)
-        IF (ASSOCIATED(Pc%ops)) THEN
-            op => Pc%ops%begin()
+        IF (ASSOCIATED(this%ops)) THEN
+            op => this%ops%begin()
             DO WHILE (ASSOCIATED(op))
                 IF (.NOT.op%flags(ppm_ops_interp)) THEN
                     op%flags(ppm_ops_iscomputed) = .FALSE.
                 ENDIF
-                op => Pc%ops%next()
+                op => this%ops%next()
             ENDDO
         ENDIF
 
+        ! We want to distinguish between "self" neighbour lists
+        ! and cross-set ones.
+        IF (ASSOCIATED(Nlist%Part,this)) THEN
+            this%flags(ppm_part_neighlists) = .TRUE.
+        ENDIF
         
         Nlist => NULL()
 
-        !FIXME
-        ! We want to distinguish between "self" neighbour lists
-        ! and cross-set ones.
-        IF (neigh_id .EQ. 1) THEN
-            Pc%flags(ppm_part_neighlists) = .TRUE.
-        ENDIF
 
     ENDIF do_something
 
@@ -2327,6 +2295,12 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     !!! the ghostlayer sizes.
     !!! The cutoff radius concerns the default neighbor list, unless
     !!! specified otherwise.
+    !!! If the cutoff is increased from its previous value, the neighbour
+    !!! list is flagged as "not up-to-date" and will have to be recomputed
+    !!! before it is used again.
+    !!! If the ghostlayer sizes are increased from their previous values,
+    !!! the ghosts are flagged as "not up-to-date" and will have to be
+    !!! recomputed before they are used again.
     !-------------------------------------------------------------------------
     ! Arguments
     !-------------------------------------------------------------------------
@@ -2338,13 +2312,13 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     !!! return status. On success, 0
     CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
     !!! Neighbor list for which this cutoff radius
-    !!! applies. Default is ppm_param_default_nlID
+    !!! applies. By default, this is the "standard" Verlet list, with neighbours
+    !!! sought within the particle set itself.
     
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
     CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
-    INTEGER                                   :: neigh_id 
 
     start_subroutine("part_set_cutoff")
 
@@ -2354,10 +2328,12 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     IF (PRESENT(NList)) THEN
         check_true("Pc%neighs%has(NList)",&
             "Neighbour list does not concern this particle set")
+        IF (cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
         NList%cutoff = cutoff
     ELSE
         nl => Pc%get_neighlist()
         check_associated(nl,"Compute neighbour lists first")
+        IF (cutoff .LT. nl%cutoff) nl%uptodate = .FALSE.
         nl%cutoff = cutoff
     ENDIF
 
