@@ -58,11 +58,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data):: DTYPE(ppm_t_part_prop)_
         DTYPE(data_2d_l_check)
 
 END TYPE DTYPE(ppm_t_part_prop)_
-!----------------------------------------------------------------------
-! Container for properties
-!----------------------------------------------------------------------
-minclude define_abstract_collection_type(DTYPE(ppm_t_part_prop)_)
-
+minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="abstract")
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -94,12 +90,7 @@ TYPE,ABSTRACT :: DTYPE(ppm_t_neighlist)_
     PROCEDURE(DTYPE(neigh_destroy)_),DEFERRED :: destroy 
 
 END TYPE DTYPE(ppm_t_neighlist)_
-!----------------------------------------------------------------------
-! Container for neighbour lists
-!----------------------------------------------------------------------
-minclude define_abstract_collection_type(DTYPE(ppm_t_neighlist)_)
-
-
+minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abstract")
 
 
 TYPE,ABSTRACT :: DTYPE(particles_stats)_
@@ -517,8 +508,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
 
 
 END TYPE DTYPE(ppm_t_particles)_
-minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
-
+minclude ppm_create_collection(DTYPE(particles)_,DTYPE(particles)_,generate="abstract")
+!minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
 
 !TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_sop)_
     !!!! an extension of the Particle set data structure
@@ -576,8 +567,5 @@ minclude define_abstract_collection_type(DTYPE(ppm_t_particles)_)
 
 
 !END TYPE DTYPE(ppm_t_sop)_
-!!----------------------------------------------------------------------
-!! Container for adaptive Particle sets
-!!----------------------------------------------------------------------
-!minclude define_abstract_collection_type(DTYPE(ppm_t_sop)_)
+
 

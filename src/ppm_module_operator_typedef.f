@@ -63,7 +63,7 @@ TYPE,EXTENDS(ppm_t_operator_) :: ppm_t_operator
     PROCEDURE :: destroy       => operator_destroy
     PROCEDURE :: discretize_on => operator_discretize_on
 END TYPE
-minclude define_collection_type(ppm_t_operator)
+minclude ppm_create_collection(operator,operator,generate="extend")
 
 
          !----------------------------------------------------------------------
@@ -73,7 +73,7 @@ minclude define_collection_type(ppm_t_operator)
 
          CONTAINS
          
-minclude define_collection_procedures(ppm_t_operator)
+minclude ppm_create_collection_procedures(operator,operator_)
 
 #define DTYPE(a) a/**/_s
 #define DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single

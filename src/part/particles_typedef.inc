@@ -20,10 +20,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_part_prop)_) :: DTYPE(ppm_t_part_prop)
     PROCEDURE :: DTYPE(data_2d_l_check)
 
 END TYPE
-!----------------------------------------------------------------------
-! Container for properties
-!----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_part_prop))
+minclude ppm_create_collection(DTYPE(part_prop),DTYPE(part_prop),generate="extend")
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists
@@ -32,10 +29,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_neighlist)_) :: DTYPE(ppm_t_neighlist)
     CONTAINS
     PROCEDURE :: destroy => DTYPE(neigh_destroy)
 END TYPE
-!----------------------------------------------------------------------
-! Container for neighbour lists
-!----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_neighlist))
+minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="extend")
 
 TYPE,EXTENDS( DTYPE(particles_stats)_) :: DTYPE(particles_stats)
 END TYPE
@@ -196,10 +190,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
 !        DTYPE(map_part_push_2dl)
 
 END TYPE DTYPE(ppm_t_particles)
-!----------------------------------------------------------------------
-! Container for lists of (pointers to) Particle sets
-!----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_particles))
+minclude ppm_create_collection(DTYPE(particles),DTYPE(particles),generate="extend")
 
 
 TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)

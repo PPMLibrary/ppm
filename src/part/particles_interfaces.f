@@ -1,7 +1,7 @@
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_part_prop)_)
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_neighlist)_)
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_particles)_)
-!minclude define_abstract_collection_interfaces(DTYPE(ppm_t_sop)_)
+minclude ppm_create_collection_interfaces(DTYPE(part_prop)_,DTYPE(part_prop)_)
+minclude ppm_create_collection_interfaces(DTYPE(neighlist)_,DTYPE(neighlist)_)
+minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
+!minclude ppm_create_collection_interfaces(DTYPE(ppm_t_sop)_)
 
 !CREATE ENTRY
 SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,field,zero)

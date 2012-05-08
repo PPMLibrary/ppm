@@ -41,16 +41,16 @@ TYPE,EXTENDS(ppm_t_subpatch_data_) :: ppm_t_subpatch_data
     PROCEDURE :: create    => subpatch_data_create
     PROCEDURE :: destroy   => subpatch_data_destroy
 END TYPE
-minclude define_collection_type(ppm_t_subpatch_data)
-minclude define_collection_type(ppm_t_subpatch_data,vec=true)
+minclude ppm_create_collection(subpatch_data,subpatch_data,generate="extend")
+minclude ppm_create_collection(subpatch_data,subpatch_data,generate="extend",vec=true)
 
 TYPE,EXTENDS(ppm_t_mesh_discr_data_) :: ppm_t_mesh_discr_data
     CONTAINS
     PROCEDURE :: create    => mesh_discr_data_create
     PROCEDURE :: destroy   => mesh_discr_data_destroy
 END TYPE
-minclude define_collection_type(ppm_t_mesh_discr_data)
-minclude define_collection_type(ppm_t_mesh_discr_data,vec=true)
+minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,generate="extend")
+minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,vec=true,generate="extend")
 
 TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
@@ -60,16 +60,14 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
 END TYPE
-minclude define_collection_type(ppm_t_subpatch)
-
+minclude ppm_create_collection(subpatch,subpatch,generate="extend")
 
 TYPE,EXTENDS(ppm_t_A_subpatch_) :: ppm_t_A_subpatch
     CONTAINS
     PROCEDURE :: create  => subpatch_A_create
     PROCEDURE :: destroy => subpatch_A_destroy
 END TYPE
-minclude define_collection_type(ppm_t_A_subpatch)
-
+minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
 
 TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     CONTAINS
@@ -88,13 +86,12 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     PROCEDURE  :: map_ghost_pop         => equi_mesh_map_ghost_pop
     PROCEDURE  :: map_send              => equi_mesh_map_send
 END TYPE
-minclude define_collection_type(ppm_t_equi_mesh)
+minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 
 !----------------------------------------------------------------------
 ! DATA STORAGE for the meshes
 !----------------------------------------------------------------------
 TYPE(ppm_c_equi_mesh)              :: ppm_mesh
-
 
 !------------------------------------------------
 ! TODO: stuff that should be moved somewhere else:
@@ -139,13 +136,13 @@ TYPE(ppm_c_equi_mesh)              :: ppm_mesh
 CONTAINS
 
 !Procedures for collections of derived types
-minclude define_collection_procedures(ppm_t_equi_mesh)
-minclude define_collection_procedures(ppm_t_subpatch_data)
-minclude define_collection_procedures(ppm_t_subpatch_data,vec=true)
-minclude define_collection_procedures(ppm_t_subpatch)
-minclude define_collection_procedures(ppm_t_A_subpatch)
-minclude define_collection_procedures(ppm_t_mesh_discr_data)
-minclude define_collection_procedures(ppm_t_mesh_discr_data,vec=true)
+minclude ppm_create_collection_procedures(subpatch_data,subpatch_data_)
+minclude ppm_create_collection_procedures(subpatch_data,subpatch_data_,vec=true)
+minclude ppm_create_collection_procedures(mesh_discr_data,mesh_discr_data_)
+minclude ppm_create_collection_procedures(mesh_discr_data,mesh_discr_data_,vec=true)
+minclude ppm_create_collection_procedures(subpatch,subpatch_)
+minclude ppm_create_collection_procedures(A_subpatch,A_subpatch_)
+minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
 
 SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     !!! Returns a pointer to the data array for a given field on this subpatch

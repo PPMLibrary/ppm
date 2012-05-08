@@ -1,7 +1,7 @@
-minclude define_collection_procedures(DTYPE(ppm_t_part_prop))
-minclude define_collection_procedures(DTYPE(ppm_t_neighlist))
-minclude define_collection_procedures(DTYPE(ppm_t_particles))
-!minclude define_collection_procedures(DTYPE(ppm_t_sop))
+minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
+minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
+minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
+!minclude ppm_create_collection_procedures(DTYPE(ppm_t_sop))
 
 SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,field,zero)
     !!! Constructor for particle property data structure

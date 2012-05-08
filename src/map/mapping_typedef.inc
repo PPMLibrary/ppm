@@ -12,7 +12,7 @@ END TYPE
 !----------------------------------------------------------------------
 ! Container for particle mappings
 !----------------------------------------------------------------------
-minclude define_collection_type(DTYPE(ppm_t_part_mapping))
+minclude ppm_create_collection(DTYPE(part_mapping),DTYPE(part_mapping),generate="extend")
 
 
 TYPE,EXTENDS(DTYPE(ppm_t_mesh_mapping)_) :: DTYPE(ppm_t_mesh_mapping)

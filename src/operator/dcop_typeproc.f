@@ -391,6 +391,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             CALL Part_to%set_field(field_to,dwps,info)
         ENDIF
     ENDIF
+
     nvlist => NULL()
     vlist => NULL()
 

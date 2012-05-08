@@ -106,34 +106,32 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 TYPE,ABSTRACT :: ppm_t_main_abstr
     !!! Generic type for all main PPM types
 END TYPE
-minclude def_collection_type_from_abstract(ppm_v_main_abstr,&
-    ppm_t_main_abstr,vec=true)
+minclude ppm_create_collection(main_abstr,main_abstr,generate="concrete",vec=true)
 
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind_
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
     !!! Discretization kinds (Particles and Meshes)
     INTEGER                           :: ID = 0
     !!! ID of the mesh or particle set in the belonging topology
 END TYPE
-minclude define_abstract_collection_type(ppm_t_discr_kind_,vec=true,def_ptr=true)
+!minclude ppm_create_collection(ppm_t_discr_kind_,vec=true,def_ptr=true)
 
-TYPE,EXTENDS(ppm_t_discr_kind_) :: ppm_t_discr_kind
-END TYPE
-minclude define_collection_type(ppm_t_discr_kind,vec=true)
+!TYPE,EXTENDS(ppm_t_discr_kind_) :: ppm_t_discr_kind
+!END TYPE
+!minclude define_collection_type(ppm_t_discr_kind,vec=true)
 
 
 TYPE,ABSTRACT :: ppm_t_discr_data
     !!! Data (discretized on either Particles or Meshes)
     INTEGER                                        :: data_type
-    !!! data type for this property
-    !!! One of:
-    !!!     ppm_param_...
+    !!! Data type for this property
+    !!! One of: ppm_type_int, ppm_type_real, ppm_type_comp, ppm_type_logical
     !!! 
     CLASS(ppm_t_main_abstr),POINTER                :: field_ptr => NULL()
     !!! Pointer to the field for which this is a discretization
     CHARACTER(LEN=ppm_char)                        :: name
     !!! Name for this property
     LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags = .FALSE.
-    !!! logical flags (applicable to either particle data or mesh data or both)
+    !!! Logical flags (applicable to either particle data or mesh data or both)
     !!!    ppm_ppt_ghosts
     !!!          true if ghost values are up-to-date
     !!!    ppm_ppt_partial
@@ -147,7 +145,7 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     !!!    ppm_ppt_map_ghosts
     !!!          true if ghost mappings are desired for this property (default)
     INTEGER                                        :: lda = 0
-    !!! leading dimension of the data array
+    !!! Leading dimension of the data array
     !!!
 END TYPE
 
@@ -170,16 +168,14 @@ TYPE,ABSTRACT ::  ppm_t_field_info_
     PROCEDURE(field_info_create_), DEFERRED :: create
     PROCEDURE(field_info_destroy_),DEFERRED :: destroy
 END TYPE
-minclude define_abstract_collection_type(ppm_t_field_info_)
+minclude ppm_create_collection(field_info_,field_info_,generate="abstract")
 
 TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
     CONTAINS
     PROCEDURE :: create  => field_info_create
     PROCEDURE :: destroy => field_info_destroy
 END TYPE
-minclude define_collection_type(ppm_t_field_info)
-
-
+minclude ppm_create_collection(field_info,field_info,generate="extend")
 
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
@@ -200,7 +196,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     PROCEDURE(operator_destroy_),      DEFERRED :: destroy
     PROCEDURE(operator_discretize_on_),DEFERRED :: discretize_on
 END TYPE
-minclude define_abstract_collection_type(ppm_t_operator_)
+minclude ppm_create_collection(operator_,operator_,generate="abstract")
 
 
 TYPE,ABSTRACT :: ppm_t_operator_discr_
@@ -236,7 +232,7 @@ TYPE,ABSTRACT :: ppm_t_operator_discr_
     PROCEDURE(operator_discr_destroy_), DEFERRED :: destroy
     !PROCEDURE(operator_discr_compute_), DEFERRED :: compute
 END TYPE
-minclude define_abstract_collection_type(ppm_t_operator_discr_)
+minclude ppm_create_collection(operator_discr_,operator_discr_,generate="abstract")
 
 TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
     CONTAINS
@@ -244,7 +240,12 @@ TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
     PROCEDURE :: destroy => operator_discr_destroy
     PROCEDURE :: compute => operator_discr_compute
 END TYPE
-minclude define_collection_type(ppm_t_operator_discr)
+minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
+
+
+
+
+
 
 
 
@@ -303,7 +304,7 @@ TYPE,ABSTRACT ::  ppm_t_discr_info_
     PROCEDURE(discr_info_create_), DEFERRED :: create
     PROCEDURE(discr_info_destroy_),DEFERRED :: destroy
 END TYPE
-minclude define_abstract_collection_type(ppm_t_discr_info_)
+minclude ppm_create_collection(discr_info_,discr_info_)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     !!! Data structure for fields 
@@ -343,9 +344,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     PROCEDURE(field_is_discretized_on_), DEFERRED :: is_discretized_on
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
 END TYPE ppm_t_field_
-! Container for fields
-minclude define_abstract_collection_type(ppm_t_field_)
-minclude define_abstract_collection_type(ppm_t_field_,vec=true)
+minclude ppm_create_collection(field_,field_)
+minclude ppm_create_collection(field_,field_,vec=true,def_ptr=false)
 
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
@@ -399,11 +399,8 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
     PROCEDURE(subpatch_data_create_), DEFERRED :: create
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
 END TYPE
-! Container for lists of (pointers to) subpatch_data
-minclude define_abstract_collection_type(ppm_t_subpatch_data_)
-minclude define_abstract_collection_type(ppm_t_subpatch_data_,vec=true)
-
-
+minclude ppm_create_collection(subpatch_data_,subpatch_data_)
+minclude ppm_create_collection(subpatch_data_,subpatch_data_,vec=true,def_ptr=false,generate="abstract")
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     CLASS(ppm_v_subpatch_data_),POINTER     :: subpatch => NULL()
@@ -411,10 +408,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     PROCEDURE(mesh_discr_data_create_), DEFERRED :: create
     PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy 
 END TYPE
-minclude define_abstract_collection_type(ppm_t_mesh_discr_data_)
-minclude define_abstract_collection_type(ppm_t_mesh_discr_data_,vec=true)
-
-
+minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract")
+minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,vec=true,def_ptr=false)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
@@ -445,9 +440,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
-! Container for lists of (pointers to) subpatch
-minclude define_abstract_collection_type(ppm_t_subpatch_)
-
+minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")
 
 TYPE,ABSTRACT :: ppm_t_A_subpatch_
     !!! Bookkeeping derived-type. Contains an array of pointers to subpatches
@@ -461,9 +454,7 @@ TYPE,ABSTRACT :: ppm_t_A_subpatch_
     PROCEDURE(subpatch_A_create_) ,DEFERRED  :: create
     PROCEDURE(subpatch_A_destroy_),DEFERRED  :: destroy
 END TYPE
-! Container for subpatch pointer arrays
-minclude define_abstract_collection_type(ppm_t_A_subpatch_)
-
+minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
 
 TYPE ppm_t_mesh_maplist
     !!! TODO: check what this is used for (imported from Petros code
@@ -620,15 +611,31 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
     PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
 END TYPE
-! Container for meshes
-minclude define_abstract_collection_type(ppm_t_equi_mesh_)
+minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 
 
 !----------------------------------------------------------------------
 !  INTERFACES
 !----------------------------------------------------------------------
-
 INTERFACE
+!----------------------------------------------------------------------
+! Interfaces for collections type-bound procedures
+!----------------------------------------------------------------------
+minclude ppm_create_collection_interfaces(equi_mesh_,equi_mesh_)
+minclude ppm_create_collection_interfaces(A_subpatch_,A_subpatch_)
+minclude ppm_create_collection_interfaces(discr_info_,discr_info_)
+minclude ppm_create_collection_interfaces(field_info_,field_info_)
+minclude ppm_create_collection_interfaces(field_,field_)
+minclude ppm_create_collection_interfaces(field_,field_,vec=true)
+minclude ppm_create_collection_interfaces(operator_,operator_)
+minclude ppm_create_collection_interfaces(operator_discr_,operator_discr_)
+minclude ppm_create_collection_interfaces(subpatch_data_,subpatch_data_)
+minclude ppm_create_collection_interfaces(subpatch_data_,subpatch_data_,vec=true)
+minclude ppm_create_collection_interfaces(subpatch_,subpatch_)
+minclude ppm_create_collection_interfaces(mesh_discr_data_,mesh_discr_data_)
+minclude ppm_create_collection_interfaces(mesh_discr_data_,mesh_discr_data_,vec=true)
+!minclude ppm_create_collection_interfaces(ppm_t_discr_kind_,vec=true)
+
 #define  DTYPE(a) a/**/_s
 #include "map/mapping_interfaces.f"
 
@@ -755,32 +762,15 @@ INTERFACE
 
 #include "operator/operator_interfaces.f"
 
-!----------------------------------------------------------------------
-! Interfaces for collections type-bound procedures
-!----------------------------------------------------------------------
-minclude define_abstract_collection_interfaces(ppm_t_equi_mesh_)
-minclude define_abstract_collection_interfaces(ppm_t_A_subpatch_)
-minclude define_abstract_collection_interfaces(ppm_t_discr_info_)
-minclude define_abstract_collection_interfaces(ppm_t_field_info_)
-minclude define_abstract_collection_interfaces(ppm_t_field_)
-minclude define_abstract_collection_interfaces(ppm_t_field_,vec=true)
-minclude define_abstract_collection_interfaces(ppm_t_operator_)
-minclude define_abstract_collection_interfaces(ppm_t_operator_discr_)
-minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_)
-minclude define_abstract_collection_interfaces(ppm_t_subpatch_data_,vec=true)
-minclude define_abstract_collection_interfaces(ppm_t_subpatch_)
-minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_)
-minclude define_abstract_collection_interfaces(ppm_t_mesh_discr_data_,vec=true)
-minclude define_abstract_collection_interfaces(ppm_t_discr_kind_,vec=true)
 
 END INTERFACE
 
 CONTAINS
 
-minclude define_collection_procedures(ppm_t_field_info)
-minclude define_collection_procedures(ppm_t_operator_discr)
-minclude define_collection_procedures(ppm_t_discr_kind,vec=true)
-minclude def_collection_proc_from_abstract(ppm_v_main_abstr,ppm_t_main_abstr,vec=true)
+minclude ppm_create_collection_procedures(field_info,field_info_)
+minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
+!minclude ppm_create_collection_procedures(ppm_t_discr_kind,vec=true)
+minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)

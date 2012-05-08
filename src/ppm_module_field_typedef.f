@@ -39,7 +39,7 @@ TYPE, EXTENDS(ppm_t_discr_info_):: ppm_t_discr_info
     PROCEDURE :: create => discr_info_create
     PROCEDURE :: destroy => discr_info_destroy
 END TYPE
-minclude define_collection_type(ppm_t_discr_info)
+minclude ppm_create_collection(discr_info,discr_info,generate="extend")
 
 TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     CONTAINS
@@ -54,19 +54,17 @@ TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
     PROCEDURE :: get_discr => field_get_discr
     PROCEDURE :: get_pid => field_get_pid
 END TYPE ppm_t_field
-minclude define_collection_type(ppm_t_field)
-minclude define_collection_type(ppm_t_field,vec=true)
-
-
+minclude ppm_create_collection(field,field,generate="extend")
+minclude ppm_create_collection(field,field,generate="extend",vec=true)
 
 !----------------------------------------------------------------------
 !  Type-bound procedures
 !----------------------------------------------------------------------
 CONTAINS
 
-minclude define_collection_procedures(ppm_t_discr_info)
-minclude define_collection_procedures(ppm_t_field)
-minclude define_collection_procedures(ppm_t_field,vec=true)
+minclude ppm_create_collection_procedures(discr_info,discr_info_)
+minclude ppm_create_collection_procedures(field,field_)
+minclude ppm_create_collection_procedures(field,field_,vec=true)
 
 !CREATE
 SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
