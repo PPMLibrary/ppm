@@ -527,6 +527,11 @@ FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
 
     INTEGER                                        :: j
     
+    IF (i.LE.0) THEN 
+        element => NULL()
+        RETURN
+    ENDIF
+
     element => this%begin()
     DO j=2,i
         element => this%next()

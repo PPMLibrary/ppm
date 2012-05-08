@@ -79,6 +79,12 @@ integer                          :: info
        ! check that the accessor (at) works
        M => c_M%at(17)
        Assert_Equal(M%topoid,17)
+       M => c_M%at(total_el+1)
+       Assert_False(associated(M))
+       M => c_M%at(1)
+       Assert_Equal(M%topoid,1)
+       M => c_M%at(0)
+       Assert_False(associated(M))
 
        count_el = 0
        M => c_M%begin()
