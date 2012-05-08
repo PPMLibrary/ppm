@@ -243,6 +243,9 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
     test mesh_mappings_uniform
         !testing mappings for a single patch that covers the whole domain
         type(ppm_t_field) :: Field1
+        procedure(my_init_function), pointer :: init_f => NULL()
+
+        init_f => my_init_function
         Nm = 129
         Nm(ndim) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm)
@@ -250,7 +253,7 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         call Mesh1%def_uniform(info)
             Assert_Equal(info,0)
 
-        call Field1%create(3,info,name='testField',init_func=my_init_function) 
+        call Field1%create(3,info,name='testField',init_func=init_f) 
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
