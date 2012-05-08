@@ -113,7 +113,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
     INTEGER                           :: ID = 0
     !!! ID of the mesh or particle set in the belonging topology
 END TYPE
-!minclude ppm_create_collection(ppm_t_discr_kind_,vec=true,def_ptr=true)
+minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
 
 !TYPE,EXTENDS(ppm_t_discr_kind_) :: ppm_t_discr_kind
 !END TYPE
@@ -769,7 +769,7 @@ CONTAINS
 
 minclude ppm_create_collection_procedures(field_info,field_info_)
 minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
-!minclude ppm_create_collection_procedures(ppm_t_discr_kind,vec=true)
+minclude ppm_create_collection_procedures(discr_kind,discr_kind,vec=true)
 minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
 
 !CREATE
