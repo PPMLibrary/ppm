@@ -1,4 +1,4 @@
-minclude define_abstract_collection_interfaces(DTYPE(ppm_t_part_mapping)_)
+minclude ppm_create_collection_interfaces(DTYPE(part_mapping)_,DTYPE(part_mapping)_)
 
 SUBROUTINE DTYPE(map_create)_(map,source_topoid,target_topoid,info)
     !!! Constructor for particle mapping data structure

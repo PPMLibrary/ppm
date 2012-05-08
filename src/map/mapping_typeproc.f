@@ -1,4 +1,4 @@
-minclude define_collection_procedures(DTYPE(ppm_t_part_mapping))
+minclude ppm_create_collection_procedures(DTYPE(part_mapping),DTYPE(part_mapping)_)
 
 SUBROUTINE DTYPE(map_create)(map,source_topoid,target_topoid,info)
     !!! Constructor for particle mapping data structure
