@@ -122,6 +122,7 @@ integer                                        :: nterms
         CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
         CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
         class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
+        class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         !--------------------------
         !Define Fields
@@ -181,8 +182,6 @@ integer                                        :: nterms
             wp_2r(5,ip) = SQRT(SUM(xp(1:ndim,ip)**2))
         ENDDO
         call Part1%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1%set_field(Field1,wp_2r,info,read_only=.false.)
         Assert_Equal(info,0)
 
         call Part1%map_ghosts(info)

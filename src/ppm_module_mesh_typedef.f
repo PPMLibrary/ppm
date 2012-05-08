@@ -27,7 +27,7 @@ IMPLICIT NONE
 !----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
-INTEGER, PRIVATE, DIMENSION(3)  :: ldc
+INTEGER, PRIVATE, DIMENSION(4)  :: ldc
 
 !----------------------------------------------------------------------
 ! Type declaration
@@ -60,6 +60,7 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
+    PROCEDURE  :: subpatch_get_field_4d_rd
 END TYPE
 minclude ppm_create_collection(subpatch,subpatch,generate="extend")
 
@@ -144,6 +145,36 @@ minclude ppm_create_collection_procedures(mesh_discr_data,mesh_discr_data_,vec=t
 minclude ppm_create_collection_procedures(subpatch,subpatch_)
 minclude ppm_create_collection_procedures(A_subpatch,A_subpatch_)
 minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
+
+SUBROUTINE subpatch_get_field_4d_rd(this,wp,Field,info)
+    !!! Returns a pointer to the data array for a given field on this subpatch
+    CLASS(ppm_t_subpatch)                :: this
+    CLASS(ppm_t_field_)                  :: Field
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: wp
+    INTEGER,                 INTENT(OUT) :: info
+    INTEGER                              :: p_idx
+
+    start_subroutine("subpatch_get_field_4d")
+
+    check_true("Field%lda+ppm_dim.GT.4",&
+        "wrong dimensions for pointer arg wp")
+
+    !Direct access to the data arrays 
+
+    check_associated(this%mesh)
+    
+    p_idx = Field%get_pid(this%mesh)
+
+    check_associated("this%subpatch_data")
+    stdout("p_idx = ",p_idx)
+    check_associated("this%subpatch_data%vec(p_idx)%t")
+
+    wp => this%subpatch_data%vec(p_idx)%t%data_4d_rd
+
+    check_associated(wp)
+
+    end_subroutine()
+END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     !!! Returns a pointer to the data array for a given field on this subpatch

@@ -60,10 +60,18 @@
 #endif
                DO j=VTK_MESH_JLBOUND,VTK_MESH_JUBOUND
                    DO i=VTK_MESH_ILBOUND,VTK_MESH_IUBOUND
+#ifndef VTK_MESH_COMPONENT
 #if __DIM == __2D
-                       WRITE(scratch, *) VTK_MESH(i,j,VTK_MESH_SUB)
+                       WRITE(scratch, *) VTK_MESH(i,j)
 #elif __DIM == __3D
-                       WRITE(scratch, *) VTK_MESH(i,j,k,VTK_MESH_SUB)
+                       WRITE(scratch, *) VTK_MESH(i,j,k)
+#endif
+#else
+#if __DIM == __2D
+                       WRITE(scratch, *) VTK_MESH(VTK_MESH_COMPONENT,i,j)
+#elif __DIM == __3D
+                       WRITE(scratch, *) VTK_MESH(VTK_MESH_COMPONENT,i,j,k)
+#endif
 #endif
                        scratch = ADJUSTL(scratch)
                        WRITE(iUnit, '(A)', advance='no') &
@@ -139,3 +147,4 @@
 #undef VTK_MESH_JUBOUND
 #undef VTK_MESH_KLBOUND
 #undef VTK_MESH_KUBOUND
+#undef VTK_MESH_COMPONENT

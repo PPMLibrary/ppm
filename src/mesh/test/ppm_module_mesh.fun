@@ -12,7 +12,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -23,7 +23,7 @@ real(mk),dimension(:  ),pointer :: max_phys => NULL()
 integer, dimension(:  ),pointer :: ighostsize => NULL()
 real(mk)                        :: sca_ghostsize
 
-integer                         :: i,j
+integer                         :: i,j,k
 integer                         :: nsublist
 integer, dimension(:  ),pointer :: isublist => NULL()
 integer, dimension(2*ndim)      :: bcdef
@@ -42,7 +42,7 @@ real(mk),dimension(ndim)         :: offset
 
 real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
 real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
+real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
 !---------------- init -----------------------
 
@@ -133,8 +133,10 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
+        if (ndim .eq. 2) then
+
         mypatchid = 1
-        my_patch = (/0.5,0.1,5.1,10.0/)
+        my_patch(1:4) = (/0.5,0.1,5.1,10.0/)
 
         call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
@@ -161,7 +163,7 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(isub,ipatch)
 
         mypatchid = 3
-        my_patch = (/0.1,0.0,0.3,0.8/)
+        my_patch(1:4) = (/0.1,0.0,0.3,0.8/)
 
         call Mesh1%def_patch(my_patch,info,mypatchid) 
         Assert_Equal(info,0)
@@ -173,6 +175,10 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
             !write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%t%patchid
         ENDDO
         p=>NULL()
+
+        else
+            write(*,*) 'TEST NOT RUNNING in 3D YET!!!'
+        endif
 
 
         call Mesh1%destroy(info)
@@ -186,16 +192,22 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
+        if (ndim .eq. 2) then
+
         mypatchid = 0
         DO i = 1,Nm(1)/4
             DO j = 1,Nm(2)/4
                 mypatchid = mypatchid + 1
-                my_patch = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
+                my_patch(1:4) = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
                 call Mesh1%def_patch(my_patch,info,mypatchid) 
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
         ENDDO
+
+        else
+            write(*,*) 'TEST NOT RUNNING in 3D YET!!!'
+        endif
         
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
@@ -214,6 +226,10 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         mypatchid = 1
         my_patch(1:ndim)        = min_phys(1:ndim)
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
+
+        write(*,*) 'adding patch : '
+        write(*,*) my_patch(1:ndim)
+        write(*,*) my_patch(ndim+1:2*ndim)
 
         call Mesh1%def_patch(my_patch,info,mypatchid) 
             Assert_Equal(info,0)
@@ -242,12 +258,15 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
 
     test mesh_mappings_uniform
         !testing mappings for a single patch that covers the whole domain
+        use ppm_module_io_vtk
         type(ppm_t_field) :: Field1
+        real(ppm_kind_double),dimension(ndim) :: pos
         procedure(my_init_function), pointer :: init_f => NULL()
 
         init_f => my_init_function
         Nm = 129
         Nm(ndim) = 65
+        Nm = 5
         call Mesh1%create(topoid,offset,info,Nm=Nm)
             Assert_Equal(info,0)
         call Mesh1%def_uniform(info)
@@ -261,17 +280,22 @@ real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
         p => Mesh1%subpatch%begin()
 
         do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
+            call p%get_field(field4d_1,Field1,info)
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
-                    field3d_1(1,i,j) = cos(i*h(1)+j)
-                    field3d_1(2,i,j) = sin(i*h(1)+j)
-                    field3d_1(3,i,j) = cos(i*h(1)+j)**2
+                    do k = 1,p%nnodes(3)
+                        pos = p%get_pos(i,j)
+                        field4d_1(1,i,j,k) = cos(2._mk*pi*pos(1))
+                        field4d_1(2,i,j,k) = sin(2._mk*pi*pos(2))
+                        field4d_1(3,i,j,k) = sin(2._mk*pi*pos(3))
+                    enddo
                 enddo
             enddo
             p => Mesh1%subpatch%next()
         enddo
 
+        call ppm_vtk_fields('testvtk',Mesh1,info)
+            Assert_Equal(info,0)
 
         !call Mesh1%map_ghost_get(info,ighostsize)
         !    Assert_Equal(info,0)

@@ -438,7 +438,9 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     PROCEDURE(subpatch_get_pos_),DEFERRED  :: get_pos
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
-    GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd
+    PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd
+    GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd,&
+        subpatch_get_field_4d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
 minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")

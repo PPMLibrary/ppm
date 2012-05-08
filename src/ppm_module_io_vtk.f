@@ -49,8 +49,7 @@
 
          IMPLICIT NONE
 
-         PUBLIC :: ppm_vtk_particles, ppm_vtk_fields, &
-              ppm_t_field_2ds,ppm_t_field_2dd,ppm_t_field_3ds,ppm_t_field_3dd
+         PUBLIC :: ppm_vtk_particles, ppm_vtk_fields
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
@@ -60,28 +59,6 @@
   INCLUDE 'mpif.h'
 #endif
          !----------------------------------------------------------------------
-         !  Types
-         !----------------------------------------------------------------------
-
-         TYPE ppm_t_field_2dd
-             REAL(ppm_kind_double), DIMENSION(:,:,:), POINTER :: fdata => NULL()
-             CHARACTER(LEN=ppm_char)                          :: fname
-         END TYPE
-         TYPE ppm_t_field_3dd
-             REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
-             CHARACTER(LEN=ppm_char)                            :: fname
-         END TYPE
-         
-         TYPE ppm_t_field_2ds
-             REAL(ppm_kind_single), DIMENSION(:,:,:), POINTER :: fdata => NULL()
-             CHARACTER(LEN=ppm_char)                          :: fname
-         END TYPE
-         TYPE ppm_t_field_3ds
-             REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: fdata => NULL()
-             CHARACTER(LEN=ppm_char)                            :: fname
-         END TYPE
-
-         !----------------------------------------------------------------------
          !  New Interface
          !----------------------------------------------------------------------
           INTERFACE ppm_vtk_particles
@@ -90,10 +67,8 @@
           END INTERFACE
 
           INTERFACE ppm_vtk_fields
-             MODULE PROCEDURE ppm_vtk_fields_2ds
-             MODULE PROCEDURE ppm_vtk_fields_2dd
-             MODULE PROCEDURE ppm_vtk_fields_3ds
-             MODULE PROCEDURE ppm_vtk_fields_3dd
+             !MODULE PROCEDURE ppm_vtk_fields_2d
+             MODULE PROCEDURE ppm_vtk_fields_3d
           END INTERFACE
 
 
@@ -127,20 +102,10 @@
 #undef __KIND
 
 #define __DIM __2D
-#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION
-#include "vtk/ppm_vtk_fields.f"
-#undef __KIND
 #undef __DIM
 #define __DIM __3D
-#define __KIND __SINGLE_PRECISION
 #include "vtk/ppm_vtk_fields.f"
-#undef __KIND
-#define __KIND __DOUBLE_PRECISION
-#include "vtk/ppm_vtk_fields.f"
-#undef __KIND
 #undef __DIM
          !----------------------------------------------------------------------
          !  Parallel VTK output
