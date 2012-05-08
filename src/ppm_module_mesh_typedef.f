@@ -56,6 +56,7 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
     PROCEDURE  :: destroy   => subpatch_destroy
+    PROCEDURE  :: get_pos   => subpatch_get_pos
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
@@ -428,6 +429,25 @@ SUBROUTINE subpatch_destroy(p,info)
 
     end_subroutine()
 END SUBROUTINE subpatch_destroy
+
+!GET POSITION
+PURE FUNCTION subpatch_get_pos(p,i,j,k) RESULT (pos)
+    !!! Return position of mesh node i,j,k
+    CLASS(ppm_t_subpatch),  INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,OPTIONAL,       INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+
+    SELECT TYPE(mesh => p%mesh)
+    TYPE IS (ppm_t_equi_mesh)
+        pos(1) = (p%istart(1)+i)*mesh%h(1)
+        pos(2) = (p%istart(2)+i)*mesh%h(2)
+        IF (PRESENT(k)) pos(3) = (p%istart(3)+k)*mesh%h(3)
+        pos(1:ppm_dim) = pos(1:ppm_dim) + mesh%offset(1:ppm_dim)
+    END SELECT
+
+END FUNCTION subpatch_get_pos
 
 !CREATE
 SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)

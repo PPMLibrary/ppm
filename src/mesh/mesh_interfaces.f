@@ -53,6 +53,16 @@ SUBROUTINE subpatch_destroy_(p,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
+!GET POSITION
+PURE FUNCTION subpatch_get_pos_(p,i,j,k) RESULT (pos)
+    IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
+    CLASS(ppm_t_subpatch_), INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,OPTIONAL,       INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+END FUNCTION
+
 !CREATE
 SUBROUTINE subpatch_A_create_(this,vecsize,info,patchid)
     !!! Destructor for subdomain data data structure

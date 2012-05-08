@@ -435,6 +435,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     CONTAINS
     PROCEDURE(subpatch_create_), DEFERRED  :: create
     PROCEDURE(subpatch_destroy_),DEFERRED  :: destroy
+    PROCEDURE(subpatch_get_pos_),DEFERRED  :: get_pos
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
     GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd
