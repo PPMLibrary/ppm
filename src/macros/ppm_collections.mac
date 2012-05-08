@@ -37,18 +37,29 @@ TYPE  <%= element_ptr_type %>
     CLASS(<%= element_type %>),                  POINTER :: t => NULL()
 END TYPE 
 % end
+% proc_list = ['begin','next','last','prev','destroy','exists','has','get_id','push','remove','grow_size','at']
 % if gen == "concrete"
 !
 TYPE,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
     CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
     CONTAINS
-%['begin','next','last','prev','destroy','exists','has','get_id','push','remove','grow_size'].each do |func_name|
+%proc_list.each do |func_name|
     PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
 % end
 END TYPE 
 % end
 %#
+% if gen == "extend"
+%#
+!
+TYPE, EXTENDS(<%= abstr_collection_type %>) ::  <%= collection_type %>
+        CONTAINS
+%proc_list.each do |func_name|
+    PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
+% end
+END TYPE 
+% end
 % if gen == "abstract"
 %#
 !
@@ -56,18 +67,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     TYPE(<%= element_ptr_type %>),DIMENSION(:), POINTER :: vec => NULL()
     CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
     CONTAINS
-%['begin','next','last','prev','destroy','exists','has','get_id','push','remove','grow_size'].each do |func_name|
+%proc_list.each do |func_name|
     PROCEDURE(<%= collection_type %>_<%=func_name%>),  DEFERRED :: <%=func_name%>
-% end
-END TYPE 
-% end
-% if gen == "extend"
-%#
-!
-TYPE, EXTENDS(<%= abstr_collection_type %>) ::  <%= collection_type %>
-        CONTAINS
-%['begin','next','last','prev','destroy','exists','has','get_id','push','remove','grow_size'].each do |func_name|
-    PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
 % end
 END TYPE 
 % end
@@ -158,6 +159,13 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
     CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
     INTEGER,                       INTENT(OUT  )   :: info
 END SUBROUTINE
+!AT
+FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
+    IMPORT <%= collection_type %>,<%= element_type %>
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(IN   )   :: i
+    CLASS(<%= element_type %>),POINTER             :: element
+END FUNCTION
 end macro
 
 
@@ -506,4 +514,29 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
     CALL substop(caller,t0,info)
     9999 CONTINUE
 END SUBROUTINE
+!AT
+FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
+    !! Access the i-th element of the collection
+    !! (the ordering is the same as that given by the iterators next()
+    !! begin(), prev() and last() )
+    !! If there is less than i elements in the collection, the function
+    !! returns a NULL pointer.
+    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
+    INTEGER,                       INTENT(IN   )   :: i
+    CLASS(<%= element_type %>),POINTER             :: element
+
+    INTEGER                                        :: j
+    
+    element => this%begin()
+    DO j=2,i
+        element => this%next()
+        DO WHILE (.NOT.ASSOCIATED(element))
+            IF (this%iter_id.GT.this%max_id) THEN
+                element => NULL()
+                RETURN
+            ENDIF
+            element => this%next()
+        ENDDO
+    ENDDO
+END FUNCTION
 end macro
