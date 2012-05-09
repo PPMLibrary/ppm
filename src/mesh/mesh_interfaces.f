@@ -16,6 +16,15 @@ SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
+SUBROUTINE subpatch_get_field_4d_rd_(this,wp,Field,info)
+    !!! gets pointer to data
+    IMPORT ppm_t_subpatch_,ppm_t_field_,ppm_kind_double
+    CLASS(ppm_t_subpatch_)              :: this
+    CLASS(ppm_t_field_)                  :: Field
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: wp
+    INTEGER,                 INTENT(OUT) :: info
+END SUBROUTINE
+
 SUBROUTINE subpatch_data_create_(this,discr_data,Nmp,info)
     !!! Constructor for subdomain data 
     IMPORT ppm_t_subpatch_data_,ppm_t_mesh_discr_data_
@@ -52,6 +61,16 @@ SUBROUTINE subpatch_destroy_(p,info)
     CLASS(ppm_t_subpatch_)              :: p
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
+
+!GET POSITION
+PURE FUNCTION subpatch_get_pos_(p,i,j,k) RESULT (pos)
+    IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
+    CLASS(ppm_t_subpatch_), INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,OPTIONAL,       INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+END FUNCTION
 
 !CREATE
 SUBROUTINE subpatch_A_create_(this,vecsize,info,patchid)

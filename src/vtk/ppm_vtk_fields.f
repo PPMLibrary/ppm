@@ -28,21 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __DIM  == __2D
-#if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_vtk_fields_2ds(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info,step)
-#elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_vtk_fields_2dd(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info,step)
-#endif
+      SUBROUTINE ppm_vtk_fields_2d(filename,Mesh,info,step)
 #elif   __DIM  == __3D
-#if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_vtk_fields_3ds(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info,step)
-#elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_vtk_fields_3dd(topoid,meshid,nfields,fields,ghostsize,&
-      &                         filename,info,step)
-#endif
+      SUBROUTINE ppm_vtk_fields_3d(filename,Mesh,info,step)
 #endif
 
       !-------------------------------------------------------------------------
@@ -62,62 +50,44 @@
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
-#if   __KIND == __SINGLE_PRECISION
-      INTEGER, PARAMETER :: MK = ppm_kind_single
-#elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
-#endif
     
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER,            INTENT(IN)            :: topoid
-      INTEGER,            INTENT(IN)            :: meshid
-      INTEGER,            INTENT(IN)            :: nfields
-#if   __DIM  == __2D
-#if   __KIND == __SINGLE_PRECISION
-      TYPE(ppm_t_field_2ds),  DIMENSION(:), POINTER :: fields
-#elif __KIND == __DOUBLE_PRECISION
-      TYPE(ppm_t_field_2dd),  DIMENSION(:), POINTER :: fields
-#endif
-#elif   __DIM  == __3D
-#if   __KIND == __SINGLE_PRECISION
-      TYPE(ppm_t_field_3ds),  DIMENSION(:), POINTER :: fields
-#elif __KIND == __DOUBLE_PRECISION
-      TYPE(ppm_t_field_3dd),  DIMENSION(:), POINTER :: fields
-#endif
-#endif
-      INTEGER, DIMENSION(:)                     :: ghostsize
-      CHARACTER(LEN=*),   INTENT(IN)            :: filename
-      INTEGER,            INTENT(OUT)           :: info
-      INTEGER,               OPTIONAL, INTENT(IN   ) :: step
+      CLASS(ppm_t_equi_mesh),     INTENT(IN)    :: Mesh
+      CHARACTER(LEN=*),           INTENT(IN)    :: filename
+      INTEGER,                    INTENT(OUT)   :: info
+      INTEGER,          OPTIONAL, INTENT(IN)    :: step
       !-------------------------------------------------------------------------
       !  Variables
       !-------------------------------------------------------------------------
-      CHARACTER(LEN=*), PARAMETER     :: caller = 'ppm_vtk_fields'
-      INTEGER                         :: i,j,k,l,isub,ifield
-      REAL(MK)                        :: t0
+      INTEGER                         :: i,j,k,l,isub,ifield,icomp
       TYPE(ppm_t_topo), POINTER       :: topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER  :: mesh => NULL()
       REAL(MK), DIMENSION(3)          :: min_phys,max_phys
       REAL(MK), DIMENSION(3)          :: h
       INTEGER, DIMENSION(6)           :: whole_ext,extent
       CHARACTER(LEN=ppm_char)         :: scratch
-      CHARACTER(LEN=ppm_char)         :: imgdatstr
-      CHARACTER(LEN=ppm_char)         :: fname
+      !CHARACTER(LEN=ppm_char)         :: imgdatstr
+      CHARACTER(LEN=ppm_char)         :: fname,vname
+      CLASS(ppm_t_subpatch_),POINTER  :: p => NULL()
+      CLASS(ppm_t_subpatch_data_),POINTER  :: pdat => NULL()
+      CLASS(ppm_t_discr_data), POINTER  :: field => NULL()
+#if   __DIM  == __2D
+      REAL(MK),DIMENSION(:,:),POINTER   :: fdata2 => NULL()
+      REAL(MK),DIMENSION(:,:,:),POINTER :: fdata3 => NULL()
+#elif   __DIM  == __3D
+      REAL(MK),DIMENSION(:,:,:),POINTER  :: fdata3 => NULL()
+      REAL(MK),DIMENSION(:,:,:,:),POINTER:: fdata4 => NULL()
+#endif
 
-      !--------------------------------------------------------------------
+      start_subroutine("ppm_vtk_fields")
+      !-------------------------------------------------------------------------
       !  Code
-      !--------------------------------------------------------------------
-      CALL substart(caller,t0,info)
+      !-------------------------------------------------------------------------
      
-      ! TODO check parameters
-
-      topo => ppm_topo(topoid)%t
-      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
-      TYPE IS (ppm_t_equi_mesh)
-          mesh => t
-      END SELECT
+      topo => ppm_topo(Mesh%topoid)%t
+      check_associated(topo)
 
       IF (PRESENT(step)) THEN
          WRITE(fname,'(A,A,I0)') &
@@ -130,18 +100,17 @@
       max_phys(:) = 0
       whole_ext(:) = 0
       extent(:) = 0
-#if   __KIND == __SINGLE_PRECISION
-      min_phys(1:ppm_dim) = topo%min_physs(1:ppm_dim)
-      max_phys(1:ppm_dim) = topo%max_physs(1:ppm_dim)
-#elif __KIND == __DOUBLE_PRECISION
+
       min_phys(1:ppm_dim) = topo%min_physd(1:ppm_dim)
       max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
-#endif
-      h(1:ppm_dim) = (max_phys(1:ppm_dim) - min_phys(1:ppm_dim)) / mesh%Nm(1:ppm_dim)
+
+      h(1:ppm_dim) = Mesh%h(1:ppm_dim)
+
       DO i=1,2*ppm_dim,2 
         whole_ext(i) = 0
-        whole_ext(i+1) = mesh%Nm((i+1)/2)-1
+        whole_ext(i+1) = Mesh%Nm((i+1)/2)-1
       ENDDO
+
       ! write parallel file
       IF (ppm_rank .EQ. 0) THEN
           WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.pvti'
@@ -162,22 +131,37 @@
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
           WRITE(iUnit,'(A)') "    <PPointData Scalars='scalars'>"              
-          DO l=1,nfields
-              WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-              fields(l)%fname &
-              (1:LEN_TRIM(fields(l)%fname)), &
-              "' type='Float64' />"
-          END DO
+
+          !print only the fields of type real
+          field => Mesh%mdata%begin()
+          DO WHILE (ASSOCIATED(field))
+              IF (field%data_type .EQ. ppm_type_real) THEN
+                  IF (field%lda.EQ.1) THEN
+                      WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                          TRIM(ADJUSTL(field%name)),"' type='Float64' />"
+                  ELSE
+                      DO icomp=1,field%lda
+                          WRITE(iUnit,'(3A,I0,A)') "      <PDataArray Name='", &
+                              TRIM(ADJUSTL(field%name)),"_",icomp,"' type='Float64' />"
+                      ENDDO
+                  ENDIF
+              ENDIF
+              field => Mesh%mdata%next()
+          ENDDO
           WRITE(iUnit,'(A)') "    </PPointData>"              
           ! find the basename of the file
-          DO l=1,topo%nsubs
+          !DO l=1,topo%nsubs
+
+          l = 0
+          p => Mesh%subpatch%begin()
+          DO WHILE (ASSOCIATED(p))
+              l = l+1
               WRITE(iUnit,'(A)', advance='no')     "    <Piece"
               WRITE(iUnit, '(A)', advance='no') " Extent='"
               DO i=1,ppm_dim
-                  WRITE(scratch, '(I0,A,I0)') mesh%istart(i,l)-1,' ',&
-                  &                           mesh%istart(i,l)+mesh%nnodes(i,l)-2
-                  scratch = ADJUSTL(scratch)
-                  WRITE(iUnit, '(A)', advance='no') scratch(1:LEN_TRIM(scratch))
+                  WRITE(scratch, '(I0,A,I0)') p%istart(i)-1,' ',&
+                  &                           p%istart(i)+p%nnodes(i)-2
+                  WRITE(iUnit, '(A)', advance='no') TRIM(ADJUSTL(scratch))
                   IF (i .LT. 3) WRITE(iUnit, '(A)', advance='no') " "
               END DO
               IF (ppm_dim.NE.3) THEN
@@ -187,17 +171,22 @@
               WRITE(iUnit, '(A,A,A,I0,A)')" Source='",     &
               fname(INDEX(fname, '/', .true.)+1:LEN_TRIM(fname)), &
               ".", l, ".vti' />"
+              p => Mesh%subpatch%next()
           END DO
           ! close
 #include "vtk/print_end_header.f"
           CLOSE(iUnit)
       END IF
 
-      DO l=1,topo%nsublist
-          isub = topo%isublist(l)
+      !DO l=1,topo%nsublist
+      l = 0
+      p => Mesh%subpatch%begin()
+      DO WHILE (ASSOCIATED(p))
+          !isub = topo%isublist(l)
+          l = l + 1
           ! append rank to name
           WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
-          '.', isub, '.vti'
+          '.', l, '.vti'
 
           ! open output file
           OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
@@ -211,8 +200,8 @@
           END IF
           ! write header
           DO i=2,2*ppm_dim,2
-              extent(i-1) = mesh%istart(i/2,isub)-1
-              extent(i) = mesh%istart(i/2,isub)+mesh%nnodes(i/2,isub)-2
+              extent(i-1) = p%istart(i/2)-1
+              extent(i) = p%istart(i/2)+p%nnodes(i/2)-2
           ENDDO
 #define VTK_FILE_TYPE "ImageData"
 #define VTK_WHOLE_EXTENT whole_ext
@@ -223,48 +212,99 @@
 
           WRITE(iUnit,'(A)',advance='no') "      <PointData" 
           WRITE(iUnit,'(A)',advance='no') " Scalars='"
-          DO ifield=1,nfields
-              WRITE(iUnit,'(A)',advance='no') &
-              fields(ifield)%fname(1:LEN_TRIM(fields(ifield)%fname))
-              IF (ifield .LT. nfields) WRITE(iUnit,'(A)',advance='no') " "
+
+
+          pdat => p%subpatch_data%begin()
+          DO WHILE (ASSOCIATED(pdat))
+              IF (pdat%discr_data%data_type .EQ. ppm_type_real) THEN
+                  IF (pdat%discr_data%lda.EQ.1) THEN
+                          WRITE(iUnit,'(A)',advance='no') &
+                              TRIM(ADJUSTL(pdat%discr_data%name))
+                          WRITE(iUnit,'(A)',advance='no') " "
+                  ELSE
+                      DO icomp=1,pdat%discr_data%lda
+                          WRITE(iUnit,'(2A,I0)',advance='no') &
+                              TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
+                          WRITE(iUnit,'(A)',advance='no') " "
+                      ENDDO
+                  ENDIF
+
+              ENDIF
+              pdat => p%subpatch_data%next()
           ENDDO
+          !FIXME
+          ! add this?
+          ! BACKSPACE(iUnit)
+
           WRITE(iUnit,'(A)') "'>"
-          DO ifield=1,nfields
-          ! write data
-#define VTK_NAME fields(ifield)%fname
+
+          !write data for all fields discretized here
+          pdat => p%subpatch_data%begin()
+          DO WHILE (ASSOCIATED(pdat))
+              IF (pdat%discr_data%data_type .EQ. ppm_type_real) THEN
+                  IF (pdat%discr_data%lda.EQ.1) THEN !scalar
+#if   __DIM == __2D
+                      fdata2 =>  pdat%data_2d_rd
+#elif   __DIM == __3D
+                      fdata3 =>  pdat%data_3d_rd
+#endif
+#define VTK_NAME pdat%discr_data%name
 #define VTK_TYPE "Float64"
-#define VTK_MESH fields(ifield)%fdata
-#define VTK_MESH_SUB l
+#if   __DIM == __2D
+#define VTK_MESH fdata2
+#elif   __DIM == __3D
+#define VTK_MESH fdata3
+#endif
+#undef VTK_MESH_COMPONENT 
 #define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND mesh%nnodes(1,isub)
+#define VTK_MESH_IUBOUND p%nnodes(1)
 #define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND mesh%nnodes(2,isub)
+#define VTK_MESH_JUBOUND p%nnodes(2)
 #define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND mesh%nnodes(3,isub)
+#define VTK_MESH_KUBOUND p%nnodes(3)
 #include "vtk/print_data_array.f"
-          ENDDO
+                  ELSE !vector field
+#if   __DIM == __2D
+                      fdata3 =>  pdat%data_3d_rd
+#elif   __DIM == __3D
+                      fdata4 =>  pdat%data_4d_rd
+#endif
+                      DO icomp=1,pdat%discr_data%lda
+                          WRITE(vname,'(2A,I0)') &
+                              TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
+#define VTK_NAME vname
+#define VTK_TYPE "Float64"
+#if   __DIM == __2D
+#define VTK_MESH fdata3
+#elif   __DIM == __3D
+#define VTK_MESH fdata4
+#endif
+#define VTK_MESH_COMPONENT icomp
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)
+#include "vtk/print_data_array.f"
+                      ENDDO
+                  ENDIF
+              ENDIF
+              pdat => p%subpatch_data%next()
+          ENDDO ! pdat
           WRITE(iUnit,'(A)') "      </PointData>"
          ! close
 #include "vtk/print_end_header.f"
          ! close file
          CLOSE(iUnit)
-      ENDDO ! subs
+         p => Mesh%subpatch%next()
+      ENDDO ! subpatch
 
-9999  CONTINUE
+      end_subroutine()
 
-      CALL substop(caller,t0,info)
-      RETURN
 #if   __DIM == __2D
-#if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_vtk_fields_2ds
-#elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_vtk_fields_2dd
-#endif
+      END SUBROUTINE ppm_vtk_fields_2d
 #elif   __DIM == __3D
-#if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_vtk_fields_3ds
-#elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_vtk_fields_3dd
-#endif
+      END SUBROUTINE ppm_vtk_fields_3d
 #endif
 

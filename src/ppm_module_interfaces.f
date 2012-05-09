@@ -304,7 +304,7 @@ TYPE,ABSTRACT ::  ppm_t_discr_info_
     PROCEDURE(discr_info_create_), DEFERRED :: create
     PROCEDURE(discr_info_destroy_),DEFERRED :: destroy
 END TYPE
-minclude ppm_create_collection(discr_info_,discr_info_)
+minclude ppm_create_collection(discr_info_,discr_info_,generate="abstract")
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     !!! Data structure for fields 
@@ -344,8 +344,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     PROCEDURE(field_is_discretized_on_), DEFERRED :: is_discretized_on
     PROCEDURE(field_discretize_on_),DEFERRED :: discretize_on
 END TYPE ppm_t_field_
-minclude ppm_create_collection(field_,field_)
-minclude ppm_create_collection(field_,field_,vec=true,def_ptr=false)
+minclude ppm_create_collection(field_,field_,generate="abstract")
+minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_ptr=false)
 
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
@@ -399,8 +399,8 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
     PROCEDURE(subpatch_data_create_), DEFERRED :: create
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
 END TYPE
-minclude ppm_create_collection(subpatch_data_,subpatch_data_)
-minclude ppm_create_collection(subpatch_data_,subpatch_data_,vec=true,def_ptr=false,generate="abstract")
+minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract")
+minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract",vec=true,def_ptr=false,generate="abstract")
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     CLASS(ppm_v_subpatch_data_),POINTER     :: subpatch => NULL()
@@ -409,7 +409,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy 
 END TYPE
 minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract")
-minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,vec=true,def_ptr=false)
+minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract",vec=true,def_ptr=false)
 
 TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
@@ -435,9 +435,12 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     CONTAINS
     PROCEDURE(subpatch_create_), DEFERRED  :: create
     PROCEDURE(subpatch_destroy_),DEFERRED  :: destroy
+    PROCEDURE(subpatch_get_pos_),DEFERRED  :: get_pos
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
-    GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd
+    PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd
+    GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd,&
+        subpatch_get_field_4d_rd
     !PROCEDURE  :: get => subpatch_get
 END TYPE
 minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")

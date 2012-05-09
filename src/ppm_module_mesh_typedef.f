@@ -27,7 +27,7 @@ IMPLICIT NONE
 !----------------------------------------------------------------------
 ! Module variables 
 !----------------------------------------------------------------------
-INTEGER, PRIVATE, DIMENSION(3)  :: ldc
+INTEGER, PRIVATE, DIMENSION(4)  :: ldc
 
 !----------------------------------------------------------------------
 ! Type declaration
@@ -56,9 +56,11 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
     PROCEDURE  :: destroy   => subpatch_destroy
+    PROCEDURE  :: get_pos   => subpatch_get_pos
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
+    PROCEDURE  :: subpatch_get_field_4d_rd
 END TYPE
 minclude ppm_create_collection(subpatch,subpatch,generate="extend")
 
@@ -143,6 +145,36 @@ minclude ppm_create_collection_procedures(mesh_discr_data,mesh_discr_data_,vec=t
 minclude ppm_create_collection_procedures(subpatch,subpatch_)
 minclude ppm_create_collection_procedures(A_subpatch,A_subpatch_)
 minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
+
+SUBROUTINE subpatch_get_field_4d_rd(this,wp,Field,info)
+    !!! Returns a pointer to the data array for a given field on this subpatch
+    CLASS(ppm_t_subpatch)                :: this
+    CLASS(ppm_t_field_)                  :: Field
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: wp
+    INTEGER,                 INTENT(OUT) :: info
+    INTEGER                              :: p_idx
+
+    start_subroutine("subpatch_get_field_4d")
+
+    check_true("Field%lda+ppm_dim.GT.4",&
+        "wrong dimensions for pointer arg wp")
+
+    !Direct access to the data arrays 
+
+    check_associated(this%mesh)
+    
+    p_idx = Field%get_pid(this%mesh)
+
+    check_associated("this%subpatch_data")
+    stdout("p_idx = ",p_idx)
+    check_associated("this%subpatch_data%vec(p_idx)%t")
+
+    wp => this%subpatch_data%vec(p_idx)%t%data_4d_rd
+
+    check_associated(wp)
+
+    end_subroutine()
+END SUBROUTINE
 
 SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     !!! Returns a pointer to the data array for a given field on this subpatch
@@ -429,6 +461,25 @@ SUBROUTINE subpatch_destroy(p,info)
     end_subroutine()
 END SUBROUTINE subpatch_destroy
 
+!GET POSITION
+PURE FUNCTION subpatch_get_pos(p,i,j,k) RESULT (pos)
+    !!! Return position of mesh node i,j,k
+    CLASS(ppm_t_subpatch),  INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,OPTIONAL,       INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+
+    SELECT TYPE(mesh => p%mesh)
+    TYPE IS (ppm_t_equi_mesh)
+        pos(1) = (p%istart(1)+i)*mesh%h(1)
+        pos(2) = (p%istart(2)+j)*mesh%h(2)
+        IF (PRESENT(k)) pos(3) = (p%istart(3)+k)*mesh%h(3)
+        pos(1:ppm_dim) = pos(1:ppm_dim) + mesh%offset(1:ppm_dim)
+    END SELECT
+
+END FUNCTION subpatch_get_pos
+
 !CREATE
 SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
     !!! Constructor for subpatch Arrays data structure
@@ -522,6 +573,9 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     h = this%h
     Offset = this%Offset
     topo => ppm_topo(this%topoid)%t
+
+    check_false("associated(topo%min_subs)",&
+        "Mesh_def_patch is not yet implemented for single precision")
 
     !-------------------------------------------------------------------------
     ! Extent of the patch on the global mesh (before it is divided into
@@ -778,8 +832,9 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
         fail("patch collection is already allocated. Call destroy() first?")
     ENDIF
 
+    nsubs = topo%nsubs
     IF (.NOT.ASSOCIATED(this%subpatch_by_sub)) THEN
-        ALLOCATE(this%subpatch_by_sub(topo%nsubs),STAT=info)
+        ALLOCATE(this%subpatch_by_sub(nsubs),STAT=info)
             or_fail_alloc("could not allocate this%subpatch_by_sub")
     ELSE
         fail("subpatch_by_sub is already allocated. Call destroy() first?")
@@ -802,91 +857,96 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
                 topo%min_physd(1:ppm_dim))/(Nm(1:ppm_dim)-1)
         ENDIF
     ENDIF
-    
+
     IF (PRESENT(ghostsize)) THEN
         this%ghostsize(1:ppm_dim) = ghostsize(1:ppm_dim)
     ELSE
         this%ghostsize(1:ppm_dim) = 0
     ENDIF
 
-      nsubs = topo%nsubs
-      !-------------------------------------------------------------------------
-      !  Allocate memory for the subdomain indices
-      !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      ldc(1) = ppm_dim
-      ldc(2) = nsubs
-      CALL ppm_alloc(this%istart,ldc,iopt,info)
-          or_fail_alloc("could not allocate this%istart")
-      CALL ppm_alloc(this%iend,ldc,iopt,info)
-          or_fail_alloc("could not allocate this%iend")
+    !-------------------------------------------------------------------------
+    !  Allocate memory for the subdomain indices
+    !-------------------------------------------------------------------------
+    iopt = ppm_param_alloc_fit
+    ldc(1) = ppm_dim
+    ldc(2) = nsubs
+    CALL ppm_alloc(this%istart,ldc,iopt,info)
+    or_fail_alloc("could not allocate this%istart")
+    CALL ppm_alloc(this%iend,ldc,iopt,info)
+    or_fail_alloc("could not allocate this%iend")
 
-      !-------------------------------------------------------------------------
-      !  Determine the start indices in the global mesh for each
-      ! subdomain
-      !-------------------------------------------------------------------------
-      DO i=1,nsubs
-          this%istart(1:ppm_dim,i) = &
-              NINT((topo%min_subd(1:ppm_dim,i)-&
-              topo%min_physd(1:ppm_dim))/this%h(1:ppm_dim)) + 1
-      ENDDO
-      !-------------------------------------------------------------------------
-      !  Check that the subs align with the mesh points and determine
-      !  number of mesh points. 2D and 3D case have separate loops for
-      !  vectorization.
-      !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
-          DO i=1,topo%nsubs
-              len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-              len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-              len_phys(3) = topo%max_subd(3,i)-topo%min_subd(3,i)
-              rat(1) = len_phys(1)/this%h(1)
-              rat(2) = len_phys(2)/this%h(2)
-              rat(3) = len_phys(3)/this%h(3)
-              Nc(1)  = NINT(rat(1))
-              Nc(2)  = NINT(rat(2))
-              Nc(3)  = NINT(rat(3))
-              IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
-     &                len_phys(3),' mesh_spacing=',this%h(3)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
-              ENDIF
-              this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-              this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-              this%iend(3,i) = this%istart(3,i) + Nc(3) + 1 
-          ENDDO
-      ELSE
-          DO i=1,nsubs
-              len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-              len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-              rat(1) = len_phys(1)/this%h(1)
-              rat(2) = len_phys(2)/this%h(2)
-              Nc(1)  = NINT(rat(1))
-              Nc(2)  = NINT(rat(2))
-              IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
-              ENDIF
-              this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-              this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-          ENDDO
-      ENDIF
+    !-------------------------------------------------------------------------
+    !  Determine the start indices in the global mesh for each
+    ! subdomain
+    !-------------------------------------------------------------------------
+    DO i=1,nsubs
+            this%istart(1:ppm_dim,i) = 1 + CEILING((     &
+                topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+            this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
+                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+    ENDDO
+
+    !DO i=1,nsubs
+        !this%istart(1:ppm_dim,i) = &
+            !NINT((topo%min_subd(1:ppm_dim,i)-&
+            !topo%min_physd(1:ppm_dim))/this%h(1:ppm_dim)) + 1
+    !ENDDO
+    !!-------------------------------------------------------------------------
+    !!  Determine number of mesh points for each sub. 
+    !!  2D and 3D case have separate loops for vectorization.
+    !!-------------------------------------------------------------------------
+    !IF (ppm_dim .EQ. 3) THEN
+        !DO i=1,nsubs
+            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
+            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
+            !len_phys(3) = topo%max_subd(3,i)-topo%min_subd(3,i)
+            !rat(1) = len_phys(1)/this%h(1)
+            !rat(2) = len_phys(2)/this%h(2)
+            !rat(3) = len_phys(3)/this%h(3)
+            !Nc(1)  = NINT(rat(1))
+            !Nc(2)  = NINT(rat(2))
+            !Nc(3)  = NINT(rat(3))
+            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
+                    !&                len_phys(1),' mesh_spacing=',this%h(1)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
+                    !&                len_phys(2),' mesh_spacing=',this%h(2)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
+                    !&                len_phys(3),' mesh_spacing=',this%h(3)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
+            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
+            !this%iend(3,i) = this%istart(3,i) + Nc(3) + 1 
+        !ENDDO
+    !ELSE
+        !DO i=1,nsubs
+            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
+            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
+            !rat(1) = len_phys(1)/this%h(1)
+            !rat(2) = len_phys(2)/this%h(2)
+            !Nc(1)  = NINT(rat(1))
+            !Nc(2)  = NINT(rat(2))
+            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
+                    !&                len_phys(1),' mesh_spacing=',this%h(1)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
+                    !&                len_phys(2),' mesh_spacing=',this%h(2)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
+            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
+        !ENDDO
+    !ENDIF
 
     !-------------------------------------------------------------------------
     !  Return
@@ -1130,7 +1190,9 @@ SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
     INTEGER,               INTENT(OUT) :: info
 
     INTEGER                            :: p_idx
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER    :: wp_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
 
     start_subroutine("equi_mesh_map_ghost_push")
 
@@ -1138,8 +1200,23 @@ SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
     !p_idx = field%M%vec(this%ID)%t%p_idx
     p_idx = field%get_pid(this)
 
-    CALL ppm_map_field_push_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
-        or_fail("map_field_push_2d")
+    IF (ppm_dim.EQ.2) THEN
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_push_2d_sca_d(this,wp2_dummy,p_idx,info)
+            or_fail("map_field_push_2d")
+        ELSE
+            CALL ppm_map_field_push_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_2d")
+        ENDIF
+    ELSE
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_push_3d_sca_d(this,wp3_dummy,p_idx,info)
+            or_fail("map_field_push_3d")
+        ELSE
+            CALL ppm_map_field_push_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_3d")
+        ENDIF
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE equi_mesh_map_ghost_push
@@ -1153,7 +1230,9 @@ SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
     INTEGER,               INTENT(OUT) :: info
 
     INTEGER                            :: p_idx
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER    :: wp_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
 
     start_subroutine("equi_mesh_map_ghost_pop")
 
@@ -1161,8 +1240,23 @@ SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
     !p_idx = field%M%vec(this%ID)%t%p_idx
     p_idx = field%get_pid(this)
 
-    CALL ppm_map_field_pop_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
-        or_fail("map_field_pop_2d")
+    IF (ppm_dim.EQ.2) THEN
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_pop_2d_sca_d(this,wp2_dummy,p_idx,info)
+            or_fail("map_field_push_2d")
+        ELSE
+            CALL ppm_map_field_pop_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_2d")
+        ENDIF
+    ELSE
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_pop_3d_sca_d(this,wp3_dummy,p_idx,info)
+            or_fail("map_field_push_3d")
+        ELSE
+            CALL ppm_map_field_pop_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_3d")
+        ENDIF
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE equi_mesh_map_ghost_pop
@@ -1264,6 +1358,14 @@ END SUBROUTINE equi_mesh_create_prop
 #define __KIND __DOUBLE_PRECISION
 #include "mesh/mesh_map_push_2d.f"
 #include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
 #undef __DIM
 #undef __SFIELD
 #undef __VFIELD
