@@ -1,19 +1,13 @@
       SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub,jsub,offset,&
               ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
               isendblkstart,isendblksize,ioffset,info,lsymm)
-      !!! This routine determines common mesh blocks (intersections) of
-      !!! two subs, possibly shifted and/or extended with ghostlayers.
+      !!! This routine determines, for each patch, common mesh blocks 
+      !!! (intersections) of two subpatches, on different subdomains, 
+      !!! possibly shifted and/or extended with ghostlayers.
       !!! Start and size of all blocks found are stored and returned. This
       !!! routine is used by `ppm_map_field_global` and
       !!! `ppm_map_field_ghost_init`.
       !!!
-      !!! [WARNING]
-      !!! This does not check whether the from_mesh and the to_mesh are
-      !!! compatible (i.e. have the same Nm). This check must be done by
-      !!! the calling routine. Furthermore, the 5 output lists need to be
-      !!! allocated by the calling routine. They are just grown here if needed.
-      !!! The reason is that this routine is typically called from inside a
-      !!! loop and we do not want to redo the checks at every iteration.
       !-------------------------------------------------------------------------
       !  Modules 
       !-------------------------------------------------------------------------
@@ -136,22 +130,22 @@
               !intersect the patch that this subpatch belongs to
               ! (coordinates istart_g and iend_g) with the extented target
               ! sub and with the source sub
-              write(*,*) '---------------------------------'
-              write(*,*) 'INTERSECTING: pdim = ',pdim
-              write(*,*) '  OFFSET = ',offset
-              write(*,*) '  CHOP = ',chop
-              write(*,*) ' patch : '
-              write(*,*) '     ',p%istart_g
-              write(*,*) '     ',p%iend_g
-              write(*,*) ' source sub : '
-              write(*,*) '     ',this%istart(1:pdim,isub)
-              write(*,*) '     ',this%iend(1:pdim,isub)
-              write(*,*) ' offset source sub : '
-              write(*,*) '     ',this%istart(1:pdim,isub)+offset(1:pdim)
-              write(*,*) '     ',this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)
-              write(*,*) ' extended target sub : '
-              write(*,*) '     ',to_mesh%istart(1:pdim,jsub)-ghostsize(1:pdim)
-              write(*,*) '     ',to_mesh%iend(1:pdim,jsub)+ghostsize(1:pdim)
+              !write(*,*) '---------------------------------'
+              !write(*,*) 'INTERSECTING: pdim = ',pdim
+              !write(*,*) '  OFFSET = ',offset
+              !write(*,*) '  CHOP = ',chop
+              !write(*,*) ' patch : '
+              !write(*,*) '     ',p%istart_g
+              !write(*,*) '     ',p%iend_g
+              !write(*,*) ' source sub : '
+              !write(*,*) '     ',this%istart(1:pdim,isub)
+              !write(*,*) '     ',this%iend(1:pdim,isub)
+              !write(*,*) ' offset source sub : '
+              !write(*,*) '     ',this%istart(1:pdim,isub)+offset(1:pdim)
+              !write(*,*) '     ',this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)
+              !write(*,*) ' extended target sub : '
+              !write(*,*) '     ',to_mesh%istart(1:pdim,jsub)-ghostsize(1:pdim)
+              !write(*,*) '     ',to_mesh%iend(1:pdim,jsub)+ghostsize(1:pdim)
 
               DO k=1,pdim
                   fromistartk= this%istart(k,isub)+offset(k)
@@ -174,9 +168,9 @@
                   IF (nblocksize(k).LT.1) dosend = .FALSE.
               ENDDO
 
-              write(*,*) 'iblockstart = ',iblockstart
-              write(*,*) 'nblockssize = ',nblocksize
-              write(*,*) '---------------------------------'
+              !write(*,*) 'iblockstart = ',iblockstart
+              !write(*,*) 'nblockssize = ',nblocksize
+              !write(*,*) '---------------------------------'
 
               IF (dosend) THEN
                   nsendlist = nsendlist + 1

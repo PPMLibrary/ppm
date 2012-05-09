@@ -574,6 +574,9 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     Offset = this%Offset
     topo => ppm_topo(this%topoid)%t
 
+    check_false("associated(topo%min_subs)",&
+        "Mesh_def_patch is not yet implemented for single precision")
+
     !-------------------------------------------------------------------------
     ! Extent of the patch on the global mesh (before it is divided into
     ! subpatches)
@@ -829,8 +832,9 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
         fail("patch collection is already allocated. Call destroy() first?")
     ENDIF
 
+    nsubs = topo%nsubs
     IF (.NOT.ASSOCIATED(this%subpatch_by_sub)) THEN
-        ALLOCATE(this%subpatch_by_sub(topo%nsubs),STAT=info)
+        ALLOCATE(this%subpatch_by_sub(nsubs),STAT=info)
             or_fail_alloc("could not allocate this%subpatch_by_sub")
     ELSE
         fail("subpatch_by_sub is already allocated. Call destroy() first?")
@@ -853,91 +857,96 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
                 topo%min_physd(1:ppm_dim))/(Nm(1:ppm_dim)-1)
         ENDIF
     ENDIF
-    
+
     IF (PRESENT(ghostsize)) THEN
         this%ghostsize(1:ppm_dim) = ghostsize(1:ppm_dim)
     ELSE
         this%ghostsize(1:ppm_dim) = 0
     ENDIF
 
-      nsubs = topo%nsubs
-      !-------------------------------------------------------------------------
-      !  Allocate memory for the subdomain indices
-      !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      ldc(1) = ppm_dim
-      ldc(2) = nsubs
-      CALL ppm_alloc(this%istart,ldc,iopt,info)
-          or_fail_alloc("could not allocate this%istart")
-      CALL ppm_alloc(this%iend,ldc,iopt,info)
-          or_fail_alloc("could not allocate this%iend")
+    !-------------------------------------------------------------------------
+    !  Allocate memory for the subdomain indices
+    !-------------------------------------------------------------------------
+    iopt = ppm_param_alloc_fit
+    ldc(1) = ppm_dim
+    ldc(2) = nsubs
+    CALL ppm_alloc(this%istart,ldc,iopt,info)
+    or_fail_alloc("could not allocate this%istart")
+    CALL ppm_alloc(this%iend,ldc,iopt,info)
+    or_fail_alloc("could not allocate this%iend")
 
-      !-------------------------------------------------------------------------
-      !  Determine the start indices in the global mesh for each
-      ! subdomain
-      !-------------------------------------------------------------------------
-      DO i=1,nsubs
-          this%istart(1:ppm_dim,i) = &
-              NINT((topo%min_subd(1:ppm_dim,i)-&
-              topo%min_physd(1:ppm_dim))/this%h(1:ppm_dim)) + 1
-      ENDDO
-      !-------------------------------------------------------------------------
-      !  Check that the subs align with the mesh points and determine
-      !  number of mesh points. 2D and 3D case have separate loops for
-      !  vectorization.
-      !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
-          DO i=1,topo%nsubs
-              len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-              len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-              len_phys(3) = topo%max_subd(3,i)-topo%min_subd(3,i)
-              rat(1) = len_phys(1)/this%h(1)
-              rat(2) = len_phys(2)/this%h(2)
-              rat(3) = len_phys(3)/this%h(3)
-              Nc(1)  = NINT(rat(1))
-              Nc(2)  = NINT(rat(2))
-              Nc(3)  = NINT(rat(3))
-              IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail(msg,ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail(msg,ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
-     &                len_phys(3),' mesh_spacing=',this%h(3)
-                  fail(msg,ppm_err_subs_incomp)
-              ENDIF
-              this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-              this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-              this%iend(3,i) = this%istart(3,i) + Nc(3) + 1 
-          ENDDO
-      ELSE
-          DO i=1,nsubs
-              len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-              len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-              rat(1) = len_phys(1)/this%h(1)
-              rat(2) = len_phys(2)/this%h(2)
-              Nc(1)  = NINT(rat(1))
-              Nc(2)  = NINT(rat(2))
-              IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail(msg,ppm_err_subs_incomp)
-              ENDIF
-              IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                  WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail(msg,ppm_err_subs_incomp)
-              ENDIF
-              this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-              this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-          ENDDO
-      ENDIF
+    !-------------------------------------------------------------------------
+    !  Determine the start indices in the global mesh for each
+    ! subdomain
+    !-------------------------------------------------------------------------
+    DO i=1,nsubs
+            this%istart(1:ppm_dim,i) = 1 + CEILING((     &
+                topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+            this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
+                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+    ENDDO
+
+    !DO i=1,nsubs
+        !this%istart(1:ppm_dim,i) = &
+            !NINT((topo%min_subd(1:ppm_dim,i)-&
+            !topo%min_physd(1:ppm_dim))/this%h(1:ppm_dim)) + 1
+    !ENDDO
+    !!-------------------------------------------------------------------------
+    !!  Determine number of mesh points for each sub. 
+    !!  2D and 3D case have separate loops for vectorization.
+    !!-------------------------------------------------------------------------
+    !IF (ppm_dim .EQ. 3) THEN
+        !DO i=1,nsubs
+            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
+            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
+            !len_phys(3) = topo%max_subd(3,i)-topo%min_subd(3,i)
+            !rat(1) = len_phys(1)/this%h(1)
+            !rat(2) = len_phys(2)/this%h(2)
+            !rat(3) = len_phys(3)/this%h(3)
+            !Nc(1)  = NINT(rat(1))
+            !Nc(2)  = NINT(rat(2))
+            !Nc(3)  = NINT(rat(3))
+            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
+                    !&                len_phys(1),' mesh_spacing=',this%h(1)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
+                    !&                len_phys(2),' mesh_spacing=',this%h(2)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
+                    !&                len_phys(3),' mesh_spacing=',this%h(3)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
+            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
+            !this%iend(3,i) = this%istart(3,i) + Nc(3) + 1 
+        !ENDDO
+    !ELSE
+        !DO i=1,nsubs
+            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
+            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
+            !rat(1) = len_phys(1)/this%h(1)
+            !rat(2) = len_phys(2)/this%h(2)
+            !Nc(1)  = NINT(rat(1))
+            !Nc(2)  = NINT(rat(2))
+            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
+                    !&                len_phys(1),' mesh_spacing=',this%h(1)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
+                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
+                    !&                len_phys(2),' mesh_spacing=',this%h(2)
+                !fail(msg,ppm_err_subs_incomp)
+            !ENDIF
+            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
+            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
+        !ENDDO
+    !ENDIF
 
     !-------------------------------------------------------------------------
     !  Return

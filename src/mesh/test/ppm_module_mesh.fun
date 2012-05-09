@@ -260,9 +260,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         procedure(my_init_function), pointer :: init_f => NULL()
 
         init_f => my_init_function
-        Nm = 129
+        Nm = 37
         Nm(ndim) = 65
-        Nm = 5
+        !Nm = 5
         call Mesh1%create(topoid,offset,info,Nm=Nm)
             Assert_Equal(info,0)
         call Mesh1%def_uniform(info)
