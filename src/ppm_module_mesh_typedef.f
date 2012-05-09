@@ -473,7 +473,7 @@ PURE FUNCTION subpatch_get_pos(p,i,j,k) RESULT (pos)
     SELECT TYPE(mesh => p%mesh)
     TYPE IS (ppm_t_equi_mesh)
         pos(1) = (p%istart(1)+i)*mesh%h(1)
-        pos(2) = (p%istart(2)+i)*mesh%h(2)
+        pos(2) = (p%istart(2)+j)*mesh%h(2)
         IF (PRESENT(k)) pos(3) = (p%istart(3)+k)*mesh%h(3)
         pos(1:ppm_dim) = pos(1:ppm_dim) + mesh%offset(1:ppm_dim)
     END SELECT
@@ -900,17 +900,17 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
               IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
                   WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
      &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
+                  fail(msg,ppm_err_subs_incomp)
               ENDIF
               IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
                   WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
      &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
+                  fail(msg,ppm_err_subs_incomp)
               ENDIF
               IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
                   WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
      &                len_phys(3),' mesh_spacing=',this%h(3)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
+                  fail(msg,ppm_err_subs_incomp)
               ENDIF
               this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
               this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
@@ -927,12 +927,12 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
               IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
                   WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
      &                len_phys(1),' mesh_spacing=',this%h(1)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
+                  fail(msg,ppm_err_subs_incomp)
               ENDIF
               IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
                   WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
      &                len_phys(2),' mesh_spacing=',this%h(2)
-                  fail("ppm_mesh_on_subs",ppm_err_subs_incomp)
+                  fail(msg,ppm_err_subs_incomp)
               ENDIF
               this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
               this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
@@ -1181,7 +1181,9 @@ SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
     INTEGER,               INTENT(OUT) :: info
 
     INTEGER                            :: p_idx
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER    :: wp_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
 
     start_subroutine("equi_mesh_map_ghost_push")
 
@@ -1189,8 +1191,23 @@ SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
     !p_idx = field%M%vec(this%ID)%t%p_idx
     p_idx = field%get_pid(this)
 
-    CALL ppm_map_field_push_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
-        or_fail("map_field_push_2d")
+    IF (ppm_dim.EQ.2) THEN
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_push_2d_sca_d(this,wp2_dummy,p_idx,info)
+            or_fail("map_field_push_2d")
+        ELSE
+            CALL ppm_map_field_push_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_2d")
+        ENDIF
+    ELSE
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_push_3d_sca_d(this,wp3_dummy,p_idx,info)
+            or_fail("map_field_push_3d")
+        ELSE
+            CALL ppm_map_field_push_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_3d")
+        ENDIF
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE equi_mesh_map_ghost_push
@@ -1204,7 +1221,9 @@ SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
     INTEGER,               INTENT(OUT) :: info
 
     INTEGER                            :: p_idx
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER    :: wp_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
+    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
 
     start_subroutine("equi_mesh_map_ghost_pop")
 
@@ -1212,8 +1231,23 @@ SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
     !p_idx = field%M%vec(this%ID)%t%p_idx
     p_idx = field%get_pid(this)
 
-    CALL ppm_map_field_pop_2d_vec_d(this,wp_dummy,field%lda,p_idx,info)
-        or_fail("map_field_pop_2d")
+    IF (ppm_dim.EQ.2) THEN
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_pop_2d_sca_d(this,wp2_dummy,p_idx,info)
+            or_fail("map_field_push_2d")
+        ELSE
+            CALL ppm_map_field_pop_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_2d")
+        ENDIF
+    ELSE
+        IF (field%lda.EQ.1) THEN
+            CALL ppm_map_field_pop_3d_sca_d(this,wp3_dummy,p_idx,info)
+            or_fail("map_field_push_3d")
+        ELSE
+            CALL ppm_map_field_pop_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+            or_fail("map_field_push_3d")
+        ENDIF
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE equi_mesh_map_ghost_pop
@@ -1315,6 +1349,14 @@ END SUBROUTINE equi_mesh_create_prop
 #define __KIND __DOUBLE_PRECISION
 #include "mesh/mesh_map_push_2d.f"
 #include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
 #undef __DIM
 #undef __SFIELD
 #undef __VFIELD

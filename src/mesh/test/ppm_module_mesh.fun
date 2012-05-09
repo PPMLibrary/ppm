@@ -227,10 +227,6 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         my_patch(1:ndim)        = min_phys(1:ndim)
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
 
-        write(*,*) 'adding patch : '
-        write(*,*) my_patch(1:ndim)
-        write(*,*) my_patch(ndim+1:2*ndim)
-
         call Mesh1%def_patch(my_patch,info,mypatchid) 
             Assert_Equal(info,0)
 
@@ -284,10 +280,10 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
                     do k = 1,p%nnodes(3)
-                        pos = p%get_pos(i,j)
+                        pos = p%get_pos(i,j,k)
                         field4d_1(1,i,j,k) = cos(2._mk*pi*pos(1))
-                        field4d_1(2,i,j,k) = sin(2._mk*pi*pos(2))
-                        field4d_1(3,i,j,k) = sin(2._mk*pi*pos(3))
+                        field4d_1(2,i,j,k) = cos(2._mk*pi*pos(2)) + 2._mk
+                        field4d_1(3,i,j,k) = cos(2._mk*pi*pos(3)) + 4._mk
                     enddo
                 enddo
             enddo
