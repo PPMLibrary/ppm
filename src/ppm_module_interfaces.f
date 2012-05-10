@@ -616,9 +616,9 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
 END TYPE
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 
-TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair_
+TYPE, ABSTRACT, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair_
   CLASS(ppm_t_field_), POINTER        :: field
-  CLASS(ppm_t_discr_kind_), POINTER   :: discretization
+  CLASS(ppm_t_discr_kind), POINTER   :: discretization
 END TYPE
 TYPE, EXTENDS(ppm_t_field_discr_pair_) ::  ppm_t_field_discr_pair
 END TYPE
