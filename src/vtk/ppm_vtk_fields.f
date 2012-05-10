@@ -55,7 +55,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh),     INTENT(IN)    :: Mesh
+      CLASS(ppm_t_equi_mesh),     INTENT(INOUT)    :: Mesh
       CHARACTER(LEN=*),           INTENT(IN)    :: filename
       INTEGER,                    INTENT(OUT)   :: info
       INTEGER,          OPTIONAL, INTENT(IN)    :: step
