@@ -12,19 +12,25 @@ end macro
 
 macro or_fail(message, type=ppm_err_sub_failed,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
+END IF
+end macro
+
+macro or_fail_MPI(message, type=ppm_err_mpi_fail,info=info)
+IF (<%= info %>.NE.MPI_SUCCESS) THEN
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
 macro or_fail_alloc(message, type=ppm_err_alloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
 macro or_fail_dealloc(message, type=ppm_err_dealloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
