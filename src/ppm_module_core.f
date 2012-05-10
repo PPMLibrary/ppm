@@ -45,6 +45,7 @@
          USE ppm_module_particles_typedef
          USE ppm_module_field_typedef
          USE ppm_module_operator_typedef
+         USE ppm_module_interfaces
       !   USE ppm_module_rmsh
 
       END MODULE ppm_module_core
