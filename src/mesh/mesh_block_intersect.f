@@ -1,5 +1,5 @@
       SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub,jsub,offset,&
-              ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
+              nsendlist,isendfromsub,isendtosub,isendpatchid,&
               isendblkstart,isendblksize,ioffset,info,lsymm)
       !!! This routine determines, for each patch, common mesh blocks 
       !!! (intersections) of two subpatches, on different subdomains, 
@@ -29,10 +29,6 @@
       !!! Source sub (from which data will be sent) in global numbering
       INTEGER                 , INTENT(IN   ) :: jsub
       !!! Destination sub in global numbering
-      INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
-      !!! Size of the ghost layer in numbers of grid points in all space
-      !!! dimensions (1...ppm_dim). The target subdomain will be enlarged
-      !!! by this.
       INTEGER, DIMENSION(:)   , INTENT(IN   ) :: offset
       !!! Shift offset for the source subdomain. Index: 1:ppm_dim
       INTEGER, DIMENSION(:)   , POINTER       :: isendfromsub
@@ -128,37 +124,37 @@
           SELECT TYPE(p => to_mesh%subpatch_by_sub(jsub)%vec(ipatch)%t)
           TYPE IS (ppm_t_subpatch)
               !intersect the patch that this subpatch belongs to
-              ! (coordinates istart_g and iend_g) with the extented target
+              ! (coordinates istart_p and iend_p) with the extented target
               ! sub and with the source sub
-              !write(*,*) '---------------------------------'
-              !write(*,*) 'INTERSECTING: pdim = ',pdim
-              !write(*,*) '  OFFSET = ',offset
-              !write(*,*) '  CHOP = ',chop
-              !write(*,*) ' patch : '
-              !write(*,*) '     ',p%istart_g
-              !write(*,*) '     ',p%iend_g
-              !write(*,*) ' source sub : '
-              !write(*,*) '     ',this%istart(1:pdim,isub)
-              !write(*,*) '     ',this%iend(1:pdim,isub)
-              !write(*,*) ' offset source sub : '
-              !write(*,*) '     ',this%istart(1:pdim,isub)+offset(1:pdim)
-              !write(*,*) '     ',this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)
-              !write(*,*) ' extended target sub : '
-              !write(*,*) '     ',to_mesh%istart(1:pdim,jsub)-ghostsize(1:pdim)
-              !write(*,*) '     ',to_mesh%iend(1:pdim,jsub)+ghostsize(1:pdim)
+              write(*,*) '---------------------------------'
+              write(*,*) 'INTERSECTING: pdim = ',pdim
+              write(*,*) '  OFFSET = ',offset
+              write(*,*) '  CHOP = ',chop
+              write(*,*) ' patch : '
+              write(*,*) '     ',p%istart_p
+              write(*,*) '     ',p%iend_p
+              write(*,*) ' source sub : '
+              write(*,*) '     ',this%istart(1:pdim,isub)
+              write(*,*) '     ',this%iend(1:pdim,isub)
+              write(*,*) ' offset source sub : '
+              write(*,*) '     ',this%istart(1:pdim,isub)+offset(1:pdim)
+              write(*,*) '     ',this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)
+              write(*,*) ' extended target sub : '
+              write(*,*) '     ',to_mesh%istart(1:pdim,jsub)-p%ghostsize(1:pdim)
+              write(*,*) '     ',to_mesh%iend(1:pdim,jsub)+p%ghostsize(1:pdim)
 
               DO k=1,pdim
                   fromistartk= this%istart(k,isub)+offset(k)
                   fromiendk  = this%iend(k,isub)+offset(k)-chop(k)
 
-                  toistartk  = p%istart_g(k)
-                  toiendk    = p%iend_g(k)
+                  toistartk  = p%istart_p(k)
+                  toiendk    = p%iend_p(k)
 
                   iblockstart(k) = MAX(fromistartk,toistartk)
                   iblockstopk    = MIN(fromiendk,toiendk)
 
-                  toistartk  = to_mesh%istart(k,jsub)-ghostsize(k)
-                  toiendk    = to_mesh%iend(k,jsub)+ghostsize(k)
+                  toistartk  = to_mesh%istart(k,jsub)-p%ghostsize(k)
+                  toiendk    = to_mesh%iend(k,jsub)+p%ghostsize(k)
 
                   iblockstart(k) = MAX(iblockstart(k),toistartk)
                   iblockstopk    = MIN(iblockstopk,toiendk)
@@ -168,9 +164,9 @@
                   IF (nblocksize(k).LT.1) dosend = .FALSE.
               ENDDO
 
-              !write(*,*) 'iblockstart = ',iblockstart
-              !write(*,*) 'nblockssize = ',nblocksize
-              !write(*,*) '---------------------------------'
+              write(*,*) 'iblockstart = ',iblockstart
+              write(*,*) 'nblockssize = ',nblocksize
+              write(*,*) '---------------------------------'
 
               IF (dosend) THEN
                   nsendlist = nsendlist + 1
@@ -205,7 +201,7 @@
                   ! global sub index of other sub where the blocks go to
                   isendtosub(nsendlist)          = jsub
                   ! global patch index of which the blocks belong
-                  isendpatchid(1:pdim,nsendlist) = p%istart_g(1:pdim)
+                  isendpatchid(1:pdim,nsendlist) = p%istart_p(1:pdim)
                   ! start of mesh block in global mesh
                   isendblkstart(1:pdim,nsendlist)= &
                       iblockstart(1:pdim) - offset(1:pdim)
@@ -225,12 +221,6 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (SIZE(ghostsize,1) .LT. ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must be at least of length ppm_dim',__LINE__,info)
-              GOTO 8888
-          ENDIF
           IF (SIZE(offset,1) .LT. ppm_dim) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_argument,caller,  &

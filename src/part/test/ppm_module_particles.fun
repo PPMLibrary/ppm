@@ -20,7 +20,7 @@ integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc,topoid
 integer                         :: np_global = 3000
-real(mk),parameter              :: cutoff = 0.15_mk
+real(mk)                        :: cutoff
 real(mk),dimension(:,:),pointer :: xp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
 real(mk),dimension(:  ),pointer :: len_phys=>NULL()
@@ -60,6 +60,7 @@ integer                                        :: nterms
         
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
+        max_phys(ndim) = 1.4_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
         
@@ -89,6 +90,11 @@ integer                                        :: nterms
         assig  = ppm_param_assign_internal
 
         topoid = 0
+        if (ndim.eq.2) then
+            cutoff = 0.15_mk
+        else
+            cutoff = 0.25_mk
+        endif
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
     end init
@@ -115,6 +121,7 @@ integer                                        :: nterms
     end teardown
 
     test PSE_client
+        use ppm_module_io_vtk
         type(ppm_t_particles_d)         :: Part1
         type(ppm_t_field)               :: Field1
         type(ppm_t_field)               :: Field2
@@ -132,6 +139,10 @@ integer                                        :: nterms
 
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
         Assert_Equal(info,0)
+
+!  print particles to a VTK file
+!        CALL ppm_vtk_particles("part_test",Part1,info)
+!        Assert_Equal(info,0)
 
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)

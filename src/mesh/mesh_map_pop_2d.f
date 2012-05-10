@@ -165,14 +165,15 @@
       ENDIF
 
       ! skip if buffer empty
-      IF (ppm_buffer_set .LT. 1) THEN
-        info = ppm_error_notice
-        IF (ppm_debug .GT. 1) THEN
-            CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop',    &
-     &          'Buffer is empty: skipping pop!',__LINE__,info)
-        ENDIF
-        GOTO 9999
-      ENDIF
+      !TODO?
+      !IF (ppm_buffer_set .LT. 1) THEN
+        !info = ppm_error_notice
+        !IF (ppm_debug .GT. 1) THEN
+            !CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop',    &
+     !&          'Buffer is empty: skipping pop!',__LINE__,info)
+        !ENDIF
+        !GOTO 9999
+      !ENDIF
 
       !-------------------------------------------------------------------------
       !  set the local pointers to the topology and mesh
@@ -225,17 +226,11 @@
       ENDIF
 #if   __DIM == __VFIELD
       IF (edim.NE.lda) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,caller,    &
-     &       'leading dimension LDA is in error',__LINE__,info)
-         GOTO 9999
+          fail("leading dimension LDA is in error",ppm_err_wrong_dim)
       ENDIF
 #elif __DIM == __SFIELD
       IF (edim.NE.1) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,caller,    &
-     &       'buffer does not contain 1d data!',__LINE__,info)
-         GOTO 9999
+         fail("buffer does not contain 1d data!",ppm_err_wrong_dim)
       ENDIF
 #endif
 
@@ -423,7 +418,7 @@
                    fdata => NULL()
                    SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
-                       IF (ALL(p%istart_g.EQ.patchid)) THEN
+                       IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
                             !------------------------------------------------
                             !  Determine size of field data array needed
@@ -449,20 +444,16 @@
                             ENDIF
 #if   __DIM == __VFIELD
                             ldu(1) = edim
-                            ldu(2) = xhi+this%ghostsize(1)
-                            ldu(3) = yhi+this%ghostsize(2)
-                            !ldu(4) = target_topo%nsublist
+                            ldu(2) = xhi+p%ghostsize(1)
+                            ldu(3) = yhi+p%ghostsize(2)
                             ldl(1) = 1
-                            ldl(2) = 1-this%ghostsize(1)
-                            ldl(3) = 1-this%ghostsize(2)
-                            !ldl(4) = 1
+                            ldl(2) = 1-p%ghostsize(1)
+                            ldl(3) = 1-p%ghostsize(2)
 #elif __DIM == __SFIELD
-                            ldu(1) = xhi+this%ghostsize(1)
-                            ldu(2) = yhi+this%ghostsize(2)
-                            !ldu(3) = target_topo%nsublist
-                            ldl(1) = 1-this%ghostsize(1)
-                            ldl(2) = 1-this%ghostsize(2)
-                            !ldl(3) = 1
+                            ldu(1) = xhi+p%ghostsize(1)
+                            ldu(2) = yhi+p%ghostsize(2)
+                            ldl(1) = 1-p%ghostsize(1)
+                            ldl(2) = 1-p%ghostsize(2)
 #endif
 
 
