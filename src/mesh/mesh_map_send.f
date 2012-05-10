@@ -54,14 +54,15 @@
       start_subroutine("mesh_map_send")
 
       ! warn if buffer is empty
-      IF (ppm_buffer_set .LT. 1) THEN
-        info = ppm_error_notice
-        IF (ppm_debug .GT. 1) THEN
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'Buffer is empty: skipping send!',__LINE__,info)
-        ENDIF
-        GOTO 9999
-      ENDIF
+      !TODO
+      !IF (ppm_buffer_set .LT. 1) THEN
+        !info = ppm_error_notice
+        !IF (ppm_debug .GT. 1) THEN
+            !CALL ppm_error(ppm_err_buffer_empt,caller,    &
+     !&          'Buffer is empty: skipping send!',__LINE__,info)
+        !ENDIF
+        !GOTO 9999
+      !ENDIF
 
 
       !-------------------------------------------------------------------------
@@ -70,52 +71,22 @@
       iopt = ppm_param_alloc_fit 
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(nsend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'send counter NSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("nsend")
       CALL ppm_alloc(psend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'particle send counter PSEND',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("psend")
       ldu(1) = ppm_nrecvlist
       CALL ppm_alloc(nrecv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'receive counter NRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("nrecv")
       CALL ppm_alloc(precv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'particle receive counter PRECV',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("precv")
       ldu(1) = ppm_nrecvlist 
       ldu(2) = ppm_buffer_set 
       CALL ppm_alloc(pp,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'work buffer PP',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("pp")
       ldu(1) = ppm_nsendlist 
       ldu(2) = ppm_buffer_set 
       CALL ppm_alloc(qq,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'work buffer QQ',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("qq")
 
       !-------------------------------------------------------------------------
       !  Count the size of the buffer that will not be send
@@ -275,12 +246,7 @@
       ELSE
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
       ENDIF 
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'global receive buffer PPM_RECVBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+          or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the smaller send and receive buffer
@@ -297,12 +263,7 @@
           ELSE
              CALL ppm_alloc(recvs,ldu,iopt,info)
           ENDIF 
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,caller,     &
-     &            'local receive buffer RECV',__LINE__,info)
-              GOTO 9999
-          ENDIF
+              or_fail_alloc("local receive buffer recv")
       ENDIF
 
       IF (ppm_nsendlist .GT. 1) THEN
@@ -312,12 +273,7 @@
           ELSE
              CALL ppm_alloc(sends,ldu,iopt,info)
           ENDIF 
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,caller,     &
-     &            'local send buffer SEND',__LINE__,info)
-              GOTO 9999
-          ENDIF
+              or_fail_alloc("local send buffer send")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -438,6 +394,7 @@
                     CALL MPI_SendRecv(sendd,nsend(k),ppm_mpi_kind,  &
      &                 ppm_isendlist(k),tag1,recvd,nrecv(k),ppm_mpi_kind,  &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                       or_fail_MPI("MPI_SendRecv")
                 ELSEIF (psend(k) .GT. 0 .AND. precv(k) .EQ. 0) THEN
                     IF (ppm_debug .GT. 1) THEN
                         WRITE(mesg,'(A,I3)') 'Send to ',ppm_isendlist(k)
@@ -445,6 +402,7 @@
                     ENDIF
                     CALL MPI_Send(sendd,nsend(k),ppm_mpi_kind,      &
      &                 ppm_isendlist(k),tag1,ppm_comm,info)
+                       or_fail_MPI("MPI_Send")
                 ELSEIF (psend(k) .EQ. 0 .AND. precv(k) .GT. 0) THEN
                     IF (ppm_debug .GT. 1) THEN
                         WRITE(mesg,'(A,I3)') 'Recv from ',ppm_irecvlist(k)
@@ -452,6 +410,7 @@
                     ENDIF
                     CALL MPI_Recv(recvd,nrecv(k),ppm_mpi_kind,      &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                       or_fail_MPI("MPI_Recv")
                 ELSE
                     ! do nothing
                 ENDIF
@@ -507,12 +466,15 @@
                     CALL MPI_SendRecv(sends,nsend(k),ppm_mpi_kind,  &
      &                 ppm_isendlist(k),tag1,recvs,nrecv(k),ppm_mpi_kind,  &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                       or_fail_MPI("MPI_SendRecv")
                 ELSEIF (psend(k) .GT. 0 .AND. precv(k) .EQ. 0) THEN
                     CALL MPI_Send(sends,nsend(k),ppm_mpi_kind,      &
      &                 ppm_isendlist(k),tag1,ppm_comm,info)
+                       or_fail_MPI("MPI_Send")
                 ELSEIF (psend(k) .EQ. 0 .AND. precv(k) .GT. 0) THEN
                     CALL MPI_Recv(recvs,nrecv(k),ppm_mpi_kind,      &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
+                       or_fail_MPI("MPI_Recv")
                 ELSE
                     ! do nothing
                 ENDIF
@@ -545,76 +507,32 @@
       ELSE
           CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
       ENDIF
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'send buffer PPM_SENDBUFFER',__LINE__,info)
-      ENDIF
+          or_fail_dealloc("ppm_sendbuffer")
     
       !-------------------------------------------------------------------------
       !  Deallocate
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(nsend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'send counter NSEND',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("nsend")
       CALL ppm_alloc(nrecv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'receive counter NRECV',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("nrecv")
       CALL ppm_alloc(psend,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'particle send counter PSEND',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("psend")
       CALL ppm_alloc(precv,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'particle receive counter PRECV',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("precv")
       CALL ppm_alloc(   pp,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'work array PP',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("pp")
       CALL ppm_alloc(   qq,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'work array QQ',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("qq")
       CALL ppm_alloc(recvd,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local receive buffer RECVD',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("recvd")
       CALL ppm_alloc(recvs,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local receive buffer RECVS',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("recvs")
       CALL ppm_alloc(sendd,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send buffer SENDD',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("sendd")
       CALL ppm_alloc(sends,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send buffer SENDS',__LINE__,info)
-      ENDIF
+      or_fail_dealloc("sends")
 
       !-------------------------------------------------------------------------
       !  Return 

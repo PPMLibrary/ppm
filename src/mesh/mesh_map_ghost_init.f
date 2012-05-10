@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_init(this,ghostsize,info)
+      SUBROUTINE equi_mesh_map_ghost_init(this,info)
       !!! This routine sets up the lists needed for sending and receiving
       !!! ghost mesh points on a given topology/mesh combination.
       !!! These lists are stored for later use by ppm_map_field_ghost_get and
@@ -42,9 +42,6 @@
       !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)                  :: this
-      INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
-      !!! Size of the ghost layer in numbers of grid points in all space
-      !!! dimensions (1...ppm_dim).
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
@@ -69,14 +66,6 @@
       start_subroutine("mesh_map_ghost_init")
 
       pdim = ppm_dim
-
-      !-------------------------------------------------------------------------
-      !  Check arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF
 
       topo => ppm_topo(this%topoID)%t
 
@@ -153,7 +142,7 @@
               jdom = topo%ineighsubs(j,i)
               ! source and destination meshes and topologies are identical
               CALL this%block_intersect(this,       &
-     &           idom,jdom,ond(1:pdim,1),ghostsize,nsendlist,isendfromsub,     &
+     &           idom,jdom,ond(1:pdim,1),nsendlist,isendfromsub,     &
      &           isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
                  or_fail("block_intersect failed")
           ENDDO
@@ -331,14 +320,14 @@
               ! first with the original (non-shifted) image of itself
               jdom = idom
               CALL this%block_intersect(this,       &
-                  &  idom,jdom,ond(1:pdim,k),ghostsize,nsendlist,isendfromsub,     &
+                  &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,     &
                   &  isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
                   or_fail("block_intersect failed")
               ! Then with all the neighbors
               DO j=1,topo%nneighsubs(i)
                   jdom = topo%ineighsubs(j,i)
                   CALL this%block_intersect(this,   &
-                      &  idom,jdom,ond(1:pdim,k),ghostsize,nsendlist,isendfromsub,&
+                      &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,&
                       &  isendtosub,isendpatchid,isendblkstart,isendblksize,&
                       &  ioffset,info)
                       or_fail("block_intersect failed")
@@ -477,6 +466,7 @@
                  tag1 = 100
                  CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
      &               MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
+                 or_fail_MPI("MPI_SendRecv")
                  ! How many blocks will I receive from the guy?
                  this%ghost_nrecv = this%ghost_nrecv + nrecv
                  this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
@@ -535,6 +525,7 @@
                  CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
      &                             recvbuf,nrecv*(2*pdim+1),MPI_INTEGER,   &
      &                             recvrank,tag1,ppm_comm,commstat,info)
+                 or_fail_MPI("MPI_SendRecv")
                  ! Unpack the received data
                  lb = this%ghost_recvblk(i)
                  ub = this%ghost_recvblk(ibuffer)
@@ -584,20 +575,6 @@
 
       this%ghost_initialized = .TRUE.
 
-      !-------------------------------------------------------------------------
-      !  Return
-      !-------------------------------------------------------------------------
       end_subroutine()
 
-      RETURN
-      CONTAINS
-      SUBROUTINE check
-          IF (SIZE(ghostsize,1) .LT. ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must be at least of length ppm_dim',__LINE__,info)
-              GOTO 8888
-          ENDIF
- 8888     CONTINUE
-      END SUBROUTINE check
       END SUBROUTINE equi_mesh_map_ghost_init

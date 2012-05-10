@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_get(this,info,ghostsize)
+      SUBROUTINE equi_mesh_map_ghost_get(this,info)
       !!! This routine receives/updates the values of the ghost mesh points of
       !!! each sub from its corresponding neighbor subs (i.e. adds ghost
       !!! layers to the subs of the current topology).
@@ -28,9 +28,6 @@
       CLASS(ppm_t_equi_mesh)                  :: this
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      INTEGER, OPTIONAL, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
-      !!! size of the ghost layers, in number of mesh nodes.
-      !!! If not present, the
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -48,25 +45,13 @@
 
       pdim = ppm_dim
 
-      !-------------------------------------------------------------------------
-      !  Check arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF
-
       topo => ppm_topo(this%topoid)%t
-
-      IF (PRESENT(ghostsize)) THEN
-          this%ghostsize = ghostsize
-      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check if ghost mappings have been initalized, if no do so now.
       !-------------------------------------------------------------------------
       IF (.NOT. this%ghost_initialized) THEN
-        CALL this%map_ghost_init(this%ghostsize,info)
+        CALL this%map_ghost_init(info)
             or_fail("map_field_ghost_init failed")
       ENDIF
 
@@ -186,20 +171,6 @@
          ENDDO
       ENDDO
 
-      !-------------------------------------------------------------------------
-      !  Return
-      !-------------------------------------------------------------------------
       end_subroutine()
 
-      RETURN
-      CONTAINS
-      SUBROUTINE check
-          IF (SIZE(this%ghostsize,1) .LT. ppm_dim) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must be at least of length ppm_dim',__LINE__,info)
-              GOTO 8888
-          ENDIF
- 8888     CONTINUE
-      END SUBROUTINE check
       END SUBROUTINE equi_mesh_map_ghost_get

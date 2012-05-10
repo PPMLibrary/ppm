@@ -12,19 +12,25 @@ end macro
 
 macro or_fail(message, type=ppm_err_sub_failed,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
+END IF
+end macro
+
+macro or_fail_MPI(message, type=ppm_err_mpi_fail,info=info)
+IF (<%= info %>.NE.MPI_SUCCESS) THEN
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
 macro or_fail_alloc(message, type=ppm_err_alloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
 macro or_fail_dealloc(message, type=ppm_err_dealloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $ppm_fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(<%=message%>,<%=type%>,<%=info%>)
 END IF
 end macro
 
@@ -116,7 +122,7 @@ macro end_subroutine(exit_point=9999)
     <%= exit_point %> CONTINUE
 end macro
 
-macro start_function(name=default_name)
+macro start_function(name="default_name")
 % scope.var info: "INTEGER                 :: info"
     CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
 
@@ -145,3 +151,30 @@ macro stdout(*message)
     CALL ppm_write(ppm_rank,caller,cbuf,info)
 end macro
 
+
+macro alloc_pointer_with_bounds1(pointer,lo,hi,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1)),STAT=<%=info%>)
+    $or_fail_alloc("<%= p %>")
+end macro
+macro alloc_pointer_with_bounds2(pointer,lo,hi,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2)),STAT=<%=info%>)
+    $or_fail_alloc("<%= p %>")
+end macro
+macro alloc_pointer_with_bounds3(pointer,lo,hi,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2),&
+                      <%=lo%>(3):<%=hi%>(3)),STAT=<%=info%>)
+    $or_fail_alloc("<%= p %>")
+end macro
+macro alloc_pointer_with_bounds4(pointer,lo,hi,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2),&
+                      <%=lo%>(3):<%=hi%>(3),<%=lo%>(4):<%=hi%>(4)),STAT=<%=info%>)
+    $or_fail_alloc("<%= p %>")
+end macro

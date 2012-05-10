@@ -422,13 +422,26 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     INTEGER, DIMENSION(:),POINTER :: iend     => NULL()
     !!! Upper-right coordinates
     INTEGER, DIMENSION(:),POINTER :: nnodes   => NULL()
-    !!! number of nodes in each direction
-    INTEGER, DIMENSION(:),POINTER :: istart_g => NULL()
+    !!! number of (real) nodes in each direction
+    INTEGER, DIMENSION(:),POINTER :: istart_g   => NULL()
+    !!! Lower-left coordinates (subpatch extended with its ghostlayer)
+    INTEGER, DIMENSION(:),POINTER :: iend_g     => NULL()
+    !!! Upper-right coordinates (subpatch extendend with its ghostlayer)
+    INTEGER, DIMENSION(:),POINTER :: istart_p => NULL()
     !!! Lower-left coordinates of the patch associated with this subpatch
     !!! (used for mapping routines)
-    INTEGER, DIMENSION(:),POINTER :: iend_g   => NULL()
+    INTEGER, DIMENSION(:),POINTER :: iend_p   => NULL()
     !!! Upper-right coordinates of the patch associated with this subpatch
     !!! (used for mapping routines)
+    INTEGER, DIMENSION(:),POINTER :: ghostsize   => NULL()
+    !!! Extent of the ghost layer in all 4 (resp. 6) directions in
+    !!! 2D (resp. 3D). It is measured in number of mesh nodes.
+    !!! - west  : 1
+    !!! - east  : 2
+    !!! - south : 3
+    !!! - north : 4
+    !!! - bottom: 5
+    !!! - top   : 6
     CLASS(ppm_c_subpatch_data_),POINTER :: subpatch_data => NULL()
     !!! container for the data arrays for each property discretized
     !!! on this mesh
@@ -613,6 +626,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_map_ghost_push_), DEFERRED :: map_ghost_push
     PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
     PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
+    PROCEDURE(equi_mesh_print_vtk_),      DEFERRED :: print_vtk
 END TYPE
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 

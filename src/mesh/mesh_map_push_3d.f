@@ -335,7 +335,7 @@
                    !write(*,*) 'IPATCH = ',ipatch,jsub,i,j
                    SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
-                       IF (ALL(p%istart_g.EQ.patchid)) THEN
+                       IF (ALL(p%istart_p.EQ.patchid)) THEN
 #if    __DIM == __SFIELD
 #if __KIND == __DOUBLE_PRECISION
                             found_patch = .TRUE.

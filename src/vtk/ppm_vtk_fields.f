@@ -55,7 +55,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh),     INTENT(IN)    :: Mesh
+      CLASS(ppm_t_equi_mesh_),     INTENT(INOUT)    :: Mesh
       CHARACTER(LEN=*),           INTENT(IN)    :: filename
       INTEGER,                    INTENT(OUT)   :: info
       INTEGER,          OPTIONAL, INTENT(IN)    :: step
@@ -254,14 +254,14 @@
 #define VTK_MESH fdata2
 #elif   __DIM == __3D
 #define VTK_MESH fdata3
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)
 #endif
 #undef VTK_MESH_COMPONENT 
 #define VTK_MESH_ILBOUND 1
 #define VTK_MESH_IUBOUND p%nnodes(1)
 #define VTK_MESH_JLBOUND 1
 #define VTK_MESH_JUBOUND p%nnodes(2)
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%nnodes(3)
 #include "vtk/print_data_array.f"
                   ELSE !vector field
 #if   __DIM == __2D
@@ -278,14 +278,14 @@
 #define VTK_MESH fdata3
 #elif   __DIM == __3D
 #define VTK_MESH fdata4
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)
 #endif
 #define VTK_MESH_COMPONENT icomp
 #define VTK_MESH_ILBOUND 1
 #define VTK_MESH_IUBOUND p%nnodes(1)
 #define VTK_MESH_JLBOUND 1
 #define VTK_MESH_JUBOUND p%nnodes(2)
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%nnodes(3)
 #include "vtk/print_data_array.f"
                       ENDDO
                   ENDIF

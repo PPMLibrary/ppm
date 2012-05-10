@@ -25,12 +25,12 @@ SUBROUTINE subpatch_get_field_4d_rd_(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE subpatch_data_create_(this,discr_data,Nmp,info)
+SUBROUTINE subpatch_data_create_(this,discr_data,sp,info)
     !!! Constructor for subdomain data 
-    IMPORT ppm_t_subpatch_data_,ppm_t_mesh_discr_data_
+    IMPORT ppm_t_subpatch_data_,ppm_t_mesh_discr_data_,ppm_t_subpatch_
     CLASS(ppm_t_subpatch_data_)             :: this
     CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN) :: discr_data
-    INTEGER,DIMENSION(:),POINTER,INTENT(IN) :: Nmp
+    CLASS(ppm_t_subpatch_),      INTENT(IN) :: sp
     INTEGER,                    INTENT(OUT) :: info
 END SUBROUTINE
 !DESTROY
@@ -42,15 +42,16 @@ SUBROUTINE subpatch_data_destroy_(this,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_create_(p,mesh,istart,iend,istart_g,iend_g,info)
+SUBROUTINE subpatch_create_(p,mesh,istart,iend,istart_p,iend_p,ghostsize,info)
     !!! Constructor for subpatch
     IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_t_equi_mesh_
     CLASS(ppm_t_subpatch_)             :: p
     CLASS(ppm_t_equi_mesh_),TARGET     :: mesh
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
-    INTEGER,DIMENSION(:)               :: istart_g
-    INTEGER,DIMENSION(:)               :: iend_g
+    INTEGER,DIMENSION(:)               :: istart_p
+    INTEGER,DIMENSION(:)               :: iend_p
+    INTEGER,DIMENSION(:)               :: ghostsize
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
@@ -181,21 +182,19 @@ SUBROUTINE equi_mesh_set_rel_(this,field,info)
     INTEGER,               INTENT(OUT)  :: info
 END SUBROUTINE
 !GHOST GET
-SUBROUTINE equi_mesh_map_ghost_get_(this,info,ghostsize)
+SUBROUTINE equi_mesh_map_ghost_get_(this,info)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
     INTEGER                 , INTENT(  OUT) :: info
-    INTEGER, OPTIONAL, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
 END SUBROUTINE
 SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
-        ghostsize,nsendlist,isendfromsub,isendtosub,isendpatchid,&
+        nsendlist,isendfromsub,isendtosub,isendpatchid,&
         isendblkstart,isendblksize,ioffset,info,lsymm)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
     CLASS(ppm_t_equi_mesh_)                 :: to_mesh
     INTEGER                 , INTENT(IN   ) :: isub
     INTEGER                 , INTENT(IN   ) :: jsub
-    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
     INTEGER, DIMENSION(:)   , INTENT(IN   ) :: offset
     INTEGER, DIMENSION(:)   , POINTER       :: isendfromsub
     INTEGER, DIMENSION(:)   , POINTER       :: isendtosub
@@ -207,10 +206,9 @@ SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
     INTEGER                 , INTENT(  OUT) :: info
     LOGICAL, DIMENSION(3)   , INTENT(IN   ), OPTIONAL :: lsymm
 END SUBROUTINE
-SUBROUTINE equi_mesh_map_ghost_init_(this,ghostsize,info)
+SUBROUTINE equi_mesh_map_ghost_init_(this,info)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
-    INTEGER, DIMENSION(:)   , INTENT(IN   ) :: ghostsize
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 SUBROUTINE equi_mesh_map_ghost_push_(this,field,info)
@@ -248,4 +246,10 @@ SUBROUTINE equi_mesh_create_prop_(this,field,discr_data,info,p_idx)
     CLASS(ppm_t_mesh_discr_data_),POINTER,INTENT(OUT) :: discr_data
     INTEGER,                              INTENT(OUT) :: info
     INTEGER, OPTIONAL,                    INTENT(OUT) :: p_idx
+END SUBROUTINE
+SUBROUTINE equi_mesh_print_vtk_(this,filename,info)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)                           :: this
+    CHARACTER(LEN=*)                                  :: filename
+    INTEGER,                              INTENT(OUT) :: info
 END SUBROUTINE
