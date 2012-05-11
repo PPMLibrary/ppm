@@ -70,7 +70,7 @@
       USE ppm_module_topo_store
       USE ppm_module_define_subs_bc
       USE ppm_module_mesh_on_subs
-      USE ppm_module_mesh_alloc
+!      USE ppm_module_mesh_alloc
       USE ppm_module_mesh_store
       USE ppm_module_topo_subs2proc
       USE ppm_module_topo_metis_s2p
