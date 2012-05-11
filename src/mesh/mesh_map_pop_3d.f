@@ -174,7 +174,6 @@
      &          'Buffer is empty: skipping pop!',__LINE__,info)
         ENDIF
 
-
         info = 0
 
         GOTO 9999
@@ -419,9 +418,9 @@
                !or_fail("could not get_field_on_patch for this sub")
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
-               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
                    fdata => NULL()
-                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
@@ -450,20 +449,20 @@
                             ENDIF
 #if   __DIM == __VFIELD
                             ldu(1) = edim
-                            ldu(2) = xhi+p%ghostsize(1)
-                            ldu(3) = yhi+p%ghostsize(2)
-                            ldu(4) = zhi+p%ghostsize(3)
+                            ldu(2) = xhi+p%ghostsize(2)
+                            ldu(3) = yhi+p%ghostsize(4)
+                            ldu(4) = zhi+p%ghostsize(6)
                             ldl(1) = 1
                             ldl(2) = 1-p%ghostsize(1)
-                            ldl(3) = 1-p%ghostsize(2)
-                            ldl(4) = 1-p%ghostsize(3)
+                            ldl(3) = 1-p%ghostsize(3)
+                            ldl(4) = 1-p%ghostsize(5)
 #elif __DIM == __SFIELD
-                            ldu(1) = xhi+p%ghostsize(1)
-                            ldu(2) = yhi+p%ghostsize(2)
-                            ldu(3) = zhi+p%ghostsize(3)
+                            ldu(1) = xhi+p%ghostsize(2)
+                            ldu(2) = yhi+p%ghostsize(4)
+                            ldu(3) = zhi+p%ghostsize(6)
                             ldl(1) = 1-p%ghostsize(1)
-                            ldl(2) = 1-p%ghostsize(2)
                             ldl(2) = 1-p%ghostsize(3)
+                            ldl(2) = 1-p%ghostsize(5)
 #endif
 
 
@@ -482,6 +481,13 @@
 #else
                             write(*,*) "WRONG TYPE!!!!"
 #endif
+                            !------------------------------------------------------
+                            !  Mesh offset for this subpatch
+                            !------------------------------------------------------
+                            mofs(1) = p%istart(1)-1
+                            mofs(2) = p%istart(2)-1
+                            mofs(3) = p%istart(3)-1
+
                             exit patches
                        ENDIF
                    END SELECT
@@ -490,12 +496,7 @@
                IF (.NOT. found_patch) THEN
                    fail("could not find a patch on this sub with the right global id")
                ENDIF
-               !----------------------------------------------------------------
-               !  Mesh offset for this sub
-               !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               mofs(3) = this%istart(3,jsub)-1
+
                !----------------------------------------------------------------
                !  Get boundaries of mesh block to be received in local sub
                !  coordinates

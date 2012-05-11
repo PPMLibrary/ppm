@@ -165,15 +165,17 @@
       ENDIF
 
       ! skip if buffer empty
-      !TODO?
-      !IF (ppm_buffer_set .LT. 1) THEN
-        !info = ppm_error_notice
-        !IF (ppm_debug .GT. 1) THEN
-            !CALL ppm_error(ppm_err_buffer_empt,'ppm_map_field_pop',    &
-     !&          'Buffer is empty: skipping pop!',__LINE__,info)
-        !ENDIF
-        !GOTO 9999
-      !ENDIF
+      IF (ppm_buffer_set .LT. 1) THEN
+        info = ppm_error_notice
+        IF (ppm_debug .GT. 1) THEN
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
+     &          'Buffer is empty: skipping pop!',__LINE__,info)
+        ENDIF
+
+        info = 0
+
+        GOTO 9999
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  set the local pointers to the topology and mesh
@@ -414,9 +416,9 @@
                !or_fail("could not get_field_on_patch for this sub")
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
-               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
                    fdata => NULL()
-                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
@@ -429,6 +431,10 @@
                             !------------------------------------------------
                             !  Reallocate array if needed
                             !------------------------------------------------
+                            !TODO: with the current data structure, the
+                            !subpatches are already allocated with a given size,
+                            !which include the ghost layers. There should be no
+                            !need to re-allocate here.
                             IF ((ppm_map_type .EQ. ppm_param_map_ghost_get) &
                                 & .OR.   &
                                 &   (ppm_map_type .EQ. ppm_param_map_ghost_put) &
@@ -444,19 +450,20 @@
                             ENDIF
 #if   __DIM == __VFIELD
                             ldu(1) = edim
-                            ldu(2) = xhi+p%ghostsize(1)
-                            ldu(3) = yhi+p%ghostsize(2)
+                            ldu(2) = xhi+p%ghostsize(2)
+                            ldu(3) = yhi+p%ghostsize(4)
                             ldl(1) = 1
                             ldl(2) = 1-p%ghostsize(1)
-                            ldl(3) = 1-p%ghostsize(2)
+                            ldl(3) = 1-p%ghostsize(3)
 #elif __DIM == __SFIELD
-                            ldu(1) = xhi+p%ghostsize(1)
-                            ldu(2) = yhi+p%ghostsize(2)
+                            ldu(1) = xhi+p%ghostsize(2)
+                            ldu(2) = yhi+p%ghostsize(4)
                             ldl(1) = 1-p%ghostsize(1)
-                            ldl(2) = 1-p%ghostsize(2)
+                            ldl(2) = 1-p%ghostsize(3)
 #endif
 
-
+                            check_associated("p%subpatch_data")
+                            check_true("p%subpatch_data%exists(p_idx)","does not exist")
 #if __KIND == __DOUBLE_PRECISION
 #if    __DIM == __SFIELD
                             call ppm_alloc(&
@@ -472,6 +479,66 @@
 #else
                             write(*,*) "WRONG TYPE!!!!"
 #endif
+                            !------------------------------------------------------
+                            !  Mesh offset for this subpatch
+                            !------------------------------------------------------
+                            mofs(1) = p%istart(1)-1
+                            mofs(2) = p%istart(2)-1
+                            !------------------------------------------------------
+                            !  Get boundaries of mesh block to be received 
+                            !  in local sub  coordinates
+                            !------------------------------------------------------
+                            xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
+                            ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
+                            xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
+                            yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
+                            IF (ppm_debug .GT. 1) THEN
+                                stdout("isub = ",isub," jsub = ",jsub)
+                                stdout("p%istart(1:2) = ",'p%istart(1:2)')
+                                WRITE(mesg,'(A,2I4)') 'start: ',             &
+                                &    ppm_mesh_irecvblkstart(1,j),&
+                                &    ppm_mesh_irecvblkstart(2,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'size: ',             &
+                                    & ppm_mesh_irecvblksize(1,j),&
+                                    & ppm_mesh_irecvblksize(2,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'size_b: ',xhi-xlo+1,yhi-ylo+1
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                            ENDIF
+                            stdout("p%lo_a",'p%lo_a')
+                            stdout("p%hi_a",'p%hi_a')
+                            stdout("p%istart",'p%istart')
+                            stdout("p%iend",'p%iend')
+                            check_true("(xlo.GE.p%lo_a(1))")
+                            check_true("(xhi.LE.p%hi_a(1))")
+                            check_true("(ylo.GE.p%lo_a(2))")
+                            check_true("(yhi.LE.p%hi_a(2))")
+                            check_associated(fdata)
+#if    __DIM == __SFIELD
+                            stdout("SIZE(fdata)=",'size(fdata,1)',&
+                                'size(fdata,2)')
+                            stdout("LBOUND(fdata)=",'LBOUND(fdata,1)',&
+                                'LBOUND(fdata,2)')
+                            stdout("UBOUND(fdata)=",'UBOUND(fdata,1)',&
+                                'UBOUND(fdata,2)')
+#elif  __DIM == __VFIELD
+                            stdout("SIZE(fdata)=",'size(fdata,1)',&
+                                'size(fdata,2)', 'size(fdata,3)')
+                            stdout("LBOUND(fdata)=",'LBOUND(fdata,1)',&
+                                'LBOUND(fdata,2)', 'LBOUND(fdata,3)')
+                            stdout("UBOUND(fdata)=",'UBOUND(fdata,1)',&
+                                'UBOUND(fdata,2)', 'UBOUND(fdata,3)')
+#endif
+
                             exit patches
                        ENDIF
                    END SELECT
@@ -479,37 +546,6 @@
 
                IF (.NOT. found_patch) THEN
                    fail("could not find a patch on this sub with the right global id")
-               ENDIF
-               !----------------------------------------------------------------
-               !  Mesh offset for this sub
-               !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be received in local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
-               xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
-               yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
-               IF (ppm_debug .GT. 1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size_b: ',xhi-xlo+1,yhi-ylo+1
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
                ENDIF
 
 

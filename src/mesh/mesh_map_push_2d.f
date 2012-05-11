@@ -250,6 +250,15 @@
       CALL ppm_alloc(sublist,ldu,iopt,info)
             or_fail_alloc("ppm_sublist")
 
+      !REMOVME
+      DO i=1,ppm_nsendlist
+          DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
+              jsub = ppm_mesh_isendfromsub(j)
+              stdout("patchid in sendlist : ",'ppm_mesh_isendpatchid(1:2,j)',&
+                  " (i=",i,",j=",j,"jsub=",jsub,")")
+          ENDDO
+      ENDDO
+
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist()
       !-------------------------------------------------------------------------
@@ -285,36 +294,6 @@
                !----------------------------------------------------------------
                isub = invsublist(jsub)
                !----------------------------------------------------------------
-               !  Mesh offset for this sub
-               !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be sent on local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
-               xhi = xlo+ppm_mesh_isendblksize(1,j)-1
-               yhi = ylo+ppm_mesh_isendblksize(2,j)-1
-               IF (ppm_debug .GT. 1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_isendblkstart(1,j),ppm_mesh_isendblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_isendblksize(1,j),ppm_mesh_isendblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-               ENDIF
-
-               !----------------------------------------------------------------
                !  Get pointer to the data for this sub, this field and this block
                ! TODO: room for improvement!...
                !----------------------------------------------------------------
@@ -323,9 +302,14 @@
                !or_fail("could not get_field_on_patch for this sub")
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
-               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
-                   !write(*,*) 'IPATCH = ',ipatch,jsub,i,j
-                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
+               do k=1,size(this%subpatch_by_sub)
+                   stdout("this%subpatch_by_sub(",k,")%nsubpatch = ",&
+                       'this%subpatch_by_sub(k)%nsubpatch')
+               enddo
+               stdout("isub = ",isub," jsub = ",jsub," j = ",j)
+               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
+                   stdout("IPATCH = ",ipatch,jsub,i,j)
+                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
@@ -340,6 +324,53 @@
                             fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
 #endif
 #endif
+                            !-----------------------------------------------------
+                            !  Mesh offset for this sub
+                            !-----------------------------------------------------
+                            !mofs(1) = this%istart(1,jsub)-1
+                            !mofs(2) = this%istart(2,jsub)-1
+                            mofs(1) = p%istart(1)-1
+                            mofs(2) = p%istart(2)-1
+                            !----------------------------------------------------
+                            !  Get boundaries of mesh block to be sent on local sub
+                            !  coordinates
+                            !----------------------------------------------------
+                            xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
+                            ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
+                            xhi = xlo+ppm_mesh_isendblksize(1,j)-1
+                            yhi = ylo+ppm_mesh_isendblksize(2,j)-1
+
+                            IF (ppm_debug .GT. 1) THEN
+                                stdout("isub = ",isub," jsub = ",jsub)
+                                stdout("p%istart(1:2) = ",'p%istart(1:2)')
+                                WRITE(mesg,'(A,2I4)') 'start: ',             &
+                                    &       ppm_mesh_isendblkstart(1,j),&
+                                    &       ppm_mesh_isendblkstart(2,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'size: ',             &
+                                    &       ppm_mesh_isendblksize(1,j),&
+                                    &       ppm_mesh_isendblksize(2,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                            ENDIF
+
+                            stdout("p%lo_a",'p%lo_a')
+                            stdout("p%hi_a",'p%hi_a')
+                            stdout("p%istart",'p%istart')
+                            stdout("p%iend",'p%iend')
+                            check_true("(xlo.GE.p%lo_a(1))")
+                            check_true("(xhi.LE.p%hi_a(1))")
+                            check_true("(ylo.GE.p%lo_a(2))")
+                            check_true("(yhi.LE.p%hi_a(2))")
+                            check_associated(fdata)
+
                             exit patches
                        ENDIF
                    END SELECT
@@ -1539,11 +1570,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(invsublist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'inverse sub list INVSUBLIST',__LINE__,info)
-      ENDIF
+        or_fail_dealloc("INVSUBLIST")
 
       !-------------------------------------------------------------------------
       !  Return
@@ -1555,7 +1582,6 @@
       SUBROUTINE check
           xhi = 0
           yhi = 0
-          WRITE(*,*) 'FIXME IN ppm_map_field_push_2d.f'
           !DO i=1,ppm_topo(topoid)%t%nsublist
               !isub = ppm_topo(topoid)%t%isublist(i)
               !IF (ppm_this%vec(meshid)%nnodes(1,isub).GT.xhi) THEN

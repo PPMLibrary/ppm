@@ -141,7 +141,7 @@
           DO j=1,topo%nneighsubs(i)
               jdom = topo%ineighsubs(j,i)
               ! source and destination meshes and topologies are identical
-              CALL this%block_intersect(this,       &
+              CALL this%block_intersect(this,i,       &
      &           idom,jdom,ond(1:pdim,1),nsendlist,isendfromsub,     &
      &           isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
                  or_fail("block_intersect failed")
@@ -319,14 +319,14 @@
           DO k=1,nnd
               ! first with the original (non-shifted) image of itself
               jdom = idom
-              CALL this%block_intersect(this,       &
+              CALL this%block_intersect(this,i,       &
                   &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,     &
                   &  isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
                   or_fail("block_intersect failed")
               ! Then with all the neighbors
               DO j=1,topo%nneighsubs(i)
                   jdom = topo%ineighsubs(j,i)
-                  CALL this%block_intersect(this,   &
+                  CALL this%block_intersect(this,i,   &
                       &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,&
                       &  isendtosub,isendpatchid,isendblkstart,isendblksize,&
                       &  ioffset,info)
@@ -423,13 +423,15 @@
                      mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
                      IF (ppm_debug .GT. 1) THEN
                          IF (ppm_dim .EQ. 2) THEN
-                             WRITE(mesg,'(2(A,2I4),A,I3)') ' sending ',  &
+                             WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
      &                   isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-     &                   ' to ',sendrank
+     &                   ' on sub ',isendfromsub(j),&
+     &                   ' to sub ',isendtosub(j),' on proc ',sendrank
                          ELSEIF (ppm_dim .EQ. 3) THEN
-                             WRITE(mesg,'(2(A,3I4),A,I3)') ' sending ',  &
+                             WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
      &                   isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-     &                   ' to ',sendrank
+     &                   ' on sub ',isendfromsub(j),&
+     &                   ' to sub ',isendtosub(j),' on proc ',sendrank
                          ENDIF
                          CALL ppm_write(ppm_rank,caller,mesg,info)
                      ENDIF
@@ -466,7 +468,7 @@
                  tag1 = 100
                  CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
      &               MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
-                 or_fail_MPI("MPI_SendRecv")
+                     or_fail_MPI("MPI_SendRecv")
                  ! How many blocks will I receive from the guy?
                  this%ghost_nrecv = this%ghost_nrecv + nrecv
                  this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
@@ -523,9 +525,9 @@
                  ! Send it to the destination processor and get my stuff
                  tag1 = 200
                  CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
-     &                             recvbuf,nrecv*(2*pdim+1),MPI_INTEGER,   &
+     &                             recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
      &                             recvrank,tag1,ppm_comm,commstat,info)
-                 or_fail_MPI("MPI_SendRecv")
+                     or_fail_MPI("MPI_SendRecv")
                  ! Unpack the received data
                  lb = this%ghost_recvblk(i)
                  ub = this%ghost_recvblk(ibuffer)

@@ -157,8 +157,6 @@ END TYPE DTYPE(particles_stats)_
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! Data structure for a particle set
 
-    CHARACTER(LEN=ppm_char)                         :: name
-    !!! name for this particle set
     REAL(MK), DIMENSION(:,:), POINTER               :: xp => NULL()
     !!! positions of the particles
     INTEGER                                         :: Npart
