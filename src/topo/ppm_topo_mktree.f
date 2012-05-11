@@ -58,7 +58,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_mesh_alloc
+      !USE ppm_module_mesh_alloc
       USE ppm_module_topo_cost
       USE ppm_module_topo_store
       USE ppm_module_mesh_store

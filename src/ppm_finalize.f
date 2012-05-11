@@ -41,7 +41,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
-      USE ppm_module_mesh_finalize
+!      USE ppm_module_mesh_finalize
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Arguments
@@ -116,16 +116,16 @@
           GOTO 9999
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Deallocate mesh structures (from ppm_module_mesh)
-      !-------------------------------------------------------------------------
-      CALL ppm_mesh_finalize(info)
-      IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',  &
-     &        'Mesh deallocation failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+!      !-------------------------------------------------------------------------
+!      !  Deallocate mesh structures (from ppm_module_mesh)
+!      !-------------------------------------------------------------------------
+!      CALL ppm_mesh_finalize(info)
+!      IF (info.NE.0) THEN
+!          info = ppm_error_error
+!          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',  &
+!     &        'Mesh deallocation failed',__LINE__,info)
+!          GOTO 9999
+!      ENDIF
       !-------------------------------------------------------------------------
       !  Set the global status
       !-------------------------------------------------------------------------
