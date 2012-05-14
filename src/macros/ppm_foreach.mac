@@ -1,0 +1,111 @@
+foreach macro equi_mesh(m)
+modifier indices(i=i,j=j,k=k)
+modifier fields(*fs)
+modifier stencil_width(st_i=nil,st_j=nil,st_k=nil)
+% scope.var sbpitr: "CLASS(ppm_t_subpatch_),POINTER   :: sbpitr"
+sbpitr => <%= m %>%subpatch%begin()
+% unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil?
+% scope.var stnclint: "INTEGER,DIMENSION(2*ppm_dim) :: stnclint"
+% end
+do while (associated(sbpitr))
+% fs.each do |f|
+    CALL sbpitr%get_field(<%= f %>_data, <%= f %>, info)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data",caller,10000,info)
+        GOTO 9999
+    ENDIF
+
+% unless bodies.all.nil?
+%   bodies.all.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.real.nil?
+%   bodies.real.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.interior.nil?
+%   bodies.interior.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.west.nil?
+%   bodies.west.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.east.nil?
+%   bodies.east.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.south.nil?
+%   bodies.south.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.north.nil?
+%   bodies.north.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.bottom.nil?
+%   bodies.bottom.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.top.nil?
+%   bodies.top.transform! "#{f}_#{iter}", "#{f}_data($1,#{i},#{j})"
+% end
+% unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil?
+!boundaries of the array on which the full symmetric stencil can be applied
+    stnclint(1) = MAX(1,            sbpitr%lo_a(1) + <%= st_i %>)
+    stnclint(2) = MIN(sbpitr%nnodes(1),sbpitr%hi_a(2) - <%= st_i %>)
+    stnclint(3) = MAX(1,            sbpitr%lo_a(3) + <%= st_j %>)
+    stnclint(4) = MIN(sbpitr%nnodes(2),sbpitr%hi_a(4) - <%= st_j %>)
+%   unless st_k.nil?
+     stnclint(5) = MAX(1,            sbpitr%lo_a(5) + <%= st_k %>)
+     stnclint(6) = MIN(sbpitr%nnodes(3),sbpitr%hi_a(6) - <%= st_k %>)
+%   end
+% end
+% end
+% unless bodies.all.nil?
+    do <%= j %> = sbpitr%lo_a(2), sbpitr%hi_a(2)
+        do <%= i %> = sbpitr%lo_a(1), sbpitr%hi_a(1)
+        <%= bodies.all.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.real.nil?
+    do <%= j %> = 1, sbpitr%nnodes(2)
+        do <%= i %> = 1, sbpitr%nnodes(1)
+        <%= bodies.interior.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.interior.nil?
+    do <%= j %> = stnclint(3),stnclint(4)
+        do <%= i %> = stnclint(1),stnclint(2)
+        <%= bodies.interior.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.west.nil?
+    do <%= j %> = stnclint(3),stnclint(4)
+        do <%= i %> = stnclint(1)-<%= st_i %>,stnclint(1)
+        <%= bodies.west.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.east.nil?
+    do <%= j %> = stnclint(3),stnclint(4)
+        do <%= i %> = stnclint(2),stnclint(2)+<%= st_i %>
+        <%= bodies.west.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.south.nil?
+    do <%= j %> = stnclint(3)-<%= st_j %>,stnclint(3)
+        do <%= i %> = stnclint(1),stnclint(2)
+        <%= bodies.west.indent 6 -%>
+        end do
+    end do
+% end
+% unless bodies.north.nil?
+    do <%= j %> = stnclint(4),stnclint(4)+<%= st_j %>
+        do <%= i %> = stnclint(1),stnclint(2)
+        <%= bodies.west.indent 6 -%>
+        end do
+    end do
+% end
+    sbpitr => <%= m %>%subpatch%next()
+end do
+
+end macro
+
