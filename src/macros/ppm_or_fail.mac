@@ -51,7 +51,7 @@ $dealloc_pointer(<%= ptr %>)
 end macro
 
 macro check_associated(p,message="",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
-% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
     WRITE(cbuf,*) &
@@ -70,7 +70,7 @@ ENDIF
 end macro
 
 macro check_equal(a,b,message,info=info,exit_point=9999)
-% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % b_s = b.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (<%= a_s %> .NE. <%= b_s%>) THEN
@@ -84,7 +84,7 @@ ENDIF
 end macro
 
 macro check_true(a,message,info=info,exit_point=9999)
-% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.<%= a_s %>) THEN
    WRITE(cbuf,*) &
@@ -96,7 +96,7 @@ ENDIF
 end macro
 
 macro check_false(a,message,info=info,exit_point=9999)
-% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (<%= a_s %>) THEN
    WRITE(cbuf,*) &
@@ -123,7 +123,7 @@ macro end_subroutine(exit_point=9999)
 end macro
 
 macro start_function(name="default_name")
-% scope.var info: "INTEGER                 :: info"
+% scope.raw_var info: "INTEGER                 :: info"
     CHARACTER(LEN=ppm_char)            :: caller = <%= name %>
 
     info = 0
@@ -144,7 +144,7 @@ ENDIF
 end macro
 
 macro stdout(*message)
-% scope.var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
+% scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % if message.is_a? Array
     WRITE(cbuf,*) <%=message.join(",&\n")%>
 % end
