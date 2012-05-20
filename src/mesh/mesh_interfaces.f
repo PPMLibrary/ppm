@@ -64,12 +64,19 @@ SUBROUTINE subpatch_destroy_(p,info)
 END SUBROUTINE
 
 !GET POSITION
-PURE FUNCTION subpatch_get_pos_(p,i,j,k) RESULT (pos)
+PURE FUNCTION subpatch_get_pos2d_(p,i,j) RESULT (pos)
     IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
     CLASS(ppm_t_subpatch_), INTENT(IN) :: p
     INTEGER,                INTENT(IN) :: i
     INTEGER,                INTENT(IN) :: j
-    INTEGER,OPTIONAL,       INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+END FUNCTION
+PURE FUNCTION subpatch_get_pos3d_(p,i,j,k) RESULT (pos)
+    IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
+    CLASS(ppm_t_subpatch_), INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,                INTENT(IN) :: k
     REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
 END FUNCTION
 
@@ -91,24 +98,17 @@ SUBROUTINE subpatch_A_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h,ghostsize)
+SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h,ghostsize,name)
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                 :: this
-    !!! cartesian mesh object
     INTEGER                 , INTENT(IN   ) :: topoid
-    !!! Topology ID for which mesh has been created 
     REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: Offset
-    !!! Offset in each dimension
     INTEGER                 , INTENT(  OUT) :: info
-    !!! Returns status, 0 upon success
     INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: Nm
-    !!! Global number of mesh points in the whole comput. domain
-    !!! Makes sense only if the computational domain is bounded.
-    !!! Note: Exactly one of Nm and h should be specified
     REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN   ) :: h
-    !!! Mesh spacing
-    !!! Note: Exactly one of Nm and h should be specified
     INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: ghostsize
+    CHARACTER(LEN=*), OPTIONAL,                 INTENT(IN   ) :: name
+    !!! name of this mesh
 END SUBROUTINE
 
 SUBROUTINE equi_mesh_destroy_(this,info)
@@ -187,12 +187,13 @@ SUBROUTINE equi_mesh_map_ghost_get_(this,info)
     CLASS(ppm_t_equi_mesh_)                 :: this
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
-SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset,&
+SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub_loc,isub,jsub,offset,&
         nsendlist,isendfromsub,isendtosub,isendpatchid,&
         isendblkstart,isendblksize,ioffset,info,lsymm)
     IMPORT ppm_t_equi_mesh_
     CLASS(ppm_t_equi_mesh_)                 :: this
     CLASS(ppm_t_equi_mesh_)                 :: to_mesh
+    INTEGER                 , INTENT(IN   ) :: isub_loc
     INTEGER                 , INTENT(IN   ) :: isub
     INTEGER                 , INTENT(IN   ) :: jsub
     INTEGER, DIMENSION(:)   , INTENT(IN   ) :: offset

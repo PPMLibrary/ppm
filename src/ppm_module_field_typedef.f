@@ -373,6 +373,7 @@ FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
 
     dinfo => this%discr_info%begin()
     loop: DO WHILE(ASSOCIATED(dinfo))
+        check_associated(dinfo%discr_ptr)
         IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
             p_idx = dinfo%p_idx
             RETURN
@@ -380,8 +381,9 @@ FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
         dinfo => this%discr_info%next()
     ENDDO loop
 
-    p_idx = -1
+    p_idx = -10
 
+    end_function()
 END FUNCTION field_get_pid
 
 SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)

@@ -285,12 +285,37 @@
                !  Translate to local sub ID for storing the data
                !----------------------------------------------------------------
                isub = invsublist(jsub)
+
+               !----------------------------------------------------------------
+               !  Get pointer to the data for this sub, this field and this block
+               ! TODO: room for improvement!...
+               !----------------------------------------------------------------
+               !something like that may be nice?
+               !CALL this%get_field_on_patch(fdata,isub,info)
+               !or_fail("could not get_field_on_patch for this sub")
+               !(lazy) search for the subpatch that has the right global id
+               found_patch = .FALSE.
+               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
+                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
+                   TYPE IS (ppm_t_subpatch)
+                       IF (ALL(p%istart_p.EQ.patchid)) THEN
+#if    __DIM == __SFIELD
+#if __KIND == __DOUBLE_PRECISION
+                            found_patch = .TRUE.
+                            fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+#endif
+#elif  __DIM == __VFIELD
+#if __KIND == __DOUBLE_PRECISION
+                            found_patch = .TRUE.
+                            fdata => p%subpatch_data%vec(p_idx)%t%data_4d_rd
+#endif
+#endif
                !----------------------------------------------------------------
                !  Mesh offset for this sub
                !----------------------------------------------------------------
-               mofs(1) = this%istart(1,jsub)-1
-               mofs(2) = this%istart(2,jsub)-1
-               mofs(3) = this%istart(3,jsub)-1
+               mofs(1) = p%istart(1)-1
+               mofs(2) = p%istart(2)-1
+               mofs(3) = p%istart(3)-1
                !----------------------------------------------------------------
                !  Get boundaries of mesh block to be sent on local sub
                !  coordinates
@@ -302,6 +327,8 @@
                yhi = ylo+ppm_mesh_isendblksize(2,j)-1
                zhi = zlo+ppm_mesh_isendblksize(3,j)-1
                IF (ppm_debug .GT. 1) THEN
+                   stdout("isub = ",isub," jsub = ",jsub)
+                   stdout("p%istart(1:2) = ",'p%istart(1:2)')
                    WRITE(mesg,'(A,3I4)') 'start: ',             &
      &                 ppm_mesh_isendblkstart(1,j),ppm_mesh_isendblkstart(2,j),&
      &                 ppm_mesh_isendblkstart(3,j)
@@ -321,32 +348,14 @@
                    WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
                    CALL ppm_write(ppm_rank,caller,mesg,info)
                ENDIF
+                           check_true("(xlo.GE.p%lo_a(1))")
+                           check_true("(xhi.LE.p%hi_a(1))")
+                           check_true("(ylo.GE.p%lo_a(2))")
+                           check_true("(yhi.LE.p%hi_a(2))")
+                           check_true("(zlo.GE.p%lo_a(3))")
+                           check_true("(zhi.LE.p%hi_a(3))")
+                           check_associated(fdata)
 
-               !----------------------------------------------------------------
-               !  Get pointer to the data for this sub, this field and this block
-               ! TODO: room for improvement!...
-               !----------------------------------------------------------------
-               !something like that may be nice?
-               !CALL this%get_field_on_patch(fdata,isub,info)
-               !or_fail("could not get_field_on_patch for this sub")
-               !(lazy) search for the subpatch that has the right global id
-               found_patch = .FALSE.
-               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
-                   !write(*,*) 'IPATCH = ',ipatch,jsub,i,j
-                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
-                   TYPE IS (ppm_t_subpatch)
-                       IF (ALL(p%istart_p.EQ.patchid)) THEN
-#if    __DIM == __SFIELD
-#if __KIND == __DOUBLE_PRECISION
-                            found_patch = .TRUE.
-                            fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
-#endif
-#elif  __DIM == __VFIELD
-#if __KIND == __DOUBLE_PRECISION
-                            found_patch = .TRUE.
-                            fdata => p%subpatch_data%vec(p_idx)%t%data_4d_rd
-#endif
-#endif
                             exit patches
                        ENDIF
                    END SELECT

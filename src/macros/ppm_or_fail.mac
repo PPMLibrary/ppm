@@ -69,7 +69,7 @@ IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
 ENDIF
 end macro
 
-macro check_equal(a,b,message,info=info,exit_point=9999)
+macro check_equal(a,b,message="",info=info,exit_point=9999)
 % scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % b_s = b.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
@@ -83,7 +83,7 @@ IF (<%= a_s %> .NE. <%= b_s%>) THEN
 ENDIF
 end macro
 
-macro check_true(a,message,info=info,exit_point=9999)
+macro check_true(a,message="",info=info,exit_point=9999)
 % scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.<%= a_s %>) THEN
@@ -95,7 +95,7 @@ IF (.NOT.<%= a_s %>) THEN
 ENDIF
 end macro
 
-macro check_false(a,message,info=info,exit_point=9999)
+macro check_false(a,message="",info=info,exit_point=9999)
 % scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % a_s = a.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (<%= a_s %>) THEN
@@ -144,8 +144,12 @@ ENDIF
 end macro
 
 macro stdout(*message)
+% #writes to standard output using ppm_write
+% #double-quoted arguments are printed as strings
+% #single-quoted ones are first evaluated in Fortran, then printed
 % scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
 % if message.is_a? Array
+% message.map! {|p| p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )}
     WRITE(cbuf,*) <%=message.join(",&\n")%>
 % end
     CALL ppm_write(ppm_rank,caller,cbuf,info)

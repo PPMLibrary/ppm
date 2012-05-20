@@ -112,6 +112,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
     !!! Discretization kinds (Particles and Meshes)
     INTEGER                           :: ID = 0
     !!! ID of the mesh or particle set in the belonging topology
+    CHARACTER(LEN=ppm_char)           :: name
+    !!! name (optional...)
 END TYPE
 minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
 
@@ -418,15 +420,15 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     CLASS(ppm_t_discr_kind),POINTER:: mesh => NULL()
     !!! Pointer to the mesh to which this subpatch belongs
     INTEGER, DIMENSION(:),POINTER :: istart   => NULL()
-    !!! Lower-left coordinates
+    !!! Lower-left coordinates on the global mesh
     INTEGER, DIMENSION(:),POINTER :: iend     => NULL()
-    !!! Upper-right coordinates
+    !!! Upper-right coordinates on the global mesh
     INTEGER, DIMENSION(:),POINTER :: nnodes   => NULL()
     !!! number of (real) nodes in each direction
-    INTEGER, DIMENSION(:),POINTER :: istart_g   => NULL()
-    !!! Lower-left coordinates (subpatch extended with its ghostlayer)
-    INTEGER, DIMENSION(:),POINTER :: iend_g     => NULL()
-    !!! Upper-right coordinates (subpatch extendend with its ghostlayer)
+    INTEGER, DIMENSION(:),POINTER :: lo_a     => NULL()
+    !!! lbound of the allocated data array (subpatch extended with its ghostlayer)
+    INTEGER, DIMENSION(:),POINTER :: hi_a     => NULL()
+    !!! ubound of the allocated data array (subpatch extended with its ghostlayer)
     INTEGER, DIMENSION(:),POINTER :: istart_p => NULL()
     !!! Lower-left coordinates of the patch associated with this subpatch
     !!! (used for mapping routines)
@@ -448,7 +450,9 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     CONTAINS
     PROCEDURE(subpatch_create_), DEFERRED  :: create
     PROCEDURE(subpatch_destroy_),DEFERRED  :: destroy
-    PROCEDURE(subpatch_get_pos_),DEFERRED  :: get_pos
+    PROCEDURE(subpatch_get_pos2d_),DEFERRED  :: get_pos2d
+    PROCEDURE(subpatch_get_pos3d_),DEFERRED  :: get_pos3d
+    GENERIC :: get_pos => get_pos2d, get_pos3d
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
     PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd

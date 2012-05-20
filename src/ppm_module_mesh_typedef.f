@@ -56,7 +56,8 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     CONTAINS
     PROCEDURE  :: create    => subpatch_create
     PROCEDURE  :: destroy   => subpatch_destroy
-    PROCEDURE  :: get_pos   => subpatch_get_pos
+    PROCEDURE  :: get_pos2d   => subpatch_get_pos2d
+    PROCEDURE  :: get_pos3d   => subpatch_get_pos3d
 
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
@@ -167,7 +168,7 @@ SUBROUTINE subpatch_get_field_4d_rd(this,wp,Field,info)
     p_idx = Field%get_pid(this%mesh)
 
     check_associated("this%subpatch_data")
-    stdout("p_idx = ",p_idx)
+    !stdout("p_idx = ",p_idx)
     check_associated("this%subpatch_data%vec(p_idx)%t")
 
     wp => this%subpatch_data%vec(p_idx)%t%data_4d_rd
@@ -197,7 +198,7 @@ SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
     p_idx = Field%get_pid(this%mesh)
 
     check_associated("this%subpatch_data")
-    stdout("p_idx = ",p_idx)
+    !stdout("p_idx = ",p_idx)
     check_associated("this%subpatch_data%vec(p_idx)%t")
 
     wp => this%subpatch_data%vec(p_idx)%t%data_3d_rd
@@ -213,9 +214,8 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     CLASS(ppm_t_field_)                  :: Field
     REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
     INTEGER,                 INTENT(OUT) :: info
-    INTEGER                              :: p_idx
 
-    INTEGER                            :: iopt, ndim
+    INTEGER                              :: p_idx
 
     start_subroutine("subpget_field_2d")
 
@@ -226,12 +226,25 @@ SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
     p_idx = Field%get_pid(this%mesh)
 
     check_associated("this%subpatch_data")
-    stdout("p_idx = ",p_idx)
-    check_associated("this%subpatch_data%vec(p_idx)%t")
+    !stdout("p_idx = ",p_idx)
+    IF (p_idx.GT.0) THEN
+        check_associated("this%subpatch_data%vec(p_idx)%t")
 
-    wp => this%subpatch_data%vec(p_idx)%t%data_2d_rd
+        wp => this%subpatch_data%vec(p_idx)%t%data_2d_rd
 
-    check_associated(wp)
+        check_associated(wp)
+    ELSE
+        !stdout(this%lo_a)
+        !stdout(this%hi_a)
+        !stdout(this%istart)
+        !stdout(this%iend)
+        !stdout(this%istart_p)
+        !stdout(this%iend_p)
+        !check_true("ANY(this%lo_a(1:ppm_dim).GT.this%hi_a(1:ppm_dim))",&
+            !"Patch is not empty, yet cant find data")
+        wp => NULL()
+        fail("returning a null pointer")
+    ENDIF
 
     end_subroutine()
 END SUBROUTINE
@@ -261,30 +274,14 @@ SUBROUTINE subpatch_data_create(this,discr_data,sp,info)
 
     ndim = ppm_dim
     IF (discr_data%lda.LT.2) THEN
-        !lo(1:ndim) = sp%istart_g(1:ppm_dim)
-        !hi(1:ndim) = sp%iend_g(1:ppm_dim)
-        lo(1) = 1 - sp%ghostsize(1)
-        hi(1) = sp%nnodes(1) + sp%ghostsize(2)
-        lo(2) = 1 - sp%ghostsize(3)
-        hi(2) = sp%nnodes(2) + sp%ghostsize(4)
-        IF (ppm_dim.EQ.3) THEN
-            lo(3) = 1 - sp%ghostsize(5)
-            hi(3) = sp%nnodes(3) + sp%ghostsize(6)
-        ENDIF
+        lo(1:ppm_dim) = sp%lo_a(1:ppm_dim)
+        hi(1:ppm_dim) = sp%hi_a(1:ppm_dim)
     ELSE
         ndim = ndim +1
         lo(1) = 1
         hi(1) = discr_data%lda
-        !lo(2:ndim) = sp%istart_g(1:ppm_dim)
-        !hi(2:ndim) = sp%iend_g(1:ppm_dim)
-        lo(2) = 1 - sp%ghostsize(1)
-        hi(2) = sp%nnodes(1) + sp%ghostsize(2)
-        lo(3) = 1 - sp%ghostsize(3)
-        hi(3) = sp%nnodes(2) + sp%ghostsize(4)
-        IF (ppm_dim.EQ.3) THEN
-            lo(4) = 1 - sp%ghostsize(5)
-            hi(4) = sp%nnodes(3) + sp%ghostsize(6)
-        ENDIF
+        lo(2:ndim) = sp%lo_a(1:ppm_dim)
+        hi(2:ndim) = sp%hi_a(1:ppm_dim)
     ENDIF
 
     SELECT CASE (ndim)
@@ -436,13 +433,13 @@ SUBROUTINE subpatch_create(p,mesh,istart,iend,istart_p,iend_p,ghostsize,info)
         ALLOCATE(p%iend_p(ppm_dim),STAT=info)
             or_fail_alloc("could not allocate p%iend_p")
     ENDIF
-    IF (.NOT.ASSOCIATED(p%istart_g)) THEN
-        ALLOCATE(p%istart_g(ppm_dim),STAT=info)
-            or_fail_alloc("could not allocate p%istart_g")
+    IF (.NOT.ASSOCIATED(p%lo_a)) THEN
+        ALLOCATE(p%lo_a(ppm_dim),STAT=info)
+            or_fail_alloc("could not allocate p%lo_a")
     ENDIF
-    IF (.NOT.ASSOCIATED(p%iend_g)) THEN
-        ALLOCATE(p%iend_g(ppm_dim),STAT=info)
-            or_fail_alloc("could not allocate p%iend_g")
+    IF (.NOT.ASSOCIATED(p%hi_a)) THEN
+        ALLOCATE(p%hi_a(ppm_dim),STAT=info)
+            or_fail_alloc("could not allocate p%hi_a")
     ENDIF
     IF (.NOT.ASSOCIATED(p%nnodes)) THEN
         ALLOCATE(p%nnodes(ppm_dim),STAT=info)
@@ -461,17 +458,14 @@ SUBROUTINE subpatch_create(p,mesh,istart,iend,istart_p,iend_p,ghostsize,info)
     p%iend_p   = iend_p
     p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
     p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
-    !p%istart_g(1:ppm_dim) = p%istart(1:ppm_dim)-ghostsize(1:ppm_dim)
-    !p%iend_g(1:ppm_dim)   = p%iend(1:ppm_dim)+ghostsize(ppm_dim+1:2*ppm_dim)
 
-    p%istart_g(1) = p%istart(1) - ghostsize(1)
-    p%iend_g(1)   = p%iend(1)   + ghostsize(2)
-    p%istart_g(2) = p%istart(2) - ghostsize(3)
-    p%iend_g(2)   = p%iend(2)   + ghostsize(4)
-
+    p%lo_a(1)     = 1 - ghostsize(1)
+    p%hi_a(1)     = p%nnodes(1)   + ghostsize(2)
+    p%lo_a(2)     = 1 - ghostsize(3)
+    p%hi_a(2)     = p%nnodes(2)   + ghostsize(4)
     IF (ppm_dim.EQ.3) THEN
-        p%istart_g(3) = p%istart(3) - ghostsize(5)
-        p%iend_g(3)   = p%iend(3)   + ghostsize(6)
+        p%lo_a(3) = 1 - ghostsize(5)
+        p%hi_a(3) = p%nnodes(3)   + ghostsize(6)
     ENDIF
 
     IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
@@ -499,10 +493,10 @@ SUBROUTINE subpatch_destroy(p,info)
         or_fail_dealloc("p%istart")
     CALL ppm_alloc(p%iend,ldc,iopt,info)
         or_fail_dealloc("p%iend")
-    CALL ppm_alloc(p%istart_g,ldc,iopt,info)
-        or_fail_dealloc("p%istart_g")
-    CALL ppm_alloc(p%iend_g,ldc,iopt,info)
-        or_fail_dealloc("p%iend_g")
+    CALL ppm_alloc(p%lo_a,ldc,iopt,info)
+        or_fail_dealloc("p%lo_a")
+    CALL ppm_alloc(p%hi_a,ldc,iopt,info)
+        or_fail_dealloc("p%hi_a")
     CALL ppm_alloc(p%istart_p,ldc,iopt,info)
         or_fail_dealloc("p%istart_p")
     CALL ppm_alloc(p%iend_p,ldc,iopt,info)
@@ -519,23 +513,36 @@ SUBROUTINE subpatch_destroy(p,info)
 END SUBROUTINE subpatch_destroy
 
 !GET POSITION
-PURE FUNCTION subpatch_get_pos(p,i,j,k) RESULT (pos)
+PURE FUNCTION subpatch_get_pos2d(p,i,j) RESULT (pos)
     !!! Return position of mesh node i,j,k
     CLASS(ppm_t_subpatch),  INTENT(IN) :: p
     INTEGER,                INTENT(IN) :: i
     INTEGER,                INTENT(IN) :: j
-    INTEGER,OPTIONAL,       INTENT(IN) :: k
     REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
 
     SELECT TYPE(mesh => p%mesh)
     TYPE IS (ppm_t_equi_mesh)
-        pos(1) = (p%istart(1)+i)*mesh%h(1)
-        pos(2) = (p%istart(2)+j)*mesh%h(2)
-        IF (PRESENT(k)) pos(3) = (p%istart(3)+k)*mesh%h(3)
-        pos(1:ppm_dim) = pos(1:ppm_dim) + mesh%offset(1:ppm_dim)
+        pos(1) = (p%istart(1)+i)*mesh%h(1) + mesh%offset(1)
+        pos(2) = (p%istart(2)+j)*mesh%h(2) + mesh%offset(2)
     END SELECT
 
-END FUNCTION subpatch_get_pos
+END FUNCTION subpatch_get_pos2d
+PURE FUNCTION subpatch_get_pos3d(p,i,j,k) RESULT (pos)
+    !!! Return position of mesh node i,j,k
+    CLASS(ppm_t_subpatch),  INTENT(IN) :: p
+    INTEGER,                INTENT(IN) :: i
+    INTEGER,                INTENT(IN) :: j
+    INTEGER,                INTENT(IN) :: k
+    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: pos
+
+    SELECT TYPE(mesh => p%mesh)
+    TYPE IS (ppm_t_equi_mesh)
+        pos(1) = (p%istart(1)+i)*mesh%h(1) + mesh%offset(1)
+        pos(2) = (p%istart(2)+j)*mesh%h(2) + mesh%offset(2)
+        pos(3) = (p%istart(3)+k)*mesh%h(3) + mesh%offset(3)
+    END SELECT
+
+END FUNCTION subpatch_get_pos3d
 
 !CREATE
 SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
@@ -605,7 +612,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     !  Local variables
     !-------------------------------------------------------------------------
     TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    INTEGER                   :: i,j,isub,id,pid
+    INTEGER                   :: i,j,isub,jsub,id,pid
     INTEGER                   :: size2,size_tmp,nsubpatch,nsubpatchi
     CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
     CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
@@ -684,11 +691,17 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     size_tmp=0
     DO i = 1,topo%nsublist
         isub = topo%isublist(i)
+        !----------------------------------------------------------------
         ! check if the subdomain overlaps with the patch
+        ! if so, then there will be a subpatch created for that subdomain.
+        ! Grow the size of the array of pointers this%subpach_by_sub.
+        ! (simpler to do it this way if we dont know how many patches
+        ! are going to be added)
+        !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
             ALL(patch(ppm_dim+1:2*ppm_dim).GT.topo%min_subd(1:ppm_dim,isub)))&
                THEN 
-           ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+           ASSOCIATE (sarray => this%subpatch_by_sub(i))
            IF (sarray%nsubpatch.GE.sarray%size) THEN
                size2 = MAX(2*sarray%size,5)
                IF (size_tmp.LT.size2) THEN
@@ -717,8 +730,10 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     ! loop through all subdomains on this processor
     DO i = 1,topo%nsublist
         isub = topo%isublist(i)
-        nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
+        nsubpatchi = this%subpatch_by_sub(i)%nsubpatch
+        !----------------------------------------------------------------
         ! check if the subdomain overlaps with the patch
+        !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
             ALL(patch(ppm_dim+1:2*ppm_dim).GT.topo%min_subd(1:ppm_dim,isub)))&
                THEN 
@@ -729,15 +744,19 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
             iend(1:ppm_dim)   = 1 + FLOOR((  MIN(patch(ppm_dim+1:2*ppm_dim),&
                 topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
 
+            !----------------------------------------------------------------
             ! create a new subpatch object
+            !----------------------------------------------------------------
             ALLOCATE(ppm_t_subpatch::p,STAT=info)
                 or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
+            !----------------------------------------------------------------
             ! determine ghostlayer size for this subpatch
             ! (there is a ghostlayer if and only if the border of the subpatch
             ! does not coincide with a border of the patch itself - in that
             ! case, the width of the ghostlayer is truncated by the "mesh-wide"
             ! ghostsize parameter) 
+            !----------------------------------------------------------------
             
             !TODO: deal with computational domain boundaries (e.g.
             ! when the patch is infinite)
@@ -756,12 +775,16 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
             nsubpatch = nsubpatch+1
             A_p%subpatch(nsubpatch)%t => p
 
+            !----------------------------------------------------------------
             !add a pointer to this subpatch
+            !----------------------------------------------------------------
             nsubpatchi = nsubpatchi + 1
-            this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
-            this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
+            this%subpatch_by_sub(i)%vec(nsubpatchi)%t => p
+            this%subpatch_by_sub(i)%nsubpatch = nsubpatchi
 
+            !----------------------------------------------------------------
             ! put the subpatch object in the collection of subpatches on this mesh
+            !----------------------------------------------------------------
             CALL this%subpatch%push(p,info,id)
                 or_fail("could not add new subpatch to mesh")
         ENDIF
@@ -788,13 +811,17 @@ SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
 
     start_subroutine("mesh_def_uniform")
 
-    !create a huge patch
+    !----------------------------------------------------------------
+    ! Create a huge patch
+    !----------------------------------------------------------------
     patch(1:ppm_dim)           = -HUGE(1._ppm_kind_double)
     patch(ppm_dim+1:2*ppm_dim) =  HUGE(1._ppm_kind_double)
 
+    !----------------------------------------------------------------
     !and add it to the mesh (it will compute the intersection
     ! between this infinite patch and the (hopefully) finite
     ! computational domain)
+    !----------------------------------------------------------------
     CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
         or_fail("failed to add patch")
 
@@ -803,7 +830,7 @@ SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
     end_subroutine()
 END SUBROUTINE equi_mesh_def_uniform
 
-SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
+SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
     !!! Constructor for the cartesian mesh object
     !-------------------------------------------------------------------------
     !  Modules
@@ -818,13 +845,13 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
     !-------------------------------------------------------------------------
     !  Arguments
     !-------------------------------------------------------------------------
-    CLASS(ppm_t_equi_mesh)                  :: this
+    CLASS(ppm_t_equi_mesh)                                    :: this
     !!! cartesian mesh object
-    INTEGER                 , INTENT(IN   ) :: topoid
+    INTEGER                 ,                   INTENT(IN   ) :: topoid
     !!! Topology ID for which mesh has been created 
-    REAL(ppm_kind_double), DIMENSION(:), INTENT(IN   ) :: Offset
+    REAL(ppm_kind_double), DIMENSION(:),        INTENT(IN   ) :: Offset
     !!! Offset in each dimension
-    INTEGER                 , INTENT(  OUT) :: info
+    INTEGER                                   , INTENT(  OUT) :: info
     !!! Returns status, 0 upon success
     INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: Nm
     !!! Global number of mesh points in the whole comput. domain
@@ -835,6 +862,8 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
     !!! Note: Exactly one of Nm and h should be specified
     INTEGER,DIMENSION(:),              OPTIONAL,INTENT(IN   ) :: ghostsize
     !!! size of the ghost layer, in number of mesh nodes for each dimension
+    CHARACTER(LEN=*), OPTIONAL,                 INTENT(IN   ) :: name
+    !!! name of this mesh
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
@@ -937,6 +966,12 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize)
         this%ghostsize(1:ppm_dim) = ghostsize(1:ppm_dim)
     ELSE
         this%ghostsize(1:ppm_dim) = 0
+    ENDIF
+
+    IF (PRESENT(name)) THEN
+        this%name = TRIM(ADJUSTL(name))
+    ELSE
+        this%name = "default_mesh_name"
     ENDIF
 
     !-------------------------------------------------------------------------
