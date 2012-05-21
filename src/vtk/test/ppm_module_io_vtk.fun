@@ -158,7 +158,7 @@ real(mk)                         :: eps
         particles%prop(1)%name = 'bla'
         particles%iprop(1)%name = 'sub'
         fname = 'test'
-        call ppm_vtk_particles(topoid,particles,fname,info)
+        call ppm_vtk_particles(fname,particles,info)
         assert_equal(info,0)
     end test
 
