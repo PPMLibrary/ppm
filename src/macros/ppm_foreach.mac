@@ -3,10 +3,10 @@ modifier indices(i=i,j=j,k=k)
 modifier sca_fields(*sfs)
 modifier vec_fields(*vfs)
 modifier stencil_width(st_i=nil,st_j=nil,st_k=nil)
-% scope.var sbpitr: "CLASS(ppm_t_subpatch_),POINTER   :: sbpitr"
+% scope.var(:sbpitr, "CLASS(ppm_t_subpatch_),POINTER")
 sbpitr => <%= m %>%subpatch%begin()
 % unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil? && bodies.interior.nil?
-%   scope.var stnclint: "INTEGER,DIMENSION(2*ppm_dim) :: stnclint"
+%   scope.var(:stnclint, "INTEGER,DIMENSION(2*ppm_dim)")
 % end
 do while (associated(sbpitr))
 % sfs.each do |f|
