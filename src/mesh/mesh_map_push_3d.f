@@ -187,11 +187,13 @@
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
       IF (Ndata .EQ. 0) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,caller,   &
-     &            'There is no data to be sent',info)
-          ENDIF
-          GOTO 9999
+        IF (ppm_debug .GT. 1) THEN
+            info = ppm_error_notice
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
+     &          'There is no data to be sent. Skipping push.',__LINE__,info)
+             info = 0
+        ENDIF
+        GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -326,7 +328,7 @@
                xhi = xlo+ppm_mesh_isendblksize(1,j)-1
                yhi = ylo+ppm_mesh_isendblksize(2,j)-1
                zhi = zlo+ppm_mesh_isendblksize(3,j)-1
-               IF (ppm_debug .GT. 1) THEN
+               IF (ppm_debug .GT. 2) THEN
                    stdout("isub = ",isub," jsub = ",jsub)
                    stdout("p%istart(1:2) = ",'p%istart(1:2)')
                    WRITE(mesg,'(A,3I4)') 'start: ',             &

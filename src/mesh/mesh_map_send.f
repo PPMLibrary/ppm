@@ -55,14 +55,15 @@
 
       ! warn if buffer is empty
       !TODO
-      !IF (ppm_buffer_set .LT. 1) THEN
-        !info = ppm_error_notice
-        !IF (ppm_debug .GT. 1) THEN
-            !CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     !&          'Buffer is empty: skipping send!',__LINE__,info)
-        !ENDIF
-        !GOTO 9999
-      !ENDIF
+      IF (ppm_buffer_set .LT. 1) THEN
+        IF (ppm_debug .GT. 1) THEN
+            info = ppm_error_notice
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
+     &          'Buffer is empty: skipping send!',__LINE__,info)
+            info = 0
+        ENDIF
+        GOTO 9999
+      ENDIF
 
 
       !-------------------------------------------------------------------------

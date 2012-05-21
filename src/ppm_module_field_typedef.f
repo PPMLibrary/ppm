@@ -225,7 +225,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
         IF (.NOT.ASSOCIATED(discr%subpatch)) THEN
             fail("Mesh not allocated. Use mesh%create() first.")
         ELSE
-            IF (discr%subpatch%nb.LE.0) THEN
+            IF (discr%npatch.LE.0) THEN
                 CALL discr%def_uniform(info)
                     or_fail("failed to create a uniform patch data structure")
             ENDIF

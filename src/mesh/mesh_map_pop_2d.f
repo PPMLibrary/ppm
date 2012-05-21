@@ -166,14 +166,12 @@
 
       ! skip if buffer empty
       IF (ppm_buffer_set .LT. 1) THEN
-        info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
+            info = ppm_error_notice
             CALL ppm_error(ppm_err_buffer_empt,caller,    &
      &          'Buffer is empty: skipping pop!',__LINE__,info)
+             info = 0
         ENDIF
-
-        info = 0
-
         GOTO 9999
       ENDIF
 
@@ -477,7 +475,7 @@
                             fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
 #endif
 #else
-                            write(*,*) "WRONG TYPE!!!!"
+                            stdout("WRONG TYPE!!!!")
 #endif
                             !------------------------------------------------------
                             !  Mesh offset for this subpatch
@@ -494,7 +492,11 @@
                             yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
                             IF (ppm_debug .GT. 1) THEN
                                 stdout("isub = ",isub," jsub = ",jsub)
-                                stdout("p%istart(1:2) = ",'p%istart(1:2)')
+                                stdout("p%istart_p",'p%istart_p')
+                                stdout("p%iend_p",'p%iend_p')
+                                stdout("p%istart",'p%istart')
+                                stdout("p%iend",'p%iend')
+                                stdout("patchid = ",patchid)
                                 WRITE(mesg,'(A,2I4)') 'start: ',             &
                                 &    ppm_mesh_irecvblkstart(1,j),&
                                 &    ppm_mesh_irecvblkstart(2,j)
@@ -514,30 +516,14 @@
                                 WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
                                 CALL ppm_write(ppm_rank,caller,mesg,info)
                             ENDIF
-                            stdout("p%lo_a",'p%lo_a')
-                            stdout("p%hi_a",'p%hi_a')
-                            stdout("p%istart",'p%istart')
-                            stdout("p%iend",'p%iend')
+                            !check that real mesh nodes are not touched
+                            check_false("(xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2))")
+                            !check that we dont access out-of-bounds elements
                             check_true("(xlo.GE.p%lo_a(1))")
                             check_true("(xhi.LE.p%hi_a(1))")
                             check_true("(ylo.GE.p%lo_a(2))")
                             check_true("(yhi.LE.p%hi_a(2))")
                             check_associated(fdata)
-#if    __DIM == __SFIELD
-                            stdout("SIZE(fdata)=",'size(fdata,1)',&
-                                'size(fdata,2)')
-                            stdout("LBOUND(fdata)=",'LBOUND(fdata,1)',&
-                                'LBOUND(fdata,2)')
-                            stdout("UBOUND(fdata)=",'UBOUND(fdata,1)',&
-                                'UBOUND(fdata,2)')
-#elif  __DIM == __VFIELD
-                            stdout("SIZE(fdata)=",'size(fdata,1)',&
-                                'size(fdata,2)', 'size(fdata,3)')
-                            stdout("LBOUND(fdata)=",'LBOUND(fdata,1)',&
-                                'LBOUND(fdata,2)', 'LBOUND(fdata,3)')
-                            stdout("UBOUND(fdata)=",'UBOUND(fdata,1)',&
-                                'UBOUND(fdata,2)', 'UBOUND(fdata,3)')
-#endif
 
                             exit patches
                        ENDIF
@@ -545,6 +531,14 @@
                ENDDO patches
 
                IF (.NOT. found_patch) THEN
+                   stdout("isub = ",isub," jsub = ",jsub," ipatch = ",ipatch)
+                   stdout("patchid = ",patchid)
+                   stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
+                   stdout("h = ",'this%h(1:ppm_dim)')
+                   stdout("this%subpatch_by_sub(isub)%nsubpatch = ",&
+                               'this%subpatch_by_sub(isub)%nsubpatch')
+                   stdout("min_sub(jsub)=",'target_topo%min_subd(1:ppm_dim,jsub)')
+                   stdout("max_sub(jsub)=",'target_topo%max_subd(1:ppm_dim,jsub)')
                    fail("could not find a patch on this sub with the right global id")
                ENDIF
 

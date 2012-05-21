@@ -366,6 +366,7 @@
       CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
             or_fail_alloc("this%ghost_recvblksize")
 
+
       !-------------------------------------------------------------------------
       !  Allocate local memory for sorted offset list
       !-------------------------------------------------------------------------
@@ -491,6 +492,8 @@
                             or_fail_alloc("this%ghost_recvblkstart")
                      CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
                             or_fail_alloc("this%ghost_recvblksize")
+                     CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
+                            or_fail_alloc("this%recvghost_patchid")
                  ENDIF
 
                  !--------------------------------------------------------------

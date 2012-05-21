@@ -487,6 +487,53 @@
                             mofs(1) = p%istart(1)-1
                             mofs(2) = p%istart(2)-1
                             mofs(3) = p%istart(3)-1
+                            !------------------------------------------------------
+                            !  Get boundaries of mesh block to be received in 
+                            !  local sub coordinates
+                            !------------------------------------------------------
+                            xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
+                            ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
+                            zlo = ppm_mesh_irecvblkstart(3,j)-mofs(3)
+                            xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
+                            yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
+                            zhi = zlo+ppm_mesh_irecvblksize(3,j)-1
+                            IF (ppm_debug .GT. 1) THEN
+                                WRITE(mesg,'(A,3I4)') 'start: ',             &
+                                    &  ppm_mesh_irecvblkstart(1,j),&
+                                    &  ppm_mesh_irecvblkstart(2,j),&
+                                    &  ppm_mesh_irecvblkstart(3,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,3I4)') 'size: ',             &
+                                    &  ppm_mesh_irecvblksize(1,j),&
+                                    &  ppm_mesh_irecvblksize(2,j),&
+                                    &  ppm_mesh_irecvblksize(3,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,3I4)')'size_b: ',&
+                                    xhi-xlo+1,yhi-ylo+1,zhi-zlo+1
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,3I4)') 'mesh offset: ',&
+                                    mofs(1),mofs(2),mofs(3)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                            ENDIF
+
+                            !check that real mesh nodes are not touched
+                            check_false("(xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2)) .AND.zhi.GE.1 .AND. zlo.LE.p%nnodes(3)")
+                            !check that we dont access out-of-bounds elements
+                            check_true("(xlo.GE.p%lo_a(1))")
+                            check_true("(xhi.LE.p%hi_a(1))")
+                            check_true("(ylo.GE.p%lo_a(2))")
+                            check_true("(yhi.LE.p%hi_a(2))")
+                            check_true("(zlo.GE.p%lo_a(3))")
+                            check_true("(zhi.LE.p%hi_a(3))")
+                            check_associated(fdata)
 
                             exit patches
                        ENDIF
@@ -497,38 +544,6 @@
                    fail("could not find a patch on this sub with the right global id")
                ENDIF
 
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be received in local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_irecvblkstart(2,j)-mofs(2)
-               zlo = ppm_mesh_irecvblkstart(3,j)-mofs(3)
-               xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
-               yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
-               zhi = zlo+ppm_mesh_irecvblksize(3,j)-1
-               IF (ppm_debug .GT. 1) THEN
-                   WRITE(mesg,'(A,3I4)') 'start: ',             &
-     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j),&
-     &                 ppm_mesh_irecvblkstart(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'size: ',             &
-     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j),&
-     &                 ppm_mesh_irecvblksize(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)')'size_b: ',xhi-xlo+1,yhi-ylo+1,zhi-zlo+1
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'mesh offset: ',mofs(1),mofs(2),mofs(3)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-               ENDIF
 
 
 #if   __DIM == __VFIELD

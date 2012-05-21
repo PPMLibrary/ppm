@@ -186,11 +186,13 @@
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
       IF (Ndata .EQ. 0) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,caller,   &
-     &            'There is no data to be sent',info)
-          ENDIF
-          GOTO 9999
+        IF (ppm_debug .GT. 1) THEN
+            info = ppm_error_notice
+            CALL ppm_error(ppm_err_buffer_empt,caller,    &
+     &          'There is no data to be sent. Skipping push.',__LINE__,info)
+             info = 0
+        ENDIF
+        GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -250,15 +252,6 @@
       CALL ppm_alloc(sublist,ldu,iopt,info)
             or_fail_alloc("ppm_sublist")
 
-      !REMOVME
-      DO i=1,ppm_nsendlist
-          DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
-              jsub = ppm_mesh_isendfromsub(j)
-              stdout("patchid in sendlist : ",'ppm_mesh_isendpatchid(1:2,j)',&
-                  " (i=",i,",j=",j,"jsub=",jsub,")")
-          ENDDO
-      ENDDO
-
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist()
       !-------------------------------------------------------------------------
@@ -302,13 +295,8 @@
                !or_fail("could not get_field_on_patch for this sub")
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
-               do k=1,size(this%subpatch_by_sub)
-                   stdout("this%subpatch_by_sub(",k,")%nsubpatch = ",&
-                       'this%subpatch_by_sub(k)%nsubpatch')
-               enddo
-               stdout("isub = ",isub," jsub = ",jsub," j = ",j)
+               !stdout("isub = ",isub," jsub = ",jsub," j = ",j)
                patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
-                   stdout("IPATCH = ",ipatch,jsub,i,j)
                    SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
@@ -340,7 +328,7 @@
                             xhi = xlo+ppm_mesh_isendblksize(1,j)-1
                             yhi = ylo+ppm_mesh_isendblksize(2,j)-1
 
-                            IF (ppm_debug .GT. 1) THEN
+                            IF (ppm_debug .GT. 2) THEN
                                 stdout("isub = ",isub," jsub = ",jsub)
                                 stdout("p%istart(1:2) = ",'p%istart(1:2)')
                                 WRITE(mesg,'(A,2I4)') 'start: ',             &
@@ -359,12 +347,12 @@
                                 CALL ppm_write(ppm_rank,caller,mesg,info)
                                 WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
                                 CALL ppm_write(ppm_rank,caller,mesg,info)
+                                stdout("p%lo_a",'p%lo_a')
+                                stdout("p%hi_a",'p%hi_a')
+                                stdout("p%istart",'p%istart')
+                                stdout("p%iend",'p%iend')
                             ENDIF
 
-                            stdout("p%lo_a",'p%lo_a')
-                            stdout("p%hi_a",'p%hi_a')
-                            stdout("p%istart",'p%istart')
-                            stdout("p%iend",'p%iend')
                             check_true("(xlo.GE.p%lo_a(1))")
                             check_true("(xhi.LE.p%hi_a(1))")
                             check_true("(ylo.GE.p%lo_a(2))")

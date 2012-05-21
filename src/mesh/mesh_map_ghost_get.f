@@ -171,6 +171,15 @@
          ENDDO
       ENDDO
 
+      !DO i=1,ppm_nsendlist
+          !DO j=ppm_psendbuffer(i),ppm_psendbuffer(i+1)-1
+              !stdout("patchid in sendlist : ",'ppm_mesh_isendpatchid(1:2,j)',&
+                  !" (i=",i,",j=",j,"jsub=",'ppm_mesh_isendfromsub(j)',")")
+              !stdout("blkstart in sendlist : ",'ppm_mesh_isendblkstart(1:2,j)',&
+                  !" (i=",i,",j=",j,"jsub=",'ppm_mesh_isendfromsub(j)',")")
+          !ENDDO
+      !ENDDO
+
       end_subroutine()
 
       END SUBROUTINE equi_mesh_map_ghost_get

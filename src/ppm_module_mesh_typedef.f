@@ -522,8 +522,9 @@ PURE FUNCTION subpatch_get_pos2d(p,i,j) RESULT (pos)
 
     SELECT TYPE(mesh => p%mesh)
     TYPE IS (ppm_t_equi_mesh)
-        pos(1) = (p%istart(1)+i)*mesh%h(1) + mesh%offset(1)
-        pos(2) = (p%istart(2)+j)*mesh%h(2) + mesh%offset(2)
+        !numbering of mesh nodes goes from 1 to N
+        pos(1) = (p%istart(1)+i-2)*mesh%h(1) + mesh%offset(1)
+        pos(2) = (p%istart(2)+j-2)*mesh%h(2) + mesh%offset(2)
     END SELECT
 
 END FUNCTION subpatch_get_pos2d
@@ -537,9 +538,10 @@ PURE FUNCTION subpatch_get_pos3d(p,i,j,k) RESULT (pos)
 
     SELECT TYPE(mesh => p%mesh)
     TYPE IS (ppm_t_equi_mesh)
-        pos(1) = (p%istart(1)+i)*mesh%h(1) + mesh%offset(1)
-        pos(2) = (p%istart(2)+j)*mesh%h(2) + mesh%offset(2)
-        pos(3) = (p%istart(3)+k)*mesh%h(3) + mesh%offset(3)
+        !numbering of mesh nodes goes from 1 to N
+        pos(1) = (p%istart(1)+i-2)*mesh%h(1) + mesh%offset(1)
+        pos(2) = (p%istart(2)+j-2)*mesh%h(2) + mesh%offset(2)
+        pos(3) = (p%istart(3)+k-2)*mesh%h(3) + mesh%offset(3)
     END SELECT
 
 END FUNCTION subpatch_get_pos3d
@@ -611,17 +613,18 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
-    TYPE(ppm_t_topo), POINTER :: topo => NULL()
-    INTEGER                   :: i,j,isub,jsub,id,pid
-    INTEGER                   :: size2,size_tmp,nsubpatch,nsubpatchi
-    CLASS(ppm_t_subpatch_),  POINTER :: p => NULL()
-    CLASS(ppm_t_A_subpatch_),POINTER :: A_p => NULL()
-    INTEGER,              DIMENSION(ppm_dim) :: istart,iend
-    INTEGER,              DIMENSION(ppm_dim) :: istart_p,iend_p
-    INTEGER,              DIMENSION(2*ppm_dim) :: ghostsize
-    REAL(ppm_kind_double),DIMENSION(ppm_dim) :: h,Offset
+    TYPE(ppm_t_topo), POINTER                   :: topo => NULL()
+    INTEGER                                     :: i,j,isub,jsub,id,pid
+    INTEGER                                     :: size2,size_tmp
+    INTEGER                                     :: nsubpatch,nsubpatchi
+    CLASS(ppm_t_subpatch_),  POINTER            :: p => NULL()
+    CLASS(ppm_t_A_subpatch_),POINTER            :: A_p => NULL()
+    INTEGER,              DIMENSION(ppm_dim)    :: istart,iend
+    INTEGER,              DIMENSION(ppm_dim)    :: istart_p,iend_p
+    INTEGER,              DIMENSION(2*ppm_dim)  :: ghostsize
+    REAL(ppm_kind_double),DIMENSION(ppm_dim)    :: h,Offset
+    LOGICAL                                     :: linfinite
     TYPE(ppm_t_ptr_subpatch),DIMENSION(:),POINTER :: tmp_array => NULL()
-    LOGICAL                                  :: linfinite
 
     start_subroutine("mesh_def_patch")
 
@@ -699,7 +702,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
         ! are going to be added)
         !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-            ALL(patch(ppm_dim+1:2*ppm_dim).GT.topo%min_subd(1:ppm_dim,isub)))&
+            ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
                THEN 
            ASSOCIATE (sarray => this%subpatch_by_sub(i))
            IF (sarray%nsubpatch.GE.sarray%size) THEN
@@ -730,19 +733,26 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     ! loop through all subdomains on this processor
     DO i = 1,topo%nsublist
         isub = topo%isublist(i)
+        !how many subpatches do we already have here
         nsubpatchi = this%subpatch_by_sub(i)%nsubpatch
         !----------------------------------------------------------------
         ! check if the subdomain overlaps with the patch
         !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-            ALL(patch(ppm_dim+1:2*ppm_dim).GT.topo%min_subd(1:ppm_dim,isub)))&
+            ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
                THEN 
 
             ! finds the mesh nodes which are contained in the overlap region
             istart(1:ppm_dim) = 1 + CEILING((MAX(patch(1:ppm_dim),&
                 topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
             iend(1:ppm_dim)   = 1 + FLOOR((  MIN(patch(ppm_dim+1:2*ppm_dim),&
-                topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
+                topo%max_subd(1:ppm_dim,isub)-ppm_myepsd)-Offset(1:ppm_dim))/h(1:ppm_dim))
+            !the ppm_myepsd term ensures that nodes that are on a East, North,
+            ! or Top subdomain boundary are not counted within a subpatch.
+            ! This is arbitrary and ensures that real mesh nodes are not
+            ! duplicated.
+            check_true("ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))",&
+                "Could it be that one subdomain is smaller than the grid spacing?") 
 
             !----------------------------------------------------------------
             ! create a new subpatch object
@@ -794,11 +804,15 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
     this%patch%vec(id)%t%nsubpatch = nsubpatch
     this%patch%vec(id)%t%patchid = pid
 
+    !Increment the number of patches defined on this mesh
+    this%npatch = this%npatch + 1
+
     end_subroutine()
 END SUBROUTINE equi_mesh_def_patch
 
 SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
-    !!! Add a uniform patch to a mesh
+    !!! Add a uniform patch to a mesh (the patch covers the whole computational
+    !!! domain, effectively mimicking a normal usual mesh without patches).
     CLASS(ppm_t_equi_mesh)                  :: this
     INTEGER                 , INTENT(  OUT) :: info
     !!! Returns status, 0 upon success
@@ -898,6 +912,9 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
     ppm_nb_meshes = ppm_nb_meshes + 1
     this%ID = ppm_nb_meshes 
 
+    !By default, there are no patches defined on this mesh yet.
+    this%npatch = 0
+
     topo => ppm_topo(topoid)%t
 
     !check_equal(a,b,"this is an error message")
@@ -993,8 +1010,16 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
             this%istart(1:ppm_dim,i) = 1 + CEILING((     &
                 topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
             this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
-                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+                topo%max_subd(1:ppm_dim,i)-ppm_myepsd-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+            check_true(&
+        "ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i))&
+        .GT.(this%h(1:ppm_dim)+ppm_myepsd))",&
+        "Grid spacing h has to be stricly smaller than any subdomain.")
     ENDDO
+    !the ppm_myepsd term ensures that nodes that are on a East, North,
+    ! or Top subdomain boundary are not counted within a subpatch.
+    ! This is arbitrary and ensures that real mesh nodes are not
+    ! duplicated.
 
     !DO i=1,nsubs
         !this%istart(1:ppm_dim,i) = &
@@ -1172,6 +1197,7 @@ SUBROUTINE equi_mesh_destroy(this,info)
     destroy_collection_ptr(this%field_ptr)
 
     this%ID = 0
+    this%npatch = 0
 
     end_subroutine()
 END SUBROUTINE equi_mesh_destroy

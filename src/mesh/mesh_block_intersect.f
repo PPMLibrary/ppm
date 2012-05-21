@@ -121,8 +121,10 @@
       !  Determine intersecting mesh blocks
       !-------------------------------------------------------------------------
       ! loop over each subpatch of the target sub
-      stdout("FOR source_sub = ",isub," target_sub",jsub)
-      stdout("   nb subpatches = ",'to_mesh%subpatch_by_sub(isub_loc)%nsubpatch')
+      IF (ppm_debug.GT.2) THEN
+          stdout("FOR source_sub = ",isub," target_sub",jsub)
+          stdout("   nb subpatches = ",'to_mesh%subpatch_by_sub(isub_loc)%nsubpatch')
+      ENDIF
       DO ipatch=1,to_mesh%subpatch_by_sub(isub_loc)%nsubpatch
           dosend = .TRUE.
           SELECT TYPE(p => to_mesh%subpatch_by_sub(isub_loc)%vec(ipatch)%t)
@@ -130,6 +132,7 @@
               !intersect the patch that this subpatch belongs to
               ! (coordinates istart_p and iend_p) with the extended target
               ! sub and with the source sub
+              IF (ppm_debug.GT.2) THEN
               stdout("---------------------------------")
               stdout("INTERSECTING: source_sub = ",isub," target_sub",jsub)
               stdout("  OFFSET = ",offset)
@@ -137,24 +140,29 @@
               stdout(" patch : ")
               stdout("     ",'p%istart_p')
               stdout("     ",'p%iend_p')
+              stdout(" subpatch : ")
+              stdout("     ",'p%istart')
+              stdout("     ",'p%iend')
+              stdout(" ghostsizes : ")
+              stdout("     ",'p%ghostsize(1)','p%ghostsize(3)')
+              stdout("     ",'p%ghostsize(2)','p%ghostsize(4)')
               stdout(" source sub : ")
               stdout("     ",'this%istart(1:pdim,isub)')
               stdout("     ",'this%iend(1:pdim,isub)')
               stdout(" offset source sub : ")
               stdout("     ",'this%istart(1:pdim,isub)+offset(1:pdim)')
               stdout("     ",'this%iend(1:pdim,isub)+offset(1:pdim)-chop(1:pdim)')
-              stdout(" target subpatch : ")
-              stdout("     ",'p%istart')
-              stdout("     ",'p%iend')
               stdout(" target sub : ")
-              stdout("     ",'to_mesh%istart(1:pdim,jsub)',&
-                             'to_mesh%iend(1:pdim,jsub)')
+              stdout("     ",'to_mesh%istart(1:pdim,jsub)')
+              stdout("     ",'to_mesh%iend(1:pdim,jsub)')
               stdout(" extended target sub : ")
               stdout("     ",'to_mesh%istart(1,jsub)-this%ghostsize(1)',&
                              'to_mesh%istart(2,jsub)-this%ghostsize(1)')
               stdout("     ",'to_mesh%iend(1,jsub)+this%ghostsize(2)',&
                              'to_mesh%iend(2,jsub)+this%ghostsize(2)')
+              ENDIF
 
+              !No intersection if the patch is not on the target subdomain
               DO k=1,pdim
                   fromistartk= this%istart(k,isub)+offset(k)
                   fromiendk  = this%iend(k,isub)+offset(k)-chop(k)
@@ -165,20 +173,38 @@
                   iblockstart(k) = MAX(fromistartk,toistartk)
                   iblockstopk    = MIN(fromiendk,toiendk)
 
+                  ! (Here we would need to use the ghostlayer sizes of the target
+                  ! subpatch, which lives on another subdomain and which we
+                  ! therefore cannot access as it could be on another proc.
+                  ! This information could be stored, but instead we just
+                  ! use the global ghostsize and reject the cases that fail.
+                  ! The latter are those for which the source patch does not
+                  ! have real mesh nodes on the target sub).
                   toistartk  = to_mesh%istart(k,jsub)-to_mesh%ghostsize(k)
                   toiendk    = to_mesh%iend(k,jsub)+to_mesh%ghostsize(k)
 
                   iblockstart(k) = MAX(iblockstart(k),toistartk)
                   iblockstopk    = MIN(iblockstopk,toiendk)
 
-                  nblocksize(k)  = iblockstopk-iblockstart(k)
+                  !size of the block (+1 if mesh nodes at the boundary
+                  ! between blocks are NOT duplicated, and should thus be
+                  ! counted as ghosts) 
+                  nblocksize(k)  = iblockstopk-iblockstart(k)+1
                   ! do not send if there is nothing to be sent
                   IF (nblocksize(k).LT.1) dosend = .FALSE.
-              ENDDO
 
+                  IF (p%istart_p(k).GT.to_mesh%iend(k,jsub)) dosend = .FALSE.
+                  IF (p%iend_p(k).LT.to_mesh%istart(k,jsub)) dosend = .FALSE.
+              ENDDO
+              !Would that make a difference in speed?
+              !dosend = ALL(nblocksize.GE.1)
+
+              IF (ppm_debug.GT.2) THEN
               stdout("iblockstart = ",iblockstart)
               stdout("nblockssize = ",nblocksize)
+              stdout("dosend = ",dosend)
               stdout("---------------------------------")
+              ENDIF
 
               IF (dosend) THEN
                   nsendlist = nsendlist + 1
