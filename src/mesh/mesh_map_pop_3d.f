@@ -166,16 +166,13 @@
       ENDIF
 
       ! skip if buffer empty
-      !TODO?
       IF (ppm_buffer_set .LT. 1) THEN
-        info = ppm_error_notice
         IF (ppm_debug .GT. 1) THEN
+            info = ppm_error_notice
             CALL ppm_error(ppm_err_buffer_empt,caller,    &
      &          'Buffer is empty: skipping pop!',__LINE__,info)
+             info = 0
         ENDIF
-
-        info = 0
-
         GOTO 9999
       ENDIF
 
@@ -462,9 +459,11 @@
                             ldu(3) = zhi+p%ghostsize(6)
                             ldl(1) = 1-p%ghostsize(1)
                             ldl(2) = 1-p%ghostsize(3)
-                            ldl(2) = 1-p%ghostsize(5)
+                            ldl(3) = 1-p%ghostsize(5)
 #endif
 
+                            check_associated("p%subpatch_data")
+                            check_true("p%subpatch_data%exists(p_idx)","does not exist")
 
 #if __KIND == __DOUBLE_PRECISION
 #if    __DIM == __SFIELD
@@ -498,6 +497,12 @@
                             yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
                             zhi = zlo+ppm_mesh_irecvblksize(3,j)-1
                             IF (ppm_debug .GT. 1) THEN
+                                stdout("isub = ",isub," jsub = ",jsub)
+                                stdout("p%istart_p",'p%istart_p')
+                                stdout("p%iend_p",'p%iend_p')
+                                stdout("p%istart",'p%istart')
+                                stdout("p%iend",'p%iend')
+                                stdout("patchid = ",patchid)
                                 WRITE(mesg,'(A,3I4)') 'start: ',             &
                                     &  ppm_mesh_irecvblkstart(1,j),&
                                     &  ppm_mesh_irecvblkstart(2,j),&
@@ -541,6 +546,14 @@
                ENDDO patches
 
                IF (.NOT. found_patch) THEN
+                   stdout("isub = ",isub," jsub = ",jsub," ipatch = ",ipatch)
+                   stdout("patchid = ",patchid)
+                   stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
+                   stdout("h = ",'this%h(1:ppm_dim)')
+                   stdout("this%subpatch_by_sub(isub)%nsubpatch = ",&
+                               'this%subpatch_by_sub(isub)%nsubpatch')
+                   stdout("min_sub(jsub)=",'target_topo%min_subd(1:ppm_dim,jsub)')
+                   stdout("max_sub(jsub)=",'target_topo%max_subd(1:ppm_dim,jsub)')
                    fail("could not find a patch on this sub with the right global id")
                ENDIF
 

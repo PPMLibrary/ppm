@@ -312,59 +312,65 @@
                             fdata => p%subpatch_data%vec(p_idx)%t%data_4d_rd
 #endif
 #endif
-               !----------------------------------------------------------------
-               !  Mesh offset for this sub
-               !----------------------------------------------------------------
-               mofs(1) = p%istart(1)-1
-               mofs(2) = p%istart(2)-1
-               mofs(3) = p%istart(3)-1
-               !----------------------------------------------------------------
-               !  Get boundaries of mesh block to be sent on local sub
-               !  coordinates
-               !----------------------------------------------------------------
-               xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
-               ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
-               zlo = ppm_mesh_isendblkstart(3,j)-mofs(3)
-               xhi = xlo+ppm_mesh_isendblksize(1,j)-1
-               yhi = ylo+ppm_mesh_isendblksize(2,j)-1
-               zhi = zlo+ppm_mesh_isendblksize(3,j)-1
-               IF (ppm_debug .GT. 2) THEN
-                   stdout("isub = ",isub," jsub = ",jsub)
-                   stdout("p%istart(1:2) = ",'p%istart(1:2)')
-                   WRITE(mesg,'(A,3I4)') 'start: ',             &
-     &                 ppm_mesh_isendblkstart(1,j),ppm_mesh_isendblkstart(2,j),&
-     &                 ppm_mesh_isendblkstart(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'size: ',             &
-     &                 ppm_mesh_isendblksize(1,j),ppm_mesh_isendblksize(2,j),&
-     &                 ppm_mesh_isendblksize(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'mesh offset: ',mofs(1),mofs(2),mofs(3)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-               ENDIF
-                           check_true("(xlo.GE.p%lo_a(1))")
-                           check_true("(xhi.LE.p%hi_a(1))")
-                           check_true("(ylo.GE.p%lo_a(2))")
-                           check_true("(yhi.LE.p%hi_a(2))")
-                           check_true("(zlo.GE.p%lo_a(3))")
-                           check_true("(zhi.LE.p%hi_a(3))")
-                           check_associated(fdata)
+                            !---------------------------------------------------
+                            !  Mesh offset for this sub
+                            !---------------------------------------------------
+                            mofs(1) = p%istart(1)-1
+                            mofs(2) = p%istart(2)-1
+                            mofs(3) = p%istart(3)-1
+                            !---------------------------------------------------
+                            !  Get boundaries of mesh block to be sent on local sub
+                            !  coordinates
+                            !---------------------------------------------------
+                            xlo = ppm_mesh_isendblkstart(1,j)-mofs(1)
+                            ylo = ppm_mesh_isendblkstart(2,j)-mofs(2)
+                            zlo = ppm_mesh_isendblkstart(3,j)-mofs(3)
+                            xhi = xlo+ppm_mesh_isendblksize(1,j)-1
+                            yhi = ylo+ppm_mesh_isendblksize(2,j)-1
+                            zhi = zlo+ppm_mesh_isendblksize(3,j)-1
+                            IF (ppm_debug .GT. 2) THEN
+                                stdout("isub = ",isub," jsub = ",jsub)
+                                WRITE(mesg,'(A,3I4)') 'start: ',             &
+                                    &  ppm_mesh_isendblkstart(1,j),&
+                                    &  ppm_mesh_isendblkstart(2,j),&
+                                    &  ppm_mesh_isendblkstart(3,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,3I4)') 'size: ',             &
+                                    &  ppm_mesh_isendblksize(1,j),&
+                                    &  ppm_mesh_isendblksize(2,j),&
+                                    &  ppm_mesh_isendblksize(3,j)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,3I4)') 'mesh offset: ',&
+                                    mofs(1),mofs(2),mofs(3)
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
+                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                stdout("p%lo_a",'p%lo_a')
+                                stdout("p%hi_a",'p%hi_a')
+                                stdout("p%istart",'p%istart')
+                                stdout("p%iend",'p%iend')
+                            ENDIF
+                            check_true("(xlo.GE.p%lo_a(1))")
+                            check_true("(xhi.LE.p%hi_a(1))")
+                            check_true("(ylo.GE.p%lo_a(2))")
+                            check_true("(yhi.LE.p%hi_a(2))")
+                            check_true("(zlo.GE.p%lo_a(3))")
+                            check_true("(zhi.LE.p%hi_a(3))")
+                            check_associated(fdata)
 
                             exit patches
-                       ENDIF
-                   END SELECT
-               ENDDO patches
-               IF (.NOT. found_patch) THEN
-                   fail("could not find a patch on this sub with the right global id")
-               ENDIF
+                        ENDIF
+                    END SELECT
+                ENDDO patches
+                IF (.NOT. found_patch) THEN
+            fail("could not find a patch on this sub with the right global id")
+                ENDIF
 
                !----------------------------------------------------------------
                !  Loop over all mesh points of this block and append data

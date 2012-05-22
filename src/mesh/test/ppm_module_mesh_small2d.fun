@@ -12,7 +12,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -135,7 +135,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             call MPI_BARRIER(comm,info)
         endif
 
-        Nm = 55
+        Nm = 125
         offset = 0._mk
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
@@ -155,8 +155,8 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         use ppm_module_io_vtk
         type(ppm_t_field) :: Field1,Field2
         real(ppm_kind_double),dimension(ndim) :: pos
-        real(mk),dimension(:,:,:,:),pointer :: Field1_data => NULL()
-        real(mk),dimension(:,:,:),  pointer :: Field2_data => NULL()
+        real(mk),dimension(:,:,:),pointer :: Field1_data => NULL()
+        real(mk),dimension(:,:),  pointer :: Field2_data => NULL()
         integer :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER             :: dinfo => NULL()
         logical :: assoc
@@ -169,7 +169,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
-        my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+        my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
 
@@ -210,14 +210,12 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
                 SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
                 TYPE IS (ppm_t_subpatch)
-                    DO k=1,p%nnodes(3)
                     DO j=1,p%nnodes(2)
-                    DO i=1,p%nnodes(1)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
-                        Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
-                    ENDDO
-                    ENDDO
+                        DO i=1,p%nnodes(1)
+                            pos(1:ndim) = p%get_pos(i,j)
+                            Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
+                            Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
+                        ENDDO
                     ENDDO
                 END SELECT
             ENDDO
@@ -228,8 +226,8 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
                 isub = topo%isublist(i)
-                stdout("coordinates subs Min =  ",'topo%min_subd(1:ndim,isub)')
-                stdout("coordinates subs Max =  ",'topo%max_subd(1:ndim,isub)')
+                stdout("coordinates subs Min =  ",'topo%min_subd(1:2,isub)')
+                stdout("coordinates subs Max =  ",'topo%max_subd(1:2,isub)')
             enddo
             call MPI_BARRIER(comm,info)
             stdout("NB patch =  ",Mesh1%npatch)
@@ -237,16 +235,18 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             p => Mesh1%subpatch%begin()
                 if(associated(p)) then
                     stdout("********************************")
-                    stdout("patch     istart_p ",'p%istart_p(1:ndim)')
-                    stdout("patch     iend_p ",'p%iend_p(1:ndim)')
+                    stdout("patch     istart_p ",'p%istart_p(1:2)')
+                    stdout("patch     iend_p ",'p%iend_p(1:2)')
                     stdout("********************************")
                 endif
             do while (ASSOCIATED(p))
                 stdout("--------------------------------")
-                stdout("patch     istart ",'p%istart(1:ndim)')
-                stdout("patch     iend   ",'p%iend(1:ndim)')
-                stdout("patch alloc from ",'p%lo_a(1:ndim)')
-                stdout("            to   ",'p%hi_a(1:ndim)')
+                stdout("patch     istart ",'p%istart(1:2)')
+                stdout("patch     iend   ",'p%iend(1:2)')
+                stdout("patch     g_start",'p%ghostsize(1)','p%ghostsize(3)')
+                stdout("patch     g_end  ",'p%ghostsize(2)','p%ghostsize(4)')
+                stdout("patch alloc from ",'p%lo_a(1:2)')
+                stdout("            to   ",'p%hi_a(1:2)')
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
             enddo
@@ -254,7 +254,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         endif
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 Field1_n(1) = -10._mk * (rank+1)
                 Field1_n(2) = -10._mk * (rank+1) - 1
@@ -263,9 +263,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         !Change the values of the real nodes to something that depends
         ! on position (so that we can later check the values)
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                pos(1:ndim) = sbpitr%get_pos(i,j)
                 Field1_n(1) = cos(2._mk*pi*pos(1))
                 Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
                 Field2_n    = 1._mk
@@ -294,9 +294,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
         nb_errors = 0
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                pos(1:ndim) = sbpitr%get_pos(i,j)
                 IF (Field2_n .lt. 0._mk) then
                     nb_errors = nb_errors + 1
                 ENDIF

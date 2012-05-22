@@ -330,7 +330,6 @@
 
                             IF (ppm_debug .GT. 2) THEN
                                 stdout("isub = ",isub," jsub = ",jsub)
-                                stdout("p%istart(1:2) = ",'p%istart(1:2)')
                                 WRITE(mesg,'(A,2I4)') 'start: ',             &
                                     &       ppm_mesh_isendblkstart(1,j),&
                                     &       ppm_mesh_isendblkstart(2,j)
@@ -364,7 +363,7 @@
                    END SELECT
                ENDDO patches
                IF (.NOT. found_patch) THEN
-                   fail("could not find a patch on this sub with the right global id")
+           fail("could not find a patch on this sub with the right global id")
                ENDIF
 
                !----------------------------------------------------------------

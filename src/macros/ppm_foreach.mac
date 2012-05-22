@@ -1,5 +1,5 @@
 foreach macro equi_mesh(m)
-modifier indices(i=i,j=j,k=k)
+modifier indices(i=nil,j=nil,k=nil)
 modifier sca_fields(*sfs)
 modifier vec_fields(*vfs)
 modifier stencil_width(st_i=nil,st_j=nil,st_k=nil)
@@ -8,6 +8,7 @@ sbpitr => <%= m %>%subpatch%begin()
 % unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil? && bodies.interior.nil?
 %   scope.var(:stnclint, "INTEGER,DIMENSION(2*ppm_dim)")
 % end
+%
 do while (associated(sbpitr))
 % sfs.each do |f|
     CALL sbpitr%get_field(<%= f %>_data, <%= f %>, info)
@@ -16,7 +17,12 @@ do while (associated(sbpitr))
         CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data",caller,10000,info)
         GOTO 9999
     ENDIF
+%
+% if k.nil?
 %   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data(i,j)"
+% else
+%   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data(i,j,k)"
+% end
 %
 %   sft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
 %   sft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top
@@ -28,11 +34,16 @@ do while (associated(sbpitr))
         CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data",caller,10000,info)
         GOTO 9999
     ENDIF
+% if k.nil?
 %   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data($1,i,j)"
+% else
+%   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data($1,i,j,k)"
+% end
 %
 %   vft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
 %   vft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top
 % end
+%
 % unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil?
 !boundaries of the array on which the full symmetric stencil can be applied
     stnclint(1) = MAX(1,               sbpitr%lo_a(1) + <%= st_i %>)
@@ -44,54 +55,103 @@ do while (associated(sbpitr))
      stnclint(6) = MIN(sbpitr%nnodes(3),sbpitr%hi_a(6) - <%= st_k %>)
 %   end
 % end
+%
 % unless bodies.all.nil?
+%   unless k.nil?
+    do <%= k %> = sbpitr%lo_a(3), sbpitr%hi_a(3)
+%   end
     do <%= j %> = sbpitr%lo_a(2), sbpitr%hi_a(2)
-        do <%= i %> = sbpitr%lo_a(1), sbpitr%hi_a(1)
-<%= bodies.all.indent 12 -%>
-        end do
+    do <%= i %> = sbpitr%lo_a(1), sbpitr%hi_a(1)
+<%= bodies.all.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+% 
 % unless bodies.real.nil?
+%   unless k.nil?
+    do <%= k %> = 1, sbpitr%nnodes(3)
+%   end
     do <%= j %> = 1, sbpitr%nnodes(2)
-        do <%= i %> = 1, sbpitr%nnodes(1)
-<%= bodies.real.indent 12 -%>
-        end do
+    do <%= i %> = 1, sbpitr%nnodes(1)
+<%= bodies.real.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+% 
 % unless bodies.interior.nil?
+%   unless k.nil?
+    do <%= k %> = stnclint(5),stnclint(6)
+%   end
     do <%= j %> = stnclint(3),stnclint(4)
-        do <%= i %> = stnclint(1),stnclint(2)
-        <%= bodies.interior.indent 6 -%>
-        end do
+    do <%= i %> = stnclint(1),stnclint(2)
+<%= bodies.interior.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+% 
 % unless bodies.west.nil?
+%   unless k.nil?
+    do <%= k %> = stnclint(5),stnclint(6)
+%   end
     do <%= j %> = stnclint(3),stnclint(4)
-        do <%= i %> = stnclint(1)-<%= st_i %>,stnclint(1)
-<%= bodies.west.indent 12 -%>
-        end do
+    do <%= i %> = stnclint(1)-<%= st_i %>,stnclint(1)
+<%= bodies.west.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+% 
 % unless bodies.east.nil?
+%   unless k.nil?
+    do <%= k %> = stnclint(5),stnclint(6)
+%   end
     do <%= j %> = stnclint(3),stnclint(4)
-        do <%= i %> = stnclint(2),stnclint(2)+<%= st_i %>
-        <%= bodies.east.indent 6 -%>
-        end do
+    do <%= i %> = stnclint(2),stnclint(2)+<%= st_i %>
+<%= bodies.east.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+%
 % unless bodies.south.nil?
+%   unless k.nil?
+    do <%= k %> = stnclint(5),stnclint(6)
+%   end
     do <%= j %> = stnclint(3)-<%= st_j %>,stnclint(3)
-        do <%= i %> = stnclint(1),stnclint(2)
-        <%= bodies.south.indent 6 -%>
-        end do
+    do <%= i %> = stnclint(1),stnclint(2)
+<%= bodies.south.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
+%
 % unless bodies.north.nil?
+%   unless k.nil?
+    do <%= k %> = stnclint(5),stnclint(6)
+%   end
     do <%= j %> = stnclint(4),stnclint(4)+<%= st_j %>
-        do <%= i %> = stnclint(1),stnclint(2)
-        <%= bodies.north.indent 6 -%>
-        end do
+    do <%= i %> = stnclint(1),stnclint(2)
+<%= bodies.north.indent 8 -%>
     end do
+    end do
+%   unless k.nil?
+    end do
+%   end
 % end
     sbpitr => <%= m %>%subpatch%next()
 end do
