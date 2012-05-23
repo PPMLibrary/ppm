@@ -11,33 +11,45 @@ sbpitr => <%= m %>%subpatch%begin()
 %
 do while (associated(sbpitr))
 % sfs.each do |f|
-    CALL sbpitr%get_field(<%= f %>_data, <%= f %>, info)
+% if k.nil?
+    CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data",caller,10000,info)
+        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data2d",caller,10000,info)
         GOTO 9999
     ENDIF
+%   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d(i,j)"
 %
-% if k.nil?
-%   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data(i,j)"
 % else
-%   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data(i,j,k)"
+    CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data3d",caller,10000,info)
+        GOTO 9999
+    ENDIF
+%   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data3d(i,j,k)"
 % end
 %
 %   sft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
 %   sft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top
 % end
 % vfs.each do |f|
-    CALL sbpitr%get_field(<%= f %>_data, <%= f %>, info)
+% if k.nil?
+    CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
-        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data",caller,10000,info)
+        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data2d",caller,10000,info)
         GOTO 9999
     ENDIF
-% if k.nil?
-%   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data($1,i,j)"
+%   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d($1,i,j)"
 % else
-%   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data($1,i,j,k)"
+    CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
+    IF (info.NE.0) THEN
+        info = ppm_error_error
+        CALL ppm_error(ppm_err_sub_failed,"<%= f%>_data3d",caller,10000,info)
+        GOTO 9999
+    ENDIF
+%   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data3d($1,i,j,k)"
 % end
 %
 %   vft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east

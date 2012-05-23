@@ -12,7 +12,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -32,8 +32,8 @@ integer, dimension(:  ),pointer :: nm => NULL()
 real(mk),dimension(:  ),pointer :: h => NULL()
 type(ppm_t_topo),       pointer :: topo => NULL()
 
-type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
-integer                          :: ipatch,isub
+type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+integer                          :: ipatch,isub,jsub
 class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
 integer                          :: mypatchid
@@ -129,16 +129,19 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
     end test
 
     test mesh_add_patches
+        integer, dimension(2) :: patchid
         Nm = 129
+        patchid = (/17,23/)
+
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
         if (ndim .eq. 2) then
 
-        mypatchid = 1
+        !One patch
         my_patch(1:4) = (/0.5,0.1,5.1,10.0/)
 
-        call Mesh1%def_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,patchid(1)) 
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -162,19 +165,17 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ENDDO
         Assert_Equal(isub,ipatch)
 
-        mypatchid = 3
+        !Second patch
         my_patch(1:4) = (/0.1,0.0,0.3,0.8/)
 
-        call Mesh1%def_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,patchid(2)) 
         Assert_Equal(info,0)
 
         
-        !find subpatches from patch 1
-        DO i=1,Mesh1%patch%vec(1)%t%nsubpatch
-            p => Mesh1%patch%vec(1)%t%subpatch(i)%t
-            !write(*,*) 'subp no ',i,' for patch ',Mesh1%patch%vec(1)%t%patchid
+        !Check that the patchids have been set properly
+        DO i=1,2
+            Assert_Equal(Mesh1%patch%vec(i)%t%patchid,patchid(i))
         ENDDO
-        p=>NULL()
 
         else
             write(*,*) 'TEST NOT RUNNING in 3D YET!!!'
@@ -188,6 +189,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
     end test
 
     test mesh_add_many_patches
+        start_subroutine("add_many_patches")
         Nm = 129
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
@@ -213,6 +215,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(info,0)
 
         Assert_False(associated(Mesh1%subpatch))
+        end_subroutine()
     end test
 
     test mesh_add_patch_uniform
@@ -252,25 +255,35 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_Equal(info,0)
     end test
 
-    test mesh_patches_and_fields
-        use ppm_module_io_vtk
+    test ghost_mappings
         type(ppm_t_field) :: Field1,Field2
-        real(ppm_kind_double),dimension(3) :: pos
-        real(mk),dimension(:,:,:),pointer :: Field1_data => NULL()
-        real(mk),dimension(:,:),  pointer :: Field2_data => NULL()
+        real(ppm_kind_double),dimension(ndim) :: pos
+        real(mk),dimension(:,:,:),  pointer :: Field1_data2d => NULL()
+        real(mk),dimension(:,:),    pointer :: Field2_data2d => NULL()
+        real(mk),dimension(:,:,:,:),pointer :: Field1_data3d => NULL()
+        real(mk),dimension(:,:,:),  pointer :: Field2_data3d => NULL()
+        integer                             :: p_idx, nb_errors
+        CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
+        logical                             :: assoc
 
-        start_subroutine("test_patch_fields")
+        start_subroutine("test_ghost_mappings")
 
-        Nm = 50
-        Nm(ndim) = 50
-        call Mesh1%create(topoid,offset,info,Nm=Nm,ghostsize=ighostsize)
+        Nm = 25
+        Nm(ndim) = 45
+        call Mesh1%create(topoid,offset,info,Nm=Nm,&
+            ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
-        my_patch(1:4) = (/0.15,0.15,0.6,0.6/)
+        if (ndim.eq.2) then
+            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+        else
+            my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+        endif
+
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
 
-        call Field1%create(5,info,name='vecField') 
+        call Field1%create(2,info,name='vecField') 
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -279,36 +292,147 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
+
         p => Mesh1%subpatch%begin()
+        IF (associated(p)) THEN
+            p_idx = Field1%get_pid(Mesh1)
+            Assert_True(p_idx.GT.0)
+            p_idx = Field2%get_pid(Mesh1)
+            Assert_True(p_idx.GT.0)
+        ENDIF
         do while (ASSOCIATED(p))
-            call p%get_field(Field1_data,Field1,info)
-            Assert_Equal(info,0)
-            Assert_True(associated(Field1_data))
-            call p%get_field(Field2_data,Field2,info)
-            Assert_Equal(info,0)
-            Assert_True(associated(Field2_data))
-            do i = p%lo_a(1),p%hi_a(2)
-                do j = p%lo_a(2),p%hi_a(2)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    Field1_data(1:5,i,j) = -1.17_mk
-                    Field2_data(i,j)     = -2.17_mk
-                enddo
-            enddo
+            Assert_True(associated(p%mesh,Mesh1))
+            Assert_True(associated(p%subpatch_data))
+            Assert_True(ALL(p%istart_p.GE.0))
+            Assert_True(ALL(p%iend_p.GE.0))
+            p_idx = Field1%get_pid(p%mesh)
+            Assert_True(p_idx.GT.0)
+            p_idx = Field2%get_pid(p%mesh)
+            Assert_True(p_idx.GT.0)
             p => Mesh1%subpatch%next()
         enddo
 
-        stdout("ok after field access")
-        call MPI_BARRIER(comm,info)
-!        foreach n in equi_mesh(Mesh1) with fields(Field1) indices(i,j)
-!            for real
-!                Field1_n(1) = -10.17_mk
-!                Field1_n(2) = -20.17_mk
-!                Field1_n(3) = -30.17_mk
-!                Field1_n(4) = -40.17_mk
-!            for all
-!                Field1_n(3) = -40.17_mk
-!                Field1_n(4) = -40.17_mk
-!        end foreach
+        ! Check if the subpatch nodes are all exactly within the right subdomain
+        topo => ppm_topo(Mesh1%topoid)%t
+        ! loop through all subdomains on this processor
+        IF (ndim.eq.2) THEN
+            DO jsub = 1,topo%nsublist
+                isub = topo%isublist(jsub)
+                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                    TYPE IS (ppm_t_subpatch)
+                        DO j=1,p%nnodes(2)
+                        DO i=1,p%nnodes(1)
+                            pos(1:ndim) = p%get_pos(i,j)
+                            Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
+                            Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
+                        ENDDO
+                        ENDDO
+                    END SELECT
+                ENDDO
+            ENDDO
+        ELSE
+            DO jsub = 1,topo%nsublist
+                isub = topo%isublist(jsub)
+                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                    TYPE IS (ppm_t_subpatch)
+                        DO k=1,p%nnodes(3)
+                        DO j=1,p%nnodes(2)
+                        DO i=1,p%nnodes(1)
+                            pos(1:ndim) = p%get_pos(i,j,k)
+                            Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
+                            Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
+                        ENDDO
+                        ENDDO
+                        ENDDO
+                    END SELECT
+                ENDDO
+            ENDDO
+        ENDIF
+
+        !Fill in the allocated field arrays (incl. ghost nodes) with some data
+        IF (ndim.EQ.2) THEN
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
+            for all
+                Field1_n(1) = -10._mk * (rank+1)
+                Field1_n(2) = -10._mk * (rank+1) - 1
+                Field2_n    = -1._mk
+        end foreach
+        ELSE
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+            for all
+                Field1_n(1) = -10._mk * (rank+1)
+                Field1_n(2) = -10._mk * (rank+1) - 1
+                Field2_n    = -1._mk
+        end foreach
+        ENDIF
+
+        !Change the values of the real nodes to something that depends
+        ! on position (so that we can later check the values)
+        IF (ndim.EQ.2) THEN
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
+            for real
+                pos(1:ndim) = sbpitr%get_pos(i,j)
+                Field1_n(1) = cos(2._mk*pi*pos(1))
+                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
+                Field2_n    = 1._mk
+        end foreach
+        ELSE
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+            for real
+                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                Field1_n(1) = cos(2._mk*pi*pos(1))
+                Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
+                Field2_n    = 1._mk
+        end foreach
+        ENDIF
+
+        !Do a ghost mapping
+        call Mesh1%map_ghost_get(info)
+            Assert_Equal(info,0)
+
+        call Field1%map_ghost_push(Mesh1,info)
+            Assert_Equal(info,0)
+        call Field2%map_ghost_push(Mesh1,info)
+            Assert_Equal(info,0)
+
+        call Mesh1%map_send(info)
+            Assert_Equal(info,0)
+
+        call Field2%map_ghost_pop(Mesh1,info)
+            Assert_Equal(info,0)
+        call Field1%map_ghost_pop(Mesh1,info)
+            Assert_Equal(info,0)
+
+        !Now check that the ghost mapping has been done correctly
+        ! by comparing the values of all nodes (incl. ghosts) to the
+        ! theoretical values.
+        nb_errors = 0
+        IF (ndim.EQ.2) THEN
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
+            for all
+                pos(1:ndim) = sbpitr%get_pos(i,j)
+                IF (Field2_n .lt. 0._mk) then
+                    nb_errors = nb_errors + 1
+                ENDIF
+                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
+                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+        end foreach
+        ELSE
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+            for all
+                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                IF (Field2_n .lt. 0._mk) then
+                    nb_errors = nb_errors + 1
+                ENDIF
+                Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
+                Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
+                Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
+        end foreach
+        ENDIF
+        Assert_Equal(nb_errors,0)
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
@@ -317,434 +441,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         call Field2%destroy(info)
             Assert_Equal(info,0)
 
-        stdout("ok after test, stopping.")
-        call MPI_BARRIER(comm,info)
-        stop
-
         end_subroutine()
     end test
 
-
-    test mesh_map_one_small_patch
-        !testing mappings for a single small patch 
-        ! in the middle of the domain
-        use ppm_module_io_vtk
-        type(ppm_t_field) :: Field1
-        real(ppm_kind_double),dimension(3) :: pos
-        procedure(my_init_function), pointer :: init_f => NULL()
-        real(mk),dimension(:,:,:),pointer:: Field1_data
-
-        start_subroutine("test_small_patch")
-
-
-        init_f => my_init_function
-        Nm = 50
-        Nm(ndim) = 50
-        call Mesh1%create(topoid,offset,info,Nm=Nm,ghostsize=ighostsize)
-            Assert_Equal(info,0)
-
-        my_patch(1:4) = (/0.15,0.15,0.6,0.6/)
-        call Mesh1%def_patch(my_patch,info) 
-        Assert_Equal(info,0)
-
-        topo => ppm_topo(Mesh1%topoid)%t
-        write(*,*) "NB of subpatches: ", Mesh1%subpatch%nb
-        write(1000+ppm_rank,'(A)') 'SubDomains:'
-        do i = 1,topo%nsublist
-            isub = topo%isublist(i)
-            write(1000+ppm_rank,'(2(F7.2,1X))') &
-                topo%min_subd(1,isub),topo%max_subd(1,isub)
-            write(1000+ppm_rank,'(2(F7.2,1X))') &
-                topo%min_subd(2,isub),topo%max_subd(2,isub)
-        enddo   
-
-        write(1000+ppm_rank,'(A)') 'SubPatches (allocated) :'
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            write(*,*) "Dimensions without ghosts:"
-            write(*,*) 1,p%nnodes(1),p%istart(1),p%iend(1)
-            write(*,*) 1,p%nnodes(2),p%istart(2),p%iend(2)
-            IF (ndim.eq.3) write(*,*) 1,p%nnodes(3)
-            write(*,*) "Dimensions allocated:"
-            write(*,*) p%lo_a(1),p%hi_a(1)
-            write(*,*) p%lo_a(2),p%hi_a(1)
-
-            write(1000+ppm_rank,'(2(I0,1X),A,2(I0,1X))') &
-                1,p%nnodes(1),' -- ',p%lo_a(1),p%hi_a(1)
-            write(1000+ppm_rank,'(2(I0,1X),A,2(I0,1X))') &
-                1,p%nnodes(2),' -- ',p%lo_a(2),p%hi_a(2)
-            write(1000+ppm_rank,'(A)') ' '
-            IF (ndim.eq.3) write(*,*) 1-p%ghostsize(5),p%nnodes(3)+p%ghostsize(6)
-            p => Mesh1%subpatch%next()
-        enddo
-
-        write(1000+ppm_rank,'(A)') 'SubPatches (absolute) :'
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            write(1000+ppm_rank,'(2(I0,1X),A,2(I0,1X))') &
-                p%istart(1),p%iend(1),' -- ',p%istart_p(1),p%iend_p(1)
-            write(1000+ppm_rank,'(2(I0,1X),A,2(I0,1X))') &
-                p%istart(2),p%iend(2),' -- ',p%istart_p(2),p%iend_p(2)
-            write(1000+ppm_rank,'(A)') ' '
-            p => Mesh1%subpatch%next()
-        enddo
-
-        call MPI_BARRIER(comm,info)
-
-
-        call Field1%create(3,info,name='testField',init_func=init_f) 
-            Assert_Equal(info,0)
-        call Field1%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
-
-!        foreach n in equi_mesh(Mesh1) with fields(Field1) indices(i,j)
-!            for real
-!                Field1_n(1) = -10.17_mk
-!                Field1_n(2) = -20.17_mk
-!                Field1_n(3) = -30.17_mk
-!                Field1_n(4) = -40.17_mk
-!            for all
-!                Field1_n(3) = -40.17_mk
-!                Field1_n(4) = -40.17_mk
-!        end foreach
-
-        !try to access the whole allocated data (incl. ghost nodes)
-        ! and assign some value to all nodes
-        IF (ndim.eq.2) THEN
-            p => Mesh1%subpatch%begin()
-            do while (ASSOCIATED(p))
-            write(*,*) ppm_rank, 'ok 0.0'
-                call p%get_field(field3d_1,Field1,info)
-            write(*,*) ppm_rank, 'ok 0.1'
-                Assert_Equal(info,0)
-                do i = p%lo_a(1),p%hi_a(2)
-                    do j = p%lo_a(2),p%hi_a(2)
-            write(*,*) ppm_rank, 'ok 0.2'
-                        pos(1:ndim) = p%get_pos(i,j)
-            write(*,*) ppm_rank, 'ok 0.31',associated(field3d_1),&
-                LBOUND(field3d_1),UBOUND(field3d_1),i,j
-                        field3d_1(1,i,j) = -10.17_mk
-            write(*,*) ppm_rank, 'ok 0.32'
-                        field3d_1(2,i,j) = -20.17_mk
-            write(*,*) ppm_rank, 'ok 0.33'
-                        field3d_1(3,i,j) = -30.17_mk
-            write(*,*) ppm_rank, 'ok 0.33'
-                    enddo
-                enddo
-                p => Mesh1%subpatch%next()
-            enddo
-        ELSE
-            p => Mesh1%subpatch%begin()
-            do while (ASSOCIATED(p))
-                call p%get_field(field4d_1,Field1,info)
-                Assert_Equal(info,0)
-                do i = p%lo_a(1),p%hi_a(2)
-                    do j = p%lo_a(2),p%hi_a(2)
-                        do k = p%lo_a(3),p%hi_a(3)
-                            pos(1:ndim) = p%get_pos(i,j,k)
-                            field4d_1(1,i,j,k) = -10.17_mk
-                            field4d_1(2,i,j,k) = -20.17_mk
-                            field4d_1(3,i,j,k) = -30.17_mk
-                        enddo
-                    enddo
-                enddo
-                p => Mesh1%subpatch%next()
-            enddo
-        ENDIF
-        write(*,*) 'ok 0'
-        call MPI_BARRIER(comm,info)
-
-        !set a value to all the real nodes
-        IF (ndim.eq.2) THEN
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    field3d_1(1,i,j) = cos(2._mk*pi*pos(1))
-                    field3d_1(2,i,j) = cos(2._mk*pi*pos(2)) + 2._mk
-                    field3d_1(3,i,j) = cos(2._mk*pi*pos(2)) + 4._mk
-        write(100,'(2(I0,2X))') i,j
-        write(101,'(E10.3)') field3d_1(1,i,j)
-        write(102,'(E10.3)') field3d_1(2,i,j)
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ELSE
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field4d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
-                    do k = 1,p%nnodes(3)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        field4d_1(1,i,j,k) = cos(2._mk*pi*pos(1))
-                        field4d_1(2,i,j,k) = cos(2._mk*pi*pos(2)) + 2._mk
-                        field4d_1(3,i,j,k) = cos(2._mk*pi*pos(3)) + 4._mk
-                    enddo
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ENDIF
-
-        call MPI_BARRIER(comm,info)
-        write(*,*) 'OK'
-        stop
-
-       ! call Mesh1%print_vtk('testvtk',info)
-       !     Assert_Equal(info,0)
-            
-        !call Mesh1%map_ghost_get(info,ighostsize)
-        !    Assert_Equal(info,0)
-
-        call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
-
-        call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
-
-        call MPI_BARRIER(comm,info)
-
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
-
-        call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
-
-        !try to access the whole allocated data (incl. ghost nodes)
-        ! and checks that the values are what they should be
-        IF (ndim.eq.2) THEN
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
-            Assert_Equal(info,0)
-                do i = p%lo_a(1),p%hi_a(2)
-                    do j = p%lo_a(2),p%hi_a(2)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    write(*,*) 'i,j =', i,j
-                    write(*,'(A,6I0)') 'ghostsize =', p%ghostsize
-        Assert_Equal_Within(field3d_1(1,i,j), cos(2._mk*pi*pos(1)),1e-3)
-        Assert_Equal_Within(field3d_1(2,i,j), cos(2._mk*pi*pos(2)) + 2._mk,1e-3)
-        Assert_Equal_Within(field3d_1(3,i,j), cos(2._mk*pi*pos(2)) + 4._mk,1e-3)
-        write(200,'(2(I0,2X))') i,j
-        write(201,'(E10.3)') field3d_1(1,i,j)
-        write(202,'(E10.3)') field3d_1(2,i,j)
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-
-        ELSE
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field4d_1,Field1,info)
-            Assert_Equal(info,0)
-                do i = p%lo_a(1),p%hi_a(2)
-                    do j = p%lo_a(2),p%hi_a(2)
-                        do k = p%lo_a(3),p%hi_a(3)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        write(*,*) 'i,j,k =', i,j,k
-                        write(*,'(A,6I0)') 'ghostsize =', p%ghostsize
-        Assert_Equal_Within(field4d_1(1,i,j,k), cos(2._mk*pi*pos(1)),1e-3)
-        Assert_Equal_Within(field4d_1(2,i,j,k), cos(2._mk*pi*pos(2)) + 2._mk,1e-3)
-        Assert_Equal_Within(field4d_1(3,i,j,k), cos(2._mk*pi*pos(3)) + 4._mk,1e-3)
-                    enddo
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ENDIF
-
-        call Mesh1%destroy(info)
-            Assert_Equal(info,0)
-
-        write(*,*) 'STOPPING FOR NOW'
-        stop
-
-        end_subroutine()
-    end test
-
-    test mesh_map_uniform
-        !testing mappings for a single patch that covers the whole domain
-        use ppm_module_io_vtk
-        type(ppm_t_field) :: Field1
-        real(ppm_kind_double),dimension(3) :: pos
-        procedure(my_init_function), pointer :: init_f => NULL()
-
-        init_f => my_init_function
-        Nm = 37
-        Nm(ndim) = 65
-        Nm = 5
-        call Mesh1%create(topoid,offset,info,Nm=Nm,ghostsize=ighostsize)
-            Assert_Equal(info,0)
-        call Mesh1%def_uniform(info)
-            Assert_Equal(info,0)
-
-        call Field1%create(3,info,name='testField',init_func=init_f) 
-            Assert_Equal(info,0)
-        call Field1%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
-
-        !try to access the whole allocated data (incl. ghost nodes)
-        ! and assign some value to all nodes
-        IF (ndim.eq.2) THEN
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1-p%ghostsize(1),p%nnodes(1)+p%ghostsize(2)
-                do j = 1-p%ghostsize(3),p%nnodes(2)+p%ghostsize(4)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    field3d_1(1,i,j) = -10.17_mk
-                    field3d_1(2,i,j) = -20.17_mk
-                    field3d_1(2,i,j) = -30.17_mk
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ELSE
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field4d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1-p%ghostsize(1),p%nnodes(1)+p%ghostsize(2)
-                do j = 1-p%ghostsize(3),p%nnodes(2)+p%ghostsize(4)
-                    do k = 1-p%ghostsize(5),p%nnodes(3)+p%ghostsize(6)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        field4d_1(1,i,j,k) = -10.17_mk
-                        field4d_1(2,i,j,k) = -20.17_mk
-                        field4d_1(3,i,j,k) = -30.17_mk
-                    enddo
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ENDIF
-
-        write(*,*) "NB of subpatches: ", Mesh1%subpatch%nb
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            write(*,*) "Dimensions without ghosts:"
-            write(*,*) 1,p%nnodes(1)
-            write(*,*) 1,p%nnodes(2)
-            IF (ndim.eq.3) write(*,*) 1,p%nnodes(3)
-            write(*,*) "Dimensions with ghosts:"
-            write(*,*) 1-p%ghostsize(1),p%nnodes(1)+p%ghostsize(2)
-            write(*,*) 1-p%ghostsize(3),p%nnodes(2)+p%ghostsize(4)
-            IF (ndim.eq.3) write(*,*) 1-p%ghostsize(5),p%nnodes(3)+p%ghostsize(6)
-            p => Mesh1%subpatch%next()
-        enddo
-
-        !set a value to all the real nodes
-        IF (ndim.eq.2) THEN
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    field3d_1(1,i,j) = cos(2._mk*pi*pos(1))
-                    field3d_1(2,i,j) = cos(2._mk*pi*pos(2)) + 2._mk
-                    field3d_1(3,i,j) = cos(2._mk*pi*pos(2)) + 4._mk
-        write(100,'(2(I0,2X))') i,j
-        write(101,'(E10.3)') field3d_1(1,i,j)
-        write(102,'(E10.3)') field3d_1(2,i,j)
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ELSE
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field4d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
-                    do k = 1,p%nnodes(3)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        field4d_1(1,i,j,k) = cos(2._mk*pi*pos(1))
-                        field4d_1(2,i,j,k) = cos(2._mk*pi*pos(2)) + 2._mk
-                        field4d_1(3,i,j,k) = cos(2._mk*pi*pos(3)) + 4._mk
-                    enddo
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ENDIF
-
-        call Mesh1%print_vtk('testvtk',info)
-            Assert_Equal(info,0)
-
-        !call Mesh1%map_ghost_get(info,ighostsize)
-        !    Assert_Equal(info,0)
-
-        call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
-
-        call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
-
-        call MPI_BARRIER(comm,info)
-
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
-
-        call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
-
-        !try to access the whole allocated data (incl. ghost nodes)
-        ! and checks that the values are what they should be
-        IF (ndim.eq.2) THEN
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field3d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1-p%ghostsize(1),p%nnodes(1)+p%ghostsize(2)
-                do j = 1-p%ghostsize(3),p%nnodes(2)+p%ghostsize(4)
-                    pos(1:ndim) = p%get_pos(i,j)
-                    write(*,*) 'i,j =', i,j
-                    write(*,'(A,6I0)') 'ghostsize =', p%ghostsize
-        Assert_Equal_Within(field3d_1(1,i,j), cos(2._mk*pi*pos(1)),1e-3)
-        Assert_Equal_Within(field3d_1(2,i,j), cos(2._mk*pi*pos(2)) + 2._mk,1e-3)
-        Assert_Equal_Within(field3d_1(3,i,j), cos(2._mk*pi*pos(2)) + 4._mk,1e-3)
-        write(200,'(2(I0,2X))') i,j
-        write(201,'(E10.3)') field3d_1(1,i,j)
-        write(202,'(E10.3)') field3d_1(2,i,j)
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-
-        ELSE
-        p => Mesh1%subpatch%begin()
-        do while (ASSOCIATED(p))
-            call p%get_field(field4d_1,Field1,info)
-            Assert_Equal(info,0)
-            do i = 1-p%ghostsize(1),p%nnodes(1)+p%ghostsize(2)
-                do j = 1-p%ghostsize(3),p%nnodes(2)+p%ghostsize(4)
-                    do k = 1-p%ghostsize(5),p%nnodes(3)+p%ghostsize(6)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        write(*,*) 'i,j,k =', i,j,k
-                        write(*,'(A,6I0)') 'ghostsize =', p%ghostsize
-        Assert_Equal_Within(field4d_1(1,i,j,k), cos(2._mk*pi*pos(1)),1e-3)
-        Assert_Equal_Within(field4d_1(2,i,j,k), cos(2._mk*pi*pos(2)) + 2._mk,1e-3)
-        Assert_Equal_Within(field4d_1(3,i,j,k), cos(2._mk*pi*pos(3)) + 4._mk,1e-3)
-                    enddo
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
-        enddo
-        ENDIF
-
-        call Mesh1%destroy(info)
-            Assert_Equal(info,0)
-    end test
 
     FUNCTION my_init_function(x) RESULT(val)
         REAL(ppm_kind_double) :: val

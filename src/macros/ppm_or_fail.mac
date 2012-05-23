@@ -77,7 +77,7 @@ IF (<%= a_s %> .NE. <%= b_s%>) THEN
    WRITE(cbuf,*) &
        & "equality check failed:",   CHAR(10),&
        & "    <%= a_s %> = ",<%= a_s %>, CHAR(10),&
-       & "    <%= b_s %> = ",<%= b_s %>,&
+       & "    <%= b_s %> = ",<%= b_s %>, CHAR(10),&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
 ENDIF
@@ -89,7 +89,7 @@ macro check_true(a,message="",info=info,exit_point=9999)
 IF (.NOT.<%= a_s %>) THEN
    WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
-       & "    <%= a_s %> is not true. ",&
+       & "    <%= a_s %> is not true. ", CHAR(10),&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
 ENDIF
@@ -101,7 +101,7 @@ macro check_false(a,message="",info=info,exit_point=9999)
 IF (<%= a_s %>) THEN
    WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
-       & "    <%= a_s %> is not true",&
+       & "    <%= a_s %> is not true", CHAR(10),&
        & <%= message %> 
    $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
 ENDIF

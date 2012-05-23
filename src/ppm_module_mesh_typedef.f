@@ -696,7 +696,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
         isub = topo%isublist(i)
         !----------------------------------------------------------------
         ! check if the subdomain overlaps with the patch
-        ! if so, then there will be a subpatch created for that subdomain.
+        ! if so, then there might be a subpatch created for that subdomain.
         ! Grow the size of the array of pointers this%subpach_by_sub.
         ! (simpler to do it this way if we dont know how many patches
         ! are going to be added)
@@ -731,7 +731,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
 
     nsubpatch = 0
     ! loop through all subdomains on this processor
-    DO i = 1,topo%nsublist
+    sub: DO i = 1,topo%nsublist
         isub = topo%isublist(i)
         !how many subpatches do we already have here
         nsubpatchi = this%subpatch_by_sub(i)%nsubpatch
@@ -751,8 +751,16 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
             ! or Top subdomain boundary are not counted within a subpatch.
             ! This is arbitrary and ensures that real mesh nodes are not
             ! duplicated.
-            check_true("ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))",&
-                "Could it be that one subdomain is smaller than the grid spacing?") 
+
+            !Check that the subpatch contains at least one mesh nodes
+            !Otherwise, exit loop
+            ! (a subpatch comprises all the mesh nodes that are WITHIN
+            !  the patch. If a patch overlap with a subdomain by less than
+            !  h, it could be that this overlap regions has actually
+            !  no mesh nodes)
+            IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                CYCLE sub
+            ENDIF
 
             !----------------------------------------------------------------
             ! create a new subpatch object
@@ -798,7 +806,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite)
             CALL this%subpatch%push(p,info,id)
                 or_fail("could not add new subpatch to mesh")
         ENDIF
-    ENDDO
+    ENDDO sub
     CALL this%patch%push(A_p,info,id)
         or_fail("could not add new subpatch_ptr_array to mesh%patch")
     this%patch%vec(id)%t%nsubpatch = nsubpatch

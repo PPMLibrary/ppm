@@ -101,6 +101,38 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         NULLIFY(topo)
     end teardown
 !----------------------------------------------
+!    test removme
+!        CLASS(ppm_v_main_abstr), POINTER :: fields => NULL()
+!        CLASS(ppm_v_main_abstr), POINTER :: other_field => NULL()
+!        CLASS(ppm_t_main_abstr), POINTER :: el => NULL()
+!        TYPE(ppm_t_equi_mesh),TARGET     :: Mesh
+!
+!        start_subroutine("small_DS_test")
+!
+!        ALLOCATE(fields,STAT=info)
+!        Assert_Equal(info,0)
+!        ALLOCATE(other_field,STAT=info)
+!        Assert_Equal(info,0)
+!
+!        el => Mesh
+!
+!        CALL fields%push(el,info)
+!        Assert_Equal(info,0)
+!
+!        el => fields%begin()
+!        SELECT TYPE(el)
+!        CLASS IS (ppm_t_equi_mesh)
+!            call other_field%push(el,info)
+!            Assert_Equal(info,0)
+!        END SELECT
+!        
+!
+!        stdout("all OK")
+!        stop
+!
+!        end_subroutine()
+!    end test
+
     test mesh_create_destroy
         start_subroutine("test_create_destroy")
         !----------------
