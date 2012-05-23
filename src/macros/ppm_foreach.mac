@@ -12,6 +12,7 @@ sbpitr => <%= m %>%subpatch%begin()
 do while (associated(sbpitr))
 % sfs.each do |f|
 % if k.nil?
+%   scope.var "#{f}_data2d".to_sym,  "real(mk), dimension(:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -21,6 +22,7 @@ do while (associated(sbpitr))
 %   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d(i,j)"
 %
 % else
+%   scope.var "#{f}_data3d".to_sym,  "real(mk), dimension(:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -35,6 +37,7 @@ do while (associated(sbpitr))
 % end
 % vfs.each do |f|
 % if k.nil?
+%   scope.var "#{f}_data2d".to_sym,  "real(mk), dimension(:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -43,6 +46,7 @@ do while (associated(sbpitr))
     ENDIF
 %   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d($1,i,j)"
 % else
+%   scope.var "#{f}_data3d".to_sym,  "real(mk), dimension(:,:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
