@@ -33,11 +33,11 @@ do while (associated(sbpitr))
         GOTO 9999
     ENDIF
 %   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data3d(i,j,k)"
-% end unless sfs.nil?
+% end
 %
 %   sft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
 %   sft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top
-% end
+% end unless sfs.nil?
 % vfs.each do |f|
 % if k.nil?
 %   scope.var "#{f}_data2d".to_sym,  "real(mk), dimension(:,:,:), pointer", "=> null()"
