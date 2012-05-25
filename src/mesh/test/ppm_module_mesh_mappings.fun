@@ -1,9 +1,10 @@
-test_suite ppm_module_mesh
+test_suite ppm_module_mesh_mappings
 
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
 use ppm_module_field_typedef
 use ppm_module_mktopo
+use ppm_module_topo_alloc
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -12,7 +13,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -37,12 +38,8 @@ integer                          :: ipatch,isub,jsub
 class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
 integer                          :: mypatchid
-real(mk),dimension(2*ndim)       :: my_patch
+real(mk),dimension(6)            :: my_patch
 real(mk),dimension(ndim)         :: offset
-
-real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
 !---------------- init -----------------------
 
@@ -102,11 +99,18 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
     end teardown
 !----------------------------------------------
 
-    test mesh_create_destroy
-        !----------------
-        ! make topology
-        !----------------
-        decomp = ppm_param_decomp_cuboid
+    test ghost_map({decomp: [ppm_param_decomp_cuboid,ppm_param_decomp_xpencil, ppm_param_decomp_ypencil,ppm_param_decomp_xy_slab,ppm_param_decomp_bisection]})
+
+        integer, dimension(2) :: patchid
+        start_subroutine("ghost_map")
+
+        if (ndim.eq.2 .and. decomp.eq.ppm_param_decomp_xy_slab) return
+
+        Nm = 55
+        Nm(ndim) = 55
+        offset = 0._mk
+        patchid = (/17,23/)
+
         assig  = ppm_param_assign_internal
         topoid = 0
         sca_ghostsize = 0.05_mk 
@@ -114,25 +118,12 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
 
-        Nm = 125
-        offset = 0._mk
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
-        Assert_Equal(info,0)
-        call Mesh1%destroy(info)
-        Assert_Equal(info,0)
 
         h = (max_phys-min_phys)/Nm
         call Mesh1%create(topoid,offset,info,h=h)
         Assert_Equal(info,0)
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
-    end test
-
-    test mesh_add_patches
-        integer, dimension(2) :: patchid
-        Nm = 129
-        Nm(ndim) = 29
-        patchid = (/17,23/)
 
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
@@ -180,18 +171,6 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_Equal(Mesh1%patch%vec(i)%t%patchid,patchid(i))
         ENDDO
 
-        call Mesh1%destroy(info)
-        Assert_Equal(info,0)
-
-        Assert_False(associated(Mesh1%subpatch))
-    end test
-
-    test mesh_add_many_patches
-        start_subroutine("add_many_patches")
-        Nm = 39
-        Nm(ndim) = 129
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
-        Assert_Equal(info,0)
 
         if (ndim .eq. 2) then
 
@@ -226,13 +205,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(info,0)
 
         Assert_False(associated(Mesh1%subpatch))
-        end_subroutine()
-    end test
 
-    test mesh_add_patch_uniform
-        !testing for a single patch that covers the whole domain
-        Nm = 129
-        Nm(ndim) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm)
             Assert_Equal(info,0)
         topo => ppm_topo(Mesh1%topoid)%t
@@ -264,17 +237,30 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_Equal(info,0)
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
+
+        call ppm_topo_dealloc(topo,info)
+            Assert_Equal(info,0)
     end test
 
-    test ghost_mappings
+    test ghost_mappings({decomp: [ppm_param_decomp_bisection,ppm_param_decomp_bisection,ppm_param_decomp_cuboid,ppm_param_decomp_xpencil, ppm_param_decomp_ypencil,ppm_param_decomp_xy_slab,ppm_param_decomp_bisection]})
+
+
         type(ppm_t_field) :: Field1,Field2
         real(ppm_kind_double),dimension(ndim) :: pos
         integer                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
         logical                             :: assoc
+        start_subroutine("ghost_mappings")
 
-        start_subroutine("test_ghost_mappings")
+        assig  = ppm_param_assign_internal
+        topoid = 0
+        sca_ghostsize = 0.05_mk 
+        if (ndim.eq.2 .and. decomp.eq.ppm_param_decomp_xy_slab) return
+        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
+            &               bcdef,sca_ghostsize,cost,info)
+        Assert_Equal(info,0)
 
+        offset = 0._mk
         Nm = 25
         Nm(ndim) = 45
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
@@ -299,6 +285,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
+         stdout("OK decomp = ",decomp,topoid)
 
         p => Mesh1%subpatch%begin()
         IF (associated(p)) THEN
@@ -318,6 +305,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_True(p_idx.GT.0)
             p => Mesh1%subpatch%next()
         enddo
+
 
         ! Check if the subpatch nodes are all exactly within the right subdomain
         topo => ppm_topo(Mesh1%topoid)%t
@@ -448,6 +436,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         call Field2%destroy(info)
             Assert_Equal(info,0)
 
+        call ppm_topo_dealloc(ppm_topo(topoid)%t,info)
+            Assert_Equal(info,0)
+        deallocate(ppm_topo(topoid)%t,STAT=info)
+            Assert_Equal(info,0)
+
         end_subroutine()
     end test
 
@@ -458,71 +451,5 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         val = sum(x)
     END FUNCTION
-!============ Test cases ======================
-!    test mesh_define
-!        ! a simplistic test for checking if mesh_define is working
-!
-!        use ppm_module_topo_typedef
-!        use ppm_module_mktopo
-!        use ppm_module_map_field
-!        use ppm_module_map_field_global
-!        use ppm_module_mesh_define
-!        use ppm_module_topo_get
-!        use ppm_module_topo_check
-!
-!
-!        allocate(nm(ndim),stat=info)
-!        do i=1,ndim
-!            nm(i) = 32*nproc
-!        enddo
-!
-!        !----------------
-!        ! make topology
-!        !----------------
-!        decomp = ppm_param_decomp_cuboid
-!        !decomp = ppm_param_decomp_xpencil
-!        assig  = ppm_param_assign_internal
-!
-!        topoid = 0
-!        meshid = -1
-!
-!        call ppm_mktopo(topoid,meshid,xp,np,decomp,assig,min_phys,max_phys,    &
-!        &               bcdef,ghostsize,cost,nm,info)
-!
-!        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
-!                        isublist,nsublist,info)
-!        
-!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-!        &        stat=info) ! 2d
-!        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
-!        &        stat=info) ! 2d
-!        
-!!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
-!!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!!        &       stat=info) ! 3d
-!!        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
-!!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
-!!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
-!!        &       stat=info) ! 3d
-!        
-!        do i=1,ndim
-!            h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
-!        enddo
-!       
-!        meshid_ref = -1
-!        nm_ref = nm
-!        call ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
-!        call ppm_map_field_global(topoid,topoid,meshid,meshid_ref,info)
-!        call ppm_map_field_push(topoid,meshid,field,info)
-!        call ppm_map_field_send(info)
-!        call ppm_map_field_pop(topoid,meshid_ref,field_ref,ghostsize,info)
-!
-!
-!        assert_equal(info,0)
-!    end test
-
 
 end test_suite

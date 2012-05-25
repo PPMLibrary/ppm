@@ -34,21 +34,6 @@ IF (<%= info %>.NE.0) THEN
 END IF
 end macro
 
-macro dealloc_pointer(p,info=info)
-IF (ASSOCIATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
-$or_fail_dealloc("<%= p %>")
-end macro
-
-macro dealloc_allocatable(p,info=info)
-IF (ALLOCATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
-$or_fail_dealloc("<%= p %>")
-end macro
-
-macro dealloc_pointers(list)
-% list.to_s.split(',').each do |ptr|
-$dealloc_pointer(<%= ptr %>)
-% end
-end macro
 
 macro check_associated(p,message="",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 % scope.raw_var cbuf: "CHARACTER(LEN=ppm_char)   :: cbuf"
@@ -168,6 +153,34 @@ macro stdout_f(format,*message)
     CALL ppm_write(ppm_rank,caller,cbuf,info)
 end macro
 
+
+macro dealloc_pointer(p,info=info)
+IF (ASSOCIATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
+$or_fail_dealloc("<%= p %>")
+end macro
+
+macro dealloc_allocatable(p,info=info)
+IF (ALLOCATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
+$or_fail_dealloc("<%= p %>")
+end macro
+
+macro dealloc_pointers(*list)
+% if list.is_a? Array
+% list.each do |ptr|
+$dealloc_pointer(<%= ptr %>)
+% end
+% end
+end macro
+
+
+
+macro alloc_pointer(pointer,dim,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+% d = dim.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
+    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    ALLOCATE(<%= p %>(<%= d %>),STAT=<%=info%>)
+    $or_fail_alloc("<%= p %>")
+end macro
 
 macro alloc_pointer_with_bounds1(pointer,lo,hi,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )

@@ -175,7 +175,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     !!! patches. If no patches have been defined, it is assumed that
     !!! that the user expects the field to be allocated on the whole domain.
     !!! A single patch is then defined, covering all the subdomains.
-    CLASS(ppm_t_field)                 :: this
+    CLASS(ppm_t_field),TARGET          :: this
     CLASS(ppm_t_discr_kind),TARGET     :: discr
     !!! mesh or Particle set onto which this field is to be discretized
     INTEGER,               INTENT(OUT)  :: info
@@ -194,6 +194,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     LOGICAL                             :: lghosts
     CLASS(ppm_t_mesh_discr_data_),POINTER :: mddata => NULL()
     CLASS(ppm_t_part_prop_d_),    POINTER :: pddata => NULL()
+    CLASS(ppm_t_main_abstr),      POINTER :: el => NULL()
 
     start_subroutine("field_discretize_on")
 
@@ -239,7 +240,10 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
         CALL this%set_rel_discr(discr,mddata,info,p_idx)
             or_fail("failed to log the relationship between this field and that mesh")
 
-        CALL discr%set_rel(this,info)
+        !CALL discr%set_rel(this,info)
+
+        el => this
+        CALL discr%field_ptr%push(el,info)
             or_fail("failed to log the relationship between this mesh and that field")
 
     CLASS IS (ppm_t_particles_d_)

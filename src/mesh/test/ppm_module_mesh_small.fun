@@ -3,6 +3,7 @@ test_suite ppm_module_mesh_small
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef
 use ppm_module_field_typedef
+use ppm_module_particles_typedef
 use ppm_module_mktopo
 
 #ifdef __MPI
@@ -12,7 +13,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -40,9 +41,15 @@ integer                          :: mypatchid
 real(mk),dimension(2*ndim)       :: my_patch
 real(mk),dimension(ndim)         :: offset
 
-real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
+integer, dimension(:), pointer                 :: wp_1i => NULL()
+integer, dimension(:,:), pointer               :: wp_2i => NULL()
+integer(ppm_kind_int64),dimension(:),  pointer :: wp_1li => NULL()
+integer(ppm_kind_int64),dimension(:,:),pointer :: wp_2li => NULL()
+real(mk), dimension(:),   pointer              :: wp_1r => NULL()
+real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
+complex(mk), dimension(:),   pointer           :: wp_1c => NULL()
+complex(mk), dimension(:,:), pointer           :: wp_2c => NULL()
+logical, dimension(:),   pointer               :: wp_1l => NULL()
 
 !---------------- init -----------------------
 
@@ -101,107 +108,67 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         NULLIFY(topo)
     end teardown
 !----------------------------------------------
-!    test removme
-!        CLASS(ppm_v_main_abstr), POINTER :: fields => NULL()
-!        CLASS(ppm_v_main_abstr), POINTER :: other_field => NULL()
-!        CLASS(ppm_t_main_abstr), POINTER :: el => NULL()
-!        TYPE(ppm_t_equi_mesh),TARGET     :: Mesh
-!
-!        start_subroutine("small_DS_test")
-!
-!        ALLOCATE(fields,STAT=info)
-!        Assert_Equal(info,0)
-!        ALLOCATE(other_field,STAT=info)
-!        Assert_Equal(info,0)
-!
-!        el => Mesh
-!
-!        CALL fields%push(el,info)
-!        Assert_Equal(info,0)
-!
-!        el => fields%begin()
-!        SELECT TYPE(el)
-!        CLASS IS (ppm_t_equi_mesh)
-!            call other_field%push(el,info)
-!            Assert_Equal(info,0)
-!        END SELECT
-!        
-!
-!        stdout("all OK")
-!        stop
-!
-!        end_subroutine()
-!    end test
 
-    test mesh_create_destroy
-        start_subroutine("test_create_destroy")
+    test small_test
+        type(ppm_t_field) :: Field1,Field2
+        type(ppm_t_particles_d) :: Part1
+        real(ppm_kind_double),dimension(ndim) :: pos
+        integer :: p_idx, nb_errors
+        integer :: np_global = 3000
+        CLASS(ppm_t_discr_info_),POINTER              :: dinfo => NULL()
+        real(ppm_kind_double),dimension(:  ), POINTER :: up_1d => NULL()
+        real(ppm_kind_double),dimension(:,:), POINTER :: up_2d => NULL()
+        logical :: assoc
+
+        start_subroutine("test_interp")
+
         !----------------
         ! make topology
         !----------------
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.05_mk 
+        sca_ghostsize = 0.07_mk 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
 
 
-
-
-        if (ppm_debug.gt.0) then
-            call MPI_BARRIER(comm,info)
-            topo => ppm_topo(topoid)%t
-            stdout("NB subdomains GLOBAL =  ",topo%nsubs)
-            stdout("NB subdomains LOCAL  =  ",topo%nsublist)
-            do i = 1,topo%nsublist
-                isub = topo%isublist(i)
-                stdout("Subdomain number ",isub)
-                stdout("coordinates  Min =  ",'topo%min_subd(1:2,isub)')
-                stdout("coordinates  Max =  ",'topo%max_subd(1:2,isub)')
-                stdout("number of neighs  =  ",'topo%nneighsubs(i)')
-                do j=1,topo%nneighsubs(i)
-                stdout("list of neighs        :  ",'topo%ineighsubs(j,i)')
-                enddo
-            enddo
-            call MPI_BARRIER(comm,info)
-        endif
-
-        Nm = 55
-        offset = 0._mk
-        call Mesh1%create(topoid,offset,info,Nm=Nm)
-        Assert_Equal(info,0)
-        call Mesh1%destroy(info)
-        Assert_Equal(info,0)
-
-        h = (max_phys-min_phys)/Nm
-        call Mesh1%create(topoid,offset,info,h=h)
-        Assert_Equal(info,0)
-        call Mesh1%destroy(info)
-        Assert_Equal(info,0)
-        end_subroutine()
-    end test
-
-
-    test small_test
-        use ppm_module_io_vtk
-        type(ppm_t_field) :: Field1,Field2
-        real(ppm_kind_double),dimension(ndim) :: pos
-        real(mk),dimension(:,:,:,:),pointer :: Field1_data => NULL()
-        real(mk),dimension(:,:,:),  pointer :: Field2_data => NULL()
-        integer :: p_idx, nb_errors
-        CLASS(ppm_t_discr_info_),POINTER             :: dinfo => NULL()
-        logical :: assoc
-
-        start_subroutine("test_patch_fields")
-
-        Nm = 25
+        Nm = 35
         Nm(ndim) = 45
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
 
-        my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+            Assert_Equal(info,0)
+
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        Assert_Equal(info,0)
+
+        allocate(wp_2r(ndim,Part1%Npart))
+        call random_number(wp_2r)
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        call Part1%move(wp_2r,info)
+        Assert_Equal(info,0)
+        deallocate(wp_2r)
+
+        Assert_true(Part1%has_neighlist(Part1))
+        call Part1%apply_bc(info)
+        Assert_Equal(info,0)
+
+        call Part1%map(info,global=.true.,topoid=topoid)
+        Assert_Equal(info,0)
+
+        call Part1%map_ghosts(info)
+        Assert_Equal(info,0)
+
+
+        if (ndim.eq.2) then
+            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+        else
+            my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+        endif
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
 
@@ -234,26 +201,6 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             p => Mesh1%subpatch%next()
         enddo
 
-        ! Check if the subpatch nodes are all exactly within the right subdomain
-        topo => ppm_topo(Mesh1%topoid)%t
-        ! loop through all subdomains on this processor
-        DO jsub = 1,topo%nsublist
-            isub = topo%isublist(jsub)
-            DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
-                SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
-                TYPE IS (ppm_t_subpatch)
-                    DO k=1,p%nnodes(3)
-                    DO j=1,p%nnodes(2)
-                    DO i=1,p%nnodes(1)
-                        pos(1:ndim) = p%get_pos(i,j,k)
-                        Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
-                        Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
-                    ENDDO
-                    ENDDO
-                    ENDDO
-                END SELECT
-            ENDDO
-        ENDDO
 
         if (ppm_debug.GT.0) then
             call MPI_BARRIER(comm,info)
@@ -286,7 +233,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         endif
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
                 Field1_n(1) = -10._mk * (rank+1)
                 Field1_n(2) = -10._mk * (rank+1) - 1
@@ -295,9 +242,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         !Change the values of the real nodes to something that depends
         ! on position (so that we can later check the values)
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for real
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                pos(1:ndim) = sbpitr%get_pos(i,j)
                 Field1_n(1) = cos(2._mk*pi*pos(1))
                 Field1_n(2) = cos(2._mk*pi*pos(1)) + 2._mk
                 Field2_n    = 1._mk
@@ -326,21 +273,12 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
         nb_errors = 0
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
-            for all
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
+            for real_and_ghosts
+                pos(1:ndim) = sbpitr%get_pos(i,j)
                 IF (Field2_n .lt. 0._mk) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                !stdout_f('(A,2(I0,1X),A,2(E24.16,1X))',&
-                !    "Local  i,j ",i,j," Pos=",pos)
-                !stdout_f('(A,2(I0,1X))',"Global i,j ",&
-                !    'i+sbpitr%istart(1)-1','j+sbpitr%istart(2)-1')
-                !stdout("p%istart=",'sbpitr%istart')
-                !stdout("p%istart_pos=",'sbpitr%get_pos(1,1)')
-                !stdout("p%iend=",'sbpitr%iend')
-                !stdout("p%iend_pos=",&
-                !    'sbpitr%get_pos(sbpitr%nnodes(1),sbpitr%nnodes(2))')
                 Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
                 Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
                 Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
@@ -349,11 +287,35 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         call MPI_BARRIER(comm,info)
 
+        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
+            for all
+                Field1_n(1) = 2._mk 
+                Field1_n(2) = 4._mk
+                Field2_n    = -1._mk
+        end foreach
+
+        call Mesh1%interp_to_part(Part1,Field1,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+
+        !call Part1%map_ghosts(info)
+        !    Assert_Equal(info,0)
+
+        call Part1%get_field(Field1,up_2d,info)
+            Assert_Equal(info,0)
+
+            stdout("Min/Max 1 = ",'MINVAL(up_2d(1,1:Part1%Npart))',&
+                'MAXVAL(up_2d(1,1:Part1%Npart))')
+            stdout("Min/Max 2 = ",'MinVAL(up_2d(2,1:Part1%Npart))',&
+                'MAXVAL(up_2d(2,1:Part1%Npart))')
+
+
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
         call Field1%destroy(info)
             Assert_Equal(info,0)
         call Field2%destroy(info)
+            Assert_Equal(info,0)
+        call Part1%destroy(info)
             Assert_Equal(info,0)
 
         end_subroutine()

@@ -417,12 +417,57 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! intersection of a user-defined patch and a subdomain
     INTEGER                       :: meshID = 0
     !!! ID of the mesh to which this subpatch belongs
+    INTEGER                       :: isub = 0
+    !!! subdomain that contains this subpatch (local id)
     CLASS(ppm_t_discr_kind),POINTER:: mesh => NULL()
     !!! Pointer to the mesh to which this subpatch belongs
     INTEGER, DIMENSION(:),POINTER :: istart   => NULL()
     !!! Lower-left coordinates on the global mesh
     INTEGER, DIMENSION(:),POINTER :: iend     => NULL()
     !!! Upper-right coordinates on the global mesh
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: start   => NULL()
+    !!! Lower-left absolute coordinates of the subpatch
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: end     => NULL()
+    !!! Upper-right absolute coordinates of the subpatch
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: start_ext   => NULL()
+    !!! Lower-left absolute coordinates of the subpatch extended with the
+    !!! mesh-wide ghostsize. This corresponds to the "zone of influence" of
+    !!! the subpatch (i.e., particles within that volume will interact with
+    !!! the nodes of the subpatch during interpolation)
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: end_ext   => NULL()
+    !!! Upper-right absolute coordinates of the subpatch extended with the
+    !!! mesh-wide ghostsize. This corresponds to the "zone of influence" of
+    !!! the subpatch (i.e., particles within that volume will interact with
+    !!! the nodes of the subpatch during interpolation)
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: start_red   => NULL()
+    !!! Lower-left absolute coordinates of the subpatch reduced by the
+    !!! mesh-wide ghostsize. This corresponds to the area where
+    !!! the field is well described by centered interpolation kernels
+    !!! (i.e., we can used centred m2p interpolation kernels for particles
+    !!! located inside that region)
+    REAL(ppm_kind_double), DIMENSION(:),POINTER :: end_red   => NULL()
+    !!! Upper-right absolute coordinates of the subpatch reduced by the
+    !!! mesh-wide ghostsize. This corresponds to the area where
+    !!! the field is well described by centered interpolation kernels
+    !!! (i.e., we can used centred m2p interpolation kernels for particles
+    !!! located inside that region)
+    INTEGER, DIMENSION(:),POINTER :: bc       => NULL()
+    !!! boundary conditions on a subpatch:
+    !!! 
+    !!! - west  : 1
+    !!! - east  : 2
+    !!! - south : 3
+    !!! - north : 4
+    !!! - bottom: 5
+    !!! - top   : 6
+    !!! 
+    !!! index 1: the index of the 4 or 6 faces in 2 and 3 D
+    !!! index 2: the global sub id
+    !!! 
+    !!! states:
+    !!! 
+    !!! - value: 0 the face is internal
+    !!! - value: 1 otherwise
     INTEGER, DIMENSION(:),POINTER :: nnodes   => NULL()
     !!! number of (real) nodes in each direction
     INTEGER, DIMENSION(:),POINTER :: lo_a     => NULL()
@@ -557,7 +602,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
                                                  subpatch_by_sub => NULL()
     !!! pointers to the subpatches contained in each sub.
 
-    CLASS(ppm_c_field_info_),POINTER           :: field_ptr => NULL()
+    !CLASS(ppm_c_field_info_),POINTER           :: field_ptr => NULL()
+    CLASS(ppm_v_main_abstr),POINTER            :: field_ptr => NULL()
     !!! Pointers to the fields that are currently discretized on this mesh
 
     CLASS(ppm_t_mesh_mapping_s_),POINTER       :: mapping_s => NULL()
@@ -619,7 +665,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_destroy_),        DEFERRED :: destroy
     PROCEDURE(equi_mesh_create_prop_),    DEFERRED :: create_prop
     PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
-    PROCEDURE(equi_mesh_set_rel_),        DEFERRED :: set_rel
+    !PROCEDURE(equi_mesh_set_rel_),        DEFERRED :: set_rel
     PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
       &                                   DEFERRED :: new_subpatch_data_ptr 
@@ -631,6 +677,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
     PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
     PROCEDURE(equi_mesh_print_vtk_),      DEFERRED :: print_vtk
+    PROCEDURE(equi_mesh_m2p_),            DEFERRED :: interp_to_part
 END TYPE
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 

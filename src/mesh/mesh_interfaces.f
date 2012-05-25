@@ -42,16 +42,21 @@ SUBROUTINE subpatch_data_destroy_(this,info)
 END SUBROUTINE
 
 !CREATE
-SUBROUTINE subpatch_create_(p,mesh,istart,iend,istart_p,iend_p,ghostsize,info)
+SUBROUTINE subpatch_create_(p,mesh,isub,istart,iend,pstart,pend,&
+        istart_p,iend_p,ghostsize,bcdef,info)
     !!! Constructor for subpatch
-    IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_t_equi_mesh_
+    IMPORT ppm_t_subpatch_,ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_subpatch_)             :: p
     CLASS(ppm_t_equi_mesh_),TARGET     :: mesh
+    INTEGER                            :: isub
     INTEGER,DIMENSION(:)               :: istart
     INTEGER,DIMENSION(:)               :: iend
+    REAL(ppm_kind_double),DIMENSION(:) :: pstart
+    REAL(ppm_kind_double),DIMENSION(:) :: pend
     INTEGER,DIMENSION(:)               :: istart_p
     INTEGER,DIMENSION(:)               :: iend_p
     INTEGER,DIMENSION(:)               :: ghostsize
+    INTEGER,DIMENSION(:)               :: bcdef
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 
@@ -117,20 +122,15 @@ SUBROUTINE equi_mesh_destroy_(this,info)
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
 
-SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid,infinite)
+SUBROUTINE equi_mesh_def_patch_(this,patch,info,patchid,infinite,bcdef)
     !!! Add a patch to a mesh
-    IMPORT ppm_t_equi_mesh_,ppm_kind_double
+    IMPORT ppm_t_equi_mesh_,ppm_kind_double,ppm_dim
     CLASS(ppm_t_equi_mesh_)                 :: this
     REAL(ppm_kind_double),DIMENSION(:)      :: patch
-    !!! Positions of the corners of the patch
-    !!! (x1,y1,z1,x2,y2,z2), where 1 is the lower-left-bottom corner
-    !!! and 2 is the upper-right-top corner.
     INTEGER                 , INTENT(  OUT) :: info
-    !!! Returns status, 0 upon success
     INTEGER, OPTIONAL                       :: patchid
-    !!! id of the patch, if we want one.
     LOGICAL, OPTIONAL                       :: infinite
-    !!! true if the patch should cover the whole computational domain
+    INTEGER, OPTIONAL,    DIMENSION(2*ppm_dim)  :: bcdef
 END SUBROUTINE
 
 SUBROUTINE equi_mesh_def_uniform_(this,info,patchid)
@@ -138,9 +138,7 @@ SUBROUTINE equi_mesh_def_uniform_(this,info,patchid)
     IMPORT ppm_t_equi_mesh_,ppm_kind_double
     CLASS(ppm_t_equi_mesh_)                 :: this
     INTEGER                 , INTENT(  OUT) :: info
-    !!! Returns status, 0 upon success
     INTEGER, OPTIONAL                       :: patchid
-    !!! id of the (uniform) patch, if we want one.
 END SUBROUTINE
 
 FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
@@ -148,10 +146,8 @@ FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
     IMPORT ppm_t_equi_mesh_,ppm_t_subpatch_data_
     IMPLICIT NONE
     CLASS(ppm_t_equi_mesh_)                 :: this
-    !!! cartesian mesh object
     CLASS(ppm_t_subpatch_data_),POINTER     :: sp
     INTEGER                 , INTENT(  OUT) :: info
-    !!! Returns status, 0 upon success
 END FUNCTION 
 !CREATE
 SUBROUTINE field_info_create_(this,field,info)
@@ -173,14 +169,13 @@ FUNCTION equi_mesh_list_of_fields_(this,info) RESULT(fids)
     INTEGER,DIMENSION(:),POINTER    :: fids
     INTEGER                         :: info
 END FUNCTION
-!ESTABLISH RELATIONSHIP BETWEEN MESH AND FIELD
-SUBROUTINE equi_mesh_set_rel_(this,field,info)
-    IMPORT ppm_t_field_,ppm_t_equi_mesh_
-    CLASS(ppm_t_equi_mesh_)            :: this
-    CLASS(ppm_t_field_)                :: field
-    !!! this mesh is discretized on that field
-    INTEGER,               INTENT(OUT)  :: info
-END SUBROUTINE
+!!ESTABLISH RELATIONSHIP BETWEEN MESH AND FIELD
+!SUBROUTINE equi_mesh_set_rel_(this,field,info)
+    !IMPORT ppm_t_field_,ppm_t_equi_mesh_
+    !CLASS(ppm_t_equi_mesh_)            :: this
+    !CLASS(ppm_t_field_)                :: field
+    !INTEGER,               INTENT(OUT)  :: info
+!END SUBROUTINE
 !GHOST GET
 SUBROUTINE equi_mesh_map_ghost_get_(this,info)
     IMPORT ppm_t_equi_mesh_
@@ -253,4 +248,12 @@ SUBROUTINE equi_mesh_print_vtk_(this,filename,info)
     CLASS(ppm_t_equi_mesh_)                           :: this
     CHARACTER(LEN=*)                                  :: filename
     INTEGER,                              INTENT(OUT) :: info
+END SUBROUTINE
+SUBROUTINE equi_mesh_m2p_(this,Part,Field,kernel,info)
+    IMPORT ppm_t_equi_mesh_,ppm_t_particles_d_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)                          :: this
+    CLASS(ppm_t_particles_d_)                        :: Part
+    CLASS(ppm_t_field_)                              :: Field
+    INTEGER                        , INTENT(IN   ) :: kernel
+    INTEGER                        , INTENT(  OUT) :: info
 END SUBROUTINE

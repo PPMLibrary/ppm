@@ -446,32 +446,32 @@
                             ELSE
                                 iopt = ppm_param_alloc_fit
                             ENDIF
-#if   __DIM == __VFIELD
-                            ldu(1) = edim
-                            ldu(2) = xhi+p%ghostsize(2)
-                            ldu(3) = yhi+p%ghostsize(4)
-                            ldl(1) = 1
-                            ldl(2) = 1-p%ghostsize(1)
-                            ldl(3) = 1-p%ghostsize(3)
-#elif __DIM == __SFIELD
-                            ldu(1) = xhi+p%ghostsize(2)
-                            ldu(2) = yhi+p%ghostsize(4)
-                            ldl(1) = 1-p%ghostsize(1)
-                            ldl(2) = 1-p%ghostsize(3)
-#endif
+!#if   __DIM == __VFIELD
+                            !ldu(1) = edim
+                            !ldu(2) = xhi+p%ghostsize(2)
+                            !ldu(3) = yhi+p%ghostsize(4)
+                            !ldl(1) = 1
+                            !ldl(2) = 1-p%ghostsize(1)
+                            !ldl(3) = 1-p%ghostsize(3)
+!#elif __DIM == __SFIELD
+                            !ldu(1) = xhi+p%ghostsize(2)
+                            !ldu(2) = yhi+p%ghostsize(4)
+                            !ldl(1) = 1-p%ghostsize(1)
+                            !ldl(2) = 1-p%ghostsize(3)
+!#endif
 
                             check_associated("p%subpatch_data")
                             check_true("p%subpatch_data%exists(p_idx)","does not exist")
 #if __KIND == __DOUBLE_PRECISION
 #if    __DIM == __SFIELD
-                            call ppm_alloc(&
-                                p%subpatch_data%vec(p_idx)%t%data_2d_rd,&
-                                ldl,ldu,iopt,info)
+                            !call ppm_alloc(&
+                                !p%subpatch_data%vec(p_idx)%t%data_2d_rd,&
+                                !ldl,ldu,iopt,info)
                             fdata => p%subpatch_data%vec(p_idx)%t%data_2d_rd
 #elif  __DIM == __VFIELD
-                            call ppm_alloc(&
-                                p%subpatch_data%vec(p_idx)%t%data_3d_rd,&
-                                ldl,ldu,iopt,info)
+                            !call ppm_alloc(&
+                                !p%subpatch_data%vec(p_idx)%t%data_3d_rd,&
+                                !ldl,ldu,iopt,info)
                             fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
 #endif
 #else

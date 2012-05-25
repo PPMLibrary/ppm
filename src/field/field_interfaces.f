@@ -65,7 +65,7 @@ SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts)
     !!! Allocate field on a mesh or on a particle set
     !!! If the field has a procedure for initialization (e.g. an
     !!! initial condition), then the field is also initialized.
-    CLASS(ppm_t_field_)                :: this
+    CLASS(ppm_t_field_),TARGET         :: this
     CLASS(ppm_t_discr_kind),TARGET     :: discr
     INTEGER,               INTENT(OUT) :: info
     INTEGER, OPTIONAL                  :: datatype

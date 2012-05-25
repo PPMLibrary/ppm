@@ -145,7 +145,12 @@
          !!! antisymmetric boundary conditions, because the offset is not a 
          !!! simple constant to be added to the particle coordinate
 
-         
+         !----------------------------------------------------------------------
+         !  internal particle lists 
+         !----------------------------------------------------------------------
+         INTEGER          , DIMENSION(:,:), POINTER :: list_sub => NULL()
+         INTEGER          , DIMENSION(:  ), POINTER :: store_info => NULL()
+         INTEGER, DIMENSION(4) :: ppm_rmsh_kernelsize 
 
 
          !----------------------------------------------------------------------
