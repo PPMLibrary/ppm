@@ -237,7 +237,8 @@
       !-------------------------------------------------------------------------
       !  Define decision heuristics for dynamic load balancing
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_loadbal_sar         = 1 
+      INTEGER, PARAMETER :: ppm_param_loadbal_sar         = 1
+      INTEGER, PARAMETER :: ppm_param_loadbal_dlb         = 2
 
       !-------------------------------------------------------------------------
       !  Define statistics update methods

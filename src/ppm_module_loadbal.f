@@ -1,4 +1,4 @@
-      !--*- f90 -*--------------------------------------------------------------
+      !-------------------------------------------------------------------------
       !  Module       :                ppm_module_loadbal
       !-------------------------------------------------------------------------
       ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -40,12 +40,23 @@
       !!! redecomposed.
 
          USE ppm_module_topo_typedef
+         USE ppm_module_data_loadbal
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
          INTERFACE ppm_loadbal_inquire
             MODULE PROCEDURE loadbal_inq_s
             MODULE PROCEDURE loadbal_inq_d
+         END INTERFACE
+
+         INTERFACE ppm_loadbal_inquire_sar
+            MODULE PROCEDURE loadbal_inquire_sar_s
+            MODULE PROCEDURE loadbal_inquire_sar_d
+         END INTERFACE
+
+         INTERFACE ppm_loadbal_inquire_dlb
+            MODULE PROCEDURE loadbal_inquire_dlb_s
+            MODULE PROCEDURE loadbal_inquire_dlb_d
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -87,10 +98,14 @@
 
 #define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_loadbal_inquire.f"
+#include "loadbal/ppm_loadbal_inquire_sar.f"
+#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
 #include "loadbal/ppm_loadbal_inquire.f"
+#include "loadbal/ppm_loadbal_inquire_sar.f"
+#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #undef __KIND
 
 #define __KIND __SINGLE_PRECISION
