@@ -634,11 +634,13 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
 END TYPE
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 
-TYPE, ABSTRACT, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair_
-  CLASS(ppm_t_field_), POINTER        :: field => NULL()
+TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair
+  CLASS(ppm_t_field_), POINTER       :: field => NULL()
   CLASS(ppm_t_discr_kind), POINTER   :: discretization => NULL()
 END TYPE
-TYPE, EXTENDS(ppm_t_field_discr_pair_) ::  ppm_t_field_discr_pair
+minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,generate="concrete")
+
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) ::  ppm_t_options
 END TYPE
 
 !----------------------------------------------------------------------
@@ -798,6 +800,7 @@ minclude ppm_create_collection_procedures(field_info,field_info_)
 minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
 minclude ppm_create_collection_procedures(discr_kind,discr_kind,vec=true)
 minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
+minclude ppm_create_collection_procedures(field_discr_pair,field_discr_pair,vec=true)
 
 !CREATE
 SUBROUTINE field_info_create(this,field,info)
