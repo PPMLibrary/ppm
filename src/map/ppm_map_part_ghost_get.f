@@ -250,7 +250,7 @@
       ENDIF
 
       ! for now here, but this can be done better
-      ! TODO: kepp this consistant throughout simulation
+      ! TODO: keep this consistent throughout simulation
       ppm_sendbufsize = 0
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          IF (ASSOCIATED(ppm_sendbufferd)) THEN

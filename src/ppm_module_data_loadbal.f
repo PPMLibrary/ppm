@@ -42,13 +42,30 @@
          !----------------------------------------------------------------------
          !  Timing and load statistics
          !----------------------------------------------------------------------
-         ! estimated cost of redefining the topology
+
          REAL(ppm_kind_double) :: ppm_loadbal_decomp_cost = 0.0_ppm_kind_double
-         ! counter of how many times decomp cost was measured (N)
+         !!! estimated cost of redefining the topology
+
          INTEGER               :: ppm_loadbal_dcn = 0
-         ! running sum of (maxtime - avgtime)
+         !!! counter of how many times decomp cost was measured (N)
+
          REAL(ppm_kind_double) :: ppm_loadbal_runsum = 0.0_ppm_kind_double
-         ! old value of the SAR function
+         !!! running sum of (maxtime - avgtime)
+
          REAL(ppm_kind_double) :: ppm_loadbal_old_sar = -1.0_ppm_kind_double
+         !!! old value of the SAR function
+
+         REAL(ppm_kind_double) :: ppm_loadbal_deltaold = 0.0_ppm_kind_double
+         !!! old value of load imbalance (maxtime - avgtime)
+         REAL(ppm_kind_double) :: ppm_loadbal_slpavg = 0.0_ppm_kind_double
+         !!! slp average SAR needs
+         INTEGER               :: ppm_loadbal_nold = 0
+         !!! number of
+         INTEGER               :: ppm_loadbal_nslp = 0
+
+         INTEGER               :: ppm_loadbal_sendrank = -1
+         !!! The process to which this process will send some subdomains
+         INTEGER               :: ppm_loadbal_recvrank = -1
+         !!! The process which will receive some subdomains
 
       END MODULE ppm_module_data_loadbal
