@@ -1177,12 +1177,14 @@ SUBROUTINE equi_mesh_destroy(this,info)
     !-------------------------------------------------------------------------
     ldc = 1
     iopt   = ppm_param_dealloc
-    CALL ppm_alloc(this%Offset,ldc,iopt,info)
-        or_fail_dealloc("Offset")
     CALL ppm_alloc(this%Nm,ldc,iopt,info)
         or_fail_dealloc("Nm")
+    CALL ppm_alloc(this%Offset,ldc,iopt,info)
+        or_fail_dealloc("Offset")
     CALL ppm_alloc(this%h,ldc,iopt,info)
         or_fail_dealloc("h")
+    CALL ppm_alloc(this%ghostsize,ldc,iopt,info)
+        or_fail_dealloc("ghostsize")
 
     CALL ppm_alloc(this%istart,ldc,iopt,info)
         or_fail_dealloc("istart")
@@ -1191,6 +1193,8 @@ SUBROUTINE equi_mesh_destroy(this,info)
 
     destroy_collection_ptr(this%subpatch)
     destroy_collection_ptr(this%patch)
+    destroy_collection_ptr(this%mdata)
+
     IF (ASSOCIATED(this%subpatch_by_sub)) THEN
         DEALLOCATE(this%subpatch_by_sub,STAT=info)
             or_fail_dealloc("subpatch_by_sub")
@@ -1204,8 +1208,12 @@ SUBROUTINE equi_mesh_destroy(this,info)
 
     destroy_collection_ptr(this%field_ptr)
 
+    dealloc_pointers(this%ghost_fromsub,this%ghost_tosub,this%ghost_patchid,this%ghost_blkstart,this%ghost_blksize,this%ghost_blk,this%ghost_recvtosub,this%ghost_recvpatchid,this%ghost_recvblkstart,this%ghost_recvblksize,this%ghost_recvblk)
+
     this%ID = 0
+    this%topoid = 0
     this%npatch = 0
+    this%ghost_initialized = .FALSE.
 
     end_subroutine()
 END SUBROUTINE equi_mesh_destroy
