@@ -1,7 +1,7 @@
 macro ppm_fail(message, type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 CALL ppm_error(<%= type %>, &
   <%= message %>,&
-  <%= caller %>, 10000 , <%= info %>)
+  <%= caller %>, <%= scope.line %> , <%= info %>)
 GOTO <%= exit_point %>
 end macro
 
