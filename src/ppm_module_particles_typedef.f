@@ -35,13 +35,13 @@ INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 #define  CTYPE(a) a/**/_sc
 #define  MK ppm_kind_single
 #define  _MK _ppm_kind_single
-#include "part/particles_typedef.inc"
+#include "part/particles_typedef.f"
 
 #define  DTYPE(a) a/**/_d
 #define  CTYPE(a) a/**/_dc
 #define  MK ppm_kind_double
 #define  _MK _ppm_kind_double
-#include "part/particles_typedef.inc"
+#include "part/particles_typedef.f"
 
 CHARACTER(LEN=ppm_char)         :: cbuf
 CHARACTER(LEN=ppm_char)         :: line_of_stars='**************************'

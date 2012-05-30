@@ -154,12 +154,16 @@ macro stdout_f(format,*message)
 end macro
 
 
-macro dealloc_pointer(p,info=info)
+macro dealloc_pointer(pointer,info=info)
+% p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+% p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
 IF (ASSOCIATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
 $or_fail_dealloc("<%= p %>")
 end macro
 
-macro dealloc_allocatable(p,info=info)
+macro dealloc_allocatable(allocatable,info=info)
+% p = allocatable.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+% p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
 IF (ALLOCATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
 $or_fail_dealloc("<%= p %>")
 end macro
@@ -167,7 +171,9 @@ end macro
 macro dealloc_pointers(*list)
 % if list.is_a? Array
 % list.each do |ptr|
-$dealloc_pointer(<%= ptr %>)
+% p = ptr.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
+% p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
+$dealloc_pointer(<%= p %>)
 % end
 % end
 end macro

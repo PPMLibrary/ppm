@@ -263,8 +263,9 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
         or_fail("failed to log the relationship between this field and that particle set")
         !CALL this%set_rel(discr,p_idx,info)
 
-    !    CALL discr%set_rel(this,info)
-    !        or_fail("failed to log the relationship between this particle set and that field")
+        el => this
+        CALL discr%field_ptr%push(el,info)
+            or_fail("failed to log the relationship between this particle set and that field")
 
     CLASS DEFAULT
         fail("support for this discretization type is missing")

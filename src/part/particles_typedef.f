@@ -42,7 +42,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: destroy => DTYPE(part_destroy)
     PROCEDURE     :: initialize => DTYPE(part_initialize)
     PROCEDURE     :: del_parts => DTYPE(part_del_parts)
-    PROCEDURE     :: set_rel   => DTYPE(part_set_rel)
 
     PROCEDURE     :: create_prop  => DTYPE(part_prop_create)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)

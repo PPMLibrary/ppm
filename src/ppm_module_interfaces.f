@@ -151,35 +151,6 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     !!!
 END TYPE
 
-
-TYPE,ABSTRACT ::  ppm_t_field_info_
-    !!! (Contained inside a ppm_t_equi_mesh, or ppm_t_particles_ 
-    !!! so relates to one specific mesh or particle set)
-    !!! Data structure containing info about a given field currently 
-    !!! discretized on this Mesh or Particle Set.
-    !!! 
-    !!! Contains pointers to the field itself as well as some
-    !!!  bookkeeping information 
-
-    INTEGER                               :: fieldID = 0
-    !!! ID of the field
-    CLASS(ppm_t_main_abstr),POINTER       :: field_ptr => NULL()
-    !!! pointer to a field that is discretized on this mesh
-
-    CONTAINS
-    PROCEDURE(field_info_create_), DEFERRED :: create
-    PROCEDURE(field_info_destroy_),DEFERRED :: destroy
-END TYPE
-minclude ppm_create_collection(field_info_,field_info_,generate="abstract")
-
-TYPE,EXTENDS(ppm_t_field_info_) ::  ppm_t_field_info
-    CONTAINS
-    PROCEDURE :: create  => field_info_create
-    PROCEDURE :: destroy => field_info_destroy
-END TYPE
-minclude ppm_create_collection(field_info,field_info,generate="extend")
-
-
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     !!! Generic differential operator
     !!! (It only contains semantic information on the operator)
@@ -602,7 +573,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
                                                  subpatch_by_sub => NULL()
     !!! pointers to the subpatches contained in each sub.
 
-    !CLASS(ppm_c_field_info_),POINTER           :: field_ptr => NULL()
     CLASS(ppm_v_main_abstr),POINTER            :: field_ptr => NULL()
     !!! Pointers to the fields that are currently discretized on this mesh
 
@@ -665,7 +635,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_destroy_),        DEFERRED :: destroy
     PROCEDURE(equi_mesh_create_prop_),    DEFERRED :: create_prop
     PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
-    !PROCEDURE(equi_mesh_set_rel_),        DEFERRED :: set_rel
     PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
       &                                   DEFERRED :: new_subpatch_data_ptr 
@@ -698,7 +667,6 @@ INTERFACE
 minclude ppm_create_collection_interfaces(equi_mesh_,equi_mesh_)
 minclude ppm_create_collection_interfaces(A_subpatch_,A_subpatch_)
 minclude ppm_create_collection_interfaces(discr_info_,discr_info_)
-minclude ppm_create_collection_interfaces(field_info_,field_info_)
 minclude ppm_create_collection_interfaces(field_,field_)
 minclude ppm_create_collection_interfaces(field_,field_,vec=true)
 minclude ppm_create_collection_interfaces(operator_,operator_)
@@ -841,41 +809,9 @@ END INTERFACE
 
 CONTAINS
 
-minclude ppm_create_collection_procedures(field_info,field_info_)
 minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
 minclude ppm_create_collection_procedures(discr_kind,discr_kind,vec=true)
 minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
-
-!CREATE
-SUBROUTINE field_info_create(this,field,info)
-    !!! Constructor for subdomain data data structure
-    CLASS(ppm_t_field_info)                    :: this
-    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)  :: field
-    INTEGER,                  INTENT(OUT)      :: info
-    start_subroutine("field_info_create")
-
-    SELECT TYPE(field)
-    CLASS IS (ppm_t_field_)
-        this%fieldID = field%ID
-        this%field_ptr => field
-    CLASS DEFAULT
-        fail("Wrong type. Argument should be a field")
-    END SELECT
-
-    end_subroutine()
-END SUBROUTINE field_info_create
-!DESTROY
-SUBROUTINE field_info_destroy(this,info)
-    !!! Destructor for subdomain data data structure
-    CLASS(ppm_t_field_info)            :: this
-    INTEGER,               INTENT(OUT) :: info
-    start_subroutine("field_info_destroy")
-
-    this%fieldID = 0
-    this%field_ptr => NULL()
-
-    end_subroutine()
-END SUBROUTINE field_info_destroy
 
 !CREATE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&

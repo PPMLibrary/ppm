@@ -217,7 +217,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     !!! cost associated to each particle 
 
 
-    CLASS(ppm_c_field_info_),POINTER                :: field_ptr => NULL()
+    CLASS(ppm_v_main_abstr),POINTER                 :: field_ptr => NULL()
     !!! Pointers to the fields that are currently discretized on this 
     !!! Particle set
 
@@ -251,7 +251,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_destroy)_),     DEFERRED :: destroy 
     PROCEDURE(DTYPE(part_initialize)_),  DEFERRED :: initialize 
     PROCEDURE(DTYPE(part_del_parts)_),   DEFERRED :: del_parts 
-    PROCEDURE(DTYPE(part_set_rel)_),     DEFERRED :: set_rel
 
     PROCEDURE(DTYPE(part_prop_create)_), DEFERRED :: create_prop 
     PROCEDURE(DTYPE(part_prop_destroy)_),DEFERRED :: destroy_prop 

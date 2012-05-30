@@ -149,19 +149,6 @@ FUNCTION equi_mesh_new_subpatch_data_ptr_(this,info) RESULT(sp)
     CLASS(ppm_t_subpatch_data_),POINTER     :: sp
     INTEGER                 , INTENT(  OUT) :: info
 END FUNCTION 
-!CREATE
-SUBROUTINE field_info_create_(this,field,info)
-    IMPORT ppm_t_field_info_,ppm_t_main_abstr
-    CLASS(ppm_t_field_info_)              :: this
-    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN ) :: field
-    INTEGER,                  INTENT(OUT) :: info
-END SUBROUTINE
-!DESTROY
-SUBROUTINE field_info_destroy_(this,info)
-    IMPORT ppm_t_field_info_
-    CLASS(ppm_t_field_info_)           :: this
-    INTEGER,               INTENT(OUT) :: info
-END SUBROUTINE 
 !LIST OF DISCRETIZED FIELDS
 FUNCTION equi_mesh_list_of_fields_(this,info) RESULT(fids)
     IMPORT ppm_t_equi_mesh_
@@ -169,13 +156,6 @@ FUNCTION equi_mesh_list_of_fields_(this,info) RESULT(fids)
     INTEGER,DIMENSION(:),POINTER    :: fids
     INTEGER                         :: info
 END FUNCTION
-!!ESTABLISH RELATIONSHIP BETWEEN MESH AND FIELD
-!SUBROUTINE equi_mesh_set_rel_(this,field,info)
-    !IMPORT ppm_t_field_,ppm_t_equi_mesh_
-    !CLASS(ppm_t_equi_mesh_)            :: this
-    !CLASS(ppm_t_field_)                :: field
-    !INTEGER,               INTENT(OUT)  :: info
-!END SUBROUTINE
 !GHOST GET
 SUBROUTINE equi_mesh_map_ghost_get_(this,info)
     IMPORT ppm_t_equi_mesh_

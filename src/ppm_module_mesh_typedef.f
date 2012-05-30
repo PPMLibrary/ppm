@@ -1048,6 +1048,13 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
         fail("subpatch_by_sub is already allocated. Call destroy() first?")
     ENDIF
 
+    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
+        ALLOCATE(this%field_ptr,STAT=info)
+            or_fail_alloc("could not allocate this%field_ptr")
+    ELSE
+        fail("field_ptr is already allocated. Call destroy() first?")
+    ENDIF
+
     !-------------------------------------------------------------------------
     !  Store the mesh information
     !-------------------------------------------------------------------------
@@ -1100,8 +1107,8 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
                 topo%max_subd(1:ppm_dim,i)-ppm_myepsd-Offset(1:ppm_dim))/this%h(1:ppm_dim))
             check_true(&
         "ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i))&
-        .GT.(this%h(1:ppm_dim)+ppm_myepsd))",&
-        "Grid spacing h has to be stricly smaller than any subdomain.")
+        .GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))",&
+        "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
     ENDDO
     !the ppm_myepsd term ensures that nodes that are on a East, North,
     ! or Top subdomain boundary are not counted within a subpatch.
@@ -1274,11 +1281,7 @@ SUBROUTINE equi_mesh_destroy(this,info)
     destroy_collection_ptr(this%patch)
     destroy_collection_ptr(this%mdata)
 
-    IF (ASSOCIATED(this%subpatch_by_sub)) THEN
-        DEALLOCATE(this%subpatch_by_sub,STAT=info)
-            or_fail_dealloc("subpatch_by_sub")
-    ENDIF
-
+    dealloc_pointer("this%subpatch_by_sub")
 
     !Destroy the bookkeeping entries in the fields that are
     !discretized on this mesh
@@ -1366,64 +1369,6 @@ FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
 
     end_function()
 END FUNCTION
-
-!SUBROUTINE equi_mesh_set_rel(this,field,info)
-    !!!! Create bookkeeping data structure to log the relationship between
-    !!!! the mesh and a field
-    !CLASS(ppm_t_equi_mesh)             :: this
-    !CLASS(ppm_t_field_),POINTER        :: field
-    !!!! this mesh is discretized on that field
-    !INTEGER,               INTENT(OUT) :: info
-
-    !TYPE(ppm_t_field_info),POINTER     :: fdinfo => NULL()
-
-    !start_subroutine("equi_mesh_set_rel")
-
-
-    !ALLOCATE(fdinfo,STAT=info)
-        !or_fail_alloc("could not allocate new field_info pointer")
-
-
-    !CALL fdinfo%create(field,info)
-        !or_fail("could not create new field_info object")
-
-    !IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
-        !ALLOCATE(ppm_c_field_info::this%field_ptr,STAT=info)
-            !or_fail_alloc("could not allocate field_info collection")
-    !ENDIF
-
-    !IF (this%field_ptr%vec_size.LT.field%ID) THEN
-        !CALL this%field_ptr%grow_size(info)
-            !or_fail("could not grow_size this%field_ptr")
-    !ENDIF
-    !!if the collection is still too small, it means we should consider
-    !! using a hash table for meshIDs...
-    !IF (this%field_ptr%vec_size.LT.field%ID) THEN
-        !stdout("field_ptr%vec_size = ",'this%field_ptr%vec_size')
-        !stdout("field%ID = ",'field%ID')
-        !fail("The id of the mesh that we are trying to store in a Field collection seems to large. Why not implement a hash function?")
-    !ENDIF
-
-    !IF (this%field_ptr%exists(field%ID)) THEN
-        !fail("It seems like this Mesh already has a pointer to that field. Are you sure you want to do that a second time?")
-    !ELSE
-        !!add field_info to the collection, at index fieldID
-        !!Update the counters nb,max_id and min_id accordingly
-        !!(this is not very clean without hash table)
-        !this%field_ptr%vec(field%ID)%t => fdinfo
-        !this%field_ptr%nb = this%field_ptr%nb + 1
-        !IF (this%field_ptr%nb.EQ.1) THEN
-            !this%field_ptr%max_id = field%ID
-            !this%field_ptr%min_id = field%ID
-        !ELSE
-            !this%field_ptr%max_id = MAX(this%field_ptr%max_id,field%ID)
-            !this%field_ptr%min_id = MIN(this%field_ptr%min_id,field%ID)
-        !ENDIF
-    !ENDIF
-    
-
-    !end_subroutine()
-!END SUBROUTINE
 
 
 SUBROUTINE equi_mesh_map_ghost_push(this,field,info)

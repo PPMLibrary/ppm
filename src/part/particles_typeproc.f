@@ -658,6 +658,13 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
 
     Pc%gi => NULL()
 
+    IF (.NOT. ASSOCIATED(Pc%field_ptr)) THEN
+        ALLOCATE(Pc%field_ptr,STAT=info)
+            or_fail_alloc("Pc%field_ptr")
+    ELSE
+        fail("Pc%field_ptr was already associated. Use destroy() first")
+    ENDIF
+
     SELECT TYPE(Pc)
     CLASS IS (DTYPE(ppm_t_sop))
         !-----------------------------------------------------------------
@@ -993,58 +1000,6 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
     end_subroutine()
 END SUBROUTINE DTYPE(part_del_parts)
 
-SUBROUTINE DTYPE(part_set_rel)(this,field,info)
-    !!! Create bookkeeping data structure to log the relationship between
-    !!! the particle set and a field
-    CLASS(DTYPE(ppm_t_particles))      :: this
-    CLASS(ppm_t_field_)                :: field
-    INTEGER,               INTENT(OUT) :: info
-    TYPE(ppm_t_field_info),POINTER     :: fdinfo => NULL()
-
-    start_subroutine("part_set_rel")
-
-
-    ALLOCATE(fdinfo,STAT=info)
-        or_fail_alloc("could not allocate new field_info pointer")
-
-
-    CALL fdinfo%create(field,info)
-        or_fail("could not create new field_info object")
-
-    IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
-        ALLOCATE(ppm_c_field_info::this%field_ptr,STAT=info)
-            or_fail_alloc("could not allocate field_info collection")
-    ENDIF
-
-    IF (this%field_ptr%vec_size.LT.field%ID) THEN
-        CALL this%field_ptr%grow_size(info)
-            or_fail("could not grow_size this%field_ptr")
-    ENDIF
-    !if the collection is still too small, it means we should consider
-    ! using a hash table for particle set IDs...
-    IF (this%field_ptr%vec_size.LT.field%ID) THEN
-        fail("The id of the partile set that we are trying to store in a Field collection seems to large. Why not implement a hash function?")
-    ENDIF
-
-    IF (this%field_ptr%exists(field%ID)) THEN
-        fail("It seems like this particle set already has a pointer to that field. Are you sure you want to do that a second time?")
-    ELSE
-        !add field_info to the collection, at index fieldID
-        !Update the counters nb,max_id and min_id accordingly
-        !(this is not very clean without hash table)
-        this%field_ptr%vec(field%ID)%t => fdinfo
-        this%field_ptr%nb = this%field_ptr%nb + 1
-        IF (this%field_ptr%nb.EQ.1) THEN
-            this%field_ptr%max_id = field%ID
-            this%field_ptr%min_id = field%ID
-        ELSE
-            this%field_ptr%max_id = MAX(this%field_ptr%max_id,field%ID)
-            this%field_ptr%min_id = MIN(this%field_ptr%min_id,field%ID)
-        ENDIF
-    ENDIF
-
-    end_subroutine()
-END SUBROUTINE DTYPE(part_set_rel)
 
 SUBROUTINE DTYPE(part_prop_push)(Pc,prop_id,info)
 
