@@ -111,6 +111,16 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
+      REAL(MK)                               :: imbal_perc,max_ctime,r_neigh
+      REAL(MK)                               :: neigh_imbal,recv_ctime
+      INTEGER                                :: random_neigh,i,tag1,sendrank
+      INTEGER                                :: recvrank
+      LOGICAL                                :: l_myneighbor
+      TYPE(ppm_t_topo),POINTER               :: topo => NULL()
+#ifdef __MPI
+      INTEGER                                :: MPTYPE
+      INTEGER, DIMENSION(MPI_STATUS_SIZE)    :: status
+#endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -120,6 +130,9 @@
       start_subroutine("ppm_loadbal_inquire")
       lredecomp = .FALSE.
       nredest = -1 
+      l_myneighbor = .TRUE.
+      neigh_imbal = 0._MK
+      recv_ctime = 0._MK
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -128,6 +141,20 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
+#ifdef __MPI
+      !-------------------------------------------------------------------------
+      !  Define MPI data type
+      !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      MPTYPE = MPI_REAL
+#elif __KIND == __DOUBLE_PRECISION
+      MPTYPE = MPI_DOUBLE_PRECISION
+#endif
+#endif
+      !-------------------------------------------------------------------------
+      !  Get the topology first
+      !-------------------------------------------------------------------------
+      topo    => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
       !  Does the user specify a heuristic?
@@ -155,9 +182,19 @@
             !-------------------------------------------------------------------
             !  Using Omer's DLB heuristic
             !-------------------------------------------------------------------
-            CALL ppm_loadbal_inquire_dlb(topoid,ctime,mov_avg_time,lflush,&
-     &                                   lredecomp,info)
+            CALL ppm_loadbal_inquire_dlb(topoid,ctime,nstep,mov_avg_time,&
+     &                                   max_ctime,imbal_perc,info)
                     or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
+
+            !-------------------------------------------------------------------
+            !  If load imbalance is more than 25% (I'm guessing this number),
+            !  we need a DLB
+            !-------------------------------------------------------------------
+            IF (imbal_perc .GT. 0.25_MK) THEN
+                lredecomp = .TRUE.
+            ELSE
+                lredecomp = .FALSE.
+            ENDIF
             !-------------------------------------------------------------------
             !  DLB heuristic expects load balancing to take place in the next
             !  time step
@@ -169,6 +206,67 @@
             !-------------------------------------------------------------------
             fail("Unknown heuristic specified. Nothing computed.")
         ENDIF
+
+      ELSE
+            !-------------------------------------------------------------------
+            !  No heuristic is provided. PPM will check first if we need LB
+            !  by calling Omer's DLB heuristic
+            !-------------------------------------------------------------------
+            CALL ppm_loadbal_inquire_dlb(topoid,ctime,nstep,mov_avg_time,&
+     &                                   max_ctime,imbal_perc,info)
+                    or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
+            !-------------------------------------------------------------------
+            !  We know now the imbalance percentage. We need to check how
+            !  the (almost) global load imbalance looks like.
+            !  For this every processor chooses a random neighboring
+            !  processor and communicates the max_ctimes. Since my neighbor has a
+            !  different neighborhood topology, I will (probably) obtain some
+            !  an other  If the difference
+            !  is big, this will hint a global imbalance. One can later call SAR
+            !  or directly do a global remap.
+            !  Find a processor first which is not me and not in my neighborhood
+            !-------------------------------------------------------------------
+            DO WHILE(l_myneighbor)
+                CALL RANDOM_NUMBER(r_neigh) ! between 0.0-1.0
+                random_neigh = INT(r_neigh*ppm_nproc) ! between 0-ppm_nproc
+                IF (random_neigh .NE. ppm_rank) l_myneighbor = .FALSE.
+                DO i=1,topo%nneighproc
+                    IF (random_neigh .EQ. topo%ineighproc(i)) THEN
+                        l_myneighbor = .TRUE.
+                        EXIT
+                    ENDIF
+                ENDDO
+            ENDDO
+
+            !-------------------------------------------------------------------
+            !  Send & receive the max_ctimes with a neighbor
+            !-------------------------------------------------------------------
+            tag1 = 678
+            sendrank = random_neigh
+            recvrank = sendrank
+            !-------------------------------------------------------------------
+            !  only consider non-negative sendranks
+            !-------------------------------------------------------------------
+            IF (sendrank.GE.0 .AND. sendrank.NE.ppm_rank) THEN
+                CALL MPI_SendRecv(max_ctime ,1,MPTYPE,sendrank,tag1, &
+     &                            recv_ctime,1,MPTYPE,recvrank,tag1, &
+     &                            ppm_comm,status,info)
+                !---------------------------------------------------------------
+                !  If a neighborhood's slowest processor is 50% slower than
+                !  other neighborhood's slowest processor, do a global mapping
+                !---------------------------------------------------------------
+                IF (recv_ctime .GT. max_ctime) THEN
+                    neigh_imbal = (recv_ctime-max_ctime)/recv_ctime
+                ELSE
+                    neigh_imbal = (max_ctime-recv_ctime)/max_ctime
+                ENDIF
+
+                IF (neigh_imbal .GT. 0.5_MK) THEN
+                    ! DO A GLOBAL MAPPING
+                ELSE
+                    ! DO DLB
+                ENDIF
+            ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------

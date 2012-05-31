@@ -67,5 +67,12 @@
          !!! The process to which this process will send some subdomains
          INTEGER               :: ppm_loadbal_recvrank = -1
          !!! The process which will receive some subdomains
+         INTEGER               :: ppm_loadbal_npart    = 0
+         !!! Current number of Npart on this processor
+         INTEGER               :: ppm_loadbal_npart_diff = 0
+         !!! The netto number of particles after partial mapping. Say, if
+         !!! 10 particles leave the processor and 5 come in, the value becomes
+         !!! -5. This value is later used for determining an estimate elapsed
+         !!! time for the next time step.
 
       END MODULE ppm_module_data_loadbal

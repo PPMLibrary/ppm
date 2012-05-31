@@ -43,6 +43,7 @@
       !  Modules 
       !-------------------------------------------------------------------------
       USE ppm_module_data
+      USE ppm_module_data_loadbal
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -375,6 +376,13 @@
       DO j=1,ppm_nsendlist
          npart_recv = npart_recv + precv(j)
       ENDDO
+
+      !-------------------------------------------------------------------------
+      !  Compute the delta of incoming/outgoing particles and store the current
+      !  Npart to be used in the loadbal module
+      !-------------------------------------------------------------------------
+      ppm_loadbal_npart_diff = npart_send - npart_recv
+      ppm_loadbal_npart      = Npart
 
       !-------------------------------------------------------------------------
       !  Compute the pointer to the position of the data in the main receive 
