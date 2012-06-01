@@ -288,13 +288,16 @@ SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
     end_subroutine()
 END SUBROUTINE DTYPE(set_xp)
 
-SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
+SUBROUTINE DTYPE(part_prop_create)(this,info,field,part_prop,discr_data,&
         dtype,name,lda,zero,with_ghosts)
     !!! Adds a property to an existing particle set
     CLASS(DTYPE(ppm_t_particles))         :: this
     INTEGER,               INTENT(OUT)    :: info
     CLASS(ppm_t_field_),OPTIONAL,INTENT(IN   ) :: field
-    CLASS(DTYPE(ppm_t_part_prop)_),OPTIONAL,POINTER,INTENT(OUT):: discr_data
+    CLASS(DTYPE(ppm_t_part_prop)_),OPTIONAL,POINTER,INTENT(OUT):: part_prop
+    !!! Pointer to the ppm_t_part_prop object for that property
+    CLASS(ppm_t_discr_data),OPTIONAL,POINTER,       INTENT(OUT):: discr_data
+    !!! Pointer to the ppm_t_discr_data object for that property
     INTEGER, OPTIONAL,      INTENT(IN   ) :: dtype
     CHARACTER(LEN=*),OPTIONAL,INTENT(IN ) :: name
     INTEGER, OPTIONAL,      INTENT(IN   ) :: lda
@@ -304,7 +307,7 @@ SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
     LOGICAL, OPTIONAL                     :: with_ghosts
     !!! if true, then allocate with Mpart instead of the default size of Npart
 
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: part_prop => NULL()
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
     CHARACTER(LEN=ppm_char)               :: name2
     INTEGER                               :: lda2,vec_size,npart,i,datatype
     LOGICAL, DIMENSION(ppm_param_length_pptflags):: flags
@@ -351,17 +354,20 @@ SUBROUTINE DTYPE(part_prop_create)(this,info,field,discr_data,&
     flags(ppm_ppt_map_parts) = .TRUE.
 
 
-    ALLOCATE(DTYPE(ppm_t_part_prop)::part_prop,STAT=info)
+    ALLOCATE(DTYPE(ppm_t_part_prop)::prop,STAT=info)
         or_fail_alloc("prop")
     ! Create the property
-    CALL part_prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
+    CALL prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
         or_fail("creating property array failed")
 
+    IF (PRESENT(part_prop)) THEN
+        part_prop => prop
+    ENDIF
     IF (PRESENT(discr_data)) THEN
-        discr_data => part_prop
+        discr_data => prop
     ENDIF
 
-    CALL this%props%push(part_prop,info)
+    CALL this%props%push(prop,info)
         or_fail("pushing new property into collection failed")
 
     end_subroutine()
@@ -504,8 +510,10 @@ SUBROUTINE DTYPE(part_neigh_create)(this,Part_src,info,&
     TYPE IS (DTYPE(ppm_t_sop))
         ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
             IF (.NOT.ASSOCIATED(this%rcp)) THEN
-                CALL this%create_prop(info,discr_data=this%rcp,dtype=ppm_type_real,&
-                    name='rcp',with_ghosts=ghosts) 
+
+                CALL this%create_prop(info,part_prop=this%rcp,&
+                    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts) 
+                    or_fail("Creating property for rcp failed")
             ENDIF
 
             CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts)
@@ -1174,7 +1182,7 @@ SUBROUTINE DTYPE(part_prop_pop)(Pc,prop_id,Npart_new,info)
 END SUBROUTINE DTYPE(part_prop_pop)
 
 
-SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
+SUBROUTINE DTYPE(part_map)(Pc,info,debug,global,topoid)
 
     !!!  Partial/Global mapping for particles
     !!!  Assumptions:
@@ -1378,9 +1386,9 @@ SUBROUTINE DTYPE(part_mapping)(Pc,info,debug,global,topoid)
 #endif
 
     end_subroutine()
-END SUBROUTINE DTYPE(part_mapping)
+END SUBROUTINE DTYPE(part_map)
 
-SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize,debug)
 
     !!!  Ghost mapping for particles
     !!!  Assumptions:
@@ -1418,11 +1426,9 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     LOGICAL                                   :: dbg
     LOGICAL                                   :: skip_ghost_get
     LOGICAL                                   :: skip_send
-    CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
-    CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
-    CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+    CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
 
-    start_subroutine("part_mapping_ghosts")
+    start_subroutine("part_map_ghosts")
 
     dbg = .FALSE.
     IF (PRESENT(debug)) dbg=debug
@@ -1434,30 +1440,15 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
-    IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Particles structure had not been defined. Call allocate first',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-
-    IF (.NOT.Pc%flags(ppm_part_partial)) THEN
-        !Particles have not been mapped onto this topology
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'Do a partial/global mapping before doing a ghost mapping',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (.NOT.Pc%flags(ppm_part_areinside)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'some particles may be outside the domain. Apply BC first',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Do a partial/global mapping before doing a ghost mapping")
+    !check that particles are inside the domain
+    check_true("Pc%flags(ppm_part_areinside)",&
+        "some particles may be outside the domain. Apply BC first")
 
     topoid = Pc%active_topoid
     topo=>ppm_topo(topoid)%t
@@ -1465,11 +1456,7 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     cutoff = Pc%ghostlayer
     IF (PRESENT(ghostsize)) THEN
         IF (ghostsize .LT. cutoff) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,   &
-                &  'using ghostsize < cutoff+skin. Increase ghostsize.',&
-                &  __LINE__,info)
-            GOTO 9999
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
         ELSE
             cutoff = ghostsize
         ENDIF
@@ -1477,35 +1464,25 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'ghostsize of topology may be smaller than that of particles',&
-            &  __LINE__,info)
-        GOTO 9999
+        fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-
-        write(*,*) 'cutoff = ',cutoff
-        write(*,*) 'cutoff used to create topology = ',topo%ghostsized
-
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'ghostsize of topology may be smaller than that of particles',&
-            &  __LINE__,info)
-        GOTO 9999
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
     IF (cutoff .GT. 0._MK) THEN
         IF (Pc%flags(ppm_part_ghosts)) THEN
             IF (dbg) THEN
-                write(*,*) 'ghosts have already been updated'
+                stdout("ghosts have already been updated")
             ENDIF
 
             IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
                 IF (dbg) THEN
-                    write(*,*) 'we skip the ghost_get and go straight to'
-                    write(*,*) 'push/send/pop'
+                    stdout("we skip the ghost_get and go straight to",&
+                        " push/send/pop")
                 ENDIF
                 skip_ghost_get = .TRUE.
             ENDIF
@@ -1516,24 +1493,18 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 #ifdef __MPI
             t1 = MPI_WTIME(info)
 #endif
-            IF(dbg) &
-                write(*,*) 'ghost-get '
             CALL ppm_map_part_ghost_get(topoid,Pc%xp,ppm_dim,&
                 Pc%Npart,Pc%isymm,cutoff,info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'ppm_map_part_ghost_get failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+                or_fail("ppm_map_part_ghost_get failed")
 #ifdef __MPI
             t2 = MPI_WTIME(info)
             Pc%stats%t_ghost_get = Pc%stats%t_ghost_get + (t2-t1)
 #endif
             skip_send = .FALSE.
         ELSE
-            IF(dbg) &
-                write(*,*) 'skipping ghost-get '
+            IF(dbg) THEN
+                stdout("skipping ghost-get")
+            ENDIF
         ENDIF
 
         !Update the ghost for the properties if
@@ -1547,21 +1518,16 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
                 IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
                     IF (prop%flags(ppm_ppt_partial)) THEN
 
-                        IF(dbg) &
-                            write(*,*) 'pushing property ',Pc%props%iter_id,&
-                            TRIM(prop%name)
-                            Pc%stats%nb_ghost_push = &
-                                Pc%stats%nb_ghost_push + 1
+                        IF(dbg) THEN
+                            stdout("pushing property ",'Pc%props%iter_id',&
+                                'TRIM(prop%name)')
+                        ENDIF
+                        Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
                         t1 = MPI_WTIME(info)
 #endif
                         CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
-                        IF (info .NE. 0) THEN
-                            info = ppm_error_error
-                            CALL ppm_error(ppm_err_sub_failed,caller,&
-                                'ppm_map_part_push failed',__LINE__,info)
-                            GOTO 9999
-                        ENDIF
+                            or_fail("map_part_push")
 #ifdef __MPI
                         t2 = MPI_WTIME(info)
                         Pc%stats%t_ghost_push = &
@@ -1569,13 +1535,9 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 #endif
                         skip_send = .FALSE.
                     ELSE
-                        write(*,*) 'pushing property ',&
-                            Pc%props%iter_id,TRIM(prop%name)
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_argument,caller,&
-                            'getting ghosts for a property thats not mapped',&
-                            __LINE__,info)
-                        GOTO 9999
+                        stdout("pushing property ",&
+                            'Pc%props%iter_id','TRIM(prop%name)')
+                        fail("getting ghosts for a property thats not mapped")
                     ENDIF
                 ENDIF
             ENDIF
@@ -1584,13 +1546,7 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
 
         IF (.NOT. skip_send) THEN
             CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
-            IF (info .NE. 0) THEN
-                write(*,*) 'ppm_map_part_send failed with info = ',info
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_sub_failed,caller,&
-                    'ppm_map_part_send failed',__LINE__,info)
-                GOTO 9999
-            ENDIF
+                or_fail("ppm_map_part_send")
 
             prop => Pc%props%last()
             DO WHILE (ASSOCIATED(prop))
@@ -1599,18 +1555,13 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
                     IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
                         IF (prop%flags(ppm_ppt_partial)) THEN
 
-                            IF(dbg) &
-                                write(*,*) 'popping property ',Pc%props%iter_id,&
-                                TRIM(prop%name)
-                            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
-                            IF (info .NE. 0) THEN
-                                write(*,*) 'popping property ',Pc%props%iter_id,&
-                                    TRIM(prop%name)
-                                info = ppm_error_error
-                                CALL ppm_error(ppm_err_sub_failed,caller,&
-                                    'ppm_map_part_pop failed',__LINE__,info)
-                                GOTO 9999
+                            IF(dbg) THEN
+                                stdout("popping property ",'Pc%props%iter_id',&
+                                    'TRIM(prop%name)')
                             ENDIF
+                            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,&
+                                Pc%Mpart,info)
+                                or_fail("map_part_pop")
                             prop%flags(ppm_ppt_ghosts) = .TRUE.
                         ENDIF
                     ENDIF
@@ -1619,24 +1570,20 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
             ENDDO
 
             IF (.NOT.skip_ghost_get) THEN
-                IF(dbg) &
-                    write(*,*) 'popping-xp '
+                IF(dbg) THEN
+                    stdout("popping xp")
+                ENDIF
                 CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,&
                     Pc%Mpart,info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_sub_failed,caller,&
-                        'ppm_map_part_pop failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
+                    or_fail("map_part_pop")
             ENDIF
         ENDIF !.NOT.skip_send
 
     ELSE ! if cutoff .le. 0
 
         IF(dbg) THEN
-            write(*,*) 'cutoff = 0, nothing to do'
-            write(*,*) 'setting all %has_ghost properties to true'
+            stdout("cutoff = 0, nothing to do")
+            stdout("setting all %has_ghost properties to true")
         ENDIF
 
         prop => Pc%props%begin()
@@ -1655,7 +1602,594 @@ SUBROUTINE DTYPE(part_mapping_ghosts)(Pc,info,ghostsize,debug)
     ! the states for the properties have already been updated above
 
     end_subroutine()
-END SUBROUTINE DTYPE(part_mapping_ghosts)
+END SUBROUTINE DTYPE(part_map_ghosts)
+
+SUBROUTINE DTYPE(part_map_ghost_get)(Pc,info,ghostsize,debug)
+    !!! Push ghost particles properties into the send buffer.
+    !!! If ghost positions are not up-to-date, they are re-computed
+    !!! with a call to ghost_get. Otherwise ghost_get is skipped.
+    !!! If the Field argument is present, only the discretization of that
+    !!! Field on this particle set is pushed. Otherwise, all the properties
+    !!! (that are not already up-to-date) are pushed, except those that
+    !!! have the ppm_ppt_map_ghosts flag set to false.
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                   :: topoid
+    !!! index variable
+    REAL(MK)                                  :: cutoff
+    !!! cutoff radius
+    TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
+    REAL(KIND(1.D0))                          :: t1,t2
+    LOGICAL                                   :: dbg
+
+    start_subroutine("part_map_ghost_get")
+
+    dbg = .FALSE.
+    IF (PRESENT(debug)) dbg=debug
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Partial/global mapping required before doing a ghost mapping")
+    !check that particles are inside the domain
+    check_true("Pc%flags(ppm_part_areinside)",&
+        "Some particles may be outside the domain. Apply BC first")
+
+    topoid = Pc%active_topoid
+    topo=>ppm_topo(topoid)%t
+
+    cutoff = Pc%ghostlayer
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+    IF (cutoff .GT. topo%ghostsizes) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+    IF (cutoff .GT. topo%ghostsized) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#endif
+    IF (cutoff .GT. 0._MK) THEN
+        IF (Pc%flags(ppm_part_ghosts)) THEN
+            IF (dbg) THEN
+                stdout("ghosts have already been updated")
+            ENDIF
+        ENDIF
+
+        IF (Pc%flags(ppm_part_ghosts)) THEN
+            IF (dbg) THEN
+                stdout("ghosts have already been updated")
+            ENDIF
+
+            IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+                IF (dbg) THEN
+                    stdout("we skip the ghost_get and go straight to",&
+                        " push/send/pop")
+                ENDIF
+
+                Pc%stats%nb_ghost_get = Pc%stats%nb_ghost_get + 1
+#ifdef __MPI
+                t1 = MPI_WTIME(info)
+#endif
+                CALL ppm_map_part_ghost_get(topoid,Pc%xp,ppm_dim,&
+                    Pc%Npart,Pc%isymm,cutoff,info)
+                    or_fail("ppm_map_part_ghost_get failed")
+#ifdef __MPI
+                t2 = MPI_WTIME(info)
+                Pc%stats%t_ghost_get = Pc%stats%t_ghost_get + (t2-t1)
+#endif
+            ELSE
+                IF(dbg) THEN
+                    stdout("skipping ghost-get")
+                ENDIF
+            ENDIF
+        ELSE
+            IF(dbg) THEN
+        stdout("flags(ppm_part_ghosts) set to false. Skipping ghost-get")
+            ENDIF
+        ENDIF
+    ELSE ! if cutoff .le. 0
+        IF(dbg) THEN
+            stdout("cutoff = 0, nothing to do")
+        ENDIF
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_get)
+
+SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize,debug)
+    !!! Push ghost particles properties into the send buffer.
+    !!! If ghost positions are not up-to-date, they are re-computed
+    !!! with a call to ghost_get. Otherwise ghost_get is skipped.
+    !!! If the Field argument is present, only the discretization of that
+    !!! Field on this particle set is pushed. Otherwise, all the properties
+    !!! (that are not already up-to-date) are pushed, except those that
+    !!! have the ppm_ppt_map_ghosts flag set to false.
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    CLASS(ppm_t_field_), OPTIONAL                       :: Field
+    !!! Push only this field. Default is to push all of them.
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                   :: topoid
+    !!! index variable
+    REAL(MK)                                  :: cutoff
+    !!! cutoff radius
+    TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
+    REAL(KIND(1.D0))                          :: t1,t2
+    LOGICAL                                   :: dbg
+    CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
+
+    start_subroutine("part_map_ghost_push")
+
+    dbg = .FALSE.
+    IF (PRESENT(debug)) dbg=debug
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Do a partial/global mapping before doing a ghost mapping")
+    !check that particles are inside the domain
+    check_true("Pc%flags(ppm_part_areinside)",&
+        "some particles may be outside the domain. Apply BC first")
+
+    topoid = Pc%active_topoid
+    topo=>ppm_topo(topoid)%t
+
+    cutoff = Pc%ghostlayer
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+    IF (cutoff .GT. topo%ghostsizes) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+    IF (cutoff .GT. topo%ghostsized) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#endif
+    IF (cutoff .GT. 0._MK) THEN
+        IF (Pc%flags(ppm_part_ghosts)) THEN
+            IF (dbg) THEN
+                stdout("ghosts have already been updated")
+            ENDIF
+        ENDIF
+        check_true("ppm_map_type_isactive(ppm_param_map_ghost_get)",&
+                "Need to call ghost_get before ghost_push")
+
+        IF (PRESENT(Field)) THEN
+            !Get discretization
+            !Points the iterator (props%iter_id) to the discretization
+            !of Field on the particle set Pc.
+            CALL Pc%get_discr(Field,prop,info)
+                or_fail("could not get discretization for this Field")
+            Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
+#ifdef __MPI
+            t1 = MPI_WTIME(info)
+#endif
+            CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+                or_fail("map_part_push")
+#ifdef __MPI
+            t2 = MPI_WTIME(info)
+            Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
+#endif
+        ELSE
+            !Update the ghost for the properties if
+            ! 1) they have been mapped to this topology,
+            ! 2) the ghosts have not yet been updated, and
+            ! 3) the user wants them to be updated
+            prop => Pc%props%begin()
+            DO WHILE (ASSOCIATED(prop))
+
+            IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+            IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
+                IF (prop%flags(ppm_ppt_partial)) THEN
+
+                    IF(dbg) THEN
+                        stdout("pushing property ",'Pc%props%iter_id',&
+                            'TRIM(prop%name)')
+                    ENDIF
+                    Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
+#ifdef __MPI
+                    t1 = MPI_WTIME(info)
+#endif
+                    CALL Pc%map_part_push_legacy(Pc%props%iter_id,info)
+                        or_fail("map_part_push")
+#ifdef __MPI
+                    t2 = MPI_WTIME(info)
+                    Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
+#endif
+                ELSE
+                    stdout("pushing property ",&
+                            'Pc%props%iter_id','TRIM(prop%name)')
+                    fail("getting ghosts for a property thats not mapped")
+                ENDIF
+            ENDIF
+            ENDIF
+            prop => Pc%props%next()
+        ENDDO
+        ENDIF
+
+    ELSE ! if cutoff .le. 0
+        IF(dbg) THEN
+            stdout("cutoff = 0, nothing to do")
+        ENDIF
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_push)
+
+SUBROUTINE DTYPE(part_map_ghost_send)(Pc,info)
+
+    !!!  Ghost mapping for particles
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    REAL(KIND(1.D0))                          :: t1,t2
+
+    start_subroutine("part_map_ghost_send")
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Do a partial/global mapping before doing a ghost mapping")
+
+    !-----------------------------------------------------------------
+    !  Send the buffer
+    !-----------------------------------------------------------------
+    CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
+        or_fail("ppm_map_part_send")
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_send)
+
+SUBROUTINE DTYPE(part_map_ghost_pop)(Pc,info,Field,ghostsize,debug)
+    !!! Push ghost particles properties into the send buffer.
+    !!! If ghost positions are not up-to-date, they are re-computed
+    !!! with a call to ghost_get. Otherwise ghost_get is skipped.
+    !!! If the Field argument is present, only the discretization of that
+    !!! Field on this particle set is pushed. Otherwise, all the properties
+    !!! (that are not already up-to-date) are pushed, except those that
+    !!! have the ppm_ppt_map_ghosts flag set to false.
+    !!!  Assumptions:
+    !!! * Particles positions need to have been mapped onto the topology
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    CLASS(ppm_t_field_), OPTIONAL                       :: Field
+    !!! Pop only this field. Default is to pop all of them
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                   :: topoid
+    !!! index variable
+    REAL(MK)                                  :: cutoff
+    !!! cutoff radius
+    TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
+    REAL(KIND(1.D0))                          :: t1,t2
+    LOGICAL                                   :: dbg
+    CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
+
+    start_subroutine("part_map_ghost_pop")
+
+    dbg = .FALSE.
+    IF (PRESENT(debug)) dbg=debug
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Do a partial/global mapping before doing a ghost mapping")
+
+    topoid = Pc%active_topoid
+    topo=>ppm_topo(topoid)%t
+
+    cutoff = Pc%ghostlayer
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+    IF (cutoff .GT. topo%ghostsizes) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+    IF (cutoff .GT. topo%ghostsized) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#endif
+    IF (cutoff .GT. 0._MK) THEN
+        IF (.NOT.Pc%flags(ppm_part_ghosts).OR. &
+            .NOT.ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
+            fail("Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+        ENDIF
+
+        IF (PRESENT(Field)) THEN
+            !Get discretization
+            !Points the iterator (props%iter_id) to the discretization
+            !of Field on the particle set Pc.
+            CALL Pc%get_discr(Field,prop,info)
+                or_fail("could not get discretization for this Field")
+            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,&
+                Pc%Mpart,info)
+                or_fail("map_part_pop")
+            prop%flags(ppm_ppt_ghosts) = .TRUE.
+        ELSE
+            prop => Pc%props%last()
+            DO WHILE (ASSOCIATED(prop))
+
+                IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+                IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
+                IF (prop%flags(ppm_ppt_partial)) THEN
+
+                    IF(dbg) THEN
+                        stdout("popping property ",'Pc%props%iter_id',&
+                            'TRIM(prop%name)')
+                    ENDIF
+                    CALL Pc%map_part_pop_legacy(Pc%props%iter_id,&
+                        Pc%Mpart,info)
+                        or_fail("map_part_pop")
+                    prop%flags(ppm_ppt_ghosts) = .TRUE.
+                ENDIF
+                ENDIF
+                ENDIF
+                prop => Pc%props%prev()
+            ENDDO
+        ENDIF
+
+    ELSE ! if cutoff .le. 0
+
+        IF(dbg) THEN
+            stdout("cutoff = 0, nothing to do")
+            stdout("setting all %has_ghost properties to true")
+        ENDIF
+
+        ! Update states
+        prop => Pc%props%begin()
+        DO WHILE (ASSOCIATED(prop))
+            IF (prop%flags(ppm_ppt_map_ghosts)) THEN
+                prop%flags(ppm_ppt_ghosts) = .TRUE.
+            ENDIF
+            prop => Pc%props%next()
+        ENDDO
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_pop)
+
+SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize,debug)
+    !!! Pop ghost particles positions from the send buffer.
+    !!!  Assumptions:
+    !!! * Needs to be called at the end of the 
+    !!!  ghost_get, ghost_push, send and ghost_pop call sequence.
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    LOGICAL, OPTIONAL                                   :: debug
+    !!! IF true, printout more
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                   :: topoid
+    !!! index variable
+    REAL(MK)                                  :: cutoff
+    !!! cutoff radius
+    TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
+    REAL(KIND(1.D0))                          :: t1,t2
+    LOGICAL                                   :: dbg
+
+    start_subroutine("part_map_ghost_pop_pos")
+
+    dbg = .FALSE.
+    IF (PRESENT(debug)) dbg=debug
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated("Pc%xp",&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true("Pc%flags(ppm_part_partial)",&
+        "Do a partial/global mapping before doing a ghost mapping")
+
+    topoid = Pc%active_topoid
+    topo=>ppm_topo(topoid)%t
+
+    cutoff = Pc%ghostlayer
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+    IF (cutoff .GT. topo%ghostsizes) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+    IF (cutoff .GT. topo%ghostsized) THEN
+        stdout("cutoff for ghost mapping       = ",cutoff)
+        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#endif
+    IF (cutoff .GT. 0._MK) THEN
+        check_true("Pc%flags(ppm_part_ghosts)",&
+            "flags(ppm_part_ghosts) need to be set to .true.")
+        check_true("ppm_map_type_isactive(ppm_param_map_ghost_get)",&
+            "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+
+        CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,&
+            Pc%Mpart,info)
+            or_fail("map_part_pop")
+
+    ELSE ! if cutoff .le. 0
+
+        IF(dbg) THEN
+            stdout("cutoff = 0, nothing to do")
+            stdout("setting all %has_ghost properties to true")
+        ENDIF
+
+    ENDIF
+
+    ! Update states
+    !   ghosts have been computed
+    Pc%flags(ppm_part_ghosts) = .TRUE.
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_pop_pos)
 
 SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
 
@@ -1739,11 +2273,7 @@ SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
                 ENDIF
             ENDDO
         ELSE
-            info = ppm_error_error
-            CALL ppm_error(999,caller,   &
-                & 'this type of BC is not implemented/tested in this version',&
-                &  __LINE__,info)
-            GOTO 9999
+            fail("this type of BC is not implemented/tested in this version")
         ENDIF
     ENDDO
 
@@ -1762,14 +2292,9 @@ SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
             ENDIF
         ENDDO
         CALL Pc%del_parts(list_del_parts,del_part,info)
-        IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,caller,   &
-                & 'could not delete particles',&
-                &  __LINE__,info)
-            GOTO 9999
-        ENDIF
-        DEALLOCATE(list_del_parts)
+            or_fail("Pc%del_parts: could not delete particles")
+        DEALLOCATE(list_del_parts,STAT=info)
+            or_fail_dealloc("list_del_parts")
     ENDIF
 
     ! Update states
@@ -2344,7 +2869,7 @@ SUBROUTINE DTYPE(part_comp_global_index)(Pc,info)
     start_subroutine("part_comp_global_index")
 
     IF (.NOT. Pc%flags(ppm_part_global_index)) THEN
-        CALL Pc%create_prop(info,discr_data=Pc%gi,dtype=ppm_type_int,&
+        CALL Pc%create_prop(info,part_prop=Pc%gi,dtype=ppm_type_int,&
             name="GlobalIndex")
         Pc%flags(ppm_part_global_index) = .TRUE.
     END IF
@@ -2521,7 +3046,7 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
     LOGICAL                                        :: res
 
     !Local variables
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER         :: prop => NULL()
+    CLASS(ppm_t_discr_data), POINTER               :: prop => NULL()
 
     start_function("has_ghosts")
 
@@ -2538,9 +3063,12 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
 END FUNCTION
 
 SUBROUTINE DTYPE(part_get_discr)(this,Field,prop,info)
-    CLASS(DTYPE(ppm_t_particles))                  :: this
+    !!! Returns a pointer to the ppm_t_discr_data object that is
+    !!! the discretization of that Field on this Particle set.
+    !!! Fails with an error if the Field is not discretized here.
+    CLASS(DTYPE(ppm_t_particles))                          :: this
     CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER, INTENT(  OUT)  :: prop
+    CLASS(ppm_t_discr_data),POINTER,        INTENT(  OUT)  :: prop
     INTEGER,                                INTENT(  OUT)  :: info
 
     start_subroutine("part_get_discr")

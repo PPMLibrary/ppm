@@ -275,10 +275,15 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
 !    PROCEDURE(DTYPE(part_op_apply)_),DEFERRED :: apply_op 
     !       PROCEDURE(DTYPE(part_updated_positions)_),DEFERRED :: updated_positions 
 
-    PROCEDURE(DTYPE(part_prop_push)_),DEFERRED :: map_part_push_legacy 
-    PROCEDURE(DTYPE(part_prop_pop)_),DEFERRED :: map_part_pop_legacy 
-    PROCEDURE(DTYPE(part_mapping)_),DEFERRED :: map 
-    PROCEDURE(DTYPE(part_mapping_ghosts)_),DEFERRED :: map_ghosts 
+    PROCEDURE(DTYPE(part_prop_push)_),         DEFERRED :: map_part_push_legacy 
+    PROCEDURE(DTYPE(part_prop_pop)_),          DEFERRED  :: map_part_pop_legacy 
+    PROCEDURE(DTYPE(part_map)_),               DEFERRED  :: map 
+    PROCEDURE(DTYPE(part_map_ghost_get)_),     DEFERRED :: map_ghost_get
+    PROCEDURE(DTYPE(part_map_ghost_push)_),    DEFERRED :: map_ghost_push
+    PROCEDURE(DTYPE(part_map_ghost_send)_),    DEFERRED :: map_ghost_send
+    PROCEDURE(DTYPE(part_map_ghost_pop)_),     DEFERRED :: map_ghost_pop
+    PROCEDURE(DTYPE(part_map_ghost_pop_pos)_), DEFERRED :: map_ghost_pop_pos
+    PROCEDURE(DTYPE(part_map_ghosts)_),        DEFERRED :: map_ghosts 
 
     PROCEDURE(DTYPE(part_move)_),DEFERRED :: move 
     PROCEDURE(DTYPE(part_apply_bc)_),DEFERRED :: apply_bc 

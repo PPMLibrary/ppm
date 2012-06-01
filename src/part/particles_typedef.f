@@ -67,9 +67,14 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     !       PROCEDURE     :: updated_positions => DTYPE(part_updated_positions)
 
     PROCEDURE     :: map_part_push_legacy => DTYPE(part_prop_push)
-    PROCEDURE     :: map_part_pop_legacy => DTYPE(part_prop_pop)
-    PROCEDURE     :: map => DTYPE(part_mapping)
-    PROCEDURE     :: map_ghosts => DTYPE(part_mapping_ghosts)
+    PROCEDURE     :: map_part_pop_legacy  => DTYPE(part_prop_pop)
+    PROCEDURE     :: map               => DTYPE(part_map)
+    PROCEDURE     :: map_ghost_get     => DTYPE(part_map_ghost_get)
+    PROCEDURE     :: map_ghost_push    => DTYPE(part_map_ghost_push)
+    PROCEDURE     :: map_ghost_send    => DTYPE(part_map_ghost_send)
+    PROCEDURE     :: map_ghost_pop     => DTYPE(part_map_ghost_pop)
+    PROCEDURE     :: map_ghost_pop_pos => DTYPE(part_map_ghost_pop_pos)
+    PROCEDURE     :: map_ghosts        => DTYPE(part_map_ghosts)
 
     PROCEDURE     :: move => DTYPE(part_move)
     PROCEDURE     :: apply_bc => DTYPE(part_apply_bc)
@@ -203,6 +208,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)) :: DTYPE(ppm_t_sop)
     LOGICAL                                         :: adaptive
     !!! true if the particles have their own cutoff radii
     !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
+    !CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: rcp => NULL()
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: rcp => NULL()
     !!! pointer to the array where the cutoff radius is stored
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER           :: D => NULL()

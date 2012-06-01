@@ -175,10 +175,6 @@ integer                                        :: nterms
         call Field3%discretize_on(Part1,info)
         Assert_Equal(info,0)
 
-        stdout("F1 has ghosts? ",'Part1%has_ghosts(Field1)')
-        stdout("F2 has ghosts? ",'Part1%has_ghosts(Field2)')
-        stdout("F3 has ghosts? ",'Part1%has_ghosts(Field3)')
-
         call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
@@ -199,9 +195,6 @@ integer                                        :: nterms
             F3_p(3) = -13._mk
         end foreach
 
-        stdout("F1 has ghosts? ",'Part1%has_ghosts(Field1)')
-        stdout("F2 has ghosts? ",'Part1%has_ghosts(Field2)')
-        stdout("F3 has ghosts? ",'Part1%has_ghosts(Field3)')
         !Check that PPM knows that the ghosts are now invalid for all the fields
         call Part1%get_discr(Field1,prop,info)
             Assert_Equal(info,0)
@@ -213,6 +206,7 @@ integer                                        :: nterms
             Assert_Equal(info,0)
             Assert_False(prop%flags(ppm_ppt_ghosts))
 
+        ! Do a ghost mapping, but only for fields 2 and 3.
         call Part1%map_ghost_get(info)
             Assert_Equal(info,0)
         call Part1%map_ghost_push(info,Field2)
@@ -304,9 +298,9 @@ integer                                        :: nterms
         Nlist => Part1%get_neighlist(Part1)
         Assert_true(associated(Nlist))
 
-        write(*,*) Nlist%cutoff
-        write(*,*) Nlist%nneighmin
-        write(*,*) Nlist%nneighmax
+        !stdout("Nlist%cutoff",'Nlist%cutoff')
+        !stdout("Nlist%nneighmin",'Nlist%nneighmin')
+        !stdout("Nlist%nneighmax",'Nlist%nneighmax')
         Nlist => NULL()
 
         !Compare values and check that they are still the same

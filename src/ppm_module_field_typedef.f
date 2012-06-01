@@ -193,7 +193,8 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     INTEGER                             :: dtype,p_idx
     LOGICAL                             :: lghosts
     CLASS(ppm_t_mesh_discr_data_),POINTER :: mddata => NULL()
-    CLASS(ppm_t_part_prop_d_),    POINTER :: pddata => NULL()
+    !CLASS(ppm_t_part_prop_d_),    POINTER :: pddata => NULL()
+    CLASS(ppm_t_discr_data),    POINTER :: pddata => NULL()
     CLASS(ppm_t_main_abstr),      POINTER :: el => NULL()
 
     start_subroutine("field_discretize_on")
@@ -254,7 +255,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
             lghosts = discr%flags(ppm_part_ghosts)
         ENDIF
         !Create a new property data structure in the particle set to store this field
-        CALL discr%create_prop(info,this,pddata,with_ghosts=lghosts)
+        CALL discr%create_prop(info,this,discr_data=pddata,with_ghosts=lghosts)
             or_fail("discr%create_prop")
 
         !Update the bookkeeping table to store the relationship between

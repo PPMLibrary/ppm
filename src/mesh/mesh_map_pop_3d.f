@@ -530,7 +530,7 @@
                             ENDIF
 
                             !check that real mesh nodes are not touched
-                            check_false("(xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2)) .AND.zhi.GE.1 .AND. zlo.LE.p%nnodes(3)")
+                            check_false("(xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2) .AND. zhi.GE.1 .AND. zlo.LE.p%nnodes(3))")
                             !check that we dont access out-of-bounds elements
                             check_true("(xlo.GE.p%lo_a(1))")
                             check_true("(xhi.LE.p%hi_a(1))")

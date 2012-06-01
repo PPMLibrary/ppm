@@ -703,6 +703,10 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     iend_d(1:ppm_dim)   = 1 + &
         FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
 
+    stdout("istart_d = ",istart_d)
+    stdout("iend_d = ",iend_d)
+    stdout("topo%bcdef = ",'topo%bcdef')
+
     !-------------------------------------------------------------------------
     !  Allocate bookkeeping arrays (pointers between patches and subpatches)
     !-------------------------------------------------------------------------
@@ -778,17 +782,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
 
             !----------------------------------------------------------------
             ! finds the mesh nodes which are contained in the overlap region
-            !the ppm_myepsd term ensures that nodes that are on a East, North,
-            ! or Top subdomain boundary are not counted within a subpatch.
-            ! This is arbitrary and ensures that real mesh nodes are not
-            ! duplicated.
             !----------------------------------------------------------------
-
-            !istart(1:ppm_dim) = 1 + CEILING((MAX(patch(1:ppm_dim),&
-                !topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim))/h(1:ppm_dim))
-            !iend(1:ppm_dim)   = 1 + FLOOR((  MIN(patch(ppm_dim+1:2*ppm_dim),&
-                !topo%max_subd(1:ppm_dim,isub)-ppm_myepsd)-&
-                !Offset(1:ppm_dim))/h(1:ppm_dim))
 
             !----------------------------------------------------------------
             !absolute positions of the corners (stored for use
@@ -798,25 +792,13 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
             pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
                 topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
             pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
-                topo%max_subd(1:ppm_dim,isub)-ppm_myepsd)-Offset(1:ppm_dim)
+                topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
 
             !----------------------------------------------------------------
             !coordinates on the grid
             !----------------------------------------------------------------
             istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
             iend(1:ppm_dim)   = 1 + FLOOR(  pend  (1:ppm_dim)/h(1:ppm_dim))
-
-            !----------------------------------------------------------------
-            !Check that the subpatch contains at least one mesh nodes
-            !Otherwise, exit loop
-            ! (a subpatch comprises all the mesh nodes that are WITHIN
-            !  the patch. If a patch overlap with a subdomain by less than
-            !  h, it could be that this overlap regions has actually
-            !  no mesh nodes)
-            !----------------------------------------------------------------
-            IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
-                CYCLE sub
-            ENDIF
 
             !----------------------------------------------------------------
             ! Specify boundary conditions for the subpatch
@@ -835,7 +817,39 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
                         bc(2*k-1) = -1
                     ENDIF
                 ENDIF
+                IF (iend(k) .EQ. iend_d(k) ) THEN
+                    bc(2*k) = topo%bcdef(2*k)
+                ELSE
+                    IF (iend(k) .EQ. iend_p(k) ) THEN
+                        IF (PRESENT(bcdef)) THEN
+                            bc(2*k) = bcdef(2*k)
+                        ELSE
+                            bc(2*k) = ppm_param_bcdef_freespace
+                        ENDIF
+                    ELSE
+                        bc(2*k) = -1
+                    ENDIF
+                ENDIF
+                ! For periodic boundary conditions, subpatches that touch
+                ! the East, North, or Top domain boundary are 
+                ! reduced by 1 mesh node so that real mesh nodes are not
+                ! duplicated.
+                IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                    iend(k) = iend(k) -1
+                ENDIF
             ENDDO
+
+            !----------------------------------------------------------------
+            !Check that the subpatch contains at least one mesh nodes
+            !Otherwise, exit loop
+            ! (a subpatch comprises all the mesh nodes that are WITHIN
+            !  the patch. If a patch overlap with a subdomain by less than
+            !  h, it could be that this overlap regions has actually
+            !  no mesh nodes)
+            !----------------------------------------------------------------
+            IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
+                CYCLE sub
+            ENDIF
 
             !----------------------------------------------------------------
             ! create a new subpatch object
@@ -969,7 +983,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
     !  Local variables
     !-------------------------------------------------------------------------
     INTEGER , DIMENSION(3)    :: ldc
-    INTEGER                   :: iopt,ld,ud,kk,i,j,isub,nsubs
+    INTEGER                   :: iopt,ld,ud,kk,i,j,k,isub,nsubs
     LOGICAL                   :: valid
     INTEGER, DIMENSION(ppm_dim)   :: Nc
     REAL(ppm_kind_double), DIMENSION(ppm_dim)  :: len_phys,rat
@@ -1104,78 +1118,41 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
             this%istart(1:ppm_dim,i) = 1 + CEILING((     &
                 topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
             this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
-                topo%max_subd(1:ppm_dim,i)-ppm_myepsd-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+
+            stdout("isub = ",i," BEFORE CHOP")
+            stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+            stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+
+            !Decide what to do if a mesh node falls on a subdomain boundary
+            DO k=1,ppm_dim
+                ! For internal boundaries, mesh nodes are not duplicated. If a 
+                ! node is on the boundary, only the West/South/Bottom one
+                ! is kept.
+                ! For periodic boundary conditions, subdomains that have a mesh
+                ! node right on the East, North, or Top domain boundary are 
+                ! reduced by 1 mesh node so that real mesh nodes are not
+                ! duplicated.
+                IF (this%iend(k,i)*this%h(k)+Offset(k).GE.topo%max_subd(k,i)) THEN
+                    IF (topo%subs_bc(2*k,i).NE.1 .OR. &
+                        (topo%subs_bc(2*k,i).EQ.1.AND.&
+                        topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
+                        this%iend(k,i) = this%iend(k,i) -1
+                    ENDIF
+                ENDIF
+            ENDDO
+
+            !Check that this subdomain is large enough and thus
+            !compatible with this mesh and its resolution h.
             check_true(&
         "ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i))&
         .GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))",&
         "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+            stdout("isub = ",i," AFTER CHOP")
+            stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+            stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
     ENDDO
-    !the ppm_myepsd term ensures that nodes that are on a East, North,
-    ! or Top subdomain boundary are not counted within a subpatch.
-    ! This is arbitrary and ensures that real mesh nodes are not
-    ! duplicated.
 
-    !DO i=1,nsubs
-        !this%istart(1:ppm_dim,i) = &
-            !NINT((topo%min_subd(1:ppm_dim,i)-&
-            !topo%min_physd(1:ppm_dim))/this%h(1:ppm_dim)) + 1
-    !ENDDO
-    !!-------------------------------------------------------------------------
-    !!  Determine number of mesh points for each sub. 
-    !!  2D and 3D case have separate loops for vectorization.
-    !!-------------------------------------------------------------------------
-    !IF (ppm_dim .EQ. 3) THEN
-        !DO i=1,nsubs
-            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-            !len_phys(3) = topo%max_subd(3,i)-topo%min_subd(3,i)
-            !rat(1) = len_phys(1)/this%h(1)
-            !rat(2) = len_phys(2)/this%h(2)
-            !rat(3) = len_phys(3)/this%h(3)
-            !Nc(1)  = NINT(rat(1))
-            !Nc(2)  = NINT(rat(2))
-            !Nc(3)  = NINT(rat(3))
-            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-                    !&                len_phys(1),' mesh_spacing=',this%h(1)
-                !fail(msg,ppm_err_subs_incomp)
-            !ENDIF
-            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-                    !&                len_phys(2),' mesh_spacing=',this%h(2)
-                !fail(msg,ppm_err_subs_incomp)
-            !ENDIF
-            !IF (ABS(rat(3)-REAL(Nc(3),ppm_kind_double)) .GT. lmyeps*rat(3)) THEN
-                !WRITE(msg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
-                    !&                len_phys(3),' mesh_spacing=',this%h(3)
-                !fail(msg,ppm_err_subs_incomp)
-            !ENDIF
-            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-            !this%iend(3,i) = this%istart(3,i) + Nc(3) + 1 
-        !ENDDO
-    !ELSE
-        !DO i=1,nsubs
-            !len_phys(1) = topo%max_subd(1,i)-topo%min_subd(1,i)
-            !len_phys(2) = topo%max_subd(2,i)-topo%min_subd(2,i)
-            !rat(1) = len_phys(1)/this%h(1)
-            !rat(2) = len_phys(2)/this%h(2)
-            !Nc(1)  = NINT(rat(1))
-            !Nc(2)  = NINT(rat(2))
-            !IF (ABS(rat(1)-REAL(Nc(1),ppm_kind_double)) .GT. lmyeps*rat(1)) THEN
-                !WRITE(msg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-                    !&                len_phys(1),' mesh_spacing=',this%h(1)
-                !fail(msg,ppm_err_subs_incomp)
-            !ENDIF
-            !IF (ABS(rat(2)-REAL(Nc(2),ppm_kind_double)) .GT. lmyeps*rat(2)) THEN
-                !WRITE(msg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-                    !&                len_phys(2),' mesh_spacing=',this%h(2)
-                !fail(msg,ppm_err_subs_incomp)
-            !ENDIF
-            !this%iend(1,i) = this%istart(1,i) + Nc(1) + 1 
-            !this%iend(2,i) = this%istart(2,i) + Nc(2) + 1 
-        !ENDDO
-    !ENDIF
 
     !-------------------------------------------------------------------------
     !  Return

@@ -61,7 +61,8 @@ END SUBROUTINE __FUNCNAME
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)
 SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
     CLASS(DTYPE(ppm_t_particles))   :: this
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
+    !CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
+    CLASS(ppm_t_discr_data)          :: discr_data
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER     :: wp
 #elif __DIM == 2
@@ -84,7 +85,8 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
 
     wp => NULL()
 
-    check_associated("discr_data")
+    SELECT TYPE(discr_data)
+    CLASS IS (DTYPE(ppm_t_part_prop)_)
 
     IF (ppm_debug.GE.1) THEN
         CALL discr_data%checktype(wp,info)
@@ -134,6 +136,8 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
         discr_data%flags(ppm_ppt_ghosts) = .FALSE.
     ENDIF
 
+    END SELECT
+
     check_associated(wp,"Get_Prop returned a NULL pointer")
 
     end_subroutine()
@@ -143,7 +147,7 @@ END SUBROUTINE __FUNCNAME
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set_prop)
 SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: this
-    CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: discr_data
+    CLASS(DTYPE(ppm_t_part_prop)_)   :: discr_data
     INTEGER                          :: info
     !!! Return status, on success 0.
     LOGICAL,OPTIONAL                 :: read_only
@@ -156,8 +160,6 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
 
     start_subroutine(__FUNCNAME)
 
-
-    check_associated("discr_data")
 
     !If read_only was not explicitely set to true, then assume
     !that ghosts are no longer up to date, unless ghosts_ok was
@@ -184,12 +186,16 @@ END SUBROUTINE __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)
 SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
+    !!! Returns a pointer to the data array where that contains
+    !!! the discretized elements of Field on this particle set.
     CLASS(DTYPE(ppm_t_particles))   :: this
     CLASS(ppm_t_field_)             :: Field
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER     :: wp
+    !!! data array 
 #elif __DIM == 2
     __TYPE,DIMENSION(:,:),POINTER   :: wp
+    !!! data array
 #endif
     INTEGER                         :: info
     !!! Return status, on success 0.

@@ -1,4 +1,4 @@
-test_suite ppm_module_particles
+test_suite ppm_module_particles_big
 
 use ppm_module_particles_typedef
 use ppm_module_topo_typedef
@@ -117,7 +117,8 @@ integer                                        :: nterms
     test initialize_cart
         ! test initialization of particles on a grid
         type(ppm_t_particles_d)               :: Part1
-        class(ppm_t_part_prop_d_),POINTER     :: Prop1=>NULL(),Prop2=>NULL()
+        !class(ppm_t_part_prop_d_),POINTER     :: Prop1=>NULL(),Prop2=>NULL()
+        class(ppm_t_discr_data),POINTER      :: Prop1=>NULL(),Prop2=>NULL()
 
 
         call Part1%initialize(np_global,info,topoid=topoid)
@@ -143,8 +144,6 @@ integer                                        :: nterms
         Assert_Equal(info,0)
         call Part1%get(Prop1,wp_1li,info,with_ghosts=.true.)
         Assert_Equal(info,0)
-        call Part1%set(Prop1,wp_1li,info)
-        Assert_Equal(info,0)
         call Part1%destroy_prop(Prop1,info)
         Assert_Equal(info,0)
 
@@ -152,8 +151,6 @@ integer                                        :: nterms
             name='test_i',with_ghosts=.true.)
         Assert_Equal(info,0)
         call Part1%get(Prop1,wp_1i,info)
-        Assert_Equal(info,0)
-        call Part1%set(Prop1,wp_1i,info)
         Assert_Equal(info,0)
 
         call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_int,&
@@ -164,8 +161,6 @@ integer                                        :: nterms
         Assert_Equal(info,0)
         Assert_Equal(MAXVAL(wp_2i),0)
         Assert_Equal(info,0)
-        call Part1%set(Prop1,wp_2i,info)
-        Assert_Equal(info,0)
 
 
         call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
@@ -173,17 +168,12 @@ integer                                        :: nterms
         Assert_Equal(info,0)
         call Part1%get(Prop1,wp_1r,info)
         Assert_Equal(info,0)
-        call Part1%set(Prop1,wp_1r,info)
-        Assert_Equal(info,0)
 
         call Part1%create_prop(info,discr_data=Prop2,dtype=ppm_type_logical,&
             name='test_l',zero=.true.)
         Assert_Equal(info,0)
         call Part1%get(Prop2,wp_1l,info)
         Assert_Equal(info,0)
-        call Part1%set(Prop2,wp_1l,info)
-        Assert_Equal(info,0)
-
 
         DO i=1,25
             call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_comp,&
@@ -194,15 +184,19 @@ integer                                        :: nterms
             Assert_Equal(info,0)
             call Part1%get(Prop1,wp_2c,info)
             Assert_Equal(info,0)
-            call Part1%set(Prop1,wp_2c,info)
-            Assert_Equal(info,0)
 
             call Part1%destroy_prop(Prop1,info)
             Assert_Equal(info,0)
-            Assert_Equal(Part1%props%get_id(Prop1),-1)
-            Assert_True(Part1%props%get_id(Prop2).GT.0)
-            wp_id = Part1%props%get_id(Prop2)
-            Assert_Equal(Part1%props%vec(wp_id)%t%lda,1)
+            SELECT TYPE(Prop1)
+            CLASS IS(ppm_t_part_prop_d) 
+                Assert_Equal(Part1%props%get_id(Prop1),-1)
+            END SELECT
+            SELECT TYPE(Prop2)
+            CLASS IS(ppm_t_part_prop_d) 
+                Assert_True(Part1%props%get_id(Prop2).GT.0)
+                wp_id = Part1%props%get_id(Prop2)
+                Assert_Equal(Part1%props%vec(wp_id)%t%lda,1)
+            END SELECT
 
             call Part1%destroy_prop(Prop2,info)
             Assert_Equal(info,0)
@@ -227,17 +221,11 @@ integer                                        :: nterms
             wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
         ENDDO
         wp_2r = cos(wp_2r) * Part1%ghostlayer
-        call Part1%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1%set(Prop2,wp_1r,info)
-        Assert_Equal(info,0)
 
         !Move the particles with this displacement field
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
 
-        call Part1%set(Prop1,wp_2r,info)
-        Assert_Equal(info,0)
 
         !Apply boundary conditions and remap the particles
         call Part1%apply_bc(info)
@@ -254,8 +242,6 @@ integer                                        :: nterms
         call Part1%get(Prop1,wp_2r,info)
         wp_2r = -wp_2r
         call Part1%move(wp_2r,info)
-        Assert_Equal(info,0)
-        call Part1%set(Prop1,wp_2r,info)
         Assert_Equal(info,0)
 
 
@@ -278,10 +264,6 @@ integer                                        :: nterms
             err = max(err,abs(wp_1r(ip) - f0_test(xp(1:ndim,ip),ndim)))
         ENDDO
         Assert_Equal_Within(err,0,tol)
-        call Part1%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1%set(Prop2,wp_1r,info,read_only=.true.)
-        Assert_Equal(info,0)
 
         !call Part1%print_info(info)
         !Assert_Equal(info,0)
@@ -314,7 +296,7 @@ integer                                        :: nterms
     test sop_type
         ! test procedures for sop data structures
         type(ppm_t_sop_d)                 :: Part1_A
-        class(ppm_t_part_prop_d_),pointer :: Prop1=>NULL(),Prop2=>NULL()
+        class(ppm_t_discr_data),  pointer :: Prop1=>NULL(),Prop2=>NULL()
 
         write(*,*) 'SOP stuff:'
         call Part1_A%initialize(np_global,info,topoid=topoid)
@@ -348,9 +330,6 @@ integer                                        :: nterms
 
         write(*,*) 'ok 0'
 
-        call Part1_A%set(Prop1,wp_1li,info)
-        Assert_Equal(info,0)
-        write(*,*) 'ok 1'
         call Part1_A%destroy_prop(Prop1,info)
         Assert_Equal(info,0)
         write(*,*) 'ok 2'
@@ -359,8 +338,6 @@ integer                                        :: nterms
             name="test_i",zero=.false.)
         Assert_Equal(info,0)
         call Part1_A%get(Prop1,wp_1i,info)
-        Assert_Equal(info,0)
-        call Part1_A%set(Prop1,wp_1i,info)
         Assert_Equal(info,0)
 
         !Set up a velocity field and a scalar test function on the particles
@@ -381,16 +358,9 @@ integer                                        :: nterms
             wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
         ENDDO
         wp_2r = cos(wp_2r) * Part1_A%ghostlayer
-        call Part1_A%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1_A%set(Prop2,wp_1r,info)
-        Assert_Equal(info,0)
 
         !Move the particles with this displacement field
         call Part1_A%move(wp_2r,info)
-        Assert_Equal(info,0)
-
-        call Part1_A%set(Prop1,wp_2r,info)
         Assert_Equal(info,0)
 
         !Apply boundary conditions and remap the particles
@@ -409,9 +379,6 @@ integer                                        :: nterms
         wp_2r = -wp_2r
         call Part1_A%move(wp_2r,info)
         Assert_Equal(info,0)
-        call Part1_A%set(Prop1,wp_2r,info)
-        Assert_Equal(info,0)
-
 
         !Re-apply boundary conditions and remap the particles
         call Part1_A%apply_bc(info)
@@ -432,11 +399,6 @@ integer                                        :: nterms
             err = max(err,abs(wp_1r(ip) - f0_test(xp(1:ndim,ip),ndim)))
         ENDDO
         Assert_Equal_Within(err,0,tol)
-        call Part1_A%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1_A%set(Prop2,wp_1r,info,read_only=.true.)
-        Assert_Equal(info,0)
-
 
 
         !call Part1_A%print_info(info)
@@ -486,10 +448,6 @@ integer                                        :: nterms
             wp_2r(4,ip) = sin(real(ip,mk))
             wp_2r(5,ip) = SQRT(SUM(xp(1:ndim,ip)**2))
         ENDDO
-        call Part1%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-        call Part1%set_field(Field1,wp_2r,info,read_only=.false.)
-        Assert_Equal(info,0)
 
         !call Part1%print_info(info)
 
