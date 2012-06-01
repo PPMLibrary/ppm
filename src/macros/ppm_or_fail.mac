@@ -7,30 +7,30 @@ end macro
 
 macro fail(message, type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 <%= info %> = ppm_error_error
-$ppm_fail(<%=message%>,<%=type%>,<%=info%>,<%=exit_point%>,<%=caller%>)
+$ppm_fail(message,type,info,exit_point,caller)
 end macro
 
 macro or_fail(message, type=ppm_err_sub_failed,info=info)
 IF (<%= info %>.NE.0) THEN
-  $fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(message,type,info)
 END IF
 end macro
 
 macro or_fail_MPI(message, type=ppm_err_mpi_fail,info=info)
 IF (<%= info %>.NE.MPI_SUCCESS) THEN
-  $fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(message,type,info)
 END IF
 end macro
 
 macro or_fail_alloc(message, type=ppm_err_alloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(message,type,info)
 END IF
 end macro
 
 macro or_fail_dealloc(message, type=ppm_err_dealloc,info=info)
 IF (<%= info %>.NE.0) THEN
-  $fail(<%=message%>,<%=type%>,<%=info%>)
+  $fail(message,type,info)
 END IF
 end macro
 
@@ -43,14 +43,14 @@ IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
        & "check failed:",   CHAR(10),&
        & "    <%= p_s %> is not associated.", CHAR(10),&
        & <%= message %> 
-   $fail(cbuf,ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
+   $fail("cbuf","ppm_err_argument",info,exit_point) 
 ENDIF
 end macro
 
 macro check_associated_noscope(p,message="default",type=ppm_err_argument,info=info,exit_point=9999,caller=caller)
 % p_s = p.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 IF (.NOT.ASSOCIATED(<%= p_s %>)) THEN
-   $fail("<%=p_s%> is not associated. ",ppm_err_argument,info=<%=info%>,<%=exit_point%>) 
+   $fail("\"#{p_s} is not associated. \"","ppm_err_argument",info,exit_point) 
 ENDIF
 end macro
 
@@ -64,7 +64,7 @@ IF (<%= a_s %> .NE. <%= b_s%>) THEN
        & "    <%= a_s %> = ",<%= a_s %>, CHAR(10),&
        & "    <%= b_s %> = ",<%= b_s %>, CHAR(10),&
        & <%= message %> 
-   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+   $fail("cbuf","ppm_err_argument",info,exit_point) 
 ENDIF
 end macro
 
@@ -76,7 +76,7 @@ IF (.NOT.<%= a_s %>) THEN
        & "check failed:",   CHAR(10),&
        & "    <%= a_s %> is not true. ", CHAR(10),&
        & <%= message %> 
-   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+   $fail("cbuf","ppm_err_argument",info,exit_point) 
 ENDIF
 end macro
 
@@ -86,9 +86,9 @@ macro check_false(a,message="",info=info,exit_point=9999)
 IF (<%= a_s %>) THEN
    WRITE(cbuf,*) &
        & "check failed:",   CHAR(10),&
-       & "    <%= a_s %> is not true", CHAR(10),&
+       & "    <%= a_s %> is not false", CHAR(10),&
        & <%= message %> 
-   $fail(cbuf,ppm_err_argument,<%=info%>,<%=exit_point%>) 
+   $fail("cbuf","ppm_err_argument",info,exit_point) 
 ENDIF
 end macro
 
@@ -122,9 +122,9 @@ macro destroy_collection_ptr(collection_pointer)
 % coll_ptr = collection_pointer
 IF (ASSOCIATED(<%= coll_ptr %>)) THEN
     CALL <%= coll_ptr %>%destroy(info)
-        $or_fail_dealloc("<%= coll_ptr %> object")
+        $or_fail_dealloc("\"#{coll_ptr} object\"")
     DEALLOCATE(<%= coll_ptr %>,STAT=info)
-        $or_fail_dealloc("<%= coll_ptr %> pointer")
+        $or_fail_dealloc("\"#{coll_ptr} pointer\"")
 ENDIF
 end macro
 
@@ -158,14 +158,14 @@ macro dealloc_pointer(pointer,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
 IF (ASSOCIATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
-$or_fail_dealloc("<%= p %>")
+$or_fail_dealloc("\"#{p}\"")
 end macro
 
 macro dealloc_allocatable(allocatable,info=info)
 % p = allocatable.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
 IF (ALLOCATED(<%= p %>)) DEALLOCATE(<%= p %>,stat=<%= info %>)
-$or_fail_dealloc("<%= p %>")
+$or_fail_dealloc("\"#{p}\"")
 end macro
 
 macro dealloc_pointers(*list)
@@ -173,7 +173,7 @@ macro dealloc_pointers(*list)
 % list.each do |ptr|
 % p = ptr.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % p = p.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
-$dealloc_pointer(<%= p %>)
+$dealloc_pointer(p)
 % end
 % end
 end macro
@@ -183,34 +183,36 @@ end macro
 macro alloc_pointer(pointer,dim,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
 % d = dim.to_s.gsub( /\A'/m, "" ).gsub( /'\Z/m, "" )
-    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    $check_false("\"ASSOCIATED(#{p})\"","\"pointer already associated\"")
     ALLOCATE(<%= p %>(<%= d %>),STAT=<%=info%>)
-    $or_fail_alloc("<%= p %>")
+    $or_fail_alloc("\"#{p}\"")
 end macro
 
 macro alloc_pointer_with_bounds1(pointer,lo,hi,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
-    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    $check_false("\"ASSOCIATED(#{p})\"","\"pointer already associated\"")
     ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1)),STAT=<%=info%>)
-    $or_fail_alloc("<%= p %>")
+    $or_fail_alloc("\"#{p}\"")
 end macro
 macro alloc_pointer_with_bounds2(pointer,lo,hi,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
-    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    $check_false("\"ASSOCIATED(#{p})\"","\"pointer already associated\"")
     ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2)),STAT=<%=info%>)
-    $or_fail_alloc("<%= p %>")
+    $or_fail_alloc("\"#{p}\"")
 end macro
 macro alloc_pointer_with_bounds3(pointer,lo,hi,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
-    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    $check_false("\"ASSOCIATED(#{p})\"","\"pointer already associated\"")
     ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2),&
                       <%=lo%>(3):<%=hi%>(3)),STAT=<%=info%>)
-    $or_fail_alloc("<%= p %>")
+    $or_fail_alloc("\"#{p}\"")
 end macro
 macro alloc_pointer_with_bounds4(pointer,lo,hi,info=info)
 % p = pointer.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
-    $check_false("ASSOCIATED(<%= p %>)","pointer already associated")
+    $check_false("\"ASSOCIATED(#{p})\"","\"pointer already associated\"")
     ALLOCATE(<%= p %>(<%=lo%>(1):<%=hi%>(1),<%=lo%>(2):<%=hi%>(2),&
                       <%=lo%>(3):<%=hi%>(3),<%=lo%>(4):<%=hi%>(4)),STAT=<%=info%>)
-    $or_fail_alloc("<%= p %>")
+    $or_fail_alloc("\"#{p}\"")
 end macro
+
+

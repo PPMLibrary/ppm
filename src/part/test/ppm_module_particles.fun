@@ -120,6 +120,137 @@ integer                                        :: nterms
         
     end teardown
 
+    test ghost_mappings
+        use ppm_module_io_vtk
+        type(ppm_t_particles_d)         :: Part1
+        type(ppm_t_field)               :: Field1
+        type(ppm_t_field)               :: Field2
+        type(ppm_t_field)               :: Field3
+        class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
+        class(ppm_t_discr_data),POINTER :: prop => NULL()
+
+        start_subroutine("ghost_mappings")
+
+        !--------------------------
+        !Define Fields
+        !--------------------------
+        call Field1%create(5,info,name="VecF1") !vector field
+        Assert_Equal(info,0)
+        call Field2%create(1,info,name="ScaF1") !scalar field
+        Assert_Equal(info,0)
+        call Field3%create(3,info,name="VecF2") !vector field
+        Assert_Equal(info,0)
+
+        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+        Assert_Equal(info,0)
+
+!  print particles to a VTK file
+!        CALL ppm_vtk_particles("part_test",Part1,info)
+!        Assert_Equal(info,0)
+
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        Assert_Equal(info,0)
+
+        allocate(wp_2r(ndim,Part1%Npart))
+        call random_number(wp_2r)
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        call Part1%move(wp_2r,info)
+        Assert_Equal(info,0)
+        deallocate(wp_2r)
+
+        Assert_true(Part1%has_neighlist(Part1))
+        call Part1%apply_bc(info)
+        Assert_Equal(info,0)
+
+        call Part1%map(info,global=.true.,topoid=topoid)
+        Assert_Equal(info,0)
+
+        call Part1%map_ghosts(info)
+        Assert_Equal(info,0)
+
+        call Field1%discretize_on(Part1,info)
+        Assert_Equal(info,0)
+        call Field2%discretize_on(Part1,info)
+        Assert_Equal(info,0)
+        call Field3%discretize_on(Part1,info)
+        Assert_Equal(info,0)
+
+        stdout("F1 has ghosts? ",'Part1%has_ghosts(Field1)')
+        stdout("F2 has ghosts? ",'Part1%has_ghosts(Field2)')
+        stdout("F3 has ghosts? ",'Part1%has_ghosts(Field3)')
+
+        call Part1%comp_neighlist(info)
+        Assert_Equal(info,0)
+
+        Nlist => Part1%get_neighlist(Part1)
+        Assert_true(associated(Nlist))
+        Nlist => NULL()
+
+        !blabla
+        foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F1=Field1,F3=Field3)
+            F1_p(1) = x_p(1)
+            F1_p(2) = x_p(2)
+            F1_p(3) = -3._mk
+            F1_p(4) = -4._mk
+            F1_p(5) = -4._mk
+            F2_p    = -10._mk
+            F3_p(1) = -11._mk
+            F3_p(2) = -12._mk
+            F3_p(3) = -13._mk
+        end foreach
+
+        stdout("F1 has ghosts? ",'Part1%has_ghosts(Field1)')
+        stdout("F2 has ghosts? ",'Part1%has_ghosts(Field2)')
+        stdout("F3 has ghosts? ",'Part1%has_ghosts(Field3)')
+        !Check that PPM knows that the ghosts are now invalid for all the fields
+        call Part1%get_discr(Field1,prop,info)
+            Assert_Equal(info,0)
+            Assert_False(prop%flags(ppm_ppt_ghosts))
+        call Part1%get_discr(Field2,prop,info)
+            Assert_Equal(info,0)
+            Assert_False(prop%flags(ppm_ppt_ghosts))
+        call Part1%get_discr(Field3,prop,info)
+            Assert_Equal(info,0)
+            Assert_False(prop%flags(ppm_ppt_ghosts))
+
+        call Part1%map_ghost_get(info)
+            Assert_Equal(info,0)
+        call Part1%map_ghost_push(info,Field2)
+            Assert_Equal(info,0)
+        call Part1%map_ghost_push(info,Field3)
+            Assert_Equal(info,0)
+
+        call Part1%map_ghost_send(info)
+            Assert_Equal(info,0)
+
+        call Part1%map_ghost_pop(info,Field3)
+            Assert_Equal(info,0)
+        call Part1%map_ghost_pop(info,Field2)
+            Assert_Equal(info,0)
+
+        call Part1%map_ghost_pop_pos(info)
+            Assert_Equal(info,0)
+
+        ! Check the states (ghosts should be ok for Field2 and Field3
+        ! but not for Field1)
+        call Part1%get_discr(Field1,prop,info)
+            Assert_Equal(info,0)
+            Assert_False(prop%flags(ppm_ppt_ghosts))
+        call Part1%get_discr(Field2,prop,info)
+            Assert_Equal(info,0)
+            Assert_True(prop%flags(ppm_ppt_ghosts))
+        call Part1%get_discr(Field3,prop,info)
+            Assert_Equal(info,0)
+            Assert_True(prop%flags(ppm_ppt_ghosts))
+
+        call Part1%destroy(info)
+            Assert_Equal(info,0)
+        call Field1%destroy(info)
+            Assert_Equal(info,0)
+
+        end_subroutine()
+    end test
+
     test PSE_client
         use ppm_module_io_vtk
         type(ppm_t_particles_d)         :: Part1

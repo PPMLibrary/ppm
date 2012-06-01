@@ -8,7 +8,7 @@ modifier stencil_width(st_i=nil,st_j=nil,st_k=nil)
 % scope.var :k, "INTEGER" unless k.nil?
 % scope.var(:sbpitr, "CLASS(ppm_t_subpatch_),POINTER")
 sbpitr => <%= m %>%subpatch%begin()
-% unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil? && bodies.interior.nil? && bodies.real_and_ghosts.nil?
+% unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil? && bodies.interior.nil? && bodies.valid_nodes.nil?
 %   scope.var(:stnclint, "INTEGER,DIMENSION(2*ppm_dim)")
 % end
 %
@@ -36,7 +36,7 @@ do while (associated(sbpitr))
 % end
 %
 %   sft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
-%   sft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top, bodies.real_and_ghosts
+%   sft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top, bodies.valid_nodes
 % end unless sfs.nil?
 % vfs.each do |f|
 % if k.nil?
@@ -60,7 +60,7 @@ do while (associated(sbpitr))
 % end
 %
 %   vft.transform! bodies.all, bodies.real, bodies.interior, bodies.west, bodies.east
-%   vft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top, bodies.real_and_ghosts
+%   vft.transform! bodies.south, bodies.north, bodies.bottom, bodies.top, bodies.valid_nodes
 % end unless vfs.nil?
 %
 % unless bodies.west.nil? && bodies.east.nil? && bodies.south.nil? && bodies.north.nil? && bodies.bottom.nil? && bodies.top.nil?
@@ -89,13 +89,28 @@ do while (associated(sbpitr))
 %   end
 % end
 % 
-% unless bodies.real_and_ghosts.nil?
-%   unless k.nil?
-    do <%= k %> = 1 - sbpitr%ghostsize(5), sbpitr%nnodes(3) + sbpitr%ghostsize(6)
+% unless bodies.valid_nodes.nil?
+%   if k.nil?
+% scope.var :incl_ghosts, "INTEGER,DIMENSION(4)"
+%   else
+% scope.var :incl_ghosts, "INTEGER,DIMENSION(6)"
 %   end
-    do <%= j %> = 1 - sbpitr%ghostsize(3), sbpitr%nnodes(2) + sbpitr%ghostsize(4)
-    do <%= i %> = 1 - sbpitr%ghostsize(1), sbpitr%nnodes(1) + sbpitr%ghostsize(2)
-<%= bodies.real_and_ghosts.indent 8 -%>
+    WHERE (sbpitr%bc.LT.0 .OR. &
+                sbpitr%bc.EQ.ppm_param_bcdef_periodic)
+        incl_ghosts = 1
+    ELSEWHERE
+        incl_ghosts = 0
+    END WHERE
+    write(*,*) "incl_ghosts = ", incl_ghosts
+%   unless k.nil?
+    do <%= k %> = 1 -            incl_ghosts(5)*sbpitr%ghostsize(5), &
+              sbpitr%nnodes(3) + incl_ghosts(6)*sbpitr%ghostsize(6)
+%   end
+    do <%= j %> = 1 -            incl_ghosts(3)*sbpitr%ghostsize(3), &
+              sbpitr%nnodes(2) + incl_ghosts(4)*sbpitr%ghostsize(4)
+    do <%= i %> = 1 -            incl_ghosts(1)*sbpitr%ghostsize(1), &
+              sbpitr%nnodes(1) + incl_ghosts(2)*sbpitr%ghostsize(2)
+<%= bodies.valid_nodes.indent 8 -%>
     end do
     end do
 %   unless k.nil?
