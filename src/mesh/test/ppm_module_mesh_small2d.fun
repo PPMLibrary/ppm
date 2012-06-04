@@ -1,4 +1,4 @@
-test_suite ppm_module_mesh_small
+test_suite ppm_module_mesh_small2d
 
 use ppm_module_mesh_typedef
 use ppm_module_topo_typedef

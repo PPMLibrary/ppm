@@ -26,7 +26,7 @@ logical                         :: ok
 
     init
 
-        use ppm_module_typedef
+        use ppm_module_data
         use ppm_module_init
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
@@ -81,7 +81,6 @@ logical                         :: ok
         ! test netstat
 
         use ppm_module_data
-        use ppm_module_typedef
         use ppm_module_mktopo
         use ppm_module_topo_check
         use ppm_module_test
@@ -105,17 +104,26 @@ logical                         :: ok
         topoid = 0
 
         call ppm_tstats_setup(2,info)
+            Assert_Equal(info,0)
         call ppm_tstats_add('test1',test1,info)
+            Assert_Equal(info,0)
         call ppm_tstats_add('test2',test2,info)
+            Assert_Equal(info,0)
 
         call ppm_tstats_tic(test1,1,info)
+            Assert_Equal(info,0)
         call ppm_tstats_tic(test2,1,info)
+            Assert_Equal(info,0)
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               0.1_mk,cost,info)
+            Assert_Equal(info,0)
         call ppm_tstats_toc(test2,1,time,info)
+            Assert_Equal(info,0)
         call ppm_tstats_toc(test1,1,time,info)
+            Assert_Equal(info,0)
 
         call ppm_tstats_collect('time.dat',info)
+            Assert_Equal(info,0)
 
     end test
 

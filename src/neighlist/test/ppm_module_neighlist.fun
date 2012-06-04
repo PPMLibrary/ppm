@@ -1,4 +1,5 @@
 test_suite ppm_module_neighlist
+use ppm_module_interfaces
 
 
 

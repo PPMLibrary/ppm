@@ -414,13 +414,13 @@ test_suite ppm_module_ctrl
   test logical_args
     CALL arg(ldefault,    'ldefault',    default   = .true.)
     CALL arg(leflag,      'leflag',      default   = .false., &
-         type = enabling_flag, flag      = '-e')
+         vtype = enabling_flag, flag      = '-e')
     CALL arg(lelong_flag, 'lelong_flag', default   = .false., &
-         type = enabling_flag, long_flag = '--enable')
+         vtype = enabling_flag, long_flag = '--enable')
     CALL arg(ldflag,      'ldflag',      default   = .true.,  &
-         type = disabling_flag, flag      = '-d')
+         vtype = disabling_flag, flag      = '-d')
     CALL arg(ldlong_flag, 'ldlong_flag', default   = .true.,  &
-         type = disabling_flag, long_flag = '--disable')
+         vtype = disabling_flag, long_flag = '--disable')
     ! supply
     CALL add_cmd('-e'       )
     CALL add_cmd('--enable' )
