@@ -77,6 +77,7 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     PROCEDURE  :: create                => equi_mesh_create
     PROCEDURE  :: destroy               => equi_mesh_destroy
     PROCEDURE  :: create_prop           => equi_mesh_create_prop
+    PROCEDURE  :: zero                  => equi_mesh_prop_zero
     PROCEDURE  :: def_patch             => equi_mesh_def_patch
     !PROCEDURE  :: set_rel               => equi_mesh_set_rel
     PROCEDURE  :: def_uniform           => equi_mesh_def_uniform
@@ -1535,6 +1536,90 @@ SUBROUTINE equi_mesh_print_vtk(this,filename,info)
 
     end_subroutine()
 END SUBROUTINE equi_mesh_print_vtk
+
+SUBROUTINE equi_mesh_prop_zero(this,Field,info)
+    !! Zero a property allocated on this mesh
+    CLASS(ppm_t_equi_mesh)                            :: this
+    CLASS(ppm_t_field_)                               :: Field
+    INTEGER,                              INTENT(OUT) :: info
+    INTEGER              :: lda
+
+    start_subroutine("equi_mesh_prop_zero")
+
+    lda = Field%lda
+
+    IF (ppm_dim.EQ.2) THEN
+        SELECT CASE (lda)
+        CASE (1)
+        foreach n in equi_mesh(this) with sca_fields(Field) 
+            for all
+                Field_n = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (2)
+        foreach n in equi_mesh(this) with vec_fields(Field) 
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (3)
+        foreach n in equi_mesh(this) with vec_fields(Field) 
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+                Field_n(3) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (4)
+        foreach n in equi_mesh(this) with vec_fields(Field) 
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+                Field_n(3) = REAL(0,ppm_kind_double)
+                Field_n(4) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE DEFAULT
+        foreach n in equi_mesh(this) with vec_fields(Field) 
+            for all
+                Field_n(1:lda) = REAL(0,ppm_kind_double)
+        end foreach
+        END SELECT
+    ELSE
+        SELECT CASE (lda)
+        CASE (1)
+        foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k)
+            for all
+                Field_n = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (2)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (3)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+                Field_n(3) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE (4)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+            for all
+                Field_n(1) = REAL(0,ppm_kind_double)
+                Field_n(2) = REAL(0,ppm_kind_double)
+                Field_n(3) = REAL(0,ppm_kind_double)
+                Field_n(4) = REAL(0,ppm_kind_double)
+        end foreach
+        CASE DEFAULT
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+            for all
+                Field_n(1:lda) = REAL(0,ppm_kind_double)
+        end foreach
+        END SELECT
+    ENDIF
+
+    end_subroutine()
+END SUBROUTINE equi_mesh_prop_zero
 
 #include "mesh/mesh_block_intersect.f"
 #include "mesh/mesh_map_ghost_init.f"

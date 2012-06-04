@@ -374,3 +374,9 @@ SUBROUTINE DTYPE(part_get_discr)_(this,Field,prop,info)
     CLASS(ppm_t_discr_data),POINTER,        INTENT(  OUT)  :: prop
     INTEGER,                                INTENT(  OUT)  :: info
 END SUBROUTINE
+SUBROUTINE DTYPE(part_prop_zero)_(this,Field,info)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)                         :: this
+    CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
+    INTEGER,                                INTENT(  OUT)  :: info
+END SUBROUTINE

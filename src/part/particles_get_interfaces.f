@@ -18,7 +18,7 @@ END SUBROUTINE
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get)_
 #define __CHECKTYPE DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
+SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
     IMPORT DTYPE(ppm_t_particles)_, ppm_kind_single,ppm_kind_double,&
                                     ppm_kind_int64
     CLASS(DTYPE(ppm_t_particles)_)   :: Pc
@@ -30,6 +30,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
 #endif
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
+    LOGICAL,OPTIONAL                :: read_only
 END SUBROUTINE
 #undef __FUNCNAME
 

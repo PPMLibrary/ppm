@@ -47,6 +47,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
     PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
     PROCEDURE     :: get_discr    => DTYPE(part_get_discr)
+    PROCEDURE     :: zero         => DTYPE(part_prop_zero)
 
     PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
     PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)

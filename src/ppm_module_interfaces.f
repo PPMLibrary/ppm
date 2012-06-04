@@ -634,6 +634,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_create_),         DEFERRED :: create
     PROCEDURE(equi_mesh_destroy_),        DEFERRED :: destroy
     PROCEDURE(equi_mesh_create_prop_),    DEFERRED :: create_prop
+    PROCEDURE(equi_mesh_prop_zero_),      DEFERRED :: zero
     PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
     PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&

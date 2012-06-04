@@ -237,3 +237,9 @@ SUBROUTINE equi_mesh_m2p_(this,Part,Field,kernel,info)
     INTEGER                        , INTENT(IN   ) :: kernel
     INTEGER                        , INTENT(  OUT) :: info
 END SUBROUTINE
+SUBROUTINE equi_mesh_prop_zero_(this,Field,info)
+    IMPORT ppm_t_equi_mesh_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)                           :: this
+    CLASS(ppm_t_field_)                               :: Field
+    INTEGER,                              INTENT(OUT) :: info
+END SUBROUTINE

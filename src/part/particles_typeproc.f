@@ -2919,23 +2919,13 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
                 !need to allocate the array of mapping pointers 
                 vec_size=20
                 ALLOCATE(cont%vec(vec_size),STAT=info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,&
-                        'allocating mapping array failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
+                    or_fail_alloc("cont%vec")
                 id = 1
             ELSE
                 !need to resize the array of mapping pointers 
                 vec_size=MAX(2*cont%vec_size,20)
                 ALLOCATE(vec_tmp(vec_size),STAT=info)
-                IF (info .NE. 0) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_alloc,caller,&
-                        'allocating mapping array failed',__LINE__,info)
-                    GOTO 9999
-                ENDIF
+                    or_fail_alloc("vec_tmp")
                 DO i=1,cont%vec_size
                     vec_tmp(i)%t => cont%vec(i)%t
                 ENDDO
@@ -2977,11 +2967,7 @@ SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
 
     ASSOCIATE (cont => Pc%maps)
         IF (id .LE. 0 .OR. id .GT. cont%vec_size) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,&
-                &    'mapping id larger than size of mappings array',&
-                __LINE__,info)
-            GOTO 9999
+            fail("mapping id larger than size of mappings array")
         ENDIF
 
         CALL cont%vec(id)%t%destroy(info)
@@ -3005,11 +2991,7 @@ SUBROUTINE DTYPE(part_map_destroy)(Pc,id,info)
                 DO WHILE(.NOT.ASSOCIATED(cont%vec(cont%min_id)%t))
                     cont%min_id = cont%min_id + 1
                     IF (cont%min_id .GT. cont%vec_size) THEN
-                        info = ppm_error_error
-                        CALL ppm_error(ppm_err_alloc,caller,&
-                            &    'coding error in the data structure',&
-                            __LINE__,info)
-                        GOTO 9999
+                        fail("fatal error in the data structure")
                     ENDIF
                 ENDDO
             ENDIF
@@ -3086,6 +3068,62 @@ SUBROUTINE DTYPE(part_get_discr)(this,Field,prop,info)
 
     end_subroutine()
 END SUBROUTINE
+
+
+SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
+    !!! Reset values of a property to zero
+    !!! (a bit unrolled)
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_particles))                          :: this
+    CLASS(ppm_t_field_),TARGET,             INTENT(IN   )  :: Field
+    INTEGER,                                INTENT(  OUT)  :: info
+
+    INTEGER                        :: lda
+
+    start_subroutine("part_prop_zero")
+    
+    lda = Field%lda
+    SELECT CASE(lda)
+    CASE (1)
+        foreach p in particles(this) with sca_fields(w=Field) prec(DTYPE(prec))
+            w_p = 0._mk
+        end foreach
+    CASE (2)
+        foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+            w_p(1) = 0._mk
+            w_p(2) = 0._mk
+        end foreach
+    CASE (3)
+        foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+            w_p(1) = 0._mk
+            w_p(2) = 0._mk
+            w_p(3) = 0._mk
+        end foreach
+    CASE (4)
+        foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+            w_p(1) = 0._mk
+            w_p(2) = 0._mk
+            w_p(3) = 0._mk
+            w_p(4) = 0._mk
+        end foreach
+    CASE (5)
+        foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+            w_p(1) = 0._mk
+            w_p(2) = 0._mk
+            w_p(3) = 0._mk
+            w_p(4) = 0._mk
+            w_p(5) = 0._mk
+        end foreach
+    CASE DEFAULT
+        foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
+            w_p(1:lda) = 0._mk
+        end foreach
+    END SELECT
+
+
+    end_subroutine()
+END SUBROUTINE
+
 
 #undef DEFINE_MK
 

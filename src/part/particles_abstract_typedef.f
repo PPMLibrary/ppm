@@ -256,6 +256,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_prop_destroy)_),DEFERRED :: destroy_prop 
     PROCEDURE(DTYPE(part_prop_realloc)_),DEFERRED :: realloc_prop 
     PROCEDURE(DTYPE(part_get_discr)_),   DEFERRED :: get_discr
+    PROCEDURE(DTYPE(part_prop_zero)_),   DEFERRED :: zero
 
     PROCEDURE(DTYPE(part_neigh_create)_),DEFERRED :: create_neighlist 
     PROCEDURE(DTYPE(part_set_cutoff)_),  DEFERRED :: set_cutoff 
