@@ -175,6 +175,10 @@ integer                                        :: nterms
         call Field3%discretize_on(Part1,info)
         Assert_Equal(info,0)
 
+        Assert_True(Part1%has_ghosts(Field1))
+        Assert_True(Part1%has_ghosts(Field2))
+        Assert_True(Part1%has_ghosts(Field3))
+
         call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
@@ -196,15 +200,10 @@ integer                                        :: nterms
         end foreach
 
         !Check that PPM knows that the ghosts are now invalid for all the fields
-        call Part1%get_discr(Field1,prop,info)
-            Assert_Equal(info,0)
-            Assert_False(prop%flags(ppm_ppt_ghosts))
-        call Part1%get_discr(Field2,prop,info)
-            Assert_Equal(info,0)
-            Assert_False(prop%flags(ppm_ppt_ghosts))
-        call Part1%get_discr(Field3,prop,info)
-            Assert_Equal(info,0)
-            Assert_False(prop%flags(ppm_ppt_ghosts))
+        Assert_False(Part1%has_ghosts(Field1))
+        Assert_False(Part1%has_ghosts(Field2))
+        Assert_False(Part1%has_ghosts(Field3))
+
 
         ! Do a ghost mapping, but only for fields 2 and 3.
         call Part1%map_ghost_get(info)
@@ -227,19 +226,17 @@ integer                                        :: nterms
 
         ! Check the states (ghosts should be ok for Field2 and Field3
         ! but not for Field1)
-        call Part1%get_discr(Field1,prop,info)
-            Assert_Equal(info,0)
-            Assert_False(prop%flags(ppm_ppt_ghosts))
-        call Part1%get_discr(Field2,prop,info)
-            Assert_Equal(info,0)
-            Assert_True(prop%flags(ppm_ppt_ghosts))
-        call Part1%get_discr(Field3,prop,info)
-            Assert_Equal(info,0)
-            Assert_True(prop%flags(ppm_ppt_ghosts))
+        Assert_False(Part1%has_ghosts(Field1))
+        Assert_True(Part1%has_ghosts(Field2))
+        Assert_True(Part1%has_ghosts(Field3))
 
         call Part1%destroy(info)
             Assert_Equal(info,0)
         call Field1%destroy(info)
+            Assert_Equal(info,0)
+        call Field2%destroy(info)
+            Assert_Equal(info,0)
+        call Field3%destroy(info)
             Assert_Equal(info,0)
 
         end_subroutine()

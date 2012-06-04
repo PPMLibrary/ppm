@@ -10,7 +10,7 @@ use ppm_module_topo_alloc
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 3
+integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
 integer,parameter               :: ndim=2
@@ -114,6 +114,9 @@ real(mk),dimension(ndim)         :: offset
         logical                             :: assoc
  
         start_subroutine("ghost_mappings_basics")
+
+
+        !skip this test for now
         !REMOVME
         return
 
@@ -278,6 +281,7 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
+        call MPI_BARRIER(comm,info)
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
@@ -330,8 +334,7 @@ real(mk),dimension(ndim)         :: offset
     end test
 
     !test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_symmetry,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
-    !test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
-    test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69], sizey:[77], bcdefX: [ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
+    test ghost_mappings_bcdef({decomp: [ppm_param_decomp_cuboid], sizex:[69,70,71,72,73,75,123], sizey:[77,83,93,111], bcdefX: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace], bcdefY: [ppm_param_bcdef_periodic,ppm_param_bcdef_freespace],unifpatch: [.true.,.false.]})
         type(ppm_t_field) :: Field1,Field2
         real(ppm_kind_double),dimension(ndim) :: pos
         integer                             :: p_idx, nb_errors
@@ -396,7 +399,7 @@ real(mk),dimension(ndim)         :: offset
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
 
-        if (ppm_debug.GE.0) then
+        if (ppm_debug.GE.1) then
             topo => ppm_topo(Mesh1%topoid)%t
             call MPI_BARRIER(comm,info)
             stdout("NB subdomains =  ",topo%nsubs)
@@ -554,14 +557,17 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
+        call MPI_BARRIER(comm,info)
 
         call Mesh1%map_send(info)
             Assert_Equal(info,0)
+        call MPI_BARRIER(comm,info)
 
         call Field2%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
+        call MPI_BARRIER(comm,info)
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
@@ -574,8 +580,8 @@ real(mk),dimension(ndim)         :: offset
                 IF (Field2_n .lt. 0._mk) then
                     nb_errors = nb_errors + 1
                 ENDIF
-                stdout("i,j = ",i,j)
-                stdout("pos = ",pos)
+                !stdout("i,j = ",i,j,'sbpitr%istart(1)-1+i','sbpitr%istart(2)-1+j')
+                !stdout("pos = ",pos)
                 Assert_Equal_Within(Field1_n(1) ,cos(2._mk*pi*pos(1)),        1e-5)
                 Assert_Equal_Within(Field1_n(2) ,cos(2._mk*pi*pos(1)) + 2._mk,1e-5)
                 Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
@@ -593,6 +599,7 @@ real(mk),dimension(ndim)         :: offset
         end foreach
         ENDIF
         Assert_Equal(nb_errors,0)
+        call MPI_BARRIER(comm,info)
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)

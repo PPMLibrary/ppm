@@ -101,7 +101,6 @@ do while (associated(sbpitr))
     ELSEWHERE
         incl_ghosts = 0
     END WHERE
-    write(*,*) "incl_ghosts = ", incl_ghosts
 %   unless k.nil?
     do <%= k %> = 1 -            incl_ghosts(5)*sbpitr%ghostsize(5), &
               sbpitr%nnodes(3) + incl_ghosts(6)*sbpitr%ghostsize(6)

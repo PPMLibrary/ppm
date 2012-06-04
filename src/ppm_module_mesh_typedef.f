@@ -429,6 +429,7 @@ SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
 
     start_subroutine("subpatch_create")
 
+    !Allocate arrays
     alloc_pointer("p%istart",ppm_dim)
     alloc_pointer("p%iend",ppm_dim)
     alloc_pointer("p%start",ppm_dim)
@@ -458,7 +459,7 @@ SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
     p%ghostsize(1:2*ppm_dim) = ghostsize(1:2*ppm_dim)
     p%bc(1:2*ppm_dim) = bcdef(1:2*ppm_dim)
 
-    !Allocated size of the subpatch
+    !Define allocated size of the subpatch
     p%lo_a(1)     = 1 - ghostsize(1)
     p%hi_a(1)     = p%nnodes(1)   + ghostsize(2)
     p%lo_a(2)     = 1 - ghostsize(3)
@@ -703,14 +704,13 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     iend_d(1:ppm_dim)   = 1 + &
         FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
 
-    stdout("istart_d = ",istart_d)
-    stdout("iend_d = ",iend_d)
-    stdout("topo%bcdef = ",'topo%bcdef')
+    !stdout("istart_d = ",istart_d)
+    !stdout("iend_d = ",iend_d)
+    !stdout("topo%bcdef = ",'topo%bcdef')
 
     !-------------------------------------------------------------------------
     !  Allocate bookkeeping arrays (pointers between patches and subpatches)
     !-------------------------------------------------------------------------
-
     ALLOCATE(ppm_t_A_subpatch::A_p,STAT=info)
         or_fail_alloc("could not allocate ppm_t_A_subpatch pointer")
 
@@ -728,7 +728,6 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     !-------------------------------------------------------------------------
     ! loop through all subdomains on this processor to allocate some book-
     ! keeping arrays.
-    ! TODO: clean this up....
     size_tmp=0
     DO i = 1,topo%nsublist
         isub = topo%isublist(i)
@@ -781,13 +780,13 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
                THEN 
 
             !----------------------------------------------------------------
-            ! finds the mesh nodes which are contained in the overlap region
+            !Finds the mesh nodes which are contained in the overlap region
             !----------------------------------------------------------------
 
             !----------------------------------------------------------------
-            !absolute positions of the corners (stored for use
-            ! during m2p interpolation, where we need to check whether
-            ! a particle is within a given subpatch)
+            !Absolute positions of the corners (stored for use
+            !during m2p interpolation, where we need to check whether
+            !a particle is within a given subpatch)
             !----------------------------------------------------------------
             pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
                 topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
@@ -795,10 +794,18 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
                 topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
 
             !----------------------------------------------------------------
-            !coordinates on the grid
+            !Coordinates on the grid
             !----------------------------------------------------------------
             istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
             iend(1:ppm_dim)   = 1 + FLOOR(  pend  (1:ppm_dim)/h(1:ppm_dim))
+
+            !----------------------------------------------------------------
+            !Intersect these coordinates with those of the subdomain
+            !(some nodes may have been removed from the subdomain, e.g. to
+            !implement some boundary conditions and/or avoid node duplication. 
+            !----------------------------------------------------------------
+            istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
+            iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
 
             !----------------------------------------------------------------
             ! Specify boundary conditions for the subpatch
@@ -864,9 +871,6 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
             ! case, the width of the ghostlayer is truncated by the "mesh-wide"
             ! ghostsize parameter) 
             !----------------------------------------------------------------
-            
-            !TODO: deal with computational domain boundaries (e.g.
-            ! when the patch is infinite)
             ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
             ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
             ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
@@ -1120,9 +1124,10 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
             this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
                 topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
 
-            stdout("isub = ",i," BEFORE CHOP")
-            stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-            stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+            !stdout("#isub = ",i," BEFORE CHOP")
+            !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+            !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+            !stdout("sub%bc = ",'topo%subs_bc(:,i)')
 
             !Decide what to do if a mesh node falls on a subdomain boundary
             DO k=1,ppm_dim
@@ -1133,7 +1138,8 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
                 ! node right on the East, North, or Top domain boundary are 
                 ! reduced by 1 mesh node so that real mesh nodes are not
                 ! duplicated.
-                IF (this%iend(k,i)*this%h(k)+Offset(k).GE.topo%max_subd(k,i)) THEN
+                IF ((this%iend(k,i)-1)*this%h(k)+Offset(k).GE.&
+                    topo%max_subd(k,i)) THEN
                     IF (topo%subs_bc(2*k,i).NE.1 .OR. &
                         (topo%subs_bc(2*k,i).EQ.1.AND.&
                         topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
@@ -1148,9 +1154,9 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
         "ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i))&
         .GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))",&
         "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
-            stdout("isub = ",i," AFTER CHOP")
-            stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-            stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+            !stdout("#isub = ",i," AFTER CHOP")
+            !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+            !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
     ENDDO
 
 
