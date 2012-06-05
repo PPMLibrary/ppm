@@ -1,10 +1,16 @@
 foreach macro equi_mesh(m)
-modifier indices(i=nil,j=nil,k=nil)
+modifier indices(i=i,j=j,k=nil)
 modifier sca_fields(*sfs)
 modifier vec_fields(*vfs)
 modifier stencil_width(st_i=nil,st_j=nil,st_k=nil)
-% scope.var :i, "INTEGER" unless i.nil?
-% scope.var :j, "INTEGER" unless j.nil?
+modifier prec(precision=mk)
+% if precision.to_s == "prec_s"
+%   precision = "ppm_kind_single"
+% else
+%   precision = "ppm_kind_double"
+% end
+% scope.var :i, "INTEGER" 
+% scope.var :j, "INTEGER"
 % scope.var :k, "INTEGER" unless k.nil?
 % scope.var(:sbpitr, "CLASS(ppm_t_subpatch_),POINTER")
 sbpitr => <%= m %>%subpatch%begin()
@@ -15,7 +21,7 @@ sbpitr => <%= m %>%subpatch%begin()
 do while (associated(sbpitr))
 % sfs.each do |f|
 % if k.nil?
-%   scope.var "#{f}_data2d".to_sym,  "real(mk), dimension(:,:), pointer", "=> null()"
+%   scope.var "#{f}_data2d".to_sym,  "real(#{precision}), dimension(:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -25,7 +31,7 @@ do while (associated(sbpitr))
 %   sft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d(i,j)"
 %
 % else
-%   scope.var "#{f}_data3d".to_sym,  "real(mk), dimension(:,:,:), pointer", "=> null()"
+%   scope.var "#{f}_data3d".to_sym,  "real(#{precision}), dimension(:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -40,7 +46,7 @@ do while (associated(sbpitr))
 % end unless sfs.nil?
 % vfs.each do |f|
 % if k.nil?
-%   scope.var "#{f}_data2d".to_sym,  "real(mk), dimension(:,:,:), pointer", "=> null()"
+%   scope.var "#{f}_data2d".to_sym,  "real(#{precision}), dimension(:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data2d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error
@@ -49,7 +55,7 @@ do while (associated(sbpitr))
     ENDIF
 %   vft = CG::Transform.new "#{f}_#{iter}", "#{f}_data2d($1,i,j)"
 % else
-%   scope.var "#{f}_data3d".to_sym,  "real(mk), dimension(:,:,:,:), pointer", "=> null()"
+%   scope.var "#{f}_data3d".to_sym,  "real(#{precision}), dimension(:,:,:,:), pointer", "=> null()"
     CALL sbpitr%get_field(<%= f %>_data3d, <%= f %>, info)
     IF (info.NE.0) THEN
         info = ppm_error_error

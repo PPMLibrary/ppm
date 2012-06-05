@@ -89,6 +89,9 @@ real(mk)                         :: eps
     
     test vtkparticles
         use ppm_module_topo_typedef
+        use ppm_module_interfaces
+        use ppm_module_particles_typedef
+        use ppm_module_field_typedef
         use ppm_module_mktopo
         use ppm_module_map
         use ppm_module_topo_check
@@ -103,63 +106,53 @@ real(mk)                         :: eps
         real(mk),dimension(:,:),pointer :: xp => NULL()
         real(mk),dimension(:),pointer   :: wp => NULL()
         integer ,dimension(:),pointer   :: ra => NULL()
-        real(mk)                        :: gl = 0.001_mk
+        real(mk)                        :: cutoff = 0.001_mk
         real(mk)                        :: h
-        type(ppm_t_particles_d),pointer :: particles
+        type(ppm_t_particles_d)         :: particles
+        type(ppm_t_field)               :: Field1
+        class(ppm_t_discr_data),pointer :: Prop1 => NULL()
         integer                         :: i,j
-        CHARACTER(LEN=32)                       :: fname
+        CHARACTER(LEN=32)               :: fname
+
+        start_subroutine("vtk")
+
         npart=100
-        !CALL part_init(xp,npart,min_phys,max_phys,info,&
-        !&    ppm_param_part_init_cartesian,0.5_mk)
-        allocate(xp(ndim,npart),randnb(npart*ndim),stat=info)
-        xp = 0.0_mk
-        call random_number(randnb)
-        do i=1,npart
-          do j=1,ndim
-            xp(j,i) = min_phys(j)+ len_phys(j)*randnb((ndim+1)*i-(ndim-j))
-          enddo
-        enddo
-        h = 2.0_mk*(len_phys(1)/(sqrt(real(npart,mk))))
         bcdef(1:ndim) = ppm_param_bcdef_freespace
-        
-        !----------------
-        ! make topology
-        !----------------
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
 
         topoid = 0
+        call ppm_mktopo(topoid,decomp,assig,min_phys,&
+            max_phys,bcdef,cutoff,cost,info)
+            assert_equal(info,0)
 
-        call ppm_mktopo(topoid,xp,npart,decomp,assig,min_phys,max_phys,bcdef, &
-        &               gl,cost,info)
+        call Field1%create(ndim,info,name="F_vec") !vector field
+            assert_equal(info,0)
 
-        call ppm_map_part_global(topoid,xp,npart,info)
-        call ppm_map_part_send(npart,newnpart,info)
-        call ppm_map_part_pop(xp,ndim,npart,newnpart,info)
-        npart=newnpart
-        allocate(wp(npart),ra(npart))
-        CALL RANDOM_NUMBER(wp)
-        ra(1:npart) = rank
-        call ppm_map_part_ghost_get(topoid,xp,ndim,npart,0,gl,info)
-        call ppm_map_part_push(wp,npart,info)
-        call ppm_map_part_send(npart,mpart,info)
-        call ppm_map_part_pop(wp,npart,mpart,info)
-        call ppm_map_part_pop(xp,ndim,npart,mpart,info)
+        !initialize particles on a grid
+        call particles%initialize(npart,info,topoid=topoid, &
+            distrib=ppm_param_part_init_cartesian)
+            assert_equal(info,0)
         
-        allocate(particles)
-        particles%xp => xp
-        particles%np = npart
-        particles%nprop = 1
-        particles%niprop = 1
-        allocate(particles%prop(particles%nprop))
-        allocate(particles%iprop(particles%niprop))
-        particles%prop(1)%wp => wp
-        particles%iprop(1)%wp => ra
-        particles%prop(1)%name = 'bla'
-        particles%iprop(1)%name = 'sub'
+        !define a property on the particle set by discretizing a Field on it
+        call Field1%discretize_on(particles,info)
+            assert_equal(info,0)
+
+        !define a property directly
+        call particles%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
+            name='test_r',zero=.true.)
+            assert_equal(info,0)
+
+        foreach p in particles(particles) with positions(x) sca_fields(F2=Prop1) vec_fields(F1=Field1)
+            F1_p(1:ndim) = 10._mk * x_p(1:ndim)
+            F2_p         = 42._mk
+        end foreach
+
         fname = 'test'
         call ppm_vtk_particles(fname,particles,info)
-        assert_equal(info,0)
+            assert_equal(info,0)
+
+        end_subroutine()
     end test
 
     

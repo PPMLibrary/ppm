@@ -116,10 +116,6 @@ real(mk),dimension(ndim)         :: offset
         start_subroutine("ghost_mappings_basics")
 
 
-        !skip this test for now
-        !REMOVME
-        return
-
         if (decomp.eq.ppm_param_decomp_xpencil .and. (sizey/nproc).LE.2) return
         if (decomp.eq.ppm_param_decomp_ypencil .and. (sizex/nproc).LE.2) return
         if (ndim.eq.2 .and. decomp.eq.ppm_param_decomp_xy_slab) return

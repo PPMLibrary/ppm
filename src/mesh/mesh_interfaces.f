@@ -1,29 +1,9 @@
-SUBROUTINE subpatch_get_field_2d_rd_(this,wp,Field,info)
-    !!! gets pointer to data
-    IMPORT ppm_t_subpatch_,ppm_t_field_,ppm_kind_double
-    CLASS(ppm_t_subpatch_)              :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-END SUBROUTINE
-
-SUBROUTINE subpatch_get_field_3d_rd_(this,wp,Field,info)
-    !!! gets pointer to data
-    IMPORT ppm_t_subpatch_,ppm_t_field_,ppm_kind_double
-    CLASS(ppm_t_subpatch_)              :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-END SUBROUTINE
-
-SUBROUTINE subpatch_get_field_4d_rd_(this,wp,Field,info)
-    !!! gets pointer to data
-    IMPORT ppm_t_subpatch_,ppm_t_field_,ppm_kind_double
-    CLASS(ppm_t_subpatch_)              :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-END SUBROUTINE
+minclude ppm_get_field_interface_template(2,s)
+minclude ppm_get_field_interface_template(3,s)
+minclude ppm_get_field_interface_template(4,s)
+minclude ppm_get_field_interface_template(2,d)
+minclude ppm_get_field_interface_template(3,d)
+minclude ppm_get_field_interface_template(4,d)
 
 SUBROUTINE subpatch_data_create_(this,discr_data,sp,info)
     !!! Constructor for subdomain data 
@@ -162,6 +142,12 @@ SUBROUTINE equi_mesh_map_ghost_get_(this,info)
     CLASS(ppm_t_equi_mesh_)                 :: this
     INTEGER                 , INTENT(  OUT) :: info
 END SUBROUTINE
+!GHOST PUT
+SUBROUTINE equi_mesh_map_ghost_put_(this,info)
+    IMPORT ppm_t_equi_mesh_
+    CLASS(ppm_t_equi_mesh_)                 :: this
+    INTEGER                 , INTENT(  OUT) :: info
+END SUBROUTINE
 SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub_loc,isub,jsub,offset,&
         nsendlist,isendfromsub,isendtosub,isendpatchid,&
         isendblkstart,isendblksize,ioffset,info,lsymm)
@@ -236,4 +222,10 @@ SUBROUTINE equi_mesh_m2p_(this,Part,Field,kernel,info)
     CLASS(ppm_t_field_)                              :: Field
     INTEGER                        , INTENT(IN   ) :: kernel
     INTEGER                        , INTENT(  OUT) :: info
+END SUBROUTINE
+SUBROUTINE equi_mesh_prop_zero_(this,Field,info)
+    IMPORT ppm_t_equi_mesh_,ppm_t_field_
+    CLASS(ppm_t_equi_mesh_)                           :: this
+    CLASS(ppm_t_field_)                               :: Field
+    INTEGER,                              INTENT(OUT) :: info
 END SUBROUTINE

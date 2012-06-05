@@ -1,5 +1,5 @@
       !--*- f90 -*--------------------------------------------------------------
-      !  Module       :            ppm_module_rmsh_remesh
+      !  Module       :            ppm_module_interp_p2m
       !-------------------------------------------------------------------------
       ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
       !                    Center for Fluid Dynamics (DTU)
@@ -35,49 +35,48 @@
 #define __SCA              6
 
       MODULE ppm_module_interp_p2m
-#ifdef COMPILEME
       !!! Contains the particle to mesh interpolation routines. Currently we
       !!! support 2nd order B-spline and MP4 interpolation schemes.
         USE ppm_module_topo_typedef
-        USE ppm_module_mesh_typedef
+        USE ppm_module_interfaces
       
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
-        INTERFACE ppm_interp_p2m
-           ! 2d scalar
-           MODULE PROCEDURE p2m_ss_2d
-           MODULE PROCEDURE p2m_ds_2d
-           ! 2d vector
-           MODULE PROCEDURE p2m_sv_2d
-           MODULE PROCEDURE p2m_dv_2d
-           ! 3d scalar
-           MODULE PROCEDURE p2m_ss_3d
-           MODULE PROCEDURE p2m_ds_3d
-           ! 3d vector
-           MODULE PROCEDURE p2m_sv_3d
-           MODULE PROCEDURE p2m_dv_3d
-        END INTERFACE
+        !INTERFACE ppm_interp_p2m
+           !! 2d scalar
+           !MODULE PROCEDURE p2m_ss_2d
+           !MODULE PROCEDURE p2m_ds_2d
+           !! 2d vector
+           !MODULE PROCEDURE p2m_sv_2d
+           !MODULE PROCEDURE p2m_dv_2d
+           !! 3d scalar
+           !MODULE PROCEDURE p2m_ss_3d
+           !MODULE PROCEDURE p2m_ds_3d
+           !! 3d vector
+           !MODULE PROCEDURE p2m_sv_3d
+           !MODULE PROCEDURE p2m_dv_3d
+        !END INTERFACE
 
-        INTERFACE ppm_interp_p2m_reno
-           ! 2d scalar
-           MODULE PROCEDURE p2m_renorm_ss_3d
-           MODULE PROCEDURE p2m_renorm_ds_3d
-           ! 3d vector
-           MODULE PROCEDURE p2m_renorm_sv_3d
-           MODULE PROCEDURE p2m_renorm_dv_3d
-        END INTERFACE
+        !INTERFACE ppm_interp_p2m_reno
+           !! 2d scalar
+           !MODULE PROCEDURE p2m_renorm_ss_3d
+           !MODULE PROCEDURE p2m_renorm_ds_3d
+           !! 3d vector
+           !MODULE PROCEDURE p2m_renorm_sv_3d
+           !MODULE PROCEDURE p2m_renorm_dv_3d
+        !END INTERFACE
 
-        INTERFACE p2m_interp_bsp2
-            MODULE PROCEDURE p2m_interp_bsp2_ss_2d
-            MODULE PROCEDURE p2m_interp_bsp2_ds_2d
-            MODULE PROCEDURE p2m_interp_bsp2_sv_2d
-            MODULE PROCEDURE p2m_interp_bsp2_dv_2d
-            MODULE PROCEDURE p2m_interp_bsp2_ss_3d
-            MODULE PROCEDURE p2m_interp_bsp2_ds_3d
-            MODULE PROCEDURE p2m_interp_bsp2_sv_3d
-            MODULE PROCEDURE p2m_interp_bsp2_dv_3d
-        END INTERFACE
+        !INTERFACE p2m_interp_bsp2
+            !MODULE PROCEDURE p2m_interp_bsp2_ss_2d
+            !MODULE PROCEDURE p2m_interp_bsp2_ds_2d
+            !MODULE PROCEDURE p2m_interp_bsp2_sv_2d
+            !MODULE PROCEDURE p2m_interp_bsp2_dv_2d
+            !MODULE PROCEDURE p2m_interp_bsp2_ss_3d
+            !MODULE PROCEDURE p2m_interp_bsp2_ds_3d
+            !MODULE PROCEDURE p2m_interp_bsp2_sv_3d
+            !MODULE PROCEDURE p2m_interp_bsp2_dv_3d
+        !END INTERFACE
 
         INTERFACE p2m_interp_mp4
             MODULE PROCEDURE p2m_interp_mp4_ss_2d
@@ -90,77 +89,104 @@
             MODULE PROCEDURE p2m_interp_mp4_dv_3d
         END INTERFACE
         
+        INTERFACE p2m_interp_bc
+            MODULE PROCEDURE p2m_interp_bc_ss_2d
+            MODULE PROCEDURE p2m_interp_bc_ds_2d
+            MODULE PROCEDURE p2m_interp_bc_sv_2d
+            MODULE PROCEDURE p2m_interp_bc_dv_2d
+            MODULE PROCEDURE p2m_interp_bc_ss_3d
+            MODULE PROCEDURE p2m_interp_bc_ds_3d
+            MODULE PROCEDURE p2m_interp_bc_sv_3d
+            MODULE PROCEDURE p2m_interp_bc_dv_3d
+        END INTERFACE
+        
       CONTAINS
 
         
 #define __KIND  __SINGLE_PRECISION
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
+#define DTYPE(a) a/**/_s
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/ppm_interp_p2m_renorm.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC SINGLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/ppm_interp_p2m_renorm.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND
+#undef  DTYPE
+#undef  DEFINE_MK
 
 
 #define __KIND  __DOUBLE_PRECISION
+#define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
+#define DTYPE(a) a/**/_d
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
         
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/ppm_interp_p2m_renorm.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC DOUBLE
-#include "interpolate/ppm_interp_p2m.f"
-#include "interpolate/ppm_interp_p2m_renorm.f"
-#include "interpolate/p2m_interp_bsp2.f"
+!#include "interpolate/ppm_interp_p2m.f"
+!#include "interpolate/ppm_interp_p2m_renorm.f"
+!#include "interpolate/p2m_interp_bsp2.f"
 #include "interpolate/p2m_interp_mp4.f"
+#include "interpolate/p2m_interp_bc.f"
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND        
+#undef  DTYPE
+#undef  DEFINE_MK
 
 
 
@@ -173,6 +199,5 @@
 #undef __VEC              
 #undef __SCA              
         
-#endif
       END MODULE ppm_module_interp_p2m
 

@@ -108,6 +108,8 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "part/particles_typeproc.f"
 #include "part/ppm_part_neighlists_get.f"
+#include "part/part_interp_to_mesh.f"
+#undef  DEFINE_MK
 
 #undef  DTYPE
 #undef  __KIND
@@ -164,6 +166,8 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "part/particles_typeproc.f"
 #include "part/ppm_part_neighlists_get.f"
+#include "part/part_interp_to_mesh.f"
+#undef  DEFINE_MK
 
 #undef  DTYPE
 #undef  __KIND

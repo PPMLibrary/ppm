@@ -472,8 +472,13 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
     PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
     PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd
+    PROCEDURE(subpatch_get_field_2d_rs_), DEFERRED :: subpatch_get_field_2d_rs
+    PROCEDURE(subpatch_get_field_3d_rs_), DEFERRED :: subpatch_get_field_3d_rs
+    PROCEDURE(subpatch_get_field_4d_rs_), DEFERRED :: subpatch_get_field_4d_rs
     GENERIC :: get_field => subpatch_get_field_2d_rd,subpatch_get_field_3d_rd,&
-        subpatch_get_field_4d_rd
+        &                   subpatch_get_field_4d_rd,                         &
+        &                   subpatch_get_field_2d_rs,subpatch_get_field_3d_rs,&
+        &                   subpatch_get_field_4d_rs
     !PROCEDURE  :: get => subpatch_get
 END TYPE
 minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")
@@ -634,6 +639,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_create_),         DEFERRED :: create
     PROCEDURE(equi_mesh_destroy_),        DEFERRED :: destroy
     PROCEDURE(equi_mesh_create_prop_),    DEFERRED :: create_prop
+    PROCEDURE(equi_mesh_prop_zero_),      DEFERRED :: zero
     PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
     PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
@@ -642,6 +648,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
     PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
     PROCEDURE(equi_mesh_map_ghost_get_),  DEFERRED :: map_ghost_get
+    PROCEDURE(equi_mesh_map_ghost_put_),  DEFERRED :: map_ghost_put
     PROCEDURE(equi_mesh_map_ghost_push_), DEFERRED :: map_ghost_push
     PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
     PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
@@ -658,6 +665,18 @@ minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,genera
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) ::  ppm_t_options
 END TYPE
+
+!TODO: this is not yet used. Not sure how to make the API look good...
+TYPE,ABSTRACT,EXTENDS(ppm_t_options)    ::  ppm_t_options_op_
+    CHARACTER(LEN=ppm_char)        :: method
+    LOGICAL                        :: with_ghosts
+    LOGICAL                        :: vector
+    LOGICAL                        :: interp
+    INTEGER,DIMENSION(:),pointer   :: order => NULL()
+    REAL(ppm_kind_double)          :: c
+END TYPE
+
+
 
 !----------------------------------------------------------------------
 !  INTERFACES

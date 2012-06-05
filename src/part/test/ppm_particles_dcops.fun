@@ -3,6 +3,8 @@ test_suite ppm_particles_dcops
 use ppm_module_interfaces
 use ppm_module_particles_typedef
 use ppm_module_topo_typedef
+use ppm_module_field_typedef
+use ppm_module_operator_typedef
 use ppm_module_data
 !use ppm_module_io_vtk
 
@@ -25,8 +27,10 @@ integer                         :: i,j,k,ip,nterms
 integer                         :: wp1_id=0, dwp1_id=0, wp2_id=0, op_id=0
 integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost
-type(ppm_t_particles_d)         :: Pc
-type(ppm_t_sop_d)               :: Pc_a
+type(ppm_t_particles_d)         :: Part1
+type(ppm_t_sop_d)               :: Part1_a
+type(ppm_t_field)               :: Field1
+type(ppm_t_field)               :: Field2
 integer                         :: seedsize
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
@@ -37,11 +41,17 @@ integer, dimension(:),  pointer :: gi => NULL()
 real(mk),dimension(:),  pointer :: wp_1r => NULL()
 real(mk),dimension(:,:),pointer :: wp_2r => NULL()
 real(mk)                        :: tol_error,err
+type(ppm_t_operator)            :: Op
+CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
+CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
+class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
+class(ppm_t_discr_data),POINTER :: prop => NULL()
 
     init
 
         use ppm_module_init
         use ppm_module_mktopo
+        start_subroutine("init")
         
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
         
@@ -79,48 +89,57 @@ real(mk)                        :: tol_error,err
 
         topoid = 0
 
+        !--------------------------
+        !Define Fields
+        !--------------------------
+        call Field1%create(ndim,info,name="F_vec") !vector field
+        call Field2%create(1,info,name="F_sca") !scalar field
+
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+
         !initialize particles on a grid
-        call Pc%initialize(np_global,info,topoid=topoid, &
+        call Part1%initialize(np_global,info,topoid=topoid, &
             distrib=ppm_param_part_init_cartesian)
 
-        call Pc%comp_global_index(info)
+        call Part1%comp_global_index(info)
 
-        call Pc%map(info,global=.true.,topoid=topoid)
-        !Set up a small random displacement field 
-        call Pc%create_prop(wp2_id,ppm_type_real,info,3,name='disp')
-        call Pc%get(wp_2r,wp2_id)
+        call Part1%map(info,global=.true.,topoid=topoid)
 
-        call Pc%get(gi,Pc%gi_id)
-        FORALL (ip=1:Pc%Npart) wp_2r(1:ndim,ip) = randn(1:ndim,gi(ip))
-        wp_2r = 0.5_mk * (wp_2r - 0.5_mk) * Pc%h_avg
-        call Pc%set(gi,Pc%gi_id,read_only=.true.)
+        call Part1%map_ghosts(info)
+
+        call Field1%discretize_on(Part1,info)
+        call Field2%discretize_on(Part1,info)
+
 
         !Perturb the  particles positions
-        call Pc%move(wp_2r,info)
-        call Pc%set(wp_2r,wp2_id)
-        call Pc%apply_bc(info)
-        call Pc%map(info)
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
+        allocate(wp_2r(ndim,Part1%Npart))
+        call Part1%get(Part1%gi,gi,info,read_only=.true.)
+        FORALL (ip=1:Part1%Npart) wp_2r(1:ndim,ip) = randn(1:ndim,gi(ip))
+        wp_2r = 0.5_mk * (wp_2r - 0.5_mk) * Part1%h_avg
+        call Part1%move(wp_2r,info)
+        deallocate(wp_2r)
 
-        call Pc%create_prop(wp1_id,ppm_type_real,info,1,name='testf_sca')
-        call Pc%create_prop(wp2_id,ppm_type_real,info,ndim,name='testf_vec')
-        call Pc%get(wp_1r,wp1_id)
-        call Pc%get(wp_2r,wp2_id)
-        call Pc%get_xp(xp)
-        DO ip=1,Pc%Npart
-            wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
-            wp_2r(1:ndim,ip) = f0_test(xp(1:ndim,ip),ndim)
-        ENDDO
-        call Pc%set_xp(xp,read_only=.true.)
-        call Pc%set(wp_1r,wp1_id)
-        call Pc%set(wp_2r,wp2_id)
+        call Part1%apply_bc(info)
+        call Part1%map(info)
+
+        foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F1=Field1)
+            F1_p(1:ndim) = f0_test(x_p(1:ndim),ndim)
+            F2_p         = f0_test(x_p(1:ndim),ndim)
+        end foreach
+
+        end_subroutine()
     end init
 
 
     finalize
         use ppm_module_finalize
 
-        call Pc%destroy(info)
+        call DCop%destroy(info)
+        call Op%destroy(info)
+        call Part1%destroy(info)
+        call Field1%destroy(info)
+        call Field2%destroy(info)
         call ppm_finalize(info)
 
         deallocate(min_phys,max_phys,len_phys)
@@ -142,16 +161,15 @@ real(mk)                        :: tol_error,err
 
 
     test Laplacian
-
         tol_error = 2e-2
 
-        call Pc%set_cutoff(3._mk * Pc%h_avg,info) 
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info) 
         Assert_Equal(info,0)
 
-        call Pc%map_ghosts(info)
+        call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
-        call Pc%comp_neighlist(info)
+        call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
         nterms=ndim
@@ -162,18 +180,21 @@ real(mk)                        :: tol_error,err
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
         endif
         coeffs = 1.0_mk
-        order =  2
 
-        call Pc%create_op(op_id,nterms,coeffs,degree,order,info,name='Laplacian')
-        Assert_Equal(info,0)
-        call Pc%comp_op(op_id,info)
+        call Op%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
 
-        call Pc%map_ghosts(info)
-
-        call Pc%apply_op(wp1_id,dwp1_id,op_id,info)
+        call Op%discretize_on(Part1,DCop,info,method="DC-PSE")
         Assert_Equal(info,0)
-        Assert_True(inf_error(Pc,wp1_id,dwp1_id,op_id).LT.tol_error)
+        Assert_True(associated(DCop))
+        !call Op%discretize_on(Part1,PSEop,info,method="PSE")
+        !Assert_Equal(info,0)
+        !Assert_True(associated(PSEop))
+
+        call DCop%compute(Field1,Field2,info)
+        Assert_Equal(info,0)
+
+        Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
 
     end test
 
@@ -181,18 +202,17 @@ real(mk)                        :: tol_error,err
 
         tol_error = 1e-2
 
-        call Pc%set_cutoff(3._mk * Pc%h_avg,info) 
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info) 
         Assert_Equal(info,0)
 
-        call Pc%map_ghosts(info)
+        call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
-        call Pc%comp_neighlist(info)
+        call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
         nterms=ndim
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        call Pc%map_ghosts(info)
 
         if (ndim .eq. 2) then
                degree =  (/1,0,   0,1/)
@@ -200,17 +220,19 @@ real(mk)                        :: tol_error,err
                degree =  (/1,0,0, 0,1,0, 0,0,1/)
         endif
         coeffs = 1.0_mk
-        order =  2
-        call Pc%create_op(op_id,nterms,coeffs,degree,order,info,&
-            name='gradient',vector=.true.)
+        
+        call Op%create(ndim,coeffs,degree,info,name="Gradient")
         Assert_Equal(info,0)
 
-        call Pc%comp_op(op_id,info)
+        call Op%discretize_on(Part1,DCop,info,method="DC-PSE",&
+            vector=.true.)
         Assert_Equal(info,0)
-        call Pc%apply_op(wp2_id,dwp1_id,op_id,info)
+        Assert_True(associated(DCop))
+
+        call DCop%compute(Field1,Field2,info)
         Assert_Equal(info,0)
 
-        Assert_True(inf_error(Pc,wp2_id,dwp1_id,op_id).LT.tol_error)
+        Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
 
     end test
 !-------------------------------------------------------------
@@ -297,10 +319,11 @@ end function df0_test
 !-------------------------------------------------------------
 ! Compute the infinity norm of the error
 !-------------------------------------------------------------
-function inf_error(Pc,wp_id,dwp_id,op_id)
+function inf_error(Part1,Field1,Field2,Op)
     use ppm_module_data
-    type(ppm_t_particles_d)          :: Pc
-    integer                          :: wp_id,dwp_id,op_id
+    type(ppm_t_particles_d)          :: Part1
+    type(ppm_t_field)                :: Field1,Field2
+    type(ppm_t_operator_discr)       :: Op
     integer                          :: ip,nterms
     real(mk), dimension(:),  pointer :: wp_1, dwp_1
     real(mk), dimension(:,:),pointer :: xp, wp_2, dwp_2
@@ -311,56 +334,53 @@ function inf_error(Pc,wp_id,dwp_id,op_id)
     integer,dimension(ndim)          :: dg
     character(len=100)               :: fname
 
-    associate (op => Pc%ops%vec(op_id)%t)
-        if (op%flags(ppm_ops_vector)) then
-            call Pc%get(dwp_2,dwp_id)
-            output_vec = .true.
-        else
-            call Pc%get(dwp_1,dwp_id)
-            output_vec = .false.
-        endif
-        if (Pc%props%vec(wp_id)%t%lda.EQ.1) then
-            call Pc%get(wp_1,wp_id)
-            output_vec = .false.
-        else
-            call Pc%get(wp_2,wp_id)
-            input_vec = .true.
-        endif
+    if (op%flags(ppm_ops_vector)) then
+        call Part1%get(Field2,dwp_2,info,read_only=.true.)
+        output_vec = .true.
+    else
+        call Part1%get(Field2,dwp_1,info,read_only=.true.)
+        output_vec = .false.
+    endif
+    if (Field1%lda.EQ.1) THEN
+        call Part1%get(Field1,wp_1,info,read_only=.true.)
+        output_vec = .false.
+    else
+        call Part1%get(Field1,wp_2,info,read_only=.true.)
+        input_vec = .true.
+    endif
 
-        nterms = op%desc%nterms
-        allocate(err(nterms),exact(nterms),degree(nterms*ndim),order(nterms))
+    nterms = op%op_ptr%nterms
+    allocate(err(nterms),exact(nterms),degree(nterms*ndim),order(nterms))
 
-        call Pc%get_xp(xp)
-                
-        err = 0._mk
-        linf = 0._mk
-        do ip=1,Pc%Npart
-            exact = 0._mk
-            do i=1,nterms
-                coeff = op%desc%coeffs(i)
-                dg = op%desc%degree(1+(i-1)*ndim:i*ndim)
-                if (output_vec) then
-                    exact(i) = coeff*df0_test(xp(1:ndim,ip),dg,ndim)
-                else
-                    exact(1) = exact(1) + coeff*df0_test(xp(1:ndim,ip),dg,ndim)
-                endif
-            enddo
+    call Part1%get_xp(xp,info)
+            
+    err = 0._mk
+    linf = 0._mk
+    do ip=1,Part1%Npart
+        exact = 0._mk
+        do i=1,nterms
+            coeff = op%op_ptr%coeffs(i)
+            dg = op%op_ptr%degree(1+(i-1)*ndim:i*ndim)
             if (output_vec) then
-                do i=1,op%desc%nterms
-                    err(i) = MAX(err(i),abs(dwp_2(i,ip) - exact(i)))
-                    !REMOVME
-                    dwp_2(i,ip) = err(i)
-                enddo
+                exact(i) = coeff*df0_test(xp(1:ndim,ip),dg,ndim)
             else
-                err(1) = MAX(err(1),abs(dwp_1(ip) - exact(1)))
+                exact(1) = exact(1) + coeff*df0_test(xp(1:ndim,ip),dg,ndim)
             endif
-            linf = MAX(linf,MAXVAL(abs(exact)))
         enddo
-
-    end associate
+        if (output_vec) then
+            do i=1,nterms
+                err(i) = MAX(err(i),abs(dwp_2(i,ip) - exact(i)))
+                !REMOVME
+                !dwp_2(i,ip) = err(i)
+            enddo
+        else
+            err(1) = MAX(err(1),abs(dwp_1(ip) - exact(1)))
+        endif
+        linf = MAX(linf,MAXVAL(abs(exact)))
+    enddo
 
 !    write(fname,'(A,I0)') 'test_grad',ppm_nproc
-!    CALL ppm_vtk_particle_cloud(TRIM(ADJUSTL(fname)),Pc,info)
+!    CALL ppm_vtk_particle_cloud(TRIM(ADJUSTL(fname)),Part1,info)
 
 #ifdef __MPI
     call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)

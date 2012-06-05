@@ -326,7 +326,7 @@ END SUBROUTINE __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get)
 #define __CHECKTYPE DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
+SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
     CLASS(DTYPE(ppm_t_particles))   :: Pc
     INTEGER                         :: ppt_id
 #if   __DIM == 1
@@ -337,80 +337,76 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts)
     INTEGER                         :: info
     !!! Return status, on success 0.
     LOGICAL,OPTIONAL                :: with_ghosts
+    !!! returns array between 1:Mpart (default is 1:Npart)
+    LOGICAL,OPTIONAL                :: read_only
+    !!! swear on your favourite book that you will not modify the data
+    !!! that you access. Default is false (which implies that the state
+    !!! variables will be modify with the assumption that the data
+    !!! accessed has been changed, e.g. so that a subsequent ghost update
+    !!! will also update this property)
+    LOGICAL   :: lghosts
+
 
     start_subroutine(__FUNCNAME)
 
-    IF (ppt_id .LE. 0) THEN
-        write(cbuf,*) 'ERROR: failed to get DATANAME for property ',& 
-            'ppt_id = ',ppt_id
-        CALL ppm_write(ppm_rank,'DATANAME',cbuf,info)
-        wp => NULL()
-        RETURN
+    wp => NULL()
+    lghosts = .FALSE.
+    IF (PRESENT(with_ghosts)) THEN
+        IF (with_ghosts) lghosts = .TRUE.
     ENDIF
+
+    IF (ppt_id .LE. 0) THEN
+        stdout("ERROR: failed to get DATANAME for property with ppt_id = ",ppt_id)
+        fail("Cannot get property. Returning Null pointer")
+    ENDIF
+
 
     IF (ppt_id .LE. Pc%props%max_id) THEN
         ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)
         IF (prop%flags(ppm_ppt_partial)) THEN
-            IF (PRESENT(with_ghosts)) THEN
-                IF (with_ghosts) THEN
-                    IF (prop%flags(ppm_ppt_ghosts)) THEN
-                        wp => &
+            IF (lghosts) THEN
+                IF (prop%flags(ppm_ppt_ghosts)) THEN
+                    wp => &
 #if   __DIM == 1
-                     prop%WRAP(DATANAME)(1:Pc%Mpart)
+                        prop%WRAP(DATANAME)(1:Pc%Mpart)
 #elif __DIM == 2
-                     prop%WRAP(DATANAME)(:,1:Pc%Mpart)
+                        prop%WRAP(DATANAME)(:,1:Pc%Mpart)
 #endif
-                    ELSE
-                        write(*,*) line_of_stars
-                        write(*,*) 'ERROR: tried to get DATANAME (name = ',&
-                            & TRIM(ADJUSTL(prop%name)),&
-                            & ') with ghosts when ghosts are not up-to-date. ',&
-                            & 'Returning NULL pointer'
-                        write(*,*) 'Run with traceback option to debug'
-                        write(*,*) line_of_stars
-                        wp => NULL()
-#ifdef __crash_on_null_pointers
-                        !segfault the program. Compile with appropriate compiler
-                        !options to check for array bounds and provide traceback
-#if   __DIM == 1
-                        write(*,*) prop%WRAP(DATANAME)(1)
-#elif   __DIM == 2
-                        write(*,*) prop%WRAP(DATANAME)(1,1)
-#endif
-#endif
-                    ENDIF
-                    RETURN
+                ELSE
+                    stdout("ERROR: tried to get DATANAME (name = ",&
+                        & 'TRIM(ADJUSTL(prop%name))',&
+                        & ") with ghosts when ghosts are not up-to-date. ",&
+                        & "Returning NULL pointer")
+                    fail("Ghosts not up-to-date. Call map_ghosts()?")
                 ENDIF
-            ENDIF
-            wp => &
+            ELSE
+                wp => &
 #if   __DIM == 1
-                prop%WRAP(DATANAME)(1:Pc%Npart)
+                    prop%WRAP(DATANAME)(1:Pc%Npart)
 #elif __DIM == 2
-                prop%WRAP(DATANAME)(:,1:Pc%Npart)
+                    prop%WRAP(DATANAME)(:,1:Pc%Npart)
 #endif
-            RETURN
+            ENDIF
+        ELSE
+            stdout("ERROR: tried to get DATANAME (name = ",&
+                & 'TRIM(ADJUSTL(Pc%props%vec(ppt_id)%t%name))',&
+                & ") when mapping is not up-to-date. ",&
+                & "Returning NULL pointer")
+            fail("unmapped particles")
         ENDIF
+
+        IF (PRESENT(read_only)) THEN
+            IF (.NOT.read_only) prop%flags(ppm_ppt_ghosts) = .FALSE.
+        ELSE
+            prop%flags(ppm_ppt_ghosts) = .FALSE.
+        ENDIF
+
         END ASSOCIATE
+    ELSE
+        fail("Invalid id for particle property, returning NULL pointer")
     ENDIF
 
-    write(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-        & TRIM(ADJUSTL(Pc%props%vec(ppt_id)%t%name)),&
-        & ') when mapping is not up-to-date. ',&
-        & 'Returning NULL pointer', &
-        'Run with traceback option to debug'
-    CALL ppm_write(ppm_rank,cbuf,caller,info)
-
-    wp => NULL()
-#ifdef __crash_on_null_pointers
-    !segfault the program. Compile with appropriate compiler
-    !options to check for array bounds and provide traceback
-#if   __DIM == 1
-    write(*,*) Pc%props%vec(ppt_id)%t%WRAP(DATANAME)(1)
-#elif   __DIM == 2
-    write(*,*) Pc%props%vec(ppt_id)%t%WRAP(DATANAME)(1,1)
-#endif
-#endif
-
+    end_subroutine()
 END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 

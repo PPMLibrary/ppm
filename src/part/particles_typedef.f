@@ -47,6 +47,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: destroy_prop => DTYPE(part_prop_destroy)
     PROCEDURE     :: realloc_prop => DTYPE(part_prop_realloc)
     PROCEDURE     :: get_discr    => DTYPE(part_get_discr)
+    PROCEDURE     :: zero         => DTYPE(part_prop_zero)
 
     PROCEDURE     :: create_neighlist => DTYPE(part_neigh_create)
     PROCEDURE     :: set_cutoff => DTYPE(part_set_cutoff)
@@ -76,11 +77,13 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: map_ghost_pop_pos => DTYPE(part_map_ghost_pop_pos)
     PROCEDURE     :: map_ghosts        => DTYPE(part_map_ghosts)
 
-    PROCEDURE     :: move => DTYPE(part_move)
-    PROCEDURE     :: apply_bc => DTYPE(part_apply_bc)
+    PROCEDURE     :: move              => DTYPE(part_move)
+    PROCEDURE     :: apply_bc          => DTYPE(part_apply_bc)
+
+    PROCEDURE     :: interp_to_mesh    => DTYPE(part_p2m)
 
 
-    PROCEDURE     :: print_info => DTYPE(part_print_info)
+    PROCEDURE     :: print_info        => DTYPE(part_print_info)
 
     PROCEDURE     :: comp_global_index => DTYPE(part_comp_global_index)
 
