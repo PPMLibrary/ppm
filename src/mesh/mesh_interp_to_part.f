@@ -57,22 +57,20 @@
       !!! Particle set on which the field should be interpolated
       CLASS(ppm_t_field_)                              :: Field
       !!! Field that we want to interpolate
-      INTEGER                        , INTENT(IN   ) :: kernel
+      INTEGER                        , INTENT(IN   )   :: kernel
       !!! Choice of the kernel used to compute the weights.                    +
       !!! One of:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
       !!! * ppm_param_rmsh_kernel_mp4
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER                        , INTENT(  OUT)   :: info
       !!! Returns 0 upon success
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      REAL(MK) , DIMENSION(:,:) ,       POINTER  :: xp => NULL()
+      REAL(MK) , DIMENSION(:,:)    , POINTER :: xp => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
       INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
       REAL(MK)                               :: x1,x2,x3,epsilon
       INTEGER                                :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
@@ -82,17 +80,13 @@
       INTEGER                                :: ip2,ip3,nbpt_x,nbpt_y,iface
       INTEGER                                :: isub,ifrom,ito,ip,dim,iopt,isubl
       INTEGER                                :: max_partnumber,nlist2
-      INTEGER, DIMENSION(ppm_dim)            :: Nm
-      INTEGER                                :: nsubs
-      INTEGER                                :: iq,nsubpatch,ipatch
+      INTEGER                                :: nsubpatch,ipatch
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
-      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
-      CLASS(ppm_t_subpatch_),POINTER   :: p => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+      CLASS(ppm_t_subpatch_),POINTER         :: p    => NULL()
 
       REAL(MK) , DIMENSION(:      ) , POINTER        :: up_1d => NULL()
       REAL(MK) , DIMENSION(:,:    ) , POINTER        :: up_2d => NULL()
@@ -135,9 +129,6 @@
       !-------------------------------------------------------------------------
       !  Assignment of the useful arrays/scalar
       !-------------------------------------------------------------------------
-      Nm(1:dim) = this%Nm
-      nsubs = topo%nsublist
-
       nsubpatch = this%subpatch%nb
 
       !-------------------------------------------------------------------------
@@ -160,17 +151,6 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Mesh spacing
-      !-------------------------------------------------------------------------
-!#if   __KIND == __SINGLE_PRECISION
-      !min_phys => topo%min_physs
-      !max_phys => topo%max_physs
-!#elif __KIND == __DOUBLE_PRECISION
-      min_phys => topo%min_physd
-      max_phys => topo%max_physd
-!#endif
-
-      !-------------------------------------------------------------------------
       !  Initialize the particle list
       !-------------------------------------------------------------------------
       IF(nsubpatch.GE.1) THEN
@@ -181,15 +161,6 @@
             ilist1(nlist1) = ipart
          END DO
       END IF
-!#if   __KIND == __SINGLE_PRECISION
-      !myeps = ppm_myepss
-      !min_sub => topo%min_subs
-      !max_sub => topo%max_subs
-!#elif __KIND == __DOUBLE_PRECISION
-      myeps = ppm_myepsd
-      min_sub => topo%min_subd
-      max_sub => topo%max_subd
-!#endif
 
       !-------------------------------------------------------------------------
       !  Loop over the subpatches in each subdomain
@@ -201,22 +172,22 @@
           p => this%subpatch%begin()
           ipatch = 1
           DO WHILE (ASSOCIATED(p))
-              !-------------------------------------------------------------------
+              !-----------------------------------------------------------------
               !  Loop over the remaining particles
-              !-------------------------------------------------------------------
+              !-----------------------------------------------------------------
               nlist2 = 0
               npart = 0
               DO i=1,nlist1
                   ipart = ilist1(i)
 
-                  !----------------------------------------------------------------
+                  !--------------------------------------------------------------
                   !  If the particle is inside the current subdomain, assign it
-                  !----------------------------------------------------------------
+                  !--------------------------------------------------------------
                   IF (ppm_dim.EQ.3) THEN
-                      !-------------------------------------------------------------
-                      !  The particle is in the region of influence of the subpatch
-                      !  (its closure reduced by a ghostlayer)
-                      !-------------------------------------------------------------
+                      !---------------------------------------------------------
+                      !  The particle is in the region of influence of 
+                      !  the subpatch (its closure reduced by a ghostlayer)
+                      !---------------------------------------------------------
                       IF(  xp(1,ipart).GE.p%start_red(1) .AND. &
      &                     xp(2,ipart).GE.p%start_red(2) .AND. &
      &                     xp(3,ipart).GE.p%start_red(3) .AND. &
@@ -287,11 +258,8 @@
 
          ENDDO !subpatch
          !----------------------------------------------------------------------
-         !  Check that we sold all the particles
+         !  Check whether we sold all the particles
          !----------------------------------------------------------------------
-         !IF (nlist2.GT.0) THEN
-             !fail("MAJOR PROBLEM",ppm_err_part_unass)
-         !END IF
          IF (ppm_debug.GT.1) THEN
              IF (nlist2.GT.0) THEN
                 stdout("Some particles seem to be outside from all subpatches",&
@@ -313,7 +281,7 @@
          !  Allocate particle list
          !----------------------------------------------------------------------
          iopt   = ppm_param_alloc_fit
-         ldu(1) = topo%nsublist
+         ldu(1) = nsubpatch
          ldu(2) = max_partnumber
          CALL ppm_alloc(list_sub,ldu,iopt,info)
             or_fail_alloc("list_sub")
@@ -419,9 +387,6 @@
          !----------------------------------------------------------------------
          !  Check if we sold all the particles
          !----------------------------------------------------------------------
-         !IF (nlist2.GT.0) THEN
-         !fail("MAJOR PROBLEM",ppm_err_part_unass)
-         !ENDIF
          IF (ppm_debug.GT.1) THEN
              IF (nlist2.GT.0) THEN
                 stdout("Some particles seem to be outside from all subpatches",&
@@ -438,20 +403,6 @@
                max_partnumber = store_info(ipatch)
             END IF
          END DO
-      !ELSE ! now the case of one subpatch on this processor
-         !max_partnumber = np
-         !iopt = ppm_param_alloc_fit
-         !ldu(1) = 1
-         !CALL ppm_alloc(store_info,ldu,iopt,info)
-            !or_fail_alloc("store_info")
-         !store_info(1) = max_partnumber
-         !ldu(1) = 1
-         !ldu(2) = max_partnumber
-         !CALL ppm_alloc(list_sub,ldu,iopt,info)
-            !or_fail_alloc("list_sub")
-         !DO i=1,max_partnumber
-            !list_sub(1,i) = i
-         !END DO
       ELSE ! now the case of ZERO subpatch on this processor
           !nothing to do
           IF (ppm_debug.GT.1) THEN
@@ -460,8 +411,6 @@
           ENDIF
 
       ENDIF
-
-      stdout("Max_partnumber = ",Max_partnumber)
 
       !-------------------------------------------------------------------------
       !  Create the discretization on the particle set if it doesnt exist yet
@@ -474,13 +423,13 @@
       !  Get a pointer to the data array and reset quantity to zero
       !-------------------------------------------------------------------------
       IF (Field%lda.EQ.1) THEN
-          CALL Part%get_field(Field,up_1d,info)
+          CALL Part%get(Field,up_1d,info)
           or_fail("Part%get_field")
           DO ip=1,np
               up_1d(ip) = 0.0_mk
           END DO
       ELSE
-          CALL Part%get_field(Field,up_2d,info)
+          CALL Part%get(Field,up_2d,info)
               or_fail("Part%get_field")
           SELECT CASE(Field%lda)
           CASE (1)
@@ -534,29 +483,32 @@
               ENDIF
           ELSE
               IF (ppm_dim .EQ. 2) THEN
-                  CALL m2p_interp_mp4(this,Field,dummy_3d,Field%lda,xp,up_2d,info)
+                  CALL m2p_interp_mp4(this,Field,dummy_3d,Field%lda,&
+                      xp,up_2d,info)
               ELSE
-                  CALL m2p_interp_mp4(this,Field,dummy_4d,Field%lda,xp,up_2d,info)
+                  CALL m2p_interp_mp4(this,Field,dummy_4d,Field%lda,&
+                      xp,up_2d,info)
               ENDIF
           ENDIF
                 or_fail("m2p_interp_mp4")
       CASE(ppm_param_rmsh_kernel_bsp2)
             !CALL this%m2p_interp_bsp2(Part,Field,info)
                 !or_fail("m2p_interp_bsp2")
+          fail("BSp2 has not been implemented yet - but thats quick to do...")
       CASE DEFAULT
           fail(&
           "Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.",&
           ppm_err_argument)
       END SELECT ! kernel type
 
-      !-------------------------------------------------------------------------
-      !  Dont deallocate if something went wrong, as the arrays may not even be
-      !  associated
-      !-------------------------------------------------------------------------
+      !----------------------------------------------------------
+      !  Dont deallocate if something went wrong, as 
+      !  the arrays may not even be associated
+      !----------------------------------------------------------
       IF (info.NE.0) GOTO 9999
-      !-------------------------------------------------------------------------
+      !----------------------------------------------------------
       !  Deallocation of the arrays....
-      !-------------------------------------------------------------------------
+      !----------------------------------------------------------
       iopt = ppm_param_dealloc
       ldu(1) = 0
       CALL ppm_alloc(ilist1,ldu,iopt,info)
@@ -579,10 +531,12 @@
 
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-            fail("Please call ppm_init first!",ppm_err_ppm_noinit,exit_point=8888)
+            fail("Please call ppm_init first!",&
+            ppm_err_ppm_noinit,exit_point=8888)
         ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
-            fail("Wrong kernel definition",ppm_err_ppm_noinit,exit_point=8888)
+            fail("Wrong kernel definition",&
+                ppm_err_ppm_noinit,exit_point=8888)
         END IF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
         IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &

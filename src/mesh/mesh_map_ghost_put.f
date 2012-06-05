@@ -1,12 +1,12 @@
-      SUBROUTINE equi_mesh_map_ghost_get(this,info)
-      !!! This routine receives/updates the values of the ghost mesh points of
-      !!! each sub from its corresponding neighbor subs (i.e. adds ghost
-      !!! layers to the subs of the current topology).
+      SUBROUTINE equi_mesh_map_ghost_put(this,info)
+      !!! This routine sends the values of ghost mesh points
+      !!! back to their origin in order to add their contribution to the
+      !!! corresponding real mesh point.
       !!!
       !!! [IMPORTANT]
       !!! `ppm_map_field_ghost_init` must not be called anymore. This routine
-      !!! checks whether the ghost mappings have been initialized already and
-      !!! if not, the routine is called internally.
+      !!! checks wheterh the ghost mappings have been initialized already and
+      !!! if not, the routine is called by the library.
       !!!
       !!! [NOTE]
       !!! The first part of the send/recv lists contains the on-processor data.
@@ -40,7 +40,7 @@
       !  Externals
       !-------------------------------------------------------------------------
 
-      start_subroutine("mesh_map_ghost_get")
+      start_subroutine("mesh_map_ghost_put")
 
       pdim = ppm_dim
 
@@ -57,7 +57,7 @@
       !-------------------------------------------------------------------------
       !  Save the map type for the subsequent calls (used to set pop type)
       !-------------------------------------------------------------------------
-      ppm_map_type = ppm_param_map_ghost_get
+      ppm_map_type = ppm_param_map_ghost_put
 
       !-------------------------------------------------------------------------
       !  Reset the buffer size counters
@@ -66,10 +66,10 @@
       ppm_nrecvbuffer = 0
 
       !-------------------------------------------------------------------------
-      !  Number of mesh blocks to be sent/recvd
+      !  Number of mesh blocks to be sent/recvd is reverse from the get
       !-------------------------------------------------------------------------
-      nsendlist = this%ghost_nsend
-      nrecvlist = this%ghost_nrecv
+      nrecvlist = this%ghost_nsend
+      nsendlist = this%ghost_nrecv
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global mesh sendlists
@@ -142,8 +142,8 @@
          !----------------------------------------------------------------------
          !  Store the mesh block range for this processor interaction
          !----------------------------------------------------------------------
-         ppm_psendbuffer(ibuffer)=this%ghost_blk(ibuffer)
-         ppm_precvbuffer(ibuffer)=this%ghost_recvblk(ibuffer)
+         ppm_psendbuffer(ibuffer)=this%ghost_recvblk(ibuffer)
+         ppm_precvbuffer(ibuffer)=this%ghost_blk(ibuffer)
 
          !----------------------------------------------------------------------
          !  Store the definitions of the mesh blocks to be sent
@@ -151,10 +151,10 @@
          lb = ppm_psendbuffer(i)
          ub = ppm_psendbuffer(ibuffer)
          DO j=lb,ub-1
-             ppm_mesh_isendblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j)
-             ppm_mesh_isendblksize(1:pdim,j) = this%ghost_blksize(1:pdim,j)
-             ppm_mesh_isendfromsub(j) = this%ghost_fromsub(j)
-             ppm_mesh_isendpatchid(1:pdim,j) = this%ghost_patchid(1:pdim,j)
+             ppm_mesh_isendblkstart(1:pdim,j) = this%ghost_recvblkstart(1:pdim,j)
+             ppm_mesh_isendblksize(1:pdim,j) = this%ghost_recvblksize(1:pdim,j)
+             ppm_mesh_isendfromsub(j) = this%ghost_recvtosub(j)
+             ppm_mesh_isendpatchid(1:pdim,j) = this%ghost_recvpatchid(1:pdim,j)
          ENDDO
 
          !----------------------------------------------------------------------
@@ -163,10 +163,10 @@
          lb = ppm_precvbuffer(i)
          ub = ppm_precvbuffer(ibuffer)
          DO j=lb,ub-1
-             ppm_mesh_irecvblkstart(1:pdim,j) = this%ghost_recvblkstart(1:pdim,j)
-             ppm_mesh_irecvblksize(1:pdim,j) = this%ghost_recvblksize(1:pdim,j)
-             ppm_mesh_irecvtosub(j) = this%ghost_recvtosub(j)
-             ppm_mesh_irecvpatchid(1:pdim,j) = this%ghost_recvpatchid(1:pdim,j)
+             ppm_mesh_irecvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j)
+             ppm_mesh_irecvblksize(1:pdim,j) = this%ghost_blksize(1:pdim,j)
+             ppm_mesh_irecvtosub(j) = this%ghost_fromsub(j)
+             ppm_mesh_irecvpatchid(1:pdim,j) = this%ghost_patchid(1:pdim,j)
          ENDDO
       ENDDO
 
@@ -181,4 +181,4 @@
 
       end_subroutine()
 
-      END SUBROUTINE equi_mesh_map_ghost_get
+      END SUBROUTINE equi_mesh_map_ghost_put

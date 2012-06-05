@@ -115,7 +115,6 @@
       REAL(MK)                               :: x1,x2,x3
       INTEGER                                :: i,j,k,ii,jj,kk
       INTEGER                                :: ip,ip1,ip2,ip3
-      INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER, DIMENSION(6)                  :: bcdef
       INTEGER                                :: iq,nsubpatch,ipatch
       ! aliases
@@ -124,8 +123,7 @@
       REAL(mk)                               :: wx1,wx2,wx3
       INTEGER                                :: ldn
       REAL(mk), DIMENSION(ppm_dim)           :: x0
-      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
-      CLASS(ppm_t_subpatch_),POINTER   :: p => NULL()
+      CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
@@ -208,8 +206,6 @@
 
       start_subroutine("m2p_interp_mp4")
 
-      topo => ppm_topo(Mesh%topoid)%t
-
       dxi = 1.0_mk/Mesh%h
 
       !  loop over subpatches
@@ -217,6 +213,7 @@
       ipatch = 1
       DO WHILE (ASSOCIATED(p))
           CALL p%get_field(field_up,Field,info)
+            or_fail("get_field failed for this subpatch")
 
 #if __DIME == __2D
             !-------------------------------------------------------------------

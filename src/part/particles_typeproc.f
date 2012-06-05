@@ -3124,7 +3124,3 @@ SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
     end_subroutine()
 END SUBROUTINE
 
-
-#undef DEFINE_MK
-
-

@@ -40,12 +40,6 @@
         USE ppm_module_topo_typedef
         USE ppm_module_interfaces
 
-        USE ppm_module_error
-        USE ppm_module_substart
-        USE ppm_module_substop
-        USE ppm_module_data
-        USE ppm_module_write
-
         !-----------------------------------------------------------------------
         !  Interface
         !-----------------------------------------------------------------------
@@ -62,13 +56,13 @@
         !END INTERFACE
 
         INTERFACE m2p_interp_mp4
-            !MODULE PROCEDURE m2p_interp_mp4_ss_2d
+            MODULE PROCEDURE m2p_interp_mp4_ss_2d
             MODULE PROCEDURE m2p_interp_mp4_ds_2d
-            !MODULE PROCEDURE m2p_interp_mp4_sv_2d
+            MODULE PROCEDURE m2p_interp_mp4_sv_2d
             MODULE PROCEDURE m2p_interp_mp4_dv_2d
-            !MODULE PROCEDURE m2p_interp_mp4_ss_3d
+            MODULE PROCEDURE m2p_interp_mp4_ss_3d
             MODULE PROCEDURE m2p_interp_mp4_ds_3d
-            !MODULE PROCEDURE m2p_interp_mp4_sv_3d
+            MODULE PROCEDURE m2p_interp_mp4_sv_3d
             MODULE PROCEDURE m2p_interp_mp4_dv_3d
         END INTERFACE
 
@@ -77,33 +71,33 @@
       CONTAINS
 
         
-!#define __KIND  __SINGLE_PRECISION
-!#define __DIME  __2D
-!#define __MODE  __SCA
-        !! 2D SCA SINGLE
-!!#include "interpolate/m2p_interp_bsp2.f"
-!#include "interpolate/m2p_interp_mp4.f"
-!#undef  __MODE
-!#define __MODE  __VEC
-        !! 2D VEC SINGLE
-!!#include "interpolate/m2p_interp_bsp2.f"
-!#include "interpolate/m2p_interp_mp4.f"
-!#undef  __MODE
-!#undef  __DIME
+#define __KIND  __SINGLE_PRECISION
+#define __DIME  __2D
+#define __MODE  __SCA
+        ! 2D SCA SINGLE
+!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 2D VEC SINGLE
+!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#undef  __DIME
         
-!#define __DIME  __3D
-!#define __MODE  __SCA
-        !! 3D SCA SINGLE
-!!#include "interpolate/m2p_interp_bsp2.f"
-!#include "interpolate/m2p_interp_mp4.f"
-!#undef  __MODE
-!#define __MODE  __VEC
-        !! 3D VEC SINGLE
-!!#include "interpolate/m2p_interp_bsp2.f"
-!#include "interpolate/m2p_interp_mp4.f"
-!#undef  __MODE
-!#undef  __DIME
-!#undef  __KIND
+#define __DIME  __3D
+#define __MODE  __SCA
+        ! 3D SCA SINGLE
+!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#define __MODE  __VEC
+        ! 3D VEC SINGLE
+!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_mp4.f"
+#undef  __MODE
+#undef  __DIME
+#undef  __KIND
 
 
 #define __KIND  __DOUBLE_PRECISION

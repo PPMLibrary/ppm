@@ -1,0 +1,64 @@
+include macro ppm_get_field_template(ndim_arg,prec)
+% ndim = ndim_arg.to_s.to_i
+SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>(this,wp,Field,info)
+    !!! Points wp to the data array for the discretization of Field
+    !!! on this subpatch.
+    !!! The type/dimension of wp have to match that of the discretized field,
+    !!! otherwise a RUNTIME error is thrown.
+% if prec.to_s == "s"
+%   kind = "ppm_kind_single"
+% else
+%   kind = "ppm_kind_double"
+% end
+    !!! Returns a pointer to the data array for a given field on this subpatch
+    CLASS(ppm_t_subpatch)                :: this
+    CLASS(ppm_t_field_)                  :: Field
+% if ndim == 2
+    REAL(<%= kind %>),DIMENSION(:,:    ),POINTER :: wp
+% elsif ndim == 3
+    REAL(<%= kind %>),DIMENSION(:,:,:  ),POINTER :: wp
+% elsif ndim == 4
+    REAL(<%= kind %>),DIMENSION(:,:,:,:),POINTER :: wp
+% end
+    INTEGER,                 INTENT(OUT) :: info
+    INTEGER                              :: p_idx
+
+$start_subroutine("\"subpatch_get_field_#{ndim}d\"")
+
+$check_true("\"Field%lda+ppm_dim.GT.#{ndim}\"","\"wrong dimensions for pointer arg wp\"")
+
+$check_associated("this%mesh")
+    p_idx = Field%get_pid(this%mesh)
+
+$check_associated("\"this%subpatch_data\"")
+$check_associated("\"this%subpatch_data%vec(p_idx)%t\"")
+
+    wp => this%subpatch_data%vec(p_idx)%t%data_<%= ndim %>d_r<%= prec%>
+
+$check_associated("wp")
+
+$end_subroutine()
+END SUBROUTINE
+end macro
+
+include macro ppm_get_field_interface_template(ndim_arg,prec)
+% ndim = ndim_arg.to_s.to_i
+SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>_(this,wp,Field,info)
+% if prec.to_s == "s"
+%   kind = "ppm_kind_single"
+% else
+%   kind = "ppm_kind_double"
+% end
+    IMPORT ppm_t_subpatch_,ppm_t_field_,<%= kind %>
+    CLASS(ppm_t_subpatch_)               :: this
+    CLASS(ppm_t_field_)                  :: Field
+% if ndim == 2
+    REAL(<%= kind %>),DIMENSION(:,:    ),POINTER :: wp
+% elsif ndim == 3
+    REAL(<%= kind %>),DIMENSION(:,:,:  ),POINTER :: wp
+% elsif ndim == 4
+    REAL(<%= kind %>),DIMENSION(:,:,:,:),POINTER :: wp
+% end
+    INTEGER,                 INTENT(OUT) :: info
+END SUBROUTINE
+end macro

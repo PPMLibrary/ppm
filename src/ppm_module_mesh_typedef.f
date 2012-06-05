@@ -59,6 +59,9 @@ TYPE,EXTENDS(ppm_t_subpatch_) :: ppm_t_subpatch
     PROCEDURE  :: get_pos2d   => subpatch_get_pos2d
     PROCEDURE  :: get_pos3d   => subpatch_get_pos3d
 
+    PROCEDURE  :: subpatch_get_field_2d_rs
+    PROCEDURE  :: subpatch_get_field_3d_rs
+    PROCEDURE  :: subpatch_get_field_4d_rs
     PROCEDURE  :: subpatch_get_field_2d_rd
     PROCEDURE  :: subpatch_get_field_3d_rd
     PROCEDURE  :: subpatch_get_field_4d_rd
@@ -79,13 +82,13 @@ TYPE,EXTENDS(ppm_t_equi_mesh_) :: ppm_t_equi_mesh
     PROCEDURE  :: create_prop           => equi_mesh_create_prop
     PROCEDURE  :: zero                  => equi_mesh_prop_zero
     PROCEDURE  :: def_patch             => equi_mesh_def_patch
-    !PROCEDURE  :: set_rel               => equi_mesh_set_rel
     PROCEDURE  :: def_uniform           => equi_mesh_def_uniform
     PROCEDURE  :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
     PROCEDURE  :: list_of_fields        => equi_mesh_list_of_fields
     PROCEDURE  :: block_intersect       => equi_mesh_block_intersect
     PROCEDURE  :: map_ghost_init        => equi_mesh_map_ghost_init
     PROCEDURE  :: map_ghost_get         => equi_mesh_map_ghost_get
+    PROCEDURE  :: map_ghost_put         => equi_mesh_map_ghost_put
     PROCEDURE  :: map_ghost_push        => equi_mesh_map_ghost_push
     PROCEDURE  :: map_ghost_pop         => equi_mesh_map_ghost_pop
     PROCEDURE  :: map_send              => equi_mesh_map_send
@@ -150,106 +153,14 @@ minclude ppm_create_collection_procedures(subpatch,subpatch_)
 minclude ppm_create_collection_procedures(A_subpatch,A_subpatch_)
 minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
 
-SUBROUTINE subpatch_get_field_4d_rd(this,wp,Field,info)
-    !!! Returns a pointer to the data array for a given field on this subpatch
-    CLASS(ppm_t_subpatch)                :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-    INTEGER                              :: p_idx
+! home-made templating system for the get_field routines
+minclude ppm_get_field_template(2,s)
+minclude ppm_get_field_template(3,s)
+minclude ppm_get_field_template(4,s)
+minclude ppm_get_field_template(2,d)
+minclude ppm_get_field_template(3,d)
+minclude ppm_get_field_template(4,d)
 
-    start_subroutine("subpatch_get_field_4d")
-
-    check_true("Field%lda+ppm_dim.GT.4",&
-        "wrong dimensions for pointer arg wp")
-
-    !Direct access to the data arrays 
-
-    check_associated(this%mesh)
-    
-    p_idx = Field%get_pid(this%mesh)
-
-    check_associated("this%subpatch_data")
-    !stdout("p_idx = ",p_idx)
-    check_associated("this%subpatch_data%vec(p_idx)%t")
-
-    wp => this%subpatch_data%vec(p_idx)%t%data_4d_rd
-
-    check_associated(wp)
-
-    end_subroutine()
-END SUBROUTINE
-
-SUBROUTINE subpatch_get_field_3d_rd(this,wp,Field,info)
-    !!! Returns a pointer to the data array for a given field on this subpatch
-    CLASS(ppm_t_subpatch)                :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-    INTEGER                              :: p_idx
-
-    start_subroutine("subpatch_get_field_3d")
-
-    check_true("Field%lda+ppm_dim.GT.3",&
-        "wrong dimensions for pointer arg wp")
-
-    !Direct access to the data arrays 
-
-    check_associated(this%mesh)
-    
-    p_idx = Field%get_pid(this%mesh)
-
-    check_associated("this%subpatch_data")
-    !stdout("p_idx = ",p_idx)
-    check_associated("this%subpatch_data%vec(p_idx)%t")
-
-    wp => this%subpatch_data%vec(p_idx)%t%data_3d_rd
-
-    check_associated(wp)
-
-    end_subroutine()
-END SUBROUTINE
-
-SUBROUTINE subpatch_get_field_2d_rd(this,wp,Field,info)
-    !!! Returns a pointer to the data array for a given field on this subpatch
-    CLASS(ppm_t_subpatch)                :: this
-    CLASS(ppm_t_field_)                  :: Field
-    REAL(ppm_kind_double),DIMENSION(:,:),POINTER :: wp
-    INTEGER,                 INTENT(OUT) :: info
-
-    INTEGER                              :: p_idx
-
-    start_subroutine("subpget_field_2d")
-
-    check_true("Field%lda+ppm_dim.GT.2",&
-        "wrong dimensions for pointer arg wp")
-
-    !Direct access to the data arrays 
-    p_idx = Field%get_pid(this%mesh)
-
-    check_associated("this%subpatch_data")
-    !stdout("p_idx = ",p_idx)
-    IF (p_idx.GT.0) THEN
-        check_associated("this%subpatch_data%vec(p_idx)%t")
-
-        wp => this%subpatch_data%vec(p_idx)%t%data_2d_rd
-
-        check_associated(wp)
-    ELSE
-        !stdout(this%lo_a)
-        !stdout(this%hi_a)
-        !stdout(this%istart)
-        !stdout(this%iend)
-        !stdout(this%istart_p)
-        !stdout(this%iend_p)
-        !check_true("ANY(this%lo_a(1:ppm_dim).GT.this%hi_a(1:ppm_dim))",&
-            !"Patch is not empty, yet cant find data")
-        wp => NULL()
-        fail("returning a null pointer")
-    ENDIF
-
-    end_subroutine()
-END SUBROUTINE
 
 SUBROUTINE subpatch_data_create(this,discr_data,sp,info)
     !!! Constructor for subdomain_data data structure
@@ -1624,6 +1535,7 @@ END SUBROUTINE equi_mesh_prop_zero
 #include "mesh/mesh_block_intersect.f"
 #include "mesh/mesh_map_ghost_init.f"
 #include "mesh/mesh_map_ghost_get.f"
+#include "mesh/mesh_map_ghost_put.f"
 
 #include "mesh/mesh_map_send.f"
 

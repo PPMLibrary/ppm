@@ -289,6 +289,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_move)_),DEFERRED :: move 
     PROCEDURE(DTYPE(part_apply_bc)_),DEFERRED :: apply_bc 
 
+    PROCEDURE(DTYPE(part_p2m)_), DEFERRED :: interp_to_mesh
 
     PROCEDURE(DTYPE(part_print_info)_),DEFERRED :: print_info 
 

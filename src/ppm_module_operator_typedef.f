@@ -65,6 +65,10 @@ TYPE,EXTENDS(ppm_t_operator_) :: ppm_t_operator
 END TYPE
 minclude ppm_create_collection(operator,operator,generate="extend")
 
+!TODO: this is not yet used. Not sure how to make the API look good...
+TYPE,EXTENDS(ppm_t_options_op_)::  ppm_t_options_op
+END TYPE
+
 
          !----------------------------------------------------------------------
          ! Type-bound procedures
