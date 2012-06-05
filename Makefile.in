@@ -136,7 +136,7 @@ new: all install
 ftest: all
 	@FC=$(FC) FCFLAGS="$(FCFLAGS)" MODULES=$(MODULES_DIR) \
 	LDFLAGS="-L$(builddir)/lib -lppm $(LDFLAGS) $(LIBS)" \
-	CPP=$(CPP) CG="$(CG)" DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNFILES)
+	CPP=$(CPP) CG="$(CG)" DEFINE="$(CPPFLAGS)" FSFLAG=$(MODFLAG) $(FUNIT) $(FUNIT_FLAGS) $(FUNITFLAGS) $(FUNFILES)
 
 test: all
 	make --directory=$(SRC_DIR)/map/test FC=$(FC) CPP="$(CPP)" \
