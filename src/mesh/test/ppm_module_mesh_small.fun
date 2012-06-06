@@ -36,6 +36,7 @@ type(ppm_t_topo),       pointer :: topo => NULL()
 type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
 integer                          :: ipatch,isub,jsub
 class(ppm_t_subpatch_),POINTER   :: p => NULL()
+class(ppm_t_subpatch_),POINTER   :: patch => NULL()
 
 integer                          :: mypatchid
 real(mk),dimension(2*ndim)       :: my_patch
@@ -113,8 +114,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         type(ppm_t_field) :: Field1,Field2
         type(ppm_t_particles_d) :: Part1
         real(ppm_kind_double),dimension(ndim) :: pos
+        real(ppm_kind_double),dimension(ndim) :: cutoff
         integer :: p_idx, nb_errors
-        integer :: np_global = 3000
+        integer :: np_global = 30000
         CLASS(ppm_t_discr_info_),POINTER              :: dinfo => NULL()
         real(ppm_kind_double),dimension(:  ), POINTER :: up_1d => NULL()
         real(ppm_kind_double),dimension(:,:), POINTER :: up_2d => NULL()
@@ -135,7 +137,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
 
         Nm = 35
-        Nm(ndim) = 45
+        Nm(ndim) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
@@ -172,7 +174,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
 
-        call Field1%create(2,info,name='vecField') 
+        call Field1%create(3,info,name='vecField') 
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -289,8 +291,10 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
             for all
-                Field1_n(1) = 2._mk 
-                Field1_n(2) = 4._mk
+                pos(1:ndim) = sbpitr%get_pos(i,j)
+                Field1_n(1) = test_constant(pos(1:ndim),ndim)
+                Field1_n(2) = test_linear(pos(1:ndim),ndim)
+                Field1_n(3) = test_quadratic(pos(1:ndim),ndim)
                 Field2_n    = -1._mk
         end foreach
 
@@ -300,13 +304,39 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         !call Part1%map_ghosts(info)
         !    Assert_Equal(info,0)
 
-        call Part1%get_field(Field1,up_2d,info)
-            Assert_Equal(info,0)
+        tol = 1e-4
 
-            stdout("Min/Max 1 = ",'MINVAL(up_2d(1,1:Part1%Npart))',&
-                'MAXVAL(up_2d(1,1:Part1%Npart))')
-            stdout("Min/Max 2 = ",'MinVAL(up_2d(2,1:Part1%Npart))',&
-                'MAXVAL(up_2d(2,1:Part1%Npart))')
+        cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
+
+        patch => Mesh1%subpatch%begin()
+
+        foreach p in particles(Part1) with positions(x) vec_fields(u=Field1)
+            if (is_well_within(x_p(1:ndim),my_patch(1:2*ndim),cutoff,ndim)) then
+                IF (abs(u_p(1)-test_constant(x_p(1:ndim),ndim)).GT.tol) then
+                    stdout_f('(A,2(F7.3,1X))',"part pos ",'x_p(1:ndim)')
+                    stdout_f('(A,4(F7.3,1X))',"   is inside patch",&
+                        'my_patch(1:2*ndim)')
+                    stdout_f('(A,4(F7.3,1X))',"patch%start     = ",'patch%start')
+                    stdout_f('(A,4(F7.3,1X))',"patch%end       = ",'patch%end')
+                    stdout_f('(A,4(F7.3,1X))',"patch%start_red = ",'patch%start_red')
+                    stdout_f('(A,4(F7.3,1X))',"patch%end_red   = ",'patch%end_red')
+                    stdout_f('(A,4(F7.3,1X))',"patch%start_ext = ",'patch%start_ext')
+                    stdout_f('(A,4(F7.3,1X))',"patch%end_ext   = ",'patch%end_ext')
+                    stdout("patch%ghostsize",'patch%ghostsize')
+                    stdout("Mesh1%ghostsize",'Mesh1%ghostsize')
+                    stdout("Mesh1%h",'Mesh1%h')
+                ENDIF
+
+                Assert_Equal_Within(u_p(1),test_constant(x_p(1:ndim),ndim),tol)
+                !Assert_Equal_Within(u_p(2),test_linear(x_p(1:ndim),ndim),tol)
+                !Assert_Equal_Within(u_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
+            endif
+        end foreach
+
+            !stdout("Min/Max 1 = ",'MINVAL(up_2d(1,1:Part1%Npart))',&
+            !    'MAXVAL(up_2d(1,1:Part1%Npart))')
+            !stdout("Min/Max 2 = ",'MinVAL(up_2d(2,1:Part1%Npart))',&
+            !    'MAXVAL(up_2d(2,1:Part1%Npart))')
 
 
         call Mesh1%destroy(info)
@@ -320,6 +350,49 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         end_subroutine()
     end test
+
+!-------------------------------------------------------------
+! test function
+!-------------------------------------------------------------
+pure function test_constant(pos,ndim) RESULT(res)
+    real(mk)                              :: res
+    integer                 ,  intent(in) :: ndim
+    real(mk), dimension(ndim), intent(in) :: pos
+
+    res =  42.17_mk
+end function
+
+pure function test_linear(pos,ndim) RESULT(res)
+    real(mk)                              :: res
+    integer                 ,  intent(in) :: ndim
+    real(mk), dimension(ndim), intent(in) :: pos
+
+    res =  pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
+end function
+
+pure function test_quadratic(pos,ndim) RESULT(res)
+    real(mk)                              :: res
+    integer                 ,  intent(in) :: ndim
+    real(mk), dimension(ndim), intent(in) :: pos
+
+    res =  pos(1)**2 + 10._mk*pos(2)**2 + 100._mk*pos(ndim)**2
+end function
+
+!!! check whether a particle is within a patch and more than a cutoff
+!!! distance away from its boundaries.
+pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
+    logical                               :: res
+    real(mk), dimension(ndim), intent(in) :: pos
+    real(mk), dimension(2*ndim),intent(in):: patch
+    real(mk), dimension(ndim), intent(in) :: cutoff
+    integer                 ,  intent(in) :: ndim
+
+    res = ALL(pos(1:ndim).GE.(patch(1:ndim)+cutoff(1:ndim)))
+    res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
+
+end function
+    
+
 
 
 end test_suite
