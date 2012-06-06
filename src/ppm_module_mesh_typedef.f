@@ -383,12 +383,16 @@ SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
 
     DO i=1,ppm_dim
         !Extended subpatch (abs. coord)
-        p%start_ext(i) = (istart(i)-1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        p%end_ext(i)   = (iend(i)  -1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        !p%start_ext(i) = (istart(i)-1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        !p%end_ext(i)   = (iend(i)  -1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        p%start_ext(i) = pstart(i) - mesh%ghostsize(i) * mesh%h(i)
+        p%end_ext(i)   = pend(i)   + mesh%ghostsize(i) * mesh%h(i)
 
         !Reduced subpatch (abs. coord)
-        p%start_red(i) = (istart(i)-1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        p%end_red(i)   = (iend(i)  -1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        !p%start_red(i) = (istart(i)-1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        !p%end_red(i)   = (iend(i)  -1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
+        p%start_red(i) = pstart(i) + mesh%ghostsize(i) * mesh%h(i)
+        p%end_red(i)   = pend(i)   - mesh%ghostsize(i) * mesh%h(i)
     ENDDO
 
 
@@ -534,6 +538,8 @@ END SUBROUTINE subpatch_A_destroy
 
 SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     !!! Add a patch to a mesh
+    !!! The patch corners are given in terms of their absolute coordinates,
+    !!! but the patch is then shrunk to the nearest mesh nodes.
     USE ppm_module_topo_typedef
 
     CLASS(ppm_t_equi_mesh)                  :: this
@@ -608,6 +614,12 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
         iend_p(1:ppm_dim)   = 1 + &
             FLOOR((patch(ppm_dim+1:2*ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
     ENDIF
+
+    !Re-define the patch boundaries so that its corners fall on mesh nodes
+    patch(1:ppm_dim)           = (istart_p(1:ppm_dim) - 1) * &
+        &                                 h(1:ppm_dim) + Offset(1:ppm_dim)
+    patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim) - 1)   * &
+        &                                 h(1:ppm_dim) + Offset(1:ppm_dim)
 
     !Bounds for the mesh nodes that are inside the computational
     !domain
