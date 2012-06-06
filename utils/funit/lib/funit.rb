@@ -54,10 +54,20 @@ module Funit
     }
     compile_tests(test_suites,prog_source_dirs)
     if (use_mpi) then
-      procs.split(',').each{ |nproc|
-        print_title("STARTING TEST ON " + nproc + " PROCESSOR(S)")
-        exit 1 unless system "PATH=.:$PATH mpirun -n " + nproc + " TestRunner"
-      }
+      print_title("Starting test series for #{procs} processor(s)")
+      if procs =~ /(?<minproc>[0-9]+)\.\.(?<maxproc>[0-9]+)/
+        minproc = $~[:minproc].to_i
+        maxproc = $~[:maxproc].to_i
+        (minproc..maxproc).each do |nproc|
+          print_title("STARTING TEST ON #{nproc} PROCESSOR(S)")
+          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} TestRunner"
+        end
+      elsif procs =~ /([0-9]+)(?:, *([0-9]+))*/
+        procs.split(',').each do |nproc|
+          print_title("STARTING TEST ON #{nproc} PROCESSOR(S)")
+          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} TestRunner"
+        end
+      end
     else
       exit 1 unless system "PATH=.:$PATH TestRunner"
     end
