@@ -5,7 +5,7 @@
            !--------------------------------------------------------------------
            DEFINE_MK()
            CHARACTER(LEN=*),                INTENT(IN   ) :: filename
-           TYPE(DTYPE(ppm_t_particles)),    INTENT(INOUT) :: Pc
+           CLASS(DTYPE(ppm_t_particles)_),  INTENT(INOUT) :: Pc
            INTEGER,                         INTENT(  OUT) :: info
            INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts

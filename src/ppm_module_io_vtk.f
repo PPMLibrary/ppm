@@ -44,8 +44,6 @@
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_interfaces
          USE ppm_module_topo_typedef
-!         USE ppm_module_mesh_typedef
-         USE ppm_module_particles_typedef
 
          IMPLICIT NONE
 
