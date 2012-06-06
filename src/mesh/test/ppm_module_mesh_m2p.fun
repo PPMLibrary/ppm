@@ -200,6 +200,10 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         call SField3%create(1,info,name='scaField3') 
         call SField3%discretize_on(Mesh1,info)
 
+        !----------------
+        ! Initialize the fields with test functions (polynomials of orders 0,1
+        ! and 2), to test interpolants of orders up to 3.
+        !----------------
         IF (ndim.EQ.2) THEN
         foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j)
             for all
@@ -251,6 +255,9 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
         ENDIF
 
+        !----------------
+        ! Perform the m2p interpolation
+        !----------------
         call Mesh1%interp_to_part(Part1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
         call Mesh1%interp_to_part(Part1,VField2,ppm_param_rmsh_kernel_mp4,info)
@@ -268,12 +275,20 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
         tol = 1e-12
 
+        !----------------
+        ! Define a cutoff distance from the sides of the patch. Particles that
+        ! are in the patch but too close to the sides will not receive anything
+        ! from the patch during interpolation (except if there are some periodic
+        ! boundaries, of course...)
+        !----------------
         cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
 
+        !----------------
         !Loop through all particles and check that the values of the field
         !have been interpolated EXACTLY,
         !as should be the case for constant, linear and quadratic functions
         !with a 3rd order interpolating kernel (like Mp4)
+        !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3)
             if (is_well_within(x_p(1:ndim),my_patch(1:2*ndim),cutoff,ndim)) then
 

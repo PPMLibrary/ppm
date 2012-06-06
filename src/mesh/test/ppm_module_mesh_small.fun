@@ -23,6 +23,8 @@ real(mk),dimension(:  ),pointer :: max_phys => NULL()
 
 integer, dimension(:  ),pointer :: ighostsize => NULL()
 real(mk)                        :: sca_ghostsize
+integer                         :: seedsize
+integer,  dimension(:),allocatable :: seed
 
 integer                         :: i,j,k
 integer                         :: nsublist
@@ -78,6 +80,13 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 #endif
         call ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
+        call random_seed(size=seedsize)
+        allocate(seed(seedsize))
+        do i=1,seedsize
+            seed(i)=10+i*i*(rank+1)
+        enddo
+        call random_seed(put=seed)
+
     end init
 
 !----------------------------------------------
@@ -113,10 +122,13 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
     test small_test
         type(ppm_t_field) :: Field1,Field2
         type(ppm_t_particles_d) :: Part1
+
+        real(ppm_kind_double),dimension(ndim) :: x0
+
         real(ppm_kind_double),dimension(ndim) :: pos
         real(ppm_kind_double),dimension(ndim) :: cutoff
         integer :: p_idx, nb_errors
-        integer :: np_global = 30000
+        integer :: np_global = 3000000
         CLASS(ppm_t_discr_info_),POINTER              :: dinfo => NULL()
         real(ppm_kind_double),dimension(:  ), POINTER :: up_1d => NULL()
         real(ppm_kind_double),dimension(:,:), POINTER :: up_2d => NULL()
@@ -289,56 +301,6 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         call MPI_BARRIER(comm,info)
 
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
-            for all
-                pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = test_constant(pos(1:ndim),ndim)
-                Field1_n(2) = test_linear(pos(1:ndim),ndim)
-                Field1_n(3) = test_quadratic(pos(1:ndim),ndim)
-                Field2_n    = -1._mk
-        end foreach
-
-        call Mesh1%interp_to_part(Part1,Field1,ppm_param_rmsh_kernel_mp4,info)
-            Assert_Equal(info,0)
-
-        !call Part1%map_ghosts(info)
-        !    Assert_Equal(info,0)
-
-        tol = 1e-4
-
-        cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
-
-        patch => Mesh1%subpatch%begin()
-
-        foreach p in particles(Part1) with positions(x) vec_fields(u=Field1)
-            if (is_well_within(x_p(1:ndim),my_patch(1:2*ndim),cutoff,ndim)) then
-                IF (abs(u_p(1)-test_constant(x_p(1:ndim),ndim)).GT.tol) then
-                    stdout_f('(A,2(F7.3,1X))',"part pos ",'x_p(1:ndim)')
-                    stdout_f('(A,4(F7.3,1X))',"   is inside patch",&
-                        'my_patch(1:2*ndim)')
-                    stdout_f('(A,4(F7.3,1X))',"patch%start     = ",'patch%start')
-                    stdout_f('(A,4(F7.3,1X))',"patch%end       = ",'patch%end')
-                    stdout_f('(A,4(F7.3,1X))',"patch%start_red = ",'patch%start_red')
-                    stdout_f('(A,4(F7.3,1X))',"patch%end_red   = ",'patch%end_red')
-                    stdout_f('(A,4(F7.3,1X))',"patch%start_ext = ",'patch%start_ext')
-                    stdout_f('(A,4(F7.3,1X))',"patch%end_ext   = ",'patch%end_ext')
-                    stdout("patch%ghostsize",'patch%ghostsize')
-                    stdout("Mesh1%ghostsize",'Mesh1%ghostsize')
-                    stdout("Mesh1%h",'Mesh1%h')
-                ENDIF
-
-                Assert_Equal_Within(u_p(1),test_constant(x_p(1:ndim),ndim),tol)
-                !Assert_Equal_Within(u_p(2),test_linear(x_p(1:ndim),ndim),tol)
-                !Assert_Equal_Within(u_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
-            endif
-        end foreach
-
-            !stdout("Min/Max 1 = ",'MINVAL(up_2d(1,1:Part1%Npart))',&
-            !    'MAXVAL(up_2d(1,1:Part1%Npart))')
-            !stdout("Min/Max 2 = ",'MinVAL(up_2d(2,1:Part1%Npart))',&
-            !    'MAXVAL(up_2d(2,1:Part1%Npart))')
-
-
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
         call Field1%destroy(info)
@@ -359,7 +321,7 @@ pure function test_constant(pos,ndim) RESULT(res)
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
 
-    res =  42.17_mk
+    res =  1._mk !42.17_mk
 end function
 
 pure function test_linear(pos,ndim) RESULT(res)
