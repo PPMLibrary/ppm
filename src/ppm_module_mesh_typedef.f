@@ -383,16 +383,12 @@ SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
 
     DO i=1,ppm_dim
         !Extended subpatch (abs. coord)
-        !p%start_ext(i) = (istart(i)-1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        !p%end_ext(i)   = (iend(i)  -1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        p%start_ext(i) = pstart(i) - mesh%ghostsize(i) * mesh%h(i)
-        p%end_ext(i)   = pend(i)   + mesh%ghostsize(i) * mesh%h(i)
+        p%start_ext(i) = pstart(i)- mesh%ghostsize(i) * mesh%h(i)
+        p%end_ext(i)   = pend(i)  + mesh%ghostsize(i) * mesh%h(i)
 
         !Reduced subpatch (abs. coord)
-        !p%start_red(i) = (istart(i)-1+mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        !p%end_red(i)   = (iend(i)  -1-mesh%ghostsize(i)) * mesh%h(i) + mesh%offset(i)
-        p%start_red(i) = pstart(i) + mesh%ghostsize(i) * mesh%h(i)
-        p%end_red(i)   = pend(i)   - mesh%ghostsize(i) * mesh%h(i)
+        p%start_red(i) = pstart(i)-(p%ghostsize(2*i-1)-mesh%ghostsize(i))*mesh%h(i)
+        p%end_red(i)   = pend(i)  -(mesh%ghostsize(i)-p%ghostsize(2*i)) * mesh%h(i)
     ENDDO
 
 

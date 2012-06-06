@@ -225,14 +225,14 @@
 #endif
             DO ip = 1,store_info(ipatch)
                iq    = list_sub(ipatch,ip)
-               x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-               x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
+               x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+               x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-               ip1 = INT(x0(1))+1
-               ip2 = INT(x0(2))+1
+               ip1 = FLOOR(x0(1))+1
+               ip2 = FLOOR(x0(2))+1
 
-               xp1 = x0(1)-AINT(x0(1))
-               xp2 = x0(2)-AINT(x0(2))
+               xp1 = x0(1)-FLOOR(x0(1))
+               xp2 = x0(2)-FLOOR(x0(2))
 
                DO jj = -1,2
                   x2 = ABS(xp2 - REAL(jj,mk))
@@ -260,14 +260,14 @@
             ! This will only vectorize over lda
             DO ip = 1,store_info(ipatch)
                iq    = list_sub(ipatch,ip)
-               x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-               x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
+               x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+               x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-               ip1 = INT(x0(1))+1
-               ip2 = INT(x0(2))+1
+               ip1 = FLOOR(x0(1))+1
+               ip2 = FLOOR(x0(2))+1
 
-               xp1 = x0(1)-AINT(x0(1))
-               xp2 = x0(2)-AINT(x0(2))
+               xp1 = x0(1)-FLOOR(x0(1))
+               xp2 = x0(2)-FLOOR(x0(2))
 
                DO jj = -1,2
                   x2 = ABS(xp2 - REAL(jj,mk))
@@ -306,13 +306,13 @@
             DO ip = 1,store_info(ipatch)
                iq    = list_sub(ipatch,ip)
 
-               x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-               x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
-               x0(3) = (xp(3,iq)-p%start(3))*dxi(3)
+               x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+               x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+               x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-               ip10 = INT(x0(1))
-               ip20 = INT(x0(2))
-               ip30 = INT(x0(3))
+               ip10 = FLOOR(x0(1))
+               ip20 = FLOOR(x0(2))
+               ip30 = FLOOR(x0(3))
 
                ip11 = ip10 + 1
                ip21 = ip20 + 1
@@ -566,13 +566,14 @@
                DO ip = 1,store_info(ipatch)
                   iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-                  x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
-                  x0(3) = (xp(3,iq)-p%start(3))*dxi(3)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1))
-                  ip20 = INT(x0(2))
-                  ip30 = INT(x0(3))
+                  ip10 = FLOOR(x0(1))
+                  ip20 = FLOOR(x0(2))
+                  ip30 = FLOOR(x0(3))
+
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -826,13 +827,13 @@
                DO ip = 1,store_info(ipatch)
                   iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-                  x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
-                  x0(3) = (xp(3,iq)-p%start(3))*dxi(3)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1))
-                  ip20 = INT(x0(2))
-                  ip30 = INT(x0(3))
+                  ip10 = FLOOR(x0(1))
+                  ip20 = FLOOR(x0(2))
+                  ip30 = FLOOR(x0(3))
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -1216,13 +1217,13 @@
                DO ip = 1,store_info(ipatch)
                   iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-                  x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
-                  x0(3) = (xp(3,iq)-p%start(3))*dxi(3)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1))
-                  ip20 = INT(x0(2))
-                  ip30 = INT(x0(3))
+                  ip10 = FLOOR(x0(1))
+                  ip20 = FLOOR(x0(2))
+                  ip30 = FLOOR(x0(3))
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -1735,13 +1736,13 @@
                DO ip = 1,store_info(ipatch)
                   iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-p%start(1))*dxi(1)
-                  x0(2) = (xp(2,iq)-p%start(2))*dxi(2)
-                  x0(3) = (xp(3,iq)-p%start(3))*dxi(3)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1))
-                  ip20 = INT(x0(2))
-                  ip30 = INT(x0(3))
+                  ip10 = FLOOR(x0(1))
+                  ip20 = FLOOR(x0(2))
+                  ip30 = FLOOR(x0(3))
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
