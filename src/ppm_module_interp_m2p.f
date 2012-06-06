@@ -44,16 +44,16 @@
         !  Interface
         !-----------------------------------------------------------------------
 
-        !INTERFACE m2p_interp_bsp2
-            !MODULE PROCEDURE m2p_interp_bsp2_ss_2d
-            !MODULE PROCEDURE m2p_interp_bsp2_ds_2d
-            !MODULE PROCEDURE m2p_interp_bsp2_sv_2d
-            !MODULE PROCEDURE m2p_interp_bsp2_dv_2d
-            !MODULE PROCEDURE m2p_interp_bsp2_ss_3d
-            !MODULE PROCEDURE m2p_interp_bsp2_ds_3d
-            !MODULE PROCEDURE m2p_interp_bsp2_sv_3d
-            !MODULE PROCEDURE m2p_interp_bsp2_dv_3d
-        !END INTERFACE
+        INTERFACE m2p_interp_bsp2
+            MODULE PROCEDURE m2p_interp_bsp2_ss_2d
+            MODULE PROCEDURE m2p_interp_bsp2_ds_2d
+            MODULE PROCEDURE m2p_interp_bsp2_sv_2d
+            MODULE PROCEDURE m2p_interp_bsp2_dv_2d
+            MODULE PROCEDURE m2p_interp_bsp2_ss_3d
+            MODULE PROCEDURE m2p_interp_bsp2_ds_3d
+            MODULE PROCEDURE m2p_interp_bsp2_sv_3d
+            MODULE PROCEDURE m2p_interp_bsp2_dv_3d
+        END INTERFACE
 
         INTERFACE m2p_interp_mp4
             MODULE PROCEDURE m2p_interp_mp4_ss_2d
@@ -75,12 +75,12 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA SINGLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC SINGLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
@@ -88,12 +88,12 @@
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC SINGLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
@@ -104,12 +104,12 @@
 #define __DIME  __2D
 #define __MODE  __SCA
         ! 2D SCA DOUBLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 2D VEC DOUBLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
@@ -117,12 +117,12 @@
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #define __MODE  __VEC
         ! 3D VEC DOUBLE
-!#include "interpolate/m2p_interp_bsp2.f"
+#include "interpolate/m2p_interp_bsp2.f"
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME

@@ -112,7 +112,8 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 !----------------------------------------------
 
     test mesh_to_part_interp
-        type(ppm_t_field) :: Field1,Field2,Field3,Field4
+        type(ppm_t_field) :: VField1,VField2,VField3,VField4
+        type(ppm_t_field) :: SField1,SField2,SField3
         type(ppm_t_particles_d) :: Part1
 
         real(ppm_kind_double),dimension(ndim) :: x0
@@ -135,32 +136,18 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         Assert_Equal(info,0)
 
 
+        !----------------
+        ! Create Mesh
+        !----------------
         Nm(1) = 35
         Nm(ndim) = 24
         Nm(2) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
-
-        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
-            Assert_Equal(info,0)
-
-        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
-        Assert_Equal(info,0)
-
-        allocate(wp_2r(ndim,Part1%Npart))
-        call random_number(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
-        call Part1%move(wp_2r,info)
-        Assert_Equal(info,0)
-        deallocate(wp_2r)
-
-        call Part1%apply_bc(info)
-        Assert_Equal(info,0)
-
-        call Part1%map(info,global=.true.,topoid=topoid)
-        Assert_Equal(info,0)
-
+        !----------------
+        ! Add a patch
+        !----------------
         if (ndim.eq.2) then
             my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
         else
@@ -169,52 +156,114 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
 
-        call Field1%create(3,info,name='vecField') 
-        call Field1%discretize_on(Mesh1,info)
+        !----------------
+        ! Create particles, from a grid + small random displacement
+        !----------------
+        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+            Assert_Equal(info,0)
 
-        call Field2%create(1,info,name='scaField1') 
-        call Field2%discretize_on(Mesh1,info)
+        allocate(wp_2r(ndim,Part1%Npart))
+        call random_number(wp_2r)
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        call Part1%move(wp_2r,info)
+        Assert_Equal(info,0)
+        deallocate(wp_2r)
 
-        call Field3%create(1,info,name='scaField2') 
-        call Field3%discretize_on(Mesh1,info)
+        !----------------
+        ! Put particles back into the domain and global map them
+        !----------------
+        call Part1%apply_bc(info)
+        Assert_Equal(info,0)
 
-        call Field4%create(1,info,name='scaField3') 
-        call Field4%discretize_on(Mesh1,info)
+        call Part1%map(info,global=.true.,topoid=topoid)
+        Assert_Equal(info,0)
+
+
+        !----------------
+        ! Define some fields. Vector and scalar fields, with different
+        ! dimensions because the interpolation routines are hard-coded for some
+        ! and we want to test them all!
+        !----------------
+        call VField1%create(2,info,name='vecField1') 
+        call VField1%discretize_on(Mesh1,info)
+        call VField2%create(3,info,name='vecField2') 
+        call VField2%discretize_on(Mesh1,info)
+        call VField3%create(4,info,name='vecField3') 
+        call VField3%discretize_on(Mesh1,info)
+        call VField4%create(5,info,name='vecField4') 
+        call VField4%discretize_on(Mesh1,info)
+
+        call SField1%create(1,info,name='scaField1') 
+        call SField1%discretize_on(Mesh1,info)
+        call SField2%create(1,info,name='scaField2') 
+        call SField2%discretize_on(Mesh1,info)
+        call SField3%create(1,info,name='scaField3') 
+        call SField3%discretize_on(Mesh1,info)
 
         IF (ndim.EQ.2) THEN
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2,Field3,Field4) vec_fields(Field1) indices(i,j)
+        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-                Field1_n(1) = test_constant(pos(1:ndim),ndim)
-                Field1_n(2) = test_linear(pos(1:ndim),ndim)
-                Field1_n(3) = test_quadratic(pos(1:ndim),ndim)
-                Field2_n    = test_constant(pos(1:ndim),ndim)
-                Field3_n    = test_linear(pos(1:ndim),ndim)
-                Field4_n    = test_quadratic(pos(1:ndim),ndim)
+                VField1_n(1) = test_constant(pos(1:ndim),ndim)
+                VField1_n(2) = test_quadratic(pos(1:ndim),ndim)
+
+                VField2_n(1) = test_constant(pos(1:ndim),ndim)
+                VField2_n(2) = test_linear(pos(1:ndim),ndim)
+                VField2_n(3) = test_quadratic(pos(1:ndim),ndim)
+
+                VField3_n(1) = test_constant(pos(1:ndim),ndim)
+                VField3_n(2) = test_linear(pos(1:ndim),ndim)
+                VField3_n(3:4) = test_quadratic(pos(1:ndim),ndim)
+
+                VField4_n(1) = test_constant(pos(1:ndim),ndim)
+                VField4_n(2) = test_linear(pos(1:ndim),ndim)
+                VField4_n(3:5) = test_quadratic(pos(1:ndim),ndim)
+
+                SField1_n    = test_constant(pos(1:ndim),ndim)
+                SField2_n    = test_linear(pos(1:ndim),ndim)
+                SField3_n    = test_quadratic(pos(1:ndim),ndim)
         end foreach
 
         ELSE
 
-        foreach n in equi_mesh(Mesh1) with sca_fields(Field2,Field3,Field4) vec_fields(Field1) indices(i,j,k)
+        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j,k)
             for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                Field1_n(1) = test_constant(pos(1:ndim),ndim)
-                Field1_n(2) = test_linear(pos(1:ndim),ndim)
-                Field1_n(3) = test_quadratic(pos(1:ndim),ndim)
-                Field2_n    = test_constant(pos(1:ndim),ndim)
-                Field3_n    = test_linear(pos(1:ndim),ndim)
-                Field4_n    = test_quadratic(pos(1:ndim),ndim)
+                VField1_n(1) = test_constant(pos(1:ndim),ndim)
+                VField1_n(2) = test_quadratic(pos(1:ndim),ndim)
+
+                VField2_n(1) = test_constant(pos(1:ndim),ndim)
+                VField2_n(2) = test_linear(pos(1:ndim),ndim)
+                VField2_n(3) = test_quadratic(pos(1:ndim),ndim)
+
+                VField3_n(1) = test_constant(pos(1:ndim),ndim)
+                VField3_n(2) = test_linear(pos(1:ndim),ndim)
+                VField3_n(3:4) = test_quadratic(pos(1:ndim),ndim)
+
+                VField4_n(1) = test_constant(pos(1:ndim),ndim)
+                VField4_n(2) = test_linear(pos(1:ndim),ndim)
+                VField4_n(3:5) = test_quadratic(pos(1:ndim),ndim)
+
+                SField1_n    = test_constant(pos(1:ndim),ndim)
+                SField2_n    = test_linear(pos(1:ndim),ndim)
+                SField3_n    = test_quadratic(pos(1:ndim),ndim)
         end foreach
 
         ENDIF
 
-        call Mesh1%interp_to_part(Part1,Field1,ppm_param_rmsh_kernel_mp4,info)
+        call Mesh1%interp_to_part(Part1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
-        call Mesh1%interp_to_part(Part1,Field2,ppm_param_rmsh_kernel_mp4,info)
+        call Mesh1%interp_to_part(Part1,VField2,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
-        call Mesh1%interp_to_part(Part1,Field3,ppm_param_rmsh_kernel_mp4,info)
+        call Mesh1%interp_to_part(Part1,VField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
-        call Mesh1%interp_to_part(Part1,Field4,ppm_param_rmsh_kernel_mp4,info)
+        call Mesh1%interp_to_part(Part1,VField4,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Mesh1%interp_to_part(Part1,SField1,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Mesh1%interp_to_part(Part1,SField2,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Mesh1%interp_to_part(Part1,SField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
         tol = 1e-12
@@ -225,64 +274,30 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         !have been interpolated EXACTLY,
         !as should be the case for constant, linear and quadratic functions
         !with a 3rd order interpolating kernel (like Mp4)
-        foreach p in particles(Part1) with positions(x) vec_fields(u=Field1) sca_fields(sca1=Field2,sca2=Field3,sca3=Field4)
+        foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3)
             if (is_well_within(x_p(1:ndim),my_patch(1:2*ndim),cutoff,ndim)) then
-! Lots of debugging output in case something goes wrong....
-!                IF (abs(u_p(3)-test_quadratic(x_p(1:ndim),ndim)).GT.tol) then
-!                    !find to which subpatch this particle belongs
-!                    patch => Mesh1%subpatch%begin()
-!                    ploop: do while(associated(patch))
-!                     IF( (      x_p(1).GE.patch%start_red(1) .AND. &
-!                     &          x_p(2).GE.patch%start_red(2) .AND. &
-!                     &          x_p(3).GE.patch%start_red(3) .AND. &
-!                     &          x_p(1).LE.patch%end_red(1) .AND. &
-!                     &          x_p(3).LE.patch%end_red(3) .AND. &
-!                     &          x_p(2).LE.patch%end_red(2) ) ) THEN
-!                                          IF(   (x_p(1).LT.patch%end(1) .OR.  &
-!                     &                           (patch%bc(2).GE.0   .AND.    &
-!                     &                           patch%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
-!                     &                          (x_p(2).LT.patch%end(2) .OR.  &
-!                     &                           (patch%bc(4).GE.0   .AND.    &
-!                     &                           patch%bc(4).NE. ppm_param_bcdef_periodic)).AND.&
-!                     &                          (x_p(3).LT.patch%end(3) .OR.  &
-!                     &                           (patch%bc(6).GE.0   .AND.    &
-!                     &                           patch%bc(6).NE. ppm_param_bcdef_periodic))) THEN
-!                                          EXIT ploop
-!                                          ENDIF
-!                    ENDIF
-!                    patch => Mesh1%subpatch%next()
-!                    enddo ploop
-!                    check_associated(patch,"particle does not belong to any subpatch")
-!                    stdout_f('(A,3(F17.13,1X))',"part pos ",'x_p(1:ndim)')
-!                    stdout_f('(A,6(F7.3,1X))',"   is inside patch",&
-!                        'my_patch(1:2*ndim)')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%start     = ",'patch%start')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%end       = ",'patch%end')
-!                    stdout_f('(A,6(I7  ,1X))',"patch%istart    = ",'patch%istart')
-!                    stdout_f('(A,6(I7  ,1X))',"patch%iend      = ",'patch%iend')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%istart    = ",&
-!                        '(patch%istart-1) * Mesh1%h')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%iend      = ",&
-!                        '(patch%iend-1) * Mesh1%h')
-!                    stdout_f('(A,3(I7,1X))',  "patch%nnodes    = ",'patch%nnodes')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%start_red = ",'patch%start_red')
-!                    stdout_f('(A,6(F7.3,1X))',"patch%end_red   = ",'patch%end_red')
-!                    stdout("patch%ghostsize",'patch%ghostsize')
-!                    x0 = x_p(1:ndim)/Mesh1%h-patch%istart+1
-!                    stdout_f('(A,3(I2,1X))',"ipj0= ",'FLOOR(x0)')
-!                    stdout_f('(A,3(I2,1X))',"ipj1= ",'FLOOR(x0)+1')
-!                    stdout_f('(A,3(I2,1X))',"ipj2= ",'FLOOR(x0)+2')
-!                    stdout_f('(A,3(I2,1X))',"ipj3= ",'FLOOR(x0)+3')
-!                    stdout_f('(A,3(F7.3,1X))',"xpj= ",'x0-REAL(FLOOR(x0))')
-!                    stdout_f('(A,3(E13.4,1X))',"Mesh1%h",'Mesh1%h')
-!                ENDIF
 
-                Assert_Equal_Within(sca1_p,test_constant(x_p(1:ndim),ndim),tol)
-                Assert_Equal_Within(sca2_p,test_linear(x_p(1:ndim),ndim),tol)
-                Assert_Equal_Within(sca3_p,test_quadratic(x_p(1:ndim),ndim),tol)
-                Assert_Equal_Within(u_p(1),test_constant(x_p(1:ndim),ndim),tol)
-                Assert_Equal_Within(u_p(2),test_linear(x_p(1:ndim),ndim),tol)
-                Assert_Equal_Within(u_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(S1_p,test_constant(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(S2_p,test_linear(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(S3_p,test_quadratic(x_p(1:ndim),ndim),tol)
+
+                Assert_Equal_Within(V1_p(1),test_constant(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V1_p(2),test_quadratic(x_p(1:ndim),ndim),tol)
+
+                Assert_Equal_Within(V2_p(1),test_constant(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V2_p(2),test_linear(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V2_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
+
+                Assert_Equal_Within(V3_p(1),test_constant(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V3_p(2),test_linear(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V3_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V3_p(4),test_quadratic(x_p(1:ndim),ndim),tol)
+
+                Assert_Equal_Within(V4_p(1),test_constant(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V4_p(2),test_linear(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V4_p(3),test_quadratic(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V4_p(4),test_quadratic(x_p(1:ndim),ndim),tol)
+                Assert_Equal_Within(V4_p(5),test_quadratic(x_p(1:ndim),ndim),tol)
 
             endif
         end foreach
@@ -291,13 +306,14 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
 
         call Mesh1%destroy(info)
-            Assert_Equal(info,0)
-        call Field1%destroy(info)
-            Assert_Equal(info,0)
-        call Field2%destroy(info)
-            Assert_Equal(info,0)
+        call SField1%destroy(info)
+        call SField2%destroy(info)
+        call SField3%destroy(info)
+        call VField1%destroy(info)
+        call VField2%destroy(info)
+        call VField3%destroy(info)
+        call VField4%destroy(info)
         call Part1%destroy(info)
-            Assert_Equal(info,0)
 
         end_subroutine()
     end test

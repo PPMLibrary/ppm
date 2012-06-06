@@ -30,29 +30,29 @@
 #if   __DIME == __2D
 #if   __MODE == __SCA
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_ss_2d(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_ss_2d(Mesh,Field,field_up,xp,up,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_ds_2d(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_ds_2d(Mesh,Field,field_up,xp,up,info)
 #endif
 #elif __MODE == __VEC
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_sv_2d(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_sv_2d(Mesh,Field,field_up,lda,xp,up,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_dv_2d(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_dv_2d(Mesh,Field,field_up,lda,xp,up,info)
 #endif
 #endif
 #elif __DIME == __3D
 #if   __MODE == __SCA
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_ss_3d(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_ss_3d(Mesh,Field,field_up,xp,up,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_ds_3d(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_ds_3d(Mesh,Field,field_up,xp,up,info)
 #endif
 #elif __MODE == __VEC
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_sv_3d(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_sv_3d(Mesh,Field,field_up,lda,xp,up,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE m2p_interp_bsp2_dv_3d(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+      SUBROUTINE m2p_interp_bsp2_dv_3d(Mesh,Field,field_up,lda,xp,up,info)
 #endif
 #endif
 #endif
@@ -70,14 +70,6 @@
 
 
 
-      USE ppm_module_error
-      USE ppm_module_alloc
-      USE ppm_module_substart
-      USE ppm_module_substop
-      USE ppm_module_data
-      USE ppm_module_data_rmsh
-      USE ppm_module_data_mesh
-      USE ppm_module_write
       IMPLICIT NONE
 
 #if   __KIND == __SINGLE_PRECISION
@@ -88,17 +80,17 @@
       !-------------------------------------------------------------------------
       ! Arguments
       !-------------------------------------------------------------------------
-      INTEGER                        , INTENT(IN   ) :: topoid
-      !!! topology identifier of target
-      INTEGER                        , INTENT(IN   ) :: meshid
-      !!! id of the mesh
+      CLASS(ppm_t_equi_mesh_)                          :: Mesh
+      !!! Mesh
+      CLASS(ppm_t_field_)                              :: Field
+      !!! Field
 #if   __MODE == __SCA
       REAL(MK) , DIMENSION(:)         , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:    ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:  ) ,     POINTER        :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:) ,     POINTER        :: field_up
 #endif
       !!! field from which to interpolate
 #elif __MODE == __VEC
@@ -107,55 +99,32 @@
       REAL(MK) , DIMENSION(:,:)       , POINTER        :: up
       !!! particle weights onto which to interpolate
 #if   __DIME == __2D
-      REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:  ) ,   POINTER        :: field_up
 #elif __DIME == __3D
-      REAL(MK) , DIMENSION(:,:,:,:,:) , POINTER        :: field_up
+      REAL(MK) , DIMENSION(:,:,:,:) ,   POINTER        :: field_up
 #endif
       !!! field from which to interpolate
 #endif
-      REAL(MK), DIMENSION(:,:)       , INTENT(IN   ) :: xp
+      REAL(MK), DIMENSION(:,:)       ,   INTENT(IN   ) :: xp
       !!! particle positions
-      INTEGER , DIMENSION(:  )       , INTENT(IN   ) :: ghostsize
-      !!! ghost size
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER                        ,   INTENT(  OUT) :: info
       !!! Returns 0 upon success
-
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
-      REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
-      REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
-      REAL(MK)                               :: x1,x2,x3,epsilon
-      INTEGER                                :: kernel_support
-      INTEGER,  DIMENSION(ppm_dim+2)         :: ldu,ldl
-      INTEGER,  DIMENSION(ppm_dim)           :: Nc
-      INTEGER                                :: i,j,k,ii,jj,kk,iidec,maptype
-      INTEGER                                :: jjdec,nb_sub,npart,ipart
-      INTEGER                                :: kkdec,ip1,nbpt_z,nlist1
-      INTEGER                                :: ip2,ip3,nbpt_x,nbpt_y,iface
-      INTEGER                                :: isub,ifrom,ito,ip,iopt,isubl
-      INTEGER                                :: max_partnumber,idom,nlist2,idoml
-      INTEGER, DIMENSION(ppm_dim)            :: Nm
-      INTEGER                                :: nsubs
+      REAL(MK),  DIMENSION(ppm_dim)          :: dxi
+      REAL(MK)                               :: x1,x2,x3
+      INTEGER                                :: i,j,k,ii,jj,kk
+      INTEGER                                :: ip,ip1,ip2,ip3
       INTEGER, DIMENSION(6)                  :: bcdef
-      INTEGER                                :: iq
-      LOGICAL                                :: internal_weights,lok
+      INTEGER                                :: iq,nsubpatch,ipatch
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
-      REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       REAL(mk)                               :: xp1,xp2,xp3
       REAL(mk)                               :: wx1,wx2,wx3
-      REAL(mk), DIMENSION(ppm_dim)           :: x0
       INTEGER                                :: ldn
-      TYPE(ppm_t_equi_mesh), POINTER         :: mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+      REAL(mk), DIMENSION(ppm_dim)           :: x0
+      CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
@@ -239,56 +208,33 @@
 #endif
 
 
-      !-------------------------------------------------------------------------
-      !  Initialize
-      !-------------------------------------------------------------------------
-      CALL substart('m2p_interp_bsp2',t0,info)
+      start_subroutine("m2p_interp_mp4")
 
-      topo => ppm_topo(topoid)%t
-      SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
-      TYPE IS (ppm_t_equi_mesh)
-          mesh => t
-      END SELECT
+      dxi = 1.0_mk/Mesh%h
 
-      istart => mesh%istart
+      !  loop over subpatches
+      p => Mesh%subpatch%begin()
+      ipatch = 1
+      DO WHILE (ASSOCIATED(p))
+          CALL p%get_field(field_up,Field,info)
+            or_fail("get_field failed for this subpatch")
 
-#if   __KIND == __SINGLE_PRECISION
-      min_phys => topo%min_physs
-      max_phys => topo%max_physs
-#elif __KIND == __DOUBLE_PRECISION
-      min_phys => topo%min_physd
-      max_phys => topo%max_physd
-#endif
-#if   __KIND == __SINGLE_PRECISION
-      myeps = ppm_myepss
-      min_sub => topo%min_subs
-      max_sub => topo%max_subs
-#elif __KIND == __DOUBLE_PRECISION
-      myeps = ppm_myepsd
-      min_sub => topo%min_subd
-      max_sub => topo%max_subd
-#endif
-
-      dxi = 1.0_mk/dx
-
-         DO isub = 1,topo%nsublist
 #if  __DIME == __2D
             !-------------------------------------------------------------------
             !  --- 2D ---
             !-------------------------------------------------------------------
 #if  __MODE == __SCA
-            isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-            DO ip = 1,store_info(isub)
-               iq    = list_sub(isub,ip)
+            DO ip = 1,store_info(ipatch)
+               iq    = list_sub(ipatch,ip)
 
-               x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-               x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+               x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+               x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-               ip10 = INT(x0(1)) + 1
-               ip20 = INT(x0(2)) + 1
+               ip10 = FLOOR(x0(1)) + 1
+               ip20 = FLOOR(x0(2)) + 1
 
                ip11 = ip10 + 1
                ip21 = ip20 + 1
@@ -315,31 +261,30 @@
                a11a21 = a11*a21
 
                up(iq) = up(iq) + &
-     &                     a10a20*field_up(ip10,ip20,isub)
+     &                     a10a20*field_up(ip10,ip20)
                up(iq) = up(iq) + &
-     &                     a10a21*field_up(ip10,ip21,isub)
+     &                     a10a21*field_up(ip10,ip21)
                up(iq) = up(iq) + &
-     &                     a11a20*field_up(ip11,ip20,isub)
+     &                     a11a20*field_up(ip11,ip20)
                up(iq) = up(iq) + &
-     &                     a11a21*field_up(ip11,ip21,isub)
+     &                     a11a21*field_up(ip11,ip21)
             END DO  ! end loop over particles in the current subdomain
 #elif __MODE == __VEC
             !-------------------------------------------------------------------
             !  Unrolled version for 1-vectors
             !-------------------------------------------------------------------
             IF(lda.EQ.1) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -366,30 +311,29 @@
                   a11a21 = a11*a21
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20,isub)
+     &                        a10a20*field_up(1,ip10,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21,isub)
+     &                        a10a21*field_up(1,ip10,ip21)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20,isub)
+     &                        a11a20*field_up(1,ip11,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21,isub)
+     &                        a11a21*field_up(1,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
                !----------------------------------------------------------------
             ELSEIF(lda.EQ.2) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -416,39 +360,38 @@
                   a11a21 = a11*a21
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20,isub)
+     &                        a10a20*field_up(1,ip10,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21,isub)
+     &                        a10a21*field_up(1,ip10,ip21)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20,isub)
+     &                        a11a20*field_up(1,ip11,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21,isub)
+     &                        a11a21*field_up(1,ip11,ip21)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20*field_up(2,ip10,ip20,isub)
+     &                        a10a20*field_up(2,ip10,ip20)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21*field_up(2,ip10,ip21,isub)
+     &                        a10a21*field_up(2,ip10,ip21)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a20*field_up(2,ip11,ip20,isub)
+     &                        a11a20*field_up(2,ip11,ip20)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21*field_up(2,ip11,ip21,isub)
+     &                        a11a21*field_up(2,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
                !----------------------------------------------------------------
             ELSEIF(lda.EQ.3) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -475,48 +418,47 @@
                   a11a21 = a11*a21
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20,isub)
+     &                        a10a20*field_up(1,ip10,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21,isub)
+     &                        a10a21*field_up(1,ip10,ip21)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20,isub)
+     &                        a11a20*field_up(1,ip11,ip20)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21,isub)
+     &                        a11a21*field_up(1,ip11,ip21)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20*field_up(2,ip10,ip20,isub)
+     &                        a10a20*field_up(2,ip10,ip20)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21*field_up(2,ip10,ip21,isub)
+     &                        a10a21*field_up(2,ip10,ip21)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a20*field_up(2,ip11,ip20,isub)
+     &                        a11a20*field_up(2,ip11,ip20)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21*field_up(2,ip11,ip21,isub)
+     &                        a11a21*field_up(2,ip11,ip21)
 
                   up(3,iq) = up(3,iq) + &
-     &                        a10a20*field_up(3,ip10,ip20,isub)
+     &                        a10a20*field_up(3,ip10,ip20)
                   up(3,iq) = up(3,iq) + &
-     &                        a10a21*field_up(3,ip10,ip21,isub)
+     &                        a10a21*field_up(3,ip10,ip21)
                   up(3,iq) = up(3,iq) + &
-     &                        a11a20*field_up(3,ip11,ip20,isub)
+     &                        a11a20*field_up(3,ip11,ip20)
                   up(3,iq) = up(3,iq) + &
-     &                        a11a21*field_up(3,ip11,ip21,isub)
+     &                        a11a21*field_up(3,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
                !----------------------------------------------------------------
             ELSE
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
 
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -543,13 +485,13 @@
                   a11a21 = a11*a21
                   DO ldn=1,lda
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a20*field_up(ldn,ip10,ip20,isub)
+     &                           a10a20*field_up(ldn,ip10,ip20)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a21*field_up(ldn,ip10,ip21,isub)
+     &                           a10a21*field_up(ldn,ip10,ip21)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a20*field_up(ldn,ip11,ip20,isub)
+     &                           a11a20*field_up(ldn,ip11,ip20)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a21*field_up(ldn,ip11,ip21,isub)
+     &                           a11a21*field_up(ldn,ip11,ip21)
                   END DO   ! ldn
                END DO ! end loop over particles in the current subdomain
             END IF
@@ -559,19 +501,18 @@
             !  --- 3D ---
             !-------------------------------------------------------------------
 #if   __MODE == __SCA
-            isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-            DO ip = 1,store_info(isub)
-               iq    = list_sub(isub,ip)
-               x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-               x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-               x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+            DO ip = 1,store_info(ipatch)
+               iq    = list_sub(ipatch,ip)
+               x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+               x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+               x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-               ip10 = INT(x0(1)) + 1
-               ip20 = INT(x0(2)) + 1
-               ip30 = INT(x0(3)) + 1
+               ip10 = FLOOR(x0(1)) + 1
+               ip20 = FLOOR(x0(2)) + 1
+               ip30 = FLOOR(x0(3)) + 1
 
                ip11 = ip10 + 1
                ip21 = ip20 + 1
@@ -611,43 +552,42 @@
                a11a21a31 = a11*a21*a31
 
                up(iq) = up(iq) + &
-     &                     a10a20a30*field_up(ip10,ip20,ip30,isub)
+     &                     a10a20a30*field_up(ip10,ip20,ip30)
                up(iq) = up(iq) + &
-     &                     a10a20a31*field_up(ip10,ip20,ip31,isub)
+     &                     a10a20a31*field_up(ip10,ip20,ip31)
 
                up(iq) = up(iq) + &
-     &                     a10a21a30*field_up(ip10,ip21,ip30,isub)
+     &                     a10a21a30*field_up(ip10,ip21,ip30)
                up(iq) = up(iq) + &
-     &                     a10a21a31*field_up(ip10,ip21,ip31,isub)
+     &                     a10a21a31*field_up(ip10,ip21,ip31)
 
                up(iq) = up(iq) + &
-     &                     a11a20a30*field_up(ip11,ip20,ip30,isub)
+     &                     a11a20a30*field_up(ip11,ip20,ip30)
                up(iq) = up(iq) + &
-     &                     a11a20a31*field_up(ip11,ip20,ip31,isub)
+     &                     a11a20a31*field_up(ip11,ip20,ip31)
 
                up(iq) = up(iq) + &
-     &                     a11a21a30*field_up(ip11,ip21,ip30,isub)
+     &                     a11a21a30*field_up(ip11,ip21,ip30)
                up(iq) = up(iq) + &
-     &                     a11a21a31*field_up(ip11,ip21,ip31,isub)
+     &                     a11a21a31*field_up(ip11,ip21,ip31)
             END DO  ! iq
 #elif __MODE == __VEC
             !-------------------------------------------------------------------
             !  Unrolled version for 1-vectors
             !-------------------------------------------------------------------
             IF(lda.EQ.1) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                  x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
-                  ip30 = INT(x0(3)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
+                  ip30 = FLOOR(x0(3)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -687,42 +627,41 @@
                   a11a21a31 = a11*a21*a31
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a30*field_up(1,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(1,ip10,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a31*field_up(1,ip10,ip20,ip31,isub)
+     &                        a10a20a31*field_up(1,ip10,ip20,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21a30*field_up(1,ip10,ip21,ip30,isub)
+     &                        a10a21a30*field_up(1,ip10,ip21,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21a31*field_up(1,ip10,ip21,ip31,isub)
+     &                        a10a21a31*field_up(1,ip10,ip21,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20a30*field_up(1,ip11,ip20,ip30,isub)
+     &                        a11a20a30*field_up(1,ip11,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20a31*field_up(1,ip11,ip20,ip31,isub)
+     &                        a11a20a31*field_up(1,ip11,ip20,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a30*field_up(1,ip11,ip21,ip30,isub)
+     &                        a11a21a30*field_up(1,ip11,ip21,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a31*field_up(1,ip11,ip21,ip31,isub)
+     &                        a11a21a31*field_up(1,ip11,ip21,ip31)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
                !----------------------------------------------------------------
             ELSEIF(lda.EQ.2) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                  x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
-                  ip30 = INT(x0(3)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
+                  ip30 = FLOOR(x0(3)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -762,62 +701,61 @@
                   a11a21a31 = a11*a21*a31
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a30*field_up(1,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(1,ip10,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a31*field_up(1,ip10,ip20,ip31,isub)
+     &                        a10a20a31*field_up(1,ip10,ip20,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21a30*field_up(1,ip10,ip21,ip30,isub)
+     &                        a10a21a30*field_up(1,ip10,ip21,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a21a31*field_up(1,ip10,ip21,ip31,isub)
-
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a20a30*field_up(1,ip11,ip20,ip30,isub)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a20a31*field_up(1,ip11,ip20,ip31,isub)
+     &                        a10a21a31*field_up(1,ip10,ip21,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a30*field_up(1,ip11,ip21,ip30,isub)
+     &                        a11a20a30*field_up(1,ip11,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a31*field_up(1,ip11,ip21,ip31,isub)
+     &                        a11a20a31*field_up(1,ip11,ip20,ip31)
+
+                  up(1,iq) = up(1,iq) + &
+     &                        a11a21a30*field_up(1,ip11,ip21,ip30)
+                  up(1,iq) = up(1,iq) + &
+     &                        a11a21a31*field_up(1,ip11,ip21,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20a30*field_up(2,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(2,ip10,ip20,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20a31*field_up(2,ip10,ip20,ip31,isub)
+     &                        a10a20a31*field_up(2,ip10,ip20,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21a30*field_up(2,ip10,ip21,ip30,isub)
+     &                        a10a21a30*field_up(2,ip10,ip21,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21a31*field_up(2,ip10,ip21,ip31,isub)
+     &                        a10a21a31*field_up(2,ip10,ip21,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a11a20a30*field_up(2,ip11,ip20,ip30,isub)
+     &                        a11a20a30*field_up(2,ip11,ip20,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a20a31*field_up(2,ip11,ip20,ip31,isub)
+     &                        a11a20a31*field_up(2,ip11,ip20,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21a30*field_up(2,ip11,ip21,ip30,isub)
+     &                        a11a21a30*field_up(2,ip11,ip21,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21a31*field_up(2,ip11,ip21,ip31,isub)
+     &                        a11a21a31*field_up(2,ip11,ip21,ip31)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
                !----------------------------------------------------------------
             ELSEIF(lda.EQ.3) THEN
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                  x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
-                  ip30 = INT(x0(3)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
+                  ip30 = FLOOR(x0(3)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -857,83 +795,82 @@
                   a11a21a31 = a11*a21*a31
 
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a30*field_up(1,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(1,ip10,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a10a20a31*field_up(1,ip10,ip20,ip31,isub)
-
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a21a30*field_up(1,ip10,ip21,ip30,isub)
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a21a31*field_up(1,ip10,ip21,ip31,isub)
+     &                        a10a20a31*field_up(1,ip10,ip20,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20a30*field_up(1,ip11,ip20,ip30,isub)
+     &                        a10a21a30*field_up(1,ip10,ip21,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a20a31*field_up(1,ip11,ip20,ip31,isub)
+     &                        a10a21a31*field_up(1,ip10,ip21,ip31)
 
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a30*field_up(1,ip11,ip21,ip30,isub)
+     &                        a11a20a30*field_up(1,ip11,ip20,ip30)
                   up(1,iq) = up(1,iq) + &
-     &                        a11a21a31*field_up(1,ip11,ip21,ip31,isub)
+     &                        a11a20a31*field_up(1,ip11,ip20,ip31)
+
+                  up(1,iq) = up(1,iq) + &
+     &                        a11a21a30*field_up(1,ip11,ip21,ip30)
+                  up(1,iq) = up(1,iq) + &
+     &                        a11a21a31*field_up(1,ip11,ip21,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20a30*field_up(2,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(2,ip10,ip20,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a20a31*field_up(2,ip10,ip20,ip31,isub)
+     &                        a10a20a31*field_up(2,ip10,ip20,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21a30*field_up(2,ip10,ip21,ip30,isub)
+     &                        a10a21a30*field_up(2,ip10,ip21,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a10a21a31*field_up(2,ip10,ip21,ip31,isub)
-
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a20a30*field_up(2,ip11,ip20,ip30,isub)
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a20a31*field_up(2,ip11,ip20,ip31,isub)
+     &                        a10a21a31*field_up(2,ip10,ip21,ip31)
 
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21a30*field_up(2,ip11,ip21,ip30,isub)
+     &                        a11a20a30*field_up(2,ip11,ip20,ip30)
                   up(2,iq) = up(2,iq) + &
-     &                        a11a21a31*field_up(2,ip11,ip21,ip31,isub)
+     &                        a11a20a31*field_up(2,ip11,ip20,ip31)
+
+                  up(2,iq) = up(2,iq) + &
+     &                        a11a21a30*field_up(2,ip11,ip21,ip30)
+                  up(2,iq) = up(2,iq) + &
+     &                        a11a21a31*field_up(2,ip11,ip21,ip31)
 
                   up(3,iq) = up(3,iq) + &
-     &                        a10a20a30*field_up(3,ip10,ip20,ip30,isub)
+     &                        a10a20a30*field_up(3,ip10,ip20,ip30)
                   up(3,iq) = up(3,iq) + &
-     &                        a10a20a31*field_up(3,ip10,ip20,ip31,isub)
+     &                        a10a20a31*field_up(3,ip10,ip20,ip31)
 
                   up(3,iq) = up(3,iq) + &
-     &                        a10a21a30*field_up(3,ip10,ip21,ip30,isub)
+     &                        a10a21a30*field_up(3,ip10,ip21,ip30)
                   up(3,iq) = up(3,iq) + &
-     &                        a10a21a31*field_up(3,ip10,ip21,ip31,isub)
+     &                        a10a21a31*field_up(3,ip10,ip21,ip31)
 
                   up(3,iq) = up(3,iq) + &
-     &                        a11a20a30*field_up(3,ip11,ip20,ip30,isub)
+     &                        a11a20a30*field_up(3,ip11,ip20,ip30)
                   up(3,iq) = up(3,iq) + &
-     &                        a11a20a31*field_up(3,ip11,ip20,ip31,isub)
+     &                        a11a20a31*field_up(3,ip11,ip20,ip31)
 
                   up(3,iq) = up(3,iq) + &
-     &                        a11a21a30*field_up(3,ip11,ip21,ip30,isub)
+     &                        a11a21a30*field_up(3,ip11,ip21,ip30)
                   up(3,iq) = up(3,iq) + &
-     &                        a11a21a31*field_up(3,ip11,ip21,ip31,isub)
+     &                        a11a21a31*field_up(3,ip11,ip21,ip31)
                END DO ! end loop over particles in the current subdomain
 
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
                !----------------------------------------------------------------
             ELSE
-               isubl = topo%isublist(isub)
 #ifdef __SXF90
 !CDIR NODEP
 #endif
-               DO ip = 1,store_info(isub)
-                  iq    = list_sub(isub,ip)
-                  x0(1) = (xp(1,iq)-min_sub(1,isubl))*dxi(1)
-                  x0(2) = (xp(2,iq)-min_sub(2,isubl))*dxi(2)
-                  x0(3) = (xp(3,iq)-min_sub(3,isubl))*dxi(3)
+               DO ip = 1,store_info(ipatch)
+                  iq    = list_sub(ipatch,ip)
+                  x0(1) = xp(1,iq)*dxi(1)-p%istart(1) + 1
+                  x0(2) = xp(2,iq)*dxi(2)-p%istart(2) + 1
+                  x0(3) = xp(3,iq)*dxi(3)-p%istart(3) + 1
 
-                  ip10 = INT(x0(1)) + 1
-                  ip20 = INT(x0(2)) + 1
-                  ip30 = INT(x0(3)) + 1
+                  ip10 = FLOOR(x0(1)) + 1
+                  ip20 = FLOOR(x0(2)) + 1
+                  ip30 = FLOOR(x0(3)) + 1
 
                   ip11 = ip10 + 1
                   ip21 = ip20 + 1
@@ -974,34 +911,35 @@
 
                   DO ldn=1,lda
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a20a30*field_up(ldn,ip10,ip20,ip30,isub)
+     &                           a10a20a30*field_up(ldn,ip10,ip20,ip30)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a20a31*field_up(ldn,ip10,ip20,ip31,isub)
+     &                           a10a20a31*field_up(ldn,ip10,ip20,ip31)
 
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a21a30*field_up(ldn,ip10,ip21,ip30,isub)
+     &                           a10a21a30*field_up(ldn,ip10,ip21,ip30)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a21a31*field_up(ldn,ip10,ip21,ip31,isub)
+     &                           a10a21a31*field_up(ldn,ip10,ip21,ip31)
 
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a20a30*field_up(ldn,ip11,ip20,ip30,isub)
+     &                           a11a20a30*field_up(ldn,ip11,ip20,ip30)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a20a31*field_up(ldn,ip11,ip20,ip31,isub)
+     &                           a11a20a31*field_up(ldn,ip11,ip20,ip31)
 
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a21a30*field_up(ldn,ip11,ip21,ip30,isub)
+     &                           a11a21a30*field_up(ldn,ip11,ip21,ip30)
                      up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a21a31*field_up(ldn,ip11,ip21,ip31,isub)
+     &                           a11a21a31*field_up(ldn,ip11,ip21,ip31)
                   END DO   ! ldn
                END DO ! end loop over particles in the current subdomain
             END IF ! lda unroll
 #endif
 #endif
-         END DO ! isub
+          p => Mesh%subpatch%next()
+          ipatch = ipatch + 1
+      ENDDO !subpatch
 
 
-      CALL substop('m2p_interp_bsp2',t0,info)
-      RETURN
+      end_subroutine()
 
 #if   __DIME == __2D
 #if   __MODE == __SCA

@@ -492,9 +492,22 @@
           ENDIF
                 or_fail("m2p_interp_mp4")
       CASE(ppm_param_rmsh_kernel_bsp2)
-            !CALL this%m2p_interp_bsp2(Part,Field,info)
-                !or_fail("m2p_interp_bsp2")
-          fail("BSp2 has not been implemented yet - but thats quick to do...")
+          IF (Field%lda.EQ.1) THEN
+              IF (ppm_dim .EQ. 2) THEN
+                  CALL m2p_interp_bsp2(this,Field,dummy_2d,xp,up_1d,info)
+              ELSE
+                  CALL m2p_interp_bsp2(this,Field,dummy_3d,xp,up_1d,info)
+              ENDIF
+          ELSE
+              IF (ppm_dim .EQ. 2) THEN
+                  CALL m2p_interp_bsp2(this,Field,dummy_3d,Field%lda,&
+                      xp,up_2d,info)
+              ELSE
+                  CALL m2p_interp_bsp2(this,Field,dummy_4d,Field%lda,&
+                      xp,up_2d,info)
+              ENDIF
+          ENDIF
+                or_fail("m2p_interp_bsp2")
       CASE DEFAULT
           fail(&
           "Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.",&
