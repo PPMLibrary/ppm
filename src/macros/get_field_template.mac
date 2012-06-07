@@ -30,12 +30,14 @@ $check_true("\"Field%lda+ppm_dim.GT.#{ndim}\"","\"wrong dimensions for pointer a
 $check_associated("this%mesh")
     p_idx = Field%get_pid(this%mesh)
 
+$check_true("\"p_idx.GT.0\"","\"Field is not discretized on Mesh cannot get pointer to data\"")
+
 $check_associated("\"this%subpatch_data\"")
 $check_associated("\"this%subpatch_data%vec(p_idx)%t\"")
 
     wp => this%subpatch_data%vec(p_idx)%t%data_<%= ndim %>d_r<%= prec%>
 
-$check_associated("wp")
+$check_associated("wp","\"Failed to get pointer to data array\"")
 
 $end_subroutine()
 END SUBROUTINE

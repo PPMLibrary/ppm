@@ -134,6 +134,14 @@
       REAL(mk)                               :: x01,x02,x03
       CHARACTER(len=256)                     :: msg
       CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
+      REAL(mk)                               :: x01_l,x02_l,x03_l
+      REAL(mk)                               :: x01_h,x02_h,x03_h
+      REAL(mk)                               :: l10,l11,l12,l13
+      REAL(mk)                               :: h10,h11,h12,h13
+      REAL(mk)                               :: l20,l21,l22,l23
+      REAL(mk)                               :: h20,h21,h22,h23
+      REAL(mk)                               :: l30,l31,l32,l33
+      REAL(mk)                               :: h30,h31,h32,h33
       !------------------------------------------------------------------------!
       !  Variables for unrolled versions
       !------------------------------------------------------------------------!
@@ -233,13 +241,13 @@
 
                  iq    = list_sub(ipatch,ip)
 
-                 x01 = (xp(1,iq)-p%start(1))*dxxi
-                 x02 = (xp(2,iq)-p%start(2))*dxyi
-                 x03 = (xp(3,iq)-p%start(3))*dxzi
+                 x01 = xp(1,iq)*dxxi-p%istart(1) + 1
+                 x02 = xp(2,iq)*dxyi-p%istart(2) + 1
+                 x03 = xp(3,iq)*dxzi-p%istart(3) + 1
 
-                 ip10 = INT(x01)
-                 ip20 = INT(x02)
-                 ip30 = INT(x03)
+                 ip10 = FLOOR(x01)
+                 ip20 = FLOOR(x02)
+                 ip30 = FLOOR(x03)
 
                  ip11 = ip10 + 1
                  ip21 = ip20 + 1
@@ -877,13 +885,13 @@
                DO ip = 1,store_info(ipatch)
                    iq    = list_sub(ipatch,ip)
 
-                 x01 = (xp(1,iq)-p%start(1))*dxxi
-                 x02 = (xp(2,iq)-p%start(2))*dxyi
-                 x03 = (xp(3,iq)-p%start(3))*dxzi
+                   x01 = xp(1,iq)*dxxi-p%istart(1) + 1
+                   x02 = xp(2,iq)*dxyi-p%istart(2) + 1
+                   x03 = xp(3,iq)*dxzi-p%istart(3) + 1
 
-                 ip10 = INT(x01)
-                 ip20 = INT(x02)
-                 ip30 = INT(x03)
+                   ip10 = FLOOR(x01)
+                   ip20 = FLOOR(x02)
+                   ip30 = FLOOR(x03)
 
                  ip11 = ip10 + 1
                  ip21 = ip20 + 1
@@ -1393,13 +1401,13 @@
                DO ip = 1,store_info(ipatch)
                    iq    = list_sub(ipatch,ip)
 
-                 x01 = (xp(1,iq)-p%start(1))*dxxi
-                 x02 = (xp(2,iq)-p%start(2))*dxyi
-                 x03 = (xp(3,iq)-p%start(3))*dxzi
+                 x01 = xp(1,iq)*dxxi-p%istart(1) + 1
+                 x02 = xp(2,iq)*dxyi-p%istart(2) + 1
+                 x03 = xp(3,iq)*dxzi-p%istart(3) + 1
 
-                 ip10 = INT(x01)
-                 ip20 = INT(x02)
-                 ip30 = INT(x03)
+                 ip10 = FLOOR(x01)
+                 ip20 = FLOOR(x02)
+                 ip30 = FLOOR(x03)
 
                  ip11 = ip10 + 1
                  ip21 = ip20 + 1
@@ -1651,13 +1659,15 @@
                DO ip = 1,store_info(ipatch)
                    iq    = list_sub(ipatch,ip)
 
-                 x01 = (xp(1,iq)-p%start(1))*dxxi
-                 x02 = (xp(2,iq)-p%start(2))*dxyi
-                 x03 = (xp(3,iq)-p%start(3))*dxzi
 
-                 ip10 = INT(x01)
-                 ip20 = INT(x02)
-                 ip30 = INT(x03)
+                 x01 = xp(1,iq)*dxxi-p%istart(1) + 1
+                 x02 = xp(2,iq)*dxyi-p%istart(2) + 1
+                 x03 = xp(3,iq)*dxzi-p%istart(3) + 1
+
+                 ip10 = FLOOR(x01)
+                 ip20 = FLOOR(x02)
+                 ip30 = FLOOR(x03)
+
 
                  ip11 = ip10 + 1
                  ip21 = ip20 + 1
@@ -1909,44 +1919,135 @@
          DO ip = 1,store_info(ipatch)
               iq    = list_sub(ipatch,ip)
 
-              x01 = (xp(1,iq)-p%start(1))*dxxi
-              x02 = (xp(2,iq)-p%start(2))*dxyi
-              x03 = (xp(3,iq)-p%start(3))*dxzi
+              x01 = xp(1,iq)*dxxi-p%istart(1) + 1
 
-              ip10 = INT(x01)
-              ip20 = INT(x02)
-              ip30 = INT(x03)
-
+              ip10 = FLOOR(x01)
               ip11 = ip10 + 1
-              ip21 = ip20 + 1
-              ip31 = ip30 + 1
-
               ip12 = ip11 + 1
-              ip22 = ip21 + 1
-              ip32 = ip31 + 1
-
               ip13 = ip11 + 2
+
+              x01_l = x01 - p%lo_a(1)
+              x01_h = p%hi_a(1) - x01
+
+              ! some kind of Heaviside function
+              !    for particles near the left boundary
+              l10 = 1+FLOOR(x01_l      )-INT(x01_l)
+              l11 = 1+FLOOR(x01_l+1._mk)-INT(x01_l+1._mk)
+              l12 = 1+FLOOR(x01_l+2._mk)-INT(x01_l+2._mk)
+
+              !    for particles near the right boundary
+              h11 = INT(x01_h- 1._mk)-FLOOR(x01_h - 1._mk)
+              h12 = INT(x01_h- 2._mk)-FLOOR(x01_h - 2._mk)
+              h13 = INT(x01_h- 3._mk)-FLOOR(x01_h - 3._mk)
+
+              x10 = (x01-REAL(ip10,mk)) * l10       + 1._mk
+              x11 = (x01-REAL(ip11,mk)) * l11 * h11 + 1._mk
+              x12 = (x01-REAL(ip12,mk)) * l12 * h12 + 1._mk
+              x13 = (x01-REAL(ip13,mk))       * h13 + 1._mk
+
+              ip10 = (ip10-p%lo_a(1) + ABS(ip10-p%lo_a(1)))/2 + p%lo_a(1)
+              ip11 = (ip11-p%lo_a(1) + ABS(ip11-p%lo_a(1)))/2 + p%lo_a(1)
+              ip12 = (ip12-p%lo_a(1) + ABS(ip12-p%lo_a(1)))/2 + p%lo_a(1)
+
+              ip11 = p%hi_a(1) - (p%hi_a(1)-ip11 + ABS(p%hi_a(1)-ip11))/2
+              ip12 = p%hi_a(1) - (p%hi_a(1)-ip12 + ABS(p%hi_a(1)-ip12))/2
+              ip13 = p%hi_a(1) - (p%hi_a(1)-ip13 + ABS(p%hi_a(1)-ip13))/2
+
+              !stdout("p%lo_a",'p%lo_a')
+              !stdout("p%hi_a",'p%hi_a')
+              !stdout("ip10",ip10,'floor(x01)')
+              !stdout("ip11",ip11,'floor(x01)+1')
+              !stdout("ip12",ip12,'floor(x01)+2')
+              !stdout("ip13",ip13,'floor(x01)+3')
+              !stdout("x10",x10)
+              !stdout("x11",x11)
+              !stdout("x12",x12)
+              !stdout("x13",x13)
+              !stdout("l1j",l10,l11,l12)
+              !stdout("h1j",h11,h12,h13)
+
+              !check_true("ip10.GE.p%lo_a(1)")
+              !check_true("ip10.LE.p%hi_a(1)")
+              !check_true("ip11.GE.p%lo_a(1)")
+              !check_true("ip11.LE.p%hi_a(1)")
+              !check_true("ip12.GE.p%lo_a(1)")
+              !check_true("ip12.LE.p%hi_a(1)")
+              !check_true("ip13.GE.p%lo_a(1)")
+              !check_true("ip13.LE.p%hi_a(1)")
+
+
+              x02 = xp(2,iq)*dxyi-p%istart(2) + 1
+
+              ip20 = FLOOR(x02)
+              ip21 = ip20 + 1
+              ip22 = ip21 + 1
               ip23 = ip21 + 2
+
+              x02_l = x02 - p%lo_a(2)
+              x02_h = p%hi_a(2) - x02
+
+              ! some kind of Heaviside function
+              !    for particles near the left boundary
+              l20 = 1+FLOOR(x02_l      )-INT(x02_l)
+              l21 = 1+FLOOR(x02_l+1._mk)-INT(x02_l+1._mk)
+              l22 = 1+FLOOR(x02_l+2._mk)-INT(x02_l+2._mk)
+
+              !    for particles near the right boundary
+              h21 = INT(x02_h - 1._mk)-FLOOR(x02_h - 1._mk)
+              h22 = INT(x02_h - 2._mk)-FLOOR(x02_h - 2._mk)
+              h23 = INT(x02_h - 3._mk)-FLOOR(x02_h - 3._mk)
+
+              x20 = (x02-REAL(ip20,mk)) * l20       + 1._mk
+              x21 = (x02-REAL(ip21,mk)) * l21 * h21 + 1._mk
+              x22 = (x02-REAL(ip22,mk)) * l22 * h22 + 1._mk
+              x23 = (x02-REAL(ip23,mk))       * h23 + 1._mk
+
+              ip20 = (ip20-p%lo_a(2) + ABS(ip20-p%lo_a(2)))/2 + p%lo_a(2)
+              ip21 = (ip21-p%lo_a(2) + ABS(ip21-p%lo_a(2)))/2 + p%lo_a(2)
+              ip22 = (ip22-p%lo_a(2) + ABS(ip22-p%lo_a(2)))/2 + p%lo_a(2)
+
+              ip21 = p%hi_a(2) - (p%hi_a(2)-ip21 + ABS(p%hi_a(2)-ip21))/2
+              ip22 = p%hi_a(2) - (p%hi_a(2)-ip22 + ABS(p%hi_a(2)-ip22))/2
+              ip23 = p%hi_a(2) - (p%hi_a(2)-ip23 + ABS(p%hi_a(2)-ip23))/2
+
+
+
+              x03 = xp(3,iq)*dxzi-p%istart(3) + 1
+
+              ip30 = FLOOR(x03)
+              ip31 = ip30 + 1
+              ip32 = ip31 + 1
               ip33 = ip31 + 2
 
-              xp1 = x01-REAL(ip10,mk)
-              xp2 = x02-REAL(ip20,mk)
-              xp3 = x03-REAL(ip30,mk)
+              x03_l = x03 - p%lo_a(3)
+              x03_h = p%hi_a(3) - x03
 
-              x10 = xp1 + 1.0_mk
-              x11 = x10 - 1.0_mk
-              x12 = x10 - 2.0_mk
-              x13 = x10 - 3.0_mk
+              ! some kind of Heaviside function
+              !    for particles near the left boundary
+              l30 = 1+FLOOR(x03_l      )-INT(x03_l)
+              l31 = 1+FLOOR(x03_l+1._mk)-INT(x03_l+1._mk)
+              l32 = 1+FLOOR(x03_l+2._mk)-INT(x03_l+2._mk)
 
-              x20 = xp2 + 1.0_mk
-              x21 = x20 - 1.0_mk
-              x22 = x20 - 2.0_mk
-              x23 = x20 - 3.0_mk
+              !    for particles near the right boundary
+              h31 = INT(x03_h - 1._mk)-FLOOR(x03_h - 1._mk)
+              h32 = INT(x03_h - 2._mk)-FLOOR(x03_h - 2._mk)
+              h33 = INT(x03_h - 3._mk)-FLOOR(x03_h - 3._mk)
 
-              x30 = xp3 + 1.0_mk
-              x31 = x30 - 1.0_mk
-              x32 = x30 - 2.0_mk
-              x33 = x30 - 3.0_mk
+              x30 = (x01-REAL(ip30,mk)) * l30       + 1._mk
+              x31 = (x01-REAL(ip31,mk)) * l31 * h31 + 1._mk
+              x32 = (x01-REAL(ip32,mk)) * l32 * h32 + 1._mk
+              x33 = (x01-REAL(ip33,mk))       * h33 + 1._mk
+
+              ip30 = (ip30-p%lo_a(3) + ABS(ip30-p%lo_a(3)))/2 + p%lo_a(3)
+              ip31 = (ip31-p%lo_a(3) + ABS(ip31-p%lo_a(3)))/2 + p%lo_a(3)
+              ip32 = (ip32-p%lo_a(3) + ABS(ip32-p%lo_a(3)))/2 + p%lo_a(3)
+
+              ip31 = p%hi_a(3) - (p%hi_a(3)-ip31 + ABS(p%hi_a(3)-ip31))/2
+              ip32 = p%hi_a(3) - (p%hi_a(3)-ip32 + ABS(p%hi_a(3)-ip32))/2
+              ip33 = p%hi_a(3) - (p%hi_a(3)-ip33 + ABS(p%hi_a(3)-ip33))/2
+
+
+
 
               a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
               a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
@@ -2164,16 +2265,18 @@
          DO ip = 1,store_info(ipatch)
               iq    = list_sub(ipatch,ip)
 
-              x01 = (xp(1,iq)-p%start(1))*dxxi
-              x02 = (xp(2,iq)-p%start(2))*dxyi
+              x01 = xp(1,iq)*dxxi-p%istart(1) + 1
+              x02 = xp(2,iq)*dxyi-p%istart(2) + 1
 
-              ip1 = INT(x01)+1
-              ip2 = INT(x02)+1
-
-              xp1 = x01-AINT(x01)
-              xp2 = x02-AINT(x02)
+              ip1 = FLOOR(x01)+1
+              ip2 = FLOOR(x02)+1
+!
+              xp1 = x01-FLOOR(x01)
+              xp2 = x02-FLOOR(x02)
 
               DO jj = -1,2
+                  IF (jj+ip2.LT.p%lo_a(2)) CYCLE
+                  IF (jj+ip2.GT.p%hi_a(2)) CYCLE
 
                  x2 = ABS(xp2 - REAL(jj,mk))
 
@@ -2185,6 +2288,8 @@
                  END IF
 
                  DO ii    = - 1,2
+                  IF (ii+ip1.LT.p%lo_a(1)) CYCLE
+                  IF (ii+ip1.GT.p%hi_a(1)) CYCLE
 
                     x1 = ABS(xp1 - REAL(ii,mk))
 

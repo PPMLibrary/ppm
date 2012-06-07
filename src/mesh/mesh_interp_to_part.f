@@ -127,7 +127,7 @@
       topo => ppm_topo(this%topoid)%t
 
       !-------------------------------------------------------------------------
-      !  Assignment of the useful arrays/scalar
+      !  Number of subpatches for this processor
       !-------------------------------------------------------------------------
       nsubpatch = this%subpatch%nb
 

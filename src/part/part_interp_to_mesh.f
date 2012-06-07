@@ -121,6 +121,11 @@
       !-------------------------------------------------------------------------!
       IF(this%Npart.EQ.0) GOTO 9998
 
+      !-------------------------------------------------------------------------
+      !  Number of subpatches for this processor
+      !-------------------------------------------------------------------------
+      nsubpatch = Mesh%subpatch%nb
+
       !-------------------------------------------------------------------------!
       !  Alloc memory for particle lists
       !  The awesome ppm_alloc will (re)allocate them, so we dont need an init
@@ -249,8 +254,8 @@
      !-------------------------------------------------------------------------!
      IF (ppm_debug.GT.1) THEN
          IF (nlist2.GT.0) THEN
-            stdout("Some particles seem to be outside from all subpatches",&
-                    " They will not take part in the m2p interpolation")
+            stdout("Some particles seem to be well outside of all subpatches",&
+                    " They will not take part in the p2m interpolation")
          ENDIF
      ENDIF
 
@@ -394,18 +399,26 @@
 9998 CONTINUE
 
       !-------------------------------------------------------------------------
-      !  Create the discretization on the particle set if it doesnt exist yet
+      !  Create the discretization on the Mesh if it doesnt exist yet
       !-------------------------------------------------------------------------
-      IF (.NOT.Field%is_discretized_on(this)) THEN
-          CALL Field%discretize_on(this,info)
-          or_fail("Could not discretize Field on Particle set")
+      IF (.NOT.Field%is_discretized_on(Mesh)) THEN
+          CALL Field%discretize_on(Mesh,info)
+          or_fail("Could not discretize Field on Mesh")
       ENDIF
 
 
      CALL Mesh%zero(Field,info)
-        or_fail("this%zero(): Failed to zero the field on this particle set")
+        or_fail("this%zero(): Failed to zero the field on this Mesh")
 
       IF(this%Npart.EQ.0) GOTO 9997
+
+      !Get a pointer to the data on the particles
+      IF (Field%lda.EQ.1) THEN
+          CALL this%get_field(Field,up_1d,info,read_only=.TRUE.)
+      ELSE
+          CALL this%get_field(Field,up_2d,info,read_only=.TRUE.)
+      ENDIF
+        or_fail("Could not get pointer to discretized data on the particles")
 
       SELECT CASE(kernel)
 
