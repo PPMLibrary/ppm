@@ -164,7 +164,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
         allocate(wp_2r(ndim,Part1%Npart))
         call random_number(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
+        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 1.15_mk
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         deallocate(wp_2r)

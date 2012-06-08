@@ -182,11 +182,11 @@
                 IF(  xp(1,ipart).GE.p%start_ext(1) .AND. &
     &                     xp(2,ipart).GE.p%start_ext(2) .AND. &
     &                     xp(3,ipart).GE.p%start_ext(3) .AND. &
-    &                     xp(1,ipart).LE.p%end_ext(1)   .AND. &
-    &                     xp(2,ipart).LE.p%end_ext(2)   .AND. &
-    &                     xp(3,ipart).LE.p%end_ext(3)           ) THEN
+    &                     xp(1,ipart).LT.p%end_ext(1)   .AND. &
+    &                     xp(2,ipart).LT.p%end_ext(2)   .AND. &
+    &                     xp(3,ipart).LT.p%end_ext(3)           ) THEN
 
-                IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
+                         IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
     &                           (p%bc(2).GE.0   .AND.    &
     &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
     &                          (xp(2,ipart).LT.p%end(2) .OR.  &
@@ -209,9 +209,9 @@
             ELSEIF (ppm_dim.EQ.2) THEN
                 IF( ( xp(1,ipart).GE.p%start_ext(1) .AND. &
     &                      xp(2,ipart).GE.p%start_ext(2) .AND. &
-    &                      xp(1,ipart).LE.p%end_ext(1) .AND. &
-    &                      xp(2,ipart).LE.p%end_ext(2) ) ) THEN
-                    IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
+    &                      xp(1,ipart).LT.p%end_ext(1) .AND. &
+    &                      xp(2,ipart).LT.p%end_ext(2) ) ) THEN
+                         IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
     &                           (p%bc(2).GE.0   .AND.    &
     &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
     &                          (xp(2,ipart).LT.p%end(2) .OR.  &
@@ -309,9 +309,9 @@
                  IF( ( xp(1,ipart).GE.p%start_ext(1) .AND. &
  &                     xp(2,ipart).GE.p%start_ext(2) .AND. &
  &                     xp(3,ipart).GE.p%start_ext(3) .AND. &
- &                     xp(1,ipart).LE.p%end_ext(1) .AND. &
- &                     xp(2,ipart).LE.p%end_ext(2) .AND. &
- &                     xp(3,ipart).LE.p%end_ext(3) ) ) THEN
+ &                     xp(1,ipart).LT.p%end_ext(1) .AND. &
+ &                     xp(2,ipart).LT.p%end_ext(2) .AND. &
+ &                     xp(3,ipart).LT.p%end_ext(3) ) ) THEN
 
                       IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
  &                           (p%bc(2).GE.0   .AND.    &
@@ -336,8 +336,8 @@
              ELSEIF (ppm_dim.EQ.2) THEN
               IF( (      xp(1,ipart).GE.p%start_ext(1) .AND. &
  &                       xp(2,ipart).GE.p%start_ext(2) .AND. &
- &                       xp(1,ipart).LE.p%end_ext(1) .AND. &
- &                       xp(2,ipart).LE.p%end_ext(2) ) ) THEN
+ &                       xp(1,ipart).LT.p%end_ext(1) .AND. &
+ &                       xp(2,ipart).LT.p%end_ext(2) ) ) THEN
                       IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
  &                           (p%bc(2).GE.0   .AND.    &
  &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&

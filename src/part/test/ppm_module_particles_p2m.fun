@@ -20,6 +20,7 @@ real(mk)                        :: tol
 integer                         :: topoid=-1
 real(mk),dimension(:  ),pointer :: min_phys => NULL()
 real(mk),dimension(:  ),pointer :: max_phys => NULL()
+real(ppm_kind_double)           :: t2,t1
 
 integer, dimension(:  ),pointer :: ighostsize => NULL()
 real(mk)                        :: sca_ghostsize
@@ -117,7 +118,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         type(ppm_t_particles_d) :: Part1
         real(ppm_kind_double),dimension(ndim) :: pos
         real(ppm_kind_double),dimension(ndim) :: cutoff
-        real(ppm_kind_double)                 :: vol_nodes
+        real(ppm_kind_double)                 :: voln
         integer :: np_global 
 
         start_subroutine("test_interp")
@@ -153,7 +154,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
             my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
             my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_mk,0.5_mk,0.89_mk,0.7_mk,0.78_mk/)
+            my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
         call Mesh1%def_patch(my_patch,info) 
         Assert_Equal(info,0)
@@ -165,8 +166,8 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
             Assert_Equal(info,0)
 
         allocate(wp_2r(ndim,Part1%Npart))
-        call random_number(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.0000015_mk
+!        call random_number(wp_2r)
+        wp_2r = 0.000010000_mk !(wp_2r - 0.5_mk) * Part1%h_avg * 0.0015_mk
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         deallocate(wp_2r)
@@ -210,27 +211,27 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
                 Vol_p   = 1._mk / np_global
-                S1_p    = test_constant(x_p(1:ndim),ndim) * Vol_p
-                S2_p    = test_linear(x_p(1:ndim),ndim) * Vol_p
-                S3_p    = test_quadratic(x_p(1:ndim),ndim) * Vol_p
+                S1_p    = f_cst(x_p(1:ndim),ndim) * Vol_p
+                S2_p    = f_lin(x_p(1:ndim),ndim) * Vol_p
+                S3_p    = f_sq(x_p(1:ndim),ndim) * Vol_p
 
-                V1_p(1) = test_constant(x_p(1:ndim),ndim) * Vol_p
-                V1_p(2) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
+                V1_p(1) = f_cst(x_p(1:ndim),ndim) * Vol_p
+                V1_p(2) = f_sq(x_p(1:ndim),ndim) * Vol_p
 
-                V2_p(1) = test_constant(x_p(1:ndim),ndim) * Vol_p
-                V2_p(2) = test_linear(x_p(1:ndim),ndim) * Vol_p
-                V2_p(3) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
+                V2_p(1) = f_cst(x_p(1:ndim),ndim) * Vol_p
+                V2_p(2) = f_lin(x_p(1:ndim),ndim) * Vol_p
+                V2_p(3) = f_sq(x_p(1:ndim),ndim) * Vol_p
 
-                V3_p(1) = test_constant(x_p(1:ndim),ndim) * Vol_p
-                V3_p(2) = test_linear(x_p(1:ndim),ndim) * Vol_p
-                V3_p(3) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
-                V3_p(4) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
+                V3_p(1) = f_cst(x_p(1:ndim),ndim) * Vol_p
+                V3_p(2) = f_lin(x_p(1:ndim),ndim) * Vol_p
+                V3_p(3) = f_sq(x_p(1:ndim),ndim) * Vol_p
+                V3_p(4) = f_sq(x_p(1:ndim),ndim) * Vol_p
 
-                V4_p(1) = test_constant(x_p(1:ndim),ndim) * Vol_p
-                V4_p(2) = test_linear(x_p(1:ndim),ndim) * Vol_p
-                V4_p(3) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
-                V4_p(4) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
-                V4_p(5) = test_quadratic(x_p(1:ndim),ndim) * Vol_p
+                V4_p(1) = f_cst(x_p(1:ndim),ndim) * Vol_p
+                V4_p(2) = f_lin(x_p(1:ndim),ndim) * Vol_p
+                V4_p(3) = f_sq(x_p(1:ndim),ndim) * Vol_p
+                V4_p(4) = f_sq(x_p(1:ndim),ndim) * Vol_p
+                V4_p(5) = f_sq(x_p(1:ndim),ndim) * Vol_p
         end foreach
 
         !----------------
@@ -242,21 +243,21 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         !----------------
         ! Perform the p2m interpolation
         !----------------
-!        call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
-!            Assert_Equal(info,0)
-!        call Part1%interp_to_mesh(Mesh1,VField2,ppm_param_rmsh_kernel_mp4,info)
-!            Assert_Equal(info,0)
-!        call Part1%interp_to_mesh(Mesh1,VField3,ppm_param_rmsh_kernel_mp4,info)
-!            Assert_Equal(info,0)
-!        call Part1%interp_to_mesh(Mesh1,VField4,ppm_param_rmsh_kernel_mp4,info)
-!            Assert_Equal(info,0)
+        call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Part1%interp_to_mesh(Mesh1,VField2,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Part1%interp_to_mesh(Mesh1,VField3,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+        call Part1%interp_to_mesh(Mesh1,VField4,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+
         call Part1%interp_to_mesh(Mesh1,SField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
         call Part1%interp_to_mesh(Mesh1,SField2,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
         call Part1%interp_to_mesh(Mesh1,SField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
-
 
         tol = 1e-2
 
@@ -268,7 +269,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         !----------------
         cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
 
-        vol_nodes = 1._mk / PRODUCT(Mesh1%Nm(1:ndim)-1)
+        voln = 1._mk / PRODUCT(Mesh1%Nm(1:ndim)-1)
 
         !----------------
         !Loop through all the mesh nodes and check that the values of the field
@@ -276,83 +277,95 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         !as should be the case for constant, linear and quadratic functions
         !with a 3rd order interpolating kernel (like Mp4)
         !----------------
-        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j,k)
-            for all
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                write(100,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
-                    test_constant(pos(1:ndim),ndim), &
-                    test_linear(pos(1:ndim),ndim),&
-                    test_quadratic(pos(1:ndim),ndim),&
-                    SField1_n/vol_nodes,&
-                    SField2_n/vol_nodes,&
-                    SField3_n/vol_nodes
+        IF (ppm_debug.GE.1) THEN
+        IF (ndim.EQ.2) THEN
+        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j)
+            for real
+                pos(1:ndim) = sbpitr%get_pos(i,j)
+                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
+                    f_cst(pos(1:ndim),ndim), &
+                    f_lin(pos(1:ndim),ndim),&
+                    f_sq(pos(1:ndim),ndim),&
+                    SField1_n/voln,&
+                    SField2_n/voln,&
+                    SField3_n/voln
         end foreach
+        ELSE
+        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j,k)
+            for real
+                pos(1:ndim) = sbpitr%get_pos(i,j,k)
+                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
+                    f_cst(pos(1:ndim),ndim), &
+                    f_lin(pos(1:ndim),ndim),&
+                    f_sq(pos(1:ndim),ndim),&
+                    SField1_n/voln,&
+                    SField2_n/voln,&
+                    SField3_n/voln
+        end foreach
+        ENDIF
 
         foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3,V=Vol)
-                write(101,'(6(E12.5,1X))') x_p(1),x_p(2),x_p(ndim),&
+                write(200+rank,'(6(E12.5,1X))') x_p(1),x_p(2),x_p(ndim),&
                     S1_p/V_p, S2_p/V_p, S3_p/V_p
         end foreach
+        ENDIF
         !----------------
         ! Check what we've got
         !----------------
         IF (ndim.EQ.2) THEN
         foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j)
-            for all
+            for real
                 pos(1:ndim) = sbpitr%get_pos(i,j)
-!                 Assert_Equal_Within(VField1_n(1),vol_nodes*test_constant(pos(1:ndim),ndim),tol)
-      !          VField1_n(2) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField1_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField1_n(2)/voln,f_sq(pos(1:ndim),ndim),tol)
+                
+                Assert_Equal_Within(VField2_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField2_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField2_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField2_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField2_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField2_n(3) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField3_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(4)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField3_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField3_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField3_n(3:4) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField4_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(4)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(5)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField4_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField4_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField4_n(3:5) = test_quadratic(pos(1:ndim),ndim)
-
-                 Assert_Equal_Within(SField1_n,vol_nodes*test_constant(pos(1:ndim),ndim),tol)
-                Assert_Equal_Within(SField2_n,vol_nodes*test_linear(pos(1:ndim),ndim),tol)
-      !          SField3_n    = test_quadratic(pos(1:ndim),ndim)
-                    stdout_f('(2(A,E10.3,2X))',"RelErr = ",&
-                        'ABS(SField1_n-vol_nodes*test_constant(pos(1:ndim),ndim))/ vol_nodes*test_constant(pos(1:ndim),ndim)',&
-                        "AbsErr = ",&
-                        'ABS(SField1_n-vol_nodes*test_constant(pos(1:ndim),ndim))')
+                Assert_Equal_Within(SField1_n/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(SField2_n/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(SField3_n/voln,f_sq(pos(1:ndim),ndim),tol)
         end foreach
 
         ELSE
 
         !foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j,k)
-        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j,k)
-            for all
+        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) vec_fields(VField1,VField2,VField3,VField4) indices(i,j,k)
+            for real
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
-      !          VField1_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField1_n(2) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField1_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField1_n(2)/voln,f_sq(pos(1:ndim),ndim),tol)
+                
+                Assert_Equal_Within(VField2_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField2_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField2_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField2_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField2_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField2_n(3) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField3_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField3_n(4)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField3_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField3_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField3_n(3:4) = test_quadratic(pos(1:ndim),ndim)
+                Assert_Equal_Within(VField4_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(4)/voln,f_sq(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(VField4_n(5)/voln,f_sq(pos(1:ndim),ndim),tol)
 
-      !          VField4_n(1) = test_constant(pos(1:ndim),ndim)
-      !          VField4_n(2) = test_linear(pos(1:ndim),ndim)
-      !          VField4_n(3:5) = test_quadratic(pos(1:ndim),ndim)
-
-      !          SField1_n    = test_constant(pos(1:ndim),ndim)
-      !          SField2_n    = test_linear(pos(1:ndim),ndim)
-      !          SField3_n    = test_quadratic(pos(1:ndim),ndim)
-                 Assert_Equal_Within(SField1_n,vol_nodes*test_constant(pos(1:ndim),ndim),tol)
-                Assert_Equal_Within(SField2_n,vol_nodes*test_linear(pos(1:ndim),ndim),tol)
-                    stdout_f('(2(A,E10.3,2X))',"RelErr = ",&
-                        'ABS(SField1_n-vol_nodes*test_constant(pos(1:ndim),ndim))/ vol_nodes*test_constant(pos(1:ndim),ndim)',&
-                        "AbsErr = ",&
-                        'ABS(SField1_n-vol_nodes*test_constant(pos(1:ndim),ndim))')
+                Assert_Equal_Within(SField1_n/voln,f_cst(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(SField2_n/voln,f_lin(pos(1:ndim),ndim),tol)
+                Assert_Equal_Within(SField3_n/voln,f_sq(pos(1:ndim),ndim),tol)
         end foreach
 
         ENDIF
@@ -379,7 +392,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------
-pure function test_constant(pos,ndim) RESULT(res)
+pure function f_cst(pos,ndim) RESULT(res)
     real(mk)                              :: res
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
@@ -387,7 +400,7 @@ pure function test_constant(pos,ndim) RESULT(res)
     res =  1._mk !42.17_mk
 end function
 
-pure function test_linear(pos,ndim) RESULT(res)
+pure function f_lin(pos,ndim) RESULT(res)
     real(mk)                              :: res
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
@@ -395,7 +408,7 @@ pure function test_linear(pos,ndim) RESULT(res)
     res =  pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
 end function
 
-pure function test_quadratic(pos,ndim) RESULT(res)
+pure function f_sq(pos,ndim) RESULT(res)
     real(mk)                              :: res
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
