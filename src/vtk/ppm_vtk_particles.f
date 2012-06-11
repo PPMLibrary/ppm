@@ -176,36 +176,6 @@
               !nb_wp_field = 0
            !ENDIF
 
-           !IF (.NOT. PRESENT(wp_list) .AND. .NOT. PRESENT(wp_field_list)) THEN
-               !!printout all properties i that are mapped
-               !nb_wp = Pc%props%nb
-               !ALLOCATE(wpi_l(nb_wp),wps_l(nb_wp),wpv_l(nb_wp),STAT=info)
-               !prop => Pc%props%begin()
-               !DO WHILE (ASSOCIATED(prop))
-                   !IF (prop%flags(ppm_ppt_partial)) THEN
-                       !SELECT CASE (prop%data_type)
-                       !CASE (ppm_type_int)
-                           !IF (prop%lda.EQ.1) THEN
-                               !nb_wpi = nb_wpi + 1
-                               !wpi_l(nb_wpi) = Pc%props%iter_id
-                           !ENDIF
-
-                       !CASE (ppm_type_real)
-                           !IF (prop%lda.EQ.1) THEN
-                               !nb_wps = nb_wps + 1
-                               !wps_l(nb_wps) = Pc%props%iter_id
-                           !ELSE
-                               !nb_wpv = nb_wpv + 1
-                               !wpv_l(nb_wpv) = Pc%props%iter_id
-                           !ENDIF
-                       !CASE DEFAULT
-                           !!not a supported type for printout (yet)
-                       !END SELECT
-                       !prop => Pc%props%next()
-                   !ENDIF
-               !ENDDO
-           !ENDIF
-
            IF (PRESENT(Fields)) THEN
                el => Fields%begin()
                DO WHILE (ASSOCIATED(field))
@@ -233,7 +203,36 @@
                    END SELECT
                    el => Fields%next()
                ENDDO
+           ELSE
+               !printout all properties i that are mapped
+               nb_wp = Pc%props%nb
+               ALLOCATE(wpi_l(nb_wp),wps_l(nb_wp),wpv_l(nb_wp),STAT=info)
+               prop => Pc%props%begin()
+               DO WHILE (ASSOCIATED(prop))
+                   IF (prop%flags(ppm_ppt_partial)) THEN
+                       SELECT CASE (prop%data_type)
+                       CASE (ppm_type_int)
+                           IF (prop%lda.EQ.1) THEN
+                               nb_wpi = nb_wpi + 1
+                               wpi_l(nb_wpi) = Pc%props%iter_id
+                           ENDIF
+
+                       CASE (ppm_type_real)
+                           IF (prop%lda.EQ.1) THEN
+                               nb_wps = nb_wps + 1
+                               wps_l(nb_wps) = Pc%props%iter_id
+                           ELSE
+                               nb_wpv = nb_wpv + 1
+                               wpv_l(nb_wpv) = Pc%props%iter_id
+                           ENDIF
+                       CASE DEFAULT
+                           !not a supported type for printout (yet)
+                       END SELECT
+                       prop => Pc%props%next()
+                   ENDIF
+               ENDDO
            ENDIF
+
 
 
 #ifdef __MPI
