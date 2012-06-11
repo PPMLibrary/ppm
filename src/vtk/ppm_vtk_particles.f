@@ -1,5 +1,5 @@
          SUBROUTINE DTYPE(ppm_vtk_particles)(filename, Pc, info, &
-              step, with_ghosts, with_nvlist, Field_list)
+              step, with_ghosts, with_nvlist, Fields)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
@@ -10,7 +10,7 @@
            INTEGER,               OPTIONAL, INTENT(IN   ) :: step
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_nvlist
-           CLASS(ppm_v_main_abstr),OPTIONAL               :: Field_list
+           CLASS(ppm_v_main_abstr),OPTIONAL               :: Fields
            !!!list of fields to print out (default = ALL)
 
            !INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: wp_list
@@ -206,8 +206,8 @@
                !ENDDO
            !ENDIF
 
-           IF (PRESENT(Field_list)) THEN
-               el => Field_list%begin()
+           IF (PRESENT(Fields)) THEN
+               el => Fields%begin()
                DO WHILE (ASSOCIATED(field))
                    SELECT TYPE(field => el)
                    CLASS IS(ppm_t_field_)
@@ -231,7 +231,7 @@
                                !not a supported type for printout (yet)
                        END SELECT
                    END SELECT
-                   el => Field_list%next()
+                   el => Fields%next()
                ENDDO
            ENDIF
 
