@@ -117,6 +117,9 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     !!! Evaluate a discretized operator (DC-PSE) on a field
     !!! (Field_src) and put the result in another field (Field_to)
     !!! The weights of the operator must have been previously computed.
+    !!! The destination field, Field_to, must have been defined (using
+    !!! Field_to%create()) but it does not have to be be discretized or
+    !!! initialized. This will be done if necessary.
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -313,7 +316,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     ELSE
         CALL Part_src%get_vlist(nvlist,vlist,info)
             or_fail("could not access neighbour lists")
-        sig = -1._mk !TODO FIXME
+        sig = -1._mk
         IF (vector_output) THEN
             IF(vector_input) THEN
                 CALL Part_src%get(field_src,wpv1,info,&

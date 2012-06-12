@@ -92,7 +92,7 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
     IF (PRESENT(name)) THEN
         this%name = TRIM(ADJUSTL(name))
     ELSE
-        this%name = "default_field_name"
+        WRITE(this%name,'(A,I0)') "dft_field_",ppm_nb_fields
     ENDIF
     IF (PRESENT(dtype)) THEN
         this%data_type = dtype

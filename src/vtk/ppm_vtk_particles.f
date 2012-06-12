@@ -391,25 +391,23 @@
               end if
               do k=1,nb_wpi
                  prop => pc%props%vec(wpi_l(k))%t
-                 CALL Pc%get(wpi,wpi_l(k),with_ghosts=ghosts)
+                 wpi => prop%data_1d_i
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
 #include "vtk/print_data_array.f"
-                 CALL Pc%set(wpi,wpi_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wps
                  prop => Pc%props%vec(wps_l(k))%t
-                 CALL Pc%get(wp,wps_l(k),with_ghosts=ghosts)
+                 wp => prop%data_1d_r
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
-                 CALL Pc%set(wp,wps_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wpv
                  prop => Pc%props%vec(wpv_l(k))%t
-                 CALL Pc%get(wp2d,wpv_l(k),with_ghosts=ghosts)
+                 wp2d => prop%data_2d_r
                  nd = SIZE(wp2d,1)
                  DO l=1,nd
                     WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
@@ -420,11 +418,10 @@
 #include "vtk/print_data_array.f"
                     wp => NULL()
                  END DO
-                 CALL Pc%set(wp2d,wpv_l(k),read_only=.TRUE.)
               END DO
               DO k=1,nb_wp_field
                  prop => Pc%props%vec(wp_field_l(k))%t
-                 CALL Pc%get(wp2d,wp_field_l(k),with_ghosts=ghosts)
+                 wp2d => prop%data_2d_r
                  nd = SIZE(wp2d,1)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
@@ -432,7 +429,6 @@
 #define VTK_VECTOR wp2d
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
-                 CALL Pc%set(wp2d,wp_field_l(k),read_only=.TRUE.)
               END DO
               WRITE(iUnit,'(A)') "      </PointData>"
            END IF
