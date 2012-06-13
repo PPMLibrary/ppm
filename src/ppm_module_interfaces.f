@@ -25,6 +25,7 @@ MODULE ppm_module_interfaces
 USE ppm_module_container_typedef
 USE ppm_module_data
 USE ppm_module_util_functions
+USE ppm_module_options
 
 IMPLICIT NONE
 
@@ -662,19 +663,6 @@ TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair
   CLASS(ppm_t_discr_kind), POINTER   :: discretization => NULL()
 END TYPE
 minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,generate="concrete")
-
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) ::  ppm_t_options
-END TYPE
-
-!TODO: this is not yet used. Not sure how to make the API look good...
-TYPE,ABSTRACT,EXTENDS(ppm_t_options)    ::  ppm_t_options_op_
-    CHARACTER(LEN=ppm_char)        :: method
-    LOGICAL                        :: with_ghosts
-    LOGICAL                        :: vector
-    LOGICAL                        :: interp
-    INTEGER,DIMENSION(:),pointer   :: order => NULL()
-    REAL(ppm_kind_double)          :: c
-END TYPE
 
 
 

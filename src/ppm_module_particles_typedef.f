@@ -22,8 +22,6 @@ USE ppm_module_substop
 
 IMPLICIT NONE
 
-PRIVATE
-
 !----------------------------------------------------------------------
 ! Global variables 
 !----------------------------------------------------------------------
@@ -44,13 +42,8 @@ INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 #include "part/particles_typedef.f"
 
 CHARACTER(LEN=ppm_char)         :: cbuf
-CHARACTER(LEN=ppm_char)         :: line_of_stars='**************************'
-INTEGER, PRIVATE, DIMENSION(3)    :: ldc
+INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 !!! Number of elements in all dimensions for allocation
-
-PUBLIC :: ppm_t_particles_s, ppm_t_particles_d, ppm_t_sop_s, ppm_t_sop_d,&
-          ppm_t_part_prop_s, ppm_t_part_prop_d
-
 
 CONTAINS
 
