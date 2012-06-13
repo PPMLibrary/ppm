@@ -183,9 +183,10 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     TYPE(ppm_t_options_op)                     :: opts_op
     TYPE(ppm_t_operator)                       :: Interp
     CLASS(ppm_t_operator_discr),POINTER        :: InterpDiscr => NULL()
+    CLASS(DTYPE(ppm_t_part_prop)_),POINTER     :: nn_sq => NULL() 
 
-    integer, dimension(:),allocatable              :: degree,order
-    real(ppm_kind_double),dimension(:),allocatable :: coeffs
+    integer, dimension(ppm_dim)                :: degree
+    real(ppm_kind_double),dimension(1)         :: coeffs
 
     start_subroutine("sop_adapt")
 
@@ -405,7 +406,6 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     !! We do it now, since we already have neighbour lists for that particle set
     !!-------------------------------------------------------------------------!
     IF (.NOT.PRESENT(wp_fun)) THEN
-        allocate(degree(ppm_dim),coeffs(1),order(1))
         degree =  0
         coeffs = 1.0_mk
 
@@ -416,13 +416,9 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
             interp=.true.,order=opts%order_approx,c=REAL(opts%c,ppm_kind_double))
             or_fail("failed to initialize option object for operator")
 
-        CALL Interp%discretize_on(this,InterpDiscr,opts_op,info,&
-            Discr_to=Particles_old)
-            or_fail("could not discretize interpolating operator")
-
-        CALL opts_op%destroy(info)
-            or_fail("failed to destroy opts_op")
-
+        !compute nearest-neighbour distances
+        CALL this%create_prop(info,part_prop=nn_sq,name='nn_sq')
+            or_fail("could not create property for nn_sq")
     ENDIF
 
     !-------------------------------------------------------------------------!
@@ -598,6 +594,13 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
 
         !TODO
 !        CALL sop_interpolate(Particles_old,Particles,opts,info)
+
+        CALL Interp%discretize_on(this,InterpDiscr,opts_op,info,&
+            Discr_src=Particles_old,nn_sq=nn_sq)
+            or_fail("could not discretize interpolating operator")
+
+        CALL opts_op%destroy(info)
+            or_fail("failed to destroy opts_op")
         
     ENDIF
 

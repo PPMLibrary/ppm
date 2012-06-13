@@ -1,5 +1,5 @@
 SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
-        vector,interp,order)
+        vector,interp,order,prop)
     !!! Create a discretized differential operator (For DC-PSE)
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_dcop))                      :: this
@@ -20,8 +20,22 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     LOGICAL,OPTIONAL,               INTENT(IN   ) :: interp
     !!! True if the operator interpolates data from one set of particles to
     !!! another. Default is false.
+    !!! WARNING: on output of this routine, one has to update the ghost
+    !!! values for the Part_src particle set (because it will have a 
+    !!! new property that stores nearest-neighbour distances, the ghost
+    !!! values of which will be needed)
     INTEGER,DIMENSION(:),OPTIONAL,  INTENT(IN   ) :: order
     !!! Order of approximation for each term of the differential operator
+    CLASS(ppm_t_discr_data),OPTIONAL,TARGET       :: prop 
+
+    INTEGER,      DIMENSION(:),   POINTER      :: nvlist => NULL()
+    INTEGER,      DIMENSION(:,:), POINTER      :: vlist  => NULL()
+    REAL(MK),     DIMENSION(:),   POINTER      :: nn2 => NULL()
+    REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
+    INTEGER   :: ip,iq,ineigh
+    REAL(MK)  :: dist2
+    !nearest-neighbor distance, for interpolating operators. Either they
+    !were computed already, or this has to be done now.
 
     start_subroutine("op_create")
 
@@ -48,6 +62,48 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     this%discr_to => Part_to
     this%op_ptr => Op
 
+    !!---------------------------------------------------------------------!
+    !!There is some work to do for interpolating operators
+    !!The square of the distance to nearest neighbours has to be stored
+    !!for each particle, including ghost ones.
+    !!---------------------------------------------------------------------!
+    IF(this%flags(ppm_ops_interp)) THEN
+        IF (.NOT.PRESENT(prop)) THEN
+            SELECT TYPE(Part_src)
+            CLASS IS (DTYPE(ppm_t_particles)_)
+                !Create a new property and make this%nn_sq point to it
+                call Part_src%create_prop(info,part_prop=this%nn_sq,&
+                    dtype=ppm_type_real,name='nearest_neighb_squared')
+                    or_fail("could not create property for nn_sq")
+                CALL Part_src%get(this%nn_sq,nn2,info)
+                    or_fail("could not get pointer to nn_sq")
+                CALL Part_src%get_xp(xp,info,with_ghosts=.TRUE.)
+                    or_fail("could not get pointer to xp")
+                CALL Part_src%get_vlist(nvlist,vlist,info)
+                    or_fail("could not get pointer to Verlet lists")
+                DO ip=1,Part_src%Npart
+                    nn2(ip) = HUGE(1._MK)
+                    DO ineigh=1,nvlist(ip)
+                        iq=vlist(ineigh,ip)
+                        dist2 = SUM( (xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))**2 )
+                        nn2(ip) = MIN(nn2(ip),dist2)
+                    ENDDO
+                ENDDO
+                CALL Part_src%set_xp(xp,info,read_only=.TRUE.)
+            CLASS DEFAULT
+                fail("does not work for this type of discretisation")
+            END SELECT
+        ELSE
+            SELECT TYPE(prop)
+            CLASS IS (DTYPE(ppm_t_part_prop)_)
+                this%nn_sq => prop
+            CLASS DEFAULT 
+            fail("wrong type. Prop argument should be of class ppm_t_part_prop")
+            END SELECT
+        ENDIF
+
+    ENDIF
+
     end_subroutine()
 END SUBROUTINE DTYPE(dcop_create)
 
@@ -61,6 +117,15 @@ SUBROUTINE DTYPE(dcop_destroy)(this,info)
 
     CALL ppm_alloc(this%ker,ldc,ppm_param_dealloc,info)
         or_fail_dealloc("op%ker")
+
+    IF(this%flags(ppm_ops_interp)) THEN
+        SELECT TYPE(Part_src => this%discr_src)
+        CLASS IS (DTYPE(ppm_t_particles)_)
+            CALL Part_src%props%remove(info,this%nn_sq)
+                or_fail("failed to remove property")
+            this%nn_sq => NULL()
+        END SELECT
+    ENDIF
 
     this%flags = .FALSE.
     this%discr_src => NULL()

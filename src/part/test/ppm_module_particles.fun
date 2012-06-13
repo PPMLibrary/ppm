@@ -144,10 +144,6 @@ integer                                        :: nterms
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
         Assert_Equal(info,0)
 
-!  print particles to a VTK file
-!        CALL ppm_vtk_particles("part_test",Part1,info)
-!        Assert_Equal(info,0)
-
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
 
@@ -198,6 +194,11 @@ integer                                        :: nterms
             F3_p(2) = -12._mk
             F3_p(3) = -13._mk
         end foreach
+
+!  print particles to a VTK file
+        CALL ppm_vtk_particles("part_test",Part1,info)
+        Assert_Equal(info,0)
+
 
         !Check that PPM knows that the ghosts are now invalid for all the fields
         Assert_False(Part1%has_ghosts(Field1))

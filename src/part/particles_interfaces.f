@@ -77,13 +77,13 @@ SUBROUTINE DTYPE(part_prop_destroy)_(this,prop,info)
     INTEGER,                INTENT(OUT)    :: info
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_prop_realloc)_(Pc,id,info,with_ghosts,datatype,lda)
-    IMPORT DTYPE(ppm_t_particles)_
+SUBROUTINE DTYPE(part_prop_realloc)_(Pc,prop,info,with_ghosts,datatype,lda)
+    IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_part_prop)_
     !!! Reallocate the property array to the correct size
     !!! (e.g. if the number of particles has changed or if the type
     !!! of the data changes)
     CLASS(DTYPE(ppm_t_particles)_)        :: Pc
-    INTEGER,                INTENT(IN   ) :: id
+    CLASS(DTYPE(ppm_t_part_prop)_)        :: prop
     INTEGER,               INTENT(OUT)    :: info
     LOGICAL, OPTIONAL                     :: with_ghosts
     INTEGER, OPTIONAL                     :: datatype
