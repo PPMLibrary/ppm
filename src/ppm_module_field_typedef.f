@@ -88,6 +88,9 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
 
+    check_true("lda.GT.0",&
+        "Trying to create field with zero components. LDA must be > 0")
+
     this%lda = lda
     IF (PRESENT(name)) THEN
         this%name = TRIM(ADJUSTL(name))
@@ -95,6 +98,7 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
         WRITE(this%name,'(A,I0)') "dft_field_",ppm_nb_fields
     ENDIF
     IF (PRESENT(dtype)) THEN
+        check_true("dtype.GT.0","dtype must be > 0")
         this%data_type = dtype
     ELSE   
         this%data_type = ppm_type_real
