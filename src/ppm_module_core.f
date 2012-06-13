@@ -41,6 +41,7 @@
          USE ppm_module_neighlist
          USE ppm_module_tree
          USE ppm_module_mesh
+         USE ppm_module_io_vtk
          USE ppm_module_topo_typedef
          USE ppm_module_mesh_typedef
          USE ppm_module_particles_typedef
