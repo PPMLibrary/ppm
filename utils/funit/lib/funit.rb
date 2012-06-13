@@ -19,7 +19,7 @@ module Funit
   ##
   # run all tests
 
-  def run_tests(prog_source_dirs=['.'],use_mpi=false,procs="1")
+  def run_tests(prog_source_dirs=['.'],use_mpi=false,mpi_flags='',procs="1")
     print_title("FUNIT STARTED")
     Compiler.new# a test for compiler env set (FIXME: remove this later)
     write_test_runner( test_files = parse_command_line,use_mpi)
@@ -60,12 +60,12 @@ module Funit
         maxproc = $~[:maxproc].to_i
         (minproc..maxproc).each do |nproc|
           print_title("STARTING TEST ON #{nproc} PROCESSOR(S)")
-          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} TestRunner"
+          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} #{mpi_flags} TestRunner"
         end
       elsif procs =~ /([0-9]+)(?:, *([0-9]+))*/
         procs.split(',').each do |nproc|
           print_title("STARTING TEST ON #{nproc} PROCESSOR(S)")
-          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} TestRunner"
+          exit 1 unless system "PATH=.:$PATH mpirun -n #{nproc} #{mpi_flags} TestRunner"
         end
       end
     else
