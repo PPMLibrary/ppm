@@ -4,6 +4,7 @@ use ppm_module_particles_typedef
 use ppm_module_topo_typedef
 use ppm_module_field_typedef
 use ppm_module_operator_typedef
+use ppm_module_sop
 use ppm_module_interfaces
 use ppm_module_data
 
@@ -16,7 +17,7 @@ integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = ACOS(-1._mk)
 real(mk),parameter              :: skin = 0._mk
-integer,parameter               :: ndim=2
+integer,parameter               :: ndim=3
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc,topoid
 integer                         :: np_global = 3000
@@ -114,18 +115,45 @@ integer                                        :: nterms
         
     end teardown
 
+    test initialize_random
+        ! test initialization of particles sampled unif. random
+        type(ppm_t_particles_d)               :: Part1
+
+        call Part1%initialize(np_global,info,topoid=topoid,&
+            distrib=ppm_param_part_init_random)
+        Assert_Equal(info,0)
+        Assert_True(associated(Part1%xp))
+
+        call Part1%get_xp(xp,info)
+        Assert_Equal(info,0)
+        call Part1%set_xp(xp,info,read_only=.true.)
+        Assert_Equal(info,0)
+
+        call Part1%map(info,global=.true.,topoid=topoid)
+        Assert_Equal(info,0)
+        call Part1%map_ghosts(info)
+        Assert_Equal(info,0)
+
+        call Part1%destroy(info)
+        Assert_Equal(info,0)
+
+    end test
+
     test initialize_cart
         ! test initialization of particles on a grid
         type(ppm_t_particles_d)               :: Part1
-        !class(ppm_t_part_prop_d_),POINTER     :: Prop1=>NULL(),Prop2=>NULL()
-        class(ppm_t_discr_data),POINTER      :: Prop1=>NULL(),Prop2=>NULL()
+        class(ppm_t_discr_data),POINTER       :: Prop1=>NULL(),Prop2=>NULL()
+        type(ppm_t_field)                     :: Field1
 
 
         call Part1%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
+        Assert_True(associated(Part1%xp))
 
-
-        write(*,*) associated(Part1%xp)
+        call Field1%create(3,info,name="Field1")
+        Assert_Equal(info,0)
+        call Field1%discretize_on(Part1,info)
+        Assert_Equal(info,0)
 
         call Part1%get_xp(xp,info)
         Assert_Equal(info,0)
@@ -237,13 +265,11 @@ integer                                        :: nterms
         call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
-
         !Move the particles back to their initial positions
         call Part1%get(Prop1,wp_2r,info)
         wp_2r = -wp_2r
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
-
 
         !Re-apply boundary conditions and remap the particles
         call Part1%apply_bc(info)
@@ -269,6 +295,8 @@ integer                                        :: nterms
         !Assert_Equal(info,0)
         call Part1%destroy(info)
         Assert_Equal(info,0)
+        call Field1%destroy(info)
+        Assert_Equal(info,0)
     end test
 
     test neighlists
@@ -288,9 +316,7 @@ integer                                        :: nterms
         call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
 
-        write(*,*) Part1%neighs%vec(1)%t%nneighmin
-        write(*,*) Part1%neighs%vec(1)%t%nneighmax
-
+        Assert_True(Part1%has_neighlist())
     end test
 
     test sop_type
@@ -298,41 +324,31 @@ integer                                        :: nterms
         type(ppm_t_sop_d)                 :: Part1_A
         class(ppm_t_discr_data),  pointer :: Prop1=>NULL(),Prop2=>NULL()
 
-        write(*,*) 'SOP stuff:'
         call Part1_A%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
 
 
-        write(*,*) 'ok -5'
         call Part1_A%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
 
-        write(*,*) 'ok -4'
         call Part1_A%map_ghosts(info)
         Assert_Equal(info,0)
 
-        write(*,*) 'ok -3'
         call Part1_A%comp_neighlist(info)
         Assert_Equal(info,0)
 
-        write(*,*) Part1_A%neighs%vec(1)%t%nneighmin
-        write(*,*) Part1_A%neighs%vec(1)%t%nneighmax
+        Assert_True(Part1_A%has_neighlist())
 
-        write(*,*) 'ok -2'
         !creating/destroying properties of different types
         call Part1_A%create_prop(info,discr_data=Prop1,dtype=ppm_type_longint,&
             name="test_li",with_ghosts=.true.)
         Assert_Equal(info,0)
-        write(*,*) 'ok -1'
         call Part1_A%get(Prop1,wp_1li,info,with_ghosts=.true.)
         Assert_Equal(info,0)
 
 
-        write(*,*) 'ok 0'
-
         call Part1_A%destroy_prop(Prop1,info)
         Assert_Equal(info,0)
-        write(*,*) 'ok 2'
 
         call Part1_A%create_prop(info,discr_data=Prop1,dtype=ppm_type_int,&
             name="test_i",zero=.false.)

@@ -65,11 +65,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     !Get boundaries of computational domain
     IF (PRESENT(topoid) .AND. (PRESENT(minphys).OR.PRESENT(maxphys))) THEN
-            info = ppm_error_error
-            CALL ppm_error(999,caller,&
-               'probable conflict of optional arguments. Use topoid OR minphys'&
-               ,__LINE__,info)
-            GOTO 9999
+        fail("probable conflict of optional arguments. Use topoid OR minphys")
     ENDIF
     IF (PRESENT(topoid)) THEN
         topo => ppm_topo(topoid)%t
@@ -84,20 +80,13 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         min_phys = minphys
         max_phys = maxphys
     ELSE
-        info = ppm_error_error
-        CALL ppm_error(999,caller,&
-            'optional arguments needed to define the domain boundaries'&
-            ,__LINE__,info)
-        GOTO 9999
+        fail("optional arguments needed to define the domain boundaries")
     ENDIF
+
     len_phys=max_phys-min_phys
-    IF (MINVAL(len_phys(1:ppm_dim)).LE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,&
-            'Domain length is <= 0 along one dimension. Check input parameters'&
-            ,__LINE__,info)
-        GOTO 9999
-    ENDIF
+
+    check_true("MINVAL(len_phys(1:ppm_dim)).GT.0",&
+        "Domain length is <= 0 along one dimension. Check input parameters")
 
 
     h = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))
@@ -129,8 +118,8 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
     ENDIF
 
     CALL Pc%create(Npart,info,name=name)
-            or_fail("Failed to create particle set")
-    check_associated("Pc%xp")
+        or_fail("Failed to create particle set")
+        check_associated("Pc%xp")
 
     !use a shortcut, for convenience
     xp => Pc%xp
@@ -214,7 +203,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 #endif
         ENDIF
         Pc%flags(ppm_part_cartesian) = .TRUE.
-    ELSE !random distribution
+    ELSE IF (distribution .EQ. ppm_param_part_init_random) THEN
         iopt = ppm_param_alloc_fit
 #ifdef same_random_sequence_nproc
         ldc(1) = ppm_dim*Npart_global
@@ -282,7 +271,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 #if __DIM == 3
         ENDDO
 #endif
-        IF(ppm_rank.EQ.0) THEN
+        IF(ppm_rank.EQ.(ppm_nproc-1)) THEN
 #if __DIM == 3
         DO k = 1,nijk(3)
             h = len_phys(3)/REAL(nijk(3),MK)
@@ -337,6 +326,8 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
         DEALLOCATE(randnb)
 
+    ELSE
+        fail("Unknown distribution type (or not yet supported)")
     ENDIF if_cartesian
 
     xp=>NULL()

@@ -227,7 +227,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
 
 
     ! stats
-    CLASS(DTYPE(particles_stats)_),ALLOCATABLE      :: stats
+    CLASS(DTYPE(particles_stats)_),POINTER          :: stats => NULL()
     !!! runtime statistics (e.g. timings, memory)
 
 
