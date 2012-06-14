@@ -5,6 +5,7 @@ use ppm_module_topo_typedef
 use ppm_module_field_typedef
 use ppm_module_particles_typedef
 use ppm_module_mktopo
+use ppm_module_io_vtk
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -13,7 +14,7 @@ use ppm_module_mktopo
 integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: pi = ACOS(-1._mk)
-integer,parameter               :: ndim=3
+integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
@@ -46,6 +47,10 @@ real(mk),dimension(2*ndim)       :: my_patch
 real(mk),dimension(ndim)         :: offset
 
 real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
+
+
+class(ppm_t_main_abstr),POINTER  :: abstr_point => NULL()
+TYPE(ppm_v_main_abstr)  :: LFields
 
 !---------------- init -----------------------
 
@@ -113,8 +118,8 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 !----------------------------------------------
 
     test part_to_meshinterp
-        type(ppm_t_field) :: VField1,VField2,VField3,VField4
-        type(ppm_t_field) :: SField1,SField2,SField3,Vol
+        type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
+        type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
         type(ppm_t_particles_d) :: Part1
         real(ppm_kind_double),dimension(ndim) :: pos
         real(ppm_kind_double),dimension(ndim) :: cutoff
@@ -240,6 +245,35 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
+
+        abstr_point => SField2
+        CALL LFields%push(abstr_point,info)
+        Assert_Equal(info,0)
+        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        Assert_Equal(info,0)
+        abstr_point => SField1
+        CALL LFields%push(abstr_point,info)
+        Assert_Equal(info,0)
+        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        Assert_Equal(info,0)
+        abstr_point => VField1
+        CALL LFields%push(abstr_point,info)
+        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        Assert_Equal(info,0)
+        abstr_point => VField2
+        CALL LFields%push(abstr_point,info)
+        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        Assert_Equal(info,0)
+        abstr_point => VField4
+        CALL LFields%push(abstr_point,info)
+        abstr_point => VField3
+        CALL LFields%push(abstr_point,info)
+        abstr_point => SField3
+        CALL LFields%push(abstr_point,info)
+        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        Assert_Equal(info,0)
+        CALL ppm_vtk_particles("output",Part1,info)
+        Assert_Equal(info,0)
         !----------------
         ! Perform the p2m interpolation
         !----------------

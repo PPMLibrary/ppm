@@ -59,6 +59,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data):: DTYPE(ppm_t_part_prop)_
 
 END TYPE DTYPE(ppm_t_part_prop)_
 minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="abstract")
+minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="concrete",vec=true,def_ptr=false)
 
 !!----------------------------------------------------------------------
 !! Particle neighbor lists

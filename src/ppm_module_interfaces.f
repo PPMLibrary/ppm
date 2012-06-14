@@ -118,10 +118,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
 END TYPE
 minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
 
-!TYPE,EXTENDS(ppm_t_discr_kind_) :: ppm_t_discr_kind
-!END TYPE
-!minclude define_collection_type(ppm_t_discr_kind,vec=true)
-
 
 TYPE,ABSTRACT :: ppm_t_discr_data
     !!! Data (discretized on either Particles or Meshes)
@@ -151,6 +147,7 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     !!! Leading dimension of the data array
     !!!
 END TYPE
+minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=true,def_ptr=true)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     !!! Generic differential operator
@@ -820,8 +817,12 @@ CONTAINS
 
 minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
 minclude ppm_create_collection_procedures(discr_kind,discr_kind,vec=true)
+minclude ppm_create_collection_procedures(discr_data,discr_data,vec=true)
 minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
 minclude ppm_create_collection_procedures(field_discr_pair,field_discr_pair,vec=true)
+
+minclude ppm_create_collection_procedures(part_prop_s_,part_prop_s_,vec=true)
+minclude ppm_create_collection_procedures(part_prop_d_,part_prop_d_,vec=true)
 
 !CREATE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&

@@ -20,14 +20,18 @@
            CHARACTER(LEN=ppm_char)              :: fname
            INTEGER                              :: i,j,k,l,nd,N,ii
            INTEGER                              :: nb_wps, nb_wpv, nb_wp_field
-           INTEGER                              :: nb_wp,nb_wpi
-           INTEGER, DIMENSION(:),   ALLOCATABLE :: wpi_l, wps_l, wpv_l, wp_field_l
+           INTEGER                              :: nb_wpi
            LOGICAL                              :: ghosts
            LOGICAL                              :: nvlist
            REAL(MK), DIMENSION(:,:),POINTER     :: xp  => NULL()
            REAL(MK), DIMENSION(:),  POINTER     :: wp  => NULL()
            REAL(MK), DIMENSION(:,:),  POINTER   :: wp2d  => NULL()
            INTEGER, DIMENSION(:),   POINTER     :: wpi  => NULL()
+
+           TYPE(DTYPE(ppm_v_part_prop)_)        :: props_i
+           TYPE(DTYPE(ppm_v_part_prop)_)        :: props_s
+           TYPE(DTYPE(ppm_v_part_prop)_)        :: props_v
+           TYPE(DTYPE(ppm_v_part_prop)_)        :: props_vf
 
            CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
            CLASS(ppm_t_discr_data),       POINTER :: discr_data => NULL()
@@ -75,18 +79,23 @@
                        !hack, so that Pc%props%iter_id is now the id
                        !of the discretization of field in Pc.
                        CALL field%get_discr(Pc,discr_data,info)
-                       or_fail("could not get discr data for this field")
+                           or_fail("could not get discr data for this field")
+                           check_associated("discr_data")
+                           SELECT TYPE(discr_data)
+                           CLASS IS (DTYPE(ppm_t_part_prop)_)
+                           prop => discr_data
+                           END SELECT
                        SELECT CASE(field%data_type)
                        CASE (ppm_type_int)
-                           nb_wpi = nb_wpi + 1
-                           wpi_l(nb_wpi) = Pc%props%iter_id
+                           CALL props_i%push(prop,info)
+                           or_fail("push integer property into print buffer list")
                        CASE (ppm_type_real)
                            IF (field%lda.EQ.1) THEN
-                               nb_wps = nb_wps + 1
-                               wps_l(nb_wps) = Pc%props%iter_id
+                               CALL props_s%push(prop,info)
+                               or_fail("push scalar property into print buffer list")
                            ELSE
-                               nb_wpv = nb_wpv + 1
-                               wpv_l(nb_wpv) = Pc%props%iter_id
+                               CALL props_v%push(prop,info)
+                               or_fail("push vector property into print buffer list")
                            ENDIF
                        CASE DEFAULT
                                fail("not a supported type for printout (yet)")
@@ -98,25 +107,23 @@
                ENDDO
            ELSE
                !printout all properties i that are mapped
-               nb_wp = Pc%props%nb
-               ALLOCATE(wpi_l(nb_wp),wps_l(nb_wp),wpv_l(nb_wp),STAT=info)
                prop => Pc%props%begin()
                DO WHILE (ASSOCIATED(prop))
                    IF (prop%flags(ppm_ppt_partial)) THEN
                        SELECT CASE (prop%data_type)
                        CASE (ppm_type_int)
                            IF (prop%lda.EQ.1) THEN
-                               nb_wpi = nb_wpi + 1
-                               wpi_l(nb_wpi) = Pc%props%iter_id
+                               CALL props_i%push(prop,info)
+                               or_fail("push integer property into print buffer list")
                            ENDIF
 
                        CASE (ppm_type_real)
                            IF (prop%lda.EQ.1) THEN
-                               nb_wps = nb_wps + 1
-                               wps_l(nb_wps) = Pc%props%iter_id
+                               CALL props_s%push(prop,info)
+                               or_fail("push integer property into print buffer list")
                            ELSE
-                               nb_wpv = nb_wpv + 1
-                               wpv_l(nb_wpv) = Pc%props%iter_id
+                               CALL props_v%push(prop,info)
+                               or_fail("push integer property into print buffer list")
                            ENDIF
                        CASE DEFAULT
                            !not a supported type for printout (yet)
@@ -127,6 +134,10 @@
                ENDDO
            ENDIF
 
+           nb_wpi=props_i%nb
+           nb_wps=props_s%nb
+           nb_wpv=props_v%nb
+           nb_wp_field=props_vf%nb
 
 
 #ifdef __MPI
@@ -149,33 +160,40 @@
               IF (nvlist) THEN
               WRITE(iUnit,'(3A)') "      <PDataArray Name='nvlist' type='Float64' />"
               END IF
-              DO i=1,nb_wpi
-                  prop => Pc%props%vec(wpi_l(i))%t
+
+              prop => props_i%begin()
+              DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                       prop%name (1:LEN_TRIM(prop%name)), &
                       "' type='Float64' />"
-              END DO
-              DO i=1,nb_wps
-                  prop => Pc%props%vec(wps_l(i))%t
+                  prop => props_i%next()
+              ENDDO
+
+              prop => props_s%begin()
+              DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                       prop%name (1:LEN_TRIM(prop%name)), &
                       "' type='Float64' />"
-              END DO
-              DO i=1,nb_wpv
-                  prop => Pc%props%vec(wpv_l(i))%t
-                  nd = prop%lda
-                  DO l=1,nd
+                  prop => props_s%next()
+              ENDDO
+
+              prop => props_v%begin()
+              DO WHILE (ASSOCIATED(prop))
+                  DO l=1,prop%lda
                       WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
                       WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                           scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
                   END DO
-              END DO
-              DO i=1,nb_wp_field
-                  prop => Pc%props%vec(wp_field_l(i))%t
+                  prop => props_v%next()
+              ENDDO
+
+              prop => props_vf%begin()
+              DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
                    prop%name (1:LEN_TRIM(prop%name)), &
                    "' type='Float64' />"
-              END DO
+                  prop => props_vf%next()
+              ENDDO
               WRITE(iUnit,'(A)') "    </PPointData>"              
               WRITE(iUnit,'(A)') "    <PPoints>"
               WRITE(iUnit,'(A)') "      <PDataArray NumberOfComponents='3' type='Float64' />"
@@ -234,42 +252,47 @@
                  IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',advance='no') " "
               END IF
               IF (nb_wpi .GT. 0) THEN
-                 DO i=1,nb_wpi
-                    prop => Pc%props%vec(wpi_l(i))%t
+                 prop => props_i%begin()
+                 DO WHILE (ASSOCIATED(prop))
                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
-                 END DO
+                    !IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
+                     prop => props_i%next()
+                 ENDDO
               END IF
               IF (nb_wps .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Scalars='"
-                 DO i=1,nb_wps
-                    prop => Pc%props%vec(wps_l(i))%t
-                    WRITE(iUnit,'(A)',advance='no') &
+                 prop => props_s%begin()
+                 DO WHILE (ASSOCIATED(prop))
+                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    IF (i .LT. nb_wps) WRITE(iUnit,'(A)',advance='no') " "
-                 END DO
+                    ! IF (i .LT. nb_wps) WRITE(iUnit,'(A)',advance='no') " "
+                     prop => props_s%next()
+                 ENDDO
               END IF
               IF (nb_wpv .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
                  WRITE(iUnit,'(A)',advance='no') " Vectors='"
-                 DO i=1,nb_wpv
-                    prop => Pc%props%vec(wpv_l(i))%t
-                    WRITE(iUnit,'(A)',advance='no') &
+                 prop => props_v%begin()
+                 DO WHILE (ASSOCIATED(prop))
+                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',advance='no') " "
-                 END DO
+                    ! IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',advance='no') " "
+                     prop => props_v%next()
+                 ENDDO
                  IF (nb_wpv .GT. 0 .AND. nb_wp_field .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') " "
-                 DO i=1,nb_wp_field
-                    prop => Pc%props%vec(wp_field_l(i))%t
+
+                 prop => props_v%begin()
+                 DO WHILE (ASSOCIATED(prop))
                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',advance='no') " "
-                 END DO
+              !      IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',advance='no') " "
+                     prop => props_vf%next()
+                 ENDDO
               END IF
               WRITE(iUnit,'(A)') "'>"
 
@@ -283,55 +306,61 @@
 #include "vtk/print_data_array.f"
                  wpi => null()
               end if
-              do k=1,nb_wpi
-                 prop => pc%props%vec(wpi_l(k))%t
-                 check_associated("prop")
-                 wpi => prop%data_1d_i
-                 check_associated("wpi")
+
+              prop => props_i%begin()
+              DO WHILE (ASSOCIATED(prop))
+                  wpi => prop%data_1d_i
+                  check_associated("wpi")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
 #include "vtk/print_data_array.f"
-              END DO
-              DO k=1,nb_wps
-                 prop => Pc%props%vec(wps_l(k))%t
-                 check_associated("prop")
-                 wp => prop%data_1d_r
-                 check_associated("wp")
+                  wpi => NULL()
+                  prop => props_i%next()
+              ENDDO
+
+              prop => props_s%begin()
+              DO WHILE (ASSOCIATED(prop))
+                  wp => prop%data_1d_r
+                  check_associated("wp")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
-              END DO
-              DO k=1,nb_wpv
-                 prop => Pc%props%vec(wpv_l(k))%t
-                 check_associated("prop")
-                 wp2d => prop%data_2d_r
-                 check_associated("wp2d")
-                 nd = SIZE(wp2d,1)
-                 DO l=1,nd
-                    WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
-                    wp => wp2d(l,:)
+                  wp => NULL()
+                  prop => props_s%next()
+              ENDDO
+
+              prop => props_v%begin()
+              DO WHILE (ASSOCIATED(prop))
+                  wp2d => prop%data_2d_r
+                  check_associated("wp2d")
+                  DO l=1,prop%lda
+                      WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
+                      wp => wp2d(l,:)
 #define VTK_NAME scratch
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
-                    wp => NULL()
-                 END DO
-              END DO
-              DO k=1,nb_wp_field
-                 prop => Pc%props%vec(wp_field_l(k))%t
-                 check_associated("prop")
-                 wp2d => prop%data_2d_r
-                 check_associated("wp2d")
-                 nd = SIZE(wp2d,1)
+                      wp => NULL()
+                  END DO
+                  prop => props_v%next()
+              ENDDO
+
+              prop => props_vf%begin()
+              DO WHILE (ASSOCIATED(prop))
+                  wp2d => prop%data_2d_r
+                  check_associated("wp2d")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
 #define VTK_VECTOR wp2d
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
-              END DO
+                  wp2d => NULL()
+                  prop => props_vf%next()
+              ENDDO
+
               WRITE(iUnit,'(A)') "      </PointData>"
            END IF
 
