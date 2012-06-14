@@ -19,23 +19,17 @@ SUBROUTINE operator_destroy_(this,info)
     INTEGER,               INTENT(OUT) :: info
 END SUBROUTINE
 !INIT
-SUBROUTINE operator_discretize_on_(this,Discr_src,op_discr,info,method,&
-        iargs,rargs,largs,with_ghosts,vector,interp,order,Discr_to) 
+SUBROUTINE operator_discretize_on_(this,Discr_to,op_discr,opts,&
+        info,Discr_src,nn_sq) 
     IMPORT ppm_t_operator_,ppm_t_discr_kind,ppm_t_operator_discr,&
-           ppm_kind_double
+           ppm_kind_double,ppm_t_options,ppm_t_discr_data
     CLASS(ppm_t_operator_)                     :: this
-    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN):: Discr_src
+    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN):: Discr_to
     CLASS(ppm_t_operator_discr),POINTER        :: op_discr
+    CLASS(ppm_t_options)                       :: opts
     INTEGER,                  INTENT(OUT)      :: info
-    CHARACTER(LEN=*),    OPTIONAL,INTENT(IN)   :: method
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)   :: iargs
-    REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN)   :: rargs
-    LOGICAL,DIMENSION(:),OPTIONAL,INTENT(IN)   :: largs
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: with_ghosts
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: vector
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: interp
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)   :: order
-    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET,INTENT(IN):: Discr_to
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET,INTENT(IN):: Discr_src
+    CLASS(ppm_t_discr_data),OPTIONAL,        INTENT(IN):: nn_sq
 END SUBROUTINE
 
 !--------------------------------------

@@ -74,7 +74,6 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_to => NULL()
     CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_src => NULL()
 
-    TYPE(DTYPE(ppm_t_sop)),        POINTER :: Pc2 => NULL()
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist => NULL()
     CLASS(ppm_t_operator_),        POINTER :: op => NULL()
 
@@ -137,8 +136,9 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     ENDIF
 
     SELECT TYPE(Part_to)
-    TYPE IS (DTYPE(ppm_t_sop))
-        CALL Part_to%get(Part_to%rcp,rcp,info,with_ghosts=with_ghosts)
+    CLASS IS (DTYPE(ppm_t_vbp))
+        CALL Part_to%get(Part_to%rcp,rcp,info,&
+            with_ghosts=with_ghosts,read_only=.true.)
         adaptive = .TRUE.
     CLASS DEFAULT
         byh = 1._MK/Part_to%h_avg
@@ -149,7 +149,8 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
         !!! nearest-neighbour distances within Part_src 
         !!! (they must have been already computed)
-        CALL Part_src%get(this%nn_sq,nn_sq,info,with_ghosts=.TRUE.)
+        CALL Part_src%get(this%nn_sq,nn_sq,info,with_ghosts=.TRUE.,&
+            read_only=.true.)
             or_fail("need to call particles_nearest_neighbors first")
     ENDIF
 
@@ -232,8 +233,8 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     gamma = alpha
 
     IF (Nlist%nneighmin .LT. ncoeff) THEN
-        WRITE(cbuf,*) 'For this DC-operator, we need ',&
-            ncoeff,' neighbours. We have ',Nlist%nneighmin
+        stdout("For this DC-operator, we need ",&
+            ncoeff," neighbours. We have ",'Nlist%nneighmin')
         fail("Not enough neighbours")
     ENDIF
 
@@ -384,23 +385,17 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
                 DO ineigh = 1,nvlist(ip)
                     WRITE(9000,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))
                 ENDDO
-                CALL ppm_write(ppm_rank,caller,&
-                    'stencil written in file fort.9000',info)
+                stdout("stencil written in file fort.9000")
                 DO i=1,ncoeff
                     WRITE(9002,*) (Z(i,j), j=1,ncoeff)
                 ENDDO
-                CALL ppm_write(ppm_rank,caller,&
-                    'Z matrix written in file fort.9002',info)
+                stdout("Z matrix written in file fort.9002")
                 WRITE(9003,myformat) xp1(1:ppm_dim,ip)*byh
                 DO ineigh = 1,nvlist(ip)
                     WRITE(9003,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))*byh
                 ENDDO
-                CALL ppm_write(ppm_rank,caller,&
-                    'h-scaled stencil written in file fort.9003',info)
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_test_fail,caller,&
-                    &  'ppm_matrix_svd failed',__LINE__,info)
-                GOTO 9999
+                stdout("h-scaled stencil written in file fort.9003")
+                fail("ppm_matrix_svd failed",ppm_err_test_fail)
             ENDIF
             min_sv = MIN(min_sv,min_sv_p)
         ENDIF
@@ -424,15 +419,13 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
             DO ineigh = 1,nvlist(ip)
                 WRITE(9000,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))
             ENDDO
-            CALL ppm_write(ppm_rank,caller,&
-                'stencil written in file fort.9000',info)
+            stdout("stencil written in file fort.9000")
 
             WRITE(9003,myformat) xp1(1:ppm_dim,ip)*byh
             DO ineigh = 1,nvlist(ip)
                 WRITE(9003,myformat) xp2(1:ppm_dim,vlist(ineigh,ip))*byh
             ENDDO
-            CALL ppm_write(ppm_rank,caller,&
-                'h-scaled stencil written in file fort.9003',info)
+            stdout("h-scaled stencil written in file fort.9003")
             fail("Failed to solve the LSE")
         ENDIF
 
@@ -515,14 +508,6 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
         xp2 => NULL()
     ENDIF
     eta => NULL()
-
-    SELECT TYPE (Part_to)
-    TYPE IS (DTYPE(ppm_t_sop))
-        CALL Part_to%set(Part_to%rcp,rcp,info,read_only=.TRUE.)
-        IF (isinterp .AND. MINVAL(sum_degree).EQ.0) THEN
-            CALL Part_src%set(this%nn_sq,nn_sq,info,read_only=.TRUE.)
-        ENDIF
-    END SELECT
 
     !!---------------------------------------------------------------------!
     !! Finalize

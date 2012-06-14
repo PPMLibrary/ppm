@@ -363,4 +363,10 @@
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_bsp2    = 1
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_mp4     = 2
       INTEGER, PARAMETER :: ppm_param_rmsh_kernel_m3p6    = 3
+      !-------------------------------------------------------------------------
+      !  Operators
+      !-------------------------------------------------------------------------
+      INTEGER, PARAMETER :: ppm_param_op_fd       = 1
+      INTEGER, PARAMETER :: ppm_param_op_pse      = 2
+      INTEGER, PARAMETER :: ppm_param_op_dcpse    = 3
       

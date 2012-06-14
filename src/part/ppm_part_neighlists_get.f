@@ -72,7 +72,7 @@ END FUNCTION DTYPE(get_neighlist)
 SUBROUTINE DTYPE(get_vlist)(this,nvlist,vlist,info,NList)
     !!! returns pointers to the arrays nvlist and vlist
     !!! that contain the Verlet lists for the neighbour list
-    !!! of ID nlid.
+    !!! NList
     CLASS(DTYPE(ppm_t_particles))                :: this
     INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
     !!! number of neighbours for each particle

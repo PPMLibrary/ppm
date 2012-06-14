@@ -25,6 +25,7 @@ MODULE ppm_module_interfaces
 USE ppm_module_container_typedef
 USE ppm_module_data
 USE ppm_module_util_functions
+USE ppm_module_options
 
 IMPLICIT NONE
 
@@ -663,19 +664,6 @@ TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair
 END TYPE
 minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,generate="concrete")
 
-TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) ::  ppm_t_options
-END TYPE
-
-!TODO: this is not yet used. Not sure how to make the API look good...
-TYPE,ABSTRACT,EXTENDS(ppm_t_options)    ::  ppm_t_options_op_
-    CHARACTER(LEN=ppm_char)        :: method
-    LOGICAL                        :: with_ghosts
-    LOGICAL                        :: vector
-    LOGICAL                        :: interp
-    INTEGER,DIMENSION(:),pointer   :: order => NULL()
-    REAL(ppm_kind_double)          :: c
-END TYPE
-
 
 
 !----------------------------------------------------------------------
@@ -837,16 +825,17 @@ minclude ppm_create_collection_procedures(field_discr_pair,field_discr_pair,vec=
 
 !CREATE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
-        with_ghosts,vector,interp,order)
-    CLASS(ppm_t_operator_discr)        :: this
+        with_ghosts,vector,interp,order,prop)
+    CLASS(ppm_t_operator_discr)               :: this
     CLASS(ppm_t_operator_), INTENT(IN),TARGET :: Op
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_src
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_to
-    INTEGER,                INTENT(OUT)   :: info
-    LOGICAL,OPTIONAL,       INTENT(IN   ) :: with_ghosts
-    LOGICAL,OPTIONAL,       INTENT(IN   ) :: vector
-    LOGICAL,OPTIONAL,       INTENT(IN   ) :: interp
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN):: order
+    INTEGER,                INTENT(OUT)       :: info
+    LOGICAL,OPTIONAL,       INTENT(IN   )     :: with_ghosts
+    LOGICAL,OPTIONAL,       INTENT(IN   )     :: vector
+    LOGICAL,OPTIONAL,       INTENT(IN   )     :: interp
+    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)  :: order
+    CLASS(ppm_t_discr_data),OPTIONAL,TARGET   :: prop 
     start_subroutine("operator_discr_create")
         fail("this dummy routine should not be called")
     end_subroutine()
@@ -862,8 +851,8 @@ END SUBROUTINE
 !COMPUTE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
     CLASS(ppm_t_operator_discr)                  :: this
-    CLASS(ppm_t_field_),TARGET,INTENT(IN)    :: Field_src
-    CLASS(ppm_t_field_),TARGET,INTENT(INOUT) :: Field_to
+    CLASS(ppm_t_field_),TARGET,INTENT(IN)        :: Field_src
+    CLASS(ppm_t_field_),TARGET,INTENT(INOUT)     :: Field_to
     INTEGER,                       INTENT(OUT)   :: info
     start_subroutine("operator_discr_compute")
         fail("this dummy routine should not be called")

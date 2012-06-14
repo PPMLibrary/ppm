@@ -1,16 +1,6 @@
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define __REAL 3 
-#define __COMPLEX 4 
-#define __INTEGER 5 
-#define __LONGINT 6 
-#define __LOGICAL 7 
-#define __CHAR 8 
-
-#define __crash_on_null_pointers  1
-#undef __WITH_KDTREE
-
       MODULE ppm_module_operator_typedef
       !!! Declares differential operator data types
       !!!
@@ -22,15 +12,12 @@
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_alloc
          USE ppm_module_data
+         USE ppm_module_util_functions
          USE ppm_module_interfaces
-         USE ppm_module_error
-         USE ppm_module_write
-         USE ppm_module_substart
-         USE ppm_module_substop
-         USE ppm_module_container_typedef
          USE ppm_module_particles_typedef
+         USE ppm_module_vbp_typedef
+
 
          IMPLICIT NONE
          !----------------------------------------------------------------------
@@ -45,17 +32,6 @@
          !----------------------------------------------------------------------
          ! Type declaration
          !----------------------------------------------------------------------
-#define  DTYPE(a) a/**/_s
-#define  MK ppm_kind_single
-#define  _MK _ppm_kind_single
-#include "operator/dcop_typedef.f"
-
-#define  DTYPE(a) a/**/_d
-#define  MK ppm_kind_double
-#define  _MK _ppm_kind_double
-#include "operator/dcop_typedef.f"
-
-
 TYPE,EXTENDS(ppm_t_operator_) :: ppm_t_operator
     !!! generic operator type
     CONTAINS
@@ -65,9 +41,16 @@ TYPE,EXTENDS(ppm_t_operator_) :: ppm_t_operator
 END TYPE
 minclude ppm_create_collection(operator,operator,generate="extend")
 
-!TODO: this is not yet used. Not sure how to make the API look good...
-TYPE,EXTENDS(ppm_t_options_op_)::  ppm_t_options_op
-END TYPE
+
+#define  DTYPE(a) a/**/_s
+#define  MK ppm_kind_single
+#define  _MK _ppm_kind_single
+#include "operator/dcop_typedef.f"
+
+#define  DTYPE(a) a/**/_d
+#define  MK ppm_kind_double
+#define  _MK _ppm_kind_double
+#include "operator/dcop_typedef.f"
 
 
          !----------------------------------------------------------------------
@@ -156,6 +139,7 @@ END SUBROUTINE
 SUBROUTINE operator_destroy(this,info)
     CLASS(ppm_t_operator)             :: this
     INTEGER,               INTENT(OUT) :: info
+    !!! return 0 on success
     start_subroutine("operator_destroy")
 
     this%nterms = 0
@@ -166,74 +150,101 @@ SUBROUTINE operator_destroy(this,info)
     end_subroutine()
 END SUBROUTINE
 !COMPUTE
-SUBROUTINE operator_discretize_on(this,Discr_src,op_discr,info,method,&
-        iargs,rargs,largs,with_ghosts,vector,interp,order,Discr_to) 
+SUBROUTINE operator_discretize_on(this,Discr_to,op_discr,opts,info,&
+        Discr_src,nn_sq)
     CLASS(ppm_t_operator)                      :: this
-    CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN):: Discr_src
+    CLASS(ppm_t_discr_kind),TARGET,INTENT(IN)  :: Discr_to
+    !!! Discretization on which the operator is applied (where the results are
+    !!! stored)
     CLASS(ppm_t_operator_discr),POINTER        :: op_discr
-    INTEGER,                  INTENT(OUT)      :: info
-    CHARACTER(LEN=*),    OPTIONAL,INTENT(IN)   :: method
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)   :: iargs
-    REAL(ppm_kind_double),DIMENSION(:),OPTIONAL,INTENT(IN)   :: rargs
-    LOGICAL,DIMENSION(:),OPTIONAL,INTENT(IN)   :: largs
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: with_ghosts
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: vector
-    LOGICAL,             OPTIONAL,INTENT(IN)   :: interp
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)   :: order
-    !!! Order of approximation for each term
-    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET, INTENT(IN):: Discr_to
-    
+    !!! Resulting discretized operator (on which %compute() is then called)
+    CLASS(ppm_t_options)                       :: opts
+    !!! Arguments for the discretized operator
+    !!!    - method (ppm_param_op_fd, ppm_param_op_pse, ppm_param_op_dcpse)
+    !!!    - with_ghosts (true if this operator is also applied to 
+    !!!             ghost particles, default is false)
+    !!!    - vector (if the result should be a vector, default is false)
+    !!!    - interp (if the operator is an interpolant, default is false)
+    !!!    - order  (order of approximation, default is 2)
+    !!!    - c      (ratio h/epsilon in the DC operators, default is 0.5)
+    INTEGER,                       INTENT(OUT) :: info
+    !!! return 0 on success
+    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET, INTENT(IN):: Discr_src
+    !!! Discretization where the data comes from (source). By default, this
+    !!! is the same as Discr_to
+    CLASS(ppm_t_discr_data),OPTIONAL,        INTENT(IN):: nn_sq
+    !!! Particle property where is stored the nearest-neighbour distance
+    !!! (squared) of the source data point (only makes sense for interpolating
+    !!! operators)
 
-    CLASS(ppm_t_discr_kind),POINTER :: Discr2 => NULL()
+    !Local variables
+    CLASS(ppm_t_discr_kind),POINTER     :: Discr2 => NULL()
 
     start_subroutine("operator_discretize_on")
 
-    IF (PRESENT(Discr_to)) THEN
-        Discr2 => Discr_to
-    ELSE
+    IF (PRESENT(Discr_src)) THEN
         Discr2 => Discr_src
+    ELSE
+        Discr2 => Discr_to
     ENDIF
-    
-    SELECT TYPE(Discr_src)
-    CLASS IS (ppm_t_equi_mesh_)
-        fail("mesh methods not yet implemented")
-    CLASS IS (ppm_t_particles_s_)
-        SELECT CASE (method)
-        CASE ("DC-PSE")
-            allocate(ppm_t_dcop_s::op_discr,stat=info)
-            fail("single-precision DCops not yet implemented (no big deal: just waiting for templating features...")
-        CASE ("PSE")
-            !allocate(ppm_t_pseop::op_discr,stat=info)
-            fail("PSE method not yet implemented")
-        CASE DEFAULT
-            fail("Method not recognized")
-        END SELECT
-    CLASS IS (ppm_t_particles_d_)
-        SELECT CASE (method)
-        CASE ("DC-PSE")
-            allocate(ppm_t_dcop_d::op_discr,stat=info)
-            SELECT TYPE(op_discr)
-            TYPE IS (ppm_t_dcop_d)
-                CALL op_discr%create(this,Discr_src,Discr2,info,&
-                    with_ghosts,vector,interp,order=order)
-                    or_fail("op_discr%create failed")
-                CALL op_discr%comp_weights(info,c=0.5D0)
-                    or_fail("Failed to compute the weights of the DC-PSE operator")
-            END SELECT
 
-        CASE ("PSE")
-            !allocate(ppm_t_pseop::op_discr,stat=info)
-            fail("PSE method not yet implemented")
-        CASE DEFAULT
-            fail("Method not recognized")
+    SELECT TYPE(opts)
+    CLASS IS (ppm_t_options_op)
+        SELECT TYPE(Discr_src)
+        CLASS IS (ppm_t_equi_mesh_)
+            fail("mesh methods not yet implemented")
+            SELECT CASE (opts%method)
+            CASE (ppm_param_op_pse)
+                fail("Cannot use PSE on a mesh.")
+            CASE (ppm_param_op_fd)
+                fail("Finite differences not yet implemented")
+            CASE DEFAULT
+                fail("Method not recognized")
+            END SELECT
+        CLASS IS (ppm_t_particles_s_)
+            SELECT CASE (opts%method)
+            CASE (ppm_param_op_dcpse)
+                allocate(ppm_t_dcop_s::op_discr,stat=info)
+                fail("single-precision DCops not yet implemented (no big deal: just waiting for templating features...")
+            CASE (ppm_param_op_pse)
+                !allocate(ppm_t_pseop::op_discr,stat=info)
+                fail("PSE method not yet implemented")
+            CASE DEFAULT
+                fail("Method not recognized")
+            END SELECT
+        CLASS IS (ppm_t_particles_d_)
+            SELECT CASE (opts%method)
+            CASE (ppm_param_op_dcpse)
+                allocate(ppm_t_dcop_d::op_discr,stat=info)
+                SELECT TYPE(op_discr)
+                TYPE IS (ppm_t_dcop_d)
+                    CALL op_discr%create(this,Discr_src,Discr2,info,&
+                        opts%with_ghosts,opts%vector,&
+                        opts%interp,order=opts%order,prop=nn_sq)
+                        or_fail("op_discr%create failed")
+
+
+                    CALL op_discr%comp_weights(info,c=opts%c)
+                        or_fail("Failed to compute the weights of the DC-PSE operator")
+                END SELECT
+
+            CASE (ppm_param_op_pse)
+                !allocate(ppm_t_pseop::op_discr,stat=info)
+                fail("PSE method not yet implemented")
+            CASE (ppm_param_op_fd)
+                fail("cannot do finite differences on particles")
+            CASE DEFAULT
+                fail("Method not recognized")
+            END SELECT
+        CLASS DEFAULT
+           fail("Class not recognized for discretization argument")
         END SELECT
     CLASS DEFAULT
-       fail("Class not recognized for discretization argument")
+        fail("Wrong ppm_t_options type for operator option argument")
     END SELECT
 
     end_subroutine()
 END SUBROUTINE
 
-
-         END MODULE ppm_module_operator_typedef
+END MODULE ppm_module_operator_typedef
 
