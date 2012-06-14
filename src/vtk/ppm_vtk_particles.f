@@ -31,7 +31,6 @@
 
            CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
            CLASS(ppm_t_discr_data),       POINTER :: discr_data => NULL()
-           CLASS(ppm_t_field_),           POINTER :: field => NULL()
            CLASS(ppm_t_main_abstr),       POINTER :: el => NULL()
 
            start_subroutine("ppm_vtk_particles")
@@ -70,7 +69,7 @@
 
            IF (PRESENT(Fields)) THEN
                el => Fields%begin()
-               DO WHILE (ASSOCIATED(field))
+               DO WHILE (ASSOCIATED(el))
                    SELECT TYPE(field => el)
                    CLASS IS(ppm_t_field_)
                        !hack, so that Pc%props%iter_id is now the id
