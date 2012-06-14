@@ -49,5 +49,6 @@
          USE ppm_module_operator_typedef
          USE ppm_module_interfaces
       !   USE ppm_module_rmsh
+         USE ppm_module_ctrl
 
       END MODULE ppm_module_core
