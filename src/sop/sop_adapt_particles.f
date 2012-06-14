@@ -428,7 +428,9 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     !Move data from the original particle set to a temporary particle set.
     !(this is done by doing a shallow copy and nullifying the pointers one
     !by one...)
-    Particles_old = this
+
+    !TODO
+    !Particles_old = this
 
     !These are kept on Particles_old
     this%xp => NULL()

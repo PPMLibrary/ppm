@@ -303,7 +303,7 @@ SUBROUTINE DTYPE(part_move)_(Pc,disp,info)
     INTEGER,                            INTENT(  OUT)     :: info
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_neighlist)_(this,info,P_xset,skin,symmetry,cutoff,name,&
+SUBROUTINE DTYPE(part_neighlist)_(this,info,P_xset,name,skin,symmetry,cutoff,&
         lstore,incl_ghosts,knn)
     IMPORT DTYPE(ppm_t_particles)_,MK
     CLASS(DTYPE(ppm_t_particles)_),TARGET                  :: this

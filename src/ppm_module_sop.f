@@ -37,6 +37,10 @@ INTEGER, PRIVATE, DIMENSION(3)    :: ldc
 
 PUBLIC :: ppm_t_sop_s, ppm_t_sop_d
 
+INTERFACE sop_init_opts
+    MODULE PROCEDURE sop_init_opts_s
+    MODULE PROCEDURE sop_init_opts_d
+END INTERFACE
 
 CONTAINS
 
@@ -44,6 +48,7 @@ CONTAINS
 #define __KIND __SINGLE_PRECISION
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "sop/sop_typeproc.f"
+#include "sop/ppm_sop_helpers.f"
 #include "sop/sop_adapt_particles.f"
 #undef  DEFINE_MK
 
@@ -55,6 +60,7 @@ CONTAINS
 #define __KIND __DOUBLE_PRECISION
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "sop/sop_typeproc.f"
+#include "sop/ppm_sop_helpers.f"
 #include "sop/sop_adapt_particles.f"
 #undef  DEFINE_MK
 

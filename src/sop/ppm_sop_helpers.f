@@ -29,7 +29,6 @@ SUBROUTINE DTYPE(sop_init_opts)(opts,info)
     opts%attractive_radius0 = 0.4_MK
     opts%fuse_radius = 0.2_MK
     opts%param_nb = 1._MK
-    opts%diff_eq => NULL()
     opts%order_approx = 4
     opts%maximum_D = 1._MK
     opts%minimum_D = 0.01_MK     

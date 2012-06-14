@@ -125,7 +125,7 @@ SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
     end_subroutine()
 END SUBROUTINE DTYPE(vbp_neigh_create)
 
-SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,skin,symmetry,cutoff,name,&
+SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         lstore,incl_ghosts,knn)
     !!!  Neighbor lists for particles
     !!!  Compute the Verlet lists for the target particles, using neighbours
@@ -163,14 +163,14 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,skin,symmetry,cutoff,name,&
     !-------------------------------------------------------------------------
     CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET         :: P_xset
     !!! Particle set from which the neighbours are sought
+    CHARACTER(LEN=*) , OPTIONAL                            :: name
+    !!! name of this neighbour list
     REAL(MK), OPTIONAL                                     :: skin
     !!! skin
     LOGICAL, OPTIONAL                                      :: symmetry    
     !!! if using symmetry
     REAL(MK), OPTIONAL                                     :: cutoff
     !!! cutoff radius
-    CHARACTER(LEN=*) , OPTIONAL                            :: name
-    !!! name of this neighbour list
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
     !!! store verlet lists
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts

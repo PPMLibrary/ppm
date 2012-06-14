@@ -2315,7 +2315,7 @@ SUBROUTINE DTYPE(part_move)(Pc,disp,info)
     end_subroutine()
 END SUBROUTINE DTYPE(part_move)
 
-SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,skin,symmetry,cutoff,name,&
+SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         lstore,incl_ghosts,knn)
     !!!  Neighbor lists for particles
     !!!  Compute the Verlet lists for the target particles, using neighbours
@@ -2353,14 +2353,14 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,skin,symmetry,cutoff,name,&
     !-------------------------------------------------------------------------
     CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET         :: P_xset
     !!! Particle set from which the neighbours are sought
+    CHARACTER(LEN=*) , OPTIONAL                            :: name
+    !!! name of this neighbour list
     REAL(MK), OPTIONAL                                     :: skin
     !!! skin
     LOGICAL, OPTIONAL                                      :: symmetry    
     !!! if using symmetry
     REAL(MK), OPTIONAL                                     :: cutoff
     !!! cutoff radius
-    CHARACTER(LEN=*) , OPTIONAL                            :: name
-    !!! name of this neighbour list
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
     !!! store verlet lists
     LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
