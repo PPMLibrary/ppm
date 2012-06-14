@@ -6,7 +6,7 @@ test_suite ppm_module_alloc
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 1
+integer, parameter              :: debug = 0
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 integer,parameter               :: ndim=2
 integer                         :: tolexp

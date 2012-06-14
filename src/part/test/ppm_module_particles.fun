@@ -196,7 +196,7 @@ integer                                        :: nterms
         end foreach
 
 !  print particles to a VTK file
-        CALL ppm_vtk_particles("part_test",Part1,info)
+        CALL ppm_vtk_particles("output",Part1,info)
         Assert_Equal(info,0)
 
 
@@ -243,119 +243,6 @@ integer                                        :: nterms
         end_subroutine()
     end test
 
-    test PSE_client
-        use ppm_module_io_vtk
-        type(ppm_t_particles_d)         :: Part1
-        type(ppm_t_field)               :: Field1
-        type(ppm_t_field)               :: Field2
-        type(ppm_t_operator)            :: Laplacian
-        CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
-        CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
-        class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
-        class(ppm_t_discr_data),POINTER :: prop => NULL()
-
-        !--------------------------
-        !Define Fields
-        !--------------------------
-        call Field1%create(5,info,name="Concentration") !vector field
-        Assert_Equal(info,0)
-
-        call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
-        Assert_Equal(info,0)
-
-!  print particles to a VTK file
-!        CALL ppm_vtk_particles("part_test",Part1,info)
-!        Assert_Equal(info,0)
-
-        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
-        Assert_Equal(info,0)
-
-        allocate(wp_2r(ndim,Part1%Npart))
-        call random_number(wp_2r)
-        wp_2r = (wp_2r - 0.5_mk) * Part1%h_avg * 0.15_mk
-        call Part1%move(wp_2r,info)
-        Assert_Equal(info,0)
-        deallocate(wp_2r)
-
-        Assert_true(Part1%has_neighlist(Part1))
-        call Part1%apply_bc(info)
-        Assert_Equal(info,0)
-
-        call Part1%map(info,global=.true.,topoid=topoid)
-        Assert_Equal(info,0)
-
-        call Part1%map_ghosts(info)
-        Assert_Equal(info,0)
-
-        call Field1%discretize_on(Part1,info)
-        Assert_Equal(info,0)
-
-        call Part1%comp_neighlist(info)
-        Assert_Equal(info,0)
-
-        Nlist => Part1%get_neighlist(Part1)
-        Assert_true(associated(Nlist))
-
-        !stdout("Nlist%cutoff",'Nlist%cutoff')
-        !stdout("Nlist%nneighmin",'Nlist%nneighmin')
-        !stdout("Nlist%nneighmax",'Nlist%nneighmax')
-        Nlist => NULL()
-
-        !Compare values and check that they are still the same
-        call Part1%get_xp(xp,info)
-        Assert_Equal(info,0)
-
-        call Part1%get_field(Field1,wp_2r,info)
-        Assert_Equal(info,0)
-
-        DO ip=1,Part1%Npart
-            wp_2r(1,ip) = xp(1,ip)
-            wp_2r(2,ip) = xp(2,ip)
-            wp_2r(3,ip) = cos(real(ip,mk))
-            wp_2r(4,ip) = sin(real(ip,mk))
-            wp_2r(5,ip) = SQRT(SUM(xp(1:ndim,ip)**2))
-        ENDDO
-        call Part1%set_xp(xp,info,read_only=.true.)
-        Assert_Equal(info,0)
-
-        call Part1%map_ghosts(info)
-        Assert_Equal(info,0)
-
-        !call Part1%print_info(info)
-
-        nterms=ndim
-        allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
-        if (ndim .eq. 2) then
-               degree =  (/2,0,   0,2/)
-        else 
-               degree =  (/2,0,0, 0,2,0, 0,0,2/)
-        endif
-        coeffs = 1.0_mk
-
-        call Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
-        Assert_Equal(info,0)
-
-        call Laplacian%discretize_on(Part1,DCop,info,method="DC-PSE")
-        Assert_Equal(info,0)
-        Assert_True(associated(DCop))
-        !call Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
-        !Assert_Equal(info,0)
-        !Assert_True(associated(PSEop))
-
-        call DCop%compute(Field1,Field2,info)
-        Assert_Equal(info,0)
-
-
-        call DCop%destroy(info)
-        Assert_Equal(info,0)
-        call Laplacian%destroy(info)
-        Assert_Equal(info,0)
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
-        call Field1%destroy(info)
-        Assert_Equal(info,0)
-        deallocate(degree,coeffs,order)
-    end test
 !-------------------------------------------------------------
 ! test function
 !-------------------------------------------------------------

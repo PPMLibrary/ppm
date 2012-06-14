@@ -257,6 +257,7 @@
                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
                     !IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
+                     WRITE(iUnit,'(A)',advance='no') " "
                      prop => props_i%next()
                  ENDDO
               END IF
@@ -269,6 +270,7 @@
                      WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
                     ! IF (i .LT. nb_wps) WRITE(iUnit,'(A)',advance='no') " "
+                     WRITE(iUnit,'(A)',advance='no') " "
                      prop => props_s%next()
                  ENDDO
               END IF
@@ -281,6 +283,7 @@
                      WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
                     ! IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',advance='no') " "
+                     WRITE(iUnit,'(A)',advance='no') " "
                      prop => props_v%next()
                  ENDDO
                  IF (nb_wpv .GT. 0 .AND. nb_wp_field .GT. 0) &
@@ -291,6 +294,7 @@
                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
               !      IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',advance='no') " "
+                     WRITE(iUnit,'(A)',advance='no') " "
                      prop => props_vf%next()
                  ENDDO
               END IF

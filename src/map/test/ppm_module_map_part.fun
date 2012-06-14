@@ -13,11 +13,13 @@ real(mk),parameter              :: skin = 0._mk
 integer,parameter               :: ndim=2
 integer,parameter               :: pdim=2
 integer                         :: decomp,assig,tolexp
-real(mk)                        :: tol,min_rcp,max_rcp
+real(mk)                        :: tol
+real(mk)                        :: min_rcp = 0.01_mk
+real(mk)                        :: max_rcp = 0.1_mk
 integer                         :: info,comm,rank,nproc
 integer                         :: topoid
-integer                         :: np = 100000
-integer                         :: mp
+integer, parameter              :: np_init = 10000
+integer                         :: np,mp
 integer                         :: newnp
 real(mk),dimension(:,:),pointer :: xp => NULL()
 real(mk),dimension(:  ),pointer :: rcp => NULL()
@@ -86,6 +88,7 @@ real(mk)                         :: t0,t1,t2,t3
 
     setup
 
+        np = np_init
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
         allocate(randnb((1+ndim)*np),stat=info)
@@ -104,6 +107,8 @@ real(mk)                         :: t0,t1,t2,t3
         
         deallocate(xp,rcp,wp,stat=info)
         deallocate(seed,randnb)
+        IF (associated(cost)) deallocate(cost)
+        cost => NULL()
 
     end teardown
 
@@ -144,6 +149,9 @@ real(mk)                         :: t0,t1,t2,t3
             enddo
         enddo
 
+        call random_number(xp)
+        call random_number(wp)
+
         !----------------
         ! make topology
         !----------------
@@ -163,9 +171,8 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_map_part_pop(wp,pdim,np,newnp,info)
         call ppm_map_part_pop(rcp,np,newnp,info)
         call ppm_map_part_pop(xp,ndim,np,newnp,info)
-        np=newnp
 
-        call ppm_topo_check(topoid,xp,np,ok,info)
+        call ppm_topo_check(topoid,xp,newnp,ok,info)
 
         assert_true(ok)
 
@@ -205,6 +212,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         topoid = 0
 
+
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               max_rcp,cost,info)
 
@@ -218,6 +226,9 @@ real(mk)                         :: t0,t1,t2,t3
         np=newnp
 
         ! move all particles
+        deallocate(randnb)
+        allocate(randnb((1+ndim)*np))
+        call random_number(randnb)
 
         do i=1,np
             do j=1,ndim
@@ -253,6 +264,8 @@ real(mk)                         :: t0,t1,t2,t3
         integer                         :: mpart
         real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk), parameter             :: gl = 0.1_mk
+
+        if (nproc.GT.1) return
     
         allocate(p(ndim,npart))
         p(1,1) = 0.05_mk
@@ -307,6 +320,8 @@ real(mk)                         :: t0,t1,t2,t3
         real(mk),dimension(2)           :: check
         real(mk), parameter             :: gl = 0.1_mk
     
+        if (nproc.GT.1) return
+
         allocate(p(ndim,npart),w(npart))
         p(1,1) = 0.05_mk  ! left
         p(2,1) = 0.5_mk
@@ -482,6 +497,8 @@ real(mk)                         :: t0,t1,t2,t3
         real(mk),dimension(:,:),pointer :: p => NULL()
         real(mk), parameter             :: gl = 0.1_mk
     
+        if (nproc.GT.1) return
+
         allocate(p(ndim,npart))
         p(1,1) = 0.05_mk
         p(2,1) = 0.05_mk
@@ -534,6 +551,8 @@ real(mk)                         :: t0,t1,t2,t3
         real(mk), parameter             :: gl = 0.1_mk
         real(mk)                        :: h
     
+        if (nproc.GT.1) return
+
         h = len_phys(1)/(snpart)
         allocate(p(ndim,npart))
         k = 0
@@ -597,6 +616,8 @@ real(mk)                         :: t0,t1,t2,t3
         real(mk),dimension(2)           :: check
         real(mk), parameter             :: gl = 0.1_mk
     
+        if (nproc.GT.1) return
+
         allocate(p(ndim,npart),w(npart))
         p(1,1) = 0.05_mk  ! left
         p(2,1) = 0.5_mk
@@ -699,6 +720,8 @@ real(mk)                         :: t0,t1,t2,t3
         real(mk),dimension(2)           :: check
         real(mk), parameter             :: gl = 0.1_mk
     
+        if (nproc.GT.1) return
+
         allocate(p(ndim,npart),w(npart))
         p(1,1) = 0.5_mk   ! bottom
         p(2,1) = 0.05_mk

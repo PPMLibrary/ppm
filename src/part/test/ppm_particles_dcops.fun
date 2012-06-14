@@ -5,6 +5,7 @@ use ppm_module_particles_typedef
 use ppm_module_topo_typedef
 use ppm_module_field_typedef
 use ppm_module_operator_typedef
+use ppm_module_sop
 use ppm_module_data
 !use ppm_module_io_vtk
 
@@ -42,6 +43,7 @@ real(mk),dimension(:),  pointer :: wp_1r => NULL()
 real(mk),dimension(:,:),pointer :: wp_2r => NULL()
 real(mk)                        :: tol_error,err
 type(ppm_t_operator)            :: Op
+TYPE(ppm_t_options_op)          :: opts_op
 CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
 CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
 class(ppm_t_neighlist_d_),POINTER :: Nlist => NULL()
@@ -161,6 +163,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
 
     test Laplacian
+        start_subroutine("test_laplacian")
         tol_error = 2e-2
 
         call Part1%set_cutoff(3._mk * Part1%h_avg,info) 
@@ -183,8 +186,12 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         call Op%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
+        
+        call opts_op%create(ppm_param_op_dcpse,info,order=2,c=0.5D0)
+            or_fail("failed to initialize option object for operator")
 
-        call Op%discretize_on(Part1,DCop,info,method="DC-PSE")
+
+        call Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
         Assert_True(associated(DCop))
         !call Op%discretize_on(Part1,PSEop,info,method="PSE")
@@ -195,10 +202,11 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         Assert_Equal(info,0)
 
         Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
-
+        end_subroutine()
     end test
 
     test Gradient
+        start_subroutine("test_gradient")
 
         tol_error = 1e-2
 
@@ -224,8 +232,11 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call Op%create(ndim,coeffs,degree,info,name="Gradient")
         Assert_Equal(info,0)
 
-        call Op%discretize_on(Part1,DCop,info,method="DC-PSE",&
-            vector=.true.)
+        call opts_op%create(ppm_param_op_dcpse,info,order=2,&
+            c=0.5D0,vector=.true.)
+            or_fail("failed to initialize option object for operator")
+
+        call Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
         Assert_True(associated(DCop))
 
@@ -234,6 +245,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
 
+        end_subroutine()
     end test
 !-------------------------------------------------------------
 ! test function
