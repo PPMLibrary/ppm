@@ -11,7 +11,7 @@ use ppm_module_data
     INCLUDE "mpif.h"
 #endif
 
-integer, parameter              :: debug = 0
+integer, parameter              :: debug = 2
 integer, parameter              :: mk = kind(1.0d0) !kind(1.0e0)
 real(mk),parameter              :: tol=epsilon(1._mk)*100
 real(mk),parameter              :: pi = ACOS(-1._mk)
@@ -121,6 +121,7 @@ integer                                        :: nterms
         type(ppm_t_operator)            :: Laplacian
         CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
         CLASS(ppm_t_operator_discr),POINTER   :: PSEop => NULL()
+        TYPE(ppm_t_options_op)          :: opts_op
 
         start_subroutine("test_PSE")
         !--------------------------
@@ -180,7 +181,10 @@ integer                                        :: nterms
         call Laplacian%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
 
-        call Laplacian%discretize_on(Part1,DCop,info,method="DC-PSE")
+        call opts_op%create(ppm_param_op_dcpse,info,order=2,c=0.5D0)
+            or_fail("failed to initialize option object for operator")
+
+        call Laplacian%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
         Assert_True(associated(DCop))
         !call Laplacian%discretize_on(Part1,PSEop,info,method="PSE")
@@ -200,6 +204,8 @@ integer                                        :: nterms
         call Field1%destroy(info)
         Assert_Equal(info,0)
         deallocate(degree,coeffs,order)
+        CALL opts_op%destroy(info)
+            or_fail("failed to destroy opts_op")
         end_subroutine()
     end test
 !-------------------------------------------------------------
