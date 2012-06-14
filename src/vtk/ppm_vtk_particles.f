@@ -185,7 +185,7 @@
                        !of the discretization of field in Pc.
                        CALL field%get_discr(Pc,discr_data,info)
                        or_fail("could not get discr data for this field")
-                       SELECT CASE(field%lda)
+                       SELECT CASE(field%data_type)
                        CASE (ppm_type_int)
                            nb_wpi = nb_wpi + 1
                            wpi_l(nb_wpi) = Pc%props%iter_id
@@ -199,6 +199,7 @@
                            ENDIF
                        CASE DEFAULT
                                !not a supported type for printout (yet)
+                               fail("elements of printout list should be of type ppm_t_field (for now)")
                        END SELECT
                    END SELECT
                    el => Fields%next()
@@ -391,7 +392,9 @@
               end if
               do k=1,nb_wpi
                  prop => pc%props%vec(wpi_l(k))%t
+                 check_associated("prop")
                  wpi => prop%data_1d_i
+                 check_associated("wpi")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
@@ -399,7 +402,9 @@
               END DO
               DO k=1,nb_wps
                  prop => Pc%props%vec(wps_l(k))%t
+                 check_associated("prop")
                  wp => prop%data_1d_r
+                 check_associated("wp")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
@@ -407,7 +412,9 @@
               END DO
               DO k=1,nb_wpv
                  prop => Pc%props%vec(wpv_l(k))%t
+                 check_associated("prop")
                  wp2d => prop%data_2d_r
+                 check_associated("wp2d")
                  nd = SIZE(wp2d,1)
                  DO l=1,nd
                     WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
@@ -421,7 +428,9 @@
               END DO
               DO k=1,nb_wp_field
                  prop => Pc%props%vec(wp_field_l(k))%t
+                 check_associated("prop")
                  wp2d => prop%data_2d_r
+                 check_associated("wp2d")
                  nd = SIZE(wp2d,1)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
