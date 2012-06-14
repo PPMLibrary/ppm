@@ -66,6 +66,7 @@
            nb_wpi=0
            nb_wps=0
            nb_wpv=0
+           nb_wp_field=0
 
            IF (PRESENT(Fields)) THEN
                el => Fields%begin()
