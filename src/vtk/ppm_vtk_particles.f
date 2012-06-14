@@ -90,9 +90,10 @@
                                wpv_l(nb_wpv) = Pc%props%iter_id
                            ENDIF
                        CASE DEFAULT
-                               !not a supported type for printout (yet)
-                               fail("elements of printout list should be of type ppm_t_field (for now)")
+                               fail("not a supported type for printout (yet)")
                        END SELECT
+                   CLASS DEFAULT
+                       fail("elements of printout list should be of type ppm_t_field (for now)")
                    END SELECT
                    el => Fields%next()
                ENDDO
