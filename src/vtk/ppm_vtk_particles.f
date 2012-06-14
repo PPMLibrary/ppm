@@ -286,7 +286,7 @@
                  IF (nb_wpv .GT. 0 .AND. nb_wp_field .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') " "
 
-                 prop => props_v%begin()
+                 prop => props_vf%begin()
                  DO WHILE (ASSOCIATED(prop))
                     WRITE(iUnit,'(A)',advance='no') &
                          prop%name (1:LEN_TRIM(prop%name))
@@ -309,7 +309,7 @@
 
               prop => props_i%begin()
               DO WHILE (ASSOCIATED(prop))
-                  wpi => prop%data_1d_i
+                  wpi => prop%data_1d_i(1:N)
                   check_associated("wpi")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
@@ -321,7 +321,7 @@
 
               prop => props_s%begin()
               DO WHILE (ASSOCIATED(prop))
-                  wp => prop%data_1d_r
+                  wp => prop%data_1d_r(1:N)
                   check_associated("wp")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
@@ -333,7 +333,7 @@
 
               prop => props_v%begin()
               DO WHILE (ASSOCIATED(prop))
-                  wp2d => prop%data_2d_r
+                  wp2d => prop%data_2d_r(1:prop%lda,1:N)
                   check_associated("wp2d")
                   DO l=1,prop%lda
                       WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
@@ -349,7 +349,7 @@
 
               prop => props_vf%begin()
               DO WHILE (ASSOCIATED(prop))
-                  wp2d => prop%data_2d_r
+                  wp2d => prop%data_2d_r(1:prop%lda,1:N)
                   check_associated("wp2d")
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
