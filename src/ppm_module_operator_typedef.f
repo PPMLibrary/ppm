@@ -190,7 +190,7 @@ SUBROUTINE operator_discretize_on(this,Discr_to,op_discr,opts,info,&
 
     SELECT TYPE(opts)
     CLASS IS (ppm_t_options_op)
-        SELECT TYPE(Discr_src)
+        SELECT TYPE(Discr_to)
         CLASS IS (ppm_t_equi_mesh_)
             fail("mesh methods not yet implemented")
             SELECT CASE (opts%method)
@@ -218,9 +218,9 @@ SUBROUTINE operator_discretize_on(this,Discr_to,op_discr,opts,info,&
                 allocate(ppm_t_dcop_d::op_discr,stat=info)
                 SELECT TYPE(op_discr)
                 TYPE IS (ppm_t_dcop_d)
-                    CALL op_discr%create(this,Discr_src,Discr2,info,&
-                        opts%with_ghosts,opts%vector,&
-                        opts%interp,order=opts%order,prop=nn_sq)
+                    CALL op_discr%create(this,Discr_to,Discr2,info,&
+                        opts%with_ghosts,opts%vector,opts%interp,&
+                        order=opts%order,order_v=opts%order_v,prop=nn_sq)
                         or_fail("op_discr%create failed")
 
 

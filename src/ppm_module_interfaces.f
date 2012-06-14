@@ -825,7 +825,7 @@ minclude ppm_create_collection_procedures(field_discr_pair,field_discr_pair,vec=
 
 !CREATE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
-        with_ghosts,vector,interp,order,prop)
+        with_ghosts,vector,interp,order,order_v,prop)
     CLASS(ppm_t_operator_discr)               :: this
     CLASS(ppm_t_operator_), INTENT(IN),TARGET :: Op
     CLASS(ppm_t_discr_kind),INTENT(IN),TARGET :: Part_src
@@ -834,7 +834,8 @@ SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
     LOGICAL,OPTIONAL,       INTENT(IN   )     :: with_ghosts
     LOGICAL,OPTIONAL,       INTENT(IN   )     :: vector
     LOGICAL,OPTIONAL,       INTENT(IN   )     :: interp
-    INTEGER,DIMENSION(:),OPTIONAL,INTENT(IN)  :: order
+    INTEGER,             OPTIONAL,INTENT(IN)  :: order
+    INTEGER,DIMENSION(:),OPTIONAL,POINTER,INTENT(IN)  :: order_v
     CLASS(ppm_t_discr_data),OPTIONAL,TARGET   :: prop 
     start_subroutine("operator_discr_create")
         fail("this dummy routine should not be called")

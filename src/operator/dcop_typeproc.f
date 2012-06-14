@@ -1,5 +1,5 @@
 SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
-        vector,interp,order,prop)
+        vector,interp,order,order_v,prop)
     !!! Create a discretized differential operator (For DC-PSE)
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_dcop))                      :: this
@@ -24,7 +24,9 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     !!! values for the Part_src particle set (because it will have a 
     !!! new property that stores nearest-neighbour distances, the ghost
     !!! values of which will be needed)
-    INTEGER,DIMENSION(:),OPTIONAL,  INTENT(IN   ) :: order
+    INTEGER             ,OPTIONAL,  INTENT(IN   ) :: order
+    !!! Order of approximation for all terms of the differential operator
+    INTEGER,DIMENSION(:),OPTIONAL,POINTER,INTENT(IN   ) :: order_v
     !!! Order of approximation for each term of the differential operator
     CLASS(ppm_t_discr_data),OPTIONAL,TARGET       :: prop 
 
@@ -47,16 +49,28 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     ldc(1)=Op%nterms
     CALL ppm_alloc(this%order,ldc,ppm_param_alloc_fit,info)
         or_fail_alloc("this%order")
-    IF (PRESENT(order)) THEN
-        IF (MINVAL(order).LT.0) THEN
-            fail("invalid approx order: must be positive")
+    IF (PRESENT(order_v)) THEN
+        IF (ASSOCIATED(order_v)) THEN
+            IF (MINVAL(order_v).LT.0) THEN
+                fail("invalid approx order: must be positive")
+            ENDIF
+            IF (SIZE(order_v).NE.Op%nterms) THEN
+                fail("Wrong size for Order parameter. Should be Op%nterms")
+            ENDIF
+            this%order = order_v
+        ELSE
+            IF (PRESENT(order)) THEN
+                this%order = order
+            ELSE
+                this%order = 2
+            ENDIF
         ENDIF
-        IF (SIZE(order).NE.Op%nterms) THEN
-            fail("Wrong size for Order parameter. Should be Op%nterms")
-        ENDIF
-        this%order = order
     ELSE
-        this%order = 2
+        IF (PRESENT(order)) THEN
+            this%order = order
+        ELSE
+            this%order = 2
+        ENDIF
     ENDIF
     this%discr_src => Part_src
     this%discr_to => Part_to
