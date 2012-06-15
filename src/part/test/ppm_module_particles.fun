@@ -182,7 +182,7 @@ integer                                        :: nterms
         Assert_true(associated(Nlist))
         Nlist => NULL()
 
-        !blabla
+        !Set field values
         foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F1=Field1,F3=Field3)
             F1_p(1) = x_p(1)
             F1_p(2) = x_p(2)
@@ -222,7 +222,7 @@ integer                                        :: nterms
         call Part1%map_ghost_pop(info,Field2)
             Assert_Equal(info,0)
 
-        call Part1%map_ghost_pop_pos(info)
+        call Part1%map_ghost_pop_positions(info)
             Assert_Equal(info,0)
 
         ! Check the states (ghosts should be ok for Field2 and Field3
@@ -230,6 +230,44 @@ integer                                        :: nterms
         Assert_False(Part1%has_ghosts(Field1))
         Assert_True(Part1%has_ghosts(Field2))
         Assert_True(Part1%has_ghosts(Field3))
+
+        !Move particles
+        allocate(wp_2r(ndim,Part1%Npart))
+        call random_number(wp_2r)
+        wp_2r = (wp_2r - 0.5_mk) * Part1%ghostlayer * 0.99_mk
+        call Part1%move(wp_2r,info)
+        Assert_Equal(info,0)
+        deallocate(wp_2r)
+        call Part1%apply_bc(info)
+        Assert_Equal(info,0)
+
+        ! Do a partial mapping, but only map fields 2 and 3.
+        call Part1%map_positions(info)
+            Assert_Equal(info,0)
+
+        call Part1%map_push(info,Field2)
+            Assert_Equal(info,0)
+        call Part1%map_push(info,Field3)
+            Assert_Equal(info,0)
+
+        call Part1%map_send(info)
+            Assert_Equal(info,0)
+
+        call Part1%map_pop(info,Field3)
+            Assert_Equal(info,0)
+        call Part1%map_pop(info,Field2)
+            Assert_Equal(info,0)
+
+        call Part1%map_pop_positions(info)
+            Assert_Equal(info,0)
+
+        !Check that are still correct
+        foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F3=Field3)
+            Assert_Equal_Within(F2_p   , -10._mk,tol)
+            Assert_Equal_Within(F3_p(1), -11._mk,tol)
+            Assert_Equal_Within(F3_p(2), -12._mk,tol)
+            Assert_Equal_Within(F3_p(3), -13._mk,tol)
+        end foreach
 
         call Part1%destroy(info)
             Assert_Equal(info,0)

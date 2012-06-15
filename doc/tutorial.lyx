@@ -759,79 +759,7 @@ Each step of the simple will be discussed in more detail.
 \end_layout
 
 \begin_layout Section
-Typical variable names
-\end_layout
-
-\begin_layout Standard
-\begin_inset listings
-lstparams "language=Fortran"
-inline true
-status open
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-Npart
-\end_layout
-
-\end_inset
-
-: number of real particles
-\end_layout
-
-\begin_layout Standard
-\begin_inset listings
-lstparams "language=Fortran"
-inline true
-status open
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-Mpart
-\end_layout
-
-\end_inset
-
-: number of (real+ghosts) particles
-\end_layout
-
-\begin_layout Standard
-\begin_inset listings
-lstparams "language=Fortran"
-inline true
-status open
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-xp
-\end_layout
-
-\end_inset
-
-: array of particles' positions
-\end_layout
-
-\begin_layout Standard
-\begin_inset listings
-lstparams "language=Fortran"
-inline true
-status open
-
-\begin_layout Labeling
-\labelwidthstring 00.00.0000
-
-wp
-\end_layout
-
-\end_inset
-
-: array of particles' strengths
-\end_layout
-
-\begin_layout Section
-Reading the control file
+Reading in parameters (command line or control file)
 \end_layout
 
 \begin_layout Standard
@@ -2654,7 +2582,7 @@ reference "fig:slab_domain_decomp"
 \end_layout
 
 \begin_layout Chapter
-Data structure for particles
+New data structure for PPM
 \end_layout
 
 \begin_layout Standard
@@ -2662,14 +2590,19 @@ In the
 \begin_inset Quotes eld
 \end_inset
 
-dcops
+develop
 \begin_inset Quotes erd
 \end_inset
 
- branch of PPM, there is a derived type for particles (ppm_t_particles)
- and a collection of routines that perform some standard/basic operations
- on these particles.
+ branch, the PPM library implements a new data structure, making use of
+ Fortran 2003 features and a macro language written in Ruby.
+ There is a derived type for each main PPM abstraction and a collection
+ of routines that perform some standard/basic operations on these abstractions.
  
+\end_layout
+
+\begin_layout Section
+Particles
 \end_layout
 
 \begin_layout Section
@@ -2724,8 +2657,20 @@ nwp2: number of vector properties
 Variables and parameters
 \end_layout
 
-\begin_layout Subsection
+\begin_layout Section
 Neighbour lists
+\end_layout
+
+\begin_layout Subsection
+Type
+\end_layout
+
+\begin_layout Itemize
+name
+\end_layout
+
+\begin_layout Itemize
+Part (Pointer to the set of particles to which the neighbours belong to)
 \end_layout
 
 \begin_layout Itemize
@@ -2738,6 +2683,103 @@ skin
 
 \begin_layout Itemize
 isymm
+\end_layout
+
+\begin_layout Itemize
+nvlist (number of neighbours of each particle)
+\end_layout
+
+\begin_layout Itemize
+vlist (Neighbour lists)
+\end_layout
+
+\begin_layout Itemize
+uptodate (boolean that is true if and only if this verlet list has been
+ computed and is up-to-date with the current positions of the particles)
+\end_layout
+
+\begin_layout Itemize
+nneighmin/nneighmax (smallest/highest number of neighbours on this processor)
+\end_layout
+
+\begin_layout Subsection
+Methods
+\end_layout
+
+\begin_layout Standard
+One can first define a neighbour list by calling:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+P1%create_neighlist(P2,info,name=``cross-set list P1-P2,skin=0,symmetry=.false.,cu
+toff=0.1)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+and then compute (or update, if e.g.
+ particles have moved, or the cutoff has changed) it by calling:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+P1%comp_neighlist(info) 
+\end_layout
+
+\end_inset
+
+(if only one neighbour list has been defined on P1), or
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+P1%comp_neighlist(info,P2)
+\end_layout
+
+\end_inset
+
+ if one needs to clarify which neighbour list should be computed.
+\end_layout
+
+\begin_layout Standard
+Alternatively, definition and computation of the Verlet list can be done
+ in one call:
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+P1%comp_neighlist(info,P2,name=``cross-set list P1-P2,skin=0,symmetry=.false.,cuto
+ff=0.1)
+\end_layout
+
+\end_inset
+
+
 \end_layout
 
 \begin_layout Subsection
@@ -2832,6 +2874,22 @@ wp2_m: property is active (one-to-one mapping between property and real
 wp2_g: ghost values are up-to-date for this property (assumes wp1_m = 1)
 \end_layout
 
+\begin_layout Section
+Methods
+\end_layout
+
+\begin_layout Standard
+Initializing Particles
+\end_layout
+
+\begin_layout Standard
+P%initialize()
+\end_layout
+
+\begin_layout Standard
+Setting cutoff radius
+\end_layout
+
 \begin_layout Subsection
 mapping_global
 \end_layout
@@ -2892,6 +2950,107 @@ we need to specify which properties have been updated and/or which haven't.
 
 \begin_layout Subsection
 neighlists
+\end_layout
+
+\begin_layout Section
+Meshes
+\end_layout
+
+\begin_layout Subsection
+Looping through mesh nodes
+\end_layout
+
+\begin_layout Standard
+Because the data storage is a bit involved, accessing mesh elements can
+ easily become difficult, inefficient or error-prone.
+ 
+\end_layout
+
+\begin_layout Standard
+For convenience, we provide some macros that implement the most usual cases.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+inline false
+status open
+
+\begin_layout Plain Layout
+
+foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1)
+ indices(i,j)     for valid_nodes                 
+\end_layout
+
+\begin_layout Plain Layout
+
+		pos(1:ndim) = sbpitr%get_pos(i,j)                 
+\end_layout
+
+\begin_layout Plain Layout
+
+		Field1_n(1) = cos(2._mk*pi*pos(1)
+\end_layout
+
+\begin_layout Plain Layout
+
+		Field2_n    = 1._mk
+\end_layout
+
+\begin_layout Plain Layout
+
+end foreach 
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+valid_nodes
+\emph default
+: all mesh nodes that are within a patch.
+ This includes the ghost layers between subpatches (when a patch overlap
+ with subdomains' boundaries and is thus split into several subpatches)
+ and the ghost layers beyond the computational domain for periodic boundary
+ conditions.
+ The other ghost layers, if they exist, are not accessed (they may be there
+ for computational reasons, but they may not contain valid data).
+ 
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+real
+\emph default
+: all real mesh nodes that are within a patch.
+ This excludes all ghost layers.
+ This loop should access all mesh nodes once and only once (nodes are never
+ duplicated).
+\end_layout
+
+\begin_layout Standard
+
+\emph on
+all
+\emph default
+: all allocated mesh nodes.
+\end_layout
+
+\begin_layout Standard
+2d vs 3d: the loop expands by default for 2D meshes unless a 3rd argument
+ is provided to the 
+\begin_inset Quotes eld
+\end_inset
+
+indices
+\begin_inset Quotes erd
+\end_inset
+
+ modifier, e.g., indices(i,j,k).
 \end_layout
 
 \begin_layout Section

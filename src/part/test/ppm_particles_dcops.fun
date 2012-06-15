@@ -30,7 +30,7 @@ integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost
 type(ppm_t_particles_d)         :: Part1
 type(ppm_t_sop_d)               :: Part1_a
-type(ppm_t_field)               :: SField1,SField2,SField3
+type(ppm_t_field)               :: SField1,SField2,SField3,SField4
 type(ppm_t_field)               :: VFieldD,VField2,VField3,VField5
 integer                         :: seedsize
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -101,7 +101,6 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call VFieldD%create(ndim,info,name="F_vecDim") !vector field
         call VField2%create(2,info,name="F_vec2") !vector field
         call VField3%create(3,info,name="F_vec3") !vector field
-        call VField5%create(5,info,name="F_vec5") !vector field
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
 
@@ -122,7 +121,6 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call VFieldD%discretize_on(Part1,info)
         call VField2%discretize_on(Part1,info)
         call VField3%discretize_on(Part1,info)
-        call VField5%discretize_on(Part1,info)
 
 
         !Perturb the  particles positions
@@ -137,14 +135,13 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call Part1%apply_bc(info)
         call Part1%map(info)
 
-        foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3) vec_fields(VD=VFieldD,V2=VField2,V3=VField3,V5=VField5)
+        foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3) vec_fields(VD=VFieldD,V2=VField2,V3=VField3)
             S1_p = f0_test(x_p(1:ndim),ndim)
             S2_p = 0._mk !f0_test(x_p(1:ndim),ndim)
             S3_p = -8._mk * pi*pi * f0_test(x_p(1:ndim),ndim)
             VD_p(1:ndim)    = -10._mk
             V2_p(1:2)       = -10._mk
             V3_p(1:3)       = -10._mk
-            V5_p(1:5)       = -10._mk
         end foreach
 
         end_subroutine()
@@ -160,6 +157,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call SField1%destroy(info)
         call SField2%destroy(info)
         call SField3%destroy(info)
+        call SField4%destroy(info)
         call VFieldD%destroy(info)
         call VField2%destroy(info)
         call VField3%destroy(info)
@@ -221,6 +219,9 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         !Assert_True(associated(PSEop))
 
         call DCop%compute(SField1,SField2,info)
+        Assert_Equal(info,0)
+        !testing output on a field that is not yet created nor discretized
+        call DCop%compute(SField1,SField4,info)
         Assert_Equal(info,0)
 
         call ppm_vtk_particles("output",Part1,info)

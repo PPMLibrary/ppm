@@ -233,61 +233,89 @@ SUBROUTINE DTYPE(get_nvlist)_(this,nvlist,info,NList)
     CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map)_(Pc,info,debug,global,topoid)
+SUBROUTINE DTYPE(part_map)_(Pc,info,global,topoid)
     IMPORT DTYPE(ppm_t_particles)_
     CLASS(DTYPE(ppm_t_particles)_)                          :: Pc
     INTEGER,                            INTENT(  OUT)      :: info
-    LOGICAL, OPTIONAL                                   :: debug
     LOGICAL, OPTIONAL                                   :: global
     INTEGER, OPTIONAL                                   :: topoid
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map_ghosts)_(Pc,info,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_positions)_(Pc,info,global,topoid)
+    IMPORT DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    INTEGER,                            INTENT(  OUT)   :: info
+    LOGICAL, OPTIONAL                                   :: global
+    INTEGER, OPTIONAL                                   :: topoid
+END SUBROUTINE
+
+SUBROUTINE DTYPE(part_map_push)_(Pc,info,Field)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    INTEGER,                            INTENT(  OUT)   :: info
+    CLASS(ppm_t_field_),OPTIONAL                        :: Field
+END SUBROUTINE
+
+SUBROUTINE DTYPE(part_map_send)_(Pc,info)
+    IMPORT DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    INTEGER,                            INTENT(  OUT)   :: info
+END SUBROUTINE
+
+SUBROUTINE DTYPE(part_map_pop)_(Pc,info,Field)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
+    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    INTEGER,                            INTENT(  OUT)   :: info
+    CLASS(ppm_t_field_),OPTIONAL                        :: Field
+END SUBROUTINE
+
+SUBROUTINE DTYPE(part_map_pop_positions)_(Pc,info)
+    IMPORT DTYPE(ppm_t_particles)_
+    CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
+    INTEGER,                            INTENT(  OUT)   :: info
+END SUBROUTINE
+
+SUBROUTINE DTYPE(part_map_ghosts)_(Pc,info,ghostsize)
     IMPORT DTYPE(ppm_t_particles)_,MK
     CLASS(DTYPE(ppm_t_particles)_)                       :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
     REAL(MK), OPTIONAL                                  :: ghostsize
-    LOGICAL, OPTIONAL                                   :: debug
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map_ghost_get)_(Pc,info,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_ghost_get)_(Pc,info,ghostsize)
     IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
     REAL(MK), OPTIONAL                                  :: ghostsize
-    LOGICAL, OPTIONAL                                   :: debug
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map_ghost_push)_(Pc,info,Field,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_ghost_push)_(Pc,info,Field,ghostsize)
     IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
     CLASS(ppm_t_field_),OPTIONAL                        :: Field
     REAL(MK), OPTIONAL                                  :: ghostsize
-    LOGICAL, OPTIONAL                                   :: debug
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_map_ghost_send)_(Pc,info)
-    IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map_ghost_pop)_(Pc,info,Field,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_ghost_pop)_(Pc,info,Field,ghostsize)
     IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
     CLASS(ppm_t_field_),OPTIONAL                        :: Field
     REAL(MK), OPTIONAL                                  :: ghostsize
-    LOGICAL, OPTIONAL                                   :: debug
 END SUBROUTINE
 
-SUBROUTINE DTYPE(part_map_ghost_pop_pos)_(Pc,info,ghostsize,debug)
+SUBROUTINE DTYPE(part_map_ghost_pop_pos)_(Pc,info,ghostsize)
     IMPORT DTYPE(ppm_t_particles)_,MK,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)                      :: Pc
     INTEGER,                            INTENT(  OUT)   :: info
     REAL(MK), OPTIONAL                                  :: ghostsize
-    LOGICAL, OPTIONAL                                   :: debug
 END SUBROUTINE
 
 SUBROUTINE DTYPE(part_apply_bc)_(Pc,info)
