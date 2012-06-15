@@ -199,6 +199,8 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     !!! The destination field, Field_to, must have been defined (using
     !!! Field_to%create()) but it does not have to be be discretized or
     !!! initialized. This will be done if necessary.
+    !!! The dimension of Field_to needs to conform the output of the 
+    !!! operator (vector or scalar, type, etc...).
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -271,6 +273,9 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         !output is a scalar. Each component of the input field will be fed
         ! to the operator.
         lda = data_src%lda
+        ! check for compatibility with the output
+        check_true("Field_to%lda.EQ.1",&
+                "With this operator, output field should be a scalar.")
     ENDIF
 
     check_true("Part_src%has_neighlist(Part_to)",&
@@ -317,7 +322,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             or_fail("Field_to%get_to failed")
     ENDIF
 
-    IF (lda.GT.1) THEN
+    IF (vector_output) THEN
         CALL Part_to%get(field_to,dwpv,info,with_ghosts=with_ghosts)
             or_fail("Cannot access Field_to on this particle set") 
         DO ip = 1,np_target

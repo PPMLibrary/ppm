@@ -349,11 +349,10 @@ real(mk),dimension(ndim)         :: offset
         bcdef(3) = bcdefY
         bcdef(4) = bcdefY
 
-        if (ppm_debug.ge.0 .and. rank.eq.0) then
+        if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("STARTING test with bcdef = ",'bcdef(1:2*ndim)')
             stdout(" patch covers the whole domain? ",unifpatch)
         endif
-        call MPI_BARRIER(comm,info)
 
         offset = 0._mk
         Nm(ndim) = 65
@@ -431,7 +430,6 @@ real(mk),dimension(ndim)         :: offset
             enddo
             call MPI_BARRIER(comm,info)
         endif
-
 
 
         p => Mesh1%subpatch%begin()

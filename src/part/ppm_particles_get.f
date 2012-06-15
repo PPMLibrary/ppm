@@ -138,7 +138,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
 
     END SELECT
 
-    check_associated(wp,"Get_Prop returned a NULL pointer")
+    check_associated(wp,"Get_Prop returned a NULL pointer",ppm_err_sub_failed)
 
     end_subroutine()
 END SUBROUTINE __FUNCNAME
@@ -270,7 +270,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
         fail("wrong type. Discretized data should be a ppm_t_part_prop")
     END SELECT
 
-    check_associated(wp,"Get_Field returned a NULL pointer")
+    check_associated(wp,"Get_Field returned a NULL pointer",ppm_err_sub_failed)
 
     end_subroutine()
 END SUBROUTINE __FUNCNAME

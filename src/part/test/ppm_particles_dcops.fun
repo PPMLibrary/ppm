@@ -7,7 +7,7 @@ use ppm_module_field_typedef
 use ppm_module_operator_typedef
 use ppm_module_sop
 use ppm_module_data
-!use ppm_module_io_vtk
+use ppm_module_io_vtk
 
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -30,8 +30,8 @@ integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost
 type(ppm_t_particles_d)         :: Part1
 type(ppm_t_sop_d)               :: Part1_a
-type(ppm_t_field)               :: Field1
-type(ppm_t_field)               :: Field2
+type(ppm_t_field)               :: SField1,SField2,SField3
+type(ppm_t_field)               :: VFieldD,VField2,VField3,VField5
 integer                         :: seedsize
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
@@ -94,8 +94,14 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         !--------------------------
         !Define Fields
         !--------------------------
-        call Field1%create(ndim,info,name="F_vec") !vector field
-        call Field2%create(1,info,name="F_sca") !scalar field
+        call SField1%create(1,info,name="F_sca1") !scalar field
+        call SField2%create(1,info,name="F_sca2") !scalar field
+        call SField3%create(1,info,name="F_sca3") !scalar field
+
+        call VFieldD%create(ndim,info,name="F_vecDim") !vector field
+        call VField2%create(2,info,name="F_vec2") !vector field
+        call VField3%create(3,info,name="F_vec3") !vector field
+        call VField5%create(5,info,name="F_vec5") !vector field
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
 
@@ -109,8 +115,14 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         call Part1%map_ghosts(info)
 
-        call Field1%discretize_on(Part1,info)
-        call Field2%discretize_on(Part1,info)
+        call SField1%discretize_on(Part1,info)
+        call SField2%discretize_on(Part1,info)
+        call SField3%discretize_on(Part1,info)
+
+        call VFieldD%discretize_on(Part1,info)
+        call VField2%discretize_on(Part1,info)
+        call VField3%discretize_on(Part1,info)
+        call VField5%discretize_on(Part1,info)
 
 
         !Perturb the  particles positions
@@ -125,9 +137,14 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call Part1%apply_bc(info)
         call Part1%map(info)
 
-        foreach p in particles(Part1) with positions(x) sca_fields(F2=Field2) vec_fields(F1=Field1)
-            F1_p(1:ndim) = f0_test(x_p(1:ndim),ndim)
-            F2_p         = f0_test(x_p(1:ndim),ndim)
+        foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3) vec_fields(VD=VFieldD,V2=VField2,V3=VField3,V5=VField5)
+            S1_p = f0_test(x_p(1:ndim),ndim)
+            S2_p = 0._mk !f0_test(x_p(1:ndim),ndim)
+            S3_p = -8._mk * pi*pi * f0_test(x_p(1:ndim),ndim)
+            VD_p(1:ndim)    = -10._mk
+            V2_p(1:2)       = -10._mk
+            V3_p(1:3)       = -10._mk
+            V5_p(1:5)       = -10._mk
         end foreach
 
         end_subroutine()
@@ -140,8 +157,13 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call DCop%destroy(info)
         call Op%destroy(info)
         call Part1%destroy(info)
-        call Field1%destroy(info)
-        call Field2%destroy(info)
+        call SField1%destroy(info)
+        call SField2%destroy(info)
+        call SField3%destroy(info)
+        call VFieldD%destroy(info)
+        call VField2%destroy(info)
+        call VField3%destroy(info)
+        call VField5%destroy(info)
         call ppm_finalize(info)
 
         deallocate(min_phys,max_phys,len_phys)
@@ -187,7 +209,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call Op%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
         
-        call opts_op%create(ppm_param_op_dcpse,info,order=2,c=0.5D0)
+        call opts_op%create(ppm_param_op_dcpse,info,order=2,c=1.4D0)
             or_fail("failed to initialize option object for operator")
 
 
@@ -198,10 +220,12 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         !Assert_Equal(info,0)
         !Assert_True(associated(PSEop))
 
-        call DCop%compute(Field1,Field2,info)
+        call DCop%compute(SField1,SField2,info)
         Assert_Equal(info,0)
 
-        Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
+        call ppm_vtk_particles("output",Part1,info)
+
+        Assert_True(inf_error(Part1,SField1,SField2,DCop).LT.tol_error)
         end_subroutine()
     end test
 
@@ -233,17 +257,17 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         Assert_Equal(info,0)
 
         call opts_op%create(ppm_param_op_dcpse,info,order=2,&
-            c=0.5D0,vector=.true.)
+            c=1.4D0,vector=.true.)
             or_fail("failed to initialize option object for operator")
 
         call Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
         Assert_True(associated(DCop))
 
-        call DCop%compute(Field1,Field2,info)
+        call DCop%compute(SField1,VFieldD,info)
         Assert_Equal(info,0)
 
-        Assert_True(inf_error(Part1,Field1,Field2,DCop).LT.tol_error)
+        Assert_True(inf_error(Part1,SField1,VFieldD,DCop).LT.tol_error)
 
         end_subroutine()
     end test
@@ -335,10 +359,10 @@ function inf_error(Part1,Field1,Field2,Op)
     use ppm_module_data
     type(ppm_t_particles_d)          :: Part1
     type(ppm_t_field)                :: Field1,Field2
-    type(ppm_t_operator_discr)       :: Op
+    class(ppm_t_operator_discr)       :: Op
     integer                          :: ip,nterms
-    real(mk), dimension(:),  pointer :: wp_1, dwp_1
-    real(mk), dimension(:,:),pointer :: xp, wp_2, dwp_2
+    real(mk), dimension(:),  pointer :: wp_1 => NULL(), dwp_1 => NULL()
+    real(mk), dimension(:,:),pointer :: xp=>NULL(), wp_2=>NULL(), dwp_2=>NULL()
     real(mk), dimension(:), allocatable :: err,exact
     real(mk)                         :: linf,inf_error,coeff
     logical                          :: input_vec,output_vec
@@ -348,16 +372,21 @@ function inf_error(Part1,Field1,Field2,Op)
 
     if (op%flags(ppm_ops_vector)) then
         call Part1%get(Field2,dwp_2,info,read_only=.true.)
+        if (info.ne.0) write(*,*) "Failed te get Field2"
         output_vec = .true.
     else
         call Part1%get(Field2,dwp_1,info,read_only=.true.)
+        if (info.ne.0) write(*,*) "Failed te get Field2"
         output_vec = .false.
     endif
+
     if (Field1%lda.EQ.1) THEN
         call Part1%get(Field1,wp_1,info,read_only=.true.)
-        output_vec = .false.
+        if (info.ne.0) write(*,*) "Failed te get Field1"
+        input_vec = .false.
     else
         call Part1%get(Field1,wp_2,info,read_only=.true.)
+        if (info.ne.0) write(*,*) "Failed te get Field1"
         input_vec = .true.
     endif
 
@@ -365,7 +394,8 @@ function inf_error(Part1,Field1,Field2,Op)
     allocate(err(nterms),exact(nterms),degree(nterms*ndim),order(nterms))
 
     call Part1%get_xp(xp,info)
-            
+        if (info.ne.0) write(*,*) "Could not get xp"
+
     err = 0._mk
     linf = 0._mk
     do ip=1,Part1%Npart
@@ -391,9 +421,6 @@ function inf_error(Part1,Field1,Field2,Op)
         linf = MAX(linf,MAXVAL(abs(exact)))
     enddo
 
-!    write(fname,'(A,I0)') 'test_grad',ppm_nproc
-!    CALL ppm_vtk_particle_cloud(TRIM(ADJUSTL(fname)),Part1,info)
-
 #ifdef __MPI
     call MPI_Allreduce(linf,linf,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
     call MPI_Allreduce(maxval(err),inf_error,1,ppm_mpi_kind,MPI_MAX,ppm_comm,info)
@@ -402,8 +429,8 @@ function inf_error(Part1,Field1,Field2,Op)
 #endif
     inf_error = inf_error/linf
 
-!    if (ppm_rank.eq.0) &
-!        write(*,*) '[',ppm_rank,']','Error is ',inf_error
+    if (ppm_rank.eq.0) &
+        write(*,*) '[',ppm_rank,']','Error is ',inf_error
 
     deallocate(err,exact,degree,order)
 end function inf_error
