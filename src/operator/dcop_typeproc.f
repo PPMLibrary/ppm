@@ -227,6 +227,8 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     INTEGER, DIMENSION(:),  POINTER            :: nvlist => NULL()
     INTEGER, DIMENSION(:,:),POINTER            :: vlist => NULL()
     REAL(MK)                                   :: sig
+    LOGICAL                                    :: vector_operator
+    !true if operator returns a vector field
     LOGICAL                                    :: vector_output
     LOGICAL                                    :: vector_input
     LOGICAL                                    :: with_ghosts
@@ -258,28 +260,30 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     CLASS IS (DTYPE(ppm_t_particles)_)
 
 
-    vector_output = this%flags(ppm_ops_vector)
+    vector_operator = this%flags(ppm_ops_vector)
     vector_input = (data_src%lda .NE. 1)
 
     ! Check that the destination field has been defined
-    ! if not, create new one.
+    ! if not, create new one with default dimensions.
     IF (Field_to%lda.LE.0) THEN
         check_false("associated(Field_to%discr_info)",&
             "Destination field seems to be corrupted - Try Field%destroy()?")
         write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
-        IF (vector_output) THEN
+        IF (vector_operator) THEN
             CALL Field_to%create(this%op_ptr%nterms,info,name=fname)
         ELSE
-            CALL Field_to%create(1,info,name=fname)
+            CALL Field_to%create(Field_src%lda,info,name=fname)
         ENDIF
         or_fail("could not create new destination field")
     ENDIF
 
+    vector_output = (Field_to%lda.GT.1)
+
     check_true("Field_to%lda.GT.0","Invalid destination field")
 
     !set lda, the leading dimension of the output data
-    IF (vector_output) THEN
-        !output is a vector
+    IF (vector_operator) THEN
+        !the operator returns vector values
         lda = this%op_ptr%nterms
         ! check for compatibility with the input
         IF (vector_input) THEN
@@ -287,12 +291,12 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                 "Leading dimension of input field does not match nterms of operator")
         ENDIF
     ELSE
-        !output is a scalar. Each component of the input field will be fed
+        ! Each component of the input field will be fed
         ! to the operator.
         lda = data_src%lda
         ! check for compatibility with the output
-            check_true("Field_to%lda.EQ.1",&
-                    "With this operator, output field should be a scalar.")
+            check_true("Field_to%lda.EQ.Field_src%lda",&
+            "With this operator, output and input fields should have the same dimensions.")
     ENDIF
 
     check_true("Part_src%has_neighlist(Part_to)",&
@@ -361,7 +365,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     IF (this%flags(ppm_ops_interp)) THEN
         CALL Part_to%get_vlist(nvlist,vlist,info)
             or_fail("could not access neighbour lists")
-        IF (vector_output) THEN
+        IF (vector_operator) THEN
             IF(vector_input) THEN
                 CALL Part_src%get(field_src,wpv2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
@@ -390,7 +394,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                 ENDDO
             ENDIF
         ELSE
-            IF(vector_input) THEN
+            IF(vector_output) THEN
                 CALL Part_src%get(field_src,wpv2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wpv2")
@@ -418,7 +422,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         CALL Part_src%get_vlist(nvlist,vlist,info)
             or_fail("could not access neighbour lists")
         sig = -1._mk
-        IF (vector_output) THEN
+        IF (vector_operator) THEN
             IF(vector_input) THEN
                 CALL Part_src%get(field_src,wpv1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
@@ -449,7 +453,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                 ENDDO
             ENDIF
         ELSE
-            IF(vector_input) THEN
+            IF(vector_output) THEN
                 CALL Part_src%get(field_src,wpv1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wpv1")
