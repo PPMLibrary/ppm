@@ -147,7 +147,7 @@ END SUBROUTINE __FUNCNAME
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set_prop)
 SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_particles))    :: this
-    CLASS(DTYPE(ppm_t_part_prop)_)   :: discr_data
+    CLASS(ppm_t_discr_data)          :: discr_data
     INTEGER                          :: info
     !!! Return status, on success 0.
     LOGICAL,OPTIONAL                 :: read_only

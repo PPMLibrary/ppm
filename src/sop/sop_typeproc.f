@@ -31,7 +31,6 @@ SUBROUTINE DTYPE(sop_create)(Pc,Npart,info,name)
         or_fail("failed to initialize non-sop particle set")
 
     !and update the few fields that are specific to SOP
-    Pc%adaptive = .FALSE.
     Pc%adapt_wp => NULL()
     Pc%D => NULL()
     Pc%Dtilde => NULL()

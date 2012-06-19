@@ -1,4 +1,4 @@
-SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
+SUBROUTINE DTYPE(sop_self_organize)(this,D_fun,opts,info,Adapt_Field,    &
         wp_fun,wp_grad_fun,wplap_id,return_grad,level_fun,level_grad_fun,&
         smallest_sv,nb_fun,stats)
       !-------------------------------------------------------------------------
@@ -55,12 +55,15 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     ! arguments
     CLASS(DTYPE(ppm_t_sop))                               :: this
     !!! particles
-    TYPE(DTYPE(sop_t_opts)),  POINTER,    INTENT(INOUT)   :: opts
+    TYPE(DTYPE(ppm_t_options_sop)),       INTENT(INOUT)   :: opts
     !!! options
     INTEGER,                              INTENT(  OUT)   :: info
 
     !optional arguments
 
+    CLASS(ppm_t_main_abstr), TARGET, OPTIONAL               :: Adapt_Field
+    !!! Field, or property, on which which the monitor function is applied.
+    !!! This is thus the field that the particles will try to best discretize.
     LOGICAL, OPTIONAL                                     :: return_grad
     !!! return field gradients on output
     INTEGER,                      OPTIONAL,INTENT(INOUT)  :: wplap_id
@@ -86,12 +89,12 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
         FUNCTION D_fun(f1,dfdx,opts,f2)
             USE ppm_module_data, ONLY: ppm_dim
             USE ppm_module_interfaces
-            import DTYPE(sop_t_opts)
+            import DTYPE(ppm_t_options_sop)
             DEFINE_MK()
             REAL(MK)                                   :: D_fun
             REAL(MK),                   INTENT(IN)     :: f1
             REAL(MK),DIMENSION(ppm_dim),INTENT(IN)     :: dfdx
-            TYPE(DTYPE(sop_t_opts)),POINTER,INTENT(IN) :: opts
+            TYPE(DTYPE(ppm_t_options_sop)),INTENT(IN)  :: opts
             REAL(MK),OPTIONAL,          INTENT(IN)     :: f2
         END FUNCTION D_fun
 
@@ -184,6 +187,7 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     TYPE(ppm_t_operator)                       :: Interp
     CLASS(ppm_t_operator_discr),POINTER        :: InterpDiscr => NULL()
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER     :: nn_sq => NULL() 
+    CLASS(ppm_t_discr_data),POINTER            :: discr_data => NULL() 
 
     integer, dimension(ppm_dim)                :: degree
     real(ppm_kind_double),dimension(1)         :: coeffs
@@ -193,24 +197,8 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Checks consistency of parameters
     !-------------------------------------------------------------------------!
-    IF (PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun)) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,   &
-            &  'provided analytical gradients but not analytical &
-            &   function values. This case is not yet implemented',&
-            &  __LINE__,info)
-        GOTO 9999
-    ENDIF
-    IF (.NOT. ASSOCIATED(opts)) THEN
-        !provide defaults for opts
-        CALL sop_init_opts(opts,info)
-        IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_alloc,caller,   &
-                &  'Allocation failed for opts',__LINE__,info)
-            GOTO 9999
-        ENDIF
-    ENDIF
+    check_false("(PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun))",&
+            &  "provided analytical gradients but not analytical function values. This case is not yet implemented")
     IF (.NOT.PRESENT(wp_grad_fun) .AND. PRESENT(wp_fun)) THEN
         IF (opts%D_needs_gradients) THEN
             info = ppm_error_error
@@ -236,9 +224,10 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
         stdout("Calling adapt_particles with conflicting options",&
                "Warning: on exit, wp_lap will have nonsense values")
     ENDIF
-    !-------------------------------------------------------------------------!
-    ! Perform consistency checks
-    !-------------------------------------------------------------------------!
+
+    check_true("(PRESENT(wp_fun).OR.PRESENT(Adapt_Field))",&
+        "Need to either provide an analytical function wp_fun, or a discretized Field, Adapt_Field, on which particles should adapt")
+
     !check data structure exists
     check_true("ASSOCIATED(this%xp)",&
             "Particles structure had not been defined. Call allocate first")
@@ -278,12 +267,22 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     ! Check that the scalar field on which particles are supposed to adapt
     ! has been defined or is provided by an analytical function
     IF (.NOT.PRESENT(wp_fun)) THEN
-        !check if a scalar property has already been specified as the argument
-        !for the resolution function (i.e. the particles will adapt to resolve
-        !this property well)
-        IF (.NOT. ASSOCIATED(this%adapt_wp)) THEN
-            fail("need to define adapt_wp first")
-        ENDIF
+        !Points this%adapt_wp to the array that stores the discretized
+        !resolution function.
+        SELECT TYPE(Adapt_Field)
+        CLASS IS (ppm_t_field_)
+        CALL this%get_discr(Adapt_Field,discr_data,info)
+            SELECT TYPE(discr_data)
+            CLASS IS (DTYPE(ppm_t_part_prop)_)
+                this%adapt_wp => discr_data
+            END SELECT
+        CLASS IS (DTYPE(ppm_t_part_prop)_)
+            this%adapt_wp => Adapt_Field
+        CLASS DEFAULT
+            fail("Wrong type for argument Adapt_Field") 
+        END SELECT
+        or_fail("Could not access data array for Adapt_Field")
+        check_associated("this%adapt_wp")
         check_true("this%adapt_wp%flags(ppm_ppt_ghosts)",&
                 &  "need to get the ghosts for adapt_wp")
     ENDIF
@@ -341,14 +340,15 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
     !!-------------------------------------------------------------------------!
 
     !TODO
-    !CALL sop_compute_D(Particles,D_fun,opts,info,     &
-        !wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
-        !level_grad_fun=level_grad_fun,nb_fun=nb_fun,stats=stats)
-        !or_fail("sop_compute_D failed")
+    CALL this%compute_D(D_fun,opts,info,     &
+        wp_fun=wp_fun,wp_grad_fun=wp_grad_fun,level_fun=level_fun,&
+        level_grad_fun=level_grad_fun,nb_fun=nb_fun,stats=stats)
+        or_fail("sop_compute_D failed")
 
     !REMOVME???
     CALL this%get(this%rcp,rcp,info)
         or_fail("could not get pointer to rcp")
+
     CALL this%get(this%D,D,info,read_only=.TRUE.)
         or_fail("could not get pointer to D")
 
@@ -743,4 +743,4 @@ SUBROUTINE DTYPE(sop_adapt_particles)(this,D_fun,opts,info,     &
 
 
     end_subroutine()
-END SUBROUTINE DTYPE(sop_adapt_particles)
+END SUBROUTINE DTYPE(sop_self_organize)

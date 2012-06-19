@@ -207,10 +207,10 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_dcop))                   :: this
     !!! Discretized DC-PSE operator, with pre-computed weights
-    CLASS(ppm_t_field_),TARGET,INTENT(IN)      :: Field_src
-    !!! Input field
-    CLASS(ppm_t_field_),TARGET,INTENT(INOUT)   :: Field_to
-    !!! Output field
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)      :: Field_src
+    !!! Input field (or particle property)
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(INOUT)   :: Field_to
+    !!! Output field (or particle property)
     INTEGER,                       INTENT(OUT) :: info
     !!! Return status, on success 0.
 
@@ -251,13 +251,24 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     check_associated("this%discr_src")
     check_associated("this%discr_to")
 
-    CALL Field_src%get_discr(this%discr_src,data_src,info)
-        or_fail("Failed to access the discretization of the source field")
-
     SELECT TYPE (Part_src => this%discr_src)
     CLASS IS (DTYPE(ppm_t_particles)_)
     SELECT TYPE (Part_to  => this%discr_to)
     CLASS IS (DTYPE(ppm_t_particles)_)
+
+
+    !Get a pointer to the discretized data (2 cases, depending on whether
+    ! the input is a Field or a Particle Property object).
+    SELECT TYPE(Field_src)
+    CLASS IS (ppm_t_field_)
+        CALL Field_src%get_discr(Part_src,data_src,info)
+        or_fail("Failed to access the discretization of the source field")
+    CLASS IS (DTYPE(ppm_t_part_prop)_)
+        data_src => Field_src
+    CLASS DEFAULT
+        fail("Wrong type for Field_src")
+    END SELECT
+
 
 
     vector_operator = this%flags(ppm_ops_vector)
@@ -265,21 +276,26 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 
     ! Check that the destination field has been defined
     ! if not, create new one with default dimensions.
-    IF (Field_to%lda.LE.0) THEN
-        check_false("associated(Field_to%discr_info)",&
-            "Destination field seems to be corrupted - Try Field%destroy()?")
-        write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
-        IF (vector_operator) THEN
-            CALL Field_to%create(this%op_ptr%nterms,info,name=fname)
-        ELSE
-            CALL Field_to%create(Field_src%lda,info,name=fname)
+    SELECT TYPE(Field_to)
+    CLASS IS (ppm_t_field_)
+        IF (Field_to%lda.LE.0) THEN
+            check_false("associated(Field_to%discr_info)",&
+                "Destination field seems to be corrupted - Try Field%destroy()?")
+            write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
+            IF (vector_operator) THEN
+                CALL Field_to%create(this%op_ptr%nterms,info,name=fname)
+            ELSE
+                CALL Field_to%create(data_src%lda,info,name=fname)
+            ENDIF
+            or_fail("could not create new destination field")
         ENDIF
-        or_fail("could not create new destination field")
-    ENDIF
+    CLASS IS (DTYPE(ppm_t_part_prop)_)
+    CLASS DEFAULT
+        fail("Wrong type for Field_to")
+    END SELECT
 
-    vector_output = (Field_to%lda.GT.1)
 
-    check_true("Field_to%lda.GT.0","Invalid destination field")
+
 
     !set lda, the leading dimension of the output data
     IF (vector_operator) THEN
@@ -294,15 +310,12 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         ! Each component of the input field will be fed
         ! to the operator.
         lda = data_src%lda
-        ! check for compatibility with the output
-            check_true("Field_to%lda.EQ.Field_src%lda",&
-            "With this operator, output and input fields should have the same dimensions.")
     ENDIF
 
     check_true("Part_src%has_neighlist(Part_to)",&
         "Please compute (maybe xset?) neighbor lists first")
 
-    check_true("Part_src%has_ghosts(Field_src)",&
+    check_true("data_src%has_ghosts()",&
         "Ghost for source field need to be updated")
 
     !If with_ghosts has been set to true (only used in some special cases)
@@ -315,45 +328,59 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         np_target = Part_src%Npart
     ENDIF
 
-
-    IF (.NOT. ASSOCIATED(Field_to%discr_info)) THEN
-        CALL Field_to%create(lda,info,name=this%op_ptr%name,&
-            dtype=Field_src%data_type)
-            or_fail("Failed to create field for the output of the operator")
-    ENDIF
-
-    !allocate output field if needed
-    !otherwise simply check that the output array had been allocated
-    !to the right size
-    IF (.NOT. Field_to%is_discretized_on(Part_to)) THEN
-        CALL Field_to%discretize_on(Part_to,info,with_ghosts=with_ghosts)
-            or_fail("Failed to initialize destination field discretization")
-    ENDIF
-
-
-    CALL Field_to%get_discr(this%discr_to,data_to,info)
-        or_fail("Field_to%get_to failed")
-
-
-    IF (.NOT. data_to%flags(ppm_ppt_partial) .OR. &
-            &       with_ghosts .AND. .NOT. data_to%flags(ppm_ppt_ghosts)) THEN
-        CALL Field_to%discretize_on(Part_to,info,with_ghosts=with_ghosts)
-            or_fail("Failed to reinitialize destination field discretization")
+    !Get a pointer to the discretized data (2 cases, depending on whether
+    ! the input is a Field or a Particle Property object).
+    SELECT TYPE(Field_to)
+    CLASS IS (ppm_t_field_)
+        IF (.NOT. ASSOCIATED(Field_to%discr_info)) THEN
+            CALL Field_to%create(lda,info,name=this%op_ptr%name,&
+                dtype=data_src%data_type)
+                or_fail("Failed to create field for the output of the operator")
+        ENDIF
+        !allocate output field if needed
+        !otherwise simply check that the output array had been allocated
+        !to the right size
+        IF (.NOT. Field_to%is_discretized_on(Part_to)) THEN
+            CALL Field_to%discretize_on(Part_to,info,with_ghosts=with_ghosts)
+                or_fail("Failed to initialize destination field discretization")
+        ENDIF
         CALL Field_to%get_discr(this%discr_to,data_to,info)
             or_fail("Field_to%get_to failed")
+
+
+        IF (.NOT. data_to%flags(ppm_ppt_partial) .OR. &
+                &       with_ghosts .AND. .NOT. data_to%flags(ppm_ppt_ghosts)) THEN
+            CALL Field_to%discretize_on(Part_to,info,with_ghosts=with_ghosts)
+                or_fail("Failed to reinitialize destination field discretization")
+            CALL Field_to%get_discr(this%discr_to,data_to,info)
+                or_fail("Field_to%get_to failed")
+        ENDIF
+    CLASS IS (DTYPE(ppm_t_part_prop)_)
+        data_to => Field_to
+    CLASS DEFAULT
+        fail("Wrong type for Field_to")
+    END SELECT
+
+
+    ! check for compatibility with the output
+    IF (.NOT.vector_operator) THEN
+        check_true("data_to%lda.EQ.data_src%lda",&
+            "With this operator, output and input fields should have the same dimensions.")
     ENDIF
 
+    vector_output = (data_to%lda.GT.1)
+
     IF (vector_output) THEN
-        CALL Part_to%get(field_to,dwpv,info,with_ghosts=with_ghosts)
-            or_fail("Cannot access Field_to on this particle set") 
+        CALL Part_to%get(data_to,dwpv,info,with_ghosts=with_ghosts)
+            or_fail("Cannot access data_to on this particle set") 
         DO ip = 1,np_target
             DO j=1,lda
                 dwpv(j,ip) = 0._MK
             ENDDO
         ENDDO
     ELSE
-        CALL Part_to%get(field_to,dwps,info,with_ghosts=with_ghosts)
-            or_fail("Cannot access Field_to on this particle set") 
+        CALL Part_to%get(data_to,dwps,info,with_ghosts=with_ghosts)
+            or_fail("Cannot access data_to on this particle set") 
         DO ip = 1,np_target
             dwps(ip) = 0._MK
         ENDDO
@@ -367,7 +394,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             or_fail("could not access neighbour lists")
         IF (vector_operator) THEN
             IF(vector_input) THEN
-                CALL Part_src%get(field_src,wpv2,info,&
+                CALL Part_src%get(data_src,wpv2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                     or_fail("could not access wpv2")
                 DO ip = 1,np_target
@@ -380,7 +407,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                     ENDDO
                 ENDDO
             ELSE
-                CALL Part_src%get(field_src,wps2,info,&
+                CALL Part_src%get(data_src,wps2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                     or_fail("could not access wps2")
                 DO ip = 1,np_target
@@ -395,7 +422,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             ENDIF
         ELSE
             IF(vector_output) THEN
-                CALL Part_src%get(field_src,wpv2,info,&
+                CALL Part_src%get(data_src,wpv2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wpv2")
                 DO ip = 1,np_target
@@ -407,7 +434,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                     ENDDO
                 ENDDO
             ELSE
-                CALL Part_src%get(field_src,wps2,info,&
+                CALL Part_src%get(data_src,wps2,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wps2")
                 DO ip = 1,np_target
@@ -424,7 +451,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         sig = -1._mk
         IF (vector_operator) THEN
             IF(vector_input) THEN
-                CALL Part_src%get(field_src,wpv1,info,&
+                CALL Part_src%get(data_src,wpv1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                     or_fail("could not access wpv1")
                 DO ip = 1,np_target
@@ -438,7 +465,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                     ENDDO
                 ENDDO
             ELSE
-                CALL Part_src%get(field_src,wps1,info,&
+                CALL Part_src%get(data_src,wps1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                     or_fail("could not access wps1")
                 DO ip = 1,np_target
@@ -454,7 +481,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             ENDIF
         ELSE
             IF(vector_output) THEN
-                CALL Part_src%get(field_src,wpv1,info,&
+                CALL Part_src%get(data_src,wpv1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wpv1")
                 DO ip = 1,np_target
@@ -467,7 +494,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
                     ENDDO
                 ENDDO
             ELSE
-                CALL Part_src%get(field_src,wps1,info,&
+                CALL Part_src%get(data_src,wps1,info,&
                     with_ghosts=.TRUE.,read_only=.TRUE.)
                 or_fail("could not access wps1")
                 DO ip = 1,np_target
@@ -488,15 +515,15 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
             !we assume that the ghosts are up-to-date even though
             !they clearly are not. we assume you know what you are
             !doing when using this option.
-            CALL Part_to%set_field(field_to,dwpv,info,ghosts_ok=.TRUE.)
+            CALL Part_to%set(data_to,dwpv,info,ghosts_ok=.TRUE.)
         ELSE
-            CALL Part_to%set_field(field_to,dwpv,info)
+            CALL Part_to%set(data_to,dwpv,info)
         ENDIF
     ELSE
         IF (with_ghosts) THEN
-            CALL Part_to%set_field(field_to,dwps,info,ghosts_ok=.TRUE.)
+            CALL Part_to%set(data_to,dwps,info,ghosts_ok=.TRUE.)
         ELSE
-            CALL Part_to%set_field(field_to,dwps,info)
+            CALL Part_to%set(data_to,dwps,info)
         ENDIF
     ENDIF
 

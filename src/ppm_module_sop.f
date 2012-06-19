@@ -35,7 +35,7 @@ PRIVATE
 INTEGER, PRIVATE, DIMENSION(3)    :: ldc
 !!! Number of elements in all dimensions for allocation
 
-PUBLIC :: ppm_t_sop_s, ppm_t_sop_d
+PUBLIC :: ppm_t_sop_s, ppm_t_sop_d, ppm_t_options_sop_s, ppm_t_options_sop_d
 
 INTERFACE sop_init_opts
     MODULE PROCEDURE sop_init_opts_s
@@ -49,7 +49,8 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
 #include "sop/sop_typeproc.f"
 #include "sop/ppm_sop_helpers.f"
-#include "sop/sop_adapt_particles.f"
+#include "sop/sop_compute_D.f"
+#include "sop/sop_self_organize.f"
 #undef  DEFINE_MK
 
 #undef  DTYPE
@@ -61,7 +62,8 @@ CONTAINS
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_double
 #include "sop/sop_typeproc.f"
 #include "sop/ppm_sop_helpers.f"
-#include "sop/sop_adapt_particles.f"
+#include "sop/sop_compute_D.f"
+#include "sop/sop_self_organize.f"
 #undef  DEFINE_MK
 
 #undef  DTYPE

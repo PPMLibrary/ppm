@@ -3,9 +3,6 @@ TYPE,EXTENDS(DTYPE(ppm_t_vbp)) :: DTYPE(ppm_t_sop)
     !!! for Self-Organizing Particles
 
     ! Adaptive particles
-    LOGICAL                                         :: adaptive
-    !!! true if the particles have their own cutoff radii
-    !!! in this case, the cutoff will be stored in wps(rcp_id)%vec
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: D => NULL()
     !!! pointer to the property that stores D
     CLASS(DTYPE(ppm_t_part_prop)_),POINTER          :: Dtilde => NULL()
@@ -41,62 +38,60 @@ TYPE,EXTENDS(DTYPE(ppm_t_vbp)) :: DTYPE(ppm_t_sop)
 
         CONTAINS
     !        PRIVATE
-           PROCEDURE :: DTYPE(sop_adapt_particles)
+           PROCEDURE :: self_organize => DTYPE(sop_self_organize)
+           PROCEDURE :: compute_D     => DTYPE(sop_compute_D)
 
 
 END TYPE DTYPE(ppm_t_sop)
 
-TYPE DTYPE(sop_t_opts)
+TYPE,EXTENDS(ppm_t_options):: DTYPE(ppm_t_options_sop)
     !!! derived type for optional arguments to the adaptivity routine
 
-    LOGICAL           :: level_set
-    REAL(MK)          :: param_nb
-    REAL(MK)          :: nb_width
-    REAL(MK)          :: nb_width2
-    REAL(MK)          :: nb_width_kill
-    INTEGER           :: order_approx
+    LOGICAL           :: level_set = .FALSE.
+    REAL(MK)          :: param_nb =  1._MK
+    REAL(MK)          :: nb_width = 1._MK
+    REAL(MK)          :: nb_width2 = 1._MK
+    REAL(MK)          :: nb_width_kill = 3._MK
+    INTEGER           :: order_approx = 2
     !!! order of approximation for the interpolation kernels
-    REAL(MK)          :: c
-    LOGICAL           :: check_dcops
+    REAL(MK)          :: c = 1.0_MK
+    LOGICAL           :: check_dcops = .FALSE.
 
-    LOGICAL           :: write_pdb    ! writeout pdb files
-    LOGICAL           :: write_xyz    ! writeout xyz files
-
-
-    LOGICAL                               :: add_parts
+    LOGICAL                               :: add_parts = .TRUE.
     !!! add new particles when needed. Default is .true.
-    LOGICAL                               :: del_parts
+    LOGICAL                               :: del_parts = .TRUE.
     !!! delete particles when too many neighbours. Default is .true.
-    LOGICAL                               :: remove_large_parts
+    LOGICAL                               :: remove_large_parts = .FALSE.
     !!! delete particles that have a cutoff equal to the maximum cutoff
     !!! This is useful in simulations where not some regions of space
     !!! should be left empty (like in level-sets).  Default is .false.
-    LOGICAL                               :: D_needs_gradients
+    LOGICAL                               :: D_needs_gradients = .TRUE.
     !!! The monitor function depends on the fields gradient
-    REAL(MK)                            :: scale_D        ! resolution scale
-    ! maximum scaling distance allowed
-    REAL(MK)                            :: maximum_D      
-    ! minimum resolution
-    REAL(MK)                            :: minimum_D      
-    ! stopping criterion for particle adaptation
-    REAL(MK)                            :: adaptivity_criterion    
-    !counter for the number of gradient descent steps performed
-    INTEGER                               :: nb_grad_desc_steps 
-    !separation distance below which 2 particles fuse
-    REAL(MK)                            :: fuse_radius 
+    REAL(MK)                            :: scale_D = 1._MK  
+    !!! resolution scale
+    REAL(MK)                            :: maximum_D = 0.01_MK
+    !!! maximum scaling distance allowed
+    REAL(MK)                            :: minimum_D = 1.00_MK
+    !!! minimum resolution
+    REAL(MK)                            :: adaptivity_criterion = 8._MK
+    !!! stopping criterion for particle adaptation
+    INTEGER                               :: nb_grad_desc_steps = 0
+    !!!counter for the number of gradient descent steps performed
+    REAL(MK)                            :: fuse_radius = 0.2_MK
+    !!!separation distance below which 2 particles fuse
 
     !some parameters used in various functions
     REAL(MK)                            :: param_a !used in module_funcs
     REAL(MK)                            :: param_d0, param_d1,param_p0 
-    REAL(MK)                            :: param_morse ! rho in the Morse
-    !potential
-    !new particles are generated at distance equal to spawn_radius * D(ip)
-    REAL(MK)                            :: spawn_radius
+    REAL(MK)                            :: param_morse = 2.5_MK 
+    !!! rho in the Morse potential
+    REAL(MK)                            :: spawn_radius = 0.5_MK
+    !!!new particles are generated at distance equal to spawn_radius * D(ip)
 
-    REAL(MK)                            :: attractive_radius0 
-    !distance below which particles attract each other
+    REAL(MK)                            :: attractive_radius0 = 0.4_MK
+    !!!distance below which particles attract each other
 
-    REAL(MK)                            :: rcp_over_D
+    REAL(MK)                            :: rcp_over_D = 2._MK
 
     !====================================================================!
     ! verlet lists
@@ -115,7 +110,7 @@ TYPE DTYPE(sop_t_opts)
     REAL(MK)           :: tolerance_livecheck
 
 
-END TYPE DTYPE(sop_t_opts)
+END TYPE DTYPE(ppm_t_options_sop)
 
 TYPE DTYPE(sop_t_stats)
     !!! derived type to store information about adaptation steps

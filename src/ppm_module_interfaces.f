@@ -119,7 +119,7 @@ END TYPE
 minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
 
 
-TYPE,ABSTRACT :: ppm_t_discr_data
+TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_data
     !!! Data (discretized on either Particles or Meshes)
     INTEGER                                        :: data_type
     !!! Data type for this property
@@ -146,6 +146,8 @@ TYPE,ABSTRACT :: ppm_t_discr_data
     INTEGER                                        :: lda = 0
     !!! Leading dimension of the data array
     !!!
+    CONTAINS
+    PROCEDURE :: has_ghosts => discr_data_has_ghosts
 END TYPE
 minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=true,def_ptr=true)
 
@@ -853,12 +855,19 @@ END SUBROUTINE
 !COMPUTE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
     CLASS(ppm_t_operator_discr)                  :: this
-    CLASS(ppm_t_field_),TARGET,INTENT(IN)        :: Field_src
-    CLASS(ppm_t_field_),TARGET,INTENT(INOUT)     :: Field_to
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)    :: Field_src
+    CLASS(ppm_t_main_abstr),TARGET,INTENT(INOUT) :: Field_to
     INTEGER,                       INTENT(OUT)   :: info
     start_subroutine("operator_discr_compute")
         fail("this dummy routine should not be called")
     end_subroutine()
 END SUBROUTINE
+
+
+FUNCTION discr_data_has_ghosts(this) RESULT(res)
+    CLASS (ppm_t_discr_data)  :: this
+    LOGICAL                   :: res
+    res = this%flags(ppm_ppt_ghosts)
+END FUNCTION
 
 END MODULE ppm_module_interfaces

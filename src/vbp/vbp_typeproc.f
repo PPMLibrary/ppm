@@ -31,10 +31,190 @@ SUBROUTINE DTYPE(vbp_create)(Pc,Npart,info,name)
         or_fail("failed to initialize non-vbp particle set")
 
     !and update the few fields that are specific to VBP
+    Pc%adaptive = .FALSE.
+    check_false("associated(Pc%rcp)",&
+        "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
     Pc%rcp => NULL()
 
     end_subroutine()
 END SUBROUTINE DTYPE(vbp_create)
+
+SUBROUTINE DTYPE(vbp_destroy)(Pc,info)
+    !!! destroy a set of particles
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_vbp))                                :: Pc
+    !!! Data structure containing the particles
+    INTEGER,                                INTENT(  OUT)  :: info
+    !!! Returns status, 0 upon success.
+
+    start_subroutine("vbp_destroy")
+
+
+    !re-initialize the few fields that are specific to VBP
+    Pc%adaptive = .FALSE.
+    Pc%rcp => NULL()
+
+    !Call the parent function
+    CALL Pc%DTYPE(ppm_t_particles)%destroy(info)
+        or_fail("failed to destroy vbp particle set")
+
+
+    end_subroutine()
+END SUBROUTINE DTYPE(vbp_destroy)
+
+SUBROUTINE DTYPE(vbp_set_cutoff)(Pc,cutoff,info,Nlist)
+    !!! Set a constant cutoff radius for a Particle set with varying sizees
+    !!! and update the ghostlayer sizes.
+    !!! The cutoff radius concerns the default neighbor list, unless
+    !!! specified otherwise.
+    !!! If the cutoff is increased from its previous value, the neighbour
+    !!! list is flagged as "not up-to-date" and will have to be recomputed
+    !!! before it is used again.
+    !!! If the ghostlayer sizes are increased from their previous values,
+    !!! the ghosts are flagged as "not up-to-date" and will have to be
+    !!! recomputed before they are used again.
+    !-------------------------------------------------------------------------
+    ! Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_vbp))                  :: Pc
+    REAL(MK),                 INTENT(IN   )  :: cutoff
+    !!! cutoff radius (same number of elements as we have particles)
+    INTEGER,                  INTENT(   OUT) :: info
+    !!! return status. On success, 0
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
+    !!! Neighbor list for which this cutoff radius
+    !!! applies. By default, this is the "standard" Verlet list, with neighbours
+    !!! sought within the particle set itself.
+    
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
+    REAL(MK)   :: max_cutoff
+    REAL(MK),DIMENSION(:),POINTER       :: rcp => NULL()
+    REAL(MK),DIMENSION(:),ALLOCATABLE   :: cutoff_v
+
+    start_subroutine("vbp_set_cutoff")
+
+    IF (associated(Pc%rcp)) THEN
+        !Varying-blob particle set already has a varying cutoff radius. Let us 
+        !overwrite it with the new value.
+        ! NOTE: a better thing to do would be to delete it and use the constant
+        ! cutoff instead. This is doable but would require every routine to
+        ! check which of the two cutoffs are defined (the scalar or the vector
+        ! variable) and use the right one.
+        allocate(cutoff_v(1:Pc%Npart),STAT=info)
+            or_fail_alloc("cutoff_v")
+        cutoff_v = cutoff
+        CALL Pc%set_varying_cutoff(cutoff_v,info,Nlist)
+            or_fail("Failed to set constant cutoff radius")
+        Pc%adaptive = .TRUE.
+        deallocate(cutoff_v,STAT=info)
+            or_fail_dealloc("cutoff_v")
+    ELSE
+        CALL Pc%DTYPE(ppm_t_particles)%set_cutoff(cutoff,info,Nlist)
+            or_fail("Failed to set constant cutoff radius")
+        Pc%adaptive = .FALSE.
+    ENDIF
+
+            
+    end_subroutine()
+END SUBROUTINE DTYPE(vbp_set_cutoff)
+
+
+SUBROUTINE DTYPE(vbp_set_varying_cutoff)(Pc,cutoff,info,Nlist)
+    !!! Set a cutoff radius for a Particle set with varying sizees
+    !!! and update the ghostlayer sizes.
+    !!! The cutoff radius concerns the default neighbor list, unless
+    !!! specified otherwise.
+    !!! If the cutoff is increased from its previous value, the neighbour
+    !!! list is flagged as "not up-to-date" and will have to be recomputed
+    !!! before it is used again.
+    !!! If the ghostlayer sizes are increased from their previous values,
+    !!! the ghosts are flagged as "not up-to-date" and will have to be
+    !!! recomputed before they are used again.
+    !-------------------------------------------------------------------------
+    ! Arguments
+    !-------------------------------------------------------------------------
+    DEFINE_MK()
+    CLASS(DTYPE(ppm_t_vbp))                  :: Pc
+    REAL(MK),DIMENSION(:),    INTENT(IN   )  :: cutoff
+    !!! cutoff radius (same number of elements as we have particles)
+    INTEGER,                  INTENT(   OUT) :: info
+    !!! return status. On success, 0
+    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
+    !!! Neighbor list for which this cutoff radius
+    !!! applies. By default, this is the "standard" Verlet list, with neighbours
+    !!! sought within the particle set itself.
+    
+    !-------------------------------------------------------------------------
+    ! local variables
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
+    REAL(MK)                                  :: max_cutoff
+    REAL(MK),DIMENSION(:),POINTER             :: rcp => NULL()
+    INTEGER                                   :: ip
+
+    start_subroutine("vbp_set_varying_cutoff")
+
+    !-------------------------------------------------------------------------
+    !  Set new cutoff
+    !-------------------------------------------------------------------------
+    IF (.NOT.associated(Pc%rcp)) THEN
+        CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,&
+            name='rcp')
+        or_fail("could not create property for varying cutoff radius rcp")
+    ENDIF
+    CALL Pc%get(Pc%rcp,rcp,info)
+        or_fail("could not access varying cutoff radius rcp")
+    DO ip=1,Pc%Npart
+        rcp(ip) = cutoff(ip)
+    ENDDO
+
+    max_cutoff = MAXVAL(rcp(1:Pc%Npart))
+
+    IF (PRESENT(NList)) THEN
+        check_true("Pc%neighs%has(NList)",&
+            "Neighbour list does not concern this particle set")
+        IF (max_cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
+        NList%cutoff = max_cutoff
+    ELSE
+        nl => Pc%get_neighlist()
+        check_associated(nl,"Compute neighbour lists first")
+        IF (max_cutoff .LT. nl%cutoff) nl%uptodate = .FALSE.
+        nl%cutoff = max_cutoff
+    ENDIF
+
+    
+    ! Compute ghostlayer sizes
+    IF (max_cutoff.GT.Pc%ghostlayer) THEN
+        !If the new cutoff is larger than the current ghostsize
+        ! then the new ghostsize is the new cutoff
+        Pc%ghostlayer = max_cutoff
+        ! update states
+        Pc%flags(ppm_part_ghosts) = .FALSE.
+    ELSE IF (max_cutoff .LT. Pc%ghostlayer) THEN
+        !Else, we find the new maximum cutoff radius amongst
+        !all existing neighbor lists on this Particle set
+        Pc%ghostlayer = 0._mk
+        nl => Pc%neighs%begin()
+        DO WHILE (ASSOCIATED(nl))
+            IF (nl%cutoff .GT. Pc%ghostlayer) THEN
+                Pc%ghostlayer = nl%cutoff
+            ENDIF
+            nl => Pc%neighs%next()
+        ENDDO
+        !no need to update states: ghosts are still ok.
+    ENDIF
+
+    Pc%adaptive = .TRUE.
+
+    end_subroutine()
+END SUBROUTINE DTYPE(vbp_set_varying_cutoff)
 
 
 SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
@@ -246,6 +426,9 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
             " because the neighbour list already exists. We",&
             " should perhaps change the API?  ")
             fail("Need to destroy/re-create this neighbour list first")
+        ENDIF
+        IF (Nlist%cutoff.LT.0._MK) THEN
+
         ENDIF
     ELSE
         CALL this%create_neighlist(Part_src,info,name=name,skin=skin,&

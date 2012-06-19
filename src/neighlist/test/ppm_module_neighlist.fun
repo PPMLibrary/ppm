@@ -183,7 +183,9 @@ real(mk)                         :: eps
 
     end test
 
-    test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
+    !uncomment for longer, more thorough testing.
+    !test stack_overflow({npart: [10,1000,10000,100000,1000000,10000000]})
+    test stack_overflow({npart: [10,1000,10000,100000]})
         use ppm_module_topo_typedef
         use ppm_module_mktopo
         use ppm_module_map

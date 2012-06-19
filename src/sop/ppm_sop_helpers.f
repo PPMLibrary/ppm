@@ -6,18 +6,10 @@ SUBROUTINE DTYPE(sop_init_opts)(opts,info)
     IMPLICIT NONE
 
     DEFINE_MK()
-    TYPE(DTYPE(sop_t_opts)), POINTER,INTENT(INOUT) :: opts
-    INTEGER                  ,       INTENT(  OUT) :: info
+    TYPE(DTYPE(ppm_t_options_sop)),INTENT(INOUT) :: opts
+    INTEGER                  ,     INTENT(  OUT) :: info
 
     info = 0
-
-    ALLOCATE(opts,STAT=info)
-    IF (info.NE.0) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_alloc,'sop_init_opts',       &
-            &                  'allocation error',__LINE__,info)
-        GOTO 9999
-    ENDIF
 
     opts%level_set = .FALSE.
     opts%D_needs_gradients = .TRUE.

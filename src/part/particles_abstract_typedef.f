@@ -342,29 +342,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         !DTYPE(data_1d_l_get_prop),&
         !DTYPE(data_2d_l_get_prop)
 
-    PROCEDURE(DTYPE(data_1d_i_set_prop)_),DEFERRED :: DTYPE(data_1d_i_set_prop)
-    PROCEDURE(DTYPE(data_2d_i_set_prop)_),DEFERRED :: DTYPE(data_2d_i_set_prop)
-    PROCEDURE(DTYPE(data_1d_li_set_prop)_),DEFERRED :: &
-        DTYPE(data_1d_li_set_prop)
-    PROCEDURE(DTYPE(data_2d_li_set_prop)_),DEFERRED :: &
-        DTYPE(data_2d_li_set_prop)
-    PROCEDURE(DTYPE(data_1d_r_set_prop)_),DEFERRED :: DTYPE(data_1d_r_set_prop)
-    PROCEDURE(DTYPE(data_2d_r_set_prop)_),DEFERRED :: DTYPE(data_2d_r_set_prop)
-    PROCEDURE(DTYPE(data_1d_c_set_prop)_),DEFERRED :: DTYPE(data_1d_c_set_prop)
-    PROCEDURE(DTYPE(data_2d_c_set_prop)_),DEFERRED :: DTYPE(data_2d_c_set_prop)
-    PROCEDURE(DTYPE(data_1d_l_set_prop)_),DEFERRED :: DTYPE(data_1d_l_set_prop)
-    PROCEDURE(DTYPE(data_2d_l_set_prop)_),DEFERRED :: DTYPE(data_2d_l_set_prop)
-    !GENERIC       :: set_prop =>  &
-        !DTYPE(data_1d_i_set_prop),&
-        !DTYPE(data_2d_i_set_prop),&
-        !DTYPE(data_1d_li_set_prop),&
-        !DTYPE(data_2d_li_set_prop),&
-        !DTYPE(data_1d_r_set_prop),&
-        !DTYPE(data_2d_r_set_prop),&
-        !DTYPE(data_1d_c_set_prop),&
-        !DTYPE(data_2d_c_set_prop),&
-        !DTYPE(data_1d_l_set_prop),&
-        !DTYPE(data_2d_l_set_prop)
 
     PROCEDURE(DTYPE(data_1d_i_get_field)_),DEFERRED :: DTYPE(data_1d_i_get_field)
     PROCEDURE(DTYPE(data_2d_i_get_field)_),DEFERRED :: DTYPE(data_2d_i_get_field)
@@ -390,29 +367,6 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_l_get_field),&
         DTYPE(data_2d_l_get_field)
 
-    PROCEDURE(DTYPE(data_1d_i_set_field)_),DEFERRED :: DTYPE(data_1d_i_set_field)
-    PROCEDURE(DTYPE(data_2d_i_set_field)_),DEFERRED :: DTYPE(data_2d_i_set_field)
-    PROCEDURE(DTYPE(data_1d_li_set_field)_),DEFERRED :: &
-        DTYPE(data_1d_li_set_field)
-    PROCEDURE(DTYPE(data_2d_li_set_field)_),DEFERRED :: &
-        DTYPE(data_2d_li_set_field)
-    PROCEDURE(DTYPE(data_1d_r_set_field)_),DEFERRED :: DTYPE(data_1d_r_set_field)
-    PROCEDURE(DTYPE(data_2d_r_set_field)_),DEFERRED :: DTYPE(data_2d_r_set_field)
-    PROCEDURE(DTYPE(data_1d_c_set_field)_),DEFERRED :: DTYPE(data_1d_c_set_field)
-    PROCEDURE(DTYPE(data_2d_c_set_field)_),DEFERRED :: DTYPE(data_2d_c_set_field)
-    PROCEDURE(DTYPE(data_1d_l_set_field)_),DEFERRED :: DTYPE(data_1d_l_set_field)
-    PROCEDURE(DTYPE(data_2d_l_set_field)_),DEFERRED :: DTYPE(data_2d_l_set_field)
-    GENERIC       :: set_field =>  &
-        DTYPE(data_1d_i_set_field),&
-        DTYPE(data_2d_i_set_field),&
-        DTYPE(data_1d_li_set_field),&
-        DTYPE(data_2d_li_set_field),&
-        DTYPE(data_1d_r_set_field),&
-        DTYPE(data_2d_r_set_field),&
-        DTYPE(data_1d_c_set_field),&
-        DTYPE(data_2d_c_set_field),&
-        DTYPE(data_1d_l_set_field),&
-        DTYPE(data_2d_l_set_field)
 
     PROCEDURE(DTYPE(data_1d_i_get)_),DEFERRED :: DTYPE(data_1d_i_get)
     PROCEDURE(DTYPE(data_2d_i_get)_),DEFERRED :: DTYPE(data_2d_i_get)
@@ -467,17 +421,31 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(data_2d_c_set)_),DEFERRED :: DTYPE(data_2d_c_set)
     PROCEDURE(DTYPE(data_1d_l_set)_),DEFERRED :: DTYPE(data_1d_l_set)
     PROCEDURE(DTYPE(data_2d_l_set)_),DEFERRED :: DTYPE(data_2d_l_set)
+    PROCEDURE(DTYPE(data_1d_i_set_prop)_),DEFERRED :: DTYPE(data_1d_i_set_prop)
+    PROCEDURE(DTYPE(data_2d_i_set_prop)_),DEFERRED :: DTYPE(data_2d_i_set_prop)
+    PROCEDURE(DTYPE(data_1d_li_set_prop)_),DEFERRED :: &
+        DTYPE(data_1d_li_set_prop)
+    PROCEDURE(DTYPE(data_2d_li_set_prop)_),DEFERRED :: &
+        DTYPE(data_2d_li_set_prop)
+    PROCEDURE(DTYPE(data_1d_r_set_prop)_),DEFERRED :: DTYPE(data_1d_r_set_prop)
+    PROCEDURE(DTYPE(data_2d_r_set_prop)_),DEFERRED :: DTYPE(data_2d_r_set_prop)
+    PROCEDURE(DTYPE(data_1d_c_set_prop)_),DEFERRED :: DTYPE(data_1d_c_set_prop)
+    PROCEDURE(DTYPE(data_2d_c_set_prop)_),DEFERRED :: DTYPE(data_2d_c_set_prop)
+    PROCEDURE(DTYPE(data_1d_l_set_prop)_),DEFERRED :: DTYPE(data_1d_l_set_prop)
+    PROCEDURE(DTYPE(data_2d_l_set_prop)_),DEFERRED :: DTYPE(data_2d_l_set_prop)
+    PROCEDURE(DTYPE(data_1d_i_set_field)_),DEFERRED :: DTYPE(data_1d_i_set_field)
+    PROCEDURE(DTYPE(data_2d_i_set_field)_),DEFERRED :: DTYPE(data_2d_i_set_field)
+    PROCEDURE(DTYPE(data_1d_li_set_field)_),DEFERRED :: &
+        DTYPE(data_1d_li_set_field)
+    PROCEDURE(DTYPE(data_2d_li_set_field)_),DEFERRED :: &
+        DTYPE(data_2d_li_set_field)
+    PROCEDURE(DTYPE(data_1d_r_set_field)_),DEFERRED :: DTYPE(data_1d_r_set_field)
+    PROCEDURE(DTYPE(data_2d_r_set_field)_),DEFERRED :: DTYPE(data_2d_r_set_field)
+    PROCEDURE(DTYPE(data_1d_c_set_field)_),DEFERRED :: DTYPE(data_1d_c_set_field)
+    PROCEDURE(DTYPE(data_2d_c_set_field)_),DEFERRED :: DTYPE(data_2d_c_set_field)
+    PROCEDURE(DTYPE(data_1d_l_set_field)_),DEFERRED :: DTYPE(data_1d_l_set_field)
+    PROCEDURE(DTYPE(data_2d_l_set_field)_),DEFERRED :: DTYPE(data_2d_l_set_field)
     GENERIC       :: set =>  &
-        DTYPE(data_1d_i_set),&
-        DTYPE(data_2d_i_set),&
-        DTYPE(data_1d_li_set),&
-        DTYPE(data_2d_li_set),&
-        DTYPE(data_1d_r_set),&
-        DTYPE(data_2d_r_set),&
-        DTYPE(data_1d_c_set),&
-        DTYPE(data_2d_c_set),&
-        DTYPE(data_1d_l_set),&
-        DTYPE(data_2d_l_set),&
         DTYPE(data_1d_i_set_prop),&
         DTYPE(data_2d_i_set_prop),&
         DTYPE(data_1d_li_set_prop),&
@@ -487,7 +455,27 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
         DTYPE(data_1d_c_set_prop),&
         DTYPE(data_2d_c_set_prop),&
         DTYPE(data_1d_l_set_prop),&
-        DTYPE(data_2d_l_set_prop)
+        DTYPE(data_2d_l_set_prop),&
+        DTYPE(data_1d_i_set_field),&
+        DTYPE(data_2d_i_set_field),&
+        DTYPE(data_1d_li_set_field),&
+        DTYPE(data_2d_li_set_field),&
+        DTYPE(data_1d_r_set_field),&
+        DTYPE(data_2d_r_set_field),&
+        DTYPE(data_1d_c_set_field),&
+        DTYPE(data_2d_c_set_field),&
+        DTYPE(data_1d_l_set_field),&
+        DTYPE(data_2d_l_set_field),&
+        DTYPE(data_1d_i_set),&
+        DTYPE(data_2d_i_set),&
+        DTYPE(data_1d_li_set),&
+        DTYPE(data_2d_li_set),&
+        DTYPE(data_1d_r_set),&
+        DTYPE(data_2d_r_set),&
+        DTYPE(data_1d_c_set),&
+        DTYPE(data_2d_c_set),&
+        DTYPE(data_1d_l_set),&
+        DTYPE(data_2d_l_set)
 
     PROCEDURE(DTYPE(part_map_create)_),DEFERRED :: create_map 
     PROCEDURE(DTYPE(part_map_destroy)_),DEFERRED :: destroy_map 
