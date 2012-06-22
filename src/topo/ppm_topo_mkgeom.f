@@ -400,7 +400,7 @@
       !-------------------------------------------------------------------------
       ELSEIF (decomp .EQ. ppm_param_decomp_user_defined) THEN
          !Do nothing. Just take the stuff from the user and trust the guy.
-
+         gsvec(1:ppm_dim) = ghostsize
       !-------------------------------------------------------------------------
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
