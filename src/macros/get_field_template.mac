@@ -23,23 +23,23 @@ SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>(this,wp,Field,info)
     INTEGER,                 INTENT(OUT) :: info
     INTEGER                              :: p_idx
 
-$start_subroutine("\"subpatch_get_field_#{ndim}d\"")
+start_subroutine("subpatch_get_field_<%= "#{ndim}" %>d")
 
-$check_true("\"Field%lda+ppm_dim.GT.#{ndim}\"","\"wrong dimensions for pointer arg wp\"")
+check_true("Field%lda+ppm_dim.GT.<%= "#{ndim}" %>","wrong dimensions for pointer arg wp")
 
-$check_associated("this%mesh")
+check_associated("this%mesh")
     p_idx = Field%get_pid(this%mesh)
 
-$check_true("\"p_idx.GT.0\"","\"Field is not discretized on Mesh cannot get pointer to data\"")
+check_true("p_idx.GT.0","Field is not discretized on Mesh cannot get pointer to data")
 
-$check_associated("\"this%subpatch_data\"")
-$check_associated("\"this%subpatch_data%vec(p_idx)%t\"")
+check_associated("this%subpatch_data")
+check_associated("this%subpatch_data%vec(p_idx)%t")
 
     wp => this%subpatch_data%vec(p_idx)%t%data_<%= ndim %>d_r<%= prec%>
 
-$check_associated("wp","\"Failed to get pointer to data array\"")
+check_associated("wp","Failed to get pointer to data array")
 
-$end_subroutine()
+end_subroutine()
 END SUBROUTINE
 end macro
 

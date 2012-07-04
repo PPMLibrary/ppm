@@ -251,24 +251,24 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
     CLASS(<%= element_type %>),POINTER   :: p => NULL()
     INTEGER, INTENT(OUT) :: info
 
-    $start_subroutine("\"#{collection_type}_destroy\"")
+    start_subroutine("<%= "#{collection_type}" %>_destroy")
 
 %if !vector
     p => this%begin()
     DO WHILE(ASSOCIATED(p))
-        $or_fail_dealloc("\"Could not deallocate collection element\"")
+        or_fail_dealloc("Could not deallocate collection element")
         p => this%next()
     ENDDO
 %end 
     IF (ASSOCIATED(this%vec))  DEALLOCATE(this%vec,STAT=info)
-    $or_fail_dealloc("\"Could not deallocate collection array\"")
+    or_fail_dealloc("Could not deallocate collection array")
     this%iter_id = 0
     this%min_id = 0
     this%max_id = 0
     this%nb = 0
     this%vec_size=0
 
-    $end_subroutine()
+    end_subroutine()
 END SUBROUTINE
 
 !EXISTS
@@ -386,7 +386,7 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
     TYPE(<%= element_ptr_type %>),DIMENSION(:),POINTER :: vec_temp => NULL()
     INTEGER                            :: i
 
-    $start_subroutine("\"#{collection_type}_push\"")
+    start_subroutine("<%= "#{collection_type}" %>_push")
 
     !add the element at the end of the array
     this%min_id = 1
@@ -396,22 +396,22 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
 
     IF (this%max_id.GT.this%vec_size) THEN
         CALL this%grow_size(info)
-            $or_fail("\"could not grow #{collection_type} to a larger size\"")
+            or_fail("could not grow <%= "#{collection_type}" %> to a larger size")
     ENDIF
 
     IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
-        $fail("\"Pointer at position of new element is already associated. Something wrong in the Collection data structure\"")
+        fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
     ENDIF
 
     this%vec(this%max_id)%t => element
 
-    $check_associated_noscope("\"this%vec(this%max_id)%t\"","\"Pushing element into collection failed unexpectedly\"")
+    check_associated_noscope("this%vec(this%max_id)%t","Pushing element into collection failed unexpectedly")
 
 %if !vector
     element => NULL()
 %end
 
-    $end_subroutine()
+    end_subroutine()
 END SUBROUTINE
 !REMOVE
 SUBROUTINE <%= collection_type %>_remove(this,info,element)
@@ -424,7 +424,7 @@ SUBROUTINE <%= collection_type %>_remove(this,info,element)
     INTEGER                            :: del_id
     INTEGER                            :: iter_id_save
 
-    $start_subroutine("\"#{collection_type}_remove\"")
+    start_subroutine("<%= "#{collection_type}" %>_remove")
 
     iter_id_save = this%iter_id
 
@@ -458,7 +458,7 @@ SUBROUTINE <%= collection_type %>_remove(this,info,element)
     this%iter_id = iter_id_save - 1
     IF (this%nb.EQ.0 .OR. this%max_id.EQ.0) this%min_id = 0
 
-    $end_subroutine()
+    end_subroutine()
 END SUBROUTINE
 !GROW COLLECTION SIZE
 SUBROUTINE <%= collection_type %>_grow_size(this,info)
@@ -482,7 +482,7 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
         !if the array is full, double its size
         ! allocate a temporary array to store the current element
         ALLOCATE(vec_temp(this%vec_size),STAT=info)
-        $or_fail_alloc("\"could not allocate temporary array\"")
+        or_fail_alloc("could not allocate temporary array")
 
         ! copy the elements to the temporary array
         DO i=1,this%vec_size
@@ -494,9 +494,9 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
 
         !reallocate the collection to a larger size
         DEALLOCATE(this%vec,STAT=info)
-        $or_fail_dealloc("\"could not deallocate collection array\"")
+        or_fail_dealloc("could not deallocate collection array")
         ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
-        $or_fail_alloc("\"could not allocate collection array\"")
+        or_fail_alloc("could not allocate collection array")
 
         !copy the elements back from the temporary array to the collection
         DO i=1,this%vec_size
@@ -508,7 +508,7 @@ SUBROUTINE <%= collection_type %>_grow_size(this,info)
         ENDDO
         this%vec_size = 2 * this%vec_size
         DEALLOCATE(vec_temp,STAT=info)
-        $or_fail_dealloc("\"could not deallocate temporary array\"")
+        or_fail_dealloc("could not deallocate temporary array")
     ENDIF
 
     CALL substop(caller,t0,info)
