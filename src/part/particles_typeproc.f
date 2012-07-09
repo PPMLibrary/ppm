@@ -2,11 +2,12 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
-SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,field,zero)
+SUBROUTINE DTYPE(prop_create)(prop,datatype,parts,npart,lda,name,flags,info,field,zero)
     !!! Constructor for particle property data structure
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_part_prop))      :: prop
     INTEGER,                INTENT(IN) :: datatype
+    CLASS(ppm_t_discr_kind), TARGET, INTENT(IN) :: parts
     INTEGER,                INTENT(IN) :: npart
     INTEGER,                INTENT(IN) :: lda
     CHARACTER(LEN=*),       INTENT(IN) :: name
@@ -37,6 +38,7 @@ SUBROUTINE DTYPE(prop_create)(prop,datatype,npart,lda,name,flags,info,field,zero
         zero_data = .FALSE.
     ENDIF
 
+    prop%discr => parts
 
     iopt   = ppm_param_alloc_grow
 
@@ -352,7 +354,7 @@ SUBROUTINE DTYPE(part_prop_create)(this,info,field,part_prop,discr_data,&
     ALLOCATE(DTYPE(ppm_t_part_prop)::prop,STAT=info)
         or_fail_alloc("prop")
     ! Create the property
-    CALL prop%create(datatype,npart,lda2,name2,flags,info,field,zero)
+    CALL prop%create(datatype,this,npart,lda2,name2,flags,info,field,zero)
         or_fail("creating property array failed")
 
     IF (PRESENT(part_prop)) THEN
@@ -450,7 +452,7 @@ SUBROUTINE DTYPE(part_prop_realloc)(Pc,prop,info,with_ghosts,datatype,lda)
     ENDIF
 
     ! Create the property
-    CALL prop%create(dtype,npart,lda2,name2,flags,info,field)
+    CALL prop%create(dtype,Pc,npart,lda2,name2,flags,info,field)
         or_fail("reallocating property array failed")
 
     end_subroutine()

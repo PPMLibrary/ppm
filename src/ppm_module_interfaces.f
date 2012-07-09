@@ -127,6 +127,8 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_data
     !!! 
     CLASS(ppm_t_main_abstr),POINTER                :: field_ptr => NULL()
     !!! Pointer to the field for which this is a discretization
+    CLASS(ppm_t_discr_kind),POINTER                :: discr => NULL()
+    !!! Pointer to the discretization to which this data belongs
     CHARACTER(LEN=ppm_char)                        :: name
     !!! Name for this property
     LOGICAL, DIMENSION(ppm_param_length_pptflags)  :: flags = .FALSE.
@@ -657,11 +659,18 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
 END TYPE
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 
+TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_var_discr_pair
+  CLASS(ppm_t_main_abstr), POINTER   :: var => NULL()
+  CLASS(ppm_t_discr_kind), POINTER   :: discr => NULL()
+END TYPE
+minclude ppm_create_collection(var_discr_pair,var_discr_pair,vec=true,generate="concrete")
+
 TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair
   CLASS(ppm_t_field_), POINTER       :: field => NULL()
-  CLASS(ppm_t_discr_kind), POINTER   :: discretization => NULL()
+  CLASS(ppm_t_discr_kind), POINTER   :: discr => NULL()
 END TYPE
 minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,generate="concrete")
+
 
 
 
@@ -821,6 +830,7 @@ minclude ppm_create_collection_procedures(operator_discr,operator_discr_)
 minclude ppm_create_collection_procedures(discr_kind,discr_kind,vec=true)
 minclude ppm_create_collection_procedures(discr_data,discr_data,vec=true)
 minclude ppm_create_collection_procedures(main_abstr,main_abstr,vec=true)
+minclude ppm_create_collection_procedures(var_discr_pair,var_discr_pair,vec=true)
 minclude ppm_create_collection_procedures(field_discr_pair,field_discr_pair,vec=true)
 
 minclude ppm_create_collection_procedures(part_prop_s_,part_prop_s_,vec=true)

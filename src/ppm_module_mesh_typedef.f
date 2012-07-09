@@ -1470,25 +1470,25 @@ SUBROUTINE equi_mesh_prop_zero(this,Field,info)
     IF (ppm_dim.EQ.2) THEN
         SELECT CASE (lda)
         CASE (1)
-        foreach n in equi_mesh(this) with sca_fields(Field) 
+        foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double) 
             for all
                 Field_n = REAL(0,ppm_kind_double)
         end foreach
         CASE (2)
-        foreach n in equi_mesh(this) with vec_fields(Field) 
+        foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
         end foreach
         CASE (3)
-        foreach n in equi_mesh(this) with vec_fields(Field) 
+        foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
                 Field_n(3) = REAL(0,ppm_kind_double)
         end foreach
         CASE (4)
-        foreach n in equi_mesh(this) with vec_fields(Field) 
+        foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
@@ -1496,7 +1496,7 @@ SUBROUTINE equi_mesh_prop_zero(this,Field,info)
                 Field_n(4) = REAL(0,ppm_kind_double)
         end foreach
         CASE DEFAULT
-        foreach n in equi_mesh(this) with vec_fields(Field) 
+        foreach n in equi_mesh(this) with vec_fields(Field) prec(ppm_kind_double)
             for all
                 Field_n(1:lda) = REAL(0,ppm_kind_double)
         end foreach
@@ -1504,25 +1504,25 @@ SUBROUTINE equi_mesh_prop_zero(this,Field,info)
     ELSE
         SELECT CASE (lda)
         CASE (1)
-        foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k)
+        foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k) prec(ppm_kind_double)
             for all
                 Field_n = REAL(0,ppm_kind_double)
         end foreach
         CASE (2)
-        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
         end foreach
         CASE (3)
-        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
                 Field_n(3) = REAL(0,ppm_kind_double)
         end foreach
         CASE (4)
-        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
             for all
                 Field_n(1) = REAL(0,ppm_kind_double)
                 Field_n(2) = REAL(0,ppm_kind_double)
@@ -1530,7 +1530,7 @@ SUBROUTINE equi_mesh_prop_zero(this,Field,info)
                 Field_n(4) = REAL(0,ppm_kind_double)
         end foreach
         CASE DEFAULT
-        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k)
+        foreach n in equi_mesh(this) with vec_fields(Field) indices(i,j,k) prec(ppm_kind_double)
             for all
                 Field_n(1:lda) = REAL(0,ppm_kind_double)
         end foreach

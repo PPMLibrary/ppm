@@ -1,6 +1,6 @@
 include macro ppm_get_field_template(ndim_arg,prec)
 % ndim = ndim_arg.to_s.to_i
-SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>(this,wp,Field,info)
+SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>(this,Field,wp,info)
     !!! Points wp to the data array for the discretization of Field
     !!! on this subpatch.
     !!! The type/dimension of wp have to match that of the discretized field,
@@ -45,7 +45,7 @@ end macro
 
 include macro ppm_get_field_interface_template(ndim_arg,prec)
 % ndim = ndim_arg.to_s.to_i
-SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>_(this,wp,Field,info)
+SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>_(this,Field,wp,info)
 % if prec.to_s == "s"
 %   kind = "ppm_kind_single"
 % else

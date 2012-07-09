@@ -4,11 +4,13 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
 !minclude ppm_create_collection_interfaces(DTYPE(ppm_t_sop)_)
 
 !CREATE ENTRY
-SUBROUTINE DTYPE(prop_create)_(prop,datatype,npart,lda,name,flags,info,field,zero)
+SUBROUTINE DTYPE(prop_create)_(prop,datatype,parts,npart,lda,name,flags,info,field,zero)
     !!! Constructor for particle property data structure
     IMPORT DTYPE(ppm_t_part_prop)_,ppm_param_length_pptflags,ppm_t_field_
+    IMPORT ppm_t_discr_kind 
     CLASS(DTYPE(ppm_t_part_prop)_)      :: prop
     INTEGER,                INTENT(IN) :: datatype
+    CLASS(ppm_t_discr_kind), TARGET, INTENT(IN) :: parts
     INTEGER,                INTENT(IN) :: npart
     INTEGER,                INTENT(IN) :: lda
     CHARACTER(LEN=*),       INTENT(IN) :: name
