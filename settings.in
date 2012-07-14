@@ -3,6 +3,7 @@
 
 conf.mpi               = @MPI_ENABLED@
 conf.ppm.build.ldflags = "@LDFLAGS@"
+conf.ppm.build.fcflags = "@FCFLAGS@"
 conf.build.compiler    = "@FC@"
 conf.build.sed         = "@SED@"
 
