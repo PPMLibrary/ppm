@@ -201,8 +201,8 @@ use ppm_module_interfaces
         p => Mesh1%subpatch%begin()
 
         do while (ASSOCIATED(p))
-            call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field3d_1,Veloc,info)
+            call p%get_field(Vort,field2d_1,info)
+            call p%get_field(Veloc,field3d_1,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
@@ -217,8 +217,8 @@ use ppm_module_interfaces
         !Second version
         do ipatch = 1,Mesh1%subpatch%nb
             p => Mesh1%subpatch%vec(ipatch)%t
-            call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field3d_1,Veloc,info)
+            call p%get_field(Vort,field2d_1,info)
+            call p%get_field(Veloc,field3d_1,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
@@ -334,8 +334,8 @@ use ppm_module_interfaces
         p => Mesh1%subpatch%begin()
 
         do while (ASSOCIATED(p))
-            call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field3d_1,Veloc,info)
+            call p%get_field(Vort,field2d_1,info)
+            call p%get_field(Veloc,field3d_1,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
@@ -349,8 +349,8 @@ use ppm_module_interfaces
         !Second version
         do ipatch = 1,Mesh1%subpatch%nb
             p => Mesh1%subpatch%vec(ipatch)%t
-            call p%get_field(field2d_1,Vort,info)
-            call p%get_field(field3d_1,Veloc,info)
+            call p%get_field(Vort,field2d_1,info)
+            call p%get_field(Veloc,field3d_1,info)
 
             do i = 1,p%nnodes(1)
                 do j = 1,p%nnodes(2)
