@@ -48,6 +48,7 @@
          USE ppm_module_field_typedef
          USE ppm_module_operator_typedef
          USE ppm_module_interfaces
+         USE ppm_module_timestats
       !   USE ppm_module_rmsh
          USE ppm_module_ctrl
 
