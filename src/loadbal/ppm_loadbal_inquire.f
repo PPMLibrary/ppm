@@ -28,10 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE loadbal_inq_s(ctime,nstep,lflush,lredecomp, &
+      SUBROUTINE loadbal_inq_s(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE loadbal_inq_d(ctime,nstep,lflush,lredecomp, &
+      SUBROUTINE loadbal_inq_d(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #endif
       !!! Inquires about the load balance status and returns advise whether
@@ -75,13 +75,18 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK)               , INTENT(IN   ) :: ctime
+      REAL(MK)               , INTENT(IN   ) :: t_comp
       !!! Elapsed time (as measured by `ppm_time`) for all computation in one
       !!! time step on the local processor.
+      REAL(MK)               , INTENT(IN   ) :: t_comm
+      !!! Elapsed time for all COMMUNICATION in one time step on the local proc
       INTEGER                , INTENT(IN   ) :: nstep
       !!! Number of time steps since last redecomposition. (>0)
       !!! If this routine is not called every time step, linear interpolation of
       !!! the load imbalance will be used to reconstruct missing data points.
+      INTEGER                , INTENT(IN   ) :: npart
+      !!! Number of particles in this time step
+
       LOGICAL                , INTENT(IN   ) :: lflush
       !!! `TRUE` to flush internal statistics (e.g. the first time this routine
       !!! is called after actually doing a redecomposition of the problem),
@@ -112,7 +117,7 @@
       !  Local variables 
       !-------------------------------------------------------------------------
       REAL(MK)                               :: imbal_perc,max_ctime,r_neigh
-      REAL(MK)                               :: neigh_imbal,recv_ctime
+      REAL(MK)                               :: neigh_imbal,recv_ctime,ctime
       INTEGER                                :: random_neigh,i,tag1,sendrank
       INTEGER                                :: recvrank
       LOGICAL                                :: l_myneighbor
@@ -157,6 +162,15 @@
       topo    => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
+      !  Update the number of particles info needed for load balancing
+      !  NOTE: DLB needs two runs (one for ..npart_old and one for .._npart_new)
+      !
+      !-------------------------------------------------------------------------
+!      stdout("-->",t_comp,t_comm,mov_avg_time)
+      ppm_loadbal_npart_old = ppm_loadbal_npart_new
+      ppm_loadbal_npart_new = npart
+!      stdout(ppm_loadbal_npart_old,ppm_loadbal_npart_new,npart)
+      !-------------------------------------------------------------------------
       !  Does the user specify a heuristic?
       !-------------------------------------------------------------------------
       IF (PRESENT(heuristic)) THEN
@@ -173,7 +187,7 @@
             !  Stop-At-Rise heuristic by Moon:1994
             !
             !-------------------------------------------------------------------
-
+            ctime = t_comp + t_comm
             CALL ppm_loadbal_inquire_sar(ctime,nstep,lflush,lredecomp,nredest, &
      &                                   info)
                     or_fail("Something went wrong in ppm_loadbal_inquire_sar")
@@ -182,7 +196,7 @@
             !-------------------------------------------------------------------
             !  Using Omer's DLB heuristic
             !-------------------------------------------------------------------
-            CALL ppm_loadbal_inquire_dlb(topoid,ctime,nstep,mov_avg_time,&
+            CALL ppm_loadbal_inquire_dlb(topoid,t_comp,t_comm,mov_avg_time,&
      &                                   max_ctime,imbal_perc,info)
                     or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
 
@@ -200,73 +214,18 @@
             !  time step
             !-------------------------------------------------------------------
             nredest=1
-        ELSE
+         ELSE
             !-------------------------------------------------------------------
             !  Unknow heuristic
             !-------------------------------------------------------------------
-            fail("Unknown heuristic specified. Nothing computed.")
-        ENDIF
-
+            stdout("PPM needs a heuristic for dynamic load balancing!")
+            fail("Choose ppm_param_loadbal_sar or ppm_param_loadbal_dlb!")
+         ENDIF
       ELSE
             !-------------------------------------------------------------------
-            !  No heuristic is provided. PPM will check first if we need LB
-            !  by calling Omer's DLB heuristic
+            !  Unknow heuristic
             !-------------------------------------------------------------------
-            CALL ppm_loadbal_inquire_dlb(topoid,ctime,nstep,mov_avg_time,&
-     &                                   max_ctime,imbal_perc,info)
-                    or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
-            !-------------------------------------------------------------------
-            !  We know now the imbalance percentage. We need to check how
-            !  the (almost) global load imbalance looks like.
-            !  For this every processor chooses a random neighboring
-            !  processor and communicates the max_ctimes. Since my neighbor has a
-            !  different neighborhood topology, I will (probably) obtain some
-            !  an other  If the difference
-            !  is big, this will hint a global imbalance. One can later call SAR
-            !  or directly do a global remap.
-            !  Find a processor first which is not me and not in my neighborhood
-            !-------------------------------------------------------------------
-            DO WHILE(l_myneighbor)
-                CALL RANDOM_NUMBER(r_neigh) ! between 0.0-1.0
-                random_neigh = INT(r_neigh*ppm_nproc) ! between 0-ppm_nproc
-                IF (random_neigh .NE. ppm_rank) l_myneighbor = .FALSE.
-                DO i=1,topo%nneighproc
-                    IF (random_neigh .EQ. topo%ineighproc(i)) THEN
-                        l_myneighbor = .TRUE.
-                        EXIT
-                    ENDIF
-                ENDDO
-            ENDDO
-
-            !-------------------------------------------------------------------
-            !  Send & receive the max_ctimes with a neighbor
-            !-------------------------------------------------------------------
-            tag1 = 678
-            sendrank = random_neigh
-            recvrank = sendrank
-            !-------------------------------------------------------------------
-            !  only consider non-negative sendranks
-            !-------------------------------------------------------------------
-            IF (sendrank.GE.0 .AND. sendrank.NE.ppm_rank) THEN
-                CALL MPI_SendRecv(max_ctime ,1,MPTYPE,sendrank,tag1, &
-     &                            recv_ctime,1,MPTYPE,recvrank,tag1, &
-     &                            ppm_comm,status,info)
-                !---------------------------------------------------------------
-                !  If a neighborhood's slowest processor is 50% slower than
-                !  other neighborhood's slowest processor, do a global mapping
-                !---------------------------------------------------------------
-                IF (recv_ctime .GT. max_ctime) THEN
-                    neigh_imbal = (recv_ctime-max_ctime)/recv_ctime
-                ELSE
-                    neigh_imbal = (max_ctime-recv_ctime)/max_ctime
-                ENDIF
-
-                IF (neigh_imbal .GT. 0.5_MK) THEN
-                    ! DO A GLOBAL MAPPING
-                ELSE
-                    ! DO DLB
-                ENDIF
-            ENDIF
+            fail("No heuristic for dynamic load balancing is given.")
       ENDIF
 
       !-------------------------------------------------------------------------

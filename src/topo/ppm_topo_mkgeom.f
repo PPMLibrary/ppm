@@ -62,6 +62,7 @@
       USE ppm_module_tree
       USE ppm_module_alloc
       USE ppm_module_topo_box2subs
+      USE ppm_module_write
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -167,7 +168,7 @@
       INTEGER, DIMENSION(3,1)           :: nnodes
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
+      REAL(MK)                          :: parea,sarea,larea,lmyeps,t0
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(1,1)          :: xpdummy
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
@@ -180,6 +181,7 @@
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER,  DIMENSION(:  ), POINTER :: sub2proc => NULL()
+      !CHARACTER(LEN=ppm_char)   :: cbuf
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -187,7 +189,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_mkgeom',t0,info)
+      start_subroutine("ppm_topo_mkgeom")
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
@@ -223,6 +225,7 @@
       IF (PRESENT(user_sub2proc)) THEN
           sub2proc => user_sub2proc
       ENDIF
+
       !-------------------------------------------------------------------------
       !  Dummy arguments for non-existing particles and meshes
       !-------------------------------------------------------------------------
@@ -415,6 +418,14 @@
       !-------------------------------------------------------------------------
       !  Find the neighbors of the subdomains
       !-------------------------------------------------------------------------
+!      print*,ppm_rank,'nsubs',nsubs
+!      print*,ppm_rank,'bcdef',bcdef
+!      print*,ppm_rank,'min_phys',min_phys
+!      print*,ppm_rank,'max_phys',max_phys
+!      print*,ppm_rank,'min_sub',min_sub
+!      print*,ppm_rank,'max_sub',max_sub
+!      stdout("gsvec",gsvec)
+
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
      &                    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
       IF (info.NE.0) THEN
@@ -423,6 +434,7 @@
      &        'Finding neighbors failed',__LINE__,info)
           GOTO 9999
       ENDIF
+      !stdout("nneigh=",nneigh)
 
       !-------------------------------------------------------------------------
       !  Find the cost of each subdomain
@@ -436,6 +448,7 @@
      &           'Computing costs failed',__LINE__,info)
              GOTO 9999
           ENDIF
+          print*,'topo_cost fine!'
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -482,14 +495,23 @@
      &           'list of local subs ISUBLIST',__LINE__,info)
              GOTO 9999
          ENDIF
+
          isublist = ppm_param_undefined
          nsublist = 0
          DO isub=1,nsubs
+             !stdout("isub",isub)
+             !stdout("sub2proc(isub)", 'sub2proc(isub)')
              IF (sub2proc(isub) .EQ. ppm_rank) THEN
                  nsublist = nsublist + 1
                  isublist(nsublist) = isub
+                 !stdout("isub",isub,"nsublist:",nsublist,"isublist(nsublist)",'isublist(nsublist)')
+
              ENDIF
          ENDDO
+!         do i=1,nsublist
+!           print*,ppm_rank,'ineigh',ineigh(1:3,i)
+!         enddo
+         !print*,ppm_rank,nneigh(1)
       ELSE
          !-------------------------------------------------------------------
          !  unknown assignment scheme
@@ -503,7 +525,7 @@
 
       !-------------------------------------------------------------------------
       !  Find and define the boundary conditions on the subs on the local
-      !  processor (the routine will allocate the requried memory)
+      !  processor (the routine will allocate the required memory)
       !-------------------------------------------------------------------------
       NULLIFY(subs_bc)
       CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
@@ -519,6 +541,8 @@
       !-------------------------------------------------------------------------
       !  Store the topology internally
       !-------------------------------------------------------------------------
+      !print*,ppm_rank,'nneigh',nneigh
+
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
      &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist,&
      &                    nneigh,ineigh,info)

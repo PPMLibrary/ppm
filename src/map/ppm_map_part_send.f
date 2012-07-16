@@ -378,13 +378,6 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Compute the delta of incoming/outgoing particles and store the current
-      !  Npart to be used in the loadbal module
-      !-------------------------------------------------------------------------
-      ppm_loadbal_npart_diff = npart_send - npart_recv
-      ppm_loadbal_npart      = Npart
-
-      !-------------------------------------------------------------------------
       !  Compute the pointer to the position of the data in the main receive 
       !  buffer 
       !-------------------------------------------------------------------------
