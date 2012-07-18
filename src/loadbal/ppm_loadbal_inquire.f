@@ -28,17 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-<<<<<<< HEAD
       SUBROUTINE loadbal_inq_s(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE loadbal_inq_d(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
-=======
-      SUBROUTINE loadbal_inq_s(ctime,nstep,lflush,lredecomp, &
-     &                         nredest,info,heuristic,mov_avg_time,topoid)
-#elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE loadbal_inq_d(ctime,nstep,lflush,lredecomp, &
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #endif
       !!! Inquires about the load balance status and returns advise whether
@@ -85,11 +78,8 @@
       REAL(MK)               , INTENT(IN   ) :: t_comp
       !!! Elapsed time (as measured by `ppm_time`) for all computation in one
       !!! time step on the local processor.
-<<<<<<< HEAD
       REAL(MK)               , INTENT(IN   ) :: t_comm
       !!! Elapsed time for all COMMUNICATION in one time step on the local proc
-=======
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
       INTEGER                , INTENT(IN   ) :: nstep
       !!! Number of time steps since last redecomposition. (>0)
       !!! If this routine is not called every time step, linear interpolation of
@@ -126,7 +116,6 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-<<<<<<< HEAD
       REAL(MK)                               :: imbal_perc,max_ctime,r_neigh
       REAL(MK)                               :: neigh_imbal,recv_ctime,ctime
       INTEGER                                :: random_neigh,i,tag1,sendrank
@@ -137,8 +126,6 @@
       INTEGER                                :: MPTYPE
       INTEGER, DIMENSION(MPI_STATUS_SIZE)    :: status
 #endif
-=======
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -159,7 +146,6 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-<<<<<<< HEAD
 #ifdef __MPI
       !-------------------------------------------------------------------------
       !  Define MPI data type
@@ -223,66 +209,19 @@
             ELSE
                 lredecomp = .FALSE.
             ENDIF
-=======
 
-      !-------------------------------------------------------------------------
-      !  Does the user specify a heuristic?
-      !-------------------------------------------------------------------------
-      IF (PRESENT(heuristic)) THEN
-
-        IF (heuristic .EQ. ppm_param_loadbal_sar) THEN
-            !-------------------------------------------------------------------------
-            !  Check that we have data available
-            !-------------------------------------------------------------------------
-            IF (ppm_loadbal_dcn .LT. 1) THEN
-                fail("Use ppm_set_decomp_cost first to gather statistics")
-            ENDIF
-
-            !-------------------------------------------------------------------
-            !  Stop-At-Rise heuristic by Moon:1994
-            !
-            !-------------------------------------------------------------------
-
-            CALL ppm_loadbal_inquire_sar(ctime,nstep,lflush,lredecomp,nredest, &
-     &                                   info)
-                    or_fail("Something went wrong in ppm_loadbal_inquire_sar")
-
-        ELSEIF (heuristic .EQ. ppm_param_loadbal_dlb) THEN
-            !-------------------------------------------------------------------
-            !  Using Omer's DLB heuristic
-            !-------------------------------------------------------------------
-            CALL ppm_loadbal_inquire_dlb(topoid,ctime,mov_avg_time,lflush,&
-     &                                   lredecomp,info)
-                    or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
             !-------------------------------------------------------------------
             !  DLB heuristic expects load balancing to take place in the next
             !  time step
             !-------------------------------------------------------------------
             nredest=1
-<<<<<<< HEAD
-         ELSE
-            !-------------------------------------------------------------------
-            !  Unknow heuristic
-            !-------------------------------------------------------------------
-            stdout("PPM needs a heuristic for dynamic load balancing!")
-            fail("Choose ppm_param_loadbal_sar or ppm_param_loadbal_dlb!")
-         ENDIF
-      ELSE
+       ELSE
             !-------------------------------------------------------------------
             !  Unknow heuristic
             !-------------------------------------------------------------------
             fail("No heuristic for dynamic load balancing is given.")
-=======
-        ELSE
-            !-------------------------------------------------------------------
-            !  Unknow heuristic
-            !-------------------------------------------------------------------
-            fail("Unknown heuristic specified. Nothing computed.")
-        ENDIF
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
+       ENDIF
       ENDIF
-
       !-------------------------------------------------------------------------
       !  Update time step counter
       !-------------------------------------------------------------------------

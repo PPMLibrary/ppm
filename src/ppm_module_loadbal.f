@@ -42,14 +42,10 @@
       !!! redecomposed.
 
          USE ppm_module_topo_typedef
-<<<<<<< HEAD
          USE ppm_module_particles_typedef
          USE ppm_module_data_loadbal
          USE ppm_module_data
          USE ppm_module_alloc
-=======
-         USE ppm_module_data_loadbal
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
@@ -75,12 +71,9 @@
             MODULE PROCEDURE loadbal_inquire_dlb_d
          END INTERFACE
 
-<<<<<<< HEAD
          INTERFACE ppm_loadbal_do_dlb
             MODULE PROCEDURE loadbal_do_dlb
          END INTERFACE
-=======
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
          !----------------------------------------------------------------------
          !  Define interface to processor speed estimator
          !----------------------------------------------------------------------
@@ -118,23 +111,9 @@
          !----------------------------------------------------------------------
          CONTAINS
 
-<<<<<<< HEAD
 #include "loadbal/ppm_loadbal_sendsub.f"
 #include "loadbal/ppm_loadbal_recvsub.f"
 #include "loadbal/ppm_loadbal_do_dlb.f"
-=======
-#define __KIND __SINGLE_PRECISION
-#include "loadbal/ppm_loadbal_inquire.f"
-#include "loadbal/ppm_loadbal_inquire_sar.f"
-#include "loadbal/ppm_loadbal_inquire_dlb.f"
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION
-#include "loadbal/ppm_loadbal_inquire.f"
-#include "loadbal/ppm_loadbal_inquire_sar.f"
-#include "loadbal/ppm_loadbal_inquire_dlb.f"
-#undef __KIND
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
 
 #define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_loadbal_inquire.f"

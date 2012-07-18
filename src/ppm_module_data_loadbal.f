@@ -63,7 +63,6 @@
          !!! number of
          INTEGER               :: ppm_loadbal_nslp = 0
 
-<<<<<<< HEAD
          INTEGER               :: ppm_loadbal_sendrank   = -1
          !!! The process to which this process will send some subdomains
          INTEGER               :: ppm_loadbal_recvrank   = -1
@@ -83,11 +82,5 @@
          !!! Number of particles in the subdomain that will be sent/received
          REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_xps
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_xpd
-=======
-         INTEGER               :: ppm_loadbal_sendrank = -1
-         !!! The process to which this process will send some subdomains
-         INTEGER               :: ppm_loadbal_recvrank = -1
-         !!! The process which will receive some subdomains
->>>>>>> 0372ef058957aa5fef82ac0c3e741e9df09a3926
 
       END MODULE ppm_module_data_loadbal
