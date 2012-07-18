@@ -75,13 +75,16 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK)               , INTENT(IN   ) :: ctime
+      REAL(MK)               , INTENT(IN   ) :: t_comp
       !!! Elapsed time (as measured by `ppm_time`) for all computation in one
       !!! time step on the local processor.
       INTEGER                , INTENT(IN   ) :: nstep
       !!! Number of time steps since last redecomposition. (>0)
       !!! If this routine is not called every time step, linear interpolation of
       !!! the load imbalance will be used to reconstruct missing data points.
+      INTEGER                , INTENT(IN   ) :: npart
+      !!! Number of particles in this time step
+
       LOGICAL                , INTENT(IN   ) :: lflush
       !!! `TRUE` to flush internal statistics (e.g. the first time this routine
       !!! is called after actually doing a redecomposition of the problem),
@@ -120,6 +123,9 @@
       start_subroutine("ppm_loadbal_inquire")
       lredecomp = .FALSE.
       nredest = -1 
+      l_myneighbor = .TRUE.
+      neigh_imbal = 0._MK
+      recv_ctime = 0._MK
 
       !-------------------------------------------------------------------------
       !  Check arguments

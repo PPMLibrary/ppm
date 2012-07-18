@@ -276,7 +276,7 @@
 
           !---------------------------------------------------------------------
           !  Do an AllReduce of the costs as one processor only has ITS
-          !  paricles, but ALL particles contribute to the cost (the
+          !  particles, but ALL particles contribute to the cost (the
           !  particles are not yet mapped!)
           !---------------------------------------------------------------------
 #ifdef __MPI

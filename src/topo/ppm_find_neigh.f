@@ -33,9 +33,9 @@
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_find_neigh_d(min_phys,max_phys,bcdef, &
      &           min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
-      !!! This routine find the neighbours of a sub domain.
+      !!! This routine find the neighbours of all subdomains.
       !!! It does that by comparing the coordinates of the
-      !!! bounding box of the sub domains using an N-square
+      !!! bounding box of the subdomains using an N-square
       !!! algorithm! Moreover, since the routine is called before
       !!! any mapping has been performed, *all* the subs (nsubs)
       !!! must be searched!
@@ -175,7 +175,7 @@
       CALL ppm_copy_image_subs(min_phys,max_phys,bcdef, &
      &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
       IF (info.NE.ppm_param_success) GOTO 9999
-
+      !print*,ppm_rank,'nsubsplus',nsubsplus
       !-------------------------------------------------------------------------
       !  Allocate memory for the neighbours of the subdomains
       !-------------------------------------------------------------------------
@@ -275,7 +275,7 @@
           IF (Nm(i) .LT. 1) Nm(i) = 1
           bsize(i) = (max_phys(i) - min_phys(i))/REAL(Nm(i),MK)
       ENDDO
-
+      !print*,ppm_rank,Nm
       !-------------------------------------------------------------------------
       !  Need one layer of ghost cells. Even for non-peroidic systems as
       !  otherwise the neighbor count in the top-left cells is wrong.

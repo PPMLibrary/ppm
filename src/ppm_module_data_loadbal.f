@@ -36,7 +36,7 @@
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_data, ONLY: ppm_kind_double
+         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          PRIVATE :: ppm_kind_double
 
          !----------------------------------------------------------------------
@@ -63,9 +63,24 @@
          !!! number of
          INTEGER               :: ppm_loadbal_nslp = 0
 
-         INTEGER               :: ppm_loadbal_sendrank = -1
+         INTEGER               :: ppm_loadbal_sendrank   = -1
          !!! The process to which this process will send some subdomains
-         INTEGER               :: ppm_loadbal_recvrank = -1
+         INTEGER               :: ppm_loadbal_recvrank   = -1
          !!! The process which will receive some subdomains
+         INTEGER               :: ppm_loadbal_n_sendrank = -1
+         !!! Neighboring process' choice to send the subdomain to
+         INTEGER               :: ppm_loadbal_n_recvrank = -1
+         !!! Neighboring process' choice to receive the subdomain from
+         INTEGER               :: ppm_loadbal_npart_old  = 1
+         !!! Current number of Npart on this processor
+         INTEGER               :: ppm_loadbal_npart_new  = 1
+         !!! The netto number of particles after partial mapping. Say, if
+         !!! 10 particles leave the processor and 5 come in, the value becomes
+         !!! -5. This value is later used for determining an estimate elapsed
+         !!! time for the next time step.
+         INTEGER               :: ppm_loadbal_subnpart = 0
+         !!! Number of particles in the subdomain that will be sent/received
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_xps
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_xpd
 
       END MODULE ppm_module_data_loadbal

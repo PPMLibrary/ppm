@@ -869,7 +869,7 @@ SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
                 CALL ppm_error(999,caller,   &
                     & 'property not mapped, data will be lost',&
                     &  __LINE__,info)
-                GOTO 9999
+                !GOTO 9999
             ENDIF
         ENDIF
         prop => Pc%props%next()

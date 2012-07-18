@@ -30,6 +30,8 @@
 
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
+#define __2D               3
+#define __3D               4
 
       MODULE ppm_module_loadbal
       !!! This module contains all routines needed for
@@ -40,10 +42,20 @@
       !!! redecomposed.
 
          USE ppm_module_topo_typedef
+         USE ppm_module_particles_typedef
          USE ppm_module_data_loadbal
+         USE ppm_module_data
+         USE ppm_module_alloc
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
+         INTERFACE ppm_loadbal_sendsub
+            MODULE PROCEDURE loadbal_sendsub
+         END INTERFACE
+
+         INTERFACE ppm_loadbal_recvsub
+            MODULE PROCEDURE loadbal_recvsub
+         END INTERFACE
          INTERFACE ppm_loadbal_inquire
             MODULE PROCEDURE loadbal_inq_s
             MODULE PROCEDURE loadbal_inq_d
@@ -59,6 +71,9 @@
             MODULE PROCEDURE loadbal_inquire_dlb_d
          END INTERFACE
 
+         INTERFACE ppm_loadbal_do_dlb
+            MODULE PROCEDURE loadbal_do_dlb
+         END INTERFACE
          !----------------------------------------------------------------------
          !  Define interface to processor speed estimator
          !----------------------------------------------------------------------
@@ -96,23 +111,21 @@
          !----------------------------------------------------------------------
          CONTAINS
 
+#include "loadbal/ppm_loadbal_sendsub.f"
+#include "loadbal/ppm_loadbal_recvsub.f"
+#include "loadbal/ppm_loadbal_do_dlb.f"
+
 #define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_loadbal_inquire.f"
 #include "loadbal/ppm_loadbal_inquire_sar.f"
 #include "loadbal/ppm_loadbal_inquire_dlb.f"
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION
-#include "loadbal/ppm_loadbal_inquire.f"
-#include "loadbal/ppm_loadbal_inquire_sar.f"
-#include "loadbal/ppm_loadbal_inquire_dlb.f"
-#undef __KIND
-
-#define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_estimate_proc_speed.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
+#include "loadbal/ppm_loadbal_inquire.f"
+#include "loadbal/ppm_loadbal_inquire_sar.f"
+#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
 #undef __KIND
 

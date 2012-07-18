@@ -1,0 +1,14 @@
+
+# basic settings
+
+conf.mpi               = true
+conf.ppm.build.ldflags = ""
+conf.build.compiler    = "mpif90"
+conf.build.sed         = "/usr/local/bin/gsed"
+
+conf.ppm.types.all     = [:integer, :long, :real, :double, :logical, :char, :complex, :double_complex]
+conf.ppm.types.real    = [:single, :double]
+conf.ppm.types.integer = [:integer, :long]
+conf.ppm.types.complex = [:complex, :double_complex]
+
+conf.ppm.dims = [2,3]

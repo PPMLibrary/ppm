@@ -91,7 +91,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       !!! a particle position array, this argument is optional
       INTEGER,            INTENT(IN),OPTIONAL    :: np
       !!! number of particles
-      !!! if xp is provided, then this one must e provided too
+      !!! if xp is provided, then this one must be provided too
       INTEGER,            INTENT(IN),OPTIONAL    :: mp
       !!! number of particles including ghost particles
       !!! if omitted it is assumed that np=mp
