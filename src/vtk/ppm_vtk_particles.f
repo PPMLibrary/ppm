@@ -74,23 +74,40 @@
            IF (PRESENT(Fields)) THEN
                el => Fields%begin()
                DO WHILE (ASSOCIATED(el))
-                   SELECT TYPE(field => el)
+                   SELECT TYPE(var => el)
                    CLASS IS(ppm_t_field_)
                        !hack, so that Pc%props%iter_id is now the id
                        !of the discretization of field in Pc.
-                       CALL field%get_discr(Pc,discr_data,info)
+                       CALL var%get_discr(Pc,discr_data,info)
                            or_fail("could not get discr data for this field")
-                           check_associated("discr_data")
+                           check_associated(discr_data)
                            SELECT TYPE(discr_data)
                            CLASS IS (DTYPE(ppm_t_part_prop)_)
                            prop => discr_data
                            END SELECT
-                       SELECT CASE(field%data_type)
+                       SELECT CASE(var%data_type)
                        CASE (ppm_type_int)
                            CALL props_i%push(prop,info)
                            or_fail("push integer property into print buffer list")
                        CASE (ppm_type_real)
-                           IF (field%lda.EQ.1) THEN
+                           IF (var%lda.EQ.1) THEN
+                               CALL props_s%push(prop,info)
+                               or_fail("push scalar property into print buffer list")
+                           ELSE
+                               CALL props_v%push(prop,info)
+                               or_fail("push vector property into print buffer list")
+                           ENDIF
+                       CASE DEFAULT
+                               fail("not a supported type for printout (yet)")
+                       END SELECT
+                   CLASS IS (DTYPE(ppm_t_part_prop)_)
+                       prop => var
+                       SELECT CASE(prop%data_type)
+                       CASE (ppm_type_int)
+                           CALL props_i%push(prop,info)
+                           or_fail("push integer property into print buffer list")
+                       CASE (ppm_type_real)
+                           IF (var%lda.EQ.1) THEN
                                CALL props_s%push(prop,info)
                                or_fail("push scalar property into print buffer list")
                            ELSE
@@ -314,7 +331,7 @@
               prop => props_i%begin()
               DO WHILE (ASSOCIATED(prop))
                   wpi => prop%data_1d_i(1:N)
-                  check_associated("wpi")
+                  check_associated(wpi)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi
@@ -326,7 +343,7 @@
               prop => props_s%begin()
               DO WHILE (ASSOCIATED(prop))
                   wp => prop%data_1d_r(1:N)
-                  check_associated("wp")
+                  check_associated(wp)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_SCALAR wp
@@ -338,7 +355,7 @@
               prop => props_v%begin()
               DO WHILE (ASSOCIATED(prop))
                   wp2d => prop%data_2d_r(1:prop%lda,1:N)
-                  check_associated("wp2d")
+                  check_associated(wp2d)
                   DO l=1,prop%lda
                       WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
                       wp => wp2d(l,:)
@@ -354,7 +371,7 @@
               prop => props_vf%begin()
               DO WHILE (ASSOCIATED(prop))
                   wp2d => prop%data_2d_r(1:prop%lda,1:N)
-                  check_associated("wp2d")
+                  check_associated(wp2d)
 #define VTK_NAME prop%name
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
