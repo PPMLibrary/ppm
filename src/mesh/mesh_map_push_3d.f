@@ -356,12 +356,12 @@
                                 stdout("p%istart",'p%istart')
                                 stdout("p%iend",'p%iend')
                             ENDIF
-                            check_true("(xlo.GE.p%lo_a(1))")
-                            check_true("(xhi.LE.p%hi_a(1))")
-                            check_true("(ylo.GE.p%lo_a(2))")
-                            check_true("(yhi.LE.p%hi_a(2))")
-                            check_true("(zlo.GE.p%lo_a(3))")
-                            check_true("(zhi.LE.p%hi_a(3))")
+                            check_true(<#(xlo.GE.p%lo_a(1))#>)
+                            check_true(<#(xhi.LE.p%hi_a(1))#>)
+                            check_true(<#(ylo.GE.p%lo_a(2))#>)
+                            check_true(<#(yhi.LE.p%hi_a(2))#>)
+                            check_true(<#(zlo.GE.p%lo_a(3))#>)
+                            check_true(<#(zhi.LE.p%hi_a(3))#>)
                             check_associated(fdata)
 
                             exit patches

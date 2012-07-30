@@ -204,7 +204,7 @@ SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
 
     start_subroutine("get_xp")
 
-    check_associated("this%xp")
+    check_associated(<#this%xp#>)
 
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
@@ -378,7 +378,7 @@ SUBROUTINE DTYPE(part_prop_destroy)(this,prop,info)
 
     start_subroutine("part_prop_destroy")
 
-    check_associated("this%props",&
+    check_associated(<#this%props#>,&
         "Particle set does not contain any discretized data")
 
     SELECT TYPE(prop)
@@ -492,7 +492,7 @@ SUBROUTINE DTYPE(part_neigh_create)(this,Part_src,info,&
             TRIM(ADJUSTL(Part_src%name))
     ENDIF
 
-    check_associated("Part_src%xp","Invalid particle set Part_src")
+    check_associated(<#Part_src%xp#>,"Invalid particle set Part_src")
 
     Nl%Part => Part_src
 
@@ -1415,7 +1415,7 @@ SUBROUTINE DTYPE(part_map_push)(Pc,info,Field)
         fail("some Pc may be outside the domain. Apply BC first")
     ENDIF
 
-    check_true("(ppm_map_type_isactive(ppm_param_map_global) .OR. ppm_map_type_isactive(ppm_param_map_partial))",&
+    check_true(<#(ppm_map_type_isactive(ppm_param_map_global) .OR. ppm_map_type_isactive(ppm_param_map_partial))#>,&
         "Need to call map_positions before map_push")
 
     !-----------------------------------------------------------------------
@@ -1481,7 +1481,7 @@ SUBROUTINE DTYPE(part_map_send)(Pc,info)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
 
     !-----------------------------------------------------------------
@@ -1685,13 +1685,13 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Do a partial/global mapping before doing a ghost mapping")
     !check that particles are inside the domain
-    check_true("Pc%flags(ppm_part_areinside)",&
+    check_true(<#Pc%flags(ppm_part_areinside)#>,&
         "some particles may be outside the domain. Apply BC first")
 
     topoid = Pc%active_topoid
@@ -1868,13 +1868,13 @@ SUBROUTINE DTYPE(part_map_ghost_get)(Pc,info,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Partial/global mapping required before doing a ghost mapping")
     !check that particles are inside the domain
-    check_true("Pc%flags(ppm_part_areinside)",&
+    check_true(<#Pc%flags(ppm_part_areinside)#>,&
         "Some particles may be outside the domain. Apply BC first")
 
     topoid = Pc%active_topoid
@@ -1978,13 +1978,13 @@ SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Do a partial/global mapping before doing a ghost mapping")
     !check that particles are inside the domain
-    check_true("Pc%flags(ppm_part_areinside)",&
+    check_true(<#Pc%flags(ppm_part_areinside)#>,&
         "some particles may be outside the domain. Apply BC first")
 
     topoid = Pc%active_topoid
@@ -2013,7 +2013,7 @@ SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
     ENDIF
 #endif
     IF (cutoff .GT. 0._MK) THEN
-        check_true("ppm_map_type_isactive(ppm_param_map_ghost_get)",&
+        check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
                 "Need to call ghost_get before ghost_push")
 
         IF (PRESENT(Field)) THEN
@@ -2108,10 +2108,10 @@ SUBROUTINE DTYPE(part_map_ghost_send)(Pc,info)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Do a partial/global mapping before doing a ghost mapping")
 
     !-----------------------------------------------------------------
@@ -2170,10 +2170,10 @@ SUBROUTINE DTYPE(part_map_ghost_pop)(Pc,info,Field,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Do a partial/global mapping before doing a ghost mapping")
 
     topoid = Pc%active_topoid
@@ -2293,10 +2293,10 @@ SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
+    check_associated(<#Pc%xp#>,&
         "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
         "Do a partial/global mapping before doing a ghost mapping")
 
     topoid = Pc%active_topoid
@@ -2325,9 +2325,9 @@ SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize)
     ENDIF
 #endif
     IF (cutoff .GT. 0._MK) THEN
-        check_true("Pc%flags(ppm_part_ghosts)",&
+        check_true(<#Pc%flags(ppm_part_ghosts)#>,&
             "flags(ppm_part_ghosts) need to be set to .true.")
-        check_true("ppm_map_type_isactive(ppm_param_map_ghost_get)",&
+        check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
             "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
 
         CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,&
@@ -2622,18 +2622,18 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
-    check_associated("this%xp",&
+    check_associated(<#this%xp#>,&
         "Particles structure had not been defined. Call allocate first")
 
-    check_true("this%flags(ppm_part_partial)",&
+    check_true(<#this%flags(ppm_part_partial)#>,&
         "Particles not mapped. Do a partial/global mapping")
 
     xset_neighlists = .FALSE.
     IF (PRESENT(P_xset)) THEN
         Part_src => P_xset
-        check_associated("Part_src%xp",&
+        check_associated(<#Part_src%xp#>,&
             "Cross-Set particles have not been defined. Call allocate first")
-        check_true("Part_src%flags(ppm_part_partial)",&
+        check_true(<#Part_src%flags(ppm_part_partial)#>,&
             "Particles not mapped. Do a partial/global mapping")
         IF (.NOT.ASSOCIATED(Part_src,this)) THEN
             xset_neighlists = .TRUE.
@@ -2643,11 +2643,11 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     ENDIF
 
 
-    check_true("Part_src%flags(ppm_part_ghosts)",&
+    check_true(<#Part_src%flags(ppm_part_ghosts)#>,&
             "Ghosts have not been updated. They are needed for neighlists")
 
 
-    check_associated("this%neighs")
+    check_associated(<#this%neighs#>)
 
     !check whether the neighbour list already exists
     IF (this%has_neighlist(Part_src)) THEN
@@ -2668,7 +2668,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     check_associated(Nlist)
 
     !check that we have a cutoff radius
-    check_true("Nlist%cutoff.GT.0",&
+    check_true(<#Nlist%cutoff.GT.0#>,&
         "cutoff is negative or zero - do we really want neighbour lists?")
 
     IF (Nlist%isymm.EQ.1) THEN
@@ -2880,7 +2880,7 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     !  Set new cutoff
     !-------------------------------------------------------------------------
     IF (PRESENT(NList)) THEN
-        check_true("Pc%neighs%has(NList)",&
+        check_true(<#Pc%neighs%has(NList)#>,&
             "Neighbour list does not concern this particle set")
         IF (cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
         NList%cutoff = cutoff

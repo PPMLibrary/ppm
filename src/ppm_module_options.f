@@ -67,7 +67,7 @@ SUBROUTINE options_op_create(this,method,info,with_ghosts,vector,&
     IF (PRESENT(with_ghosts)) this%with_ghosts=with_ghosts
     IF (PRESENT(vector)) this%vector=vector
     IF (PRESENT(interp)) this%interp=interp
-    check_false("PRESENT(order_v).AND.PRESENT(order)",&
+    check_false(<#PRESENT(order_v).AND.PRESENT(order)#>,&
         "provide values for either order_v or order, not both")
     IF (PRESENT(order_v)) THEN
         allocate(this%order_v(size(order_v)),STAT=info)

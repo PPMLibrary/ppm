@@ -460,8 +460,8 @@
                             !ldl(2) = 1-p%ghostsize(3)
 !#endif
 
-                            check_associated("p%subpatch_data")
-                            check_true("p%subpatch_data%exists(p_idx)","does not exist")
+                            check_associated(<#p%subpatch_data#>)
+                            check_true(<#p%subpatch_data%exists(p_idx)#>,"does not exist")
 #if __KIND == __DOUBLE_PRECISION
 #if    __DIM == __SFIELD
                             !call ppm_alloc(&
@@ -518,15 +518,15 @@
                             ENDIF
                             !For ghost_get:
                             !check that real mesh nodes are not touched
-                            check_false("ppm_map_type .EQ. ppm_param_map_ghost_get .AND.  (xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2))")
+                            check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_get .AND. (xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2))#>)
                             !for ghost_put:
                             !check that ghost mesh nodes are not touched
-                            check_false("ppm_map_type .EQ. ppm_param_map_ghost_put .AND.  (xhi.LT.1 .OR. xlo.GT.p%nnodes(1) .OR. yhi.LT.1 .OR. ylo.GT.p%nnodes(2))")
+                            check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_put .AND. (xhi.LT.1 .OR. xlo.GT.p%nnodes(1) .OR. yhi.LT.1 .OR. ylo.GT.p%nnodes(2))#>)
                             !check that we dont access out-of-bounds elements
-                            check_true("(xlo.GE.p%lo_a(1))")
-                            check_true("(xhi.LE.p%hi_a(1))")
-                            check_true("(ylo.GE.p%lo_a(2))")
-                            check_true("(yhi.LE.p%hi_a(2))")
+                            check_true(<#(xlo.GE.p%lo_a(1))#>)
+                            check_true(<#(xhi.LE.p%hi_a(1))#>)
+                            check_true(<#(ylo.GE.p%lo_a(2))#>)
+                            check_true(<#(yhi.LE.p%hi_a(2))#>)
                             check_associated(fdata)
 
                             exit patches

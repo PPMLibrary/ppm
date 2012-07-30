@@ -577,7 +577,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     !-------------------------------------------------------------------------
     !  Check arguments
     !-------------------------------------------------------------------------
-    check_associated("this%subpatch",&
+    check_associated(<#this%subpatch#>,&
         "Mesh not allocated. Call Mesh%create() first?")
 
     !-------------------------------------------------------------------------
@@ -587,7 +587,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     Offset = this%Offset
     topo => ppm_topo(this%topoid)%t
 
-    check_false("associated(topo%min_subs)",&
+    check_false(<#associated(topo%min_subs)#>,&
         "Mesh_def_patch is not yet implemented for single precision")
 
     !-------------------------------------------------------------------------
@@ -1070,9 +1070,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
 
             !Check that this subdomain is large enough and thus
             !compatible with this mesh and its resolution h.
-            check_true(&
-        "ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i))&
-        .GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))",&
+            check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
         "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
             !stdout("#isub = ",i," AFTER CHOP")
             !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
@@ -1430,7 +1428,7 @@ SUBROUTINE equi_mesh_create_prop(this,field,discr_data,info,p_idx)
 
 
     !check that the returned pointer makes sense
-    check_associated("discr_data")
+    check_associated(discr_data)
 
 
     end_subroutine()

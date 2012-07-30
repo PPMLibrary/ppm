@@ -113,7 +113,7 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-      check_associated("Part%xp","Position array xp not initialized")
+      check_associated(<#Part%xp#>,"Position array xp not initialized")
 
       Np = Part%Npart
       CALL Part%get_xp(xp,info)
@@ -121,7 +121,7 @@
 
       IF(Np.EQ.0) GOTO 9999
 
-      check_associated("this%subpatch",&
+      check_associated(<#this%subpatch#>,&
           "Mesh not allocated. Call Mesh%create() first?")
 
       topo => ppm_topo(this%topoid)%t

@@ -197,7 +197,7 @@ SUBROUTINE DTYPE(sop_self_organize)(this,D_fun,opts,info,Adapt_Field,    &
     !-------------------------------------------------------------------------!
     ! Checks consistency of parameters
     !-------------------------------------------------------------------------!
-    check_false("(PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun))",&
+    check_false(<#(PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun))#>,&
             &  "provided analytical gradients but not analytical function values. This case is not yet implemented")
     IF (.NOT.PRESENT(wp_grad_fun) .AND. PRESENT(wp_fun)) THEN
         IF (opts%D_needs_gradients) THEN
@@ -225,23 +225,23 @@ SUBROUTINE DTYPE(sop_self_organize)(this,D_fun,opts,info,Adapt_Field,    &
                "Warning: on exit, wp_lap will have nonsense values")
     ENDIF
 
-    check_true("(PRESENT(wp_fun).OR.PRESENT(Adapt_Field))",&
+    check_true(<#(PRESENT(wp_fun).OR.PRESENT(Adapt_Field))#>,&
         "Need to either provide an analytical function wp_fun, or a discretized Field, Adapt_Field, on which particles should adapt")
 
     !check data structure exists
-    check_true("ASSOCIATED(this%xp)",&
+    check_true(<#ASSOCIATED(this%xp)#>,&
             "Particles structure had not been defined. Call allocate first")
 
     !check that we are dealing with adaptive particles 
-    check_true("this%adaptive",&
+    check_true(<#this%adaptive#>,&
             &  "These particles have not been declared as adaptive")
 
     !check all particles are inside the computational domain
-    check_true("this%flags(ppm_part_areinside)",&
+    check_true(<#this%flags(ppm_part_areinside)#>,&
             "Some particles may be outside the domain. Apply BC first")
 
     !check that neighbour lists have been computed
-    check_true("this%has_neighlist()",&
+    check_true(<#this%has_neighlist()#>,&
             "Neighbour lists are not up-to-date. Call neighlists first")
 
     IF (opts%level_set) THEN
@@ -282,8 +282,8 @@ SUBROUTINE DTYPE(sop_self_organize)(this,D_fun,opts,info,Adapt_Field,    &
             fail("Wrong type for argument Adapt_Field") 
         END SELECT
         or_fail("Could not access data array for Adapt_Field")
-        check_associated("this%adapt_wp")
-        check_true("this%adapt_wp%flags(ppm_ppt_ghosts)",&
+        check_associated(<#this%adapt_wp#>)
+        check_true(<#this%adapt_wp%flags(ppm_ppt_ghosts)#>,&
                 &  "need to get the ghosts for adapt_wp")
     ENDIF
 
@@ -291,15 +291,15 @@ SUBROUTINE DTYPE(sop_self_organize)(this,D_fun,opts,info,Adapt_Field,    &
         ! Check that the level set has been defined or
         ! is provided by an analytical function
         IF (PRESENT(level_fun)) THEN
-            check_true("PRESENT(level_grad_fun)",&
+            check_true(<#PRESENT(level_grad_fun)#>,&
                     &  "need analytical gradients for level function")
         ELSE
             !check if a scalar property has already been specified as the argument
             !for the resolution function (i.e. the particles will adapt to resolve
             !this property well)
-            check_associated("this%level",&
+            check_associated(<#this%level#>,&
                     &  "need to define level set property first")
-            check_associated("this%level_grad",&
+            check_associated(<#this%level_grad#>,&
                     &  "need to define level set gradient property first")
         ENDIF
     ENDIF

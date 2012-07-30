@@ -88,7 +88,7 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
     ppm_nb_fields = ppm_nb_fields + 1
     this%ID = ppm_nb_fields
 
-    check_true("lda.GT.0",&
+    check_true(<#lda.GT.0#>,&
         "Trying to create field with zero components. LDA must be > 0")
 
     this%lda = lda
@@ -98,12 +98,12 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
         WRITE(this%name,'(A,I0)') "dft_field_",ppm_nb_fields
     ENDIF
     IF (PRESENT(dtype)) THEN
-        check_true("dtype.GT.0","dtype must be > 0")
+        check_true(<#dtype.GT.0#>,"dtype must be > 0")
         this%data_type = dtype
     ELSE   
         this%data_type = ppm_type_real
     ENDIF
-    check_false("ASSOCIATED(this%discr_info)",&
+    check_false(<#ASSOCIATED(this%discr_info)#>,&
         "Seems like this field was alrady allocated - Call destroy() first?")
     ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
         or_fail_alloc("this%discr_info")
@@ -207,14 +207,14 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
         dtype = datatype
     ELSE
         dtype = this%data_type
-        check_true("this%data_type .NE. 0","field data type has not been initialized. Fix constructor.")
+        check_true(<#this%data_type .NE. 0#>,"field data type has not been initialized. Fix constructor.")
     END IF
 
     !Check whether this field has already been initialized
-    check_true("this%ID.GT.0 .AND. this%lda.GT.0",&
+    check_true(<#this%ID.GT.0 .AND. this%lda.GT.0#>,&
         "Field needs to be initialized before calling discretized. Call ThisField%create() first")
 
-    check_false("this%is_discretized_on(discr)",&
+    check_false(<#this%is_discretized_on(discr)#>,&
         "Method to re-discretize a field on an existing discretization (overwriting, reallocation of data) is not yet implemented. TODO!")
 
     SELECT TYPE(discr)
@@ -299,7 +299,7 @@ SUBROUTINE field_set_rel_discr(this,discr,discr_data,info,p_idx)
 
     start_subroutine("field_set_rel_discr")
 
-    check_false("this%is_discretized_on(discr)",&
+    check_false(<#this%is_discretized_on(discr)#>,&
         "This field has already been discretized here. Cannot do that twice")
 
     flags = .FALSE.
@@ -383,7 +383,7 @@ FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
 
     dinfo => this%discr_info%begin()
     loop: DO WHILE(ASSOCIATED(dinfo))
-        check_associated(dinfo%discr_ptr)
+        check_associated(<#dinfo%discr_ptr#>)
         IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
             p_idx = dinfo%p_idx
             RETURN

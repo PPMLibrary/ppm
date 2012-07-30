@@ -246,10 +246,10 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
-    check_true("this%flags(ppm_ops_iscomputed)",&
+    check_true(<#this%flags(ppm_ops_iscomputed)#>,&
         "Operator is not correctly discretized. Maybe the particles have moved?")
-    check_associated("this%discr_src")
-    check_associated("this%discr_to")
+    check_associated(<#this%discr_src#>)
+    check_associated(<#this%discr_to#>)
 
     SELECT TYPE (Part_src => this%discr_src)
     CLASS IS (DTYPE(ppm_t_particles)_)
@@ -279,7 +279,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     SELECT TYPE(Field_to)
     CLASS IS (ppm_t_field_)
         IF (Field_to%lda.LE.0) THEN
-            check_false("associated(Field_to%discr_info)",&
+            check_false(<#associated(Field_to%discr_info)#>,&
                 "Destination field seems to be corrupted - Try Field%destroy()?")
             write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
             IF (vector_operator) THEN
@@ -303,7 +303,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         lda = this%op_ptr%nterms
         ! check for compatibility with the input
         IF (vector_input) THEN
-            check_true("lda.EQ.data_src%lda",&
+            check_true(<#lda.EQ.data_src%lda#>,&
                 "Leading dimension of input field does not match nterms of operator")
         ENDIF
     ELSE
@@ -312,10 +312,10 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         lda = data_src%lda
     ENDIF
 
-    check_true("Part_src%has_neighlist(Part_to)",&
+    check_true(<#Part_src%has_neighlist(Part_to)#>,&
         "Please compute (maybe xset?) neighbor lists first")
 
-    check_true("data_src%has_ghosts()",&
+    check_true(<#data_src%has_ghosts()#>,&
         "Ghost for source field need to be updated")
 
     !If with_ghosts has been set to true (only used in some special cases)
@@ -364,7 +364,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 
     ! check for compatibility with the output
     IF (.NOT.vector_operator) THEN
-        check_true("data_to%lda.EQ.data_src%lda",&
+        check_true(<#data_to%lda.EQ.data_src%lda#>,&
             "With this operator, output and input fields should have the same dimensions.")
     ENDIF
 

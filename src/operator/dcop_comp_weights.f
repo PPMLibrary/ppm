@@ -83,7 +83,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     start_subroutine("op_comp_weights_3d")
 #endif
 
-    check_associated("this%discr_src",&
+    check_associated(<#this%discr_src#>,&
         "Operator first needs to be discretized on a particle set")
 
     SELECT TYPE(ds => this%discr_src)
@@ -101,7 +101,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
         c_value=1._MK
     ENDIF
 
-    check_associated("this%op_ptr",&
+    check_associated(<#this%op_ptr#>,&
         "Discretized operator does not contain a pointer to a generic differential operator. Something is wrong.")
 
     !Pointer to the mathematical description of the operator (as opposed
@@ -123,8 +123,8 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
     !invertible. These particles will be skipped without raising a warning.
 
     Nlist => Part_to%get_neighlist(Part_src)
-    check_associated("Nlist","failed to access neighbour list")
-    check_true("Nlist%uptodate","The neighbour list is not up-to-date")
+    check_associated(Nlist,"failed to access neighbour list")
+    check_true(<#Nlist%uptodate#>,"The neighbour list is not up-to-date")
 
     nterms = op%nterms
     ALLOCATE(sum_degree(nterms),byh0powerbeta(nterms),STAT=info)
@@ -163,7 +163,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
 
         degree_poly = sum_degree(i) + order_a - 1
 
-        check_true("degree_poly .GE. 0","Negative degree for polynomial basis")
+        check_true(<#degree_poly .GE. 0#>,"Negative degree for polynomial basis")
 
         IF (cartesian) THEN
             n_odd = 0
@@ -177,7 +177,7 @@ SUBROUTINE DTYPE(dcop_comp_weights_3d)(this,info,c,min_sv)
         ENDIF
     ENDDO
 
-    check_true("ncoeff.GT.0","Could not compute number of coefficient")
+    check_true(<#ncoeff.GT.0#>,"Could not compute number of coefficient")
 
     ALLOCATE(gamma(ppm_dim,ncoeff),alpha(ppm_dim,ncoeff),STAT=info)
         or_fail_alloc("Local variables")

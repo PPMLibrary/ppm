@@ -125,7 +125,7 @@ SUBROUTINE DTYPE(get_nvlist)(this,nvlist,info,NList)
     ENDIF
 
     check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
-    check_true(nl%uptodate,"Neighbour lists need to be updated") 
+    check_true(<#nl%uptodate#>,"Neighbour lists need to be updated") 
 
     nvlist => nl%nvlist
 

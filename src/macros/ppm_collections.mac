@@ -405,7 +405,7 @@ SUBROUTINE <%= collection_type %>_push(this,element,info,id)
 
     this%vec(this%max_id)%t => element
 
-    check_associated_noscope("this%vec(this%max_id)%t","Pushing element into collection failed unexpectedly")
+    check_associated_noscope(<#this%vec(this%max_id)%t#>,"Pushing element into collection failed unexpectedly")
 
 %if !vector
     element => NULL()

@@ -85,7 +85,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     len_phys=max_phys-min_phys
 
-    check_true("MINVAL(len_phys(1:ppm_dim)).GT.0",&
+    check_true(<#MINVAL(len_phys(1:ppm_dim)).GT.0#>,&
         "Domain length is <= 0 along one dimension. Check input parameters")
 
 
@@ -119,7 +119,7 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
 
     CALL Pc%create(Npart,info,name=name)
         or_fail("Failed to create particle set")
-        check_associated("Pc%xp")
+        check_associated(<#Pc%xp#>)
 
     !use a shortcut, for convenience
     xp => Pc%xp

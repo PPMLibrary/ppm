@@ -32,7 +32,7 @@ SUBROUTINE DTYPE(vbp_create)(Pc,Npart,info,name)
 
     !and update the few fields that are specific to VBP
     Pc%adaptive = .FALSE.
-    check_false("associated(Pc%rcp)",&
+    check_false(<#associated(Pc%rcp)#>,&
         "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
     Pc%rcp => NULL()
 
@@ -178,7 +178,7 @@ SUBROUTINE DTYPE(vbp_set_varying_cutoff)(Pc,cutoff,info,Nlist)
     max_cutoff = MAXVAL(rcp(1:Pc%Npart))
 
     IF (PRESENT(NList)) THEN
-        check_true("Pc%neighs%has(NList)",&
+        check_true(<#Pc%neighs%has(NList)#>,&
             "Neighbour list does not concern this particle set")
         IF (max_cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
         NList%cutoff = max_cutoff
@@ -250,7 +250,7 @@ SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
             TRIM(ADJUSTL(Part_src%name))
     ENDIF
 
-    check_associated("Part_src%xp","Invalid particle set Part_src")
+    check_associated(<#Part_src%xp#>,"Invalid particle set Part_src")
 
     Nl%Part => Part_src
 
@@ -390,18 +390,18 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     !-----------------------------------------------------------------
     !  Checks
     !-----------------------------------------------------------------
-    check_associated("this%xp",&
+    check_associated(<#this%xp#>,&
         "Particles structure had not been defined. Call allocate first")
 
-    check_true("this%flags(ppm_part_partial)",&
+    check_true(<#this%flags(ppm_part_partial)#>,&
         "Particles not mapped. Do a partial/global mapping")
 
     xset_neighlists = .FALSE.
     IF (PRESENT(P_xset)) THEN
         Part_src => P_xset
-        check_associated("Part_src%xp",&
+        check_associated(<#Part_src%xp#>,&
             "Cross-Set particles have not been defined. Call allocate first")
-        check_true("Part_src%flags(ppm_part_partial)",&
+        check_true(<#Part_src%flags(ppm_part_partial)#>,&
             "Particles not mapped. Do a partial/global mapping")
         IF (.NOT.ASSOCIATED(Part_src,this)) THEN
             xset_neighlists = .TRUE.
@@ -411,11 +411,11 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     ENDIF
 
 
-    check_true("Part_src%flags(ppm_part_ghosts)",&
+    check_true(<#Part_src%flags(ppm_part_ghosts)#>,&
             "Ghosts have not been updated. They are needed for neighlists")
 
 
-    check_associated("this%neighs")
+    check_associated(<#this%neighs#>)
 
     !check whether the neighbour list already exists
     IF (this%has_neighlist(Part_src)) THEN
@@ -439,7 +439,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     check_associated(Nlist)
 
     !check that we have a cutoff radius
-    check_associated("this%rcp",&
+    check_associated(<#this%rcp#>,&
         "cutoff radii for adaptive particles have not been defined")
     CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.true.)
         or_fail("could not access cutoff radii")
@@ -682,7 +682,7 @@ SUBROUTINE DTYPE(vbp_updated_cutoff)(this,max_cutoff,info,Nlist)
     !  Set new cutoff
     !-------------------------------------------------------------------------
     IF (PRESENT(NList)) THEN
-        check_true("this%neighs%has(NList)",&
+        check_true(<#this%neighs%has(NList)#>,&
             "Neighbour list does not concern this particle set")
         NList%uptodate = .FALSE.
         NList%cutoff = max_cutoff

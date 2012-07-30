@@ -141,7 +141,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
     ! Checks consistency of parameters
     !-------------------------------------------------------------------------!
-    check_false("(PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun))",&
+    check_false(<#(PRESENT(wp_grad_fun) .AND. .NOT.PRESENT(wp_fun))#>,&
             &  "provided analytical gradients but not analytical function values. This case is not yet implemented")
     IF (.NOT.PRESENT(wp_grad_fun) .AND. PRESENT(wp_fun)) THEN
         IF (this%level_set) THEN
@@ -168,7 +168,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
     ENDIF
 
     !check all particles are inside the computational domain
-    check_true("this%flags(ppm_part_areinside)",&
+    check_true(<#this%flags(ppm_part_areinside)#>,&
             "Some particles may be outside the domain. Apply BC first")
 
     IF (opts%level_set) THEN
@@ -195,7 +195,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
         !check if a scalar property has already been specified as the argument
         !for the resolution function (i.e. the particles will adapt to resolve
         !this property well)
-        check_associated("this%adapt_wp")
+        check_associated(<#this%adapt_wp#>)
     ENDIF
 
     IF (opts%level_set) THEN
@@ -227,7 +227,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
         IF (PRESENT(wp_grad_fun)) THEN
             !no need to allocate an array for wp_grad
         ELSE
-            check_associated("this%adapt_wp_grad")
+            check_associated(<#this%adapt_wp_grad#>)
             IF (.NOT.this%adapt_wp_grad%flags(ppm_ppt_partial)) THEN
                 CALL this%realloc_prop(this%adapt_wp_grad,&
                     info,lda=ppm_dim)
@@ -237,7 +237,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
     ENDIF
 
     NList => this%get_neighlist()
-    check_associated("NList","Could not find neighbour list for that particle set")
+    check_associated(NList,"Could not find neighbour list for that particle set")
     ! crash if not enough neighbours
     IF (need_derivatives .AND. NList%nneighmin.LT.opts%nneigh_critical) THEN
         WRITE(cbuf,'(2(A,I5,2X))') 'nneigh_critical ',opts%nneigh_critical,&
@@ -286,7 +286,7 @@ SUBROUTINE DTYPE(sop_compute_D)(this,D_fun,opts,info,     &
     !-------------------------------------------------------------------------!
 
     if_D_needs_grad: IF (opts%D_needs_gradients) THEN
-        check_false("opts%level_set",&
+        check_false(<#opts%level_set#>,&
                 "D_needs_gradients with level_sets: not supported")
 
         IF (.NOT.PRESENT(wp_grad_fun)) THEN
