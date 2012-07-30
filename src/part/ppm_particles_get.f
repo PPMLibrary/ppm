@@ -21,7 +21,7 @@ SUBROUTINE __FUNCNAME(this,wp,info)
     !!! Return status, on success 0.
     INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
     
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
@@ -81,7 +81,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
 
     INTEGER                         :: np
 
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
 
     wp => NULL()
 
@@ -158,7 +158,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
     __TYPE,DIMENSION(:,:),POINTER    :: wp
 #endif
 
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
 
 
     !If read_only was not explicitely set to true, then assume
@@ -211,7 +211,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
     INTEGER                         :: np
     CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
 
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
 
     wp => NULL()
 
@@ -292,7 +292,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
 
     CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
 
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
 
     CALL Field%get_discr(this,discr_data,info)
         or_fail("could not get discr data for this field on that particle set")
@@ -347,7 +347,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
     LOGICAL   :: lghosts
 
 
-    start_subroutine(__FUNCNAME)
+    start_subroutine("__FUNCNAME")
 
     wp => NULL()
     lghosts = .FALSE.
