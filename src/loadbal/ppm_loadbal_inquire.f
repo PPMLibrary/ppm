@@ -28,10 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE loadbal_inq_s(ctime,nstep,lflush,lredecomp, &
+      SUBROUTINE loadbal_inq_s(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE loadbal_inq_d(ctime,nstep,lflush,lredecomp, &
+      SUBROUTINE loadbal_inq_d(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
      &                         nredest,info,heuristic,mov_avg_time,topoid)
 #endif
       !!! Inquires about the load balance status and returns advise whether
@@ -78,6 +78,8 @@
       REAL(MK)               , INTENT(IN   ) :: t_comp
       !!! Elapsed time (as measured by `ppm_time`) for all computation in one
       !!! time step on the local processor.
+      REAL(MK)               , INTENT(IN   ) :: t_comm
+      !!! Elapsed time for all COMMUNICATION in one time step on the local proc
       INTEGER                , INTENT(IN   ) :: nstep
       !!! Number of time steps since last redecomposition. (>0)
       !!! If this routine is not called every time step, linear interpolation of
@@ -114,6 +116,16 @@
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
+      REAL(MK)                               :: imbal_perc,max_ctime,r_neigh
+      REAL(MK)                               :: neigh_imbal,recv_ctime,ctime
+      INTEGER                                :: random_neigh,i,tag1,sendrank
+      INTEGER                                :: recvrank
+      LOGICAL                                :: l_myneighbor
+      TYPE(ppm_t_topo),POINTER               :: topo => NULL()
+#ifdef __MPI
+      INTEGER                                :: MPTYPE
+      INTEGER, DIMENSION(MPI_STATUS_SIZE)    :: status
+#endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -134,7 +146,30 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
+#ifdef __MPI
+      !-------------------------------------------------------------------------
+      !  Define MPI data type
+      !-------------------------------------------------------------------------
+#if   __KIND == __SINGLE_PRECISION
+      MPTYPE = MPI_REAL
+#elif __KIND == __DOUBLE_PRECISION
+      MPTYPE = MPI_DOUBLE_PRECISION
+#endif
+#endif
+      !-------------------------------------------------------------------------
+      !  Get the topology first
+      !-------------------------------------------------------------------------
+      topo    => ppm_topo(topoid)%t
 
+      !-------------------------------------------------------------------------
+      !  Update the number of particles info needed for load balancing
+      !  NOTE: DLB needs two runs (one for ..npart_old and one for .._npart_new)
+      !
+      !-------------------------------------------------------------------------
+!      stdout("-->",t_comp,t_comm,mov_avg_time)
+      ppm_loadbal_npart_old = ppm_loadbal_npart_new
+      ppm_loadbal_npart_new = npart
+!      stdout(ppm_loadbal_npart_old,ppm_loadbal_npart_new,npart)
       !-------------------------------------------------------------------------
       !  Does the user specify a heuristic?
       !-------------------------------------------------------------------------
@@ -152,7 +187,7 @@
             !  Stop-At-Rise heuristic by Moon:1994
             !
             !-------------------------------------------------------------------
-
+            ctime = t_comp + t_comm
             CALL ppm_loadbal_inquire_sar(ctime,nstep,lflush,lredecomp,nredest, &
      &                                   info)
                     or_fail("Something went wrong in ppm_loadbal_inquire_sar")
@@ -161,22 +196,32 @@
             !-------------------------------------------------------------------
             !  Using Omer's DLB heuristic
             !-------------------------------------------------------------------
-            CALL ppm_loadbal_inquire_dlb(topoid,ctime,mov_avg_time,lflush,&
-     &                                   lredecomp,info)
+            CALL ppm_loadbal_inquire_dlb(topoid,t_comp,t_comm,mov_avg_time,&
+     &                                   max_ctime,imbal_perc,info)
                     or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
+
+            !-------------------------------------------------------------------
+            !  If load imbalance is more than 25% (I'm guessing this number),
+            !  we need a DLB
+            !-------------------------------------------------------------------
+            IF (imbal_perc .GT. 0.25_MK) THEN
+                lredecomp = .TRUE.
+            ELSE
+                lredecomp = .FALSE.
+            ENDIF
+
             !-------------------------------------------------------------------
             !  DLB heuristic expects load balancing to take place in the next
             !  time step
             !-------------------------------------------------------------------
             nredest=1
-        ELSE
+       ELSE
             !-------------------------------------------------------------------
             !  Unknow heuristic
             !-------------------------------------------------------------------
-            fail("Unknown heuristic specified. Nothing computed.")
-        ENDIF
+            fail("No heuristic for dynamic load balancing is given.")
+       ENDIF
       ENDIF
-
       !-------------------------------------------------------------------------
       !  Update time step counter
       !-------------------------------------------------------------------------
