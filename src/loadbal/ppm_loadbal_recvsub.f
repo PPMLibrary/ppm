@@ -2,7 +2,7 @@
 
       SUBROUTINE loadbal_recvsub(topoid,prec,info)
       !!! This routine is called by the underloaded processor to receive a sub
-      !!! from an overlaoded neighbor
+      !!! from an overloaded neighbor
       !!!
       !-------------------------------------------------------------------------
       !  Modules

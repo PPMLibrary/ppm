@@ -107,6 +107,13 @@
          END INTERFACE
          
          !----------------------------------------------------------------------
+         !  Balancing circuit DLB model
+         !----------------------------------------------------------------------
+         INTERFACE ppm_loadbal_bc
+            MODULE PROCEDURE loadbal_bc_s
+            MODULE PROCEDURE loadbal_bc_d
+         END INTERFACE
+         !----------------------------------------------------------------------
          !  include the source
          !----------------------------------------------------------------------
          CONTAINS
@@ -120,6 +127,7 @@
 #include "loadbal/ppm_loadbal_inquire_sar.f"
 #include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
+#include "loadbal/ppm_loadbal_bc.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
@@ -127,6 +135,7 @@
 #include "loadbal/ppm_loadbal_inquire_sar.f"
 #include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
+#include "loadbal/ppm_loadbal_bc.f"
 #undef __KIND
 
 #define __KIND __SINGLE_PRECISION

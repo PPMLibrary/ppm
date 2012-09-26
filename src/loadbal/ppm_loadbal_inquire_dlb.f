@@ -28,7 +28,7 @@
       !!! and have only one round of partial mapping. Thus, we will be able to
       !!! save time.
       !!! One more thing: Calling DLB in the very first time step would yield
-      !!! to severe problems.
+      !!! severe problems.
       !!!
       !!! .References
       !!! *************************************************************

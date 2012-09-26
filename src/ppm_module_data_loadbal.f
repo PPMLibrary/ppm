@@ -78,6 +78,8 @@
          !!! 10 particles leave the processor and 5 come in, the value becomes
          !!! -5. This value is later used for determining an estimate elapsed
          !!! time for the next time step.
+         REAL(ppm_kind_single) :: ppm_loadbal_oldtime_s = 0.0_ppm_kind_single
+         REAL(ppm_kind_double) :: ppm_loadbal_oldtime_d = 0.0_ppm_kind_double
          INTEGER               :: ppm_loadbal_subnpart = 0
          !!! Number of particles in the subdomain that will be sent/received
          REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_xps
