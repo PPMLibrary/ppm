@@ -28,9 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_get_cost_s(topoid,meshid,xp,Np,cost,proc_cost,info,pcost)
+      SUBROUTINE ppm_get_cost_s(topoid,meshid,xp,Np,cost,proc_cost,info,&
+     &                          vlist,nvlist,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_get_cost_d(topoid,meshid,xp,Np,cost,proc_cost,info,pcost)
+      SUBROUTINE ppm_get_cost_d(topoid,meshid,xp,Np,cost,proc_cost,info,&
+     &                          vlist,nvlist,pcost)
 #endif
       !!! This routine calculates the computational cost of each subdomain
       !!! and each processor.
@@ -51,6 +53,7 @@
       USE ppm_module_write
       USE ppm_module_check_id
       USE ppm_module_topo_cost
+      USE ppm_module_data_loadbal
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -86,17 +89,29 @@
       !!! computed based on the geometry: cost(sub) = volume(sub).
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      INTEGER, DIMENSION(:)  , OPTIONAL, INTENT(IN   ) :: nvlist
+      !!! Number of particles with which ip has to interact. Index: ip.
+      INTEGER, DIMENSION(:,:), OPTIONAL, INTENT(IN   ) :: vlist
+      !!! Verlet list. First index: particles with which particle ip interacts.
+      !!! Second index: ip. The second index only runs up to the
+      !!! largest ip with non-zero nvlist. This is to save memory since the
+      !!! last particles are the ghosts and they do not have a verlet list.
+      !!! This is only allocated and returned if lstore is .TRUE.
       REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
       !!! per-particle costs.
-      !!! If not present, a cost of 1.0 per particle is assumed.
+      !!! If it is not present but the nvlist and vlist are given,
+      !!! pcost is computed by PPM using the relative communication cost
+      !!! If it is not present AND nvlist and vlist are NOT given,
+      !!! pcost is 1.0 for each particle
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0,mincost,maxcost
+      REAL(MK)                          :: t0,mincost,maxcost,comp_cost
+      REAL(MK)                          :: comm_cost
       INTEGER, DIMENSION(ppm_dim)       :: ldl,ldu
       INTEGER, DIMENSION(3,1), TARGET   :: ndummy
       INTEGER, DIMENSION(:,:), POINTER  :: nnodes => NULL()
-      INTEGER                           :: i,proc
+      INTEGER                           :: i,j,k,proc
       INTEGER                           :: iopt,minproc,maxproc
       LOGICAL                           :: valid
       CHARACTER(LEN=ppm_char)           :: mesg
@@ -121,7 +136,6 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-
       !-------------------------------------------------------------------------
       !  Allocate memory for the proc_costs
       !-------------------------------------------------------------------------
@@ -136,8 +150,8 @@
           GOTO 9999
       ENDIF
       proc_cost = 0.0_MK
-
-
+      comp_cost = 1._MK
+      comm_cost = comp_cost * 5._MK
 
       !-------------------------------------------------------------------------
       !  Sum up the costs of all subs of the processors
@@ -158,13 +172,36 @@
             GOTO 9999
         ENDIF
 
-        IF (PRESENT(pcost)) THEN
+        !---------------------------------------------------------------------
+        !  Advanced communication costs.
+        !  One particle cost: comp_cost
+        !  One neighbor on the SAME proc cost: comp_cost (aka interaction cost)
+        !  One neighbor on ANOTHER proc cost:  comm_cost
+        !---------------------------------------------------------------------
+        IF (PRESENT(pcost) .AND. PRESENT(nvlist) .AND. PRESENT(vlist)) THEN
+            DO i = 1, Np
+                cost(1) = cost(1) + pcost(i)
+                DO j=1,nvlist(i)
+           !--------------------------------------------------------------------
+           !  Computational cost of a neighboring particle on THIS proc is 1
+           !  on another processor, it's comm_cost.
+           !  If the ID of a particle is GREATER THAN Np, it's a ghost particle
+           !  thus it belongs to another processor.
+           !--------------------------------------------------------------------
+                    IF (vlist(j,i) .LE. Np) THEN
+                        cost(1) = cost(1) + comp_cost
+                    ELSE ! ghost particle --> add comm_cost
+                        cost(1) = cost(1) + comm_cost
+                    ENDIF
+                ENDDO
+            ENDDO
+        ELSEIF (PRESENT(pcost)) THEN
             DO i = 1, Np
                 cost(1) = cost(1) + pcost(i)
             ENDDO
         ELSE
             DO i = 1, Np
-                cost(1) = cost(1) + 1.0_MK
+                cost(1) = cost(1) + comp_cost
             ENDDO
         ENDIF
 
@@ -221,6 +258,7 @@
 #else
         proc_cost(0) = cost(1)
 #endif
+
       ELSE
 
         topo => ppm_topo(topoid)%t
@@ -240,6 +278,7 @@
         !  points
         !-------------------------------------------------------------------------
         IF (PRESENT(pcost)) THEN
+
 #if   __KIND == __SINGLE_PRECISION
             CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:),       &
      &          topo%max_subs(:,:),topo%nsubs,         &
@@ -269,6 +308,44 @@
 
         NULLIFY(nnodes)
         !---------------------------------------------------------------------
+        !  Advanced communication costs.
+        !  One particle cost: comp_cost
+        !  One neighbor on the SAME proc cost: comp_cost (aka interaction cost)
+        !  One neighbor on ANOTHER proc cost:  comm_cost
+        !---------------------------------------------------------------------
+        IF (PRESENT(pcost) .AND. PRESENT(nvlist) .AND. PRESENT(vlist)) THEN
+            DO k = 1, topo%nsubs
+                DO i = 1, Np
+                    cost(k) = cost(k) + pcost(i)
+                    DO j=1,nvlist(i)
+               !--------------------------------------------------------------------
+               !  Computational cost of a neighboring particle on THIS proc is 1
+               !  on another processor, it's comm_cost.
+               !  If the ID of a particle is GREATER THAN Np, it's a ghost particle
+               !  thus it belongs to another processor.
+               !--------------------------------------------------------------------
+                        IF (vlist(j,i) .LE. Np) THEN
+                            cost(k) = cost(k) + comp_cost
+                        ELSE ! ghost particle --> add comm_cost
+                            cost(k) = cost(k) + comm_cost
+                        ENDIF
+                    ENDDO
+                ENDDO
+            ENDDO
+        ELSEIF (PRESENT(pcost)) THEN
+            DO k = 1, topo%nsubs
+                DO i = 1, Np
+                    cost(k) = cost(k) + pcost(i)
+                ENDDO
+            ENDDO
+        ELSE
+            DO k = 1, topo%nsubs
+                DO i = 1, Np
+                    cost(k) = cost(k) + comp_cost
+                ENDDO
+            ENDDO
+        ENDIF
+        !---------------------------------------------------------------------
         !  All processors know the costs of all the
         !  subs and we simply sum them up according to subs2proc
         !---------------------------------------------------------------------
@@ -277,6 +354,16 @@
             proc_cost(proc) = proc_cost(proc) + cost(i)
         ENDDO
       ENDIF
+
+#if    __KIND == __SINGLE_PRECISION
+      ppm_loadbal_subcosts => cost
+      ppm_loadbal_proccosts= proc_cost(ppm_rank)
+      print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
+#else
+      ppm_loadbal_subcostd => cost
+      ppm_loadbal_proccostd= proc_cost(ppm_rank)
+      print*,ppm_rank,ppm_loadbal_subcostd,ppm_loadbal_proccostd
+#endif
 
       !-------------------------------------------------------------------------
       !  Diagnostics

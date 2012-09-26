@@ -224,7 +224,7 @@
                           ENDIF
                       ELSE
                          !------------------------------------------------------
-                         !  if not, add it the list of particle to search
+                         !  if not, add it to the list of particle to search
                          !------------------------------------------------------
                          nlist2         = nlist2 + 1
                          ilist2(nlist2) = ipart
@@ -247,7 +247,7 @@
               !-----------------------------------------------------------------
               IF (nlist1.EQ.0) EXIT
           ENDDO    ! loop over subdomains
-              
+
           !---------------------------------------------------------------------
           !  Check that we did not miss a particle
           !---------------------------------------------------------------------
