@@ -1,171 +1,33 @@
-      !-------------------------------------------------------------------------
+      !--*- f90 -*--------------------------------------------------------------
       !  Module       :                     ppm_param
-      !-------------------------------------------------------------------------
       !
       !  Purpose      : Define global and user-accessible parameters
       !
-      !  Remarks      :
-      !
-      !  References   :
-      !
-      !  Revisions    :
       !-------------------------------------------------------------------------
-      !  $Log: ppm_param.h,v $
-      !  Revision 1.1.1.1  2007/07/13 10:19:01  ivos
-      !  CBL version of the PPM library
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      !                    Center for Fluid Dynamics (DTU)
       !
-      !  Revision 1.45  2006/09/04 18:34:54  pchatela
-      !  Fixes and cleanups to make it compile for
-      !  release-1-0
       !
-      !  Revision 1.44  2006/05/15 12:40:47  pchatela
-      !  Added Hammer 3-4-7-12 quadrature rules
+      ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
-      !  Revision 1.43  2005/08/05 09:28:08  ivos
-      !  Added STS ode scheme.
+      ! PPM is free software: you can redistribute it and/or modify
+      ! it under the terms of the GNU Lesser General Public License 
+      ! as published by the Free Software Foundation, either 
+      ! version 3 of the License, or (at your option) any later 
+      ! version.
       !
-      !  Revision 1.42  2005/03/10 01:49:19  ivos
-      !  Added order parameters for GMM.
+      ! PPM is distributed in the hope that it will be useful,
+      ! but WITHOUT ANY WARRANTY; without even the implied warranty of
+      ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+      ! GNU General Public License for more details.
       !
-      !  Revision 1.41  2005/01/13 13:23:26  michaebe
-      !  added m3p6
+      ! You should have received a copy of the GNU General Public License
+      ! and the GNU Lesser General Public License along with PPM. If not,
+      ! see <http://www.gnu.org/licenses/>.
       !
-      !  Revision 1.40  2005/01/13 13:19:08  ivos
-      !  Added ppm_param_assign_user_defined.
-      !
-      !  Revision 1.39  2004/10/29 16:01:36  kotsalie
-      !  RED BLACK SOR PARAMETER
-      !
-      !  Revision 1.38  2004/10/13 16:43:06  davidch
-      !  added constants for 3d sph kernels
-      !
-      !  Revision 1.37  2004/10/01 15:14:37  hiebers
-      !  added ppm_param_ode_rk4
-      !
-      !  Revision 1.36  2004/09/28 14:17:33  kotsalie
-      !  Added parameter for 4th order
-      !
-      !  Revision 1.35  2004/09/24 15:03:54  ivos
-      !  Added params for slab decomposition types.
-      !
-      !  Revision 1.34  2004/09/22 18:21:53  kotsalie
-      !  Added parameters for the mg
-      !
-      !  Revision 1.33  2004/09/22 10:32:54  ivos
-      !  Added ppm_param_tree_bin, ppm_param_tree_quad, ppm_param_tree_oct.
-      !
-      !  Revision 1.32  2004/09/17 12:05:09  ivos
-      !  cosmetics.
-      !
-      !  Revision 1.31  2004/08/31 12:15:18  ivos
-      !  Added ppm_param_id_internal and ppm_param_id_user.
-      !
-      !  Revision 1.30  2004/08/13 15:29:19  michaebe
-      !  added another ode scheme
-      !
-      !  Revision 1.29  2004/08/12 10:45:26  michaebe
-      !  inserted kernel paramters
-      !
-      !  Revision 1.28  2004/07/29 12:56:59  hiebers
-      !  Added ppm_param_kernel_*sph2d*
-      !
-      !  Revision 1.27  2004/07/27 09:05:32  michaebe
-      !  added user-accessbile ode parameters
-      !
-      !  Revision 1.26  2004/07/27 07:06:04  ivos
-      !  Added BEM parameters.
-      !
-      !  Revision 1.25  2004/07/23 12:54:04  ivos
-      !  Added parameters for laplacian kernels in 2d and 3d.
-      !
-      !  Revision 1.24  2004/07/20 16:43:51  ivos
-      !  Added data update and loadbalance parameters.
-      !
-      !  Revision 1.23  2004/07/16 11:43:04  ivos
-      !  Added ppm_param_topo_field and ppm_param_topo_part.
-      !
-      !  Revision 1.22  2004/05/11 14:53:46  ivos
-      !  Added ppm_param_io_single and ppm_param_io_double.
-      !
-      !  Revision 1.21  2004/05/11 13:31:39  oingo
-      !  Added connection options
-      !
-      !  Revision 1.20  2004/05/06 07:44:08  ivos
-      !  Added I/O parameters.
-      !
-      !  Revision 1.19  2004/04/13 15:18:56  oingo
-      !  Added ppm_param_decomp_null
-      !  Removed ppm_param_map_ring
-      !
-      !  Revision 1.18  2004/04/07 11:48:26  oingo
-      !  Added ppm_param_map_ring
-      !
-      !  Revision 1.17  2004/04/05 11:01:55  ivos
-      !  Added ppm_param_pop_add and ppm_param_pop_replace.
-      !
-      !  Revision 1.16  2004/04/02 15:24:47  ivos
-      !  Added ppm_param_map_init.
-      !
-      !  Revision 1.15  2004/04/01 14:11:06  ivos
-      !  added ppm_param_map_ghost_init.
-      !
-      !  Revision 1.14  2004/02/25 14:45:36  ivos
-      !  Added new METIS assignment types ppm_param_assign_nodal_cut, 
-      !  _nodal_comm,
-      !  _dual_cut and _dual_comm.
-      !
-      !  Revision 1.13  2004/02/18 14:53:58  walther
-      !  Now receiving the ghost particles is named ppm_param_map_ghost_get and
-      !  sending ghost values back to their host processor is 
-      !  ppm_param_map_ghost_put.
-      !
-      !  Revision 1.12  2004/02/18 14:30:54  walther
-      !  Renamed parameters: ppm_param_map_update is now ppm_param_map_partial,
-      !  ppm_param_map_ghost is used in both the field and particle ghost 
-      !  mapping
-      !  and refers to the ghost VALUE; therefore I added the 
-      !  ppm_param_map_ghostpart
-      !  as the parameter to map the ghost POSITION (particles only).
-      !
-      !  Revision 1.11  2004/02/12 17:07:34  ivos
-      !  Added parameters to define sub2proc assignment types.
-      !
-      !  Revision 1.10  2004/02/12 08:33:27  michaebe
-      !  inserted a _io_ for the append,replace,overwrite params to make them
-      !  more style conforming
-      !
-      !  Revision 1.9  2004/02/10 12:32:08  michaebe
-      !  added some miscellaneous params (overwrite,replace,append,insert)
-      !
-      !  Revision 1.8  2004/02/06 15:43:29  walther
-      !  Added ppm_param_map_use_symmetry.
-      !
-      !  Revision 1.7  2004/02/05 09:02:59  walther
-      !  Changed header.
-      !
-      !  Revision 1.6  2004/02/04 17:21:41  ivos
-      !  Added mesh operation params ppm_param_mesh_refine and
-      !  ppm_param_mesh_coarsen.
-      !
-      !  Revision 1.5  2004/01/29 13:56:12  ivos
-      !  Added decomposition methods for meshes.
-      !
-      !  Revision 1.4  2004/01/09 15:56:03  ivos
-      !  Added error level constants.
-      !
-      !  Revision 1.3  2003/12/12 17:13:43  ivos
-      !  Added map type ppm_param_map_cancel = 10.
-      !
-      !  Revision 1.2  2003/11/24 15:02:54  ivos
-      !  Added map type ppm_param_map_partial = 10
-      !
-      !  Revision 1.1.1.1  2003/11/17 15:13:45  walther
-      !
-      !-------------------------------------------------------------------------
-      !  Parallel Particle Mesh Library (PPM)
-      !  Institute of Computational Science
-      !  ETH Zentrum, Hirschengraben 84
-      !  CH-8092 Zurich, Switzerland
+      ! Parallel Particle Mesh Library (PPM)
+      ! ETH Zurich
+      ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------

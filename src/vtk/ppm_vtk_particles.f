@@ -11,7 +11,7 @@
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_ghosts
            LOGICAL,               OPTIONAL, INTENT(IN   ) :: with_nvlist
            CLASS(ppm_v_main_abstr),OPTIONAL               :: Fields
-           !!!list of fields to print out (default = ALL)
+           !!!list of fields (or properties!) to print out (default = ALL)
 
            !--------------------------------------------------------------------
            !  Variables
@@ -101,6 +101,7 @@
                                fail("not a supported type for printout (yet)")
                        END SELECT
                    CLASS IS (DTYPE(ppm_t_part_prop)_)
+                   ! support for particle properties
                        prop => var
                        SELECT CASE(prop%data_type)
                        CASE (ppm_type_int)

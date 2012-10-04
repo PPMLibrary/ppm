@@ -61,13 +61,14 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_param_part_init_random = 2
 !PPM internal parameters used only to access entries in the
 !particle data structure.
 INTEGER,PARAMETER,PUBLIC   :: ppm_part_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_partial = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_reqput = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_areinside = 4
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_cartesian = 5
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_neighlists = 6
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_global_index = 7
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_partflags = 7
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_ghosts_exist = 2
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_partial = 3
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_reqput = 4
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_areinside = 5
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_cartesian = 6
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_neighlists = 7
+INTEGER,PARAMETER,PUBLIC   :: ppm_part_global_index = 8
+INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_partflags = 9
 
 INTEGER,PARAMETER,PUBLIC   :: ppm_pdata_lflags = 3
 

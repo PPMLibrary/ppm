@@ -1712,8 +1712,8 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
@@ -1764,8 +1764,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
 #endif
                         skip_send = .FALSE.
                     ELSE
-                        stdout("pushing property ",&
-                            'Pc%props%iter_id','TRIM(prop%name)')
+                        stdout("pushing property ",<#Pc%props%iter_id#>,<#TRIM(prop%name)#>)
                         fail("getting ghosts for a property thats not mapped")
                     ENDIF
                 ENDIF
@@ -1891,14 +1890,14 @@ SUBROUTINE DTYPE(part_map_ghost_get)(Pc,info,ghostsize)
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
@@ -2001,14 +2000,14 @@ SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
@@ -2058,8 +2057,7 @@ SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
                     Pc%stats%t_ghost_push = Pc%stats%t_ghost_push + (t2-t1)
 #endif
                 ELSE
-                    stdout("pushing property ",&
-                            'Pc%props%iter_id','TRIM(prop%name)')
+                    stdout("pushing property ",<#Pc%props%iter_id#>,<#TRIM(prop%name)#>)
                     fail("getting ghosts for a property thats not mapped")
                 ENDIF
             ENDIF
@@ -2190,14 +2188,14 @@ SUBROUTINE DTYPE(part_map_ghost_pop)(Pc,info,Field,ghostsize)
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
@@ -2313,14 +2311,14 @@ SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize)
 
 #if   __KIND == __SINGLE_PRECISION
     IF (cutoff .GT. topo%ghostsizes) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsizes')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #elif   __KIND == __DOUBLE_PRECISION
     IF (cutoff .GT. topo%ghostsized) THEN
-        stdout("cutoff for ghost mapping       = ",cutoff)
-        stdout("cutoff used to create topology = ",'topo%ghostsized')
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
