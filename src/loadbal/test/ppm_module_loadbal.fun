@@ -38,7 +38,7 @@ integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
 integer, dimension(:,:),pointer :: vlist=>NULL()
 real(mk)                        :: err,start_time,end_time,elapsed_t
-real(mk)                        :: t_comp,t_comm
+real(mk)                        :: t_comp,t_comm,t_total
 
 integer, dimension(:), pointer                 :: wp_1i => NULL()
 integer, dimension(:,:), pointer               :: wp_2i => NULL()
@@ -100,9 +100,9 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
 
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
-        !do i=1,seedsize
-        !    seed(i)=10+i*i*(rank+1)
-        !enddo
+!        do i=1,seedsize
+!            seed(i)=10+i*i*(rank+1)
+!        enddo
         call random_seed(put=seed)
 
         !----------------
@@ -160,7 +160,7 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
 &           minsub, maxsub,nsubs,sub2proc)
 
         topo    => ppm_topo(topoid)%t
-        print*,rank,'s neighbors ',topo%ineighproc(1:2)
+!        print*,rank,'s neighbors ',topo%ineighproc(1:2)
 
     end init
 
@@ -184,123 +184,240 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
     test balancing_circuit
          use ppm_module_util_dbg
 
-        ! test initialization of particles on a grid
         type(ppm_t_particles_d)               :: Part1
         class(ppm_t_discr_data),POINTER       :: Prop1=>NULL(),Prop2=>NULL()
-        character(len=32)                     :: fname
-        integer                               :: nsteps,step,npart_this,i
-        real(mk)                              :: random_num,t_comm_old,t_comp_old
-        integer,dimension(:),pointer          :: colortag
-        real(mk)                              :: t_total
-        
-        
-       
-        call ppm_dbg_print(topoid,0.0_mk,0,1,info)
-!        print*,'ppm_dbg_print'
+        type(ppm_t_field)                     :: Field1
+        INTEGER,DIMENSION(:),POINTER          :: nvlist => NULL()
+        INTEGER,DIMENSION(:,:),POINTER        :: vlist => NULL()
+        class(ppm_t_neighlist_d_),POINTER     :: Nlist => NULL()
+        integer                               :: np_local
+        REAL(mk), DIMENSION(:  ), POINTER     :: cost
+        !!! Aggregate cost for each subdomain
+        REAL(mk), DIMENSION(:  ), POINTER     :: proc_cost
+        integer                               :: i, nsteps
+    
+        t_comp = 0._mk
+        t_comm = 0._mk
+
+        start_time =  MPI_Wtime()
+        ! ----------------------------
+        ! Initialize the particles
+        ! ----------------------------
         call Part1%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
-!        print*,'Part1 initialize'
+        Assert_True(associated(Part1%xp))
+
+!        print*,'AFTER INIT'
         call Part1%get_xp(xp,info)
         Assert_Equal(info,0)
-!        print*,'Get Xp'
-        ! Global mapping
+        call Part1%set_xp(xp,info,read_only=.true.)
+        Assert_Equal(info,0)
+        
+!        print*,'AFTER GET/SET'
+        
+        end_time = MPI_Wtime()
+        t_comp   = end_time-start_time
+        start_time   = MPI_Wtime()
+        ! ----------------------------
+        ! Map the particles
+        ! ----------------------------
         call Part1%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
-!        print*,rank,'Global mapping'
-        ! Ghost mapping
+!        print*,'GLOBAL MAPPING ---- DONE'
         call Part1%map_ghosts(info)
         Assert_Equal(info,0)
-!        print*,rank,'Ghost mapping'
+!        print*,'GHOST MAPPING ---- DONE'
         
-        lredecomp = .FALSE.
-        nredest   = -1
-        heuristic = ppm_param_loadbal_dlb
-        nsteps    = 4
+        end_time = MPI_Wtime()
+        t_comm   = end_time-start_time
+        start_time   = MPI_Wtime()
         
-        ! initialize the current iteration's timings
-        t_comp = 0._MK
-        t_comm = 0._MK
-
-        ! A sample time loop
-        DO step=1,nsteps
-
-            start_time = 0._MK
-            end_time = 0._MK
-            ! store old time step's timings
-            t_comm_old = t_comm
-            t_comp_old = t_comp
-          
+        ! ----------------------------
+        ! Create initial neighbor list
+        ! ----------------------------
+        call Part1%comp_neighlist(info)
+        Assert_Equal(info,0)
+!        print*,'DEBUG =0='        
+        Nlist => Part1%get_neighlist(Part1)
+        Assert_true(associated(Nlist))
+        
+        Assert_True(Part1%has_neighlist())
+        call Part1%get_vlist(nvlist,vlist,info,Nlist)
+        Assert_true(associated(vlist))
+        Assert_true(associated(nvlist))
+        Assert_Equal(info,0)
+        
+        call Part1%get_xp(xp,info)
+        Assert_Equal(info,0)
+        
+        end_time = MPI_Wtime()
+        t_comp   = t_comp + end_time-start_time
+        t_total  = t_comp + t_comm
+!         print*,'ARRIVED HERE'
+        ! ----------------------------
+        ! Estimate the initial cost
+        ! ----------------------------
+        call ppm_loadbal_bc(topoid,-1,Part1,t_total, &
+&                           info,vlist,nvlist,t_comp=t_comp)
+        Assert_Equal(info,0)
+        
+        ! ----------------------------
+        ! Start the time loop
+        ! ---------------------------
+        nsteps = 1
+        DO i=1,nsteps
+            t_comp = 0._mk
+            t_comm = 0._mk
             start_time = MPI_Wtime()
-            !Set up a velocity field and a scalar test function 
-            ! on the particles
-            call Part1%create_prop(info,discr_data=Prop1,&
-                dtype=ppm_type_real,lda=2,name="velocity")
+            call Part1%set_xp(xp,info,read_only=.true.)
+            Assert_Equal(info,0)
+            
+            ! ----------------------------
+            ! Set up a velocity field and 
+            ! a scalar test function on 
+            ! the particles
+            ! ----------------------------
+            call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
+                lda=3,name="velocity")
+            Assert_Equal(info,0)
+            call Part1%create_prop(info,discr_data=Prop2,dtype=ppm_type_real,&
+                lda=1,name="testf")
             Assert_Equal(info,0)
             call Part1%get(Prop1,wp_2r,info)
             Assert_Equal(info,0)
-          
-          !call Part1%get_xp(xp,info)
-          !Assert_Equal(info,0)
- 
-          ! RANDOM MOTION
-          DO ip=1,Part1%Npart
-             call random_number(random_num) 
-             wp_2r(1:ndim,ip) = random_num* Part1%ghostlayer
-          ENDDO
+            call Part1%get(Prop2,wp_1r,info)
+            Assert_Equal(info,0)
+            call Part1%get_xp(xp,info)
+            Assert_Equal(info,0)
+            DO ip=1,Part1%Npart
+                wp_2r(1:ndim,ip) = COS((10._MK*xp(1:ndim,ip))**2)
+                wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
+            ENDDO
+            wp_2r = cos(wp_2r) * Part1%ghostlayer
+            ! ----------------------------
+            ! Move the particles with this 
+            ! displacement field
+            ! ----------------------------
+            call Part1%move(wp_2r,info)
+            Assert_Equal(info,0)
+            ! ----------------------------
+            ! Apply boundary conditions and 
+            ! remap the particles
+            ! ----------------------------
+            call Part1%apply_bc(info)
+            Assert_Equal(info,0)
+            end_time = MPI_Wtime()
+            t_comp = end_time - start_time
+            call Part1%map(info)
+            Assert_Equal(info,0)
+            
+            ! ----------------------------
+            ! Get the new ghosts
+            ! ----------------------------
+            call Part1%map_ghosts(info)
+            Assert_Equal(info,0)  
+                  
+            ! ----------------------------
+            ! Update (re-create) neighbor list 
+            ! ----------------------------
+            start_time   = MPI_Wtime()
+            call Part1%comp_neighlist(info)
+            Assert_Equal(info,0)
+            Nlist => Part1%get_neighlist(Part1)
+            Assert_true(associated(Nlist))
+            
+            Assert_True(Part1%has_neighlist())
+            call Part1%get_vlist(nvlist,vlist,info,Nlist)
+            Assert_true(associated(vlist))
+            Assert_true(associated(nvlist))
+            Assert_Equal(info,0)
+    
+            ! ----------------------------
+            ! Estimate the updated cost
+            ! ----------------------------
+            call Part1%get_xp(xp,info)
+            Assert_Equal(info,0)
+            end_time   = MPI_Wtime()
+            t_comp     = t_comp + end_time - start_time
+            
+            
+            
+            call ppm_loadbal_bc(topoid,-1,Part1,t_total, &
+&                           info,vlist,nvlist,t_comp=t_comp)
+            Assert_Equal(info,0)
+            call Part1%set_xp(xp,info,read_only=.true.)
+            Assert_Equal(info,0)
+            
+            print*,rank,' required this many time:',t_comp
+            print*,'%%%%%%%%%%%%%%%%%%%%%%%'
+!            ! ----------------------------
+!            ! Now, move the particles back
+!            ! ----------------------------       
+!            call Part1%get(Prop1,wp_2r,info)
+!            wp_2r = -wp_2r
+!            call Part1%move(wp_2r,info)
+!            Assert_Equal(info,0)
+!    
+!            ! ----------------------------
+!            ! Re-apply boundary conditions 
+!            ! & remap the particles
+!            ! ----------------------------
+!            call Part1%apply_bc(info)
+!            Assert_Equal(info,0)
+!            call Part1%map(info)
+!            Assert_Equal(info,0)
+!    
+!            call Part1%map_ghosts(info)
+!            Assert_Equal(info,0)
+!            
+!            ! ----------------------------
+!            ! Update (re-create) neighbor list 
+!            ! ----------------------------            
+!            call Part1%comp_neighlist(info)
+!            Assert_Equal(info,0)
+!            Assert_True(Part1%has_neighlist())
+!
+!            ! ----------------------------
+!            ! Compare values and check that
+!            ! they are still the same 
+!            ! ----------------------------
+!            call Part1%get_xp(xp,info)
+!            Assert_Equal(info,0)
+!            call Part1%get(Prop2,wp_1r,info)
+!            Assert_Equal(info,0)
+!            err = 0._mk
+!            DO ip=1,Part1%Npart
+!                err = max(err,abs(wp_1r(ip) - f0_test(xp(1:ndim,ip),ndim)))
+!            ENDDO
+!            Assert_Equal_Within(err,0,tol)
+!            
+!            ! ----------------------------
+!            ! Update (re-create) neighbor list 
+!            ! ----------------------------
+!            call Part1%comp_neighlist(info)
+!            Assert_Equal(info,0)
+!            Nlist => Part1%get_neighlist(Part1)
+!            Assert_true(associated(Nlist))
+!            
+!            Assert_True(Part1%has_neighlist())
+!            call Part1%get_vlist(nvlist,vlist,info,Nlist)
+!            Assert_true(associated(vlist))
+!            Assert_true(associated(nvlist))
+!            Assert_Equal(info,0)
+!    
+!            ! ----------------------------
+!            ! Estimate the updated cost
+!            ! ----------------------------
+!            call Part1%get_xp(xp,info)
+!            Assert_Equal(info,0)
+!            call ppm_loadbal_bc(topoid,-1,xp,Part1%Npart,t_total, &
+!&                           info,vlist,nvlist,t_comp=t_comp,t_comm=t_comm)
+!            Assert_Equal(info,0)
+!            call Part1%set_xp(xp,info,read_only=.true.)
+!            Assert_Equal(info,0)
+!            
+       enddo
 
-          ! CONSTANT MOTION
-!          DO ip=1,Part1%Npart
-!             ! if (xp(1,ip).LT.0.6) then
-!             !     wp_2r(1,ip) = (0.6/REAL(nsteps))+0.1
-!             ! else
-!                  wp_2r(1:2,ip) = 0.0
-!             ! endif 
-!          ENDDO
-!          
-          !wp_2r = cos(wp_2r) * Part1%ghostlayer
-          
-          !Move the particles with this displacement field
-          call Part1%move(wp_2r,info)
-          Assert_Equal(info,0)
-       
-          ! Computation time is being calculated
-          t_comp = MPI_Wtime()
-          t_comp = t_comp - start_time 
-
-          call Part1%set_xp(xp,info)
-          Assert_Equal(info,0)
-          start_time = MPI_Wtime()   
-          !Apply boundary conditions and remap the particles
-          call Part1%apply_bc(info)
-          Assert_Equal(info,0)       
-          call Part1%map(info)
-          Assert_Equal(info,0)
-          
-          !Get the new ghosts
-          call Part1%map_ghosts(info)
-          Assert_Equal(info,0)
-          
-          end_time = MPI_Wtime()
-          t_comm = end_time-start_time
-        
-          t_total = t_comp + t_comm
-          call ppm_loadbal_bc(topoid,t_total,info)
-          Assert_Equal(info,0)
-         ! call Part1%get_xp(xp,info)
-         ! Assert_Equal(info,0)
-
-         
-!          print*,'***********************'
-          write(*,*) 'step:',step,' do dlb:',lredecomp
-          print*,'***********************'
-
-          !write(*,*) 'fine till here'
-
-        ENDDO
-        !call Part1%print_info(info)
-        !Assert_Equal(info,0)
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
     
     end test
 !    test random_motion

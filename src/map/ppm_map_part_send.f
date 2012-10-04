@@ -73,7 +73,7 @@
       INTEGER               :: iopt,count,tag1,qpart,msend,mrecv
       INTEGER               :: npart_send,npart_recv
       CHARACTER(ppm_char)   :: mesg
-      REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double) :: t0,t_start,t_end
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
@@ -85,6 +85,7 @@
       !  Initialise 
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_send',t0,info)
+
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -191,7 +192,8 @@
       precv(1)        = qpart
       mrecv           = -1
       msend           = -1
-
+      ! # of particles to be sent
+      ppm_loadbal_comm_part_num = 0
       DO k=2,ppm_nsendlist
 
          !----------------------------------------------------------------------
@@ -228,7 +230,9 @@
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
      &                         precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
      &                         ppm_comm,status,info)
-     
+             ! Accumulate number of communicated particles for load balancing
+             ppm_loadbal_comm_part_num = ppm_loadbal_comm_part_num + psend(k)
+
              ! Compute nrecv(k) from precv(k)
              nrecv(k) = sbdim*precv(k)
 
@@ -650,6 +654,12 @@
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_part_send',t0,info)
+!      t_end = MPI_Wtime()
+      !-------------------------------------------------------------------------
+      !  Update the overall time spent for map_part_send
+      !-------------------------------------------------------------------------
+!      ppm_loadbal_comm_time = ppm_loadbal_comm_time + (t_end-t_start)
+!      print*,'******TIME****:',ppm_loadbal_comm_time
       RETURN
       CONTAINS
       SUBROUTINE check

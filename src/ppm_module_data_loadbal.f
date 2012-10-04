@@ -82,7 +82,57 @@
          REAL(ppm_kind_double) :: ppm_loadbal_oldtime_d = 0.0_ppm_kind_double
          INTEGER               :: ppm_loadbal_subnpart = 0
          !!! Number of particles in the subdomain that will be sent/received
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_xps
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_xpd
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_xps => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_xpd => NULL()
+
+         REAL(ppm_kind_single) :: ppm_loadbal_proccosts = -1._ppm_kind_single
+         REAL(ppm_kind_double) :: ppm_loadbal_proccostd = -1._ppm_kind_double
+         !!! DLB cost of this processor
+         REAL(ppm_kind_single) :: ppm_loadbal_totcommcosts = -1._ppm_kind_single
+         REAL(ppm_kind_double) :: ppm_loadbal_totcommcostd = -1._ppm_kind_double
+         !!! DLB total communication cost given by the time model
+         REAL(ppm_kind_single) :: ppm_loadbal_totcompcosts = -1._ppm_kind_single
+         REAL(ppm_kind_double) :: ppm_loadbal_totcompcostd = -1._ppm_kind_double
+         !!! DLB total computation cost given by the time model
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_subcosts => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_subcostd => NULL()
+         !!! DLB total cost of all the subs on that processor
+         !!! It is given by the time model
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_subcommcosts => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_subcommcostd => NULL()
+         !!! DLB total communication cost of all the subs on that processor
+         !!! It is given by the time model
+         REAL(ppm_kind_single), DIMENSION(:), POINTER :: ppm_loadbal_subcompcosts => NULL()
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: ppm_loadbal_subcompcostd => NULL()
+         !!! DLB total computation COST of all the subs on that processor
+         !!! It is given by the time model
+         INTEGER                :: ppm_loadbal_comm_part_num = 0
+         !!! The number of particles being communicated
+!         REAL(ppm_kind_single)  :: ppm_loadbal_comm_part_costs
+         REAL(ppm_kind_double)  :: ppm_loadbal_comm_part_cost = -1._ppm_kind_double
+         !!! The average cost of a communicated particle
+         REAL(ppm_kind_double)  :: ppm_loadbal_comp_part_cost = -1._ppm_kind_double
+         !!! The average COST of a real particle
+         !!! This is always 1. (normalized)
+         !!! 'ppm_loadbal_comm_part_cost' is a multiple of this.
+         REAL(ppm_kind_double)  :: ppm_loadbal_comp_ratio = -1._ppm_kind_double
+         !!! Normalization ratio of comp time
+         REAL(ppm_kind_double)  :: ppm_loadbal_comp_part_time = -1._ppm_kind_double
+         !!! The average compute TIME of a real particle
+         REAL(ppm_kind_double)  :: ppm_loadbal_comm_part_time = -1._ppm_kind_double
+         !!! The average communication TIME of a ghost particle
+         INTEGER                :: ppm_loadbal_comm_field_num
+         !!! The number of mesh nodes being communicated
+         REAL(ppm_kind_single)  :: ppm_loadbal_comm_field_costs
+         REAL(ppm_kind_double)  :: ppm_loadbal_comm_field_costd
+         !!! The average cost of a communicated mesh node
+         REAL(ppm_kind_double)  :: ppm_loadbal_comm_time = 0._ppm_kind_double
+         !!! Total communication TIME
+         REAL(ppm_kind_double)  :: ppm_loadbal_partmap_time_old = 0._ppm_kind_double
+         !!! Old timing for partial mapping
+         REAL(ppm_kind_double)  :: ppm_loadbal_partmap_time_new = 0._ppm_kind_double
+         !!! New timing for partial mapping
+         REAL(ppm_kind_double)  :: ppm_loadbal_ghostmap_time = 0._ppm_kind_double
+         !!! Timing for ghost mapping
 
       END MODULE ppm_module_data_loadbal

@@ -1,7 +1,10 @@
       minclude ppm_header(ppm_module_name="loadbal_sendsub")
 
-      SUBROUTINE loadbal_sendsub(topoid,Pc,isub,maxneigh,prec,info)
-
+#if   __KIND == __SINGLE_PRECISION
+      SUBROUTINE loadbal_sendsub_s(topoid,Pc,isub,receiver,maxneigh,prec,info)
+#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE loadbal_sendsub_d(topoid,Pc,isub,receiver,maxneigh,prec,info)
+#endif
       !!! This routine is called by the overloaded process. One subdomain is
       !!! sent to the most underloaded process.
       !!! Particles within the subdomain need to be sent as well.
@@ -34,12 +37,18 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID
+#if    __KIND == __SINGLE_PRECISION
+      TYPE(ppm_t_particles_s) , INTENT(IN   ) :: Pc
+#else
       TYPE(ppm_t_particles_d) , INTENT(IN   ) :: Pc
+#endif
       !!! Particle set
+      INTEGER                 , INTENT(IN   ) :: receiver
+      !!! MPI rank of the receiving underloaded process
       INTEGER                 , INTENT(IN   ) :: isub
       !!! The local ID of the subdomain to be sent
       INTEGER                 , INTENT(IN   ) :: maxneigh
-      !!! max number of neighbors of a subdomain
+      !!! max number of neighbors of a subdomain on this topology
       INTEGER                 , INTENT(IN   ) :: prec
       !!! Precision. One of:
       !!! * ppm_kind_single
@@ -143,58 +152,58 @@
       IF (ppm_dim .EQ. 2) THEN
           IF (prec .EQ. ppm_kind_single) THEN
             tag1 = 400
-            CALL MPI_Send(min_subs2,numelm2,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(min_subs2,numelm2,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("min_sub send failed!")
             tag1 = 500
-            CALL MPI_Send(max_subs2,numelm2,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(max_subs2,numelm2,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("max_sub send failed!")
             tag1 = 600
-            CALL MPI_Send(subcosts,1,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("subcost send failed!")
 
           ELSE IF(prec .EQ. ppm_kind_double) THEN
             tag1 = 400
-            CALL MPI_Send(min_subd2,numelm2,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(min_subd2,numelm2,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("min_sub send failed!")
             tag1 = 500
-            CALL MPI_Send(max_subd2,numelm2,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(max_subd2,numelm2,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("max_sub send failed!")
             tag1 = 600
-            CALL MPI_Send(subcostd,1,MPTYPE,ppm_loadbal_recvrank,tag1,&
+            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,&
      &                    ppm_comm,status,info)
                 or_fail("subcost send failed!")
           ENDIF
       ELSE IF (ppm_dim .EQ. 3) THEN
           IF (prec .EQ. ppm_kind_single) THEN
             tag1 = 400
-            CALL MPI_Send(min_subs3,numelm3,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(min_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("min_sub send failed!")
             tag1 = 500
-            CALL MPI_Send(max_subs3,numelm3,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(max_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("max_sub send failed!")
             tag1 = 600
-            CALL MPI_Send(subcosts,1,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("subcost send failed!")
 
           ELSE IF(prec .EQ. ppm_kind_double) THEN
             tag1 = 400
-            CALL MPI_Send(min_subd3,numelm3,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(min_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("min_sub send failed!")
             tag1 = 500
-            CALL MPI_Send(max_subd3,numelm3,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(max_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("max_sub send failed!")
             tag1 = 600
-            CALL MPI_Send(subcostd,1,MPTYPE,ppm_loadbal_recvrank,tag1,ppm_comm,&
+            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,ppm_comm,&
      &                    status,info)
                 or_fail("subcost send failed!")
           ENDIF
@@ -202,11 +211,11 @@
       ENDIF
 
       tag1 = 700
-      CALL MPI_Send(nneighsubs,1,MPI_INTEGER,ppm_loadbal_recvrank,tag1, &
+      CALL MPI_Send(nneighsubs,1,MPI_INTEGER,receiver,tag1, &
      &              ppm_comm,status,info)
         or_fail("nneighsubs send failed!")
       tag1 = 800
-      CALL MPI_Send(ineighsubs,nneighsubs,MPI_INTEGER,ppm_loadbal_recvrank,&
+      CALL MPI_Send(ineighsubs,nneighsubs,MPI_INTEGER,receiver,&
      &              tag1,ppm_comm,status,info)
         or_fail("nneighsubs send failed!")
       stdout("subdomain info sent")
@@ -412,19 +421,19 @@
       ENDIF
 
       !-----------------------------------------------------------------------------
-      !  Send the buffer, first the size then the data
+      !  Send the buffer, first the size then data
       !-----------------------------------------------------------------------------
       tag1 = 900
-      CALL MPI_Send(ldu1(1),1,MPI_INTEGER,ppm_loadbal_recvrank,tag1, &
+      CALL MPI_Send(ldu1(1),1,MPI_INTEGER,receiver,tag1, &
      &              ppm_comm,status,info)
         or_fail("# of particle coordinates send failed!")
       tag1 = 1000
       IF (prec .EQ. ppm_kind_single) THEN
-        CALL MPI_Send(ppm_loadbal_xps,ldu1(1),MPTYPE,ppm_loadbal_recvrank,&
+        CALL MPI_Send(ppm_loadbal_xps,ldu1(1),MPTYPE,receiver,&
      &              tag1,ppm_comm,status,info)
             or_fail("ppm_loadbal_xps send failed!")
       ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL MPI_Send(ppm_loadbal_xpd,ldu1(1),MPTYPE,ppm_loadbal_recvrank,&
+        CALL MPI_Send(ppm_loadbal_xpd,ldu1(1),MPTYPE,receiver,&
      &              tag1,ppm_comm,status,info)
             or_fail("ppm_loadbal_xpd send failed!")
       ENDIF
@@ -546,5 +555,9 @@
 
  8888   CONTINUE
       END SUBROUTINE check
-      END SUBROUTINE loadbal_sendsub
+#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE loadbal_sendsub_s
+#elif __KIND == __DOUBLE_PRECISION
+      END SUBROUTINE loadbal_sendsub_d
+#endif
 

@@ -1,6 +1,6 @@
       minclude ppm_header(ppm_module_name="loadbal_recvsub")
 
-      SUBROUTINE loadbal_recvsub(topoid,prec,info)
+      SUBROUTINE loadbal_recvsub(topoid,sender,prec,info)
       !!! This routine is called by the underloaded processor to receive a sub
       !!! from an overloaded neighbor
       !!!
@@ -28,6 +28,8 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID
+      INTEGER                 , INTENT(IN   ) :: sender
+      !!! MPI rank of the sending overloaded process
       INTEGER                 , INTENT(IN   ) :: prec
       !!! Precision. One of:
       !!! * ppm_kind_single
@@ -93,34 +95,34 @@
         GOTO 9999
       ENDIF
       !-------------------------------------------------------------------------
-      !  Receive subdomain info from the most underloaded processor
+      !  Receive subdomain info from the most overloaded processor
       !-------------------------------------------------------------------------
       IF (ppm_dim .EQ. 2) THEN
           IF (prec .EQ. ppm_kind_single) THEN
             tag1 = 400
-            CALL MPI_Recv(min_subs2,numelm2,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(min_subs2,numelm2,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("min_sub recv failed!")
             tag1 = 500
-            CALL MPI_Recv(max_subs2,numelm2,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(max_subs2,numelm2,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("max_sub recv failed!")
             tag1 = 600
-            CALL MPI_Recv(subcosts,1,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("subcost recv failed!")
 
           ELSE IF(prec .EQ. ppm_kind_double) THEN
             tag1 = 400
-            CALL MPI_Recv(min_subd2,numelm2,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(min_subd2,numelm2,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("min_sub recv failed!")
             tag1 = 500
-            CALL MPI_Recv(max_subd2,numelm2,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(max_subd2,numelm2,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("max_sub recv failed!")
             tag1 = 600
-            CALL MPI_Recv(subcostd,1,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("subcost recv failed!")
 
@@ -128,36 +130,36 @@
       ELSE IF (ppm_dim .EQ. 3) THEN
           IF (prec .EQ. ppm_kind_single) THEN
             tag1 = 400
-            CALL MPI_Recv(min_subs3,numelm3,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(min_subs3,numelm3,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("min_sub recv failed!")
             tag1 = 500
-            CALL MPI_Recv(max_subs3,numelm3,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(max_subs3,numelm3,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("max_sub recv failed!")
             tag1 = 600
-            CALL MPI_Recv(subcosts,1,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
             or_fail("subcost recv failed!")
 
           ELSE IF(prec .EQ. ppm_kind_double) THEN
             tag1 = 400
-            CALL MPI_Recv(min_subd3,numelm3,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(min_subd3,numelm3,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("min_sub recv failed!")
             tag1 = 500
-            CALL MPI_Recv(max_subd3,numelm3,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(max_subd3,numelm3,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("max_sub recv failed!")
             tag1 = 600
-            CALL MPI_Recv(subcostd,1,MPTYPE,ppm_loadbal_sendrank,tag1,&
+            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
      &              ppm_comm,status,info)
              or_fail("subcost recv failed!")
           ENDIF
 
       ENDIF
       tag1 = 700
-      CALL MPI_Recv(nneighsubs,1,MPI_INTEGER,ppm_loadbal_sendrank,tag1,ppm_comm,&
+      CALL MPI_Recv(nneighsubs,1,MPI_INTEGER,sender,tag1,ppm_comm,&
      &              status,info)
         or_fail("nneighsubs recv failed!")
       !-------------------------------------------------------------------------
@@ -166,7 +168,7 @@
       ALLOCATE(ineighsubs(1:nneighsubs),STAT=info)
         or_fail_alloc("ineighsubs")
       tag1 = 800
-      CALL MPI_Recv(ineighsubs,nneighsubs,MPI_INTEGER,ppm_loadbal_sendrank,  &
+      CALL MPI_Recv(ineighsubs,nneighsubs,MPI_INTEGER,sender,  &
      &              tag1,ppm_comm,status,info)
         or_fail("ineighsubs recv failed!")
       stdout("subdomain info received")
@@ -233,7 +235,7 @@
       !  Receive the particle buffer, first the size then the data
       !-----------------------------------------------------------------------------
       tag1 = 900
-      CALL MPI_Recv(ppm_loadbal_subnpart,1,MPI_INTEGER,ppm_loadbal_sendrank,tag1, &
+      CALL MPI_Recv(ppm_loadbal_subnpart,1,MPI_INTEGER,sender,tag1, &
      &              ppm_comm,status,info)
         or_fail("# of particle coordinates recv failed!")
 
@@ -251,11 +253,11 @@
       ENDIF
       tag1 = 1000
       IF (prec .EQ. ppm_kind_single) THEN
-        CALL MPI_Recv(ppm_loadbal_xps,ldu1(1),MPTYPE,ppm_loadbal_sendrank,&
+        CALL MPI_Recv(ppm_loadbal_xps,ldu1(1),MPTYPE,sender,&
      &              tag1,ppm_comm,status,info)
             or_fail("ppm_loadbal_xps recv failed!")
       ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL MPI_Recv(ppm_loadbal_xpd,ldu1(1),MPTYPE,ppm_loadbal_sendrank,&
+        CALL MPI_Recv(ppm_loadbal_xpd,ldu1(1),MPTYPE,sender,&
      &              tag1,ppm_comm,status,info)
             or_fail("ppm_loadbal_xpd recv failed!")
       ENDIF

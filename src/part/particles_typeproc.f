@@ -226,6 +226,10 @@ SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
 END SUBROUTINE DTYPE(get_xp)
 
 SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
+    !!! [NOTE]
+    !!! Never use xp after you set it with read_only=TRUE
+    !!! that would cause Program received signal SIGSEGV:
+    !!! Segmentation fault - invalid memory reference.
     DEFINE_MK()
     CLASS(DTYPE(ppm_t_particles))    :: this
     LOGICAL,OPTIONAL                 :: read_only
@@ -1193,6 +1197,7 @@ SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
     IF (partial .AND. Pc%flags(ppm_part_partial)) THEN
         !Particles have already been mapped onto this topology
         !nothing to do
+        stdout("NOTHING")
     ELSE
 #ifdef __MPI
         t1 = MPI_WTIME(info)
@@ -1215,7 +1220,6 @@ SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
             ENDIF
             prop => Pc%props%next()
         ENDDO
-
         CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
         or_fail("ppm_map_part_send")
 
@@ -1274,13 +1278,21 @@ SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
 
 #ifdef __MPI
     t2 = MPI_WTIME(info)
+
     IF (partial) THEN
+        ! (Omer -TODO): Why do we havea moving sum of partial mapping timings?
+        !
         Pc%stats%t_part_map = Pc%stats%t_part_map + (t2-t1)
+
+        ppm_loadbal_partmap_time_new = t2-t1
+
     ELSE
         Pc%stats%t_global_map = Pc%stats%t_global_map + (t2-t1)
     ENDIF
 #endif
+      ppm_loadbal_partmap_time_new=t2-t1
 
+!      stdout("Partial mapping time:",ppm_loadbal_comm_time)
     end_subroutine()
 END SUBROUTINE DTYPE(part_map)
 
@@ -1644,6 +1656,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     !!! * Particles positions need to have been mapped onto the topology
     !!!
     USE ppm_module_map
+
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -1669,13 +1682,13 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     REAL(MK)                                  :: cutoff
     !!! cutoff radius
     TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
-    REAL(KIND(1.D0))                          :: t1,t2
+    REAL(KIND(1.D0))                          :: t1,t2,t_start,t_end
     LOGICAL                                   :: skip_ghost_get
     LOGICAL                                   :: skip_send
     CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
 
     start_subroutine("part_map_ghosts")
-
+    t_start = MPI_WTIME(info)
     skip_ghost_get = .FALSE.
     skip_send = .TRUE.
     !we must not call ppm_map_part_send unless ppm_map_part_push (or ghost_get)
@@ -1819,7 +1832,29 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     !   ghosts have been computed
     Pc%flags(ppm_part_ghosts) = .TRUE.
     ! the states for the properties have already been updated above
+    t_end = MPI_WTIME(info)
+    ! measure the ghost mapping
+    ppm_loadbal_ghostmap_time = t_end - t_start
+    ! check if a partial mapping has been in THIS time step
+    ! If so, it should be included in the total communication time
+    IF (ppm_loadbal_partmap_time_old .NE. ppm_loadbal_partmap_time_new)THEN
+        ! now the overall communication time is the sum of timings of
+        ! partial mapping  and ghost mapping
+        ppm_loadbal_comm_time= ppm_loadbal_ghostmap_time + &
+     &                         ppm_loadbal_partmap_time_new
+        ! now, update the partial mapping timing
+        ppm_loadbal_partmap_time_old = ppm_loadbal_partmap_time_new
+    ELSE
+        ppm_loadbal_comm_time= ppm_loadbal_ghostmap_time
+    ENDIF
 
+
+
+    stdout("Total comm time (incl. ghost mapping):",ppm_loadbal_comm_time)
+
+    ppm_loadbal_comm_part_cost = ppm_loadbal_comm_time &
+    &                                        / ppm_loadbal_comm_part_num
+    stdout("Average comm cost per particle:",ppm_loadbal_comm_part_cost)
     end_subroutine()
 END SUBROUTINE DTYPE(part_map_ghosts)
 
