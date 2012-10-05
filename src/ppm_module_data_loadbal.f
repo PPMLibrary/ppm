@@ -26,7 +26,8 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-     
+#define __SINGLE_PRECISION 1
+#define __DOUBLE_PRECISION 2
       MODULE ppm_module_data_loadbal
       !!! This module holds data used by the load balancing routines.
       !!!
@@ -36,9 +37,8 @@
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_data, ONLY: ppm_kind_double
-         PRIVATE :: ppm_kind_double
-
+         USE ppm_module_data, ONLY: ppm_kind_double,ppm_kind_single
+         !PRIVATE :: ppm_kind_double,ppm_kind_single
          !----------------------------------------------------------------------
          !  Timing and load statistics
          !----------------------------------------------------------------------
@@ -50,5 +50,14 @@
          REAL(ppm_kind_double) :: ppm_loadbal_runsum = 0.0_ppm_kind_double
          ! old value of the SAR function
          REAL(ppm_kind_double) :: ppm_loadbal_old_sar = -1.0_ppm_kind_double
-
+         REAL(ppm_kind_double),DIMENSION(:),POINTER::ppm_loadbal_subcostd=>NULL()
+         !!! Index: SubID
+         !!! Computational costs of subdomains on this processor
+         REAL(ppm_kind_double)  :: ppm_loadbal_proccostd = -1._ppm_kind_double
+         !!! Total computational cost of this processor
+         REAL(ppm_kind_single),DIMENSION(:),POINTER::ppm_loadbal_subcosts=>NULL()
+         !!! Index: SubID
+         !!! Computational costs of subdomains on this processor
+         REAL(ppm_kind_single)  :: ppm_loadbal_proccosts = -1._ppm_kind_single
+         !!! Total computational cost of this processor
       END MODULE ppm_module_data_loadbal

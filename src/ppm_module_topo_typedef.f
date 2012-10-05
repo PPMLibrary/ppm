@@ -108,6 +108,10 @@
           INTEGER              , DIMENSION(:  ),POINTER :: sub2proc => NULL()
           !!! subdomain to processor assignment. index: subID (global)
 
+          INTEGER              , DIMENSION(:  ),POINTER :: part2sub => NULL()
+          !!! particle to subdomain assignment.  index: partID (global)
+          !!! Given a particle ID, you get the global subID.
+
           INTEGER                                       :: nsublist
           !!! number of subs on the current processor.
 
