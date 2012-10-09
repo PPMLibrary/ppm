@@ -350,9 +350,12 @@ SUBROUTINE DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
         Pc%active_topoid = topoid
     ENDIF
 
-    CALL Pc%create_neighlist(Pc,info,name='self',&
-        skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
-        or_fail("failed to create neighbour list")
+    ! Even though convenient, this code should not be here
+    ! Neighborlists have lots of options and are costly. The user should
+    ! have the chance to decide himself where and how to create them.
+    !CALL Pc%create_neighlist(Pc,info,name='self',&
+    !    skin=0._MK,symmetry=.FALSE.,cutoff=cutoff)
+    !    or_fail("failed to create neighbour list")
 
     !-----------------------------------------------------------------------
     ! Finalize
