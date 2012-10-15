@@ -2060,10 +2060,10 @@ SUBROUTINE DTYPE(part_map_ghost_push)(Pc,info,Field,ghostsize)
                     stdout("pushing property ",<#Pc%props%iter_id#>,<#TRIM(prop%name)#>)
                     fail("getting ghosts for a property thats not mapped")
                 ENDIF
-            ENDIF
-            ENDIF
-            prop => Pc%props%next()
-        ENDDO
+                ENDIF
+              ENDIF
+              prop => Pc%props%next()
+            ENDDO
         ENDIF
 
     ELSE ! if cutoff .le. 0
@@ -2250,6 +2250,92 @@ SUBROUTINE DTYPE(part_map_ghost_pop)(Pc,info,Field,ghostsize)
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_map_ghost_pop)
+
+SUBROUTINE DTYPE(part_map_ghost_push_pos)(Pc,info,ghostsize)
+    !!! Push ghost particles positions from the send buffer.
+    !!!
+    USE ppm_module_map
+#ifdef __MPI
+    INCLUDE "mpif.h"
+#endif
+
+    !-------------------------------------------------------------------------
+    !  Arguments
+    !-------------------------------------------------------------------------
+    CLASS(DTYPE(ppm_t_particles))                       :: Pc
+    DEFINE_MK()
+    !!! Data structure containing the particles
+    INTEGER,                            INTENT(  OUT)   :: info
+    !!! Return status, on success 0.
+    !-------------------------------------------------------------------------
+    !  Optional Arguments
+    !-------------------------------------------------------------------------
+    REAL(MK), OPTIONAL                                  :: ghostsize
+    !!! size of the ghost layers. Default is to use the particles cutoff
+    !-------------------------------------------------------------------------
+    !  Local variables
+    !-------------------------------------------------------------------------
+    INTEGER                                   :: topoid
+    !!! index variable
+    REAL(MK)                                  :: cutoff
+    !!! cutoff radius
+    TYPE(ppm_t_topo),POINTER                  :: topo => NULL()
+    REAL(KIND(1.D0))                          :: t1,t2
+
+    start_subroutine("part_map_ghost_push_pos")
+
+    !-----------------------------------------------------------------
+    !  Checks
+    !-----------------------------------------------------------------
+    !check that particles are allocated
+    check_associated(<#Pc%xp#>,&
+        "Particles structure had not been defined. Call allocate first")
+    !check that particles are mapped onto this topology
+    check_true(<#Pc%flags(ppm_part_partial)#>,&
+        "Do a partial/global mapping before doing a ghost mapping")
+
+    topoid = Pc%active_topoid
+    topo=>ppm_topo(topoid)%t
+
+    cutoff = Pc%ghostlayer
+    IF (PRESENT(ghostsize)) THEN
+        IF (ghostsize .LT. cutoff) THEN
+            fail("using ghostsize < cutoff+skin. Increase ghostsize.")
+        ELSE
+            cutoff = ghostsize
+        ENDIF
+    ENDIF
+
+#if   __KIND == __SINGLE_PRECISION
+    IF (cutoff .GT. topo%ghostsizes) THEN
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsizes#>)
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#elif   __KIND == __DOUBLE_PRECISION
+    IF (cutoff .GT. topo%ghostsized) THEN
+        stdout("cutoff for ghost mapping       = ",<#cutoff#>)
+        stdout("cutoff used to create topology = ",<#topo%ghostsized#>)
+        fail("ghostsize of topology may be smaller than that of particles")
+    ENDIF
+#endif
+    IF (cutoff .GT. 0._MK) THEN
+        check_true(<#Pc%flags(ppm_part_ghosts)#>,&
+            "flags(ppm_part_ghosts) need to be set to .true.")
+        check_true(<#ppm_map_type_isactive(ppm_param_map_ghost_get)#>,&
+            "Ghost buffer invalid. Correct sequence is ghost_get, ghost_push, ghost_send and ghost_pop.")
+
+        CALL ppm_map_part_push(Pc%xp,ppm_dim,Pc%Npart,info,pushpp=.true.)
+             or_fail("map_part_push")
+
+    ELSE ! if cutoff .le. 0
+            !stdout("cutoff = 0, nothing to do")
+            !stdout("setting all %has_ghost properties to true")
+    ENDIF
+
+
+    end_subroutine()
+END SUBROUTINE DTYPE(part_map_ghost_push_pos)
 
 SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize)
     !!! Pop ghost particles positions from the send buffer.
