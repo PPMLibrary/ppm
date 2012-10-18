@@ -419,3 +419,13 @@ SUBROUTINE DTYPE(part_p2m)_(this,Mesh,Field,kernel,info,p2m_bcdef)
     INTEGER                     ,     INTENT(  OUT) :: info
     INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
 END SUBROUTINE
+SUBROUTINE DTYPE(part_remesh)_(this,Mesh,kernel,info,p2m_bcdef,cutoff_val,cutoff_field)
+    IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_,ppm_t_equi_mesh_, MK
+    CLASS(DTYPE(ppm_t_particles)_)                  :: this
+    CLASS(ppm_t_equi_mesh_)                         :: Mesh
+    INTEGER                     ,     INTENT(IN   ) :: kernel
+    INTEGER                     ,     INTENT(  OUT) :: info
+    INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
+    REAL(MK), DIMENSION(2),  OPTIONAL, INTENT(IN)   :: cutoff_val
+    CLASS(ppm_t_field_),    OPTIONAL, INTENT(IN)    :: cutoff_field
+END SUBROUTINE

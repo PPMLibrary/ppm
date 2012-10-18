@@ -309,6 +309,10 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: DTYPE(ppm_t_particles)_
     PROCEDURE(DTYPE(part_p2m)_), DEFERRED :: interp_to_mesh
     !!! Interpolate quantity from particles to a mesh
 
+    PROCEDURE(DTYPE(part_remesh)_), DEFERRED :: remesh
+    !!! Remesh particles onto a given mesh (NOT completed, but basic features
+    !!! are there)
+
     PROCEDURE(DTYPE(part_print_info)_),DEFERRED :: print_info 
     !!! Print some information about the particle set to standard output
 

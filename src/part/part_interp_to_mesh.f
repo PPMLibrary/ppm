@@ -86,6 +86,7 @@
       LOGICAL                                  :: internal_weights
       ! aliases
       CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
+      CLASS(DTYPE(ppm_t_part_prop)_),POINTER         :: prop => NULL()
 
       REAL(MK) , DIMENSION(:      ) , POINTER  :: up_1d => NULL()
       REAL(MK) , DIMENSION(:,:    ) , POINTER  :: up_2d => NULL()
@@ -419,6 +420,15 @@
           CALL this%get_field(Field,up_2d,info,read_only=.TRUE.)
       ENDIF
         or_fail("Could not get pointer to discretized data on the particles")
+
+      !For checking only - display warnings, but should in principle fail
+      !gracefully
+      CALL Field%get_discr(this,prop,info)
+        or_fail("Could not get pointer to discretization object on the particles")
+      IF (.NOT. prop%flags(ppm_ppt_partial)) THEN
+        stdout("WARNING: property has not been partial-mapped. This can produce garbage data")
+      ENDIF
+      !
 
       SELECT CASE(kernel)
 

@@ -103,6 +103,9 @@ CONTAINS
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
+# define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_single)
+#include "part/part_remesh.f"
+#undef  DEFINE_MK
 
 #undef  DTYPE
 #undef  __KIND
@@ -160,6 +163,9 @@ CONTAINS
 #include "part/particles_typeproc.f"
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
+#undef  DEFINE_MK
+# define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_double)
+#include "part/part_remesh.f"
 #undef  DEFINE_MK
 
 #undef  DTYPE

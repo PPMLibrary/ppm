@@ -88,6 +88,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_particles)_) :: DTYPE(ppm_t_particles)
     PROCEDURE     :: apply_bc          => DTYPE(part_apply_bc)
 
     PROCEDURE     :: interp_to_mesh    => DTYPE(part_p2m)
+    PROCEDURE     :: remesh            => DTYPE(part_remesh)
 
 
     PROCEDURE     :: print_info        => DTYPE(part_print_info)
