@@ -160,14 +160,17 @@ TYPE(ppm_v_main_abstr)  :: LFields
 !not for now... (first try with a mesh that covers the whole domain)
 !               (which is the default, when no patches are defined)
 
-!        if (ndim.eq.2) then
-!            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
-!            my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
-!        else
-!            my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
-!        endif
-!        call Mesh1%def_patch(my_patch,info) 
-!        Assert_Equal(info,0)
+        if (ndim.eq.2) then
+            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+            my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
+            !works (at least on one proc)
+!            my_patch(1:4) = (/-10000._mk,-1000._mk,1000._mk,1000._mk/)
+            !does not work (problem with ghosts)
+        else
+            my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
+        endif
+        call Mesh1%def_patch(my_patch,info) 
+        Assert_Equal(info,0)
 
         !----------------
         ! Create particles, from a grid + small random displacement
@@ -177,7 +180,9 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
         allocate(wp_2r(ndim,Part1%Npart))
 !        call random_number(wp_2r)
-        wp_2r = 0.000010000_mk !(wp_2r - 0.5_mk) * Part1%h_avg * 0.0015_mk
+!        wp_2r = (wp_2r-0.5_mk)*Part1%h_avg * 0.3_mk
+        wp_2r = Part1%h_avg*0.5217_mk
+
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         deallocate(wp_2r)
@@ -251,41 +256,21 @@ TYPE(ppm_v_main_abstr)  :: LFields
         Assert_Equal(info,0)
 
 
-        abstr_point => SField2
-        CALL LFields%push(abstr_point,info)
-        Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        abstr_point => SField1
-        CALL LFields%push(abstr_point,info)
-        Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        abstr_point => VField1
-        CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        abstr_point => VField2
-        CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        abstr_point => VField4
-        CALL LFields%push(abstr_point,info)
-        abstr_point => VField3
-        CALL LFields%push(abstr_point,info)
-        abstr_point => SField3
-        CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info)
+        CALL ppm_vtk_particles("output_before",Part1,info)
         Assert_Equal(info,0)
 
         !----------------
         ! Remesh the particles 
         ! (this performs the p2m interpolation as well)
         !----------------
+        call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+
         call Part1%remesh(Mesh1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
+
+        CALL ppm_vtk_particles("output_after",Part1,info)
+        Assert_Equal(info,0)
 
         tol = 1e-2
 
