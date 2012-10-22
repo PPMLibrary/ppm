@@ -86,7 +86,7 @@
       LOGICAL                                  :: internal_weights
       ! aliases
       CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER         :: prop => NULL()
+      CLASS(ppm_t_discr_data),POINTER         :: prop => NULL()
 
       REAL(MK) , DIMENSION(:      ) , POINTER  :: up_1d => NULL()
       REAL(MK) , DIMENSION(:,:    ) , POINTER  :: up_2d => NULL()
