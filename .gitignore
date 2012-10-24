@@ -8,6 +8,7 @@ autom4te.cache
 lib
 Makefile
 aclocal.m4
+tags
 src/ppm_define.h
 
 # output files
@@ -32,3 +33,11 @@ src/neighlist/test/ppm_test_inl3d_2
 # temporary files
 *.swp
 *~
+__*
+*_fun.f
+*.orig
+/gnu
+/gnu_opt
+/intel_opt
+/pse
+/module_not*
