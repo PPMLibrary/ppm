@@ -99,7 +99,7 @@ CONTAINS
 #undef  __DIM
 
 #define  DEFINE_MK() INTEGER, PARAMETER :: MK = ppm_kind_single
-#include "part/particles_typeproc.F"
+#include "part/particles_typeproc.f"
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
