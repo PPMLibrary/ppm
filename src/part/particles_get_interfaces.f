@@ -18,7 +18,7 @@ END SUBROUTINE
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get)_
 #define __CHECKTYPE DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only,skip_checks)
     IMPORT DTYPE(ppm_t_particles)_, ppm_kind_single,ppm_kind_double,&
                                     ppm_kind_int64
     CLASS(DTYPE(ppm_t_particles)_)   :: Pc
@@ -31,6 +31,7 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
     LOGICAL,OPTIONAL                :: read_only
+    LOGICAL,OPTIONAL                :: skip_checks
 END SUBROUTINE
 #undef __FUNCNAME
 
@@ -52,7 +53,7 @@ END SUBROUTINE
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)_
-SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only,skip_checks)
     IMPORT DTYPE(ppm_t_particles)_, ppm_kind_single,ppm_kind_double,&
                                     ppm_kind_int64,ppm_t_field_
     CLASS(DTYPE(ppm_t_particles)_)  :: this
@@ -65,6 +66,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
     LOGICAL,OPTIONAL                :: read_only
+    LOGICAL,OPTIONAL                :: skip_checks
 END SUBROUTINE
 #undef __FUNCNAME
 
@@ -87,7 +89,7 @@ END SUBROUTINE
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)_
-SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only,skip_checks)
     IMPORT DTYPE(ppm_t_particles)_, ppm_kind_single,ppm_kind_double,&
            DTYPE(ppm_t_part_prop)_, ppm_kind_int64,ppm_t_field_,&
            ppm_t_discr_data
@@ -102,6 +104,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
     INTEGER                         :: info
     LOGICAL,OPTIONAL                :: with_ghosts
     LOGICAL,OPTIONAL                :: read_only
+    LOGICAL,OPTIONAL                :: skip_checks
 END SUBROUTINE
 #undef __FUNCNAME
 

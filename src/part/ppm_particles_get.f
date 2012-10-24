@@ -21,7 +21,7 @@ SUBROUTINE __FUNCNAME(this,wp,info)
     !!! Return status, on success 0.
     INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
     
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
     !-------------------------------------------------------------------------
     ! Check arguments
     !-------------------------------------------------------------------------
@@ -59,7 +59,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)
-SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only,skip_checks)
     CLASS(DTYPE(ppm_t_particles))   :: this
     !CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
     CLASS(ppm_t_discr_data)          :: discr_data
@@ -78,10 +78,18 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
     !!! variables will be modify with the assumption that the data
     !!! accessed has been changed, e.g. so that a subsequent ghost update
     !!! will also update this property)
-
+    LOGICAL,OPTIONAL                :: skip_checks
+    !!! Only for users with huge cojones
+    LOGICAL                         :: skip
     INTEGER                         :: np
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
+    
+    IF (PRESENT(skip_checks)) THEN
+      skip = skip_checks
+    ELSE
+      skip = .FALSE.
+    ENDIF
 
     wp => NULL()
 
@@ -96,7 +104,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
     np = this%Npart
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
-            IF (discr_data%flags(ppm_ppt_ghosts)) THEN
+            IF (skip.OR.discr_data%flags(ppm_ppt_ghosts)) THEN
                 np = this%Mpart
             ELSE
                 WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
@@ -109,7 +117,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only)
         ENDIF
     ENDIF
 
-    IF (discr_data%flags(ppm_ppt_partial)) THEN
+    IF (skip.OR.discr_data%flags(ppm_ppt_partial)) THEN
         wp => &
 #if   __DIM == 1
             discr_data%WRAP(DATANAME)(1:np)
@@ -158,7 +166,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
     __TYPE,DIMENSION(:,:),POINTER    :: wp
 #endif
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
 
 
     !If read_only was not explicitely set to true, then assume
@@ -185,7 +193,7 @@ END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)
-SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only,skip_checks)
     !!! Returns a pointer to the data array where that contains
     !!! the discretized elements of Field on this particle set.
     CLASS(DTYPE(ppm_t_particles))   :: this
@@ -207,11 +215,20 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
     !!! variables will be modify with the assumption that the data
     !!! accessed has been changed, e.g. so that a subsequent ghost update
     !!! will also update this property)
+    LOGICAL,OPTIONAL                :: skip_checks
+    !!! Only for users with huge cojones
 
     INTEGER                         :: np
     CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
+    LOGICAL                         :: skip
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
+
+    IF (PRESENT(skip_checks)) THEN
+      skip = skip_checks
+    ELSE
+      skip = .FALSE.
+    ENDIF
 
     wp => NULL()
 
@@ -228,7 +245,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
         np = this%Npart
         IF (PRESENT(with_ghosts)) THEN
             IF (with_ghosts) THEN
-                IF (prop%flags(ppm_ppt_ghosts)) THEN
+                IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
                     np = this%Mpart
                 ELSE
                     WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
@@ -241,7 +258,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only)
             ENDIF
         ENDIF
 
-        IF (prop%flags(ppm_ppt_partial)) THEN
+        IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
             wp => &
 #if   __DIM == 1
                 prop%WRAP(DATANAME)(1:np)
@@ -292,7 +309,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
 
     CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
 
-    start_subroutine("__FUNCNAME")
+    start_subroutine(__FUNCNAME)
 
     CALL Field%get_discr(this,discr_data,info)
         or_fail("could not get discr data for this field on that particle set")
@@ -326,7 +343,7 @@ END SUBROUTINE __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get)
 #define __CHECKTYPE DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
+SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only,skip_checks)
     CLASS(DTYPE(ppm_t_particles))   :: Pc
     INTEGER                         :: ppt_id
 #if   __DIM == 1
@@ -344,10 +361,19 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
     !!! variables will be modify with the assumption that the data
     !!! accessed has been changed, e.g. so that a subsequent ghost update
     !!! will also update this property)
+    LOGICAL,OPTIONAL                :: skip_checks
+    !!! Only for users with huge cojones
     LOGICAL   :: lghosts
+    LOGICAL                         :: skip
 
+    start_subroutine(__FUNCNAME)
 
-    start_subroutine("__FUNCNAME")
+    IF (PRESENT(skip_checks)) THEN
+      skip = skip_checks
+    ELSE
+      skip = .FALSE.
+    ENDIF
+
 
     wp => NULL()
     lghosts = .FALSE.
@@ -363,9 +389,9 @@ SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only)
 
     IF (ppt_id .LE. Pc%props%max_id) THEN
         ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)
-        IF (prop%flags(ppm_ppt_partial)) THEN
+        IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
             IF (lghosts) THEN
-                IF (prop%flags(ppm_ppt_ghosts)) THEN
+                IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
                     wp => &
 #if   __DIM == 1
                         prop%WRAP(DATANAME)(1:Pc%Mpart)
