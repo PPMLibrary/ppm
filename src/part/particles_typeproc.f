@@ -695,6 +695,9 @@ SUBROUTINE DTYPE(part_destroy)(Pc,info)
     !Deallocate operators
     destroy_collection_ptr(Pc%ops)
 
+    !Deallocate pointers to fields
+    destroy_collection_ptr(Pc%field_ptr)
+
     !-------------------------------------------------------------------------
     !  Finalize
     !-------------------------------------------------------------------------

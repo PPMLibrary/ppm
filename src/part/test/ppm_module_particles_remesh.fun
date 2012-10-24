@@ -52,6 +52,14 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 class(ppm_t_main_abstr),POINTER  :: abstr_point => NULL()
 TYPE(ppm_v_main_abstr)  :: LFields
 
+type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
+type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
+type(ppm_t_particles_d) :: Part1
+real(ppm_kind_double),dimension(ndim) :: pos
+real(ppm_kind_double),dimension(ndim) :: cutoff
+real(ppm_kind_double)                 :: voln
+integer :: np_global 
+
 !---------------- init -----------------------
 
     init
@@ -106,27 +114,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
 !------------- setup --------------------------
 
     setup
-
-    end setup
-!----------------------------------------------
-        
-
-!--------------- teardown ---------------------
-    teardown
-        NULLIFY(topo)
-    end teardown
-!----------------------------------------------
-
-    test part_remesh
-        type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
-        type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
-        type(ppm_t_particles_d) :: Part1
-        real(ppm_kind_double),dimension(ndim) :: pos
-        real(ppm_kind_double),dimension(ndim) :: cutoff
-        real(ppm_kind_double)                 :: voln
-        integer :: np_global 
-
-        start_subroutine("test_interp")
+        start_subroutine("setup")
 
         !----------------
         ! make topology
@@ -137,13 +125,11 @@ TYPE(ppm_v_main_abstr)  :: LFields
         sca_ghostsize = 0.07_mk 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
-        Assert_Equal(info,0)
-
 
         !----------------
         ! Create Mesh
         !----------------
-        Nm = 31
+        Nm = 61
         np_global = PRODUCT(Nm(1:ndim)-1)
         !Note:
         ! We get an exact p2m interpolation of 2nd order polynomials
@@ -151,7 +137,6 @@ TYPE(ppm_v_main_abstr)  :: LFields
         ! the same spacing as the mesh).
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
-            Assert_Equal(info,0)
 
         !----------------
         ! Add a patch
@@ -164,37 +149,32 @@ TYPE(ppm_v_main_abstr)  :: LFields
             my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
             my_patch(1:4) = (/0.15_mk,0.15_mk,0.7_mk,0.7_mk/)
             !works (at least on one proc)
-!            my_patch(1:4) = (/-10000._mk,-1000._mk,1000._mk,1000._mk/)
+            my_patch(1:4) = (/-10000._mk,-1000._mk,1000._mk,1000._mk/)
             !does not work (problem with ghosts)
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
         call Mesh1%def_patch(my_patch,info) 
-        Assert_Equal(info,0)
 
         !----------------
         ! Create particles, from a grid + small random displacement
         !----------------
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
-            Assert_Equal(info,0)
 
         allocate(wp_2r(ndim,Part1%Npart))
 !        call random_number(wp_2r)
 !        wp_2r = (wp_2r-0.5_mk)*Part1%h_avg * 0.3_mk
-        wp_2r = Part1%h_avg*0.5217_mk
+        wp_2r = Part1%h_avg*0.04997_mk
 
         call Part1%move(wp_2r,info)
-        Assert_Equal(info,0)
         deallocate(wp_2r)
 
         !----------------
         ! Put particles back into the domain and global map them
         !----------------
         call Part1%apply_bc(info)
-        Assert_Equal(info,0)
 
         call Part1%map(info,global=.true.,topoid=topoid)
-        Assert_Equal(info,0)
 
 
         !----------------
@@ -253,11 +233,35 @@ TYPE(ppm_v_main_abstr)  :: LFields
         ! Get ghost values for all the fields
         !----------------
         call Part1%map_ghosts(info)
-        Assert_Equal(info,0)
 
+        end_subroutine()
+    end setup
+!----------------------------------------------
+        
 
-        CALL ppm_vtk_particles("output_before",Part1,info)
-        Assert_Equal(info,0)
+!--------------- teardown ---------------------
+    teardown
+        call Mesh1%destroy(info)
+        call SField1%destroy(info)
+        call SField2%destroy(info)
+        call SField3%destroy(info)
+        call VField1%destroy(info)
+        call VField2%destroy(info)
+        call VField3%destroy(info)
+        call VField4%destroy(info)
+        call Vol%destroy(info)
+        call Part1%destroy(info)
+
+        NULLIFY(topo)
+    end teardown
+!----------------------------------------------
+
+    test part_remesh
+
+        start_subroutine("remesh")
+
+        !CALL ppm_vtk_particles("output_before",Part1,info)
+        !Assert_Equal(info,0)
 
         !----------------
         ! Remesh the particles 
@@ -269,8 +273,8 @@ TYPE(ppm_v_main_abstr)  :: LFields
         call Part1%remesh(Mesh1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
-        CALL ppm_vtk_particles("output_after",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output_after",Part1,info)
+        !Assert_Equal(info,0)
 
         tol = 1e-2
 
@@ -289,42 +293,6 @@ TYPE(ppm_v_main_abstr)  :: LFields
         !have been interpolated EXACTLY,
         !as should be the case for constant, linear and quadratic functions
         !with a 3rd order interpolating kernel (like Mp4)
-        !----------------
-        IF (ppm_debug.GE.1) THEN
-        IF (ndim.EQ.2) THEN
-        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j)
-            for real
-                pos(1:ndim) = sbpitr%get_pos(i,j)
-                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
-                    f_cst(pos(1:ndim),ndim), &
-                    f_lin(pos(1:ndim),ndim),&
-                    f_sq(pos(1:ndim),ndim),&
-                    SField1_n/voln,&
-                    SField2_n/voln,&
-                    SField3_n/voln
-        end foreach
-        ELSE
-        foreach n in equi_mesh(Mesh1) with sca_fields(SField1,SField2,SField3) indices(i,j,k)
-            for real
-                pos(1:ndim) = sbpitr%get_pos(i,j,k)
-                write(100+rank,'(9(E12.5,1X))') pos(1),pos(2),pos(ndim),&
-                    f_cst(pos(1:ndim),ndim), &
-                    f_lin(pos(1:ndim),ndim),&
-                    f_sq(pos(1:ndim),ndim),&
-                    SField1_n/voln,&
-                    SField2_n/voln,&
-                    SField3_n/voln
-        end foreach
-        ENDIF
-
-        foreach p in particles(Part1) with positions(x) sca_fields(S1=SField1,S2=SField2,S3=SField3,V=Vol)
-                write(200+rank,'(6(E12.5,1X))') x_p(1),x_p(2),x_p(ndim),&
-                    S1_p/V_p, S2_p/V_p, S3_p/V_p
-        end foreach
-        ENDIF
-
-        !----------------
-        ! Check what we've got
         !----------------
         foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
                 Vol_p   = 1._mk / np_global
@@ -353,19 +321,78 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
         CALL MPI_BARRIER(comm,info)
 
-        call Mesh1%destroy(info)
+        end_subroutine()
+        !check that we are leaving the test without error
         Assert_Equal(info,0)
-        call SField1%destroy(info)
-        Assert_Equal(info,0)
-        call SField2%destroy(info)
-        call SField3%destroy(info)
-        call VField1%destroy(info)
-        call VField2%destroy(info)
-        call VField3%destroy(info)
-        call VField4%destroy(info)
-        Assert_Equal(info,0)
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
+    end test
+
+    test part_remesh_split
+
+        start_subroutine("remesh_split")
+
+        !CALL ppm_vtk_particles("output_before",Part1,info)
+        !Assert_Equal(info,0)
+
+        !----------------
+        ! Remesh the particles 
+        ! (this performs the p2m interpolation as well)
+        !----------------
+        call Part1%interp_to_mesh_all(Mesh1,ppm_param_rmsh_kernel_mp4,info)
+            Assert_Equal(info,0)
+
+        !here, we could do something, like finite differences on the mesh
+        ! (TODO: add a test for that)
+
+        call Part1%recreate_from_mesh(Mesh1,info)
+            Assert_Equal(info,0)
+
+        !CALL ppm_vtk_particles("output_after",Part1,info)
+        !Assert_Equal(info,0)
+
+        tol = 1e-2
+
+        !----------------
+        ! Define a cutoff distance from the sides of the patch. Particles that
+        ! are in the patch but too close to the sides will not receive anything
+        ! from the patch during interpolation (except if there are some periodic
+        ! boundaries, of course...)
+        !----------------
+        cutoff = REAL(Mesh1%ghostsize(1:ndim),ppm_kind_double)* Mesh1%h(1:ndim)
+
+        voln = 1._mk / PRODUCT(Mesh1%Nm(1:ndim)-1)
+
+        !----------------
+        !Loop through all the mesh nodes and check that the values of the field
+        !have been interpolated EXACTLY,
+        !as should be the case for constant, linear and quadratic functions
+        !with a 3rd order interpolating kernel (like Mp4)
+        !----------------
+        foreach p in particles(Part1) with positions(x) vec_fields(V1=VField1,V2=VField2,V3=VField3,V4=Vfield4) sca_fields(S1=SField1,S2=SField2,S3=SField3,Vol=Vol)
+                Vol_p   = 1._mk / np_global
+                Assert_Equal_Within(S1_p, f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(S2_p, f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(S3_p, f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+
+                Assert_Equal_Within(V1_p(1), f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V1_p(2), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+
+                Assert_Equal_Within(V2_p(1), f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V2_p(2), f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V2_p(3), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+
+                Assert_Equal_Within(V3_p(1), f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V3_p(2), f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V3_p(3), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+                Assert_Equal_Within(V3_p(4), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+
+                Assert_Equal_Within(V4_p(1), f_cst(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V4_p(2), f_lin(x_p(1:ndim),ndim)* Vol_p,tol)
+                Assert_Equal_Within(V4_p(3), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+                Assert_Equal_Within(V4_p(4), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+                Assert_Equal_Within(V4_p(5), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
+        end foreach
+
+        CALL MPI_BARRIER(comm,info)
 
         end_subroutine()
         !check that we are leaving the test without error
@@ -380,7 +407,7 @@ pure function f_cst(pos,ndim) RESULT(res)
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
 
-    res =  1._mk !42.17_mk
+    res =  42._mk
 end function
 
 pure function f_lin(pos,ndim) RESULT(res)
@@ -388,7 +415,7 @@ pure function f_lin(pos,ndim) RESULT(res)
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
 
-    res =  pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
+    res =  1.337_mk + pos(1) + 10._mk*pos(2) + 100._mk*pos(ndim)
 end function
 
 pure function f_sq(pos,ndim) RESULT(res)

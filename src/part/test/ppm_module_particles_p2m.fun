@@ -172,7 +172,8 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
         allocate(wp_2r(ndim,Part1%Npart))
 !        call random_number(wp_2r)
-        wp_2r = 0.000010000_mk !(wp_2r - 0.5_mk) * Part1%h_avg * 0.0015_mk
+        wp_2r(1,:) = -0.1100010000_mk !(wp_2r - 0.5_mk) * Part1%h_avg * 0.0015_mk
+        wp_2r(2,:) = 0.1300010000_mk !(wp_2r - 0.5_mk) * Part1%h_avg * 0.0015_mk
         call Part1%move(wp_2r,info)
         Assert_Equal(info,0)
         deallocate(wp_2r)
@@ -277,6 +278,10 @@ TYPE(ppm_v_main_abstr)  :: LFields
         !----------------
         ! Perform the p2m interpolation
         !----------------
+
+        CALL ppm_vtk_particles("output_before",Part1,info)
+        Assert_Equal(info,0)
+
         call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
         call Part1%interp_to_mesh(Mesh1,VField2,ppm_param_rmsh_kernel_mp4,info)
@@ -292,6 +297,10 @@ TYPE(ppm_v_main_abstr)  :: LFields
             Assert_Equal(info,0)
         call Part1%interp_to_mesh(Mesh1,SField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
+
+        CALL ppm_vtk_particles("output_after",Part1,info)
+        Assert_Equal(info,0)
+
 
         tol = 1e-2
 

@@ -104,7 +104,7 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
         this%data_type = ppm_type_real
     ENDIF
     check_false(<#ASSOCIATED(this%discr_info)#>,&
-        "Seems like this field was alrady allocated - Call destroy() first?")
+        "Seems like this field was already allocated - Call destroy() first?")
     ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
         or_fail_alloc("this%discr_info")
 
