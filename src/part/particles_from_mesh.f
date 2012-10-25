@@ -154,7 +154,9 @@
           or_fail_alloc("xp")
 
       this%Npart = nb_part
-
+      ! get xp again to have the new boundaries in the pointer
+      CALL this%get_xp(xp,info)
+        or_fail("Get_xp failed")
 
       !Reallocate property arrays if needed
       prop => this%props%begin()
