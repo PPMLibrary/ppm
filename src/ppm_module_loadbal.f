@@ -43,6 +43,8 @@
 
          USE ppm_module_topo_typedef
          USE ppm_module_particles_typedef
+         USE ppm_module_operator_typedef
+         USE ppm_module_interfaces
          USE ppm_module_data_loadbal
          USE ppm_module_data
          USE ppm_module_alloc
@@ -50,13 +52,16 @@
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
          INTERFACE ppm_loadbal_sendsub
-            MODULE PROCEDURE loadbal_sendsub_s
-            MODULE PROCEDURE loadbal_sendsub_d
+            MODULE PROCEDURE loadbal_sendsub
          END INTERFACE
 
          INTERFACE ppm_loadbal_recvsub
             MODULE PROCEDURE loadbal_recvsub
          END INTERFACE
+          INTERFACE ppm_loadbal_map_subpart
+             MODULE PROCEDURE loadbal_map_subpart_s
+             MODULE PROCEDURE loadbal_map_subpart_d
+          END INTERFACE
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
@@ -129,10 +134,8 @@
          !----------------------------------------------------------------------
          CONTAINS
 
-
+#include "loadbal/ppm_loadbal_sendsub.f"
 #include "loadbal/ppm_loadbal_recvsub.f"
-!#include "loadbal/ppm_loadbal_do_dlb.f"
-
 
 #define __KIND __SINGLE_PRECISION
 !#include "loadbal/ppm_loadbal_inquire.f"
@@ -141,7 +144,8 @@
 #include "loadbal/ppm_estimate_proc_speed.f"
 #include "loadbal/ppm_loadbal_bc.f"
 #include "loadbal/ppm_loadbal_choose_sub.f"
-#include "loadbal/ppm_loadbal_sendsub.f"
+
+#include "loadbal/ppm_loadbal_map_subpart.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
@@ -151,7 +155,8 @@
 #include "loadbal/ppm_estimate_proc_speed.f"
 #include "loadbal/ppm_loadbal_bc.f"
 #include "loadbal/ppm_loadbal_choose_sub.f"
-#include "loadbal/ppm_loadbal_sendsub.f"
+!#include "loadbal/ppm_loadbal_sendsub.f"
+#include "loadbal/ppm_loadbal_map_subpart.f"
 #undef __KIND
 
 #define __KIND __SINGLE_PRECISION

@@ -177,9 +177,9 @@
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get.OR. &
           ppm_map_type.EQ.ppm_param_map_ghost_put) THEN
-         Mpart = qpart + Npart
+        Mpart = qpart + Npart
       ELSE
-         Mpart = qpart
+        Mpart = qpart
       ENDIF
 
       !-------------------------------------------------------------------------

@@ -508,6 +508,21 @@
 
              ENDIF
          ENDDO
+         !-------------------------------------------------------------------
+         !  Reduce the size of the sublist to the actual subdomain size on
+         !  this processor
+         !-------------------------------------------------------------------
+         iopt = ppm_param_alloc_fit_preserve
+         ldc(1) = nsublist
+         CALL ppm_alloc(isublist,ldc,iopt,info)
+         IF (info .NE. 0) THEN
+             info = ppm_error_fatal
+             CALL ppm_error(ppm_err_alloc,'ppm_topo_mkgeom',   &
+     &           'list of local subs ISUBLIST',__LINE__,info)
+             GOTO 9999
+         ENDIF
+!         print*,ppm_rank,'isublist:',isublist
+
 !         do i=1,nsublist
 !           print*,ppm_rank,'ineigh',ineigh(1:3,i)
 !         enddo

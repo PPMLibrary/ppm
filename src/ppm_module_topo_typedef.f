@@ -88,17 +88,17 @@
           !!! total number of subs on all processors.
 
           REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: min_subs => NULL()
-          !!! mimimum of extension of subs (single)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! minimum of extension of subs (single)
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: max_subs => NULL()
           !!! maximum of extension of subs (single)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: min_subd => NULL()
-          !!! mimimum of extension of subs (double)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! minimum of extension of subs (double)
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: max_subd => NULL()
           !!! maximum of extension of subs (double)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
 
           REAL(ppm_kind_single), DIMENSION(:  ),POINTER :: sub_costs => NULL()
           !!! estimated cost associated with subdomains (single). Index: sub-ID.
@@ -113,7 +113,7 @@
 
           INTEGER              , DIMENSION(:  ),POINTER :: isublist => NULL()
           !!! list of global sub IDs of the current processor.
-          !!! 1st index: local sub number.
+          !!! 1st index: local sub index.
           !!! Given the local sub ID, you get the global ID
 
           INTEGER              , DIMENSION(:,:),POINTER :: subs_bc => NULL()

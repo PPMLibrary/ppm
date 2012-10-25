@@ -44,7 +44,7 @@ integer, dimension(:), pointer                 :: wp_1i => NULL()
 integer, dimension(:,:), pointer               :: wp_2i => NULL()
 integer(ppm_kind_int64),dimension(:),  pointer :: wp_1li => NULL()
 integer(ppm_kind_int64),dimension(:,:),pointer :: wp_2li => NULL()
-real(mk), dimension(:),   pointer              :: wp_1r => NULL()
+integer, dimension(:),   pointer              :: wp_1r => NULL()
 real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 complex(mk), dimension(:),   pointer           :: wp_1c => NULL()
 complex(mk), dimension(:,:), pointer           :: wp_2c => NULL()
@@ -108,10 +108,10 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
         !----------------
         ! make topology
         !----------------
-        !decomp = ppm_param_decomp_cuboid
-        decomp = ppm_param_decomp_user_defined
-        !assig  = ppm_param_assign_internal
-        assig  = ppm_param_assign_user_defined
+        decomp = ppm_param_decomp_cuboid
+!        decomp = ppm_param_decomp_user_defined
+        assig  = ppm_param_assign_internal
+!        assig  = ppm_param_assign_user_defined
         
         !----------------
         ! Define the subs
@@ -125,11 +125,12 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
         cost = 1._mk
         if (info.ne.0) print*, 'problem with allocate'
         nsubs_x = INT(sqrt(REAL(nsubs)))
+        
         side_len = len_phys(1)/REAL(nsubs_x)
         run_sum = 0._mk
         id = 1
         x = min_phys(1)
-        y = min_phys(1)
+        y = min_phys(2)
         do i=1,nsubs_x
            do j=1,nsubs_x
               
@@ -139,7 +140,7 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
               maxsub(1,id) = x + side_len
               maxsub(2,id) = y + side_len
               
-              !print*,rank,x,y
+!              print*,rank,minsub(1:2,id),maxsub(1:2,id)
               y = y + side_len
               id = id + 1
            enddo
@@ -149,15 +150,16 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
              
         do i=1,nsubs
            sub2proc(i) = MOD(i,nproc)
+!           print*,'sub2proc:',sub2proc(i),'i:',i
         enddo
         topoid = 0
         !if (rank.eq.0)
         !print*,'nsubs:',nsubs
 !        print*,'fine till here'
         
-!       call  ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info, &
-&           minsub, maxsub,nsubs,sub2proc)
+       call  ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info)
+!        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,cutoff,cost,info, &
+!&           minsub, maxsub,nsubs,sub2proc)
 
         topo    => ppm_topo(topoid)%t
 !        print*,rank,'s neighbors ',topo%ineighproc(1:2)
@@ -182,7 +184,7 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
     teardown
     end teardown
     test balancing_circuit
-         use ppm_module_util_dbg
+        use ppm_module_util_dbg
 
         type(ppm_t_particles_d)               :: Part1
         class(ppm_t_discr_data),POINTER       :: Prop1=>NULL(),Prop2=>NULL()
@@ -194,7 +196,8 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
         REAL(mk), DIMENSION(:  ), POINTER     :: cost
         !!! Aggregate cost for each subdomain
         REAL(mk), DIMENSION(:  ), POINTER     :: proc_cost
-        integer                               :: i, nsteps
+        integer                               :: i, nsteps,globalID
+        real(mk),DIMENSION(2)                 :: dist
     
         t_comp = 0._mk
         t_comm = 0._mk
@@ -210,6 +213,9 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
 !        print*,'AFTER INIT'
         call Part1%get_xp(xp,info)
         Assert_Equal(info,0)
+        
+!        call ppm_dbg_print(topoid,Part1%ghostlayer,0,1,info,xp,Part1%Npart,Part1%Mpart)
+        
         call Part1%set_xp(xp,info,read_only=.true.)
         Assert_Equal(info,0)
         
@@ -260,7 +266,41 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
         call ppm_loadbal_bc(topoid,-1,Part1,t_total, &
 &                           info,vlist,nvlist,t_comp=t_comp)
         Assert_Equal(info,0)
-        
+        ! ----------------------------
+        ! Set up a velocity field and 
+        ! a scalar test function on 
+        ! the particles
+        ! ----------------------------
+        call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
+                lda=2,name="velocity")
+            Assert_Equal(info,0)
+        call Part1%create_prop(info,discr_data=Prop2,dtype=ppm_type_int,&
+                lda=1,name="subID")
+            Assert_Equal(info,0)
+
+        call Part1%get(Prop2,wp_1r,info)
+                        Assert_Equal(info,0)
+        wp_1r = -5
+        DO k = 1, topo%nsublist
+            globalID = topo%isublist(k)
+!               !---------------------------------------------------------------
+                !  and check which particles are inside the sub
+                !---------------------------------------------------------------
+            DO j=1,Part1%Npart
+                IF (xp(1,j).GE.topo%min_subd(1,globalID).AND. &
+ &                  xp(1,j).LE.topo%max_subd(1,globalID).AND. &
+ &                  xp(2,j).GE.topo%min_subd(2,globalID).AND. &
+ &                  xp(2,j).LE.topo%max_subd(2,globalID)) THEN
+
+                    wp_1r(j) = k !globalID
+!                        print*,rank,'minsub',topo%min_subd(1,k)
+  
+                ENDIF ! if the particle is inside this sub
+            ENDDO
+!                PRINT*,rank,' SUB-ID',topo%isublist(k)
+        ENDDO
+        call ppm_vtk_particles('to_the_corner',Part1,info,step=0)
+        Assert_Equal(info,0)
         ! ----------------------------
         ! Start the time loop
         ! ---------------------------
@@ -271,29 +311,24 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
             start_time = MPI_Wtime()
             call Part1%set_xp(xp,info,read_only=.true.)
             Assert_Equal(info,0)
+             call Part1%get_xp(xp,info)
+            Assert_Equal(info,0)
             
-            ! ----------------------------
-            ! Set up a velocity field and 
-            ! a scalar test function on 
-            ! the particles
-            ! ----------------------------
-            call Part1%create_prop(info,discr_data=Prop1,dtype=ppm_type_real,&
-                lda=3,name="velocity")
-            Assert_Equal(info,0)
-            call Part1%create_prop(info,discr_data=Prop2,dtype=ppm_type_real,&
-                lda=1,name="testf")
-            Assert_Equal(info,0)
             call Part1%get(Prop1,wp_2r,info)
             Assert_Equal(info,0)
-            call Part1%get(Prop2,wp_1r,info)
-            Assert_Equal(info,0)
-            call Part1%get_xp(xp,info)
-            Assert_Equal(info,0)
+            
             DO ip=1,Part1%Npart
-                wp_2r(1:ndim,ip) = COS((10._MK*xp(1:ndim,ip))**2)
-                wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
+                if (xp(1,ip).GT.1._mk .or. xp(2,ip).GT.1_mk) then
+                    dist = 0._mk
+                else
+                    dist(1) = 1 - xp(1,ip)
+                    dist(2) = 1 - xp(2,ip)
+                endif
+                wp_2r(1:ndim,ip) = dist/nsteps!COS((10._MK*xp(1:ndim,ip))**2)
+!                wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
             ENDDO
-            wp_2r = cos(wp_2r) * Part1%ghostlayer
+!            wp_2r = cos(wp_2r) * Part1%ghostlayer
+            wp_2r  = wp_2r * Part1%ghostlayer
             ! ----------------------------
             ! Move the particles with this 
             ! displacement field
@@ -306,8 +341,8 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
             ! ----------------------------
             call Part1%apply_bc(info)
             Assert_Equal(info,0)
-            end_time = MPI_Wtime()
-            t_comp = end_time - start_time
+            
+!            t_comp = end_time - start_time
             call Part1%map(info)
             Assert_Equal(info,0)
             
@@ -316,7 +351,32 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
             ! ----------------------------
             call Part1%map_ghosts(info)
             Assert_Equal(info,0)  
-                  
+            
+            call Part1%get(Prop2,wp_1r,info)
+                        Assert_Equal(info,0)
+            wp_1r = -5
+            call Part1%get_xp(xp,info)
+            Assert_Equal(info,0)
+            DO k = 1, topo%nsublist
+                globalID = topo%isublist(k)
+                !---------------------------------------------------------------
+                !  and check which particles are inside the sub
+                !---------------------------------------------------------------
+                DO j=1,Part1%Npart
+                    IF (xp(1,j).GE.topo%min_subd(1,globalID).AND. &
+     &                  xp(1,j).LE.topo%max_subd(1,globalID).AND. &
+     &                  xp(2,j).GE.topo%min_subd(2,globalID).AND. &
+     &                  xp(2,j).LE.topo%max_subd(2,globalID)) THEN
+    
+                        wp_1r(j) = k !globalID
+    !                        print*,rank,'minsub',topo%min_subd(1,k)
+      
+                    ENDIF ! if the particle is inside this sub
+                ENDDO
+!                PRINT*,rank,' SUB-ID',topo%isublist(k)
+            ENDDO
+            call ppm_vtk_particles('to_the_corner',Part1,info,step=i)
+            Assert_Equal(info,0)
             ! ----------------------------
             ! Update (re-create) neighbor list 
             ! ----------------------------
@@ -341,14 +401,15 @@ TYPE(ppm_t_topo),POINTER               :: topo => NULL()
             t_comp     = t_comp + end_time - start_time
             
             
-            
+            end_time = MPI_Wtime()
+            t_total = end_time - start_time
             call ppm_loadbal_bc(topoid,-1,Part1,t_total, &
-&                           info,vlist,nvlist,t_comp=t_comp)
+&                           info,vlist,nvlist)
             Assert_Equal(info,0)
             call Part1%set_xp(xp,info,read_only=.true.)
             Assert_Equal(info,0)
             
-            print*,rank,' required this many time:',t_comp
+            print*,rank,' required this many time:',t_total
             print*,'%%%%%%%%%%%%%%%%%%%%%%%'
 !            ! ----------------------------
 !            ! Now, move the particles back

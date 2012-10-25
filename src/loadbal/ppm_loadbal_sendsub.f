@@ -1,10 +1,10 @@
       minclude ppm_header(ppm_module_name="loadbal_sendsub")
 
-#if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE loadbal_sendsub_s(topoid,Pc,isub,receiver,maxneigh,prec,info)
-#elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE loadbal_sendsub_d(topoid,Pc,isub,receiver,maxneigh,prec,info)
-#endif
+!#if   __KIND == __SINGLE_PRECISION
+!      SUBROUTINE loadbal_sendsub_s(topoid,isub,receiver,maxneigh,prec,info)
+!#elif __KIND == __DOUBLE_PRECISION
+      SUBROUTINE loadbal_sendsub(topoid,isub,receiver,maxneigh,prec,info)
+!#endif
       !!! This routine is called by the overloaded process. One subdomain is
       !!! sent to the most underloaded process.
       !!! Particles within the subdomain need to be sent as well.
@@ -37,11 +37,11 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID
-#if    __KIND == __SINGLE_PRECISION
-      TYPE(ppm_t_particles_s) , INTENT(IN   ) :: Pc
-#else
-      TYPE(ppm_t_particles_d) , INTENT(IN   ) :: Pc
-#endif
+!#if    __KIND == __SINGLE_PRECISION
+!      TYPE(ppm_t_particles_s) , INTENT(IN   ) :: Pc
+!#else
+!      TYPE(ppm_t_particles_d) , INTENT(IN   ) :: Pc
+!#endif
       !!! Particle set
       INTEGER                 , INTENT(IN   ) :: receiver
       !!! MPI rank of the receiving underloaded process
@@ -86,8 +86,8 @@
       !-------------------------------------------------------------------------
       start_subroutine("loadbal_sendsub")
       topo => ppm_topo(topoid)%t
-      call Pc%get_xp(xp,info)
-       or_fail("Pc%get_xp failed")
+!      call Pc%get_xp(xp,info)
+!       or_fail("Pc%get_xp failed")
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -118,97 +118,101 @@
         stdout("WARNING: you are using only one process. DLB will quit!")
         GOTO 9999
       ENDIF
-
+!      stdout("local subID to be sent",isub)
       !-------------------------------------------------------------------------
       !  Copy subdomain-related information to send them.
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-              min_subs2 = topo%min_subs(:,isub)
-              max_subs2 = topo%max_subs(:,isub)
-              subcosts  = topo%sub_costs( isub)
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-              min_subd2 = topo%min_subd(:,isub)
-              max_subd2 = topo%max_subd(:,isub)
-              subcostd  = topo%sub_costd( isub)
-          ENDIF
-      ELSE IF (ppm_dim .EQ. 3) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-              min_subs3 = topo%min_subs(:,isub)
-              max_subs3 = topo%max_subs(:,isub)
-              subcosts  = topo%sub_costs( isub)
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-              min_subd3 = topo%min_subd(:,isub)
-              max_subd3 = topo%max_subd(:,isub)
-              subcostd  = topo%sub_costd( isub)
-          ENDIF
-      ENDIF
-
+!      IF (ppm_dim .EQ. 2) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!              min_subs2 = topo%min_subs(:,isub)
+!              max_subs2 = topo%max_subs(:,isub)
+!              subcosts  = topo%sub_costs( isub)
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!              min_subd2 = topo%min_subd(:,isub)
+!              max_subd2 = topo%max_subd(:,isub)
+!              subcostd  = topo%sub_costd( isub)
+!          ENDIF
+!      ELSE IF (ppm_dim .EQ. 3) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!              min_subs3 = topo%min_subs(:,isub)
+!              max_subs3 = topo%max_subs(:,isub)
+!              subcosts  = topo%sub_costs( isub)
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!              min_subd3 = topo%min_subd(:,isub)
+!              max_subd3 = topo%max_subd(:,isub)
+!              subcostd  = topo%sub_costd( isub)
+!          ENDIF
+!      ENDIF
+      ineighsubs = 0
+      temp_neigh = 0
+!      stdout("ineighsubs of isub BEFORE",ineighsubs)
       nneighsubs = topo%nneighsubs(isub)
+!      stdout("size of topo%ineighsubs(:,isub)",'size(topo%ineighsubs(:,isub),1)')
       ineighsubs = topo%ineighsubs(:,isub)
+!      stdout("ineighsubs of isub AFTER",ineighsubs)
       !-------------------------------------------------------------------------
       !  Send subdomain info to the most underloaded processor
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-            tag1 = 400
-            CALL MPI_Send(min_subs2,numelm2,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("min_sub send failed!")
-            tag1 = 500
-            CALL MPI_Send(max_subs2,numelm2,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("max_sub send failed!")
-            tag1 = 600
-            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("subcost send failed!")
-
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-            tag1 = 400
-            CALL MPI_Send(min_subd2,numelm2,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("min_sub send failed!")
-            tag1 = 500
-            CALL MPI_Send(max_subd2,numelm2,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("max_sub send failed!")
-            tag1 = 600
-            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,&
-     &                    ppm_comm,status,info)
-                or_fail("subcost send failed!")
-          ENDIF
-      ELSE IF (ppm_dim .EQ. 3) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-            tag1 = 400
-            CALL MPI_Send(min_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("min_sub send failed!")
-            tag1 = 500
-            CALL MPI_Send(max_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("max_sub send failed!")
-            tag1 = 600
-            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("subcost send failed!")
-
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-            tag1 = 400
-            CALL MPI_Send(min_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("min_sub send failed!")
-            tag1 = 500
-            CALL MPI_Send(max_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("max_sub send failed!")
-            tag1 = 600
-            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,ppm_comm,&
-     &                    status,info)
-                or_fail("subcost send failed!")
-          ENDIF
-
-      ENDIF
+!      IF (ppm_dim .EQ. 2) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!            tag1 = 400
+!            CALL MPI_Send(min_subs2,numelm2,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("min_sub send failed!")
+!            tag1 = 500
+!            CALL MPI_Send(max_subs2,numelm2,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("max_sub send failed!")
+!            tag1 = 600
+!            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("subcost send failed!")
+!
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!            tag1 = 400
+!            CALL MPI_Send(min_subd2,numelm2,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("min_sub send failed!")
+!            tag1 = 500
+!            CALL MPI_Send(max_subd2,numelm2,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("max_sub send failed!")
+!            tag1 = 600
+!            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,&
+!     &                    ppm_comm,status,info)
+!                or_fail("subcost send failed!")
+!          ENDIF
+!      ELSE IF (ppm_dim .EQ. 3) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!            tag1 = 400
+!            CALL MPI_Send(min_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("min_sub send failed!")
+!            tag1 = 500
+!            CALL MPI_Send(max_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("max_sub send failed!")
+!            tag1 = 600
+!            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("subcost send failed!")
+!
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!            tag1 = 400
+!            CALL MPI_Send(min_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("min_sub send failed!")
+!            tag1 = 500
+!            CALL MPI_Send(max_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("max_sub send failed!")
+!            tag1 = 600
+!            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,ppm_comm,&
+!     &                    status,info)
+!                or_fail("subcost send failed!")
+!          ENDIF
+!
+!      ENDIF
 
       tag1 = 700
       CALL MPI_Send(nneighsubs,1,MPI_INTEGER,receiver,tag1, &
@@ -218,274 +222,57 @@
       CALL MPI_Send(ineighsubs,nneighsubs,MPI_INTEGER,receiver,&
      &              tag1,ppm_comm,status,info)
         or_fail("nneighsubs send failed!")
-      stdout("subdomain info sent")
-      !-------------------------------------------------------------------------
-      !  Send the particles that are in this subdomain.
-      !  Allocate the send buffer (ppm_loadbal_xp_) with size of Npart
-      !  We will shrink the array once we know the exact number of particles
-      !  in the subdomain
-      !-------------------------------------------------------------------------
-      IF (prec .EQ. ppm_kind_single) THEN
-        ALLOCATE(ppm_loadbal_xps(ppm_dim*Pc%Npart),STAT=info)
-               or_fail_alloc("ppm_loadbal_xps")
-        ppm_loadbal_xps = 0._MK
-      ELSE IF (prec .EQ. ppm_kind_double) THEN
-        ALLOCATE(ppm_loadbal_xpd(ppm_dim*Pc%Npart),STAT=info)
-               or_fail_alloc("ppm_loadbal_xpd")
-        ppm_loadbal_xpd = 0._MK
-      ENDIF
-      ALLOCATE(list_del_parts(Pc%Npart),STAT=info)
-            or_fail_alloc("list_del_parts failed")
-      !-------------------------------------------------------------------------
-      !  First determine the number of to-be-sent particles
-      !-------------------------------------------------------------------------
-      IF (ppm_dim.EQ.2) THEN
-        IF (prec .EQ. ppm_kind_single) THEN
-            !-----------------------------------------------------------------------
-            !  Loop over the particles in 2D
-            !-----------------------------------------------------------------------
-            DO k=1,Pc%Npart
-                !-------------------------------------------------------------------
-                !  and check if they are inside the sub
-                !-------------------------------------------------------------------
-                IF (xp(1,k).GE.min_subs2(1).AND. &
-     &              xp(1,k).LE.max_subs2(1).AND. &
-     &              xp(2,k).GE.min_subs2(2).AND. &
-     &              xp(2,k).LE.max_subs2(2)) THEN
-                    !---------------------------------------------------------------
-                    !  In the non-periodic case, allow particles that are
-                    !  exactly ON an upper EXTERNAL boundary.
-                    !---------------------------------------------------------------
-                    IF((xp(1,k).LT.max_subs2(1)                  .OR.  &
-     &                 (topo%subs_bc(2,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(2).NE. ppm_param_bcdef_periodic))  .AND. &
-     &                 (xp(2,k).LT.max_subs2(2)                  .OR.  &
-     &                 (topo%subs_bc(4,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
-                        !-----------------------------------------------------------
-                        !  Increase the number of particles to-be-sent and add the
-                        !  particle to the buffer
-                        !-----------------------------------------------------------
-                        ppm_loadbal_subnpart = ppm_loadbal_subnpart + 1
-                        list_del_parts(ppm_loadbal_subnpart) = ppm_loadbal_subnpart
-                        DO i=0,ppm_dim-1
-                            ppm_loadbal_xps(ppm_loadbal_subnpart+i) = &
-     &                                     xp(i+1,ppm_loadbal_subnpart)
-                        ENDDO
-                    ENDIF
-                ENDIF
-            ENDDO
-        ELSE IF (prec .EQ. ppm_kind_double) THEN
-            !-----------------------------------------------------------------------
-            !  Loop over the particles in 2D
-            !-----------------------------------------------------------------------
-            DO k=1,Pc%Npart
-                !-------------------------------------------------------------------
-                !  and check if they are inside the sub
-                !-------------------------------------------------------------------
-                IF (xp(1,k).GE.min_subd2(1).AND. &
-     &              xp(1,k).LE.max_subd2(1).AND. &
-     &              xp(2,k).GE.min_subd2(2).AND. &
-     &              xp(2,k).LE.max_subd2(2)) THEN
-                    !---------------------------------------------------------------
-                    !  In the non-periodic case, allow particles that are
-                    !  exactly ON an upper EXTERNAL boundary.
-                    !---------------------------------------------------------------
-                    IF((xp(1,k).LT.max_subd2(1)                  .OR.  &
-     &                 (topo%subs_bc(2,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(2).NE. ppm_param_bcdef_periodic))  .AND. &
-     &                 (xp(2,k).LT.max_subd2(2)                  .OR.  &
-     &                 (topo%subs_bc(4,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
-                        !-----------------------------------------------------------
-                        !  Increase the number of particles to-be-sent and add the
-                        !  particle to the buffer
-                        !-----------------------------------------------------------
-
-                        ppm_loadbal_subnpart = ppm_loadbal_subnpart + 1
-                        list_del_parts(ppm_loadbal_subnpart) = ppm_loadbal_subnpart
-                        DO i=0,ppm_dim-1
-                            ppm_loadbal_xpd(ppm_loadbal_subnpart+i) = &
-     &                                     xp(i+1,ppm_loadbal_subnpart)
-                        ENDDO
-                    ENDIF
-                ENDIF
-            ENDDO
-        ENDIF
-      ELSE IF (ppm_dim.EQ.3) THEN
-        IF (prec .EQ. ppm_kind_single) THEN
-            !-----------------------------------------------------------------------
-            !  Loop over the particles in 3D
-            !-----------------------------------------------------------------------
-            DO k=1,Pc%Npart
-                !-------------------------------------------------------------------
-                !  and check if they are inside the sub
-                !-------------------------------------------------------------------
-                IF (xp(1,k).GE.min_subs3(1).AND. &
-     &              xp(1,k).LE.max_subs3(1).AND. &
-     &              xp(2,k).GE.min_subs3(2).AND. &
-     &              xp(2,k).LE.max_subs3(2).AND. &
-     &              xp(1,k).GE.min_subs3(3).AND. &
-     &              xp(1,k).LE.max_subs3(3)) THEN
-                    !---------------------------------------------------------------
-                    !  In the non-periodic case, allow particles that are
-                    !  exactly ON an upper EXTERNAL boundary.
-                    !---------------------------------------------------------------
-                    IF((xp(1,k).LT.max_subs3(1)                  .OR.  &
-     &                 (topo%subs_bc(2,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(2).NE. ppm_param_bcdef_periodic))  .AND. &
-     &                 (xp(2,k).LT.max_subs3(2)                  .OR.  &
-     &                 (topo%subs_bc(4,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(4).NE. ppm_param_bcdef_periodic))  .OR.  &
-     &                  (xp(3,k).LT.max_subs3(3)                 .OR.  &
-     &                 (topo%subs_bc(6,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(6).NE. ppm_param_bcdef_periodic))) THEN
-                        !-----------------------------------------------------------
-                        !  Increase the number of particles to-be-sent and add the
-                        !  particle to the buffer
-                        !-----------------------------------------------------------
-                        ppm_loadbal_subnpart = ppm_loadbal_subnpart + 1
-                        list_del_parts(ppm_loadbal_subnpart) = ppm_loadbal_subnpart
-                        DO i=0,ppm_dim-1
-                            ppm_loadbal_xps(ppm_loadbal_subnpart+i) = &
-     &                                     xp(i+1,ppm_loadbal_subnpart)
-                        ENDDO
-                    ENDIF
-                ENDIF
-            ENDDO
-        ELSE IF (prec .EQ. ppm_kind_double) THEN
-            !-----------------------------------------------------------------------
-            !  Loop over the particles in 3D
-            !-----------------------------------------------------------------------
-            DO k=1,Pc%Npart
-                !-------------------------------------------------------------------
-                !  and check if they are inside the sub
-                !-------------------------------------------------------------------
-                IF (xp(1,k).GE.min_subd3(1).AND. &
-     &              xp(1,k).LE.max_subd3(1).AND. &
-     &              xp(2,k).GE.min_subd3(2).AND. &
-     &              xp(2,k).LE.max_subd3(2).AND. &
-     &              xp(1,k).GE.min_subd3(3).AND. &
-     &              xp(1,k).LE.max_subd3(3)) THEN
-                    !---------------------------------------------------------------
-                    !  In the non-periodic case, allow particles that are
-                    !  exactly ON an upper EXTERNAL boundary.
-                    !---------------------------------------------------------------
-                    IF((xp(1,k).LT.max_subd3(1)                  .OR.  &
-     &                 (topo%subs_bc(2,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(2).NE. ppm_param_bcdef_periodic))  .AND. &
-     &                 (xp(2,k).LT.max_subd3(2)                  .OR.  &
-     &                 (topo%subs_bc(4,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(4).NE. ppm_param_bcdef_periodic))  .OR.  &
-     &                  (xp(3,k).LT.max_subd3(3)                 .OR.  &
-     &                 (topo%subs_bc(6,topo%isublist(isub)).EQ.1      .AND. &
-     &                  topo%bcdef(6).NE. ppm_param_bcdef_periodic))) THEN
-                        !-----------------------------------------------------------
-                        !  Increase the number of particles to-be-sent and add the
-                        !  particle to the buffer
-                        !-----------------------------------------------------------
-                        ppm_loadbal_subnpart = ppm_loadbal_subnpart + 1
-                        list_del_parts(ppm_loadbal_subnpart) = ppm_loadbal_subnpart
-                        DO i=0,ppm_dim-1
-                            ppm_loadbal_xpd(ppm_loadbal_subnpart+i) = &
-     &                                     xp(i+1,ppm_loadbal_subnpart)
-                        ENDDO
-                    ENDIF
-                ENDIF
-            ENDDO
-        ENDIF
-      ENDIF
-      !-----------------------------------------------------------------------------
-      !  Shorten the list of to-be-deleted particles
-      !-----------------------------------------------------------------------------
-      iopt = ppm_param_alloc_grow_preserve
-      ldu1(1) = ppm_loadbal_subnpart
-      CALL ppm_alloc(list_del_parts,ldu1,iopt,info)
-        or_fail_alloc("list_del_parts re-alloc failed!")
-      !-----------------------------------------------------------------------------
-      !  Delete the particles
-      !-----------------------------------------------------------------------------
-      CALL Pc%del_parts(list_del_parts,ppm_loadbal_subnpart,info)
-        or_fail("Error while at deleting particles")
-      !-----------------------------------------------------------------------------
-      !  Before we send the buffer, we should also trim it so that the size will be
-      !  shorter (we are allowed to send only an 1D array)
-      !-----------------------------------------------------------------------------
-      ldu1(1) = ppm_dim*ppm_loadbal_subnpart
-      IF (prec .EQ. ppm_kind_single) THEN
-        CALL ppm_alloc(ppm_loadbal_xps,ldu1,iopt,info)
-            or_fail_alloc("ppm_loadbal_xps re-alloc failed!")
-      ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL ppm_alloc(ppm_loadbal_xpd,ldu1,iopt,info)
-            or_fail_alloc("ppm_loadbal_xpd re-alloc failed!")
-      ENDIF
+!      stdout("subdomain info sent")
 
       !-----------------------------------------------------------------------------
-      !  Send the buffer, first the size then data
-      !-----------------------------------------------------------------------------
-      tag1 = 900
-      CALL MPI_Send(ldu1(1),1,MPI_INTEGER,receiver,tag1, &
-     &              ppm_comm,status,info)
-        or_fail("# of particle coordinates send failed!")
-      tag1 = 1000
-      IF (prec .EQ. ppm_kind_single) THEN
-        CALL MPI_Send(ppm_loadbal_xps,ldu1(1),MPTYPE,receiver,&
-     &              tag1,ppm_comm,status,info)
-            or_fail("ppm_loadbal_xps send failed!")
-      ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL MPI_Send(ppm_loadbal_xpd,ldu1(1),MPTYPE,receiver,&
-     &              tag1,ppm_comm,status,info)
-            or_fail("ppm_loadbal_xpd send failed!")
-      ENDIF
-      !-----------------------------------------------------------------------------
-      !  Copy the sent subdomain to the last in the array so that ppm_alloc
+      !  Copy the sent subdomain to the end in the array so that ppm_alloc
       !  can clear it.
       !-----------------------------------------------------------------------------
-      stdout("isub:",isub," old_nsub:",old_nsub)
-      IF (ppm_dim .EQ. 2) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
-              topo%min_subs(:,old_nsub) = min_subs2
-
-              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
-              topo%max_subs(:,old_nsub) = max_subs2
-
-              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
-              topo%sub_costs(old_nsub) = subcosts
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-
-              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
-              topo%min_subd(:,old_nsub) = min_subd2
-
-              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
-              topo%max_subd(:,old_nsub) = max_subd2
-
-              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
-              topo%sub_costd(old_nsub) = subcostd
-          ENDIF
-      ELSE IF (ppm_dim .EQ. 3) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
-              topo%min_subs(:,old_nsub) = min_subs3
-
-              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
-              topo%max_subs(:,old_nsub) = max_subs3
-
-              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
-              topo%sub_costs(old_nsub) = subcosts
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-
-              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
-              topo%min_subd(:,old_nsub) = min_subd3
-
-              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
-              topo%max_subd(:,old_nsub) = max_subd3
-
-              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
-              topo%sub_costd(old_nsub) = subcostd
-          ENDIF
-
-      ENDIF
+!      stdout("isub:",isub," old_nsub:",old_nsub)
+!      IF (ppm_dim .EQ. 2) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
+!              topo%min_subs(:,old_nsub) = min_subs2
+!
+!              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
+!              topo%max_subs(:,old_nsub) = max_subs2
+!
+!              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
+!              topo%sub_costs(old_nsub) = subcosts
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!
+!              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
+!              topo%min_subd(:,old_nsub) = min_subd2
+!
+!              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
+!              topo%max_subd(:,old_nsub) = max_subd2
+!
+!              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
+!              topo%sub_costd(old_nsub) = subcostd
+!          ENDIF
+!      ELSE IF (ppm_dim .EQ. 3) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
+!              topo%min_subs(:,old_nsub) = min_subs3
+!
+!              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
+!              topo%max_subs(:,old_nsub) = max_subs3
+!
+!              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
+!              topo%sub_costs(old_nsub) = subcosts
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!
+!              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
+!              topo%min_subd(:,old_nsub) = min_subd3
+!
+!              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
+!              topo%max_subd(:,old_nsub) = max_subd3
+!
+!              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
+!              topo%sub_costd(old_nsub) = subcostd
+!          ENDIF
+!
+!      ENDIF
       !-------------------------------------------------------------------------
       !  New sublist has one LESS sub in it
       !-------------------------------------------------------------------------
@@ -493,7 +280,14 @@
       !-------------------------------------------------------------------------
       !  Continue updating local subdomain info by swaping
       !  isublist, nneighsubs, ineighsubs, nsublist
+      !  Only if the local subID is the last sub in the isublist, then
+      !  I don't need to do any special thing, ppm_param_alloc_fit_preserve
+      !  will handle it for me
       !-------------------------------------------------------------------------
+!      stdout("topo%ineighsubs(:,old_nsub) BEFORE",'topo%ineighsubs(:,old_nsub)')
+!      stdout("topo%ineighsubs(:,    isub) BEFORE",'topo%ineighsubs(:,isub)')
+
+      stdout("old_nsub",old_nsub)
       itemp = topo%isublist(isub)
       topo%isublist(    isub) = topo%isublist(old_nsub)
       topo%isublist(old_nsub) = itemp
@@ -506,33 +300,37 @@
       temp_neigh = topo%ineighsubs(:,isub)
       topo%ineighsubs(:,    isub) = topo%ineighsubs(:,old_nsub)
       topo%ineighsubs(:,old_nsub) = temp_neigh
+!
+!      stdout("topo%ineighsubs(:,old_nsub) AFTER",'topo%ineighsubs(:,old_nsub)')
+!      stdout("topo%ineighsubs(:,    isub) AFTER",'topo%ineighsubs(:,isub)')
+!      stdout("topo%ineighsubs(:,new_nsub) AFTER",'topo%ineighsubs(:,new_nsub)')
 
       topo%nsublist = new_nsub
 
       !-------------------------------------------------------------------------
       !  Remove the sent subdomain by shrinking the array by one element
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_grow_preserve
-      ldu2(1) = ppm_dim
+      iopt = ppm_param_alloc_fit_preserve
+      ldu2(1) = maxneigh
       ldu2(2) = new_nsub
       ldu1(1) = new_nsub
 
-      IF(prec .EQ. ppm_kind_single) THEN
-          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
-            or_fail_alloc("min_subs re-alloc failed!")
-          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
-            or_fail_alloc("max_subs re-alloc failed!")
-          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
-            or_fail_alloc("sub_costs re-alloc failed!")
-
-      ELSE IF(prec .EQ. ppm_kind_double) THEN
-          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
-            or_fail_alloc("min_subd re-alloc failed!")
-          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
-            or_fail_alloc("max_subd re-alloc failed!")
-          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
-            or_fail_alloc("sub_costd re-alloc failed!")
-      ENDIF
+!      IF(prec .EQ. ppm_kind_single) THEN
+!          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
+!            or_fail_alloc("min_subs re-alloc failed!")
+!          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
+!            or_fail_alloc("max_subs re-alloc failed!")
+!          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
+!            or_fail_alloc("sub_costs re-alloc failed!")
+!
+!      ELSE IF(prec .EQ. ppm_kind_double) THEN
+!          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
+!            or_fail_alloc("min_subd re-alloc failed!")
+!          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
+!            or_fail_alloc("max_subd re-alloc failed!")
+!          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
+!            or_fail_alloc("sub_costd re-alloc failed!")
+!      ENDIF
       CALL ppm_alloc(topo%nneighsubs,ldu1,iopt,info)
         or_fail_alloc("nneighsubs re-alloc failed!")
       CALL ppm_alloc(topo%isublist,ldu1,iopt,info)
@@ -540,6 +338,9 @@
       CALL ppm_alloc(topo%ineighsubs,ldu2,iopt,info)
         or_fail_alloc("ineighsubs re-alloc failed!")
 
+!      stdout("topo%ineighsubs(:,new_nsub) VERY AFTER",'topo%ineighsubs(:,new_nsub)')
+!      stdout("size of ineighsubs",'size()'
+      stdout("sendsub is done")
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
@@ -550,14 +351,9 @@
         IF (.NOT. ppm_initialized) THEN
             fail("Please call ppm_init first!", exit_point=8888)
         ENDIF
-
-
-
  8888   CONTINUE
       END SUBROUTINE check
-#if   __KIND == __SINGLE_PRECISION
-      END SUBROUTINE loadbal_sendsub_s
-#elif __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE loadbal_sendsub_d
-#endif
+!#if   __KIND == __SINGLE_PRECISION
+      END SUBROUTINE loadbal_sendsub
+
 

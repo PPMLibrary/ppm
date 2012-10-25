@@ -203,9 +203,9 @@ SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
     LOGICAL,OPTIONAL                             :: with_ghosts
 
     start_subroutine("get_xp")
-
+!    stdout("entering get_xp")
     check_associated("this%xp")
-
+!    stdout("associated check")
     IF (PRESENT(with_ghosts)) THEN
         IF (with_ghosts) THEN
             IF (this%flags(ppm_part_ghosts)) THEN
@@ -219,9 +219,9 @@ SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
             RETURN
         ENDIF
     ENDIF
-
+!    stdout("noprob here")
     xp => this%xp(1:ppm_dim,1:this%Npart)
-
+!    stdout("noprob here 2")
     end_subroutine()
 END SUBROUTINE DTYPE(get_xp)
 
@@ -285,6 +285,7 @@ SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
     ENDIF
 
     xp => NULL()
+
 
     end_subroutine()
 END SUBROUTINE DTYPE(set_xp)
@@ -744,6 +745,10 @@ SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
     !!! cutoff of the particles
     CHARACTER(LEN=*),           OPTIONAL,INTENT(IN   )     :: name
     !!! name for this set of particles
+!    REAL(MK),DIMENSION(:,:),TARGET,OPTIONAL,INTENT(IN   )     :: xp_user
+    !!! User-provided position array of the particles
+    !!! distrib MUST be equal to ppm_param_part_init_user_defined
+    !!! We trust the user here for many things.
 
     start_subroutine("part_initialize")
 
@@ -1688,6 +1693,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     CLASS(ppm_t_discr_data), POINTER          :: prop => NULL()
 
     start_subroutine("part_map_ghosts")
+
     t_start = MPI_WTIME(info)
     skip_ghost_get = .FALSE.
     skip_send = .TRUE.
@@ -1698,19 +1704,24 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
     !  Checks
     !-----------------------------------------------------------------
     !check that particles are allocated
-    check_associated("Pc%xp",&
-        "Particles structure had not been defined. Call allocate first")
+
+!    check_associated("Pc%xp",&
+!        "Particles structure had not been defined. Call allocate first")
     !check that particles are mapped onto this topology
-    check_true("Pc%flags(ppm_part_partial)",&
-        "Do a partial/global mapping before doing a ghost mapping")
+!    print*,ppm_rank, 'arrived here-0!'
+!    check_true("Pc%flags(ppm_part_partial)",&
+!        "Do a partial/global mapping before doing a ghost mapping")
+!    print*,ppm_rank, 'arrived here-0.5!'
     !check that particles are inside the domain
-    check_true("Pc%flags(ppm_part_areinside)",&
-        "some particles may be outside the domain. Apply BC first")
+!    check_true("Pc%flags(ppm_part_areinside)",&
+!        "some particles may be outside the domain. Apply BC first")
+
 
     topoid = Pc%active_topoid
     topo=>ppm_topo(topoid)%t
 
     cutoff = Pc%ghostlayer
+!    print*,ppm_rank, 'arrived here-1.5!'
     IF (PRESENT(ghostsize)) THEN
         IF (ghostsize .LT. cutoff) THEN
             fail("using ghostsize < cutoff+skin. Increase ghostsize.")
@@ -1730,6 +1741,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
         fail("ghostsize of topology may be smaller than that of particles")
     ENDIF
 #endif
+!    print*,ppm_rank, 'arrived here-2!'
     IF (cutoff .GT. 0._MK) THEN
         IF (Pc%flags(ppm_part_ghosts)) THEN
             IF (ppm_map_type_isactive(ppm_param_map_ghost_get)) THEN
@@ -1753,9 +1765,9 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
         ELSE
             !skip ghost get
         ENDIF
-
+!        print*,ppm_rank, 'arrived here-3!'
         !Update the ghost for the properties if
-        ! 1) they have been mapped to this topology,
+        ! 1) they have been mapped to thisbreak  topology,
         ! 2) the ghosts have not yet been updated, and
         ! 3) the user wants them to be updated
         prop => Pc%props%begin()
@@ -1785,7 +1797,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
             ENDIF
             prop => Pc%props%next()
         ENDDO
-
+!        print*,ppm_rank, 'arrived here-4!'
         IF (.NOT. skip_send) THEN
             CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
                 or_fail("ppm_map_part_send")
@@ -1826,7 +1838,7 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
             prop => Pc%props%next()
         ENDDO
     ENDIF
-
+!    print*,ppm_rank, 'arrived here-5!'
 
     ! Update states
     !   ghosts have been computed
@@ -1850,11 +1862,11 @@ SUBROUTINE DTYPE(part_map_ghosts)(Pc,info,ghostsize)
 
 
 
-    stdout("Total comm time (incl. ghost mapping):",ppm_loadbal_comm_time)
+!    stdout("Total comm time (incl. ghost mapping):",ppm_loadbal_comm_time)
 
     ppm_loadbal_comm_part_cost = ppm_loadbal_comm_time &
     &                                        / ppm_loadbal_comm_part_num
-    stdout("Average comm cost per particle:",ppm_loadbal_comm_part_cost)
+!    stdout("Average comm cost per particle:",ppm_loadbal_comm_part_cost)
     end_subroutine()
 END SUBROUTINE DTYPE(part_map_ghosts)
 

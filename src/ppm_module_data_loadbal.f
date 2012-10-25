@@ -134,5 +134,7 @@
          !!! New timing for partial mapping
          REAL(ppm_kind_double)  :: ppm_loadbal_ghostmap_time = 0._ppm_kind_double
          !!! Timing for ghost mapping
-
+         INTEGER,DIMENSION(:),POINTER :: ppm_loadbal_isendlist,ppm_loadbal_irecvlist
+         !!! Arrays to store the original ppm_isendlist & ppm_irecvlist
+         INTEGER                      :: ppm_loadbal_nsendlist
       END MODULE ppm_module_data_loadbal

@@ -355,6 +355,8 @@
       !  to this processor and checking if the particles are well within the
       !  sub. If this is the case, the particle will never be a ghost 
       !-------------------------------------------------------------------------
+!      print*,ppm_rank,'topo%nsublist in ghost_get',topo%nsublist
+!      print*,ppm_rank,'topo%isublist in ghost_get',topo%isublist
       DO k=1,topo%nsublist
          !----------------------------------------------------------------------
          !  Initialize the second list counter to zero

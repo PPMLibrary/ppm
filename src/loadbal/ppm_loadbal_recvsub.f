@@ -1,6 +1,6 @@
       minclude ppm_header(ppm_module_name="loadbal_recvsub")
 
-      SUBROUTINE loadbal_recvsub(topoid,sender,prec,info)
+      SUBROUTINE loadbal_recvsub(topoid,isub,sender,prec,info)
       !!! This routine is called by the underloaded processor to receive a sub
       !!! from an overloaded neighbor
       !!!
@@ -14,6 +14,8 @@
       USE ppm_module_error
       USE ppm_module_write
       USE ppm_module_util_commopt
+      USE ppm_module_particles_typedef
+      USE ppm_module_interfaces
       IMPLICIT NONE
 
 
@@ -28,6 +30,8 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID
+      INTEGER                 , INTENT(IN   ) :: isub
+      !!! GLOBAL ID of the sub to be received
       INTEGER                 , INTENT(IN   ) :: sender
       !!! MPI rank of the sending overloaded process
       INTEGER                 , INTENT(IN   ) :: prec
@@ -39,7 +43,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                            :: i,isub,jsub,iproc,nprocs_of_this_sub
+      INTEGER                            :: i,jsub,iproc,nprocs_of_this_sub
       INTEGER                            :: tag1,nneighsubs,iopt
       INTEGER  , DIMENSION(:  ), POINTER :: ineighsubs => NULL()
       INTEGER                            :: new_nsub
@@ -54,6 +58,7 @@
       REAL(ppm_kind_single),DIMENSION(3) :: min_subs3,max_subs3
       REAL(ppm_kind_double),DIMENSION(3) :: min_subd3,max_subd3
       TYPE(ppm_t_topo),POINTER           :: topo => NULL()
+      INTEGER,DIMENSION(:),POINTER       :: list_add_parts => NULL()
 #ifdef __MPI
       INTEGER                            :: MPTYPE
       INTEGER, DIMENSION(MPI_STATUS_SIZE):: status
@@ -97,68 +102,69 @@
       !-------------------------------------------------------------------------
       !  Receive subdomain info from the most overloaded processor
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-            tag1 = 400
-            CALL MPI_Recv(min_subs2,numelm2,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("min_sub recv failed!")
-            tag1 = 500
-            CALL MPI_Recv(max_subs2,numelm2,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("max_sub recv failed!")
-            tag1 = 600
-            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("subcost recv failed!")
-
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-            tag1 = 400
-            CALL MPI_Recv(min_subd2,numelm2,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("min_sub recv failed!")
-            tag1 = 500
-            CALL MPI_Recv(max_subd2,numelm2,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("max_sub recv failed!")
-            tag1 = 600
-            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("subcost recv failed!")
-
-          ENDIF
-      ELSE IF (ppm_dim .EQ. 3) THEN
-          IF (prec .EQ. ppm_kind_single) THEN
-            tag1 = 400
-            CALL MPI_Recv(min_subs3,numelm3,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("min_sub recv failed!")
-            tag1 = 500
-            CALL MPI_Recv(max_subs3,numelm3,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("max_sub recv failed!")
-            tag1 = 600
-            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-            or_fail("subcost recv failed!")
-
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-            tag1 = 400
-            CALL MPI_Recv(min_subd3,numelm3,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("min_sub recv failed!")
-            tag1 = 500
-            CALL MPI_Recv(max_subd3,numelm3,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("max_sub recv failed!")
-            tag1 = 600
-            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
-     &              ppm_comm,status,info)
-             or_fail("subcost recv failed!")
-          ENDIF
-
-      ENDIF
+!      IF (ppm_dim .EQ. 2) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!            tag1 = 400
+!            CALL MPI_Recv(min_subs2,numelm2,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("min_sub recv failed!")
+!            tag1 = 500
+!            CALL MPI_Recv(max_subs2,numelm2,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("max_sub recv failed!")
+!            tag1 = 600
+!            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("subcost recv failed!")
+!
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!            tag1 = 400
+!            CALL MPI_Recv(min_subd2,numelm2,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("min_sub recv failed!")
+!            tag1 = 500
+!            CALL MPI_Recv(max_subd2,numelm2,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("max_sub recv failed!")
+!            tag1 = 600
+!            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("subcost recv failed!")
+!
+!          ENDIF
+!      ELSE IF (ppm_dim .EQ. 3) THEN
+!          IF (prec .EQ. ppm_kind_single) THEN
+!            tag1 = 400
+!            CALL MPI_Recv(min_subs3,numelm3,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("min_sub recv failed!")
+!            tag1 = 500
+!            CALL MPI_Recv(max_subs3,numelm3,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("max_sub recv failed!")
+!            tag1 = 600
+!            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!            or_fail("subcost recv failed!")
+!
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!            tag1 = 400
+!            CALL MPI_Recv(min_subd3,numelm3,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("min_sub recv failed!")
+!            tag1 = 500
+!            CALL MPI_Recv(max_subd3,numelm3,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("max_sub recv failed!")
+!            tag1 = 600
+!            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
+!     &              ppm_comm,status,info)
+!             or_fail("subcost recv failed!")
+!          ENDIF
+!
+!      ENDIF
       tag1 = 700
+      stdout("sender",sender)
       CALL MPI_Recv(nneighsubs,1,MPI_INTEGER,sender,tag1,ppm_comm,&
      &              status,info)
         or_fail("nneighsubs recv failed!")
@@ -180,87 +186,64 @@
       ldu2(1) = ppm_dim
       ldu2(2) = new_nsub
       ldu1(1) = new_nsub
-      IF(prec .EQ. ppm_kind_single) THEN
-          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
-            or_fail_alloc("min_subs re-alloc failed!")
-          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
-            or_fail_alloc("max_subs re-alloc failed!")
-          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
-            or_fail_alloc("sub_costs re-alloc failed!")
-      ELSE IF(prec .EQ. ppm_kind_double) THEN
-          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
-            or_fail_alloc("min_subd re-alloc failed!")
-          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
-            or_fail_alloc("max_subd re-alloc failed!")
-          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
-            or_fail_alloc("sub_costd re-alloc failed!")
-      ENDIF
-      CALL ppm_alloc(topo%nneighsubs,ldu1,iopt,info)
-        or_fail_alloc("nneighsubs re-alloc failed!")
+!      IF(prec .EQ. ppm_kind_single) THEN
+!          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
+!            or_fail_alloc("min_subs re-alloc failed!")
+!          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
+!            or_fail_alloc("max_subs re-alloc failed!")
+!          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
+!            or_fail_alloc("sub_costs re-alloc failed!")
+!      ELSE IF(prec .EQ. ppm_kind_double) THEN
+!          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
+!            or_fail_alloc("min_subd re-alloc failed!")
+!          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
+!            or_fail_alloc("max_subd re-alloc failed!")
+!          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
+!            or_fail_alloc("sub_costd re-alloc failed!")
+!      ENDIF
       CALL ppm_alloc(topo%isublist,ldu1,iopt,info)
         or_fail_alloc("isublist re-alloc failed!")
+      CALL ppm_alloc(topo%nneighsubs,ldu1,iopt,info)
+        or_fail_alloc("nneighsubs re-alloc failed!")
+      !-------------------------------------------------------------------------
+      !  It may be the case where I have to increase the size of
+      !  topo%nneighsubs
+      !-------------------------------------------------------------------------
+      ldu2(1) = nneighsubs !,MAXVAL(topo%nneighsubs))
+      ldu2(2) = new_nsub
       CALL ppm_alloc(topo%ineighsubs,ldu2,iopt,info)
         or_fail_alloc("ineighsubs re-alloc failed!")
 
       !-------------------------------------------------------------------------
       !  Copy subdomain-related information
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
-          IF(prec .EQ. ppm_kind_single) THEN
-              topo%min_subs(:,new_nsub) = min_subs2
-              topo%max_subs(:,new_nsub) = max_subs2
-              topo%sub_costs( new_nsub) = subcosts
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-              topo%min_subd(:,new_nsub) = min_subd2
-              topo%max_subd(:,new_nsub) = max_subd2
-              topo%sub_costd( new_nsub) = subcostd
-          ENDIF
-      ELSE IF (ppm_dim .EQ. 3) THEN
-          IF(prec .EQ. ppm_kind_single) THEN
-              topo%min_subs(:,new_nsub) = min_subs3
-              topo%max_subs(:,new_nsub) = max_subs3
-              topo%sub_costs( new_nsub) = subcosts
-          ELSE IF(prec .EQ. ppm_kind_double) THEN
-              topo%min_subd(:,new_nsub) = min_subd3
-              topo%max_subd(:,new_nsub) = max_subd3
-              topo%sub_costd( new_nsub) = subcostd
-          ENDIF
-      ENDIF
+!      IF (ppm_dim .EQ. 2) THEN
+!          IF(prec .EQ. ppm_kind_single) THEN
+!              topo%min_subs(:,new_nsub) = min_subs2
+!              topo%max_subs(:,new_nsub) = max_subs2
+!              topo%sub_costs( new_nsub) = subcosts
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!              topo%min_subd(:,new_nsub) = min_subd2
+!              topo%max_subd(:,new_nsub) = max_subd2
+!              topo%sub_costd( new_nsub) = subcostd
+!          ENDIF
+!      ELSE IF (ppm_dim .EQ. 3) THEN
+!          IF(prec .EQ. ppm_kind_single) THEN
+!              topo%min_subs(:,new_nsub) = min_subs3
+!              topo%max_subs(:,new_nsub) = max_subs3
+!              topo%sub_costs( new_nsub) = subcosts
+!          ELSE IF(prec .EQ. ppm_kind_double) THEN
+!              topo%min_subd(:,new_nsub) = min_subd3
+!              topo%max_subd(:,new_nsub) = max_subd3
+!              topo%sub_costd( new_nsub) = subcostd
+!          ENDIF
+!      ENDIF
       topo%nneighsubs(new_nsub) = nneighsubs
-      topo%ineighsubs(:,new_nsub) = ineighsubs
+      topo%ineighsubs(1:nneighsubs,new_nsub) = ineighsubs
       topo%nsublist = new_nsub
-      topo%isublist(new_nsub) = new_nsub ! that's the new ID
+      topo%isublist(new_nsub) = isub ! that's the new ID
 
-      !-----------------------------------------------------------------------------
-      !  Receive the particle buffer, first the size then the data
-      !-----------------------------------------------------------------------------
-      tag1 = 900
-      CALL MPI_Recv(ppm_loadbal_subnpart,1,MPI_INTEGER,sender,tag1, &
-     &              ppm_comm,status,info)
-        or_fail("# of particle coordinates recv failed!")
-
-      !-----------------------------------------------------------------------------
-      !  Before we send the buffer, we should also trim it so that the size will be
-      !  shorter (we are allowed to send only an 1D array)
-      !-----------------------------------------------------------------------------
-      ldu1(1) = ppm_dim*ppm_loadbal_subnpart
-      IF (prec .EQ. ppm_kind_single) THEN
-        CALL ppm_alloc(ppm_loadbal_xps,ldu1,iopt,info)
-            or_fail_alloc("ppm_loadbal_xps re-alloc failed!")
-      ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL ppm_alloc(ppm_loadbal_xpd,ldu1,iopt,info)
-            or_fail_alloc("ppm_loadbal_xpd re-alloc failed!")
-      ENDIF
-      tag1 = 1000
-      IF (prec .EQ. ppm_kind_single) THEN
-        CALL MPI_Recv(ppm_loadbal_xps,ldu1(1),MPTYPE,sender,&
-     &              tag1,ppm_comm,status,info)
-            or_fail("ppm_loadbal_xps recv failed!")
-      ELSE IF (prec .EQ. ppm_kind_double) THEN
-        CALL MPI_Recv(ppm_loadbal_xpd,ldu1(1),MPTYPE,sender,&
-     &              tag1,ppm_comm,status,info)
-            or_fail("ppm_loadbal_xpd recv failed!")
-      ENDIF
+      stdout("Sub",'topo%isublist(new_nsub)'," received: total subs:",'topo%nsublist')
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
@@ -271,8 +254,6 @@
         IF (.NOT. ppm_initialized) THEN
             fail("Please call ppm_init first!", exit_point=8888)
         ENDIF
-
-
 
  8888   CONTINUE
       END SUBROUTINE check
