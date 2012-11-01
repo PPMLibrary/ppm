@@ -287,7 +287,7 @@
 !      stdout("topo%ineighsubs(:,old_nsub) BEFORE",'topo%ineighsubs(:,old_nsub)')
 !      stdout("topo%ineighsubs(:,    isub) BEFORE",'topo%ineighsubs(:,isub)')
 
-      stdout("old_nsub",old_nsub)
+!      stdout("old_nsub",old_nsub)
       itemp = topo%isublist(isub)
       topo%isublist(    isub) = topo%isublist(old_nsub)
       topo%isublist(old_nsub) = itemp
@@ -306,6 +306,7 @@
 !      stdout("topo%ineighsubs(:,new_nsub) AFTER",'topo%ineighsubs(:,new_nsub)')
 
       topo%nsublist = new_nsub
+      stdout("Sub",'topo%isublist(old_nsub)'," sent: total subs:",'topo%nsublist')
 
       !-------------------------------------------------------------------------
       !  Remove the sent subdomain by shrinking the array by one element
@@ -340,7 +341,6 @@
 
 !      stdout("topo%ineighsubs(:,new_nsub) VERY AFTER",'topo%ineighsubs(:,new_nsub)')
 !      stdout("size of ineighsubs",'size()'
-      stdout("sendsub is done")
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------

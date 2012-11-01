@@ -164,7 +164,7 @@
 !
 !      ENDIF
       tag1 = 700
-      stdout("sender",sender)
+!      stdout("sender",sender)
       CALL MPI_Recv(nneighsubs,1,MPI_INTEGER,sender,tag1,ppm_comm,&
      &              status,info)
         or_fail("nneighsubs recv failed!")
@@ -177,7 +177,7 @@
       CALL MPI_Recv(ineighsubs,nneighsubs,MPI_INTEGER,sender,  &
      &              tag1,ppm_comm,status,info)
         or_fail("ineighsubs recv failed!")
-      stdout("subdomain info received")
+!      stdout("subdomain info received")
       !-------------------------------------------------------------------------
       !  Add the received subdomain by expanding the array by one element
       !-------------------------------------------------------------------------

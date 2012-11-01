@@ -21,7 +21,7 @@ real(mk),parameter              :: skin = 0._mk
 integer,parameter               :: ndim=2
 integer                         :: decomp,assig,tolexp,temp
 integer                         :: info,comm,rank,nproc,topoid
-integer                         :: np_global = 64000
+integer                         :: np_global = 140000
 real(mk),parameter              :: cutoff = 0.1_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL(),xp_temp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys=>NULL(),max_phys=>NULL()
@@ -68,12 +68,12 @@ INTEGER,  DIMENSION(:  ), POINTER :: sub2proc
 integer, dimension(:),allocatable              :: degree,order
 real(ppm_kind_double),dimension(:),allocatable :: coeffs
 integer                                        :: nterms
-real(mk) :: side_len,run_sum,x,y
+real(mk) :: side_len,run_sum,x,y,t_total_noDLB
 integer                         :: nredest,heuristic,nsubs,id,nsubs_x
 logical                         :: lredecomp
 TYPE(ppm_t_topo),POINTER               :: topo => NULL()
-character(len=18)             :: output_buf
-character(len=16)             :: output_dlb
+character(len=19)             :: output_buf
+character(len=17)             :: output_dlb
 
 
     init
@@ -87,6 +87,7 @@ character(len=16)             :: output_dlb
        
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
+        if (nproc.eq.7) max_phys(1:ndim) = 1.4_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6)       = ppm_param_bcdef_periodic
         
@@ -120,16 +121,25 @@ character(len=16)             :: output_dlb
         ! Define the subs
         ! run the test with 4,16 procs
         !----------------
-        nsubs = 16*nproc
+        IF (nproc.eq.2) then
+            nsubs = 16*nproc
+        elseif (nproc.eq.4) then
+            nsubs = 16*nproc
+        elseif (nproc.eq.5) then        
+            nsubs = 20*nproc
+        elseif (nproc.eq.7) then
+            nsubs = 196
+        endif
         allocate(minsub(ndim,nsubs),maxsub(ndim,nsubs),cost(nsubs),sub2proc(nsubs),stat=info)
         cost = 1._mk
         if (info.ne.0) print*, 'problem with allocate'
         cost = 1._mk
         if (info.ne.0) print*, 'problem with allocate'
         nsubs_x = floor(sqrt(REAL(nsubs)))
-        
+        if (nproc.eq.7) nsubs_x=14
         side_len = len_phys(1)/REAL(nsubs_x)
-        print*,'side_len',side_len,'nsubs_x',nsubs_x
+!        if (nproc.eq.7) side_len=0.1_mk
+        print*,'nsubs_x',nsubs_x,'side_len',side_len,'nsubs',nsubs
         
         run_sum = 0._mk
         id = 1
@@ -151,8 +161,11 @@ character(len=16)             :: output_dlb
            y = min_phys(1)
            x = x + side_len
         enddo   
-             
-        do i=1,nsubs
+        IF (nproc.eq.2) then
+            sub2proc(1:16) = 0
+            sub2proc(17:32)= 1
+        elseif (nproc.eq.4) then
+            do i=1,nsubs
              if (i.LE.16) then
                 sub2proc(i) = 0
              elseif (i.LE.32) then
@@ -163,9 +176,42 @@ character(len=16)             :: output_dlb
                 sub2proc(i) = 3
              endif
 !            print*,'sub2proc:',sub2proc(i),'i:',i
-        enddo
+            enddo
+        elseif (nproc.eq.5) then        
+            do i=1,nsubs
+             if (i.LE.20) then
+                sub2proc(i) = 0
+             elseif (i.LE.40) then
+                sub2proc(i) = 1
+             elseif (i.LE.60) then
+                sub2proc(i) = 2
+             elseif (i .le.80) then
+                sub2proc(i) = 3
+             else
+                sub2proc(i) = 4
+             endif
+!            print*,'sub2proc:',sub2proc(i),'i:',i
+            enddo
+        elseif (nproc.eq.7) then        
+            
+                sub2proc(1:28) = 0
+             
+                sub2proc(29:56) = 1
+             
+                sub2proc(57:84) = 2
+             
+                sub2proc(85:112) = 3
+             
+                sub2proc(113:140) = 4
+             
+                sub2proc(141:168) = 5
+             
+                sub2proc(169:196) = 6
+             
+        endif    
+        
         topoid = 0
-        print*,rank,sub2proc
+!        print*,rank,sub2proc
         ! ----------------------------
         ! Create topology using particles
         ! ----------------------------
@@ -213,13 +259,15 @@ character(len=16)             :: output_dlb
         integer                               :: i, nsteps,globalID
         real(mk),DIMENSION(2)                 :: dist
         logical                               :: isDLB
-        character(len=4)                      :: vtkfilename
+        character(len=5)                      :: vtkfilename
+        character(len=1)                      :: procbuf
     
         isDLB = .TRUE.
+        write(procbuf,'(I1)')nproc
         IF (isDLB) THEN
-            vtkfilename = 'wDLB'
+            write(vtkfilename,'(A1,A4)')  trim(procbuf),'wDLB'
         ELSE
-            vtkfilename = 'nDLB'
+            write(vtkfilename,'(A1,A4)')  trim(procbuf),'nDLB'
         ENDIF 
         t_comp = 0._mk
         t_comm = 0._mk
@@ -255,23 +303,24 @@ character(len=16)             :: output_dlb
         end_time = MPI_Wtime()
         t_comm   = end_time-start_time
         start_time   = MPI_Wtime()
-        
-        ! ----------------------------
+        print*,rank,'subs',topo%nsubs,'topo%nsublist',topo%nsublist
+        !---------------------------
         ! Create initial neighbor list
         ! ----------------------------
+        print*,rank,'# particles',Part1%Npart
         call Part1%comp_neighlist(info)
         Assert_Equal(info,0)
                 
         Nlist => Part1%get_neighlist(Part1)
         Assert_true(associated(Nlist))
-        
+        print*,Nlist%uptodate
         Assert_True(Part1%has_neighlist())
         call Part1%get_vlist(nvlist,vlist,info,Nlist)
         Assert_true(associated(vlist))
         Assert_true(associated(nvlist))
         Assert_Equal(info,0)
 
-        print*,rank,'isublist',topo%isublist
+!        print*,rank,'isublist',topo%isublist
         ! ----------------------------
         ! Set up a velocity field and 
         ! a scalar test function on 
@@ -287,21 +336,22 @@ character(len=16)             :: output_dlb
         Assert_Equal(info,0)
         wp_1r = -5
 !        !print*,rank,'size of wp_1r',size(wp_1r,1)
-        DO k = 1, topo%nsublist
-            globalID = topo%isublist(k)
+        print*,'topo%nsublist',topo%nsublist
+!        DO k = 1, topo%nsublist
+!            globalID = topo%isublist(k)
                 !---------------------------------------------------------------
                 !  and check which particles are inside the sub
                 !---------------------------------------------------------------
             DO j=1,Part1%Npart
-                IF (xp(1,j).GE.topo%min_subd(1,globalID).AND. &
- &                  xp(1,j).LE.topo%max_subd(1,globalID).AND. &
- &                  xp(2,j).GE.topo%min_subd(2,globalID).AND. &
- &                  xp(2,j).LE.topo%max_subd(2,globalID)) THEN
+!                IF (xp(1,j).GE.topo%min_subd(1,globalID).AND. &
+! &                  xp(1,j).LE.topo%max_subd(1,globalID).AND. &
+! &                  xp(2,j).GE.topo%min_subd(2,globalID).AND. &
+! &                  xp(2,j).LE.topo%max_subd(2,globalID)) THEN
 
                     wp_1r(j) = rank 
-                ENDIF ! if the particle is inside this sub
+!                ENDIF ! if the particle is inside this sub
             ENDDO
-        ENDDO
+!        ENDDO
 !        !print*, 'arrived here too'
         call Part1%set_xp(xp,info,read_only=.true.)
         Assert_Equal(info,0)
@@ -325,8 +375,8 @@ character(len=16)             :: output_dlb
         ! ----------------------------
         ! Start the time loop
         ! ---------------------------
-        nsteps = 10
-        DO i=1,nsteps,2
+        nsteps = 40
+        DO i=1,nsteps
             print*,'%%%%%%%%%%%%%%%%%%%%% - ',i
             t_comp = 0._mk
             t_comm = 0._mk
@@ -344,12 +394,14 @@ character(len=16)             :: output_dlb
             Assert_Equal(info,0)
 !            print*,rank,'OK',i
             ! Move particles
+!            print*,rank,'wp_1r size:',size(wp_1r),'XP size:',size(xp(1,:)),'Npart',Part1%Npart
+            
             DO ip=1,Part1%Npart
                 if (xp(1,ip).GT.1._mk-Part1%ghostlayer) then
                     dist(1) = 0._mk
                     dist(2) = 0._mk !0.5_mk  - xp(2,ip)
                 else
-                    dist(1) = 1._mk - xp(1,ip)
+                    dist(1) = max_phys(1) - xp(1,ip)
                     dist(2) = 0._mk !0.5_mk  - xp(2,ip)
                 endif
                 wp_2r(1:ndim,ip) = dist/1.1_mk!COS((10._MK*xp(1:ndim,ip))**2)
@@ -385,7 +437,7 @@ character(len=16)             :: output_dlb
 !            print*,rank,'OK333',i
             Nlist => Part1%get_neighlist(Part1)
             Assert_true(associated(Nlist))
-            print*,rank,'OK444',i
+!            print*,rank,'OK444',i
 !            Assert_True(Part1%has_neighlist())
             call Part1%get_vlist(nvlist,vlist,info,Nlist)
             Assert_true(associated(vlist))
@@ -393,6 +445,11 @@ character(len=16)             :: output_dlb
             
     
             call Part1%get_xp(xp,info)
+            call Part1%get(Prop1,wp_2r,info)
+            Assert_Equal(info,0)
+            
+            call Part1%get(Prop2,wp_1r,info)
+            Assert_Equal(info,0)
             Assert_Equal(info,0)            
             wp_1r = -5
 !            print*,rank,'OK222',i
@@ -413,23 +470,23 @@ character(len=16)             :: output_dlb
                     ENDIF ! if the particle is inside this sub
                 ENDDO
             ENDDO
-            print*,rank,'OK555',i
+!            print*,rank,'OK555',i
             DO k = 1,Part1%Npart,2
                 DO j=1,Part1%Npart
-                    one_real=  cos(sin(cos(cos(1._mk))))
+                    one_real  = cos(sin(cos(cos (1._mk))))
                     two_reals = cos(sin(cos(sqrt(1._mk))))
                 ENDDO
             ENDDO
 !            call Part1%set_xp(xp,info,read_only=.true.)
 !            Assert_Equal(info,0)
-            print*,rank,'OK666',i
+!            print*,rank,'OK666',i
 !            call Part1%set_xp(xp,info,read_only=.true.)
 !            Assert_Equal(info,0)
             
-        
-            call ppm_vtk_particles(vtkfilename,Part1,info,step=i+2)
-            Assert_Equal(info,0)
-            print*,rank,'OK777',i
+!            print*,rank,'====wp_1r size:',size(wp_1r),'XP size:',size(xp(1,:)),'Npart',Part1%Npart
+!            call ppm_vtk_particles(vtkfilename,Part1,info,step=i+2)
+!            Assert_Equal(info,0)
+!            print*,rank,'OK777',i
             ! ----------------------------
             ! Update (re-create) neighbor list 
             ! ----------------------------
@@ -444,14 +501,14 @@ character(len=16)             :: output_dlb
             
             end_time = MPI_Wtime()
             
-            t_total =  end_time - start_time
+            t_total_noDLB =  end_time - start_time
+            
             start_time = MPI_Wtime()
 !            print*,rank,'t_total:',t_total
             !!!!! DLB !!!!!
+            
             IF (isDLB) THEN
-                Assert_true(associated(vlist))
-                Assert_true(associated(nvlist))
-                call ppm_loadbal_bc(topoid,-1,Part1,t_total, &
+                call ppm_loadbal_bc(topoid,-1,Part1,t_total_noDLB, &
 &                           info,vlist,nvlist)
                 Assert_Equal(info,0)
 !            ! ----------------------------
@@ -462,6 +519,20 @@ character(len=16)             :: output_dlb
 !                print*,rank,'after ghosts after loadbal'
             ENDIF
 !            print*,rank,'before get_xp:Npart',Part1%Npart
+            end_time = MPI_Wtime()
+            t_total = t_total_noDLB + (end_time-start_time)
+            IF (.NOT. isDLB) THEN
+                write(output_buf,'(A1,A,I1,A)') trim(procbuf),'output_NODLB_',rank,'.txt'
+                open (unit=rank, file=output_buf, status='unknown',access='append')
+                write(rank,'(I6,F10.6)'), Part1%Npart,t_total
+                close(rank)
+            ELSE
+                  
+                write(output_dlb,'(A1,A,I1,A)') trim(procbuf),'output_dlb_',rank,'.txt'
+                open (unit=rank, file=output_dlb, status='unknown',access='append')
+                write(rank,'(I6,F10.6,F10.6)'), Part1%Npart,t_total,t_total_noDLB
+                close(rank)
+            ENDIF
             
             call Part1%get_xp(xp,info)
             Assert_Equal(info,0)
@@ -493,7 +564,7 @@ character(len=16)             :: output_dlb
             call Part1%set_xp(xp,info,read_only=.true.)
             Assert_Equal(info,0)            
 !            !print*,rank,'after set_xp'
-            call ppm_vtk_particles(vtkfilename,Part1,info,step=i+3)
+            call ppm_vtk_particles(vtkfilename,Part1,info,step=i)
             Assert_Equal(info,0)
 !            
             
@@ -502,18 +573,18 @@ character(len=16)             :: output_dlb
             
             print*,rank,' required this much time:',t_total
             ! Number of particles and time spent
-            IF (.NOT. isDLB) THEN
-                write(output_buf,'(A,I1,A)') 'output_NODLB_',rank,'.txt'
-                open (unit=rank, file=output_buf, status='unknown',access='append')
-                write(rank,'(I6,F10.6)'), Part1%Npart,t_total
-                close(rank)
-            ELSE
-                  
-                write(output_dlb,'(A,I1,A)') 'output_dlb_',rank,'.txt'
-                open (unit=rank, file=output_dlb, status='unknown',access='append')
-                write(rank,'(I6,F10.6)'), Part1%Npart,t_total
-                close(rank)
-            ENDIF
+!            IF (.NOT. isDLB) THEN
+!                write(output_buf,'(A,I1,A)') 'output_NODLB_',rank,'.txt'
+!                open (unit=rank, file=output_buf, status='unknown',access='append')
+!                write(rank,'(I6,F10.6)'), Part1%Npart,t_total
+!                close(rank)
+!            ELSE
+!                  
+!                write(output_dlb,'(A,I1,A)') 'output_dlb_',rank,'.txt'
+!                open (unit=rank, file=output_dlb, status='unknown',access='append')
+!                write(rank,'(I6,F10.6)'), Part1%Npart,t_total
+!                close(rank)
+!            ENDIF
 !            
             
             print*,rank,'%%%%ENDS%%%%%%%%%%%%%%%%%%'         

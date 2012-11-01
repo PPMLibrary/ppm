@@ -99,6 +99,7 @@
       REAL(MK),DIMENSION(:),POINTER      :: weighted_time=>NULL(),helper=>NULL()
       INTEGER,DIMENSION(:),POINTER       :: n_ineighproc=>NULL()
       INTEGER,DIMENSION(:),POINTER       :: candidate_sublist=>NULL()
+      INTEGER,DIMENSION(:),POINTER       :: newcandidate_sublist=>NULL()
       INTEGER,DIMENSION(:),POINTER       :: send_sublist=>NULL()
       INTEGER,DIMENSION(:),POINTER       :: recv_sublist=>NULL()
       INTEGER                            :: balancing_subloc
@@ -107,10 +108,11 @@
       INTEGER                            :: nneighs,groupsize,nsteps
       INTEGER                            :: counter,isub,jproc,n_nneighproc,jsub
       INTEGER                            :: balancing_subID,recv_subsize
-      INTEGER                            :: send_subsize
+      INTEGER                            :: send_subsize,neigh_globalID,ii
+      INTEGER                            :: num_candidate_neighs,num_neighs_same_proc
       TYPE(ppm_t_topo),POINTER           :: topo => NULL()
       LOGICAL                            :: isSender
-      LOGICAL,DIMENSION(:,:),POINTER     :: isNewNeighbor,isEngulfed
+      LOGICAL,DIMENSION(:,:),POINTER     :: isNewNeighbor,isSameProc
 #ifdef __MPI
       INTEGER                            :: MPTYPE
       INTEGER, DIMENSION(MPI_STATUS_SIZE):: status
@@ -120,7 +122,7 @@
       INTEGER                            :: Np,Mp
       ! Number of particles. Set to <= 0 if mesh-based costs are desired.
       INTEGER, DIMENSION(2)              :: ldu
-      INTEGER                            :: iopt
+      INTEGER                            :: iopt,new_counter,num_sur_subs,counter2
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -205,8 +207,8 @@
       !  This process has to be repeated until we are K-close to an ideal soln.
       !-------------------------------------------------------------------------
 !      print*,ppm_rank,': ppm_loadbal_subcostd=',ppm_loadbal_subcostd(1:topo%nsublist)
-      nsteps = 1
-!      stdout("ppm_isendlist",ppm_isendlist,"ppm_nsendlist",ppm_nsendlist)
+
+      stdout("ppm_isendlist",ppm_isendlist,"ppm_nsendlist",ppm_nsendlist)
 !      stdout("size(ppm_isendlist)",'size(ppm_isendlist)')
 !      stdout("ppm_irecvlist",ppm_irecvlist)
       !-------------------------------------------------------------------------
@@ -224,6 +226,7 @@
       ppm_loadbal_isendlist = ppm_isendlist
       ppm_loadbal_irecvlist = ppm_irecvlist
       ppm_loadbal_nsendlist = ppm_nsendlist
+      nsteps = 1
       DO k=1,1
         groupsize = 0
           DO i=2,ppm_loadbal_nsendlist
@@ -241,7 +244,7 @@
 !           stdout("original isend now",'ppm_loadbal_isendlist(i)',"irecv now",'ppm_loadbal_irecvlist(i)')
 
                 IF (ppm_loadbal_isendlist(i).GE.0 .AND. ppm_loadbal_irecvlist(i).GE.0) THEN
-                    tag1 = 122
+                    tag1 = 121
                     !-----------------------------------------------------------
                     !  Send & receive estimated computational cost
                     !
@@ -252,10 +255,11 @@
      &                                ppm_comm,status,info)
                     or_fail("Sendrecv problem for time!")
                     neighbor_time = recvbuf(1)
+!                    stdout("time exchange done!")
                     !-----------------------------------------------------------
                     !  Get the estimated cost model
                     !-----------------------------------------------------------
-                    ratio = my_time/neighbor_time
+                    ratio = (my_time/neighbor_time)/2._MK
                     CALL ppm_get_cost(topoid,meshid,xp,Np,ratio,info,vlist,nvlist,pcost)
                     or_fail("Something went wrong in the ppm_get_cost()")
 #if    __KIND == __SINGLE_PRECISION
@@ -263,12 +267,13 @@
 #else
                     sendbuf(1) = ppm_loadbal_proccostd
 #endif
-
+!                    stdout("proc costs computed")
+                    tag1 = 122
                     CALL MPI_SendRecv(sendbuf,1,MPTYPE,ppm_loadbal_isendlist(i),tag1, &
      &                                recvbuf,1,MPTYPE,ppm_loadbal_irecvlist(i),tag1, &
      &                                ppm_comm,status,info)
                     or_fail("Sendrecv problem for cost exchange!")
-
+!                    stdout("cost exchange done!")
 
                     stdout("my cost", 'sendbuf(1)',",",'ppm_loadbal_irecvlist(i)',&
      &                     " cost:",'recvbuf(1)')
@@ -303,12 +308,13 @@
                     !  If SENDER has only 1 sub, we can't do load balancing
                     !  This info should be told to the RECEIVER
                     !-----------------------------------------------------------
-                    stdout("# of subs on this proc:",'topo%nsublist')
+                    stdout("# of subs BEFORE DLB:",'topo%nsublist')
                     sendbuf_i  = topo%nsublist
                     tag1 = 123
                     CALL MPI_SendRecv(sendbuf_i,1,MPI_INTEGER,ppm_loadbal_isendlist(i),tag1, &
      &                                recvbuf_i,1,MPI_INTEGER,ppm_loadbal_irecvlist(i),tag1, &
      &                                ppm_comm,status,info)
+!                    stdout("MPI send/recv OK")
                     !-----------------------------------------------------------
                     !  Quit DLB if SENDER has only one sub.
                     !-----------------------------------------------------------
@@ -316,7 +322,7 @@
      &                   (.NOT. isSender .AND. recvbuf_i.EQ.1)) THEN
                         stdout("Only one sub! Load balancing is not possible!")
                         stdout("Quitting DLB")
-                        GOTO 9999
+                        GOTO 7777
                     ENDIF
                     !-----------------------------------------------------------
                     !  OK, if we made this far, we know that the SENDER has at
@@ -334,6 +340,7 @@
                     !     a greater imbalance, then better do not send ANYTHING!
                     !  5. OR, you may also send multiple subs.
                     !-----------------------------------------------------------
+                    stdout("Sender? ",isSender)
                     IF (isSender) THEN
                         !-------------------------------------------------------
                         !  Get RECEIVING processor's list of its neighbors
@@ -371,14 +378,14 @@
                         ldu(1) = topo%nsublist
                         CALL ppm_alloc(candidate_sublist,ldu,iopt,info)
                         or_fail_alloc("candidate_sublist")
-                        candidate_sublist = 0
+                        candidate_sublist = -1
                         !------------------------------------------------------
                         !  I assume initially that every sub of the SENDER
                         !  violates criterion (1). To clear a sub I introduce
                         !  isNewNeighbor logical array.
                         !------------------------------------------------------
-                        ldu(1) = topo%nsublist
-                        ldu(2) = MAXVAL(topo%nneighsubs)
+                        ldu(1) = MAXVAL(topo%nneighsubs)
+                        ldu(2) = topo%nsublist
                         CALL ppm_alloc(isNewNeighbor,ldu,iopt,info)
                         or_fail_alloc("isNewNeighbor")
                         isNewNeighbor = .TRUE.
@@ -386,11 +393,11 @@
                         !  I assume initially that every sub is engulfed totally
                         !  by other SENDER's subs.
                         !------------------------------------------------------
-                        ldu(1) = topo%nsublist
-                        ldu(2) = MAXVAL(topo%nneighsubs)
-                        CALL ppm_alloc(isEngulfed,ldu,iopt,info)
-                        or_fail_alloc("isEngilfed")
-                        isEngulfed = .TRUE.
+                        ldu(1) = MAXVAL(topo%nneighsubs)
+                        ldu(2) = topo%nsublist
+                        CALL ppm_alloc(isSameProc,ldu,iopt,info)
+                        or_fail_alloc("isSameProc")
+                        isSameProc = .TRUE.
 
                         !-------------------------------------------------------
                         !  Now, iterate over my subs to find out which subs are
@@ -417,6 +424,9 @@
                                 !  case.
                                 !  In addition to this, the selected sub should
                                 !  not be engulfed by other processor completely.
+                                !  OR
+                                !  In case you send this sub, it shouldn't cause
+                                !  an engulfed sub
                                 !  So, at least one jsub should belong to Sender
                                 !  Iterate over overloaded proc's neighboring
                                 !  procs and compare
@@ -425,23 +435,21 @@
 !                                    stdout("isub",isub)
 !                                    stdout("globalID of isub",'topo%isublist(isub)')
 !                                    stdout("globalID of jsub",'topo%ineighsubs(jsub,isub)')
-
-                                    IF (topo%sub2proc(topo%ineighsubs(jsub,isub)).EQ.&
-     &                                  n_ineighproc(jproc)       .OR.       &
-     &                                  topo%sub2proc(topo%ineighsubs(jsub,isub))   .EQ.       &
-     &                                  ppm_loadbal_isendlist(i)) THEN
+                                    neigh_globalID = topo%sub2proc(topo%ineighsubs(jsub,isub))
+                                    IF (neigh_globalID.EQ.n_ineighproc(jproc).OR.       &
+     &                                  neigh_globalID.EQ.ppm_loadbal_isendlist(i)) THEN
                                         !---------------------------------------
                                         !  This isub can be sent since its
                                         !  neighbors' procs are also underloaded
                                         !  proc's neighbors OR jsub is already
                                         !  on the underloaded proc
                                         !---------------------------------------
-                                        isNewNeighbor(isub,jsub) = .FALSE.
+                                        isNewNeighbor(jsub,isub) = .FALSE.
                                     ENDIF
                                 ENDDO! jproc -> iterate over RECV's sub's procs
                                 IF (.NOT. topo%sub2proc(topo%ineighsubs(jsub,isub)).EQ.&
      &                              ppm_rank) THEN
-                                    isEngulfed(isub,jsub) = .FALSE.
+                                    isSameProc(jsub,isub) = .FALSE.
                                 ENDIF
                             ENDDO! jsub->iterate over neighboring subs
                             !---------------------------------------------------
@@ -451,16 +459,70 @@
                             !  candidate_sublist keeps local sub IDs
                             !---------------------------------------------------
 !                            print*,ppm_rank,isub,isNewNeighbor(isub,:)
-                            IF (.NOT. ANY(isNewNeighbor(isub,:)) .AND.   &
-     &                          .NOT. ALL(isEngulfed(isub,:))  ) THEN
+                            IF (.NOT. ANY(isNewNeighbor(:,isub)) .AND.   &
+     &                          .NOT. ALL(isSameProc   (:,isub))) THEN
                                 counter = counter + 1
                                 candidate_sublist(counter) = isub
                             ENDIF
                         ENDDO ! isub->iterate over all subs
                         !---------------------------------------------------------
-                        !  If no candidate subs are eligible then skip DLB
+                        !  To prevent having isolated subs after sending its neigh
+                        !  -bors, we have to check that
                         !---------------------------------------------------------
-                        IF (counter .EQ. 0) GOTO 7777
+
+                        counter2    = 0
+                        DO isub=1,counter ! local ID of this sub
+                            num_neighs_same_proc = 0
+                            num_candidate_neighs = 0
+                            ! global ID of neighbor
+                            DO jsub=1,topo%nneighsubs(candidate_sublist(isub))
+                                IF (isSameProc(jsub,isub)) THEN
+                                    num_neighs_same_proc = num_neighs_same_proc + 1
+                                ENDIF
+                                DO ii=1,counter
+                                    IF (candidate_sublist(ii).NE.-1) THEN
+                                    IF (jsub.EQ.topo%isublist(candidate_sublist(ii))) THEN
+                                        num_candidate_neighs = num_candidate_neighs + 1
+
+                                    ENDIF
+                                    ENDIF
+                                ENDDO
+                            ENDDO
+                            ! If I chose all the neighbors of isub to send away,
+                            ! isub would become isolated, which would eventually
+                            ! cause us to have bigger ghost layers
+                            IF (num_candidate_neighs.EQ.num_neighs_same_proc) THEN
+                                candidate_sublist(isub) = -1
+                                stdout("Removed sub from the list:",isub)
+                            ELSE
+                                counter2 = counter2+1
+                            ENDIF
+                        ENDDO
+
+                        !-------------------------------------------------------
+                        !  Create a new list of possible subdomain candidates
+                        !  that are cleared to be sent to the underloaded proc.
+                        !-------------------------------------------------------
+                        ldu(1) = counter2
+                        CALL ppm_alloc(newcandidate_sublist,ldu,iopt,info)
+                        or_fail_alloc("new candidate_sublist")
+                        newcandidate_sublist = -1
+                        new_counter = 0
+                        DO jj= 1,counter
+                            IF (candidate_sublist(jj).NE.-1) THEN
+                                new_counter = new_counter +1
+                                newcandidate_sublist(new_counter) = candidate_sublist(jj)
+                            ENDIF
+                        ENDDO
+
+!                        stdout("candidates:",'newcandidate_sublist(:)')
+!                        !---------------------------------------------------------
+!                        !  If no candidate subs are eligible then skip DLB
+!                        !---------------------------------------------------------
+!                        IF (counter .EQ. 0) THEN
+!                            stdout("no candidates to send")
+!                            GOTO 7777
+!                        ENDIF
                         !---------------------------------------------------------
                         !  Now, I gotta choose which sub to send. More on this is
                         !  explained in ppm_loadbal_choose_sub()
@@ -470,16 +532,17 @@
                         ! stdout("CHOOSING a SUB")
 !                        stdout("candidate list:",candidate_sublist)
 !                        print*,ppm_rank,'candidates:',candidate_sublist
-                        CALL ppm_loadbal_choose_sub(topoid,ideal_load,candidate_sublist,&
-     &                                            send_sublist,counter,info)
+                        CALL ppm_loadbal_choose_sub(topoid,ideal_load,newcandidate_sublist,&
+     &                                            send_sublist,counter2,info)
                         or_fail("ppm_loadbal_choose_sub")
                         !---------------------------------------------------------
                         !  Communicate list of to-be-sent subs w/ underloaded proc
                         !  First : Size.......
                         !---------------------------------------------------------
-                        send_subsize = SIZE(send_sublist,1)
+!                        send_subsize = SIZE(send_sublist)
 
 !                        stdout("SIZE(send_sublist):",send_subsize)
+!                        stdout("send_sublist",'send_sublist(:)')
 !                        IF (send_sublist(1).NE.-1) THEN
 !                            stdout("sublistID to be sent:",'send_sublist')
 !                        ELSE
@@ -489,11 +552,7 @@
                         CALL MPI_Send(send_subsize,1,MPI_INTEGER,ppm_loadbal_isendlist(i),&
      &                              tag1,ppm_comm,status,info)
                         or_fail("MPI_Send::send_sublist")
-                        !---------------------------------------------------------
-                        !  If no subs are eligible then skip DLB
-                        !---------------------------------------------------------
-                        IF (send_subsize .EQ. 0) GOTO 7777
-                        !---------------------------------------------------------
+                        !--------------------------------------------------------
                         !  Second: Actual list
                         !  send_sublist contains global IDs of subs
                         !---------------------------------------------------------
@@ -507,7 +566,7 @@
                         !  one (i.e. -1), it means I have nothing to send to RECV
                         !  Thus, I can skip this neighbor in this round
                         !---------------------------------------------------------
-                        IF (send_subsize.LE.1 .AND.send_sublist(1).EQ.-1) THEN
+                        IF (send_subsize.EQ.1 .AND.send_sublist(1).EQ.-1) THEN
                             stdout("Nothing to send....")
                             GOTO 7777
                         !-------------------------------------------------------
@@ -524,6 +583,8 @@
                                 ENDIF
                             ENDDO
                         ENDIF
+
+
                     ELSE
                         !-------------------------------------------------------
                         !  I'm the underloaded proc.
@@ -537,8 +598,8 @@
      &                                ppm_loadbal_irecvlist(i),tag1,ppm_comm,status, &
      &                                info)
                         or_fail("topo%nneighproc MPI_Send failed")
-                        stdout("topo%nneighproc",'topo%nneighproc')
-!                        stdout("MPI_SEND----OK")
+!                        stdout("topo%nneighproc",'topo%nneighproc')
+!                        stdout("nneighproc send to",'ppm_loadbal_irecvlist(i)',"----OK")
                         !-------------------------------------------------------
                         !  Second: actual list
                         !-------------------------------------------------------
@@ -548,7 +609,7 @@
      &                                ppm_loadbal_irecvlist(i),tag1,ppm_comm,status, &
      &                                info)
                         or_fail("topo%ineighproc MPI_Send failed")
-!                        stdout("MPI_SEND2----OK")
+!                        stdout("ineighproc send to",'ppm_loadbal_irecvlist(i)',"----OK")
 !                        stdout("# of neighs",'topo%nneighproc')
 !                        stdout("my neighs",'topo%ineighproc(1:topo%nneighproc)')
                         !-------------------------------------------------------
@@ -564,10 +625,8 @@
                         CALL MPI_Recv(recv_subsize,1,MPI_INTEGER,ppm_loadbal_irecvlist(i),&
      &                                tag1,ppm_comm,status,info)
                         or_fail("MPI_Recv::recv_subsize")
-                        !---------------------------------------------------------
-                        !  If no subs are eligible then skip DLB
-                        !---------------------------------------------------------
-                        IF (recv_subsize .EQ. 0) GOTO 7777
+!                        stdout("MPI_Recv1----OK")
+
                         !-------------------------------------------------------
                         !  ... allocate recv_sublist...
                         !-------------------------------------------------------
@@ -590,7 +649,10 @@
                         !  nothing to receive from the overloaded processor
                         !  Thus, I can skip this neighbor in this round
                         !-------------------------------------------------------
-                        IF (recv_subsize.EQ.1 .AND. recv_sublist(1).EQ.-1) THEN
+                        IF (recv_subsize.EQ.0) THEN
+                            stdout("Nothing to receive....")
+                            GOTO 7777
+                        ELSEIF (recv_subsize.EQ.1 .AND. recv_sublist(1).EQ.-1) THEN
                             stdout("Nothing to receive....")
                             GOTO 7777
                         !-------------------------------------------------------
@@ -616,6 +678,7 @@
  7777       CONTINUE
 !            CALL MPI_Wait(status,ppm_comm,info)
 !            or_fail("MPI_Wait failed")
+             stdout("one neigh is done..")
           ENDDO
       ENDDO !threshold to reach k-close solution
       !-------------------------------------------------------------------------
@@ -635,8 +698,8 @@
       !  Deallocate arrays
       !-------------------------------------------------------------------------
       IF (isSender) THEN
-        DEALLOCATE(n_ineighproc,candidate_sublist,isNewNeighbor,isEngulfed,STAT=info)
-        or_fail_dealloc("n_ineighproc,candidate_sublist,isNewNeighbor,isEngulfed")
+        DEALLOCATE(n_ineighproc,candidate_sublist,newcandidate_sublist,isNewNeighbor,isSameProc,STAT=info)
+        or_fail_dealloc("n_ineighproc,candidate_sublist,isNewNeighbor,isSameProc")
         IF (ASSOCIATED(send_sublist)) DEALLOCATE(send_sublist,STAT=info)
         or_fail_dealloc("send_sublist")
       ELSE
@@ -645,6 +708,7 @@
       ENDIF
       DEALLOCATE(ppm_loadbal_isendlist,ppm_loadbal_irecvlist,STAT=info)
       or_fail_dealloc("ppm_loadbal_irecvlist or ppm_loadbal_isendlist")
+      stdout("# of subs AFTER DLB:",'topo%nsublist')
       stdout("========DLB ENDED========")
       !-------------------------------------------------------------------------
       !  Return

@@ -297,6 +297,7 @@
                  GOTO 9999
              ENDIF
              costsum = 0.0_MK
+
 #if   __KIND == __SINGLE_PRECISION
              CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL,MPI_SUM,    &
      &          ppm_comm,info)
@@ -304,6 +305,7 @@
              CALL MPI_AllReduce(cost,costsum,nsubs,MPI_DOUBLE_PRECISION,&
      &          MPI_SUM,ppm_comm,info)
 #endif
+
              !------------------------------------------------------------------
              !  Copy data back
              !------------------------------------------------------------------

@@ -38,7 +38,7 @@
            CLASS(ppm_t_main_abstr),       POINTER :: el => NULL()
 
            start_subroutine("ppm_vtk_particles")
-           
+
            IF (PRESENT(step)) THEN
               WRITE(fname,'(A,A,I0)') &
                    filename(1:LEN_TRIM(filename)), '.', step
@@ -109,6 +109,7 @@
                !printout all properties i that are mapped
                prop => Pc%props%begin()
                DO WHILE (ASSOCIATED(prop))
+
                    IF (prop%flags(ppm_ppt_partial)) THEN
                        SELECT CASE (prop%data_type)
                        CASE (ppm_type_int)
@@ -142,6 +143,7 @@
 
 #ifdef __MPI
            ! write parallel file
+
            IF (ppm_rank .EQ. 0) THEN
               WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.pvtp'
               OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
@@ -208,6 +210,7 @@
 #include "vtk/print_end_header.f"
               CLOSE(iUnit)
            END IF
+
            ! append rank to name
            WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
                                        '.', ppm_rank, '.vtp'
@@ -251,6 +254,7 @@
                  WRITE(iUnit,'(A)',advance='no') "nvlist"
                  IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',advance='no') " "
               END IF
+
               IF (nb_wpi .GT. 0) THEN
                  prop => props_i%begin()
                  DO WHILE (ASSOCIATED(prop))
@@ -261,6 +265,7 @@
                      prop => props_i%next()
                  ENDDO
               END IF
+
               IF (nb_wps .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
@@ -274,6 +279,7 @@
                      prop => props_s%next()
                  ENDDO
               END IF
+
               IF (nb_wpv .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
                       WRITE(iUnit,'(A)',advance='no') "'"
@@ -378,6 +384,7 @@
 #define VTK_VECTOR xp
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
+
            CALL Pc%set_xp(xp,info,read_only=.TRUE.)
                 or_fail("set_xp")
            WRITE(iUnit,'(A)') "      </Points>"
@@ -404,6 +411,7 @@
            ! close file
            end_subroutine()
            CLOSE(iUnit)
+
          END SUBROUTINE DTYPE(ppm_vtk_particles)
 
 #undef __KIND

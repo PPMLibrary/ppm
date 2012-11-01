@@ -408,8 +408,10 @@ integer                                        :: nterms
         !Compare values and check that they are still the same
         call Part1_A%get_xp(xp,info)
         Assert_Equal(info,0)
+        print*,rank,'XP size:',size(xp)
         call Part1_A%get(Prop2,wp_1r,info)
         Assert_Equal(info,0)
+        print*,rank,'wp_1r size:',size(wp_1r)
         err = 0._mk
         DO ip=1,Part1_A%Npart
             err = max(err,abs(wp_1r(ip) - f0_test(xp(1:ndim,ip),ndim)))

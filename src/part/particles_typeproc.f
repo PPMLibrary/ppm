@@ -2698,6 +2698,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
 
     !check whether the neighbour list already exists
     IF (this%has_neighlist(Part_src)) THEN
+
         Nlist => this%get_neighlist(Part_src)
         IF (PRESENT(skin).OR.PRESENT(symmetry).OR.PRESENT(cutoff)) THEN
             stdout("the optional arguments skin,",&
@@ -2707,6 +2708,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
             fail("Need to destroy/re-create this neighbour list first")
         ENDIF
     ELSE
+
         CALL this%create_neighlist(Part_src,info,name=name,skin=skin,&
             symmetry=symmetry,cutoff=cutoff,Nlist=Nlist)
             or_fail("failed to create neighbour list")
@@ -2732,10 +2734,10 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
 
     lskin = Nlist%skin
     topoid = this%active_topoid
-
     do_something: IF (Nlist%uptodate .OR. this%Npart.EQ.0) THEN
         !neighbor lists are already up-to-date, or no particles on this proc
         !nothing to do
+
         IF (Nlist%uptodate) THEN
             info = ppm_error_notice
             CALL ppm_error(999,caller,   &
@@ -2749,6 +2751,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     ELSE
         !hack to build (potentially incomplete) neighbour lists even 
         !for ghost particles
+
         np_target = this%Npart
         IF (PRESENT(incl_ghosts)) THEN
             IF (incl_ghosts) THEN
@@ -2881,9 +2884,9 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         IF (ASSOCIATED(Nlist%Part,this)) THEN
             this%flags(ppm_part_neighlists) = .TRUE.
         ENDIF
-        
-        Nlist => NULL()
 
+        Nlist => NULL()
+        
 
     ENDIF do_something
 

@@ -182,7 +182,7 @@
       !        buffer to be the local particles and SKIPS IT.
       !-------------------------------------------------------------------------
       nneighsubs = 0
-      stdout("from",from,"to",to)
+!      stdout("from",from,"to",to)
       topo%sub2proc(isub)  = to
 
       DO i=1,topo%nsubs
@@ -729,20 +729,21 @@
       !-------------------------------------------------------------------------
 !      print*,ppm_rank,'isublist BEFORE:',topo%isublist
       IF (isSender) THEN
-        maxneigh = MAXVAL(topo%nneighsubs)
-        stdout("global subID to be sent",isub)
+
+!        stdout("global subID to be sent",isub)
         DO i=1,topo%nsublist
             IF (topo%isublist(i).EQ.isub) THEN
-                stdout("local subID is found")
+!                stdout("local subID is found")
                 local_isub = i
             ENDIF
         ENDDO
-
+        maxneigh = SIZE(topo%ineighsubs(:,local_isub))
+        stdout("maxneigh",maxneigh)
         CALL ppm_loadbal_sendsub(topoid,local_isub,to,maxneigh,topo%prec, &
      &                           info)
         or_fail("ppm_loadbal_sendsub")
       ELSE
-        stdout("from end",from,"to",to)
+!        stdout("from end",from,"to",to)
         CALL ppm_loadbal_recvsub(topoid,isub,from,topo%prec,info)
         or_fail("ppm_loadbal_recvsub")
       ENDIF

@@ -70,6 +70,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
       start_subroutine("loadbal_choose_sub")
+      send_sublist => NULL()
       !-------------------------------------------------------------------------
       !  Get the topology first
       !-------------------------------------------------------------------------
@@ -80,6 +81,17 @@
       IF (ppm_debug .GT. 0) THEN
         CALL check
         IF (info .NE. 0) GOTO 9999
+      ENDIF
+      !-------------------------------------------------------------------------
+      !  If all candidates are -1, it means that there are no subs to send
+      !-------------------------------------------------------------------------
+      IF (MAXVAL(candidate_sublist).EQ.-1) THEN
+        iopt = ppm_param_alloc_fit
+        ldu(1) = 1
+        CALL ppm_alloc(send_sublist,ldu,iopt,info)
+        or_fail_alloc("send_sublist")
+        send_sublist(1) = -1
+        GOTO 9999
       ENDIF
       !-------------------------------------------------------------------------
       !  Conditions when to send a sub
@@ -189,15 +201,22 @@
         ENDDO
  6666   CONTINUE
         iopt = ppm_param_alloc_fit_preserve
-        ldu(1) = counter
+        IF (counter .EQ. 0) THEN
+            ldu(1) = 1
+        ELSE
+            ldu(1) = counter
+        ENDIF
         CALL ppm_alloc(send_sublist,ldu,iopt,info)
         or_fail_alloc("send_sublist")
+
         !----------------------------------------------------------------------
         !  Return global IDs of the subs in the send_sublist
         !----------------------------------------------------------------------
-        DO i=1,SIZE(send_sublist,1)
-            send_sublist(i)  = topo%isublist(send_sublist(i))
-        ENDDO
+        IF (counter .NE. 0) THEN
+            DO i=1,SIZE(send_sublist)
+                send_sublist(i)  = topo%isublist(send_sublist(i))
+            ENDDO
+        ENDIF
 !      ELSE
 !        stdout("An unknown case...oh wait..have I forgotten to implement this??")
       ENDIF
