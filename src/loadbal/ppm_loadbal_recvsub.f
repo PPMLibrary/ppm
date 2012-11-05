@@ -99,70 +99,7 @@
         stdout("WARNING: you are using only one process(or). DLB will quit!")
         GOTO 9999
       ENDIF
-      !-------------------------------------------------------------------------
-      !  Receive subdomain info from the most overloaded processor
-      !-------------------------------------------------------------------------
-!      IF (ppm_dim .EQ. 2) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!            tag1 = 400
-!            CALL MPI_Recv(min_subs2,numelm2,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("min_sub recv failed!")
-!            tag1 = 500
-!            CALL MPI_Recv(max_subs2,numelm2,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("max_sub recv failed!")
-!            tag1 = 600
-!            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("subcost recv failed!")
-!
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!            tag1 = 400
-!            CALL MPI_Recv(min_subd2,numelm2,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("min_sub recv failed!")
-!            tag1 = 500
-!            CALL MPI_Recv(max_subd2,numelm2,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("max_sub recv failed!")
-!            tag1 = 600
-!            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("subcost recv failed!")
-!
-!          ENDIF
-!      ELSE IF (ppm_dim .EQ. 3) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!            tag1 = 400
-!            CALL MPI_Recv(min_subs3,numelm3,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("min_sub recv failed!")
-!            tag1 = 500
-!            CALL MPI_Recv(max_subs3,numelm3,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("max_sub recv failed!")
-!            tag1 = 600
-!            CALL MPI_Recv(subcosts,1,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!            or_fail("subcost recv failed!")
-!
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!            tag1 = 400
-!            CALL MPI_Recv(min_subd3,numelm3,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("min_sub recv failed!")
-!            tag1 = 500
-!            CALL MPI_Recv(max_subd3,numelm3,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("max_sub recv failed!")
-!            tag1 = 600
-!            CALL MPI_Recv(subcostd,1,MPTYPE,sender,tag1,&
-!     &              ppm_comm,status,info)
-!             or_fail("subcost recv failed!")
-!          ENDIF
-!
-!      ENDIF
+
       tag1 = 700
 !      stdout("sender",sender)
       CALL MPI_Recv(nneighsubs,1,MPI_INTEGER,sender,tag1,ppm_comm,&
@@ -186,21 +123,7 @@
       ldu2(1) = ppm_dim
       ldu2(2) = new_nsub
       ldu1(1) = new_nsub
-!      IF(prec .EQ. ppm_kind_single) THEN
-!          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
-!            or_fail_alloc("min_subs re-alloc failed!")
-!          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
-!            or_fail_alloc("max_subs re-alloc failed!")
-!          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
-!            or_fail_alloc("sub_costs re-alloc failed!")
-!      ELSE IF(prec .EQ. ppm_kind_double) THEN
-!          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
-!            or_fail_alloc("min_subd re-alloc failed!")
-!          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
-!            or_fail_alloc("max_subd re-alloc failed!")
-!          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
-!            or_fail_alloc("sub_costd re-alloc failed!")
-!      ENDIF
+
       CALL ppm_alloc(topo%isublist,ldu1,iopt,info)
         or_fail_alloc("isublist re-alloc failed!")
       CALL ppm_alloc(topo%nneighsubs,ldu1,iopt,info)
@@ -214,30 +137,7 @@
       CALL ppm_alloc(topo%ineighsubs,ldu2,iopt,info)
         or_fail_alloc("ineighsubs re-alloc failed!")
 
-      !-------------------------------------------------------------------------
-      !  Copy subdomain-related information
-      !-------------------------------------------------------------------------
-!      IF (ppm_dim .EQ. 2) THEN
-!          IF(prec .EQ. ppm_kind_single) THEN
-!              topo%min_subs(:,new_nsub) = min_subs2
-!              topo%max_subs(:,new_nsub) = max_subs2
-!              topo%sub_costs( new_nsub) = subcosts
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!              topo%min_subd(:,new_nsub) = min_subd2
-!              topo%max_subd(:,new_nsub) = max_subd2
-!              topo%sub_costd( new_nsub) = subcostd
-!          ENDIF
-!      ELSE IF (ppm_dim .EQ. 3) THEN
-!          IF(prec .EQ. ppm_kind_single) THEN
-!              topo%min_subs(:,new_nsub) = min_subs3
-!              topo%max_subs(:,new_nsub) = max_subs3
-!              topo%sub_costs( new_nsub) = subcosts
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!              topo%min_subd(:,new_nsub) = min_subd3
-!              topo%max_subd(:,new_nsub) = max_subd3
-!              topo%sub_costd( new_nsub) = subcostd
-!          ENDIF
-!      ENDIF
+
       topo%nneighsubs(new_nsub) = nneighsubs
       topo%ineighsubs(1:nneighsubs,new_nsub) = ineighsubs
       topo%nsublist = new_nsub

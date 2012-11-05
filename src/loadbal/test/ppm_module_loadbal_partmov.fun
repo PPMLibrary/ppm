@@ -32,7 +32,7 @@ integer,dimension(3)            :: ldc
 integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost=>NULL()
 integer                         :: isymm = 0
-real(mk)                        :: t0,t1,t2,t3,mat_time
+real(mk)                        :: t0,t1,t2,t3,mat_time,ratio
 integer                         :: seedsize
 integer,  dimension(:),allocatable :: seed
 integer, dimension(:),pointer   :: nvlist=>NULL()
@@ -164,6 +164,7 @@ character(len=17)             :: output_dlb
         IF (nproc.eq.2) then
             sub2proc(1:16) = 0
             sub2proc(17:32)= 1
+            ratio = 1.1_mk
         elseif (nproc.eq.4) then
             do i=1,nsubs
              if (i.LE.16) then
@@ -177,6 +178,7 @@ character(len=17)             :: output_dlb
              endif
 !            print*,'sub2proc:',sub2proc(i),'i:',i
             enddo
+            ratio = 3._mk
         elseif (nproc.eq.5) then        
             do i=1,nsubs
              if (i.LE.20) then
@@ -192,6 +194,7 @@ character(len=17)             :: output_dlb
              endif
 !            print*,'sub2proc:',sub2proc(i),'i:',i
             enddo
+            ratio = 4.0_mk
         elseif (nproc.eq.7) then        
             
                 sub2proc(1:28) = 0
@@ -207,7 +210,7 @@ character(len=17)             :: output_dlb
                 sub2proc(141:168) = 5
              
                 sub2proc(169:196) = 6
-             
+             ratio = 5.0_mk
         endif    
         
         topoid = 0
@@ -375,7 +378,8 @@ character(len=17)             :: output_dlb
         ! ----------------------------
         ! Start the time loop
         ! ---------------------------
-        nsteps = 40
+        nsteps = 20
+        
         DO i=1,nsteps
             print*,'%%%%%%%%%%%%%%%%%%%%% - ',i
             t_comp = 0._mk
@@ -404,11 +408,12 @@ character(len=17)             :: output_dlb
                     dist(1) = max_phys(1) - xp(1,ip)
                     dist(2) = 0._mk !0.5_mk  - xp(2,ip)
                 endif
-                wp_2r(1:ndim,ip) = dist/1.1_mk!COS((10._MK*xp(1:ndim,ip))**2)
+                
+                wp_2r(1:ndim,ip) = dist/ratio!COS((10._MK*xp(1:ndim,ip))**2)
 !                !wp_1r(ip) = f0_test(xp(1:ndim,ip),ndim)
             ENDDO
 
-            wp_2r  = wp_2r * Part1%ghostlayer
+            wp_2r  = 0._mk ! wp_2r * Part1%ghostlayer
             ! ----------------------------
             ! Move the particles with this 
             ! displacement field

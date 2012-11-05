@@ -119,30 +119,6 @@
         GOTO 9999
       ENDIF
 !      stdout("local subID to be sent",isub)
-      !-------------------------------------------------------------------------
-      !  Copy subdomain-related information to send them.
-      !-------------------------------------------------------------------------
-!      IF (ppm_dim .EQ. 2) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!              min_subs2 = topo%min_subs(:,isub)
-!              max_subs2 = topo%max_subs(:,isub)
-!              subcosts  = topo%sub_costs( isub)
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!              min_subd2 = topo%min_subd(:,isub)
-!              max_subd2 = topo%max_subd(:,isub)
-!              subcostd  = topo%sub_costd( isub)
-!          ENDIF
-!      ELSE IF (ppm_dim .EQ. 3) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!              min_subs3 = topo%min_subs(:,isub)
-!              max_subs3 = topo%max_subs(:,isub)
-!              subcosts  = topo%sub_costs( isub)
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!              min_subd3 = topo%min_subd(:,isub)
-!              max_subd3 = topo%max_subd(:,isub)
-!              subcostd  = topo%sub_costd( isub)
-!          ENDIF
-!      ENDIF
       ineighsubs = 0
       temp_neigh = 0
 !      stdout("ineighsubs of isub BEFORE",ineighsubs)
@@ -150,69 +126,7 @@
 !      stdout("size of topo%ineighsubs(:,isub)",'size(topo%ineighsubs(:,isub),1)')
       ineighsubs = topo%ineighsubs(:,isub)
 !      stdout("ineighsubs of isub AFTER",ineighsubs)
-      !-------------------------------------------------------------------------
-      !  Send subdomain info to the most underloaded processor
-      !-------------------------------------------------------------------------
-!      IF (ppm_dim .EQ. 2) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!            tag1 = 400
-!            CALL MPI_Send(min_subs2,numelm2,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("min_sub send failed!")
-!            tag1 = 500
-!            CALL MPI_Send(max_subs2,numelm2,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("max_sub send failed!")
-!            tag1 = 600
-!            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("subcost send failed!")
-!
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!            tag1 = 400
-!            CALL MPI_Send(min_subd2,numelm2,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("min_sub send failed!")
-!            tag1 = 500
-!            CALL MPI_Send(max_subd2,numelm2,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("max_sub send failed!")
-!            tag1 = 600
-!            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,&
-!     &                    ppm_comm,status,info)
-!                or_fail("subcost send failed!")
-!          ENDIF
-!      ELSE IF (ppm_dim .EQ. 3) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!            tag1 = 400
-!            CALL MPI_Send(min_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("min_sub send failed!")
-!            tag1 = 500
-!            CALL MPI_Send(max_subs3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("max_sub send failed!")
-!            tag1 = 600
-!            CALL MPI_Send(subcosts,1,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("subcost send failed!")
-!
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!            tag1 = 400
-!            CALL MPI_Send(min_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("min_sub send failed!")
-!            tag1 = 500
-!            CALL MPI_Send(max_subd3,numelm3,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("max_sub send failed!")
-!            tag1 = 600
-!            CALL MPI_Send(subcostd,1,MPTYPE,receiver,tag1,ppm_comm,&
-!     &                    status,info)
-!                or_fail("subcost send failed!")
-!          ENDIF
-!
-!      ENDIF
+
 
       tag1 = 700
       CALL MPI_Send(nneighsubs,1,MPI_INTEGER,receiver,tag1, &
@@ -223,56 +137,6 @@
      &              tag1,ppm_comm,status,info)
         or_fail("nneighsubs send failed!")
 !      stdout("subdomain info sent")
-
-      !-----------------------------------------------------------------------------
-      !  Copy the sent subdomain to the end in the array so that ppm_alloc
-      !  can clear it.
-      !-----------------------------------------------------------------------------
-!      stdout("isub:",isub," old_nsub:",old_nsub)
-!      IF (ppm_dim .EQ. 2) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
-!              topo%min_subs(:,old_nsub) = min_subs2
-!
-!              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
-!              topo%max_subs(:,old_nsub) = max_subs2
-!
-!              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
-!              topo%sub_costs(old_nsub) = subcosts
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!
-!              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
-!              topo%min_subd(:,old_nsub) = min_subd2
-!
-!              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
-!              topo%max_subd(:,old_nsub) = max_subd2
-!
-!              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
-!              topo%sub_costd(old_nsub) = subcostd
-!          ENDIF
-!      ELSE IF (ppm_dim .EQ. 3) THEN
-!          IF (prec .EQ. ppm_kind_single) THEN
-!              topo%min_subs(:,isub) = topo%min_subs(:,old_nsub)
-!              topo%min_subs(:,old_nsub) = min_subs3
-!
-!              topo%max_subs(:,isub) = topo%max_subs(:,old_nsub)
-!              topo%max_subs(:,old_nsub) = max_subs3
-!
-!              topo%sub_costs( isub) = topo%sub_costs( old_nsub)
-!              topo%sub_costs(old_nsub) = subcosts
-!          ELSE IF(prec .EQ. ppm_kind_double) THEN
-!
-!              topo%min_subd(:,isub) = topo%min_subd(:,old_nsub)
-!              topo%min_subd(:,old_nsub) = min_subd3
-!
-!              topo%max_subd(:,isub) = topo%max_subd(:,old_nsub)
-!              topo%max_subd(:,old_nsub) = max_subd3
-!
-!              topo%sub_costd( isub) = topo%sub_costd( old_nsub)
-!              topo%sub_costd(old_nsub) = subcostd
-!          ENDIF
-!
-!      ENDIF
       !-------------------------------------------------------------------------
       !  New sublist has one LESS sub in it
       !-------------------------------------------------------------------------
@@ -316,22 +180,6 @@
       ldu2(2) = new_nsub
       ldu1(1) = new_nsub
 
-!      IF(prec .EQ. ppm_kind_single) THEN
-!          CALL ppm_alloc(topo%min_subs,ldu2,iopt,info)
-!            or_fail_alloc("min_subs re-alloc failed!")
-!          CALL ppm_alloc(topo%max_subs,ldu2,iopt,info)
-!            or_fail_alloc("max_subs re-alloc failed!")
-!          CALL ppm_alloc(topo%sub_costs,ldu1,iopt,info)
-!            or_fail_alloc("sub_costs re-alloc failed!")
-!
-!      ELSE IF(prec .EQ. ppm_kind_double) THEN
-!          CALL ppm_alloc(topo%min_subd,ldu2,iopt,info)
-!            or_fail_alloc("min_subd re-alloc failed!")
-!          CALL ppm_alloc(topo%max_subd,ldu2,iopt,info)
-!            or_fail_alloc("max_subd re-alloc failed!")
-!          CALL ppm_alloc(topo%sub_costd,ldu1,iopt,info)
-!            or_fail_alloc("sub_costd re-alloc failed!")
-!      ENDIF
       CALL ppm_alloc(topo%nneighsubs,ldu1,iopt,info)
         or_fail_alloc("nneighsubs re-alloc failed!")
       CALL ppm_alloc(topo%isublist,ldu1,iopt,info)

@@ -516,21 +516,12 @@
                         ENDDO
 
 !                        stdout("candidates:",'newcandidate_sublist(:)')
-!                        !---------------------------------------------------------
-!                        !  If no candidate subs are eligible then skip DLB
-!                        !---------------------------------------------------------
-!                        IF (counter .EQ. 0) THEN
-!                            stdout("no candidates to send")
-!                            GOTO 7777
-!                        ENDIF
+!
                         !---------------------------------------------------------
                         !  Now, I gotta choose which sub to send. More on this is
                         !  explained in ppm_loadbal_choose_sub()
                         !  candidate_sublist contains LOCAL IDs of the subs
                         !---------------------------------------------------------
-
-                        ! stdout("CHOOSING a SUB")
-!                        stdout("candidate list:",candidate_sublist)
 !                        print*,ppm_rank,'candidates:',candidate_sublist
                         CALL ppm_loadbal_choose_sub(topoid,ideal_load,newcandidate_sublist,&
      &                                            send_sublist,counter2,info)
@@ -539,7 +530,7 @@
                         !  Communicate list of to-be-sent subs w/ underloaded proc
                         !  First : Size.......
                         !---------------------------------------------------------
-!                        send_subsize = SIZE(send_sublist)
+                        send_subsize = SIZE(send_sublist)
 
 !                        stdout("SIZE(send_sublist):",send_subsize)
 !                        stdout("send_sublist",'send_sublist(:)')
@@ -566,8 +557,11 @@
                         !  one (i.e. -1), it means I have nothing to send to RECV
                         !  Thus, I can skip this neighbor in this round
                         !---------------------------------------------------------
-                        IF (send_subsize.EQ.1 .AND.send_sublist(1).EQ.-1) THEN
-                            stdout("Nothing to send....")
+                        IF (send_subsize.EQ.0) THEN
+                            stdout("Nothing to send 0....")
+                            GOTO 7777
+                        ELSEIF (send_subsize.EQ.1 .AND.send_sublist(1).EQ.-1) THEN
+                            stdout("Nothing to send 1....")
                             GOTO 7777
                         !-------------------------------------------------------
                         !  ... ELSE I send subdomains one after another at most
@@ -650,10 +644,10 @@
                         !  Thus, I can skip this neighbor in this round
                         !-------------------------------------------------------
                         IF (recv_subsize.EQ.0) THEN
-                            stdout("Nothing to receive....")
+                            stdout("Nothing to receive 0....")
                             GOTO 7777
                         ELSEIF (recv_subsize.EQ.1 .AND. recv_sublist(1).EQ.-1) THEN
-                            stdout("Nothing to receive....")
+                            stdout("Nothing to receive 1....")
                             GOTO 7777
                         !-------------------------------------------------------
                         ! ... ELSE I receive subdomains one after another
@@ -697,16 +691,16 @@
       !-------------------------------------------------------------------------
       !  Deallocate arrays
       !-------------------------------------------------------------------------
-      IF (isSender) THEN
-        DEALLOCATE(n_ineighproc,candidate_sublist,newcandidate_sublist,isNewNeighbor,isSameProc,STAT=info)
-        or_fail_dealloc("n_ineighproc,candidate_sublist,isNewNeighbor,isSameProc")
-        IF (ASSOCIATED(send_sublist)) DEALLOCATE(send_sublist,STAT=info)
-        or_fail_dealloc("send_sublist")
-      ELSE
-        IF (ASSOCIATED(recv_sublist)) DEALLOCATE(recv_sublist,STAT=info)
-        or_fail_dealloc("recv_sublist")
-      ENDIF
-      DEALLOCATE(ppm_loadbal_isendlist,ppm_loadbal_irecvlist,STAT=info)
+!      IF (isSender) THEN
+!        DEALLOCATE(n_ineighproc,candidate_sublist,newcandidate_sublist,isNewNeighbor,isSameProc,STAT=info)
+!        or_fail_dealloc("n_ineighproc,candidate_sublist,isNewNeighbor,isSameProc")
+!        IF (ASSOCIATED(send_sublist)) DEALLOCATE(send_sublist,STAT=info)
+!        or_fail_dealloc("send_sublist")
+!      ELSE
+!        IF (ASSOCIATED(recv_sublist)) DEALLOCATE(recv_sublist,STAT=info)
+!        or_fail_dealloc("recv_sublist")
+!      ENDIF
+!      DEALLOCATE(ppm_loadbal_isendlist,ppm_loadbal_irecvlist,STAT=info)
       or_fail_dealloc("ppm_loadbal_irecvlist or ppm_loadbal_isendlist")
       stdout("# of subs AFTER DLB:",'topo%nsublist')
       stdout("========DLB ENDED========")

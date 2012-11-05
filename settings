@@ -2,7 +2,8 @@
 # basic settings
 
 conf.mpi               = true
-conf.ppm.build.ldflags = ""
+conf.ppm.build.ldflags = "-L/Users/demirelo/libs/metis4/lib -lmetis"
+conf.ppm.build.fcflags = "-O3 -ffree-form -ffree-line-length-none"
 conf.build.compiler    = "mpif90"
 conf.build.sed         = "/usr/local/bin/gsed"
 
