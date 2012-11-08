@@ -134,40 +134,27 @@
          !----------------------------------------------------------------------
          CONTAINS
 
+#include "loadbal/ppm_loadbal_sendsub.f"
+#include "loadbal/ppm_loadbal_recvsub.f"
+
 #define __KIND __SINGLE_PRECISION
-!#include "loadbal/ppm_loadbal_inquire.f"
-!#include "loadbal/ppm_loadbal_inquire_sar.f"
-!#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
 #include "loadbal/ppm_loadbal_bc.f"
 #include "loadbal/ppm_loadbal_choose_sub.f"
-
 #include "loadbal/ppm_loadbal_map_subpart.f"
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION
-!#include "loadbal/ppm_loadbal_inquire.f"
-!#include "loadbal/ppm_loadbal_inquire_sar.f"
-!#include "loadbal/ppm_loadbal_inquire_dlb.f"
-#include "loadbal/ppm_estimate_proc_speed.f"
-#include "loadbal/ppm_loadbal_bc.f"
-#include "loadbal/ppm_loadbal_choose_sub.f"
-!#include "loadbal/ppm_loadbal_sendsub.f"
-#include "loadbal/ppm_loadbal_map_subpart.f"
-#undef __KIND
-
-#define __KIND __SINGLE_PRECISION
-#include "loadbal/ppm_get_cost.f"
-#undef __KIND
-
-#define __KIND __DOUBLE_PRECISION
-#include "loadbal/ppm_get_cost.f"
-#undef __KIND
-
-#define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_set_decomp_cost.f"
 #include "loadbal/ppm_set_proc_speed.f"
+#include "loadbal/ppm_get_cost.f"
 #undef __KIND
 
+#define __KIND __DOUBLE_PRECISION
+#include "loadbal/ppm_estimate_proc_speed.f"
+#include "loadbal/ppm_loadbal_bc.f"
+#include "loadbal/ppm_loadbal_choose_sub.f"
+#include "loadbal/ppm_loadbal_map_subpart.f"
+#include "loadbal/ppm_set_decomp_cost.f"
+#include "loadbal/ppm_set_proc_speed.f"
+#include "loadbal/ppm_get_cost.f"
+#undef __KIND
 
       END MODULE ppm_module_loadbal
