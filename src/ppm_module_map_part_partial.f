@@ -45,7 +45,7 @@
          INTEGER, DIMENSION(:), POINTER :: part2proc  => NULL()
          INTEGER, DIMENSION(:), POINTER :: ineighsubs => NULL()
 
-         PRIVATE :: ilist1,ilist2,part2proc,ineighsubs
+         !PRIVATE :: ilist1,ilist2,part2proc,ineighsubs
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_partial

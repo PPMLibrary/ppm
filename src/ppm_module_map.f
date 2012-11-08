@@ -43,6 +43,7 @@
       !   USE ppm_module_map_field
          USE ppm_module_map_part
          USE ppm_module_impose_part_bc
+         USE ppm_module_data_loadbal
       CONTAINS
 
 #include "map/ppm_map_type_isactive.f"

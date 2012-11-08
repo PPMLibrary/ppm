@@ -73,9 +73,9 @@
       INTEGER                 , INTENT(IN   ) :: np
       !!! Number of particles
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmin
-      !!! Minimum extent of mesh (not including any ghost layer)
+      !!! Minimum extent of mesh (excluding any ghost layer)
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmax
-      !!! Maximum extent of mesh (not including any ghost layer)
+      !!! Maximum extent of mesh (excluding any ghost layer)
       INTEGER , DIMENSION(:)  , INTENT(IN   ) :: nm
       !!! Number of mesh points (cells)
       INTEGER , DIMENSION(:)  , INTENT(IN   ) :: ngl

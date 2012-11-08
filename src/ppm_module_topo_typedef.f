@@ -88,17 +88,17 @@
           !!! total number of subs on all processors.
 
           REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: min_subs => NULL()
-          !!! mimimum of extension of subs (single)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! minimum of extension of subs (single)
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: max_subs => NULL()
           !!! maximum of extension of subs (single)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: min_subd => NULL()
-          !!! mimimum of extension of subs (double)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! minimum of extension of subs (double)
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
           REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: max_subd => NULL()
           !!! maximum of extension of subs (double)
-          !!! Note: 1st index: x,y,(z), 2nd: subID
+          !!! Note: 1st index: x,y,(z), 2nd: global subID
 
           REAL(ppm_kind_single), DIMENSION(:  ),POINTER :: sub_costs => NULL()
           !!! estimated cost associated with subdomains (single). Index: sub-ID.
@@ -116,8 +116,9 @@
           !!! number of subs on the current processor.
 
           INTEGER              , DIMENSION(:  ),POINTER :: isublist => NULL()
-          !!! list of subs of the current processor. 1st index: local sub
-          !!! number.
+          !!! list of global sub IDs of the current processor.
+          !!! 1st index: local sub index.
+          !!! Given the local sub ID, you get the global ID
 
           INTEGER              , DIMENSION(:,:),POINTER :: subs_bc => NULL()
           !!! boundary conditions on a sub:
@@ -137,7 +138,7 @@
           !!! - value: 0 the face is internal
           !!! - value: 1 otherwise
           INTEGER            , DIMENSION(:,:), POINTER :: ineighsubs => NULL()
-          !!! list of neighboring subs of all local subs.
+          !!! list of neighboring subs (global IDs) of all local subs.
           !!! - index 1: neighbor index
           !!! - index 2: sub id (local index, not global ID!)
 
@@ -147,12 +148,12 @@
           !!! index 1: sub id (local index, not global ID!)
           INTEGER            , DIMENSION(:  ), POINTER :: ineighproc => NULL()
           !!! list of neighboring processors. Index 1: neighbor index
-          INTEGER                                        :: nneighproc
+          INTEGER                                      :: nneighproc
           !!! number of neighboring processors.
-          LOGICAL                                        :: isoptimized
+          LOGICAL                                      :: isoptimized
           !!! has optimal communication sequence already been determined for
           !!! this topology?
-          INTEGER                                        :: ncommseq
+          INTEGER                                      :: ncommseq
           !!! number of communication rounds needed for partial mapping
           INTEGER            , DIMENSION(:  ), POINTER :: icommseq => NULL()
           !!! optimal communication sequence for this processor. 1st index:
@@ -163,9 +164,9 @@
           !TYPE(ppm_t_patch), DIMENSION(:),POINTER :: patches => NULL()
           !!!! List of patches data structures on this topology.
 
-          REAL(ppm_kind_single)                          :: ghostsizes
+          REAL(ppm_kind_single)                        :: ghostsizes
           !!! max ghostsize width used when creating this topology (single)
-          REAL(ppm_kind_double)                          :: ghostsized
+          REAL(ppm_kind_double)                        :: ghostsized
           !!! max ghostsize width used when creating this topology (double)
           !!! using a larger cutoff when calling routines such as ghost_get
           !!! should ideally raise a warning

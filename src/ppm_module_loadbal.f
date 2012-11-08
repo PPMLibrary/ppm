@@ -1,4 +1,4 @@
-      !--*- f90 -*--------------------------------------------------------------
+      !-------------------------------------------------------------------------
       !  Module       :                ppm_module_loadbal
       !-------------------------------------------------------------------------
       ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
@@ -30,6 +30,8 @@
 
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
+#define __2D               3
+#define __3D               4
 
       MODULE ppm_module_loadbal
       !!! This module contains all routines needed for
@@ -40,14 +42,47 @@
       !!! redecomposed.
 
          USE ppm_module_topo_typedef
+         USE ppm_module_particles_typedef
+         USE ppm_module_operator_typedef
+         USE ppm_module_interfaces
+         USE ppm_module_data_loadbal
+         USE ppm_module_data
+         USE ppm_module_alloc
          !----------------------------------------------------------------------
          !  Define interface to load balance inquiry routine
          !----------------------------------------------------------------------
-         INTERFACE ppm_loadbal_inquire
-            MODULE PROCEDURE loadbal_inq_s
-            MODULE PROCEDURE loadbal_inq_d
+         INTERFACE ppm_loadbal_sendsub
+            MODULE PROCEDURE loadbal_sendsub
          END INTERFACE
 
+         INTERFACE ppm_loadbal_recvsub
+            MODULE PROCEDURE loadbal_recvsub
+         END INTERFACE
+          INTERFACE ppm_loadbal_map_subpart
+             MODULE PROCEDURE loadbal_map_subpart_s
+             MODULE PROCEDURE loadbal_map_subpart_d
+          END INTERFACE
+         !----------------------------------------------------------------------
+         !  Define interface to load balance inquiry routine
+         !----------------------------------------------------------------------
+!         INTERFACE ppm_loadbal_inquire
+!            MODULE PROCEDURE loadbal_inq_s
+!            MODULE PROCEDURE loadbal_inq_d
+!         END INTERFACE
+!
+!         INTERFACE ppm_loadbal_inquire_sar
+!            MODULE PROCEDURE loadbal_inquire_sar_s
+!            MODULE PROCEDURE loadbal_inquire_sar_d
+!         END INTERFACE
+
+!         INTERFACE ppm_loadbal_inquire_dlb
+!            MODULE PROCEDURE loadbal_inquire_dlb_s
+!            MODULE PROCEDURE loadbal_inquire_dlb_d
+!         END INTERFACE
+
+!         INTERFACE ppm_loadbal_do_dlb
+!            MODULE PROCEDURE loadbal_do_dlb
+!         END INTERFACE
          !----------------------------------------------------------------------
          !  Define interface to processor speed estimator
          !----------------------------------------------------------------------
@@ -81,22 +116,55 @@
          END INTERFACE
          
          !----------------------------------------------------------------------
+         !  Balancing circuit DLB model
+         !----------------------------------------------------------------------
+         INTERFACE ppm_loadbal_bc
+            MODULE PROCEDURE loadbal_bc_s
+            MODULE PROCEDURE loadbal_bc_d
+         END INTERFACE
+         !----------------------------------------------------------------------
+         !  Choose a sequence of subdomains to send to an underloaded processor
+         !----------------------------------------------------------------------
+         INTERFACE ppm_loadbal_choose_sub
+            MODULE PROCEDURE loadbal_choose_sub_s
+            MODULE PROCEDURE loadbal_choose_sub_d
+         END INTERFACE
+         !----------------------------------------------------------------------
          !  include the source
          !----------------------------------------------------------------------
          CONTAINS
 
 #define __KIND __SINGLE_PRECISION
-#include "loadbal/ppm_loadbal_inquire.f"
+!#include "loadbal/ppm_loadbal_inquire.f"
+!#include "loadbal/ppm_loadbal_inquire_sar.f"
+!#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
-#include "loadbal/ppm_get_cost.f"
-#include "loadbal/ppm_set_decomp_cost.f"
-#include "loadbal/ppm_set_proc_speed.f"
+#include "loadbal/ppm_loadbal_bc.f"
+#include "loadbal/ppm_loadbal_choose_sub.f"
+
+#include "loadbal/ppm_loadbal_map_subpart.f"
 #undef __KIND
 
 #define __KIND __DOUBLE_PRECISION
-#include "loadbal/ppm_loadbal_inquire.f"
+!#include "loadbal/ppm_loadbal_inquire.f"
+!#include "loadbal/ppm_loadbal_inquire_sar.f"
+!#include "loadbal/ppm_loadbal_inquire_dlb.f"
 #include "loadbal/ppm_estimate_proc_speed.f"
+#include "loadbal/ppm_loadbal_bc.f"
+#include "loadbal/ppm_loadbal_choose_sub.f"
+!#include "loadbal/ppm_loadbal_sendsub.f"
+#include "loadbal/ppm_loadbal_map_subpart.f"
+#undef __KIND
+
+#define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_get_cost.f"
+#undef __KIND
+
+#define __KIND __DOUBLE_PRECISION
+#include "loadbal/ppm_get_cost.f"
+#undef __KIND
+
+#define __KIND __SINGLE_PRECISION
 #include "loadbal/ppm_set_decomp_cost.f"
 #include "loadbal/ppm_set_proc_speed.f"
 #undef __KIND

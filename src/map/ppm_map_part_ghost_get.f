@@ -39,10 +39,23 @@
       !!! (`ppm_map_part_partial`) in the sense that the ghost particles are
       !!! assumed to be located on neighbouring processors only, and thus only
       !!! require a nearest neighbour communication.
+      !!! We iterate over the subdomains and first check if they are within our
+      !!! domain (no part of a sub goes beyond the actual processor domain)
+      !!! Only check the particles that belong to a subdomain some of whose part
+      !!! go beyond the processor domain; thus, its particles MAY be ghost
+      !!! particles.
+      !!! This way of iterating saves us time.
+      !!! stbc: subs to-be-checked
+      !!! subs: all subs
+      !!! Comp. cost: O(stbc+(Npart*stbc/subs)) instead of O(Npart)
       !!!
       !!! [WARNING]
       !!! It is an error to specify a topology ID to which the particles are not
       !!! currently mapped
+      !!!
+      !!! [NOTE]
+      !!! A partial mapping invalidates previous ghost mappings. Ghosts have to
+      !!! be computed from new.
       !!!
       !!! [NOTE]
       !!! ==============================================================
@@ -250,7 +263,7 @@
       ENDIF
 
       ! for now here, but this can be done better
-      ! TODO: kepp this consistant throughout simulation
+      ! TODO: keep this consistent throughout simulation
       ppm_sendbufsize = 0
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          IF (ASSOCIATED(ppm_sendbufferd)) THEN
@@ -342,6 +355,8 @@
       !  to this processor and checking if the particles are well within the
       !  sub. If this is the case, the particle will never be a ghost 
       !-------------------------------------------------------------------------
+!      print*,ppm_rank,'topo%nsublist in ghost_get',topo%nsublist
+!      print*,ppm_rank,'topo%isublist in ghost_get',topo%isublist
       DO k=1,topo%nsublist
          !----------------------------------------------------------------------
          !  Initialize the second list counter to zero

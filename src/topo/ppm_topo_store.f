@@ -118,6 +118,7 @@
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
       REAL(MK)                  :: t0
+      !CHARACTER(LEN=ppm_char)   :: cbuf
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
@@ -138,12 +139,15 @@
       !-------------------------------------------------------------------------
       !  Determine the maximum number of neighbours of all local subdomains
       !-------------------------------------------------------------------------
+      !do i=1,nsublist
+      !   print*,ppm_rank,nneigh(i)
+      !enddo
       maxneigh = 0
       DO i=1,nsublist
          j = nneigh(isublist(i))
          IF (j.GT.maxneigh) maxneigh = j
       ENDDO
-
+      !print*,ppm_rank,nsublist
       !-------------------------------------------------------------------------
       !  (Re)allocate memory for the topology structure
       !-------------------------------------------------------------------------
@@ -341,11 +345,13 @@
       topo%nneighproc = 0
 
       isize = size(topo%ineighproc,1)
-      
+      !print*,ppm_rank,':-->isize:',isize,'nsublist',topo%nsublist
       DO k=1,topo%nsublist
           i = topo%isublist(k)
+          !print*,ppm_rank,'k',k,'i',i,'nneigh(i)',nneigh(i)
           DO j=1,nneigh(i)
               iproc = topo%sub2proc(ineigh(j,i))
+              !print*,ppm_rank,'iproc',iproc
               ! if it is not myself
               IF (iproc .NE. ppm_rank) THEN
                   isin = 0
@@ -377,7 +383,6 @@
       END DO
 
       topo%isdefined = .TRUE.
-
       !-------------------------------------------------------------------------
       !  Return 
       !-------------------------------------------------------------------------

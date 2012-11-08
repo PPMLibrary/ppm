@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE loadbal_inq_s(ctime,nstep,heuristic,lflush,imbal, &
-     &    lredecomp,nredest,info)
+      SUBROUTINE loadbal_inq_s(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
+     &                         nredest,info,heuristic,mov_avg_time,topoid)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE loadbal_inq_d(ctime,nstep,heuristic,lflush,imbal, &
-     &    lredecomp,nredest,info)
+      SUBROUTINE loadbal_inq_d(t_comp,t_comm,nstep,npart,lflush,lredecomp, &
+     &                         nredest,info,heuristic,mov_avg_time,topoid)
 #endif
       !!! Inquires about the load balance status and returns advise whether
       !!! redecomposing the problem is recommended (based on some decision
@@ -45,22 +45,12 @@
       !!! routine.
       !!!
       !!! [NOTE]
-      !!! This estimate is currently a scalar, so only one topology/set of
-      !!! topologies can be monitored. Introducing a topology set ID and making
-      !!! the internal estimates a vector, this can later be extended to
-      !!! multiple topology sets if needed. The topology set
-      !!! ID for which to evaluate the load balance will then be an additional
-      !!! argument to this routine. This routine does two global MPI
-      !!! communication operations (`MPI_Allreduce`).
-      !!!
-      !!! .References
-      !!! *************************************************************
-      !!! - B. Moon and J. Saltz, Adaptive Runtime
-      !!!   Support for Direct Simulation Monte Carlo Methods on
-      !!!   Distributed Memory Architectures. Proceedings of
-      !!!   the IEEE Scalable High-Performance Computing
-      !!!   Conference. 1994. 176--183.
-      !!! *************************************************************
+      !!! User must provide the moving average time ('mov_avg_time') and
+      !!! topology ID ('topoid') UNLESS the chosen heuristic is SAR
+      !!! (stop-at-rise) policy.
+      !!! This means that if 'heuristic' is not present OR is equal to
+      !!! 'ppm_param_loadbal_dlb', user MUST provide mov_avg_time.
+
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -85,24 +75,33 @@
       !-------------------------------------------------------------------------
       !  Arguments     
       !-------------------------------------------------------------------------
-      REAL(MK)               , INTENT(IN   ) :: ctime
+      REAL(MK)               , INTENT(IN   ) :: t_comp
       !!! Elapsed time (as measured by `ppm_time`) for all computation in one
       !!! time step on the local processor.
-      INTEGER                , INTENT(IN   ) :: heuristic
-      !!! Decision heuristic for redecomposition advise. One of:
-      !!! 
-      !!! * ppm_param_loadbal_sar (Stop-at-Rise heuristic)
+      REAL(MK)               , INTENT(IN   ) :: t_comm
+      !!! Elapsed time for all COMMUNICATION in one time step on the local proc
       INTEGER                , INTENT(IN   ) :: nstep
       !!! Number of time steps since last redecomposition. (>0)
       !!! If this routine is not called every time step, linear interpolation of
       !!! the load imbalance will be used to reconstruct missing data points.
+      INTEGER                , INTENT(IN   ) :: npart
+      !!! Number of particles in this time step
+
       LOGICAL                , INTENT(IN   ) :: lflush
       !!! `TRUE` to flush internal statistics (e.g. the first time this routine
       !!! is called after actually doing a redecomposition of the problem),
       !!! `FALSE` to continue gathering statistics.
-      REAL(MK)               , INTENT(  OUT) :: imbal
-      !!! Load imbalance defined as the ratio of computation time of the
-      !!! bottleneck processor to the average computation time of all processors.
+      INTEGER,OPTIONAL       , INTENT(IN   ) :: heuristic
+      !!! Decision heuristic for redecomposition advise. One of:
+      !!!
+      !!! * ppm_param_loadbal_sar (Stop-at-Rise heuristic)
+      !!! * ppm_param_loadbal_dlb (Dynamic load balancing heuristic)
+      !!! If a heuristic is not specified, PPM will first try dynamic load
+      !!! balancing. If DLB is bad, it will use SAR heuristic
+      INTEGER,OPTIONAL       , INTENT(IN   ) :: topoid
+      !!! Topology ID needed for DLB heuristic
+      REAL(MK),OPTIONAL      , INTENT(IN   ) :: mov_avg_time
+      !!! Moving (running) average time of the simulation.
       LOGICAL                , INTENT(  OUT) :: lredecomp
       !!! `TRUE` if the choosen heuristic recommends problem redecomposition.
       !!! Otherwise `FALSE`. Redecomposition means: do the ppm_topo_mktopo again.
@@ -110,33 +109,35 @@
       !!! Estimated (linear extrapolation) number of time steps to go until next
       !!! advised redecomposition. -1 is returned if the chosen heuristic
       !!! does not support this kind of information. Be careful with this value!
+      !!! DLB will always return 1 (i.e. next step is the DLB step)
       INTEGER                , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+
       !-------------------------------------------------------------------------
       !  Local variables 
       !-------------------------------------------------------------------------
-      REAL(MK)               :: t0,maxtime,avgtime
-      REAL(ppm_kind_double)  :: Wn,delta,slp,estsol
-      REAL(ppm_kind_double), SAVE :: deltaold = 0.0_ppm_kind_double
-      REAL(ppm_kind_double), SAVE :: slpavg = 0.0_ppm_kind_double
-      INTEGER, SAVE          :: nold = 0
-      INTEGER, SAVE          :: nslp = 0
-      CHARACTER(LEN=ppm_char):: mesg
-      INTEGER                :: ndiff,i
+      REAL(MK)                               :: imbal_perc,max_ctime,r_neigh
+      REAL(MK)                               :: neigh_imbal,recv_ctime,ctime
+      INTEGER                                :: random_neigh,i,tag1,sendrank
+      INTEGER                                :: recvrank
+      LOGICAL                                :: l_myneighbor
+      TYPE(ppm_t_topo),POINTER               :: topo => NULL()
 #ifdef __MPI
-      INTEGER                :: MPTYPE
+      INTEGER                                :: MPTYPE
+      INTEGER, DIMENSION(MPI_STATUS_SIZE)    :: status
 #endif
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------
-      
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_loadbal_inquire',t0,info)
-      imbal = 0.0_MK
+      start_subroutine("ppm_loadbal_inquire")
       lredecomp = .FALSE.
       nredest = -1 
+      l_myneighbor = .TRUE.
+      neigh_imbal = 0._MK
+      recv_ctime = 0._MK
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -145,34 +146,6 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Flush internal information if needed
-      !-------------------------------------------------------------------------
-      IF (lflush) THEN
-          ppm_loadbal_old_sar = -1.0_ppm_kind_double
-          ppm_loadbal_runsum  = 0.0_ppm_kind_double
-          slpavg  = 0.0_ppm_kind_double
-          nold = 0
-          nslp = 0
-          deltaold = 0.0_ppm_kind_double
-          IF (ppm_debug .GT. 1) THEN
-              CALL ppm_write(ppm_rank,'ppm_loadbal_inquire',    &
-     &            'Internal buffers flushed',info)
-          ENDIF
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Check that we have data available
-      !-------------------------------------------------------------------------
-      IF (ppm_loadbal_dcn .LT. 1) THEN
-          info = ppm_error_warning
-          CALL ppm_error(ppm_err_no_data,'ppm_loadbal_inquire', &
-     &         'Use ppm_set_decomp_cost first to gather statistics',  &
-     &         __LINE__,info)
-          GOTO 9999
-      ENDIF
-
 #ifdef __MPI
       !-------------------------------------------------------------------------
       !  Define MPI data type
@@ -183,184 +156,100 @@
       MPTYPE = MPI_DOUBLE_PRECISION
 #endif
 #endif
+      !-------------------------------------------------------------------------
+      !  Get the topology first
+      !-------------------------------------------------------------------------
+      topo    => ppm_topo(topoid)%t
 
       !-------------------------------------------------------------------------
-      !  Determine the time used by the slowest processor
+      !  Update the number of particles info needed for load balancing
+      !  NOTE: DLB needs two runs (one for ..npart_old and one for .._npart_new)
+      !
       !-------------------------------------------------------------------------
-#ifdef __MPI
-      CALL MPI_Allreduce(ctime,maxtime,1,MPTYPE,MPI_MAX,ppm_comm,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_mpi_fail,'ppm_loadbal_inquire', &
-     &         'MPI_ALLREDUCE for max ctime. Nothing computed.',__LINE__,info)
-          GOTO 9999
+!      stdout("-->",t_comp,t_comm,mov_avg_time)
+      ppm_loadbal_npart_old = ppm_loadbal_npart_new
+      ppm_loadbal_npart_new = npart
+!      stdout(ppm_loadbal_npart_old,ppm_loadbal_npart_new,npart)
+      !-------------------------------------------------------------------------
+      !  Does the user specify a heuristic?
+      !-------------------------------------------------------------------------
+      IF (PRESENT(heuristic)) THEN
+
+        IF (heuristic .EQ. ppm_param_loadbal_sar) THEN
+            !-------------------------------------------------------------------------
+            !  Check that we have data available
+            !-------------------------------------------------------------------------
+            IF (ppm_loadbal_dcn .LT. 1) THEN
+                fail("Use ppm_set_decomp_cost first to gather statistics")
+            ENDIF
+
+            !-------------------------------------------------------------------
+            !  Stop-At-Rise heuristic by Moon:1994
+            !
+            !-------------------------------------------------------------------
+            ctime = t_comp + t_comm
+            CALL ppm_loadbal_inquire_sar(ctime,nstep,lflush,lredecomp,nredest, &
+     &                                   info)
+                    or_fail("Something went wrong in ppm_loadbal_inquire_sar")
+
+        ELSEIF (heuristic .EQ. ppm_param_loadbal_dlb) THEN
+            !-------------------------------------------------------------------
+            !  Using Omer's DLB heuristic
+            !-------------------------------------------------------------------
+            CALL ppm_loadbal_inquire_dlb(topoid,t_comp,t_comm,mov_avg_time,&
+     &                                   max_ctime,imbal_perc,info)
+                    or_fail("Something went wrong in ppm_loadbal_inquire_dlb")
+
+            !-------------------------------------------------------------------
+            !  If load imbalance is more than 25% (I'm guessing this number),
+            !  we need a DLB
+            !-------------------------------------------------------------------
+            IF (imbal_perc .GT. 0.25_MK) THEN
+                lredecomp = .TRUE.
+            ELSE
+                lredecomp = .FALSE.
+            ENDIF
+
+            !-------------------------------------------------------------------
+            !  DLB heuristic expects load balancing to take place in the next
+            !  time step
+            !-------------------------------------------------------------------
+            nredest=1
+       ELSE
+            !-------------------------------------------------------------------
+            !  Unknow heuristic
+            !-------------------------------------------------------------------
+            fail("No heuristic for dynamic load balancing is given.")
+       ENDIF
       ENDIF
-#else
-      maxtime = ctime
-#endif
-
-      !-------------------------------------------------------------------------
-      !  Determine the average compute time
-      !-------------------------------------------------------------------------
-#ifdef __MPI
-      CALL MPI_Allreduce(ctime,avgtime,1,MPTYPE,MPI_SUM,ppm_comm,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_mpi_fail,'ppm_loadbal_inquire', &
-     &         'MPI_ALLREDUCE for avg ctime. Nothing computed.',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      avgtime = avgtime/REAL(ppm_nproc,MK)
-#else
-      avgtime = ctime
-#endif
-
-      !-------------------------------------------------------------------------
-      !  Debug output
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,F12.6))') 'max time = ',maxtime,   &
-     &        ' / average time = ',avgtime
-          CALL ppm_write(ppm_rank,'ppm_loadbal_inquire',mesg,info)
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Compute load imbalance
-      !-------------------------------------------------------------------------
-      imbal = maxtime/avgtime
-
-      !-------------------------------------------------------------------------
-      !  Choose decision heuristic
-      !-------------------------------------------------------------------------
-      IF     (heuristic .EQ. ppm_param_loadbal_sar) THEN
-          !---------------------------------------------------------------------
-          !  Stop-At-Rise heuristic by Moon:1994
-          !---------------------------------------------------------------------
-          ndiff = nstep-nold
-#if   __KIND == __SINGLE_PRECISION
-          delta = REAL(maxtime-avgtime,ppm_kind_double)
-#elif __KIND == __DOUBLE_PRECISION
-          delta = maxtime-avgtime
-#endif
-          slp = (delta-deltaold)/REAL(ndiff,ppm_kind_double)
-          IF (ndiff .GT. 1) THEN
-              !-----------------------------------------------------------------
-              !  Use linear interpolation for missing data points
-              !-----------------------------------------------------------------
-              IF (ppm_debug .GT. 1) THEN
-                  WRITE(mesg,'(A,I3)') 'Linear interpolation steps: ',   &
-     &                ndiff
-                  CALL ppm_write(ppm_rank,'ppm_loadbal_inquire',mesg,info)
-              ENDIF
-              DO i=1,ndiff
-                  ppm_loadbal_runsum = ppm_loadbal_runsum +    &
-     &                (deltaold+(REAL(i,ppm_kind_double)*slp))
-              ENDDO
-          ELSEIF (ndiff .EQ. 1) THEN
-              ppm_loadbal_runsum = ppm_loadbal_runsum + delta
-          ELSE
-              !-----------------------------------------------------------------
-              !  Called twice for the same time step or going backward in
-              !  time: warn
-              !-----------------------------------------------------------------
-              info = ppm_error_warning
-              CALL ppm_error(ppm_err_rev_time,'ppm_loadbal_inquire',    &
-         &       'nstep did not increase since last call!',__LINE__,info)
-          ENDIF
-          Wn = ppm_loadbal_runsum + ppm_loadbal_decomp_cost
-          Wn = Wn/REAL(nstep,ppm_kind_double)
-          ! if we have an old value at all...
-          IF (ppm_loadbal_old_sar .GT. -0.5_ppm_kind_double) THEN
-              IF (ppm_loadbal_old_sar .LT. Wn) THEN
-                  lredecomp = .TRUE.
-                  nredest   = 0
-                  IF (ppm_debug .GT. 1) THEN
-                      CALL ppm_write(ppm_rank,'ppm_loadbal_inquire',   &
-     &                    'redecomposition advised by SAR heuristic.',info)
-                  ENDIF
-              ENDIF
-          ENDIF
-          IF (ppm_debug .GT. 1) THEN
-              WRITE(mesg,'(2(A,F12.6))') 'old SAR value: ',   &
-     &            ppm_loadbal_old_sar,' / new SAR value: ',Wn
-              CALL ppm_write(ppm_rank,'ppm_loadbal_inquire',mesg,info)
-          ENDIF
-          !---------------------------------------------------------------------
-          !  Update running average (with exp. forgetting) of slope
-          !---------------------------------------------------------------------
-          nslp = nslp + 1
-          IF (nslp .EQ. 1) THEN
-              slpavg = slp
-          ELSE
-              slpavg = 0.5_ppm_kind_double*(slpavg+slp)
-          ENDIF
-          !---------------------------------------------------------------------
-          !  Extrapolate expected number of steps until redecomposition
-          !---------------------------------------------------------------------
-          estsol = 2.0_ppm_kind_double*ppm_loadbal_decomp_cost/slpavg
-          IF (estsol .LT. 0.0_ppm_kind_double) THEN
-              nredest = -1
-              info = ppm_error_notice
-              CALL ppm_error(ppm_err_sqrt_neg,'ppm_loadbal_inquire', &
-     &            'Balance improved. Cannot extrapolate load imbalance.', &
-     &            __LINE__,info)
-          ELSE
-              nredest = INT(SQRT(estsol)) - nstep
-              IF (nredest .LT. 0) nredest = 0
-          ENDIF
-
-          !---------------------------------------------------------------------
-          !  Update old values
-          !---------------------------------------------------------------------
-          ppm_loadbal_old_sar = Wn
-          deltaold = delta
-      ELSE
-          !---------------------------------------------------------------------
-          !  Unknow heuristic
-          !---------------------------------------------------------------------
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_argument,'ppm_loadbal_inquire',    &
-     &       'Unknown heuristic specified. Nothing computed.',__LINE__,info)
-          GOTO 9999
-      ENDIF
-
       !-------------------------------------------------------------------------
       !  Update time step counter
       !-------------------------------------------------------------------------
-      nold = nstep
+      ppm_loadbal_nold = nstep
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_loadbal_inquire',t0,info)
+      end_subroutine()
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_loadbal_inquire',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
+            fail("Please call ppm_init first!", exit_point=8888)
         ENDIF
         IF (ctime .LT. 0.0_MK) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_loadbal_inquire', &
-     &          'ctime must be >= 0.0',__LINE__,info)
-           GOTO 8888
+            fail("ctime must be >= 0.0", exit_point=8888)
+        ENDIF
+        IF (mov_avg_time .LT. 0.0_MK) THEN
+            fail("moving avg time must be >= 0.0", exit_point=8888)
         ENDIF
         IF (nstep .LT. 1) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_loadbal_inquire', &
-     &           'nstep must be > 0',__LINE__,info)
-            GOTO 8888
+            fail("nstep must be > 0",exit_point=8888)
         ENDIF
-        IF (nstep .LE. nold) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_loadbal_inquire', &
-     &            'nstep did not increase since last call! Use flush?', &
-     &            __LINE__,info)
-           GOTO 8888
+
+        IF (nstep .LE. ppm_loadbal_nold) THEN
+            fail("nstep did not increase since last step. Use flush?", &
+     &                  exit_point=8888)
         ENDIF
  8888   CONTINUE
       END SUBROUTINE check

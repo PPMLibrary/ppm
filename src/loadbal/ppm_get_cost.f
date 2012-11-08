@@ -28,10 +28,10 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_get_cost_s(topoid,meshid,xp,Np,cost,proc_cost,info,&
+      SUBROUTINE ppm_get_cost_s(topoid,meshid,xp,Np,ratio,info,&
      &                          vlist,nvlist,pcost)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_get_cost_d(topoid,meshid,xp,Np,cost,proc_cost,info,&
+      SUBROUTINE ppm_get_cost_d(topoid,meshid,xp,Np,ratio,info,&
      &                          vlist,nvlist,pcost)
 #endif
       !!! This routine calculates the computational cost of each subdomain
@@ -69,14 +69,6 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
-      !!! Particle positions
-      REAL(MK), DIMENSION(:  ), POINTER       :: cost
-      !!! Aggregate cost for each subdomain
-      REAL(MK), DIMENSION(:  ), POINTER       :: proc_cost
-      !!! Aggregate cost for each processor
-      INTEGER                 , INTENT(IN   ) :: Np
-      !!! Number of particles. Set to <= 0 if mesh-based costs are desired.
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID for which to compute the cost.
       !!! If `ppm_param_topo_undefined` all particle positions on the processor
@@ -87,6 +79,13 @@
       !!! ignored.                                                             +
       !!! If there are no particles and mesh_id is -1, the costs are
       !!! computed based on the geometry: cost(sub) = volume(sub).
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
+      !!! Particle positions
+      INTEGER                 , INTENT(IN   ) :: Np
+      !!! Number of particles. Set to <= 0 if mesh-based costs are desired.
+      REAL(MK),INTENT(IN)                     :: ratio
+      !!! The time ratio between me and the other proc. I use this ratio
+      !!! to update my per particle comm and comp cost
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       INTEGER, DIMENSION(:)  , OPTIONAL, INTENT(IN   ) :: nvlist
@@ -97,12 +96,13 @@
       !!! largest ip with non-zero nvlist. This is to save memory since the
       !!! last particles are the ghosts and they do not have a verlet list.
       !!! This is only allocated and returned if lstore is .TRUE.
-      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
+      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN  ) :: pcost
       !!! per-particle costs.
       !!! If it is not present but the nvlist and vlist are given,
       !!! pcost is computed by PPM using the relative communication cost
       !!! If it is not present AND nvlist and vlist are NOT given,
       !!! pcost is 1.0 for each particle
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -111,7 +111,7 @@
       INTEGER, DIMENSION(ppm_dim)       :: ldl,ldu
       INTEGER, DIMENSION(3,1), TARGET   :: ndummy
       INTEGER, DIMENSION(:,:), POINTER  :: nnodes => NULL()
-      INTEGER                           :: i,j,k,proc
+      INTEGER                           :: i,j,k,proc,globalID
       INTEGER                           :: iopt,minproc,maxproc
       LOGICAL                           :: valid
       CHARACTER(LEN=ppm_char)           :: mesg
@@ -120,6 +120,14 @@
       REAL(MK), DIMENSION(:), POINTER   :: proccost => NULL()
 #endif
       TYPE(ppm_t_topo)      , POINTER   :: topo     => NULL()
+      REAL(MK), DIMENSION(:  ), POINTER :: subcompcost => NULL()
+      !!! Aggregate cost for each subdomain
+      REAL(MK), DIMENSION(:  ), POINTER :: subcommcost => NULL()
+      !!! Aggregate cost for each subdomain
+      REAL(MK), DIMENSION(:  ), POINTER :: cost => NULL()
+      !!! Aggregate cost for each subdomain
+      REAL(MK), DIMENSION(:  ), POINTER :: proc_cost => NULL()
+      !!! Aggregate cost for each processor
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -127,7 +135,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_get_cost',t0,info)
+      start_subroutine("get_cost")
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -149,9 +157,29 @@
      &        'costs per processor PROC_COST',__LINE__,info)
           GOTO 9999
       ENDIF
+
       proc_cost = 0.0_MK
-      comp_cost = 1._MK
-      comm_cost = comp_cost * 5._MK
+      !-------------------------------------------------------------------------
+      !  Compute per particle comm cost. Per particle comp cost is always 1.
+      !  Comm cost per particle C_comm:
+      !  C_comm = (t_comm/Np_comm)*C_comp/(t_comp/Np_comp)
+      !  C_comp is normalized and always equal to 1.
+      !-------------------------------------------------------------------------
+      ppm_loadbal_comp_part_cost = 1._MK*ratio
+!      stdout("# Comm particles",ppm_loadbal_comm_part_num)
+      IF (ppm_loadbal_comm_part_num.EQ.0) THEN
+        ppm_loadbal_comm_part_time = 0._MK
+      ELSE
+        ppm_loadbal_comm_part_time = ppm_loadbal_comm_time*ratio /             &
+     &                              ppm_loadbal_comm_part_num
+      ENDIF
+      ppm_loadbal_comm_part_cost = ppm_loadbal_comm_part_time /       &
+     &                              ppm_loadbal_comp_part_time
+      stdout("Comm part time",ppm_loadbal_comm_part_time)
+      stdout("Comp part time",ppm_loadbal_comp_part_time)
+      stdout("Comm_part_num:",ppm_loadbal_comm_part_num)
+      stdout("COMP_part_cost:",ppm_loadbal_comp_part_cost)
+      stdout("COMM_part_cost:",ppm_loadbal_comm_part_cost)
 
       !-------------------------------------------------------------------------
       !  Sum up the costs of all subs of the processors
@@ -189,9 +217,9 @@
            !  thus it belongs to another processor.
            !--------------------------------------------------------------------
                     IF (vlist(j,i) .LE. Np) THEN
-                        cost(1) = cost(1) + comp_cost
+                        cost(1) = cost(1) + ppm_loadbal_comp_part_cost
                     ELSE ! ghost particle --> add comm_cost
-                        cost(1) = cost(1) + comm_cost
+                        cost(1) = cost(1) + ppm_loadbal_comm_part_cost
                     ENDIF
                 ENDDO
             ENDDO
@@ -273,32 +301,39 @@
         !ELSE
             nnodes => ndummy
         !ENDIF
+
         !-------------------------------------------------------------------------
         !  Determine the subdomain costs either based on particles or mesh
         !  points
         !-------------------------------------------------------------------------
-        IF (PRESENT(pcost)) THEN
 
-#if   __KIND == __SINGLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:),       &
-     &          topo%max_subs(:,:),topo%nsubs,         &
-     &          nnodes,cost,info,pcost)
-#elif __KIND == __DOUBLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:),       &
-     &          topo%max_subd(:,:),topo%nsubs,         &
-     &          nnodes,cost,info,pcost)
-#endif
-        ELSE
-#if   __KIND == __SINGLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:),       &
-     &          topo%max_subs(:,:),topo%nsubs,         &
-     &          nnodes,cost,info)
-#elif __KIND == __DOUBLE_PRECISION
-            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:),       &
-     &          topo%max_subd(:,:),topo%nsubs,         &
-     &          nnodes,cost,info)
-#endif
-        ENDIF
+!        IF (PRESENT(pcost)) THEN
+!            stdout("ELSE -2")
+!#if   __KIND == __SINGLE_PRECISION
+!            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:),       &
+!     &          topo%max_subs(:,:),topo%nsubs,         &
+!     &          nnodes,cost,info,pcost)
+!#elif __KIND == __DOUBLE_PRECISION
+!            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:),       &
+!     &          topo%max_subd(:,:),topo%nsubs,         &
+!     &          nnodes,cost,info,pcost)
+!#endif
+!        ELSE
+!
+!#if   __KIND == __SINGLE_PRECISION
+!            CALL ppm_topo_cost(xp,Np,topo%min_subs(:,:),       &
+!     &          topo%max_subs(:,:),topo%nsubs,         &
+!     &          nnodes,cost,info)
+!#elif __KIND == __DOUBLE_PRECISION
+!            stdout("topo%nsubs",'topo%nsubs')
+!            stdout("nnodes",nnodes,"Np",Np)
+!            stdout("is XP allocated?",'allocated(xp)')
+!            CALL ppm_topo_cost(xp,Np,topo%min_subd(:,:),       &
+!     &          topo%max_subd(:,:),topo%nsubs,         &
+!     &          nnodes,cost,info)
+!#endif
+!
+!        ENDIF
         IF (info.NE.0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_sub_failed,'ppm_get_cost',         &
@@ -307,64 +342,178 @@
         ENDIF
 
         NULLIFY(nnodes)
+
         !---------------------------------------------------------------------
         !  Advanced communication costs.
         !  One particle cost: comp_cost
         !  One neighbor on the SAME proc cost: comp_cost (aka interaction cost)
         !  One neighbor on ANOTHER proc cost:  comm_cost
         !---------------------------------------------------------------------
-        IF (PRESENT(pcost) .AND. PRESENT(nvlist) .AND. PRESENT(vlist)) THEN
+        IF (PRESENT(nvlist) .AND. PRESENT(vlist)) THEN
+
+            !-------------------------------------------------------------
+            !  Allocate communication and computation costs of the subs
+            !-------------------------------------------------------------
+            iopt = ppm_param_alloc_fit
+            ldu(1) = topo%nsublist
+            CALL ppm_alloc(subcompcost,ldu,iopt,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
+     &          'costs per sub COST',__LINE__,info)
+                GOTO 9999
+            ENDIF
+            CALL ppm_alloc(subcommcost,ldu,iopt,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
+     &          'costs per sub COST',__LINE__,info)
+                GOTO 9999
+            ENDIF
+
+            CALL ppm_alloc(cost,ldu,iopt,info)
+            IF (info .NE. 0) THEN
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
+     &               'costs per sub COST',__LINE__,info)
+                GOTO 9999
+            ENDIF
+            cost = 0._MK
+
+
+            subcompcost = 0._MK
+            subcommcost = 0._MK
+#if    __KIND == __SINGLE_PRECISION
+            ppm_loadbal_totcommcosts = 0._MK
+            ppm_loadbal_totcompcosts = 0._MK
+#else
+            ppm_loadbal_totcommcostd = 0._MK
+            ppm_loadbal_totcompcostd = 0._MK
+#endif
+!            print*,'Comp cost/part',ppm_loadbal_comp_part_cost
+!            print*,'Comm cost/part',ppm_loadbal_comm_part_cost
+            !-------------------------------------------------------------------
+            !  Iterate over subdomains
+            !  TODO: These nested loops can be optimized..
+            !-------------------------------------------------------------------
+            stdout("present nvlist-2")
+            DO k = 1, topo%nsublist
+                !---------------------------------------------------------------
+                !  and check which particles are inside the sub
+                !---------------------------------------------------------------
+                globalID = topo%isublist(k)
+                DO i=1,Np
+                    IF (ppm_dim .EQ. 2) THEN
+
+#if    __KIND == __SINGLE_PRECISION
+                        IF (xp(1,i).GE.topo%min_subs(1,globalID).AND. &
+     &                      xp(1,i).LE.topo%max_subs(1,globalID).AND. &
+     &                      xp(2,i).GE.topo%min_subs(2,globalID).AND. &
+     &                      xp(2,i).LE.topo%max_subs(2,globalID)) THEN
+#else
+                        IF (xp(1,i).GE.topo%min_subd(1,globalID).AND. &
+     &                      xp(1,i).LE.topo%max_subd(1,globalID).AND. &
+     &                      xp(2,i).GE.topo%min_subd(2,globalID).AND. &
+     &                      xp(2,i).LE.topo%max_subd(2,globalID)) THEN
+#endif
+                            subcompcost(k) = subcompcost(k) + &
+     &                                       ppm_loadbal_comp_part_cost
+                            DO j=1,nvlist(i)
+                            !---------------------------------------------------
+                            !  Computational cost of a neighboring particle on
+                            !  THIS proc is 1. On another processor, it's comm_cost
+                            !  (interaction cost)
+                            !  If the ID of a particle is GREATER THAN Np, it's a
+                            !  ghost particle thus it belongs to another processor
+                            !---------------------------------------------------
+                                IF (vlist(j,i) .GT. Np) THEN
+                                    subcommcost(k) = subcommcost(k) + &
+     &                                       ppm_loadbal_comm_part_cost
+                                ENDIF
+                            ENDDO
+                        ENDIF ! if the particle is inside (2D)
+                    ELSEIF (ppm_dim .EQ. 3) THEN! 3D
+#if    __KIND == __SINGLE_PRECISION
+                        IF (xp(1,i).GE.topo%min_subs(1,globalID).AND. &
+     &                      xp(1,i).LE.topo%max_subs(1,globalID).AND. &
+     &                      xp(2,i).GE.topo%min_subs(2,globalID).AND. &
+     &                      xp(2,i).LE.topo%max_subs(2,globalID).AND. &
+     &                      xp(3,i).GE.topo%min_subs(3,globalID).AND. &
+     &                      xp(3,i).LE.topo%max_subs(3,globalID)) THEN
+#else
+                        IF (xp(1,i).GE.topo%min_subd(1,globalID).AND. &
+     &                      xp(1,i).LE.topo%max_subd(1,globalID).AND. &
+     &                      xp(2,i).GE.topo%min_subd(2,globalID).AND. &
+     &                      xp(2,i).LE.topo%max_subd(2,globalID).AND. &
+     &                      xp(3,i).GE.topo%min_subd(3,globalID).AND. &
+     &                      xp(3,i).LE.topo%max_subd(3,globalID)) THEN
+#endif
+                            subcompcost(k) = subcompcost(k) + &
+     &                                       ppm_loadbal_comp_part_cost
+                            DO j=1,nvlist(i)
+                            !---------------------------------------------------
+                            !  Computational cost of a neighboring particle on
+                            !  THIS proc is 1. On another processor, it's comm_cost
+                            !  (interaction cost)
+                            !  If the ID of a particle is GREATER THAN Np, it's a
+                            !  ghost particle thus it belongs to another processor
+                            !---------------------------------------------------
+                                IF (vlist(j,i) .GT. Np) THEN
+                                    subcommcost(k) = subcommcost(k) + &
+     &                                       ppm_loadbal_comm_part_cost
+                                ENDIF
+                            ENDDO
+                        ENDIF ! if the particle is inside (3D)
+                    ENDIF ! either 3D or 2D
+                ENDDO ! Np
+!                print*,ppm_rank,k,'====>',subcompcost(k),'====>',subcommcost(k)
+                cost(k) = subcompcost(k) + subcommcost(k)
+#if    __KIND == __SINGLE_PRECISION
+                ppm_loadbal_totcommcosts = ppm_loadbal_totcommcosts + subcommcost(k)
+                ppm_loadbal_totcompcosts = ppm_loadbal_totcompcosts + subcompcost(k)
+#else
+                ppm_loadbal_totcommcostd = ppm_loadbal_totcommcostd + subcommcost(k)
+                ppm_loadbal_totcompcostd = ppm_loadbal_totcompcostd + subcompcost(k)
+#endif
+            ENDDO ! nsublist
+
+#if    __KIND == __SINGLE_PRECISION
+            ppm_loadbal_subcommcosts => subcommcost
+            ppm_loadbal_subcompcosts => subcompcost
+!      print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
+#else
+            ppm_loadbal_subcommcostd => subcommcost
+            ppm_loadbal_subcompcostd => subcompcost
+      !,ppm_loadbal_proccostd
+#endif
+        ELSE IF ( .NOT. PRESENT(pcost)) THEN
             DO k = 1, topo%nsubs
                 DO i = 1, Np
-                    cost(k) = cost(k) + pcost(i)
-                    DO j=1,nvlist(i)
-               !--------------------------------------------------------------------
-               !  Computational cost of a neighboring particle on THIS proc is 1
-               !  on another processor, it's comm_cost.
-               !  If the ID of a particle is GREATER THAN Np, it's a ghost particle
-               !  thus it belongs to another processor.
-               !--------------------------------------------------------------------
-                        IF (vlist(j,i) .LE. Np) THEN
-                            cost(k) = cost(k) + comp_cost
-                        ELSE ! ghost particle --> add comm_cost
-                            cost(k) = cost(k) + comm_cost
-                        ENDIF
-                    ENDDO
-                ENDDO
-            ENDDO
-        ELSEIF (PRESENT(pcost)) THEN
-            DO k = 1, topo%nsubs
-                DO i = 1, Np
-                    cost(k) = cost(k) + pcost(i)
-                ENDDO
-            ENDDO
-        ELSE
-            DO k = 1, topo%nsubs
-                DO i = 1, Np
-                    cost(k) = cost(k) + comp_cost
+                    cost(k) = cost(k) + ppm_loadbal_comp_part_cost
                 ENDDO
             ENDDO
         ENDIF
+
         !---------------------------------------------------------------------
         !  All processors know the costs of all the
         !  subs and we simply sum them up according to subs2proc
         !---------------------------------------------------------------------
-        DO i=1,topo%nsubs
-            proc = topo%sub2proc(i)
-            proc_cost(proc) = proc_cost(proc) + cost(i)
-        ENDDO
+!        DO i=1,topo%nsublist
+!            proc            = topo%sub2proc(i)
+!            proc_cost(proc) = proc_cost(proc) + cost(i)
+!        ENDDO
       ENDIF
 
 #if    __KIND == __SINGLE_PRECISION
       ppm_loadbal_subcosts => cost
-      ppm_loadbal_proccosts= proc_cost(ppm_rank)
-      print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
+      ppm_loadbal_proccosts=  SUM(cost)
+!      print*,ppm_rank,ppm_loadbal_subcosts,ppm_loadbal_proccosts
 #else
       ppm_loadbal_subcostd => cost
-      ppm_loadbal_proccostd= proc_cost(ppm_rank)
-      print*,ppm_rank,ppm_loadbal_subcostd,ppm_loadbal_proccostd
+      ppm_loadbal_proccostd=  SUM(cost)
+!      print*,ppm_rank,ppm_loadbal_subcostd,ppm_loadbal_proccostd
 #endif
-
+!      print*,ppm_rank,ppm_loadbal_subcostd,topo%nsublist
       !-------------------------------------------------------------------------
       !  Diagnostics
       !-------------------------------------------------------------------------
