@@ -622,11 +622,13 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
     istart_d(1:ppm_dim) = 1 + &
         CEILING(( topo%min_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
     iend_d(1:ppm_dim)   = 1 + &
-        FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
+        FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/&
+        (h(1:ppm_dim)-epsilon(h(1:ppm_dim))))
 
     !stdout("istart_d = ",istart_d)
     !stdout("iend_d = ",iend_d)
     !stdout("topo%bcdef = ",'topo%bcdef')
+    !stdout("before roundoff: ",'(topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim)')
 
     !-------------------------------------------------------------------------
     !  Allocate bookkeeping arrays (pointers between patches and subpatches)
@@ -1000,6 +1002,13 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
 
     IF (PRESENT(h)) THEN
         this%h(1:ppm_dim) = h(1:ppm_dim)
+        IF (ASSOCIATED(topo%max_physs)) THEN
+            this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
+                topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
+        ELSE
+            this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
+                topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
+        ENDIF
     ELSE
         this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
         IF (ASSOCIATED(topo%max_physs)) THEN
@@ -1009,6 +1018,13 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
             this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) - &
                 topo%min_physd(1:ppm_dim))/(Nm(1:ppm_dim)-1)
         ENDIF
+        !check for round-off problems and fix them if necessary
+        DO k=1,ppm_dim
+            DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
+                this%h(k)=this%h(k)+epsilon(this%h(k)) 
+            ENDDO
+        ENDDO
+        check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
     ENDIF
 
     IF (PRESENT(ghostsize)) THEN
@@ -1042,7 +1058,10 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
             this%istart(1:ppm_dim,i) = 1 + CEILING((     &
                 topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
             this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
-                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
+                topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/&
+                (this%h(1:ppm_dim)-EPSILON(this%h(1:ppm_dim))))
+            !WARNING: this is a hack to resolve a round-off issue when h is such
+            !that a node falls epsilon away from the subdomain boundary
 
             !stdout("#isub = ",i," BEFORE CHOP")
             !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
@@ -1058,8 +1077,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
                 ! node right on the East, North, or Top domain boundary are 
                 ! reduced by 1 mesh node so that real mesh nodes are not
                 ! duplicated.
-                IF ((this%iend(k,i)-1)*this%h(k)+Offset(k).GE.&
-                    topo%max_subd(k,i)) THEN
+                IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
                     IF (topo%subs_bc(2*k,i).NE.1 .OR. &
                         (topo%subs_bc(2*k,i).EQ.1.AND.&
                         topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
