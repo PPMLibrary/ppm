@@ -54,10 +54,10 @@
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: sends => NULL()
-         REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
-         REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
+         REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: sends => NULL()
+         REAL(ppm_kind_single), DIMENSION(:,:), POINTER :: recvs => NULL()
+         REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: sendd => NULL()
+         REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: recvd => NULL()
          INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
          INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
          INTEGER, DIMENSION(:), POINTER   :: psend => NULL()

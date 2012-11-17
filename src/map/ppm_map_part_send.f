@@ -75,6 +75,8 @@
       REAL(ppm_kind_double) :: t0
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
+      INTEGER, DIMENSION(:), POINTER  :: rreq, sreq
+      INTEGER                         :: kreq
 #endif
       !-------------------------------------------------------------------------
       !  Externals 
@@ -191,6 +193,11 @@
       mrecv           = -1
       msend           = -1
 
+#ifdef __MPI
+      allocate(sreq(ppm_nsendlist),rreq(ppm_nsendlist))
+      sreq = 0
+      rreq = 0
+#endif
       DO k=2,ppm_nsendlist
 
          !----------------------------------------------------------------------
@@ -224,18 +231,11 @@
      &               ppm_isendlist(k),', nsend=',nsend(k),', psend=',psend(k)
                  CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
              ENDIF
-             CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
-     &                         precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
-     &                         ppm_comm,status,info)
+             CALL MPI_IRecv(precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
+     &                         ppm_comm,rreq(k),info)
+             CALL MPI_ISend(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
+     &                         ppm_comm,sreq(k),info)
      
-             ! Compute nrecv(k) from precv(k)
-             nrecv(k) = sbdim*precv(k)
-
-             IF (ppm_debug .GT. 1) THEN
-                 WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
-     &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
-                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
-             ENDIF
          ELSE
              ! skip this round, i.e. neither send nor receive any
              ! particles.
@@ -245,6 +245,24 @@
 #endif
 
       ENDDO
+#ifdef __MPI
+      DO k=2,ppm_nsendlist
+         IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
+             CALL MPI_Wait(rreq(k),status,info) 
+             CALL MPI_Wait(sreq(k),status,info) 
+             ! Compute nrecv(k) from precv(k)
+             nrecv(k) = sbdim*precv(k)
+
+             IF (ppm_debug .GT. 1) THEN
+                 WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
+     &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
+                 CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+             ENDIF
+         ENDIF
+      ENDDO
+      sreq = 0
+      rreq = 0
+#endif
       !----------------------------------------------------------------------
       !  Find the required (maximum) size of the send/recv buffers
       !----------------------------------------------------------------------
@@ -303,6 +321,7 @@
       IF (ppm_nsendlist .GT. 1) THEN
           iopt   = ppm_param_alloc_grow
           ldu(1) = MAX(mrecv,1)
+          ldu(2) = ppm_nsendlist
           IF (ppm_kind.EQ.ppm_kind_double) THEN
              CALL ppm_alloc(recvd,ldu,iopt,info)
           ELSE
@@ -316,6 +335,7 @@
           ENDIF
 
           ldu(1) = MAX(msend,1)
+          ldu(2) = ppm_nsendlist
           IF (ppm_kind.EQ.ppm_kind_double) THEN
              CALL ppm_alloc(sendd,ldu,iopt,info)
           ELSE
@@ -427,6 +447,7 @@
       !  loop over the processors in the ppm_isendlist(); skip the first entry
       !  which is the local processor
       !-------------------------------------------------------------------------
+      !---- send buffers in non-blocking fashion
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          !----------------------------------------------------------------------
          !  For each send/recv 
@@ -444,7 +465,7 @@
                DO i=1,psend(k)*ppm_buffer_dim(j)
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
-                  sendd(ibuffer) = ppm_sendbufferd(jbuffer)
+                  sendd(ibuffer,k) = ppm_sendbufferd(jbuffer)
                ENDDO 
             ENDDO 
 
@@ -457,26 +478,14 @@
             ! (only needed in the partial mapping).
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
                 tag1 = 300
-                CALL MPI_SendRecv( &
-     &             sendd,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
-     &             recvd,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-     &             ppm_comm,status,info)
+                CALL MPI_IRecv(recvd(:,k),nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
+     &             ppm_comm,rreq(k),info)
+                CALL MPI_ISend(sendd(:,k),nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
+     &             ppm_comm,sreq(k),info)
             ENDIF
 #else
-            recvd = sendd
+            recvd(:,k) = sendd(:,k)
 #endif
-            !-------------------------------------------------------------------
-            !  Store the data back in the recv buffer
-            !-------------------------------------------------------------------
-            ibuffer = 0
-            DO j=1,ppm_buffer_set
-               jbuffer = pp(k,j) - 1
-               DO i=1,precv(k)*ppm_buffer_dim(j)
-                  ibuffer                  = ibuffer + 1
-                  jbuffer                  = jbuffer + 1
-                  ppm_recvbufferd(jbuffer) = recvd(ibuffer)
-               ENDDO 
-            ENDDO 
          ENDDO
       ELSE
          !----------------------------------------------------------------------
@@ -495,7 +504,7 @@
                DO i=1,psend(k)*ppm_buffer_dim(j)
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
-                  sends(ibuffer) = ppm_sendbuffers(jbuffer)
+                  sends(ibuffer,k) = ppm_sendbuffers(jbuffer)
                ENDDO 
             ENDDO 
 
@@ -508,15 +517,29 @@
             ! (only needed in the partial mapping).
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
                 tag1 = 400
-                CALL MPI_SendRecv(                                    &
-     &             sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, & 
-     &             recvs,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
-     &             ppm_comm,status,info)
+                CALL MPI_IRecv(recvs(:,k),nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
+     &             ppm_comm,rreq(k),info)
+                CALL MPI_ISend(sends(:,k),nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
+     &             ppm_comm,sreq(k),info)
             ENDIF
 #else
-            recvs = sends
+            recvs(:,k) = sends(:,k)
 #endif
 
+         ENDDO
+      ENDIF 
+
+      !---- write back all the buffers
+      IF (ppm_kind.EQ.ppm_kind_double) THEN
+         !----------------------------------------------------------------------
+         !  For each recv 
+         !----------------------------------------------------------------------
+         DO k=2,ppm_nsendlist
+            !CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
+            IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
+              CALL MPI_Wait(rreq(k),status,info)
+              !CALL MPI_Wait(sreq(k),status,info) 
+            ENDIF 
             !-------------------------------------------------------------------
             !  Store the data back in the recv buffer
             !-------------------------------------------------------------------
@@ -526,11 +549,45 @@
                DO i=1,precv(k)*ppm_buffer_dim(j)
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
-                  ppm_recvbuffers(jbuffer) = recvs(ibuffer)
+                  ppm_recvbufferd(jbuffer) = recvd(ibuffer,k)
+               ENDDO 
+            ENDDO 
+         ENDDO
+      ELSE
+         !----------------------------------------------------------------------
+         !  For each recv 
+         !----------------------------------------------------------------------
+         DO k=2,ppm_nsendlist
+            !CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
+            IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
+              CALL MPI_Wait(rreq(k),status,info)
+              !CALL MPI_Wait(sreq(k),status,info) 
+            ENDIF 
+            !-------------------------------------------------------------------
+            !  Store the data back in the recv buffer
+            !-------------------------------------------------------------------
+            ibuffer = 0
+            DO j=1,ppm_buffer_set
+               jbuffer = pp(k,j) - 1
+               DO i=1,precv(k)*ppm_buffer_dim(j)
+                  ibuffer                  = ibuffer + 1
+                  jbuffer                  = jbuffer + 1
+                  ppm_recvbuffers(jbuffer) = recvs(ibuffer,k)
                ENDDO 
             ENDDO
          ENDDO
       ENDIF 
+
+#ifdef __MPI
+      !----- wait for all the sends.
+      
+      CALL MPI_Waitall(ppm_nsendlist,sreq,MPI_STATUSES_IGNORE,info)
+     
+      ! cleanup
+      deallocate(sreq,rreq)
+#endif
+
+      !-----
 
       !-------------------------------------------------------------------------
       !  before we through away the precv() data let us store it for later use:
