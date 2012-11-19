@@ -72,10 +72,10 @@
       INTEGER               :: iopt,count,tag1,qpart,msend,mrecv
       INTEGER               :: npart_send,npart_recv
       CHARACTER(ppm_char)   :: mesg
-      REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double) :: t0,t1,t2
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-      INTEGER, DIMENSION(:), POINTER  :: rreq, sreq
+      INTEGER, DIMENSION(:), POINTER  :: rreq, sreq,ssreq
       INTEGER                         :: kreq
 #endif
       !-------------------------------------------------------------------------
@@ -194,9 +194,10 @@
       msend           = -1
 
 #ifdef __MPI
-      allocate(sreq(ppm_nsendlist),rreq(ppm_nsendlist))
-      sreq = 0
-      rreq = 0
+      allocate(ssreq(ppm_nsendlist),sreq(ppm_nsendlist),rreq(ppm_nsendlist))
+      sreq = MPI_REQUEST_NULL
+      ssreq = MPI_REQUEST_NULL
+      rreq = MPI_REQUEST_NULL
 #endif
       DO k=2,ppm_nsendlist
 
@@ -234,7 +235,7 @@
              CALL MPI_IRecv(precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
      &                         ppm_comm,rreq(k),info)
              CALL MPI_ISend(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
-     &                         ppm_comm,sreq(k),info)
+     &                         ppm_comm,ssreq(k),info)
      
          ELSE
              ! skip this round, i.e. neither send nor receive any
@@ -243,34 +244,93 @@
              precv(k) = 0
          ENDIF
 #endif
-
       ENDDO
+
+      !-------------------------------------------------------------------------
+      ! now, since we already know nsend we can do all allocs, copies
+      ! and precomps that involve sned buffers here already.
+      !----------------------------------------------------------------------
+      !  Find the required (maximum) size of the send buffers
+      !----------------------------------------------------------------------
+      DO k=2,ppm_nsendlist
+         IF (msend.LE.nsend(k)) msend = nsend(k)
+      ENDDO
+      !-------------------------------------------------------------------------
+      !  Allocate memory for the smaller send buffer
+      !-------------------------------------------------------------------------
+      ! only allocate if there actually is anything to be sent/recvd with
+      ! other processors. Otherwise mrecv and msend would both still be -1
+      ! (as initialized above) and the alloc would throw a FATAL. This was
+      ! Bug ID 000012.
+      IF (ppm_nsendlist .GT. 1) THEN
+          iopt   = ppm_param_alloc_grow
+          ldu(1) = MAX(msend,1)
+          ldu(2) = ppm_nsendlist
+          IF (ppm_kind.EQ.ppm_kind_double) THEN
+             CALL ppm_alloc(sendd,ldu,iopt,info)
+          ELSE
+             CALL ppm_alloc(sends,ldu,iopt,info)
+          ENDIF 
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
+     &            'local send buffer SEND',__LINE__,info)
+              GOTO 9999
+          ENDIF
+      ENDIF
+      !-------------------------------------------------------------------------
+      !  Compute the total number of particles to send 
+      !  As it is now, this should be equal to Npart
+      !-------------------------------------------------------------------------
+      npart_send = 0
+      DO j=1,ppm_nsendlist
+         npart_send = npart_send + psend(j)
+      ENDDO
+      !-------------------------------------------------------------------------
+      !  Compute the pointer to the position of the data in the main send 
+      !  buffer 
+      !-------------------------------------------------------------------------
+      DO k=1,ppm_buffer_set
+         IF (k.EQ.1) THEN
+            qq(1,k) = 1
+         ELSE
+            qq(1,k) = qq(1,k-1) + npart_send*ppm_buffer_dim(k-1)
+         ENDIF
+         bdim    = ppm_buffer_dim(k)
+         DO j=2,ppm_nsendlist
+            qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
+            IF (ppm_debug .GT. 1) THEN
+                WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
+                CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
+            ENDIF
+         ENDDO
+      ENDDO
+
+      !-------------------------------------------------------------------------
+      ! end overlap
+      !-------------------------------------------------------------------------
+
+
 #ifdef __MPI
       DO k=2,ppm_nsendlist
          IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
-             CALL MPI_Wait(rreq(k),status,info) 
-             CALL MPI_Wait(sreq(k),status,info) 
+              CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
              ! Compute nrecv(k) from precv(k)
-             nrecv(k) = sbdim*precv(k)
+             nrecv(kreq) = sbdim*precv(kreq)
 
              IF (ppm_debug .GT. 1) THEN
                  WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
-     &               ppm_irecvlist(k),', nrecv=',nrecv(k),', precv=',precv(k)
+     &               ppm_irecvlist(kreq),', nrecv=',nrecv(kreq),', precv=',precv(kreq)
                  CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
              ENDIF
          ENDIF
       ENDDO
-      sreq = 0
-      rreq = 0
 #endif
       !----------------------------------------------------------------------
-      !  Find the required (maximum) size of the send/recv buffers
+      !  Find the required (maximum) size of the recv buffers
       !----------------------------------------------------------------------
       DO k=2,ppm_nsendlist
          IF (mrecv.LE.nrecv(k)) mrecv = nrecv(k)
-      ENDDO
-      DO k=2,ppm_nsendlist
-         IF (msend.LE.nsend(k)) msend = nsend(k)
       ENDDO
       !----------------------------------------------------------------------
       !  Increment the total receive buffer
@@ -333,20 +393,6 @@
      &            'local receive buffer RECV',__LINE__,info)
               GOTO 9999
           ENDIF
-
-          ldu(1) = MAX(msend,1)
-          ldu(2) = ppm_nsendlist
-          IF (ppm_kind.EQ.ppm_kind_double) THEN
-             CALL ppm_alloc(sendd,ldu,iopt,info)
-          ELSE
-             CALL ppm_alloc(sends,ldu,iopt,info)
-          ENDIF 
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
-     &            'local send buffer SEND',__LINE__,info)
-              GOTO 9999
-          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -357,34 +403,6 @@
           CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Compute the total number of particles to send 
-      !  As it is now, this should be equal to Npart
-      !-------------------------------------------------------------------------
-      npart_send = 0
-      DO j=1,ppm_nsendlist
-         npart_send = npart_send + psend(j)
-      ENDDO
-
-      !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main send 
-      !  buffer 
-      !-------------------------------------------------------------------------
-      DO k=1,ppm_buffer_set
-         IF (k.EQ.1) THEN
-            qq(1,k) = 1
-         ELSE
-            qq(1,k) = qq(1,k-1) + npart_send*ppm_buffer_dim(k-1)
-         ENDIF
-         bdim    = ppm_buffer_dim(k)
-         DO j=2,ppm_nsendlist
-            qq(j,k) = qq(j-1,k) + psend(j-1)*bdim
-            IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
-                CALL ppm_write(ppm_rank,'ppm_map_part_send',mesg,info)
-            ENDIF
-         ENDDO
-      ENDDO
 
 
       !-------------------------------------------------------------------------
@@ -448,6 +466,8 @@
       !  which is the local processor
       !-------------------------------------------------------------------------
       !---- send buffers in non-blocking fashion
+      sreq = MPI_REQUEST_NULL
+      rreq = MPI_REQUEST_NULL
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          !----------------------------------------------------------------------
          !  For each send/recv 
@@ -535,21 +555,21 @@
          !  For each recv 
          !----------------------------------------------------------------------
          DO k=2,ppm_nsendlist
-            !CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
-              CALL MPI_Wait(rreq(k),status,info)
-              !CALL MPI_Wait(sreq(k),status,info) 
+              CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
+            ELSE
+              kreq = k
             ENDIF 
             !-------------------------------------------------------------------
             !  Store the data back in the recv buffer
             !-------------------------------------------------------------------
             ibuffer = 0
             DO j=1,ppm_buffer_set
-               jbuffer = pp(k,j) - 1
-               DO i=1,precv(k)*ppm_buffer_dim(j)
+               jbuffer = pp(kreq,j) - 1
+               DO i=1,precv(kreq)*ppm_buffer_dim(j)
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
-                  ppm_recvbufferd(jbuffer) = recvd(ibuffer,k)
+                  ppm_recvbufferd(jbuffer) = recvd(ibuffer,kreq)
                ENDDO 
             ENDDO 
          ENDDO
@@ -558,21 +578,21 @@
          !  For each recv 
          !----------------------------------------------------------------------
          DO k=2,ppm_nsendlist
-            !CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
-              CALL MPI_Wait(rreq(k),status,info)
-              !CALL MPI_Wait(sreq(k),status,info) 
+              CALL MPI_Waitany(ppm_nsendlist,rreq,kreq,status,info)
+            ELSE
+              kreq = k
             ENDIF 
             !-------------------------------------------------------------------
             !  Store the data back in the recv buffer
             !-------------------------------------------------------------------
             ibuffer = 0
             DO j=1,ppm_buffer_set
-               jbuffer = pp(k,j) - 1
-               DO i=1,precv(k)*ppm_buffer_dim(j)
+               jbuffer = pp(kreq,j) - 1
+               DO i=1,precv(kreq)*ppm_buffer_dim(j)
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
-                  ppm_recvbuffers(jbuffer) = recvs(ibuffer,k)
+                  ppm_recvbuffers(jbuffer) = recvs(ibuffer,kreq)
                ENDDO 
             ENDDO
          ENDDO
@@ -581,10 +601,11 @@
 #ifdef __MPI
       !----- wait for all the sends.
       
+      CALL MPI_Waitall(ppm_nsendlist,ssreq,MPI_STATUSES_IGNORE,info)
       CALL MPI_Waitall(ppm_nsendlist,sreq,MPI_STATUSES_IGNORE,info)
      
       ! cleanup
-      deallocate(sreq,rreq)
+      deallocate(ssreq,sreq,rreq)
 #endif
 
       !-----
@@ -676,30 +697,30 @@
 !          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
 !     &        'work array QQ',__LINE__,info)
 !      ENDIF
-      CALL ppm_alloc(recvd,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
-     &        'local receive buffer RECVD',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(recvs,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
-     &        'local receive buffer RECVS',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(sendd,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
-     &        'local send buffer SENDD',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(sends,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
-     &        'local send buffer SENDS',__LINE__,info)
-      ENDIF
+!     CALL ppm_alloc(recvd,ldu,iopt,info)
+!     IF (info .NE. 0) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!    &        'local receive buffer RECVD',__LINE__,info)
+!     ENDIF
+!     CALL ppm_alloc(recvs,ldu,iopt,info)
+!     IF (info .NE. 0) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!    &        'local receive buffer RECVS',__LINE__,info)
+!     ENDIF
+!     CALL ppm_alloc(sendd,ldu,iopt,info)
+!     IF (info .NE. 0) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!    &        'local send buffer SENDD',__LINE__,info)
+!     ENDIF
+!     CALL ppm_alloc(sends,ldu,iopt,info)
+!     IF (info .NE. 0) THEN
+!         info = ppm_error_error
+!         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_send',     &
+!    &        'local send buffer SENDS',__LINE__,info)
+!     ENDIF
 
       !-------------------------------------------------------------------------
       !  Return 

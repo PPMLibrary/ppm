@@ -1219,7 +1219,11 @@ SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
             prop => Pc%props%next()
         ENDDO
 
-        CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
+        IF (partial) THEN
+          CALL ppm_map_part_send(Pc%Npart,Npart_new,info)
+        ELSE
+          CALL ppm_map_part_send_global(Pc%Npart,Npart_new,info)
+        ENDIF
         or_fail("ppm_map_part_send")
 
         prop => Pc%props%last()

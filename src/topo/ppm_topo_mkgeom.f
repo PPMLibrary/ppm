@@ -194,13 +194,6 @@
       lmyeps = ppm_myepsd
 #endif
 
-      !-------------------------------------------------------------------------
-      !  Check arguments
-      !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
-      ENDIF
 
 !      IF (topo_id .EQ. 0) THEN
 !         info = ppm_error_warning
@@ -222,6 +215,14 @@
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
           sub2proc => user_sub2proc
+      ENDIF
+      
+      !-------------------------------------------------------------------------
+      !  Check arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+        CALL check
+        IF (info .NE. 0) GOTO 9999
       ENDIF
       !-------------------------------------------------------------------------
       !  Dummy arguments for non-existing particles and meshes
