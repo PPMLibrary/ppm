@@ -79,7 +79,18 @@
       FUNCTION binomial(n,k)
           INTEGER    :: n,k
           INTEGER    :: binomial
-          binomial = factorial(n)/(factorial(k)*factorial(n-k))
+          real*8     :: i_r,n_l_k_r,k_r
+          real*8     :: acc
+          n_l_k_r = REAL(n - k)
+          k_r = REAL(k)
+          acc = 1.0
+          i_r = 1.0
+          DO WHILE(i_r <= k_r)
+              acc = acc*(n_l_k_r + i_r)/i_r
+              i_r = i_r + 1.0
+          ENDDO
+          binomial = NINT(acc)
+          RETURN
       END FUNCTION binomial
 
 
