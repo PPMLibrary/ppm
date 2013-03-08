@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                 ppm_dbg_print
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -45,9 +45,9 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       !!! The routine is used in conjunction with the ppmdbg.py script.
       !!! It creates two files with names ppm_dbg_####.sub and ppm_dbg_####.dat
       !!! That contain the domain decomposition and particle data respectively
-      
+
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
 
       USE ppm_module_data
@@ -56,8 +56,8 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       USE ppm_module_error
       USE ppm_module_substart
       USE ppm_module_substop
-      
-      implicit none
+
+      IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -70,7 +70,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #elif __KIND == __DOUBLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
-    
+
       ! arguments
       INTEGER,            INTENT(IN)    :: topoid
       !!! topology ID to which we are currently mapped
@@ -120,7 +120,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       INTEGER                           :: iproc
       INTEGER, DIMENSION(:),  POINTER   :: req => NULL()
 #endif
-       
+
       CALL substart('ppm_dbg_print',t0,info)
 
 
@@ -144,7 +144,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #endif
       CALL ppm_topo_get(topoid,topo,info)
       OPEN(iunit,file=sfname)
-   
+
       WRITE(iunit,'(I1)') ppm_dim
       WRITE(iunit,'(F12.8)') ghostlayer
       DO i=1,topo%nsubs
@@ -156,9 +156,9 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #ifdef __MPI
       ENDIF
 #endif
-      
-      IF (present(xp).AND.present(np)) THEN
-          IF (present(mp)) THEN
+
+      IF (PRESENT(xp).AND.PRESENT(np)) THEN
+          IF (PRESENT(mp)) THEN
               mpart = mp
           ELSE
               mpart = np
@@ -194,7 +194,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
      &            'failed to gather allnp, allmp or allctag',__LINE__,info)
               GOTO 9999
           ENDIF
-          
+
           IF (ppm_rank.eq.0) THEN
               ! allocate allxp array
               maxmp = maxval(allmp)
@@ -213,7 +213,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
          &            'failed to allocate allxp',__LINE__,info)
                   GOTO 9999
               ENDIF
-              
+
               lda(1) = ppm_nproc
               CALL ppm_alloc(req,lda,ppm_param_alloc_fit,info)
               IF (info .NE. 0) THEN
@@ -222,7 +222,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
          &            'failed to allocate req',__LINE__,info)
                   GOTO 9999
               ENDIF
-              
+
               DO i=1,allmp(1)
                   allxp(:,i,1) = xp(:,i)
 #if __CTAG == __VECTOR
@@ -253,7 +253,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
                   ENDIF
 #endif
               ENDDO
-              IF (present(append).AND.append) then
+              IF (PRESENT(append).AND.append) then
                   OPEN(iunit,file=pfname,access='append')
               ELSE
                   OPEN(iunit,file=pfname)
@@ -282,8 +282,8 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
               CALL mpi_send(colortag,mpart,MPI_INTEGER,0,0,ppm_comm,info)
 #endif
           ENDIF
-#else  
-          IF (present(append).AND.append) then
+#else
+          IF (PRESENT(append).AND.append) then
               OPEN(iunit,file=pfname,access='append')
           ELSE
               OPEN(iunit,file=pfname)
@@ -306,7 +306,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
 #endif
       ENDIF
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
 9999  CONTINUE
       CALL substop('ppm_dbg_print',t0,info)
