@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_init
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,7 +30,7 @@
       SUBROUTINE ppm_init(dim,prec,tolexp,comm,debug,info,logfile,stderr,stdout)
       !!! Initialisation of the ppm library.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_topo_typedef
@@ -48,9 +48,9 @@
       !-------------------------------------------------------------------------
 #ifdef __MPI
       INCLUDE 'mpif.h'
-#endif 
+#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER, INTENT(IN)   :: dim
       !!! dimension of the problem (2 or 3)
@@ -74,7 +74,7 @@
       INTEGER, INTENT(OUT)  :: info
       !!! returns status 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER               :: iopt,ilen,istdout,istderr,ilog
       INTEGER, DIMENSION(1) :: ldl,ldu
@@ -83,7 +83,7 @@
       CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=255)    :: cbuf
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
@@ -110,7 +110,7 @@
           ! -1 means: do not write log file
           ilog = -1
       ENDIF
- 
+
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -127,6 +127,16 @@
       CALL MPI_Initialized(ppm_mpi_init,info)
 
       !-------------------------------------------------------------------------
+      !  If MPI not initialized exit with error status ppm_error_fatal
+      !-------------------------------------------------------------------------
+      IF (.NOT.ppm_mpi_init) THEN
+         info = ppm_error_fatal
+         CALL ppm_error(ppm_err_nompi,'ppm_init',  &
+         &   'Call MPI_Init before calling ppm_init !',__LINE__,info)
+         GOTO 9999
+      ENDIF
+
+      !-------------------------------------------------------------------------
       !  Get the MPI communicator
       !-------------------------------------------------------------------------
       ppm_comm = comm
@@ -137,28 +147,19 @@
       ppm_nproc = 1
       ppm_rank  = 0
 #endif
-      
+
       !-------------------------------------------------------------------------
       !  Set unit numbers of stdout and stderr and log file
       !-------------------------------------------------------------------------
       CALL ppm_io_set_unit(istdout,istderr,ilog,info)
-      
+
       !-------------------------------------------------------------------------
       !  Now the library can talk...
       !-------------------------------------------------------------------------
-      
+
       CALL substart('ppm_init',t0,info)
 
 #if defined __MPI
-      !-------------------------------------------------------------------------
-      !  If MPI not initialized exit with error status ppm_error_fatal
-      !-------------------------------------------------------------------------
-      IF (.NOT.ppm_mpi_init) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_nompi,'ppm_init',  &
-     &         'Call MPI_Init before calling ppm_init !',__LINE__,info)
-         GOTO 9999
-      ENDIF
       IF (ppm_debug .GT. 0) THEN
         WRITE(mesg,'(2A)') '*** This is the PPM library starting on ',&
      &                    cbuf(1:ilen)
@@ -198,7 +199,7 @@
      &        'Print defines did not execute correctly',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Check and save the dimensionality of the problem
       !-------------------------------------------------------------------------
@@ -229,7 +230,7 @@
          CALL ppm_error(ppm_err_wrong_prec,'ppm_init', &
      &         'Must be either SINGE or DOUBLE!',__LINE__,info)
          GOTO 9999
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Save the precision
@@ -255,14 +256,14 @@
              info = ppm_error_warning
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Usual values are between 10^(-20) and 10^(-3)',__LINE__,info)
-          ENDIF 
+          ENDIF
           IF     (tolexp.LT.INT(LOG10(EPSILON(ppm_myepsd)))) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Tolerance must not be smaller than machine epsilon'  &
      &           ,__LINE__,info)
              GOTO 9999
-          ENDIF 
+          ENDIF
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
           WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',  &
@@ -272,14 +273,14 @@
              info = ppm_error_warning
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Usual values are between 10^(-12) and 10^(-3)',__LINE__,info)
-          ENDIF 
+          ENDIF
           IF     (tolexp.LT.INT(LOG10(EPSILON(ppm_myepss)))) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_tol_warn,'ppm_init', &
      &           'Tolerance must not be smaller than machine epsilon'  &
      &           ,__LINE__,info)
              GOTO 9999
-          ENDIF 
+          ENDIF
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
           WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',   &
@@ -292,14 +293,14 @@
 
 #ifdef __MPI
       !-------------------------------------------------------------------------
-      !  Save the MPI precision 
+      !  Save the MPI precision
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          ppm_mpi_kind = MPI_DOUBLE_PRECISION
       ELSE
          ppm_mpi_kind = MPI_REAL
-      ENDIF 
-#endif 
+      ENDIF
+#endif
 
       !-------------------------------------------------------------------------
       !  Definition of PI
@@ -335,7 +336,7 @@
       ppm_initialized = .TRUE.
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_init',t0,info)

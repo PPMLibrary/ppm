@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module   :                   ppm_module_typedef
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,7 +36,7 @@
       !----------------------------------------------------------------------
       !  Modules
       !----------------------------------------------------------------------
-      USE ppm_module_data
+      USE ppm_module_data, ONLY : ppm_kind_double, ppm_kind_single
 
       !----------------------------------------------------------------------
       ! Data types
@@ -60,7 +60,7 @@
 
           INTEGER                                      :: ID
           !!! ID of this topology
-          !!! 
+          !!!
           !!! It is the same as its index in the ppm_topo array
           LOGICAL                                      :: isdefined = .FALSE.
           !!! flag to tell if this topology is defined/in use
@@ -121,19 +121,19 @@
 
           INTEGER              , DIMENSION(:,:),POINTER :: subs_bc => NULL()
           !!! boundary conditions on a sub:
-          !!! 
+          !!!
           !!! - west  : 1
           !!! - east  : 2
           !!! - south : 3
           !!! - north : 4
           !!! - bottom: 5
           !!! - top   : 6
-          !!! 
+          !!!
           !!! index 1: the index of the 4 or 6 faces in 2 and 3 D
           !!! index 2: the global sub id
-          !!! 
+          !!!
           !!! states:
-          !!! 
+          !!!
           !!! - value: 0 the face is internal
           !!! - value: 1 otherwise
           INTEGER            , DIMENSION(:,:), POINTER :: ineighsubs => NULL()
@@ -185,8 +185,8 @@
       TYPE ppm_t_clist
           !!! Cell list data structure
           INTEGER, DIMENSION(:), POINTER    :: nm  => NULL()
-          !!! Number of cells in x,y,(z) direction (including the ghosts 
-          !!! cells) in each subdomain. 
+          !!! Number of cells in x,y,(z) direction (including the ghosts
+          !!! cells) in each subdomain.
           INTEGER, DIMENSION(:), POINTER    :: lpdx => NULL()
           !!! particle index list
           INTEGER, DIMENSION(:), POINTER    :: lhbx => NULL()
@@ -203,7 +203,7 @@
       INTEGER :: ppm_next_avail_topo
       !!! id of the next available topology to be used by
       !!! ppm_topo_alloc.
-      !!! 
+      !!!
       !!! at initialization this is set to ppm_param_undefined              +
       !!! if it points within (1,size(ppm_topo)) this slot is (re)used to
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
