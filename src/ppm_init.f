@@ -110,6 +110,19 @@
           ilog = -1
       ENDIF
  
+      !-------------------------------------------------------------------------
+      !  Set unit numbers of stdout and stderr and log file
+      !-------------------------------------------------------------------------
+      CALL ppm_io_set_unit(istdout,istderr,ilog,info)
+      
+      !-------------------------------------------------------------------------
+      !  Now the library can talk...
+      !-------------------------------------------------------------------------
+      
+      !-------------------------------------------------------------------------
+      !  Initialise 
+      !-------------------------------------------------------------------------
+      CALL substart('ppm_init',t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -126,31 +139,7 @@
       CALL MPI_Initialized(ppm_mpi_init,info)
 
       !-------------------------------------------------------------------------
-      !  Get the MPI communicator
-      !-------------------------------------------------------------------------
-      ppm_comm = comm
-      CALL MPI_Comm_Size(ppm_comm,ppm_nproc,info)
-      CALL MPI_Comm_Rank(ppm_comm,ppm_rank,info)
-      CALL MPI_Get_Processor_Name(cbuf,ilen,info)
-#else
-      ppm_nproc = 1
-      ppm_rank  = 0
-#endif
-      
-      !-------------------------------------------------------------------------
-      !  Set unit numbers of stdout and stderr and log file
-      !-------------------------------------------------------------------------
-      CALL ppm_io_set_unit(istdout,istderr,ilog,info)
-      
-      !-------------------------------------------------------------------------
-      !  Now the library can talk...
-      !-------------------------------------------------------------------------
-      
-      CALL substart('ppm_init',t0,info)
-
-#if defined __MPI
-      !-------------------------------------------------------------------------
-      !  If MPI not initialized exit with error status ppm_error_fatal
+      !  If not exit with error status ppm_error_fatal
       !-------------------------------------------------------------------------
       IF (.NOT.ppm_mpi_init) THEN
          info = ppm_error_fatal
@@ -158,6 +147,14 @@
      &         'Call MPI_Init before calling ppm_init !',__LINE__,info)
          GOTO 9999
       ENDIF
+
+      !-------------------------------------------------------------------------
+      !  Get the MPI communicator
+      !-------------------------------------------------------------------------
+      ppm_comm = comm
+      CALL MPI_Comm_Size(ppm_comm,ppm_nproc,info)
+      CALL MPI_Comm_Rank(ppm_comm,ppm_rank,info)
+      CALL MPI_Get_Processor_Name(cbuf,ilen,info)
       IF (ppm_debug .GT. 0) THEN
         WRITE(mesg,'(2A)') '*** This is the PPM library starting on ',&
      &                    cbuf(1:ilen)
@@ -172,6 +169,8 @@
         ENDIF
       ENDIF
 #else
+      ppm_nproc = 1
+      ppm_rank  = 0
       WRITE(mesg,'(A)') '*** This is the PPM library in single-processor mode'
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
@@ -264,7 +263,7 @@
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-          WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',  &
+          WRITE(mesg,'(A,E15.10)') 'Floating point tolerance set to ',  &
      &        ppm_myepsd
       ELSE
           IF     (tolexp.LT.-12.OR.tolexp.GT.-3) THEN
@@ -281,7 +280,7 @@
           ENDIF 
           ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
           ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-          WRITE(mesg,'(A,E17.10)') 'Floating point tolerance set to ',   &
+          WRITE(mesg,'(A,E15.10)') 'Floating point tolerance set to ',   &
      &        ppm_myepss
       ENDIF
       CALL ppm_log('ppm_init',mesg,info)

@@ -121,13 +121,7 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! NOTE: first index is 1-6 (each of the faces)
-      !!! - west  : 1
-      !!! - east  : 2
-      !!! - south : 3
-      !!! - north : 4
-      !!! - bottom: 5
-      !!! - top   : 6
+      !!! first index is 1-6 (each of the faces)
       REAL(MK)                , INTENT(IN   ) :: ghostsize
       !!! The size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
@@ -159,7 +153,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,treetype,nbox,isub
+      INTEGER                           :: i,j,treetype,nbox,isub
       INTEGER                           :: iopt
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
@@ -416,7 +410,7 @@
       !  Find the neighbors of the subdomains
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
-     &                    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
+     &                    min_sub,max_sub,nsubs,nneigh,ineigh,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &

@@ -28,9 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_util_rank2d_s(xp,np,xmin,xmax,nm,ngl,lpdx,lhbx,info)
+      SUBROUTINE ppm_util_rank2d_s(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_util_rank2d_d(xp,np,xmin,xmax,nm,ngl,lpdx,lhbx,info)
+      SUBROUTINE ppm_util_rank2d_d(xp,Np,xmin,xmax,Nm,Ngl,lpdx,lhbx,info)
 #endif
       !!! Sort particles in cells. Create index table to
       !!! particles and pointer to first particle in each cell.
@@ -70,22 +70,22 @@
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Particle coordinates
-      INTEGER                 , INTENT(IN   ) :: np
+      INTEGER                 , INTENT(IN   ) :: Np
       !!! Number of particles
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmin
       !!! Minimum extent of mesh (not including any ghost layer)
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmax
       !!! Maximum extent of mesh (not including any ghost layer)
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: nm
+      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm
       !!! Number of mesh points (cells)
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: ngl
+      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Ngl
       !!! Number of ghost layers to add. The ghost layers will be added to the
       !!! domain passed in xmin(:) and xmax()
       !!!
-      !!! * nm(1) : added layers below xmin(1)
-      !!! * nm(2) : added layers below xmin(2)
-      !!! * nm(3) : added layers above xmax(1)
-      !!! * nm(4) : added layers above xmax(2)
+      !!! * Nm(1) : added layers below xmin(1)
+      !!! * Nm(2) : added layers below xmin(2)
+      !!! * Nm(3) : added layers above xmax(1)
+      !!! * Nm(4) : added layers above xmax(2)
       INTEGER , DIMENSION(:)  , POINTER       :: lpdx
       !!! Index of particles in cells (lpdx(icnt))
       INTEGER , DIMENSION(:)  , POINTER       :: lhbx
@@ -114,7 +114,7 @@
       INTEGER, DIMENSION(:), POINTER          :: cbox  => NULL()
       INTEGER, DIMENSION(:), POINTER          :: npbx  => NULL()
       ! total number of cells in each direction (including ghost layers)
-      INTEGER, DIMENSION(2)                   :: nmtot
+      INTEGER, DIMENSION(2)                   :: Nmtot
       CHARACTER(LEN=ppm_char)                 :: msg
       ! dimensions for allocate
       INTEGER, DIMENSION(1)                   :: ldc
@@ -141,15 +141,15 @@
       !-------------------------------------------------------------------------
       !  Compute total number of mesh cells (global and in each direction)
       !-------------------------------------------------------------------------
-      nmtot(1) = nm(1) + ngl(1) + ngl(3)
-      nmtot(2) = nm(2) + ngl(2) + ngl(4)
-      nbox  = nmtot(1)*nmtot(2)
+      Nmtot(1) = Nm(1) + Ngl(1) + Ngl(3)
+      Nmtot(2) = Nm(2) + Ngl(2) + Ngl(4)
+      nbox  = Nmtot(1)*Nmtot(2)
 
       !-------------------------------------------------------------------------
       !  Allocate memory
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_fit
-      ldc(1) = np
+      ldc(1) = Np
       CALL ppm_alloc(pbox,ldc,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_fatal
@@ -184,8 +184,8 @@
       !-------------------------------------------------------------------------
       !  Compute mesh spacing
       !-------------------------------------------------------------------------
-      rdx   = REAL(nm(1),MK)/(xmax(1) - xmin(1))
-      rdy   = REAL(nm(2),MK)/(xmax(2) - xmin(2))
+      rdx   = REAL(Nm(1),MK)/(xmax(1) - xmin(1))
+      rdy   = REAL(Nm(2),MK)/(xmax(2) - xmin(2))
 
       !-------------------------------------------------------------------------
       !  Compute non-dimensional cell co-ordinates (min. extent of mesh)
@@ -215,7 +215,7 @@
          !  The domain is defined not to include the upper boundary. (dach)
          !----------------------------------------------------------------------
          icount  = 0
-         DO ipart=1,np
+         DO ipart=1,Np
             IF (xp(1,ipart).LT.xmin(1).OR.xp(1,ipart).GE.xmax(1).OR. &
      &          xp(2,ipart).LT.xmin(2).OR.xp(2,ipart).GE.xmax(2)) THEN
                icount  = icount + 1
@@ -241,7 +241,7 @@
       icount = 0
       info   = 0
       icorr = 0
-      DO ipart=1,np
+      DO ipart=1,Np
          !----------------------------------------------------------------------
          !  This has to be a FLOOR and not an INT. The latter would give
          !  wrong results with negative box indices!
@@ -250,8 +250,8 @@
          !  The subtraction has to come before the multiplication due to 
          !  Nummerical errors. (dach)
          !----------------------------------------------------------------------
-         i = FLOOR((xp(1,ipart) - x0) * rdx) + ngl(1)
-         j = FLOOR((xp(2,ipart) - y0) * rdy) + ngl(2)
+         i = FLOOR((xp(1,ipart) - x0) * rdx) + Ngl(1)
+         j = FLOOR((xp(2,ipart) - y0) * rdy) + Ngl(2)
 
          ! The calculated indices are only correct on the lower boundary.
          ! On the upper boundary it may happen that particles inside the 
@@ -260,32 +260,32 @@
          
          ! if particle is outside the physical domain but index belongs to a
          ! real cell -> move particle to ghost cell 
-         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
-            i = nm(1) + ngl(1)
+         if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. Nm(1)+Ngl(1)) THEN
+            i = Nm(1) + Ngl(1)
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. nm(2)+ngl(2)) THEN
-            j = nm(2) + ngl(2)
+         if (xp(2,ipart) .GE. xmax(2) .AND. j .LT. Nm(2)+Ngl(2)) THEN
+            j = Nm(2) + Ngl(2)
             icorr = icorr + 1
          ENDIF
          
          ! if particle is inside the physical domain but index belongs to a
          ! ghost cell -> move particle in real cell
-         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
-            i = nm(1) + ngl(1) - 1
+         if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. Nm(1)+Ngl(1)) THEN
+            i = Nm(1) + Ngl(1) - 1
             icorr = icorr + 1
          ENDIF
-         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. nm(2)+ngl(2)) THEN
-            j = nm(2) + ngl(2) - 1
+         if (xp(2,ipart) .LT. xmax(2) .AND. j .GE. Nm(2)+Ngl(2)) THEN
+            j = Nm(2) + Ngl(2) - 1
             icorr = icorr + 1
          ENDIF
          
-         ! ignore particles outside the mesh (numbering is from 0...nmtot(:)-1
+         ! ignore particles outside the mesh (numbering is from 0...Nmtot(:)-1
          ! since we are using FLOOR !!!
-         IF ((i .GE. 0 .AND. i .LT. nmtot(1)) .AND.  &
-     &       (j .GE. 0 .AND. j .LT. nmtot(2))) THEN
+         IF ((i .GE. 0 .AND. i .LT. Nmtot(1)) .AND.  &
+     &       (j .GE. 0 .AND. j .LT. Nmtot(2))) THEN
             icount       = icount + 1
-            ibox         = i + 1 + j*nmtot(1)
+            ibox         = i + 1 + j*Nmtot(1)
             pbox(ipart)  = ibox
          ELSE
             ! particle is in no box
@@ -321,7 +321,7 @@
       !  Count the number of particles per box (moved out of above loop
       !  since this count does not vectorize)
       !-------------------------------------------------------------------------
-      DO ipart=1,np
+      DO ipart=1,Np
          ibox = pbox(ipart)
          IF (ibox .GT. 0) npbx(ibox) = npbx(ibox) + 1
       ENDDO
@@ -341,7 +341,7 @@
       !-------------------------------------------------------------------------
       !  Map the particles in the correct order. This does not vectorize.
       !-------------------------------------------------------------------------
-      DO ipart=1,np
+      DO ipart=1,Np
          ibox = pbox(ipart)
          IF (ibox .GT. 0) THEN
             ! if particle is in any box, add it to index list
@@ -413,46 +413,46 @@
       RETURN
       CONTAINS
       SUBROUTINE check
-         IF (np .LT. 0) THEN
+         IF (Np .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'np must be >0',__LINE__,info)
+     &           'Np must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (ngl(1) .LT. 0) THEN
+         IF (Ngl(1) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'ngl(1) must be >= 0',__LINE__,info)
+     &           'Ngl(1) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (ngl(2) .LT. 0) THEN
+         IF (Ngl(2) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'ngl(2) must be >= 0',__LINE__,info)
+     &           'Ngl(2) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (ngl(3) .LT. 0) THEN
+         IF (Ngl(3) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'ngl(3) must be >= 0',__LINE__,info)
+     &           'Ngl(3) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (ngl(4) .LT. 0) THEN
+         IF (Ngl(4) .LT. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'ngl(4) must be >= 0',__LINE__,info)
+     &           'Ngl(4) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (nm(1) .LE. 0) THEN
+         IF (Nm(1) .LE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'nm(1) must be >0',__LINE__,info)
+     &           'Nm(1) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
-         IF (nm(2) .LE. 0) THEN
+         IF (Nm(2) .LE. 0) THEN
             info = ppm_error_error
             CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
-     &           'nm(2) must be >0',__LINE__,info)
+     &           'Nm(2) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (xmax(1) .LE. xmin(1)) THEN

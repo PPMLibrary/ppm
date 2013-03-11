@@ -91,7 +91,7 @@
          IF (ASSOCIATED(topo)) ldealloc = .TRUE.
          lalloc   = .TRUE.
       ELSEIF (iopt.EQ.ppm_param_dealloc) THEN
-         ldealloc = .TRUE.
+      	 ldealloc = .TRUE.
 
       ELSE
          !----------------------------------------------------------------------

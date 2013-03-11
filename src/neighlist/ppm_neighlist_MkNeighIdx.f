@@ -175,7 +175,7 @@
          ind(1,5) = 1     ! interaction   1 -- 3
          jnd(2,5) = 1
 
-         IF (ppm_dim .EQ. 3) THEN
+         IF (ppm_dim .GT. 2) THEN
              jnd(3,5)   = 1   ! interaction   0 -- 9
              ind(1,5)   = 0   ! reset to zero (1-3 will be further down)
              jnd(2,5)   = 0

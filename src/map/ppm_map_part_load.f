@@ -29,8 +29,6 @@
 
       SUBROUTINE ppm_map_part_load(info)
       !!! This routine loads the internally stored particle mapping.
-      !!!
-      !!! See `ppm_map_part_store` for more information.
 
       !-------------------------------------------------------------------------
       !  Modules 

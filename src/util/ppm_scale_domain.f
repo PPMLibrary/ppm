@@ -122,9 +122,9 @@
             !  scale the physical domain for/in each topology
             !-------------------------------------------------------------------
 
-            DO i=1,dim
+	        DO i=1,dim
 #if __KIND == __DOUBLE_PRECISION
-                topo%min_physd(i) = &
+				topo%min_physd(i) = &
      &            (topo%min_physd(i) - origo(i))*scale(i) + origo(i)
                 topo%max_physd(i) = &
      &            (topo%max_physd(i) - origo(i))*scale(i) + origo(i)
@@ -165,7 +165,7 @@
                 topo%max_subs(i,j) = &
      &           (topo%max_subs(i,j) - origo(i))*scale(i) + origo(i)
 #endif
-             ENDDO
+		     ENDDO
          ENDDO
 
          !----------------------------------------------------------------------
@@ -183,7 +183,7 @@
              topo%max_physs(i) = &
      &         (topo%max_physs(i) - origo(i))*scale(i) + origo(i)
 #endif
-         ENDDO
+	    ENDDO
       ENDIF
 
       !-------------------------------------------------------------------------

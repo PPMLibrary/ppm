@@ -38,6 +38,5 @@
          USE ppm_module_is_initialized
          USE ppm_module_time
          USE ppm_module_util_dbg
-         USE ppm_module_util_netstat
 
       END MODULE ppm_module_core_util

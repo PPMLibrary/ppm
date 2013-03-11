@@ -132,7 +132,8 @@ test_suite ppm_module_interp_m2p
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
-    test m2p_2d({ngp: [17,33,65,129,257,513,1025], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu,ppm_param_device_gpu]})
+    !test m2p_2d({ngp: [17,33,65,129,257,513,1025], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu,ppm_param_device_gpu]})
+    test m2p_2d({ngp: [17,33,65,129,257,513,1025,2049], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_gpu]})
         use ppm_module_typedef
         use ppm_module_data
         use ppm_module_mktopo
@@ -280,7 +281,8 @@ test_suite ppm_module_interp_m2p
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
-    test m2p_3d({ngp: [9,17,33,65,129,257], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu,ppm_param_device_gpu]})
+    !test m2p_3d({ngp: [17], kernel: [ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu]})
+    test m2p_3d({ngp: [9,17,33,65,97,129], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_gpu]})
         use ppm_module_typedef
         use ppm_module_data
         use ppm_module_mktopo

@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_find_neigh_s(min_phys,max_phys,bcdef, &
-     &           min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
+     &           min_sub,max_sub,nsubs,nneigh,ineigh,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_find_neigh_d(min_phys,max_phys,bcdef, &
-     &           min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
+     &           min_sub,max_sub,nsubs,nneigh,ineigh,info)
       !!! This routine find the neighbours of a sub domain.
       !!! It does that by comparing the coordinates of the
       !!! bounding box of the sub domains using an N-square
@@ -41,14 +41,6 @@
       !!! must be searched!
       !!!
       !!! NOTE: No sub is listed as a neighbor of itself.
-      !!!
-      !!! NOTE: [SR, 02.12.2011] 
-      !!!     This routine has been modified to account for ghostlayer sizes
-      !!!     so that a subdomain that overlaps the ghost layer of another
-      !!!     subdomain is considered as a neighbor even if it does not
-      !!!     touch the subdomain itself (this is what happens when 2 subs
-      !!!     that are touching at a corner are slightly shifted, leading
-      !!!     to some particle interactions being missed...). 
       !!!
       !!! [NOTE]
       !!! ======================================================================
@@ -114,8 +106,6 @@
       !!! of neighbouring subs of isub
       INTEGER                 , INTENT(IN   ) :: nsubs
       !!! Total number of (real) sub domains
-      REAL(MK), DIMENSION(ppm_dim),INTENT(IN) :: ghostsize
-      !!! The ghostlayer size in each dimension
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------

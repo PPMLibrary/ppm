@@ -161,6 +161,9 @@
       REAL(mk)                               :: x01,x02,x03
       CHARACTER(len=256)                     :: msg
       TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
+#if   __MODE == __SCA
+      INTEGER                                :: lda = 1
+#endif
       !------------------------------------------------------------------------!
       !  Variables for unrolled versions
       !------------------------------------------------------------------------!
@@ -168,6 +171,22 @@
       REAL(mk) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
       INTEGER  :: ip10,ip11,ip12,ip13,ip20,ip21,ip22,ip23,ip30,ip31,ip32,ip33
       INTEGER  :: ldn
+      REAL(mk) :: a10a20
+      REAL(mk) :: a10a21
+      REAL(mk) :: a10a22
+      REAL(mk) :: a10a23
+      REAL(mk) :: a11a20
+      REAL(mk) :: a11a21
+      REAL(mk) :: a11a22
+      REAL(mk) :: a11a23
+      REAL(mk) :: a12a20
+      REAL(mk) :: a12a21
+      REAL(mk) :: a12a22
+      REAL(mk) :: a12a23
+      REAL(mk) :: a13a20
+      REAL(mk) :: a13a21
+      REAL(mk) :: a13a22
+      REAL(mk) :: a13a23
       REAL(mk) :: a10a20a30
       REAL(mk) :: a10a20a31
       REAL(mk) :: a10a20a32
@@ -268,9 +287,7 @@
       dxyi = 1.0_mk/dx(2)
       IF(ppm_dim.EQ.3) dxzi = 1.0_mk/dx(3)
 
-
 #if __DIME == __3D
-
         DO isub = 1,topo%nsublist
 
 #if __MODE == __VEC
@@ -2219,60 +2236,140 @@
            ENDDO        ! iq
 #endif
         END DO              ! loop over subs
-
 #elif __DIME == __2D
         DO isub = 1,topo%nsublist
-           DO ip = 1,store_info(isub)
-
               isubl = topo%isublist(isub)
-              iq    = list_sub(isub,ip)
+              DO ip = 1,store_info(isub)
 
-              x01 = (xp(1,iq)-min_sub(1,isubl))*dxxi
-              x02 = (xp(2,iq)-min_sub(2,isubl))*dxyi
+                 iq    = list_sub(isub,ip)
 
-              ip1 = INT(x01)+1
-              ip2 = INT(x02)+1
+                 x01 = (xp(1,iq)-min_sub(1,isubl))*dxxi
+                 x02 = (xp(2,iq)-min_sub(2,isubl))*dxyi
 
-              xp1 = x01-AINT(x01)
-              xp2 = x02-AINT(x02)
+                 ip10 = INT(x01)
+                 ip20 = INT(x02)
 
-              DO jj = -1,2
+                 ip11 = ip10 + 1
+                 ip21 = ip20 + 1
 
-                 x2 = ABS(xp2 - REAL(jj,mk))
+                 ip12 = ip11 + 1
+                 ip22 = ip21 + 1
 
-                 IF(x2.LT.1.0_mk) THEN
-                    wx2 = 1.0_mk - x2**2*(2.5_mk-1.5_mk*x2)
-                 ELSE
-                    wx2 = 2.0_mk + (-4.0_mk + &
-     &                         (2.5_mk - 0.5_mk * x2)*x2)*x2
-                 END IF
+                 ip13 = ip11 + 2
+                 ip23 = ip21 + 2
 
-                 DO ii    = - 1,2
+                 xp1 = x01-REAL(ip10,mk)
+                 xp2 = x02-REAL(ip20,mk)
 
-                    x1 = ABS(xp1 - REAL(ii,mk))
+                 x10 = xp1 + 1.0_mk
+                 x11 = x10 - 1.0_mk
+                 x12 = x10 - 2.0_mk
+                 x13 = x10 - 3.0_mk
 
-                    IF(x1.LT.1.0_MK) THEN
-                       wx1 =  1.0_mk - x1**2*(2.5_mk - &
-     &                             1.5_mk*x1)
-                    ELSE
-                       wx1 =  2.0_mk + (-4.0_mk + &
-     &                             (2.5_mk - 0.5_mk*x1)*x1)*x1
-                    END IF
+                 x20 = xp2 + 1.0_mk
+                 x21 = x20 - 1.0_mk
+                 x22 = x20 - 2.0_mk
+                 x23 = x20 - 3.0_mk
+
+                 a10 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x10)*x10)*x10
+                 a20 = 2.0_mk + (-4.0_mk+(2.5_mk-0.5_mk*x20)*x20)*x20
+
+                 a11 = 1.0_mk + (-2.5_mk+1.5_mk*x11)*x11**2
+                 a21 = 1.0_mk + (-2.5_mk+1.5_mk*x21)*x21**2
+
+                 a12 = 1.0_mk + (-2.5_mk-1.5_mk*x12)*x12**2
+                 a22 = 1.0_mk + (-2.5_mk-1.5_mk*x22)*x22**2
+
+                 a13 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x13)*x13)*x13
+                 a23 = 2.0_mk + (4.0_mk + (2.5_mk+0.5_mk*x23)*x23)*x23
+
+                 a10a20 = a10*a20
+                 a10a21 = a10*a21
+                 a10a22 = a10*a22
+                 a10a23 = a10*a23
+                 a11a20 = a11*a20
+                 a11a21 = a11*a21
+                 a11a22 = a11*a22
+                 a11a23 = a11*a23
+                 a12a20 = a12*a20
+                 a12a21 = a12*a21
+                 a12a22 = a12*a22
+                 a12a23 = a12*a23
+                 a13a20 = a13*a20
+                 a13a21 = a13*a21
+                 a13a22 = a13*a22
+                 a13a23 = a13*a23
 
 #if __MODE == __SCA
-                    field_up(ii+ip1,jj+ip2,isub) &
-     &                         = field_up(ii+ip1,jj+ip2,isub) &
-     &                                          + wx1*wx2*up(iq)
-#else
-                    DO ldn=1,lda
-                       field_up(ldn,ii+ip1,jj+ip2,isub) &
-     &                            = field_up(ldn,ii+ip1,jj+ip2,isub) &
-     &                                             + wx1*wx2*up(ldn,iq)
-                    ENDDO
+             field_up(ip10,ip20,isub)=field_up(ip10,ip20,isub)+&
+     &                  a10a20*up(iq)
+             field_up(ip11,ip20,isub)=field_up(ip11,ip20,isub)+&
+     &                  a11a20*up(iq)
+             field_up(ip12,ip20,isub)=field_up(ip12,ip20,isub)+&
+     &                  a12a20*up(iq)
+             field_up(ip13,ip20,isub)=field_up(ip13,ip20,isub)+&
+     &                  a13a20*up(iq)
+             field_up(ip10,ip21,isub)=field_up(ip10,ip21,isub)+&
+     &                  a10a21*up(iq)
+             field_up(ip11,ip21,isub)=field_up(ip11,ip21,isub)+&
+     &                  a11a21*up(iq)
+             field_up(ip12,ip21,isub)=field_up(ip12,ip21,isub)+&
+     &                  a12a21*up(iq)
+             field_up(ip13,ip21,isub)=field_up(ip13,ip21,isub)+&
+     &                  a13a21*up(iq)
+             field_up(ip10,ip22,isub)=field_up(ip10,ip22,isub)+&
+     &                  a10a22*up(iq)
+             field_up(ip11,ip22,isub)=field_up(ip11,ip22,isub)+&
+     &                  a11a22*up(iq)
+             field_up(ip12,ip22,isub)=field_up(ip12,ip22,isub)+&
+     &                  a12a22*up(iq)
+             field_up(ip13,ip22,isub)=field_up(ip13,ip22,isub)+&
+     &                  a13a22*up(iq)
+             field_up(ip10,ip23,isub)=field_up(ip10,ip23,isub)+&
+     &                  a10a23*up(iq)
+             field_up(ip11,ip23,isub)=field_up(ip11,ip23,isub)+&
+     &                  a11a23*up(iq)
+             field_up(ip12,ip23,isub)=field_up(ip12,ip23,isub)+&
+     &                  a12a23*up(iq)
+             field_up(ip13,ip23,isub)=field_up(ip13,ip23,isub)+&
+     &                  a13a23*up(iq)
+#elif __MODE == __VEC
+       DO ldn=1,lda
+             field_up(ldn,ip10,ip20,isub)=field_up(ldn,ip10,ip20,isub)+&
+     &                  a10a20*up(ldn,iq)
+             field_up(ldn,ip11,ip20,isub)=field_up(ldn,ip11,ip20,isub)+&
+     &                  a11a20*up(ldn,iq)
+             field_up(ldn,ip12,ip20,isub)=field_up(ldn,ip12,ip20,isub)+&
+     &                  a12a20*up(ldn,iq)
+             field_up(ldn,ip13,ip20,isub)=field_up(ldn,ip13,ip20,isub)+&
+     &                  a13a20*up(ldn,iq)
+             field_up(ldn,ip10,ip21,isub)=field_up(ldn,ip10,ip21,isub)+&
+     &                  a10a21*up(ldn,iq)
+             field_up(ldn,ip11,ip21,isub)=field_up(ldn,ip11,ip21,isub)+&
+     &                  a11a21*up(ldn,iq)
+             field_up(ldn,ip12,ip21,isub)=field_up(ldn,ip12,ip21,isub)+&
+     &                  a12a21*up(ldn,iq)
+             field_up(ldn,ip13,ip21,isub)=field_up(ldn,ip13,ip21,isub)+&
+     &                  a13a21*up(ldn,iq)
+             field_up(ldn,ip10,ip22,isub)=field_up(ldn,ip10,ip22,isub)+&
+     &                  a10a22*up(ldn,iq)
+             field_up(ldn,ip11,ip22,isub)=field_up(ldn,ip11,ip22,isub)+&
+     &                  a11a22*up(ldn,iq)
+             field_up(ldn,ip12,ip22,isub)=field_up(ldn,ip12,ip22,isub)+&
+     &                  a12a22*up(ldn,iq)
+             field_up(ldn,ip13,ip22,isub)=field_up(ldn,ip13,ip22,isub)+&
+     &                  a13a22*up(ldn,iq)
+             field_up(ldn,ip10,ip23,isub)=field_up(ldn,ip10,ip23,isub)+&
+     &                  a10a23*up(ldn,iq)
+             field_up(ldn,ip11,ip23,isub)=field_up(ldn,ip11,ip23,isub)+&
+     &                  a11a23*up(ldn,iq)
+             field_up(ldn,ip12,ip23,isub)=field_up(ldn,ip12,ip23,isub)+&
+     &                  a12a23*up(ldn,iq)
+             field_up(ldn,ip13,ip23,isub)=field_up(ldn,ip13,ip23,isub)+&
+     &                  a13a23*up(ldn,iq)
+          END DO          ! loop over lda 
 #endif
-                 END DO
-              END DO
-           END DO
+          END DO          ! loop over iq 
         END DO          ! loop over subs
 #endif
 

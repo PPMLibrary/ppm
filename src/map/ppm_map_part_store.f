@@ -29,12 +29,6 @@
 
       SUBROUTINE ppm_map_part_store(info)
       !!! This routine stores the state of the current/active particle mapping.
-      !!!
-      !!! This is especially useful for alternating ghost-get/ghost-put
-      !!! mappings, which are used for implementing the communication in
-      !!! symmetric particle interactions. The `ppm_map_part_ghost_get` mapping
-      !!! can then be stored after its first call and reloaded after each
-      !!! ghost-put mapping.
 
       !-------------------------------------------------------------------------
       !  Modules 

@@ -28,7 +28,7 @@
       !-------------------------------------------------------------------------
 
       SUBROUTINE ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
-      &                                isublist,nsublist,info)
+                                  isublist,nsublist,info)
       !!! This routine returns the subdomain boundaries and boundary
       !!! conditions
 
@@ -59,9 +59,9 @@
       !!! Topology ID
       INTEGER                         , INTENT(IN   ) :: meshid
       !!! Mesh ID
-      INTEGER, DIMENSION(:  ), POINTER                :: nm
+      INTEGER, DIMENSION(:  ), POINTER, INTENT(  OUT) :: nm
       !!! global number of mesh points in computational domain
-      INTEGER, DIMENSION(:,:), POINTER                :: istart
+      INTEGER, DIMENSION(:,:), POINTER, INTENT(  OUT) :: istart
       !!! Start indices (i,j[,k]) (first index) of sub mesh isub (second
       !!! index) in *global* mesh.
       !!!
@@ -70,7 +70,7 @@
       !!! subdomains in the *whole* physical domain (i.e. all processors).
       !!! Use `topo%isublist` to find the indeces for the grids on the
       !!! processor
-      INTEGER, DIMENSION(:,:), POINTER                :: ndata
+      INTEGER, DIMENSION(:,:), POINTER, INTENT(  OUT) :: ndata
       !!! Returns number of grid POINTS in x,y[,z] (first index) of sub mesh
       !!! isub (second index). Includes the points ON the sub boundaries.
       !!!
@@ -81,7 +81,7 @@
       !!! processor
       INTEGER, DIMENSION(ppm_dim)      , INTENT(  OUT) :: maxndata 
       !!! Returns maximum number of grid points over all subdomains
-      INTEGER, DIMENSION(:  ), POINTER                 :: isublist
+      INTEGER, DIMENSION(:  ), POINTER,  INTENT(  OUT) :: isublist
       !!! list of subs of the current processor. 
       !!! 1st index: local sub number.
       INTEGER                         ,  INTENT(  OUT) :: nsublist
@@ -123,16 +123,10 @@
       !  Allocate memory for structures
       !-------------------------------------------------------------------------
 
+
       iopt = ppm_param_alloc_fit
       lda(1) = ppm_dim
       lda(2) = topo%nsubs
-      CALL ppm_alloc(nm,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_get_meshinfo',    &
-     &        'global mesh size NM',__LINE__,info)
-          GOTO 9999
-      ENDIF
       CALL ppm_alloc(istart,lda,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal

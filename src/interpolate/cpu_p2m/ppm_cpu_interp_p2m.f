@@ -601,7 +601,7 @@
 #endif
       IF(np.EQ.0) GOTO 9997
 
-      CALL tic(t_start)
+      CALL tic()
       SELECT CASE(kernel)
       CASE(ppm_param_rmsh_kernel_mp4)
 #if __MODE == __SCA

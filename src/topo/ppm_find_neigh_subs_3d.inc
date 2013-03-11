@@ -30,15 +30,19 @@
       mx2 = MIN(max_sub(2,ip),max_sub(2,jp))
       mx3 = MIN(max_sub(3,ip),max_sub(3,jp))
 
-      mn1 = MAX(min_sub(1,ip),min_sub(1,jp)) - ghostsize(1)
-      mn2 = MAX(min_sub(2,ip),min_sub(2,jp)) - ghostsize(2)
-      mn3 = MAX(min_sub(3,ip),min_sub(3,jp)) - ghostsize(3)
-
+      mn1 = MAX(min_sub(1,ip),min_sub(1,jp))
+      mn2 = MAX(min_sub(2,ip),min_sub(2,jp))
+      mn3 = MAX(min_sub(3,ip),min_sub(3,jp))
 
       !-------------------------------------------------------------------------
-      !  Check for adjacent faces. 
+      !  Check for adjacent faces. SHARK: The funny logic is faster.
       !-------------------------------------------------------------------------
-      IF (mx1.GE.mn1.AND.mx2.GE.mn2.AND.mx3.GE.mn3) THEN
+      IF (.NOT.(mx1.LT.min_sub(1,ip).OR.mx1.GT.max_sub(1,ip)).AND.    &
+     &    .NOT.(mx1.LT.min_sub(1,jp).OR.mx1.GT.max_sub(1,jp)).AND.    &
+     &    .NOT.(mx2.LT.min_sub(2,ip).OR.mx2.GT.max_sub(2,ip)).AND.    &
+     &    .NOT.(mx2.LT.min_sub(2,jp).OR.mx2.GT.max_sub(2,jp)).AND.    &
+     &    .NOT.(mx3.LT.min_sub(3,ip).OR.mx3.GT.max_sub(3,ip)).AND.    &
+     &    .NOT.(mx3.LT.min_sub(3,jp).OR.mx3.GT.max_sub(3,jp))) THEN
 
           !---------------------------------------------------------------------
           !  Check that this sub is not already in the list and exclude

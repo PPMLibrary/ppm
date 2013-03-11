@@ -142,13 +142,7 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! NOTE: first index is 1-6 (each of the faces)
-      !!! - west  : 1
-      !!! - east  : 2
-      !!! - south : 3
-      !!! - north : 4
-      !!! - bottom: 5
-      !!! - top   : 6
+      !!! First index is 1-6 (each of the faces)
       INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ighostsize
       !!! Size (width) of the ghost layer.
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
@@ -195,15 +189,15 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,iopt,treetype,nbox
+      INTEGER                           :: i,ul,iopt,j,treetype,nbox
       INTEGER                           :: isub,minbox
       INTEGER, DIMENSION(1)             :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: istart  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: ndata   => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: istart => NULL()
+      INTEGER , DIMENSION(:,:), POINTER :: ndata => NULL()
       REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec,meshdx
       LOGICAL , DIMENSION(ppm_dim)      :: fixed
@@ -217,6 +211,7 @@
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER                           :: nsubs
       INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      TYPE(ppm_t_topo)       , POINTER  :: topo     => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -555,7 +550,7 @@
       !  Find the neighbors of the subdomains
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
-     &                    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
+     &                    min_sub,max_sub,nsubs,nneigh,ineigh,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkfield',      &

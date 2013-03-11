@@ -157,6 +157,9 @@
       INTEGER                                :: ldn
       TYPE(ppm_t_equi_mesh), POINTER         :: mesh => NULL()
       TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+#if   __MODE == __SCA
+      INTEGER                                :: lda = 1
+#endif
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
@@ -269,6 +272,7 @@
 
       dxi = 1.0_mk/dx
 
+         !  loop over subs
          DO isub = 1,topo%nsublist
 #if  __DIME == __2D
             !-------------------------------------------------------------------

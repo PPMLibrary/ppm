@@ -54,6 +54,8 @@ extern int         kernel_size_p2m_bsp2[3];
 extern int         kernel_size_m2p_mp4[3];
 extern int         kernel_size_m2p_bsp2[3];
 
+extern int     blocksize[2];
+
 extern int 		BLOCK_SIZE_interior[3];
 extern int         BLOCK_SIZE_exterior[3]; 
 extern int         BLOCK_SIZE_interior_2d[3];

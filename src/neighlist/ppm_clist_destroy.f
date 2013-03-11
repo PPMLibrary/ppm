@@ -41,7 +41,7 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      USE ppm_module_typedef
+      USE ppm_module_data_neighlist
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -50,7 +50,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_clist), DIMENSION(:), POINTER :: clist
+      TYPE(ppm_type_ptr_to_clist), DIMENSION(:), POINTER :: clist
       !!! Cell list which is to be deallocated.
       INTEGER                    , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
@@ -91,17 +91,11 @@
       iopt = ppm_param_dealloc
       IF (ASSOCIATED(clist)) THEN
           DO i=1,size(clist,1)
-             CALL ppm_alloc(clist(i)%nm,lda,iopt,info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_dealloc,'ppm_clist_destroy',&
-     &             'cell list CLIST%LHBX',__LINE__,info)
-             ENDIF
              CALL ppm_alloc(clist(i)%lhbx,lda,iopt,info)
              IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_dealloc,'ppm_clist_destroy',&
-     &             'cell list CLIST%NM',__LINE__,info)
+     &             'cell list CLIST%LHBX',__LINE__,info)
              ENDIF
              CALL ppm_alloc(clist(i)%lpdx,lda,iopt,info)
              IF (info .NE. 0) THEN

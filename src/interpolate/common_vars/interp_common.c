@@ -46,10 +46,25 @@ int         kernel_size_p2m_bsp2[3] = {1, 1, 1};
 int         kernel_size_m2p_mp4[3]  = {1, 1 ,1};
 int         kernel_size_m2p_bsp2[3] = {0, 0, 0};
 
+int     blocksize[2];
+
+
 int 		BLOCK_SIZE_interior[3];
 int         BLOCK_SIZE_exterior[3]; 
+
+#if __GPU == NV_TESLA
 int         BLOCK_SIZE_interior_2d[3] = {32, 16, 0};
 int         BLOCK_SIZE_interior_3d[3] = {32, 4, 4};
+#elif __GPU == ATI_CAYMAN
+int         BLOCK_SIZE_interior_2d[3] = {32, 8, 0};
+int         BLOCK_SIZE_interior_3d[3] = {32, 4, 2};
+#elif __GPU == AMD_CPU
+int         BLOCK_SIZE_interior_2d[3] = {32, 32, 0};
+int         BLOCK_SIZE_interior_3d[3] = {16, 8, 8};
+#else
+int         BLOCK_SIZE_interior_2d[3] = {16, 16, 0};
+int         BLOCK_SIZE_interior_3d[3] = {8, 8, 4};
+#endif
 
 size_t		globalWorkSize;
 size_t    	localWorkSize;

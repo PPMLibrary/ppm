@@ -29,10 +29,10 @@
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE count_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, nvlist)
+ &               red, rcred, blue, rcblue, skin, vlist, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE count_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, nvlist)
+ &               red, rcred, blue, rcblue, skin, vlist, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
@@ -74,11 +74,9 @@
           !!! Particle cutoff radii blue
           REAL(MK), INTENT(IN)                 :: skin
           !!! Skin parameter
-#if __ACTION == __GET
           INTEGER,  DIMENSION(:,:)             :: vlist
           !!! Verlet list, where vlist(j, i) contains the jth neighbor of
           !!! ith particle
-#endif
           INTEGER,  DIMENSION(:)               :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.
@@ -260,7 +258,7 @@
                           IF(red_idx .LE. red_clist%n_real_p)   THEN
                               ! Store neighbor particle in verlet list of
                               ! reference particle
-                              nvlist(red_idx)   = nvlist(red_idx)   + 1
+                              nvlist(red_idx)   = nvlist(blue_idx)   + 1
 #if __ACTION == __GET
                               vlist(nvlist(red_idx), red_idx) = blue_idx
 #endif

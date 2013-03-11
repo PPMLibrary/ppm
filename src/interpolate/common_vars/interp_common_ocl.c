@@ -6,6 +6,8 @@ cl_context       context;
 cl_command_queue queue;
 cl_program       program;
 
+cl_mem      test_buffer; //Allocate for testing purposes only!
+
 cl_mem      dev_xp_const;
 cl_mem      dev_mass_const;
 cl_mem      dev_mass;

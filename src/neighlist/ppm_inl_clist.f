@@ -85,9 +85,6 @@
       INTEGER                                       :: level
       ! Depth level.
 
-      REAL(MK)                                      :: max_size
-      REAL(MK)                                      :: size_diff
-
       !---------------------------------------------------------------------
       !  Parameters for ppm_alloc
       !---------------------------------------------------------------------
@@ -106,25 +103,18 @@
 
       CALL substart('ppm_create_inl_clist',t0,info)
 
-      max_size = 0.0_mk
       IF(lsymm) THEN
           DO i = 1, ppm_dim
               whole_domain(2*i-1) = actual_domain(2*i-1)
               whole_domain(2*i)   = actual_domain(2*i) + ghost_extend(i)
-              max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
           END DO
       ELSE
           DO i = 1, ppm_dim
               whole_domain(2*i-1) = actual_domain(2*i-1) - ghost_extend(i)
               whole_domain(2*i)   = actual_domain(2*i)   + ghost_extend(i)
-              max_size = MAX(max_size, (whole_domain(2*i) - whole_domain(2*i-1)))
           END DO
-      END IF 
-      DO i = 1, ppm_dim
-          IF ((whole_domain(2*i) - whole_domain(2*i-1)) .LE. max_size/2.0_MK) THEN
-              whole_domain(2*i)   = whole_domain(2*i-1) + max_size
-          END IF
-      END DO
+      END IF
+      
 
       clist%n_real_p = Np
       clist%n_all_p = Mp
@@ -229,7 +219,7 @@
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
       !-------------------------------------------------------------------------
-      clist%max_depth = MAX(getMaxDepth(cutoff, clist, whole_domain),1)
+      clist%max_depth = getMaxDepth(cutoff, clist, whole_domain)
 
       !-------------------------------------------------------------------------
       !  Allocate rc_borders array, in order to store borders on rank
@@ -425,23 +415,6 @@
 #endif
 
 #if __KIND == __SINGLE_PRECISION
-      PURE FUNCTION child(idx) RESULT(child_idx)
-      !!! Given the index of child cell, returns the index of its first child.
-      !!! Works for nD.
-      IMPLICIT NONE
-      !---------------------------------------------------------------------
-      !  Arguments
-      !---------------------------------------------------------------------
-      INTEGER(ppm_kind_int64), INTENT(IN) :: idx
-      !!! Input index
-      INTEGER(ppm_kind_int64)             :: child_idx
-      !!! Index of first child cell to be returned
-
-      child_idx = ISHFT(idx,ppm_dim) - (2**ppm_dim-2)
-      END FUNCTION child
-#endif
-
-#if __KIND == __SINGLE_PRECISION
 #ifdef __DEBUG
       FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
 #else
@@ -571,9 +544,7 @@
       ! Rank of the child
       REAL(MK)                                        :: t0
 
-      IF (ppm_debug .GE. 3) THEN
-          CALL substart('GetCellCoor_Depth',t0,info)
-      ENDIF
+      CALL substart('GetCellCoor_Depth',t0,info)
 
 
       ! Set minimum and maximum physical extent of first cell,
@@ -635,9 +606,7 @@
           END DO
       END DO
 
-      IF (ppm_debug .GE. 3) THEN
-          CALL substop('GetCellCoor_Depth',t0,info)
-      ENDIF
+      CALL substop('GetCellCoor_Depth',t0,info)
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE getCellCoor_Depth_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -826,9 +795,7 @@
       INTEGER                         :: j
       REAL(MK)                        :: t0
 
-      IF(ppm_debug.GE.3)THEN
-          CALL substart('setSubregions',t0,info)
-      ENDIF
+      CALL substart('setSubregions',t0,info)
       
       ! Initialize minimum and maximum physical extents to be
       ! assigned to subregions.
@@ -851,9 +818,7 @@
           END DO
       END DO
 
-      IF(ppm_debug.GE.3)THEN
-          CALL substop('setSubregions',t0,info)
-      ENDIF
+      CALL substop('setSubregions',t0,info)
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE setSubregions_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -1390,17 +1355,17 @@
       
       ! This pivoting strategy broke the code in some specific cases
       !pivot = (cutoff(rank(1)) + cutoff(rank(size(rank))))/2
-      pivot = cutoff(rank(size(rank)/2)) + skin
+      pivot = cutoff(rank(size(rank)/2)) 
       i= 0
       j= size(rank) + 1
 
       DO WHILE(i .LT. j)
          j = j - 1
-         DO WHILE((cutoff(rank(j)) + skin) .LT. pivot)
+         DO WHILE( cutoff(rank(j)) .LT. pivot)
             j = j-1
          END DO
          i = i + 1
-         DO WHILE((cutoff(rank(i)) + skin) .GT. pivot)
+         DO WHILE( cutoff(rank(i)) .GT. pivot)
             i = i + 1
          END DO
          IF (i .LT. j) THEN
@@ -1514,7 +1479,7 @@
 
       rc_min = cutoff(clist%rank(size(clist%rank)))
       minSideLength = getMinimumSideLength(domain)
-      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2._MK))
+      depthMax = CEILING(LOG(minSideLength/rc_min)/LOG(2.0))
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMaxDepth_s
 #elif __KIND == __DOUBLE_PRECISION

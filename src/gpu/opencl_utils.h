@@ -12,6 +12,11 @@
 #include <stdlib.h>
 #include <sys/time.h>
 
+// list of devices we know optimizations for:w
+
+#define NV_TESLA 1024
+#define ATI_CAYMAN 1025
+#define AMD_CPU 1026
 
 void tic(struct timeval* t);
 
@@ -20,6 +25,9 @@ double toc(struct timeval* t);
 void clReadCode(char* fileName, char** code, size_t* len);
 
 int clInit(cl_platform_id *platform, cl_device_id *device, cl_context *context, cl_command_queue *queue, cl_program *program);
+
+int clGetWorkGroupSize(cl_context *context, cl_device_id *device, 
+    int dim, size_t *workgroup_size, cl_ulong *lmemsize);
 
 int clBuild(char **filename, int fcount, cl_program *program, cl_context *context, cl_device_id *device, const char* option);
 

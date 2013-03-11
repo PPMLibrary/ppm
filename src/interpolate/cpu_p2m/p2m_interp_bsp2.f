@@ -161,6 +161,9 @@
       REAL(mk)                               :: x01,x02,x03
       CHARACTER(len=256)                     :: msg
       TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
+#if   __MODE == __SCA
+      INTEGER                                :: lda = 1
+#endif
       !------------------------------------------------------------------------!
       !  Variables for unrolled versions
       !------------------------------------------------------------------------!
@@ -168,6 +171,10 @@
       REAL(mk) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
       INTEGER  :: ip10,ip11,ip12,ip13,ip20,ip21,ip22,ip23,ip30,ip31,ip32,ip33
       INTEGER  :: ldn
+      REAL(mk) :: a10a20
+      REAL(mk) :: a10a21
+      REAL(mk) :: a11a20
+      REAL(mk) :: a11a21
       REAL(mk) :: a10a20a30
       REAL(mk) :: a10a20a31
       REAL(mk) :: a10a20a32
@@ -709,10 +716,99 @@
 #endif
         END DO              ! loop over subs
 #elif __DIME == __2D
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,'p2m_interp_bsp2',    &
-     &        'Currently bsp2 is not available. Use ppm_rmsh_remesh for other kernels.', &
-     &           __LINE__,info)
+        DO isub = 1,topo%nsublist
+#if   __MODE == __SCA
+           isubl = topo%isublist(isub)
+           DO ip = 1,store_info(isub)
+              iq    = list_sub(isub,ip)
+
+              x01 = (xp(1,iq)-min_sub(1,isubl))*dxxi
+              x02 = (xp(2,iq)-min_sub(2,isubl))*dxyi
+
+              ip10 = INT(x01) + 1
+              ip20 = INT(x02) + 1
+
+              ip11 = ip10 + 1
+              ip21 = ip20 + 1
+
+              xp1 = x01-REAL(ip10-1,mk)
+              xp2 = x02-REAL(ip20-1,mk)
+
+              x10 = xp1
+              x11 = x10 - 1.0_mk
+
+              x20 = xp2
+              x21 = x20 - 1.0_mk
+
+              a10 = 1.0_mk - x10
+              a20 = 1.0_mk - x20
+
+              a11 = 1.0_mk + x11
+              a21 = 1.0_mk + x21
+
+              a10a20 = a10*a20
+              a10a21 = a10*a21
+              a11a20 = a11*a20
+              a11a21 = a11*a21
+
+
+              field_up(ip10,ip20,isub)=field_up(ip10,ip20,isub)+&
+     &                   a10a20*up(iq)
+              field_up(ip11,ip20,isub)=field_up(ip11,ip20,isub)+&
+     &                   a11a20*up(iq)
+              field_up(ip10,ip21,isub)=field_up(ip10,ip21,isub)+&
+     &                   a10a21*up(iq)
+              field_up(ip11,ip21,isub)=field_up(ip11,ip21,isub)+&
+     &                   a11a21*up(iq)
+           ENDDO        ! iq
+#elif __MODE == __VEC
+           isubl = topo%isublist(isub)
+           DO ip = 1,store_info(isub)
+              iq    = list_sub(isub,ip)
+
+              x01 = (xp(1,iq)-min_sub(1,isubl))*dxxi
+              x02 = (xp(2,iq)-min_sub(2,isubl))*dxyi
+
+              ip10 = INT(x01) + 1
+              ip20 = INT(x02) + 1
+
+              ip11 = ip10 + 1
+              ip21 = ip20 + 1
+
+              xp1 = x01-REAL(ip10-1,mk)
+              xp2 = x02-REAL(ip20-1,mk)
+
+              x10 = xp1
+              x11 = x10 - 1.0_mk
+
+              x20 = xp2
+              x21 = x20 - 1.0_mk
+
+              a10 = 1.0_mk - x10
+              a20 = 1.0_mk - x20
+
+              a11 = 1.0_mk + x11
+              a21 = 1.0_mk + x21
+
+              a10a20 = a10*a20
+              a10a21 = a10*a21
+              a11a20 = a11*a20
+              a11a21 = a11*a21
+
+                 DO ldn=1,lda
+          field_up(ldn,ip10,ip20,isub)=field_up(ldn,ip10,ip20,isub)+&
+     &               a10a20*up(ldn,iq)
+          field_up(ldn,ip11,ip20,isub)=field_up(ldn,ip11,ip20,isub)+&
+     &               a11a20*up(ldn,iq)
+          field_up(ldn,ip10,ip21,isub)=field_up(ldn,ip10,ip21,isub)+&
+     &               a10a21*up(ldn,iq)
+          field_up(ldn,ip11,ip21,isub)=field_up(ldn,ip11,ip21,isub)+&
+     &               a11a21*up(ldn,iq)
+                 ENDDO    ! lda
+           ENDDO        ! iq
+#endif
+        END DO              ! loop over subs
+      !!! field onto which to interpolate
 #endif
       CALL substop('p2m_interp_bsp2',t0,info)
       RETURN

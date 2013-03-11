@@ -77,7 +77,11 @@ int clInit(cl_platform_id *platform, cl_device_id *device, cl_context *context, 
         printf("Error getting platform id: %s\n", clErrorString(error));
     }
 
+#if __GPU == AMD_CPU
+    error = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_CPU, 1, device, NULL);
+#else
     error = clGetDeviceIDs(*platform, CL_DEVICE_TYPE_GPU, 1, device, NULL);
+#endif
     if (error != CL_SUCCESS) {
         printf("Error getting device id: %s\n", clErrorString(error));
     }
@@ -92,6 +96,52 @@ int clInit(cl_platform_id *platform, cl_device_id *device, cl_context *context, 
     //*queue = clCreateCommandQueue(*context, *device, 0, &error);
     if (error != CL_SUCCESS) {
         printf("Error creating cmd queue: %s\n",clErrorString(error));
+    }
+    return error;
+}
+
+int clGetWorkGroupSize(cl_context *context, cl_device_id *device, 
+    int dim, size_t *workgroup_size, cl_ulong *lmemsize)
+{
+    cl_program program;
+    cl_int error = 0;
+    cl_kernel	kernel;
+    char** cl_code;
+    size_t code_lens[1] = {41};
+    size_t wgsize;
+    size_t wgsizemult;
+    cl_code = (char**) malloc(sizeof(char*));
+    cl_code[0] = (char*) malloc(sizeof(char)*41);
+    cl_code[0] = "__kernel void ppm_wgroup_size_test() { }";
+    program = clCreateProgramWithSource(*context, 1, 
+            (const char**)cl_code, code_lens, &error);
+    if (error != CL_SUCCESS) {
+        printf("Error creating program: %s\n",clErrorString(error));
+    }
+    error = clBuildProgram(program, 1, device, NULL, NULL, NULL);
+  
+
+    // Initialize np_cell array to 0
+    kernel = clCreateKernel(program, "ppm_wgroup_size_test", &error);
+
+    clGetKernelWorkGroupInfo (kernel,*device,
+            CL_KERNEL_WORK_GROUP_SIZE,sizeof(wgsize), &wgsize, NULL);
+    
+    clGetKernelWorkGroupInfo (kernel,*device,
+            CL_KERNEL_LOCAL_MEM_SIZE,sizeof(cl_ulong), lmemsize, NULL);
+
+    workgroup_size[0] = 32;
+    if (dim == 3) {
+      workgroup_size[1] = 2;
+      wgsize = wgsize / workgroup_size[0];
+      wgsize /= 2;
+      while (wgsize > workgroup_size[1]) {
+        wgsize /= 2;
+        workgroup_size[1] *= 2;
+      }
+      workgroup_size[2] = wgsize;
+    } else {
+      workgroup_size[1] = wgsize / workgroup_size[0];
     }
     return error;
 }

@@ -118,13 +118,7 @@
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
-      !!! NOTE: first index is 1-6 (each of the faces)
-      !!! - west  : 1
-      !!! - east  : 2
-      !!! - south : 3
-      !!! - north : 4
-      !!! - bottom: 5
-      !!! - top   : 6
+      !!! first index is 1-6 (each of the faces)
       REAL(MK), DIMENSION(:  ), POINTER       :: cost
       !!! Estimated cost associated with subdomains. Either user-defined on
       !!! input or decomposition result on output. The cost of a subdomain
@@ -198,13 +192,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,nbox,iopt,isub
+      INTEGER                           :: i,j,nbox,iopt,isub
       INTEGER, DIMENSION(2  )           :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
       INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      REAL(MK)                          :: t0,lmyeps
+      REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
@@ -302,7 +296,7 @@
       !  Find the neighbors of the subdomains
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
-     &                    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
+     &                    min_sub,max_sub,nsubs,nneigh,ineigh,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mktree',  &

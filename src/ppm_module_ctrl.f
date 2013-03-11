@@ -75,9 +75,6 @@ MODULE ppm_module_ctrl
 !!! default :: [_42_] default value
 !!! min :: [_4_] minimum value for numeric types
 !!! max :: [_30_] maximum value
-!!! help :: ['Description.'] help message to display in the auto
-!!! generated ctrl file and command line help. You can use +\n+ to
-!!! force a line break.
 !!! default_func :: [_external_func_] custom function to compute the
 !!! value of the variable after other globals have been set (only
 !!! available when compiled with F2003 support)
@@ -121,7 +118,7 @@ MODULE ppm_module_ctrl
        &    logical_array_func, string_array_func,                  &
        &    complex_array_func, dcomplex_array_func,                &
 #endif
-       &    reset, add_cmd, ctrl_file_test, break_help,             &
+       &    reset, add_cmd, ctrl_file_test,                         &
        &    find_arg, find_flag, arg_count,                         &
        &    enabling_flag, disabling_flag, exit_gracefully
 
@@ -389,7 +386,6 @@ CONTAINS
     CHARACTER(LEN=*), PARAMETER             :: caller='parse_args'
     CHARACTER(LEN=256)                      :: value
     LOGICAL                                 :: ok
-    LOGICAL                                 :: printing_ctrl = .FALSE.
     INTEGER                                 :: info2
     INTEGER                                 :: i
     INTEGER                                 :: rank = 0
@@ -444,15 +440,6 @@ CONTAINS
           END IF
        END IF
        !-------------------------------------------------------------------
-       !  Print Control file
-       !-------------------------------------------------------------------
-       IF (ctrl_enabled) THEN
-          CALL find_flag('--print-ctrl', ok)
-          IF (ok) THEN
-             printing_ctrl = .TRUE.
-          END IF
-       END IF
-       !-------------------------------------------------------------------
        !  Parse rest of the command line
        !-------------------------------------------------------------------
        CALL parse_cmd_line(info)
@@ -463,10 +450,19 @@ CONTAINS
           GOTO 100
        END IF
        !-------------------------------------------------------------------
-       !  Parse Control file
+       !  Control file
        !-------------------------------------------------------------------
        IF (ctrl_enabled) THEN
+          CALL find_flag('--print-ctrl', ok)
+          IF (ok) THEN
+             CALL print_ctrl
+             info = exit_gracefully
+             GOTO 100
+          END IF
           CALL find_arg(1, ok, ctrl_file_name)
+          !----------------------------------------------------------------
+          !  Parse control file
+          !----------------------------------------------------------------
           CALL parse_ctrl_file(info)
           IF (info .NE. 0) THEN
              info = ppm_error_fatal
@@ -509,14 +505,6 @@ CONTAINS
           GOTO 100
        END IF
 #endif
-       !-------------------------------------------------------------------
-       !  Print Control file
-       !-------------------------------------------------------------------
-       IF (printing_ctrl) THEN
-          CALL print_ctrl
-          info = exit_gracefully
-          GOTO 100
-       END IF
        !-------------------------------------------------------------------
        !  DONE!
        !-------------------------------------------------------------------
@@ -1288,65 +1276,6 @@ CONTAINS
     END IF
   END SUBROUTINE arg_group
   !------------------------------------------------------------------------
-  !  Help string break
-  !------------------------------------------------------------------------
-  SUBROUTINE break_help(ht, w, prefix, unit, skip_first_line)
-    ! args
-    CHARACTER(LEN=*),  INTENT(IN   ) :: ht
-    INTEGER,           INTENT(IN   ) :: w
-    CHARACTER(LEN=*),  INTENT(IN   ) :: prefix
-    INTEGER,           INTENT(IN   ) :: unit
-    LOGICAL, OPTIONAL, INTENT(IN   ) :: skip_first_line
-    ! vars
-    INTEGER :: start
-    INTEGER :: break
-    INTEGER :: next
-    INTEGER :: end
-    INTEGER :: skip
-    LOGICAL :: fl
-    IF (.NOT. PRESENT(skip_first_line)) THEN
-       fl = .TRUE.
-    ELSE
-       fl = skip_first_line
-    END IF
-    start = 1
-    break = 1
-    next  = 1
-    end   = LEN(ht)
-    ! line loop
-    DO WHILE (start .LT. end)
-       ! break < start + w < next
-       DO WHILE (next .LT. end .AND. next .LT. start+w)
-          ! find next blank or new line
-          skip = 1
-          DO WHILE (next .LT. end .AND. ht(next:next) .NE. ' ')
-             IF (next .LT. end) THEN
-                IF (ht(next:next+1) .EQ. '\n') THEN
-                   ! line break
-                   skip = 3
-                   break = next - 1
-                   next = next + 2
-                   GOTO 1234
-                END IF
-             END IF
-             next = next + 1
-          END DO
-          break = next
-          next = next + 1
-       END DO
-       ! print line
-1234   IF (fl) THEN
-          fl = .FALSE.
-       ELSE
-          WRITE(unit,'(A)',advance='no') prefix
-       END IF
-       WRITE (unit,'(A)') ht(start:break)
-       ! itterate
-       start = break + skip
-       break = next
-    END DO
-  END SUBROUTINE break_help
-  !------------------------------------------------------------------------
   !  Print command line help
   !------------------------------------------------------------------------
   SUBROUTINE print_help
@@ -1367,13 +1296,11 @@ CONTAINS
 '  help                          Print this help message and exit.',&
 '                  short flag :  -h',&
 '                   long flag :  --help'
-             WRITE (*,*) ""
           END IF
           IF (ctrl_enabled) THEN
              WRITE (*,'(A,/A)') &
 '  control file                  Print sample control file and exit.',&
 '                   long flag :  --print-ctrl'
-             WRITE (*,*) ""
           END IF
        END IF
        group_loop: DO i=1,group_size(k)
@@ -1440,15 +1367,15 @@ CONTAINS
        WRITE (*,*) "No args have been defined..."
        RETURN
     END IF
-    WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
+    WRITE (*,'(A)') "#--------------------------------------------------------------------------"
     WRITE (*,'(A)') "#  Sample control file for ppm_client"
     WRITE (*,'(A)') "#"
     WRITE (*,'(A)') "#  Edit the settings below"
     WRITE (*,'(A)') "#"
-    WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
+    WRITE (*,'(A)') "#--------------------------------------------------------------------------"
     DO k=0,groups_i
        IF (.NOT. group_has_ctrl(k)) CYCLE
-       WRITE (*,'(/A)') "#-------------------------------------------------------------------------------"
+       WRITE (*,'(/A)') "#--------------------------------------------------------------------------"
        WRITE (*,'(2A)') "#  ", groups(k)(1:LEN_TRIM(groups(k)))
 
        comment_loop: DO i=1,group_size(k)
@@ -1502,7 +1429,7 @@ CONTAINS
 #undef ARRAY
        END DO comment_loop
 
-       WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
+       WRITE (*,'(A)') "#--------------------------------------------------------------------------"
 
        var_loop: DO i=1,group_size(k)
           ! scalar

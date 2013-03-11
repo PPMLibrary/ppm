@@ -94,7 +94,8 @@
       REAL(MK)                     :: t0
       INTEGER , DIMENSION(ppm_dim) :: ldc
       INTEGER                      :: i,j,k
-      INTEGER                      :: iopt,isize
+      INTEGER                      :: istat,iopt,isize
+      CHARACTER(ppm_char)          :: mesg
       !-------------------------------------------------------------------------
       !  Externals 
       !-------------------------------------------------------------------------

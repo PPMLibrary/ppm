@@ -9,6 +9,8 @@ extern cl_context       context;
 extern cl_command_queue queue;
 extern cl_program       program;
 
+extern cl_mem      test_buffer;  //Allocate for testing purposes only!
+
 extern cl_mem      dev_xp_const;
 extern cl_mem      dev_mass_const;
 extern cl_mem      dev_mass;

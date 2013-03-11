@@ -128,7 +128,7 @@
       INTEGER                                    :: j
       REAL(MK)                                   :: t0
       REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
-      REAL(MK)                                   :: max_sub_size
+      REAL(MK)                                   :: max_phys
 #if   __MODE == __HNL
       REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
 #endif
@@ -177,21 +177,12 @@
       ! set rcred to a large value to make sure all red particles are on the
       ! top level of the cell tree
       !---------------------------------------------------------------------
-      max_sub_size=0._MK
-      DO rank_sub = 1, topo%nsublist
-          isub = topo%isublist(rank_sub)
 #if   __KIND == __SINGLE_PRECISION
-          max_sub_size = MAX(max_sub_size,&
-              MAXVAL(topo%max_subs(1:ppm_dim, isub) - &
-              topo%min_subs(1:ppm_dim, isub)))
+      max_phys = MAXVAL(topo%max_physs-topo%min_physs)
 #elif   __KIND == __DOUBLE_PRECISION
-          max_sub_size = MAX(max_sub_size,&
-              MAXVAL(topo%max_subd(1:ppm_dim, isub) - &
-              topo%min_subd(1:ppm_dim, isub)))
+      max_phys = MAXVAL(topo%max_physd-topo%min_physd)
 #endif
-      ENDDO
-
-      rcred(1:mred) = max_sub_size
+      rcred(1:mred) = max_phys
       !---------------------------------------------------------------------
       ! As no neighbors have been found yet, maximum number of neighbors
       ! (neigh_max) is set to 0.
@@ -689,7 +680,7 @@
               p_idx = red_clist%rank(i)
               CALL count_xset_neigh(p_idx, red_clist, blue_clist, &
  &                 whole_domain, &
- &                 red, rcred, blue, rcblue, skin, nvlist)
+ &                 red, rcred, blue, rcblue, skin, vlist, nvlist)
           END DO
 
       !-------------------------------------------------------------------------
