@@ -44,7 +44,8 @@ __kernel void kernel_clist_get_particle_positions
 				const __global t_real* physmin,
 				const __global int*   num_groups,
 				__global int* 		  np_cell,
-				__global int* 		  p_cell
+				__global int* 		  p_cell,
+				__global int* 		  blocksize 
 ) {
 	int p_id, cell_ID, image_group, index, i;
 	int cell_pos_x, cell_pos_y, val;
@@ -68,6 +69,11 @@ __kernel void kernel_clist_get_particle_positions
 
 		p_cell[p_id] = index;
 	}
+
+  if(p_id == 0){
+    blocksize[0] = BLOCK_SIZE_X;
+    blocksize[1] = BLOCK_SIZE_Y;
+  }
 }
 
 __kernel void kernel_clist_place_particle_pos

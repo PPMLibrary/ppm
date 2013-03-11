@@ -284,6 +284,7 @@
 
       dxi = 1.0_mk/dx
 
+!$OMP PARALLEL DEFAULT(PRIVATE) FIRSTPRIVATE(lda,dxi) SHARED(min_phys,max_phys,topo,store_info,list_sub,istart,xp,up,min_sub,max_sub,field_up)
          !  loop over subs
          DO isub = 1,topo%nsublist
 #if __DIME == __2D
@@ -295,6 +296,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
             DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -388,9 +390,11 @@
                      up(iq) = up(iq) + &
      &                           a13a23*field_up(ip13,ip23,isub)
             END DO ! end loop over particles in the current subdomain
+!$OMP END DO
 #elif __MODE == __VEC
             ! This will only vectorize over lda
             isubl = topo%isublist(isub)
+!$OMP DO
                DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -486,6 +490,7 @@
      &                           a13a23*field_up(ldn,ip13,ip23,isub)
                   END DO ! lda
             END DO ! end loop over particles in the current subdomain
+!$OMP END DO
 #endif
 #elif __DIME == __3D
             !-------------------------------------------------------------------
@@ -496,6 +501,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
             DO ip = 1,store_info(isub)
                iq    = list_sub(isub,ip)
 
@@ -748,6 +754,7 @@
                up(iq) = up(iq) + &
      &                     a13a23a33*field_up(ip13,ip23,ip33,isub)
             END DO ! end loop over particles in the current subdomain
+!$OMP END DO
 #elif __MODE == __VEC
             !-------------------------------------------------------------------
             !  Unrolled version for 1-vectors
@@ -757,6 +764,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
                DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -1010,6 +1018,7 @@
      &                        a13a23a33*field_up(1,ip13,ip23,ip33,isub)
 
                END DO ! end loop over particles in the current subdomain
+!$OMP END DO
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
                !----------------------------------------------------------------
@@ -1018,6 +1027,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
                DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -1401,6 +1411,7 @@
 
 
                END DO ! end loop over particles in the current subdomain
+!$OMP END DO
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
                !----------------------------------------------------------------
@@ -1409,6 +1420,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
                DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -1921,6 +1933,7 @@
      &                        a13a23a33*field_up(3,ip13,ip23,ip33,isub)
 
                END DO ! end loop over particles in the current subdomain
+!$OMP END DO
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
                !----------------------------------------------------------------
@@ -1929,6 +1942,7 @@
 #ifdef __SXF90
 !CDIR NODEP
 #endif
+!$OMP DO
                DO ip = 1,store_info(isub)
                   iq    = list_sub(isub,ip)
 
@@ -2183,10 +2197,12 @@
      &                           a13a23a33*field_up(ldn,ip13,ip23,ip33,isub)
                   END DO ! lda
                END DO ! end loop over particles in the current subdomain
+!$OMP END DO
             END IF ! unrolled lda cases
 #endif
 #endif
          END DO ! isub
+!$OMP END PARALLEL
 
 #if   __DIME == __2D
 #if   __MODE == __SCA

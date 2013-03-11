@@ -56,8 +56,8 @@ int         BLOCK_SIZE_exterior[3];
 int         BLOCK_SIZE_interior_2d[3] = {32, 16, 0};
 int         BLOCK_SIZE_interior_3d[3] = {32, 4, 4};
 #elif __GPU == ATI_CAYMAN
-int         BLOCK_SIZE_interior_2d[3] = {32, 8, 0};
-int         BLOCK_SIZE_interior_3d[3] = {32, 4, 2};
+int         BLOCK_SIZE_interior_2d[3] = {16, 16, 0};
+int         BLOCK_SIZE_interior_3d[3] = {8, 8, 4};
 #elif __GPU == AMD_CPU
 int         BLOCK_SIZE_interior_2d[3] = {32, 32, 0};
 int         BLOCK_SIZE_interior_3d[3] = {16, 8, 8};

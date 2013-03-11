@@ -1,9 +1,9 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable
 
-#define BLOCK_SIZE_X 32
-#define BLOCK_SIZE_Y 4
-#define BLOCK_SIZE_Z 2
+#define BLOCK_SIZE_X 8
+#define BLOCK_SIZE_Y 8
+#define BLOCK_SIZE_Z 4
 
 #ifdef __SINGLE_PRECISION
 typedef float  t_real;

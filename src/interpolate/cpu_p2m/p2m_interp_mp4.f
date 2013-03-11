@@ -287,7 +287,9 @@
       dxyi = 1.0_mk/dx(2)
       IF(ppm_dim.EQ.3) dxzi = 1.0_mk/dx(3)
 
+!$OMP PARALLEL DEFAULT(PRIVATE) FIRSTPRIVATE(lda,dxxi,dxyi,dxzi) SHARED(topo,store_info,list_sub,xp,up,min_sub,max_sub,field_up)
 #if __DIME == __3D
+!$OMP DO
         DO isub = 1,topo%nsublist
 
 #if __MODE == __VEC
@@ -2236,7 +2238,9 @@
            ENDDO        ! iq
 #endif
         END DO              ! loop over subs
+!$OMP END DO
 #elif __DIME == __2D
+!$OMP DO
         DO isub = 1,topo%nsublist
               isubl = topo%isublist(isub)
               DO ip = 1,store_info(isub)
@@ -2371,8 +2375,10 @@
 #endif
           END DO          ! loop over iq 
         END DO          ! loop over subs
+!$OMP END DO
 #endif
 
+!$OMP END PARALLEL
       CALL substop('p2m_interp_mp4',t0,info)
       RETURN
 

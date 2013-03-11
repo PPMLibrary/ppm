@@ -1,8 +1,8 @@
 #pragma OPENCL EXTENSION cl_khr_global_int32_base_atomics : enable
 #pragma OPENCL EXTENSION cl_khr_local_int32_base_atomics : enable
 
-#define BLOCK_SIZE_X 32 
-#define BLOCK_SIZE_Y 8
+#define BLOCK_SIZE_X 16
+#define BLOCK_SIZE_Y 16
 
 #ifdef __SINGLE_PRECISION
 typedef float  t_real;
@@ -46,7 +46,8 @@ __kernel void kernel_clist_get_particle_positions
 				const __global t_real* physmin,
 				const __global int*   num_groups,
 					  __global int*   np_cell,
-					  __global int*   p_cell
+					  __global int*   p_cell,
+					  __global int*   blocksize
 ) {
 	int p_id, cell_ID, image_group, index, i;
 	int cell_pos_x, cell_pos_y, val;
@@ -70,6 +71,11 @@ __kernel void kernel_clist_get_particle_positions
 
 		p_cell[p_id] = index;
 	}
+
+  if(p_id == 0){
+    blocksize[0] = BLOCK_SIZE_X;
+    blocksize[1] = BLOCK_SIZE_Y;
+  }
 }
 
 __kernel void kernel_clist_place_particle_pos

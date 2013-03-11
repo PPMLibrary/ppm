@@ -12,8 +12,8 @@ test_suite ppm_module_interp_m2p
     INTEGER, PARAMETER :: ppm_param_rmsh_kernel_bsp2    = 1
     INTEGER, PARAMETER :: ppm_param_rmsh_kernel_mp4     = 2
     integer, parameter              :: debug = 0
-    !integer, parameter              :: mk = kind(1.0d0) ! double precision
-    integer, parameter              :: mk = kind(1.0e0) ! single precision
+    integer, parameter              :: mk = kind(1.0d0) ! double precision
+    !integer, parameter              :: mk = kind(1.0e0) ! single precision
 #ifdef __MPI
     integer, parameter              :: comm = mpi_comm_world
 #endif
@@ -132,8 +132,8 @@ test_suite ppm_module_interp_m2p
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
-    !test m2p_2d({ngp: [17,33,65,129,257,513,1025], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu,ppm_param_device_gpu]})
-    test m2p_2d({ngp: [17,33,65,129,257,513,1025,2049], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_gpu]})
+    !test m2p_2d({ngp: [17,2049], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu]})
+    test m2p_2d({ngp: [17,33,65,129,257,513,1025,2049], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu]})
         use ppm_module_typedef
         use ppm_module_data
         use ppm_module_mktopo
@@ -185,7 +185,7 @@ test_suite ppm_module_interp_m2p
                 DO id=1,ndim
                     call random_number(roff)
                     xp(id,p) = (REAL(midx(id),mk)-(roff+0.0001_mk)*0.5_mk)*h(id) + &
-                    &          + min_phys(id)
+                    &            min_phys(id)
                 ENDDO
             ENDDO
         ENDDO
@@ -281,8 +281,8 @@ test_suite ppm_module_interp_m2p
 !------------------------------------------------------------------------------
 
 !------------------------------------------------------------------------------
-    !test m2p_3d({ngp: [17], kernel: [ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu]})
-    test m2p_3d({ngp: [9,17,33,65,97,129], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_gpu]})
+    test m2p_3d({ngp: [17,33,65,97,129], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu]})
+    !test m2p_3d({ngp: [9,17,33,65,129,257], kernel: [ppm_param_rmsh_kernel_bsp2,ppm_param_rmsh_kernel_mp4], compdev: [ppm_param_device_cpu,ppm_param_device_gpu]})
         use ppm_module_typedef
         use ppm_module_data
         use ppm_module_mktopo
@@ -335,7 +335,7 @@ test_suite ppm_module_interp_m2p
                   DO id=1,ndim
                       call random_number(roff)
                       xp(id,p) = (REAL(midx(id),mk)-(roff+0.0001_mk)*0.5_mk)*h(id) + &
-                      &          + min_phys(id)
+                      &            min_phys(id)
                   ENDDO
               ENDDO
           ENDDO

@@ -267,12 +267,11 @@ int ppm_gpu_m2p_interpolation_d_
 	int	ndim	  			= *ndim_in;
 	int nmass    		    = *nmass_in;
   int idim;
-    struct timeval t_comp, t_comm;
-    t_real2  t_elapsed_comp, t_elapsed_comm;
+    struct timeval t, t_total;
+    t_real2  t_elapsed, t_elapsed_total;
   // gpu timers
   cl_ulong start, end;
-  double executionTimeInMilliseconds[11];
-  int volume;
+  float executionTimeInMilliseconds;
 
 #if __KIND == __SINGLE_PRECISION
 	error = ppm_gpu_m2p_initialize_s_(mesh_size, minphys_with_ghost, maxphys_with_ghost, np, ndim_in, nmass_in, interp_kernel);
@@ -281,6 +280,8 @@ int ppm_gpu_m2p_interpolation_d_
 #endif
    	checkError(error, "clCreateBuffer while allocating dev_offset", __FUNCTION__, __LINE__, stamp);
 
+  tic(&t_total);
+
     // Buffer 1: Positions of particles
     dev_xp_const = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(cl_t_real2)*nparticle*ndim, NULL, &error);
     checkError(error, "clCreateBuffer while allocating devCoorX", __FUNCTION__, __LINE__, stamp);
@@ -288,22 +289,14 @@ int ppm_gpu_m2p_interpolation_d_
     dev_mesh_const = clCreateBuffer(context, CL_MEM_READ_ONLY, sizeof(cl_t_real2)*nmesh_ext*nmass, NULL, &error);
     checkError(error, "clCreateBuffer while allocating dev_offset", __FUNCTION__, __LINE__, stamp);
 
-    clFinish(queue);
-    tic(&t_comm);
     error = clEnqueueWriteBuffer(queue, dev_xp_const, CL_FALSE, 0, sizeof(cl_t_real2)*nparticle*ndim, xp, 0, NULL, &event_write_xp);
-    clFinish(queue);
-    executionTimeInMilliseconds[8] = toc(&t_comm)*1000.0;
-    printf("GPU M2P (double) particle positions kernel time: %lf ms\n", executionTimeInMilliseconds[8]);
     checkError(error, "clCreateBuffer while allocating dev_offset", __FUNCTION__, __LINE__, stamp);
-
-    tic(&t_comm);
 	error = clEnqueueWriteBuffer(queue, dev_mesh_const, CL_FALSE, 0, sizeof(cl_t_real2)*nmesh_ext*nmass, mesh, 0, NULL, &event_write_mesh);
-    clFinish(queue);
-    executionTimeInMilliseconds[9] = toc(&t_comm)*1000.0;
-    printf("GPU M2P (double) writing mesh prpoerties kernel time: %lf ms\n", executionTimeInMilliseconds[9]);
     checkError(error, "clCreateBuffer while allocating dev_offset", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
+    clFinish(queue);
+  tic(&t);
+
 // INITIALIZING TO ZERO //
 	// Initialize np_cell array to 0
 #if __KIND == __SINGLE_PRECISION
@@ -311,45 +304,30 @@ int ppm_gpu_m2p_interpolation_d_
 #elif __KIND == __DOUBLE_PRECISION
 	error = m2p_initialize_np_cell_d();
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[0] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) init'ing np_cell kernel time: %lf ms\n", executionTimeInMilliseconds[0]);
     checkError(error, "Error in m2p_initialize_np_cell", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 	// Initialize padded mesh array to 0
 #if __KIND == __SINGLE_PRECISION
 	error = initialize_padded_mesh_s(nmass);
 #elif __KIND == __DOUBLE_PRECISION
 	error = initialize_padded_mesh_d(nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[1] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) init padded mesh kernel time: %lf ms\n", executionTimeInMilliseconds[1]);
     checkError(error, "Error in initialize_padded_mesh", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // GET CELL INDICES OF PARTICLES AND COUNT NUMBER OF PARTICLES IN CELLS //
 #if __KIND == __SINGLE_PRECISION
     error = m2p_get_particle_positions_s(nparticle, ndim, nmass);
 #elif __KIND == __DOUBLE_PRECISION
     error = m2p_get_particle_positions_d(nparticle, ndim, nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[2] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) get particle pos. kernel time: %lf ms\n", executionTimeInMilliseconds[2]);
     checkError(error, "Error in m2p_get_particle_positions", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // REDUCE NP_CELL TO GET MAXIMUM NUMBER OF PARTICLES PER CELL //
 #if __KIND == __SINGLE_PRECISION
 	error = m2p_reduce_np_cell_s();
 #elif __KIND == __DOUBLE_PRECISION
 	error = m2p_reduce_np_cell_d();
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[3] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) reducing np_cell kernel time: %lf ms\n", executionTimeInMilliseconds[3]);
     checkError(error, "Error in m2p_reduce_np_cell", __FUNCTION__, __LINE__, stamp);
 
 // COMPUTE SIZE OF PARTICLE DATA BUFFER AND ALLOCATE IT ON THE DEVICE
@@ -360,155 +338,91 @@ int ppm_gpu_m2p_interpolation_d_
 #endif
     checkError(error, "Error in m2p_allocate_data_buffers", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // DUPLICATE MESH
 #if __KIND == __SINGLE_PRECISION
 	error = duplicate_mesh_s(ndim, nmass);
 #elif __KIND == __DOUBLE_PRECISION
 	error = duplicate_mesh_d(ndim, nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[4] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) duplicating mesh kernel time: %lf ms\n", executionTimeInMilliseconds[4]);
     checkError(error, "Error in duplicate_mesh", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // PLACE PARTICLES ACCORDINGLY //
 #if __KIND == __SINGLE_PRECISION
 	error = place_particle_pos_s(nparticle, ndim, nmass);
 #elif __KIND == __DOUBLE_PRECISION
 	error = place_particle_pos_d(nparticle, ndim, nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[5] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) placing particle pos. kernel time: %lf ms\n", executionTimeInMilliseconds[5]);
     checkError(error, "Error in place_particle_pos", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // INTERPOLATE MESH POINTS ONTO PARTICLES //
 #if __KIND == __SINGLE_PRECISION
 	error = m2p_interpolate_s(ndim, nmass);
 #elif __KIND == __DOUBLE_PRECISION
 	error = m2p_interpolate_d(ndim, nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[6] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) m2p_interpolation kernel time: %lf ms\n", executionTimeInMilliseconds[6]);
     checkError(error, "Error in m2p_interpolate", __FUNCTION__, __LINE__, stamp);
 
-  tic(&t_comp);
 // COLLECT PARTICLES FROM PADDED PARTICLE ARRAY //
 #if __KIND == __SINGLE_PRECISION
-	  error = collect_particles_s(nparticle, nmass);
+	error = collect_particles_s(nparticle, nmass);
 #elif __KIND == __DOUBLE_PRECISION
-	  error = collect_particles_d(nparticle, nmass);
+	error = collect_particles_d(nparticle, nmass);
 #endif
-    clFinish(queue);
-    executionTimeInMilliseconds[7] = toc(&t_comp)*1000.0;
-    printf("GPU M2P (double) collecting particles kernel time: %lf ms\n", executionTimeInMilliseconds[7]);
     checkError(error, "Error in collect_particles", __FUNCTION__, __LINE__, stamp);
 
-// READ BACK RESULTS //
-   	error = clEnqueueWaitForEvents(queue, 1, &event_collect_particles);
+   clFinish(queue);
 
-    clFinish(queue);
-    tic(&t_comm);
-    error = clEnqueueReadBuffer(queue, dev_mass, CL_TRUE, 0, sizeof(t_real2)*nparticle*nmass, mass, 0, NULL, &event_read_mesh);
-    clFinish(queue);
-    executionTimeInMilliseconds[10] = toc(&t_comm)*1000.0;
-    printf("GPU M2P (double) reading back particle properties kernel time: %lf ms\n", executionTimeInMilliseconds[10]);
-    checkError(error, "clEnqueueReadBuffer while reading back", __FUNCTION__, __LINE__, stamp);
+    t_elapsed  = toc(&t);
+    t_elapsed *= 1000.0;
 
     
-  // get gpu timing for initalizing np_cell 
-  clGetEventProfilingInfo(event_init_np_cell, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_init_np_cell, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[0] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) init'ing np_cell kernel time: %lf ms\n", executionTimeInMilliseconds[0]);
-  // get gpu timing for initalizing padded mesh 
-  clGetEventProfilingInfo(event_init_padded_mesh, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_init_padded_mesh, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[1] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) init'ing padded mesh kernel time: %lf ms\n", executionTimeInMilliseconds[1]);
-  // get gpu timing for getting particle positions 
-  clGetEventProfilingInfo(event_get_np_cell, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_get_np_cell, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[2] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) getting particle positions kernel time: %lf ms\n", executionTimeInMilliseconds[2]);
-  // get gpu timing for reducing np_cell 
-  clGetEventProfilingInfo(event_get_max_np, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_get_max_np, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[3] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) reducing np_cell kernel time: %lf ms\n", executionTimeInMilliseconds[3]);
-  // get gpu timing for duplicating mesh 
-  clGetEventProfilingInfo(event_duplicate_mesh, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_duplicate_mesh, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[4] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) reducing np_cell kernel time: %lf ms\n", executionTimeInMilliseconds[4]);
-  // get gpu timing for part place
-  executionTimeInMilliseconds[5] = 0.0;
-  for(idim = 0; idim < ndim; idim++){
+    // get gpu timing for clist
+    clGetEventProfilingInfo(event_get_np_cell, CL_PROFILING_COMMAND_END, 
+                                sizeof(cl_ulong), &end, NULL); 
+    clGetEventProfilingInfo(event_get_np_cell, CL_PROFILING_COMMAND_START,  
+                                sizeof(cl_ulong), &start, NULL); 
+    executionTimeInMilliseconds = (end - start) * 1.0e-6f;
+    printf("GPU M2P (double) clist kernel time: %lf ms\n", executionTimeInMilliseconds);
+    // get gpu timing for part place
+    executionTimeInMilliseconds = 0.0;
+	  for(idim = 0; idim < ndim; idim++){
     clGetEventProfilingInfo(event_place_particle_pos[idim], CL_PROFILING_COMMAND_END, 
-        sizeof(cl_ulong), &end, NULL); 
+                                sizeof(cl_ulong), &end, NULL); 
     clGetEventProfilingInfo(event_place_particle_pos[idim], CL_PROFILING_COMMAND_START,  
-        sizeof(cl_ulong), &start, NULL); 
-    executionTimeInMilliseconds[5] += (end - start) * 1.0e-6f;
-  }
-  printf("GPU M2P (double) placing particle positions (%d dims) kernel time: %lf ms\n", ndim,executionTimeInMilliseconds[5]);
-  // get gpu timing for interpolation
-  clGetEventProfilingInfo(event_m2p_interpolate, CL_PROFILING_COMMAND_END, sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_m2p_interpolate, CL_PROFILING_COMMAND_START, sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[6] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) interp kernel time: %lf ms\n", executionTimeInMilliseconds[6]);
-  // get gpu timing for collectiong particles
-  clGetEventProfilingInfo(event_collect_particles, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_collect_particles, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[7] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) sewing kernel time: %lf ms\n", executionTimeInMilliseconds[7]);
-  // get gpu timing for writing xp 
-  clGetEventProfilingInfo(event_write_xp, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_write_xp, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[8] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) writing xp kernel time: %lf ms\n", executionTimeInMilliseconds[8]);
-  // get gpu timing for writing mesh 
-  clGetEventProfilingInfo(event_write_mesh, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_write_mesh, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[9] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) writing mass kernel time: %lf ms\n", executionTimeInMilliseconds[9]);
-  // get gpu timing for reading mass 
-  clGetEventProfilingInfo(event_read_mesh, CL_PROFILING_COMMAND_END, 
-      sizeof(cl_ulong), &end, NULL); 
-  clGetEventProfilingInfo(event_read_mesh, CL_PROFILING_COMMAND_START,  
-      sizeof(cl_ulong), &start, NULL); 
-  executionTimeInMilliseconds[10] = (end - start) * 1.0e-6f;
-  printf("GPU M2P (double) reading back kernel time: %lf ms\n", executionTimeInMilliseconds[10]);
-  
+                                sizeof(cl_ulong), &start, NULL); 
+    executionTimeInMilliseconds += (end - start) * 1.0e-6f;
+    }
+    printf("GPU M2P (double) part_place (%d dims) kernel time: %lf ms\n", ndim,executionTimeInMilliseconds);
+    // get gpu timing for interpolation
+    clGetEventProfilingInfo(event_m2p_interpolate, CL_PROFILING_COMMAND_END, 
+                                sizeof(cl_ulong), &end, NULL); 
+    clGetEventProfilingInfo(event_m2p_interpolate, CL_PROFILING_COMMAND_START,  
+                                sizeof(cl_ulong), &start, NULL); 
 
-  volume = 1;
-  for(dim = 0; dim<ndim;dim++){
-    volume *= mesh_size_int[dim] + 2*kernel_size[dim] - 5;
-  }
-  printf("%d\t", volume);
-  for(i = 0; i < 11; i++){
-    printf("%lf\t", executionTimeInMilliseconds[i]);
-  }
-  printf("\n");
+    executionTimeInMilliseconds = (end - start) * 1.0e-6f;
+    printf("GPU M2P (double) interp kernel time: %lf ms\n", executionTimeInMilliseconds);
+    // get gpu timing for part_collect
+    clGetEventProfilingInfo(event_collect_particles, CL_PROFILING_COMMAND_END, 
+                                sizeof(cl_ulong), &end, NULL); 
+    clGetEventProfilingInfo(event_collect_particles, CL_PROFILING_COMMAND_START,  
+                                sizeof(cl_ulong), &start, NULL); 
+
+    executionTimeInMilliseconds = (end - start) * 1.0e-6f;
+    printf("GPU M2P (double) collect part kernel time: %lf ms\n", executionTimeInMilliseconds);
+
+
+// READ BACK RESULTS //
+	error = clEnqueueWaitForEvents(queue, 1, &event_collect_particles);
+
+    error = clEnqueueReadBuffer(queue, dev_mass, CL_TRUE, 0, sizeof(t_real2)*nparticle*nmass, mass, 0, NULL, &event_read_mesh);
+    checkError(error, "clEnqueueReadBuffer while reading back", __FUNCTION__, __LINE__, stamp);
+
+    error |= clFinish(queue);
+
+    t_elapsed_total  = toc(&t_total);
+    t_elapsed_total *= 1000.0;
+
+    printf("GPU Time consumtion: %lf ms including data transfer: %lf ms\n", t_elapsed, t_elapsed_total);
 
 // CLEAN-UP INTERMEDIATE BUFFERS
 	error |= clReleaseMemObject(dev_xp_const);
@@ -542,7 +456,7 @@ int m2p_initialize_np_cell_d(){
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -550,6 +464,7 @@ int m2p_initialize_np_cell_d(){
 	if(localWorkSize > globalWorkSize) localWorkSize = globalWorkSize;
   num_wg = (globalWorkSize + localWorkSize - 1)/localWorkSize;
   globalWorkSize = num_wg*localWorkSize;
+  printf("lws: %d, gws: %d\n",(int)localWorkSize,(int)globalWorkSize);
 
     // Launch kernel on the GPU
 	error |= clEnqueueNDRangeKernel(queue, kernel, 1, NULL, &globalWorkSize, &localWorkSize, 0, NULL, &event_init_np_cell);
@@ -581,7 +496,7 @@ int initialize_padded_mesh_d(int nmass)
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -631,7 +546,7 @@ int m2p_get_particle_positions_d
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -660,27 +575,17 @@ int m2p_reduce_np_cell_d()
 	cl_kernel ck_init_max_np, ck_init_max_np2, ck_init_max_np3, ck_get_max_np, ck_get_max_np2, ck_get_max_np3; 
 	size_t 	  size_max_np = 0, size_max_np2 = 0, size_max_np3 = 0;
 
-  // Set work-group sizes
-#if __GPU == NV_TESLA
-	localWorkSize  = 512;
-#elif __GPU == ATI_CAYMAN
-  localWorkSize  = 256;
-#elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
-#else
-  localWorkSize  = 256;
-#endif
   // Buffer 19: Sorted particle position 
-	size_max_np = (ncell_int_padded + 2*localWorkSize-1)/(2*localWorkSize-1);
+	size_max_np = (ncell_int_padded + 1023)/1024;
 	dev_max_np  = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int)*size_max_np, NULL, &error); 
 
   if(size_max_np > 1){
     // Buffer 20: Sorted particle position 
-    size_max_np2 = (size_max_np + 2*localWorkSize-1)/(2*localWorkSize);
+    size_max_np2 = (size_max_np + 1023)/1024;
     dev_max_np2  = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int)*size_max_np2, NULL, &error); 
   }
 	if(size_max_np2 > 1){
-	  size_max_np3 = (size_max_np2 + 2*localWorkSize-1)/(2*localWorkSize);
+	  size_max_np3 = (size_max_np2 + 1023)/1024;
 	  dev_max_np3  = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(cl_int)*size_max_np3, NULL, &error);
   } 
 // Initialize max_np to 0
@@ -697,7 +602,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -725,7 +630,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -754,7 +659,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -784,7 +689,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -815,7 +720,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -845,7 +750,7 @@ int m2p_reduce_np_cell_d()
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -952,7 +857,7 @@ int duplicate_mesh_d
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -1010,7 +915,7 @@ int place_particle_pos_d
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif
@@ -1104,7 +1009,7 @@ int collect_particles_d
 #elif __GPU == ATI_CAYMAN
   localWorkSize  = 256;
 #elif __GPU == AMD_CPU
-	localWorkSize  = 1024;
+	localWorkSize  = 512;
 #else
   localWorkSize  = 256;
 #endif

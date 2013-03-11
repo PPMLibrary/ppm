@@ -278,7 +278,9 @@
         !----------------------------------------------------------------------!
         !  B-spline 2 (Witch hat)
         !----------------------------------------------------------------------!
+!$OMP PARALLEL DEFAULT(PRIVATE) FIRSTPRIVATE(lda,dxxi,dxyi,dxzi) SHARED(topo,store_info,list_sub,xp,up,min_sub,max_sub,field_up)
 #if __DIME == __3D
+!$OMP DO
         DO isub = 1,topo%nsublist
 
 #if __MODE == __VEC
@@ -715,7 +717,9 @@
            ENDDO        ! iq
 #endif
         END DO              ! loop over subs
+!$OMP END DO
 #elif __DIME == __2D
+!$OMP DO
         DO isub = 1,topo%nsublist
 #if   __MODE == __SCA
            isubl = topo%isublist(isub)
@@ -808,8 +812,10 @@
            ENDDO        ! iq
 #endif
         END DO              ! loop over subs
+!$OMP END DO
       !!! field onto which to interpolate
 #endif
+!$OMP END PARALLEL
       CALL substop('p2m_interp_bsp2',t0,info)
       RETURN
 
