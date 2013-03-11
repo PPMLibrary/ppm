@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_topo_mkpart
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -88,7 +88,6 @@
       USE ppm_module_topo_subs2proc
       USE ppm_module_find_neigh
       USE ppm_module_decomp
-      USE ppm_module_decomp
       USE ppm_module_tree
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
@@ -139,7 +138,7 @@
       !!! *  ppm_param_assign_dual_comm
       !!! *  ppm_param_assign_user_defined
       !!!
-      !!! *nodal* and *dual* assignments  use the external library METIS 
+      !!! *nodal* and *dual* assignments  use the external library METIS
       !!! and are only available if ppm was compiled with METIS support.
       INTEGER                 , INTENT(INOUT) :: topoid
       !!! ID number identifying the topology.
@@ -147,7 +146,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -188,7 +187,7 @@
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_minsub
       !!! Mimimum of extension of subs.
       !!! Used when decomp is user defined
-      !!! 
+      !!!
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub

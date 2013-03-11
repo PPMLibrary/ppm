@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_tree
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -91,7 +91,7 @@
       !!! ==============================================================
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_tree
@@ -122,7 +122,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The data points
@@ -209,7 +209,7 @@
       !!! processor are considered. Entries for non-leaf boxes are
       !!! only true if `pruneboxes=FALSE`
       INTEGER , DIMENSION(:,:), POINTER       :: child
-      !!! Indices of all children of a box. 
+      !!! Indices of all children of a box.
       !!!
       !!! 1st index: child ID                                                  +
       !!! 2nd: box ID.
@@ -217,7 +217,7 @@
       !!! The number of levels. Level 1 is the root box.
 #endif
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: mins,maxs,meshdx,meshdxinv
       INTEGER , DIMENSION(ppm_dim)            :: thisNm
@@ -245,11 +245,11 @@
       INTEGER                                 :: info2,mxlev,bpc,istart,iend
       CHARACTER(LEN=ppm_char)                 :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_tree',t0,info)
 #if   __KIND == __SINGLE_PRECISION
@@ -271,7 +271,7 @@
       IF (ppm_debug .GT. 0) THEN
         CALL check
         IF (info .NE. 0) GOTO 9999
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check what kind of input data is given
@@ -289,7 +289,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Revert to the more efficient (specialized) decomposition trees where 
+      !  Revert to the more efficient (specialized) decomposition trees where
       !  possible
       !  PC: Disabled it: not fully compatible yet.
       !  Need to generate index lists etc...
@@ -350,30 +350,31 @@
       !-------------------------------------------------------------------------
       !  Store the number of boxes and cuts per subdivision
       !-------------------------------------------------------------------------
-      IF (itype .EQ. ppm_param_tree_bin) THEN
+      SELECT CASE (itype)
+      CASE (ppm_param_tree_bin)
           nbpd = 2
           ncut = 1
           IF (ppm_debug .GT. 0) THEN
               CALL ppm_write(ppm_rank,'ppm_tree','Creating binary tree.',info)
           ENDIF
-      ELSEIF (itype .EQ. ppm_param_tree_quad) THEN
+      CASE (ppm_param_tree_quad)
           nbpd = 4
           ncut = 2
           IF (ppm_debug .GT. 0) THEN
               CALL ppm_write(ppm_rank,'ppm_tree','Creating quad-tree.',info)
           ENDIF
-      ELSEIF (itype .EQ. ppm_param_tree_oct) THEN
+      CASE (ppm_param_tree_oct)
           nbpd = 8
           ncut = 3
           IF (ppm_debug .GT. 0) THEN
               CALL ppm_write(ppm_rank,'ppm_tree','Creating oct-tree.',info)
           ENDIF
-      ELSE
+      CASE DEFAULT
           info = ppm_error_error
           CALL ppm_error(ppm_err_argument,'ppm_tree',     &
      &        'unknown tree type specified !',__LINE__,info)
           GOTO 9999
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Clear module pointers
@@ -447,14 +448,14 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
      &        'lower coordinates of new boxes MINC',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(maxc,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
      &        'upper coordinates of new boxes MAXC',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate local data structures
@@ -469,7 +470,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
      &        'list of divisible boxes BOXLIST',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       boxlist(1) = 1
       IF (have_mesh) THEN
           ldc(1) = ppm_dim
@@ -480,8 +481,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
      &            'list of divisible boxes BOXLIST',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
       IF (have_particles) THEN
           ldc(1) = 2**ncut
           CALL ppm_alloc(cbox,ldc,iopt,info)
@@ -498,7 +499,7 @@
      &            'number of particles per box NPBX',__LINE__,info)
               GOTO 9999
           ENDIF
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  The domain itself is the root box. Get the tree started!
@@ -607,7 +608,7 @@
      &        1,lhbx_cut,tree_lpdx,boxcost,info)
       ENDIF
       IF (info .NE. ppm_param_success) GOTO 9999
-      
+
       !-------------------------------------------------------------------------
       !  Grow the list to the proper size as util_rank has only allocated
       !  it to length 2
@@ -621,8 +622,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_tree',          &
      &            'particle list header pointers LHBX_CUT',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check if there is anything to be done at all
@@ -677,7 +678,7 @@
       lctr = 0
       DO WHILE (lcontinue)
           lctr = lctr + 1
-      
+
 !         WRITE(mesg,'(a,i4.4)') 'boxes',lctr
 !         OPEN(10,FILE=mesg)
 !         DO i=1,nbox
@@ -735,10 +736,10 @@
           !---------------------------------------------------------------------
           !  Determine best cut direction(s)
           !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN 
+          IF (PRESENT(pcost)) THEN
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
      &                             inext,ncut,fixed,minboxsize,icut,info,pcost)
-          ELSE 
+          ELSE
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
      &                             inext,ncut,fixed,minboxsize,icut,info)
           ENDIF
@@ -747,10 +748,10 @@
           !---------------------------------------------------------------------
           !  Determine best cut position(s)
           !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN 
+          IF (PRESENT(pcost)) THEN
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
      &                             inext,ncut,minboxsize,icut,cpos,info,pcost)
-          ELSE 
+          ELSE
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
      &                             inext,ncut,minboxsize,icut,cpos,info)
           ENDIF
@@ -815,7 +816,7 @@
 
           !---------------------------------------------------------------------
           !  Update the Nm of the sub-boxes. This needs to be done here for
-          !  all sub-boxes since tree_boxcost needs it. 
+          !  all sub-boxes since tree_boxcost needs it.
           !---------------------------------------------------------------------
           IF (have_mesh) THEN
               DO i=1,nbpd
@@ -831,7 +832,7 @@
           !  Update the costs of the new boxes.
           !  This also grows boxcost.
           !---------------------------------------------------------------------
-          IF (PRESENT(pcost)) THEN 
+          IF (PRESENT(pcost)) THEN
               CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc,   &
      &            nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
           ELSE
@@ -986,8 +987,8 @@
      &                            'list of divisible boxes BOXLIST',    &
      &                            __LINE__,info)
                               GOTO 9999
-                          ENDIF 
-                      ENDIF 
+                          ENDIF
+                      ENDIF
                       boxlist(j) = ibox+i-1
                       k = k + 1
                   ENDIF
@@ -1181,7 +1182,7 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  8000 CALL substop('ppm_tree',t0,info)
       RETURN

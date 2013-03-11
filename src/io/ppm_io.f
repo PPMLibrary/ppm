@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_io
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,125 +30,125 @@
 #if   __DIM == 0
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_0ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single scalars 
+      !!! Performs parallel I/O (read or write) of real single scalars
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_0dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real double scalars 
+      !!! Performs parallel I/O (read or write) of real double scalars
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_0dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single scalars 
+      !!! Performs parallel I/O (read or write) of complex single scalars
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_0ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double scalars 
+      !!! Performs parallel I/O (read or write) of complex double scalars
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_0di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer scalars 
+      !!! Performs parallel I/O (read or write) of integer scalars
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_0dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical scalars 
+      !!! Performs parallel I/O (read or write) of logical scalars
 #elif __KIND == __CHARACTER
       SUBROUTINE ppm_io_0dc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of character scalars 
+      !!! Performs parallel I/O (read or write) of character scalars
 #endif
 #elif __DIM == 1
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_1ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single 1D vectors 
+      !!! Performs parallel I/O (read or write) of real single 1D vectors
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_1dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real double 1D vectors 
+      !!! Performs parallel I/O (read or write) of real double 1D vectors
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_1dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single 1D vectors 
+      !!! Performs parallel I/O (read or write) of complex single 1D vectors
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_1ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double 1D vectors 
+      !!! Performs parallel I/O (read or write) of complex double 1D vectors
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_1di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer 1D vectors 
+      !!! Performs parallel I/O (read or write) of integer 1D vectors
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_1dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical 1D vectors 
+      !!! Performs parallel I/O (read or write) of logical 1D vectors
 #endif
 #elif __DIM == 2
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_2ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single 2D vectors 
+      !!! Performs parallel I/O (read or write) of real single 2D vectors
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_2dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real dbouble 2D vectors 
+      !!! Performs parallel I/O (read or write) of real dbouble 2D vectors
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_2dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single 2D vectors 
+      !!! Performs parallel I/O (read or write) of complex single 2D vectors
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_2ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double 2D vectors 
+      !!! Performs parallel I/O (read or write) of complex double 2D vectors
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_2di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer 2D vectors 
+      !!! Performs parallel I/O (read or write) of integer 2D vectors
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_2dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical 2D vectors 
+      !!! Performs parallel I/O (read or write) of logical 2D vectors
 #endif
 #elif __DIM == 3
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_3ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single 3D vectors 
+      !!! Performs parallel I/O (read or write) of real single 3D vectors
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_3dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real double 3D vectors 
+      !!! Performs parallel I/O (read or write) of real double 3D vectors
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_3dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single 3D vectors 
+      !!! Performs parallel I/O (read or write) of complex single 3D vectors
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_3ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double 3D vectors 
+      !!! Performs parallel I/O (read or write) of complex double 3D vectors
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_3di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer 3D vectors 
+      !!! Performs parallel I/O (read or write) of integer 3D vectors
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_3dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical 3D vectors 
+      !!! Performs parallel I/O (read or write) of logical 3D vectors
 #endif
 #elif __DIM == 4
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_4ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single 4D vectors 
+      !!! Performs parallel I/O (read or write) of real single 4D vectors
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_4dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real double 4D vectors 
+      !!! Performs parallel I/O (read or write) of real double 4D vectors
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_4dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single 4D vectors 
+      !!! Performs parallel I/O (read or write) of complex single 4D vectors
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_4ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double 4D vectors 
+      !!! Performs parallel I/O (read or write) of complex double 4D vectors
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_4di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer 4D vectors 
+      !!! Performs parallel I/O (read or write) of integer 4D vectors
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_4dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical 4D vectors 
+      !!! Performs parallel I/O (read or write) of logical 4D vectors
 #endif
 #elif __DIM == 5
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_io_5ds(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real single 5D vectors 
+      !!! Performs parallel I/O (read or write) of real single 5D vectors
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_io_5dd(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of real double 5D vectors 
+      !!! Performs parallel I/O (read or write) of real double 5D vectors
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_5dsc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex single 5D vectors 
+      !!! Performs parallel I/O (read or write) of complex single 5D vectors
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       SUBROUTINE ppm_io_5ddc(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of complex double 5D vectors 
+      !!! Performs parallel I/O (read or write) of complex double 5D vectors
 #elif __KIND == __INTEGER
       SUBROUTINE ppm_io_5di(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of integer 5D vectors 
+      !!! Performs parallel I/O (read or write) of integer 5D vectors
 #elif __KIND == __LOGICAL
       SUBROUTINE ppm_io_5dl(iUnit,adata,actn,dist,iofmt,ioprec,stat)
-      !!! Performs parallel I/O (read or write) of logical 5D vectors 
+      !!! Performs parallel I/O (read or write) of logical 5D vectors
 #endif
 #endif
       !!! on a distributed or centralized unit opened with ppm_io_open.
@@ -165,7 +165,7 @@
       !!! RESHAPE operates on the stack, so on machines
       !!! with limited stack size this limits the max possible
       !!! data size. Therefore we use DO loops (not slower) to
-      !!! emain on the heap. On vector machines we still use
+      !!! remain on the heap. On vector machines we still use
       !!! RESHAPE because it is faster.
       !-------------------------------------------------------------------------
       !  Modules
@@ -186,7 +186,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                              , INTENT(IN   ) :: iUnit
       !!! I/O unit (as returned by ppm_io_open).
@@ -291,7 +291,7 @@
       INTEGER         , OPTIONAL, INTENT(  OUT) :: stat
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                         :: t0
       INTEGER                          :: info,iactn,idist,iprec
@@ -312,9 +312,9 @@
       LOGICAL    , DIMENSION(:), POINTER :: abuf => NULL()
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
@@ -388,13 +388,13 @@
           info = ppm_error_error
           CALL ppm_error(ppm_err_argument,subname,    &
      &     'Split distribution not possible for characters.',__LINE__,info)
-          GOTO 9999 
+          GOTO 9999
       ENDIF
       IF (idist .EQ. ppm_param_io_sum) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_argument,subname,    &
      &     'Sum reduction not possible for characters.',__LINE__,info)
-          GOTO 9999 
+          GOTO 9999
       ENDIF
 #endif
 
@@ -419,11 +419,11 @@
       !-------------------------------------------------------------------------
       !  Point to proper work storage
       !-------------------------------------------------------------------------
-#if   __KIND == __SINGLE_PRECISION 
+#if   __KIND == __SINGLE_PRECISION
       abuf => abuf_s
 #elif __KIND == __DOUBLE_PRECISION
       abuf => abuf_d
-#elif __KIND == __SINGLE_PRECISION_COMPLEX 
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
       abuf => abuf_sc
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
       abuf => abuf_dc
@@ -506,7 +506,7 @@
 #else
 
           !---------------------------------------------------------------------
-          !  On scalar machines use DO loops since RESHAPE operates on the 
+          !  On scalar machines use DO loops since RESHAPE operates on the
           !  stack and we easily run into the limit. DO loops avoid this.
           !---------------------------------------------------------------------
 #if   __DIM == 2
@@ -573,7 +573,7 @@
       !  Convert to character string
       !-------------------------------------------------------------------------
       IF (iactn .EQ. ppm_param_io_read) THEN
-          ishift = IACHAR('a') 
+          ishift = IACHAR('a')
           DO i=1,ndata
               adata(i:i) = CHAR(abuf(i)+ishift)
           ENDDO
@@ -614,7 +614,7 @@
 #else
 
           !---------------------------------------------------------------------
-          !  On scalar machines use DO loops since RESHAPE operates on the 
+          !  On scalar machines use DO loops since RESHAPE operates on the
           !  stack and we easily run into the limit. DO loops avoid this.
           !---------------------------------------------------------------------
 #if   __DIM == 2
