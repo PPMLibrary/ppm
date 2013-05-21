@@ -753,7 +753,8 @@ CONTAINS
        cmd_args_used = .FALSE.
        ! read in all args
        DO i=1,cmd_args_i
-          CALL getarg(start+i, cbuf)
+          CALL GET_COMMAND_ARGUMENT(start+i, cbuf)
+!           CALL getarg(start+i, cbuf)
           cmd_args_len(i) = LEN_TRIM(cbuf)
           cmd_args(i)     = cbuf(1:cmd_args_len(i))
        END DO
@@ -869,7 +870,7 @@ CONTAINS
           !-------------------------------------------------------
           j = 0
           DO i=1,ilen
-             IF (cbuf(i:i) .NE. ' ') THEN
+             IF (cbuf(i:i) .NE. ' ' .AND. cbuf(i:i) .NE. ACHAR(9)) THEN
                 j = j + 1
                 cbuf(j:j) = cbuf(i:i)
              END IF

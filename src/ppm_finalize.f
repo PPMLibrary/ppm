@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_finalize
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -41,6 +41,8 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_alloc
+      USE ppm_module_write
+      USE ppm_module_log
 !      USE ppm_module_mesh_finalize
       IMPLICIT NONE
       !-------------------------------------------------------------------------
@@ -130,6 +132,61 @@
       !  Set the global status
       !-------------------------------------------------------------------------
       ppm_initialized = .FALSE.
+
+      IF (ppm_rank .EQ. 0) THEN
+         WRITE(mesg,'(A)') &
+      &  "***********************************************************"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***         Parallel Particle Mesh Library (PPM)        ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***                                                     ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  Thank you for using the PPM library in your work.  ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  Please, acknowledge our efforts by including the   ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  following reference when publishing data obtained  ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  using PPM library:                                 ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***                                                     ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  I. F. Sbalzarini, J. Walther, M. Bergdorf,         ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  S. E. Hieber, E. M. Kotsalis, P. Koumoutsakos,     ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***  `J. Comput. Phys.`, 215, pp. 566-588, (2006)       ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***                                                     ***"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         WRITE(mesg,'(A)') &
+      &  "***********************************************************"
+         CALL ppm_log('ppm_finalize',mesg,info)
+         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return

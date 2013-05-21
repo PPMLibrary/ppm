@@ -32,16 +32,22 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
-      USE ppm_module_topo_typedef
+      USE ppm_module_data, ONLY: ppm_kind,ppm_kind_single,ppm_kind_double,     &
+      & ppm_char,ppm_debug,ppm_comm,ppm_nproc,ppm_rank,ppm_dim,ppm_proc_speed, &
+      & ppm_initialized,ppm_pi_s,ppm_pi_d,ppm_param_undefined,ppm_mpi_kind,    &
+      & ppm_param_alloc_fit,ppm_myepss,ppm_myepsd,                             &
+      & ppm_error_fatal,ppm_error_warning,ppm_error_error
+      USE ppm_module_topo_typedef, ONLY: ppm_next_avail_topo
       USE ppm_module_substart
       USE ppm_module_substop
-      USE ppm_module_error
+      USE ppm_module_error, ONLY: ppm_error,ppm_err_sub_failed,&
+      & ppm_err_wrong_dim,ppm_err_wrong_prec,ppm_err_tol_warn,ppm_err_alloc,&
+      & ppm_err_multipleinit,ppm_err_nompi
       USE ppm_module_write
       USE ppm_module_log
-      USE ppm_module_alloc
+      USE ppm_module_alloc, ONLY: ppm_alloc
       USE ppm_module_print_defines
-      USE ppm_module_io
+      USE ppm_module_io, ONLY: ppm_io_set_unit
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -139,7 +145,8 @@
       !-------------------------------------------------------------------------
       !  Get the MPI communicator
       !-------------------------------------------------------------------------
-      ppm_comm = comm
+!       ppm_comm = comm
+      CALL MPI_Comm_Dup(comm,ppm_comm,info)
       CALL MPI_Comm_Size(ppm_comm,ppm_nproc,info)
       CALL MPI_Comm_Rank(ppm_comm,ppm_rank,info)
       CALL MPI_Get_Processor_Name(cbuf,ilen,info)
@@ -167,14 +174,55 @@
         CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       ELSE
         IF (ppm_rank .EQ. 0) THEN
-            WRITE(mesg,'(2A)') '*** This is the PPM library starting on ',&
-     &                    cbuf(1:ilen)
-            CALL ppm_log('ppm_init',mesg,info)
-            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+      &    "**************************************************************"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+      &    "***       Parallel Particle Mesh Library (PPM)       ***P*****"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+      &    "***          version:  1.2.2  /  October 2012        ****P****"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A,i12,A)') &
+      &    '***       Execution on  / ',ppm_nproc,'    node(s)    *****M***'
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+      &    "*** Copyright MOSAIC Group, ETHZ and MPI-CBG Dresden *********"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+      &    "**************************************************************"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
         ENDIF
       ENDIF
 #else
-      WRITE(mesg,'(A)') '*** This is the PPM library in single-processor mode'
+      WRITE(mesg,'(A)') &
+      &    "**************************************************************"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "***       Parallel Particle Mesh Library (PPM)       ***P*****"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "***          version:  1.2.2  /  October 2012        ****P****"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "***        Execution in single-processor mode        *****M***"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** Copyright MOSAIC Group, ETHZ and MPI-CBG Dresden *********"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "**************************************************************"
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
 #endif
@@ -342,13 +390,13 @@
       CALL substop('ppm_init',t0,info)
       RETURN
       CONTAINS
-      SUBROUTINE check
-        IF (ppm_initialized) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_multipleinit,'ppm_init',  &
-     &          'Please call ppm_finalize first!',__LINE__,info)
-            GOTO 8888
-        ENDIF
- 8888   CONTINUE
-      END SUBROUTINE check
+        SUBROUTINE check
+          IF (ppm_initialized) THEN
+             info = ppm_error_error
+             CALL ppm_error(ppm_err_multipleinit,'ppm_init', &
+             & 'Please call ppm_finalize first!',__LINE__,info)
+             GOTO 8888
+          ENDIF
+ 8888     CONTINUE
+        END SUBROUTINE check
       END SUBROUTINE ppm_init

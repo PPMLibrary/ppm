@@ -43,6 +43,9 @@
             MODULE PROCEDURE substart_d
          END INTERFACE
 
+         PRIVATE
+         PUBLIC :: substart
+
          !----------------------------------------------------------------------
          !  include the source 
          !----------------------------------------------------------------------

@@ -209,6 +209,4 @@
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
       !!! array must be extended
 
-
-
       END MODULE ppm_module_topo_typedef
