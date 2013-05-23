@@ -163,7 +163,7 @@
       !  Set number of particles to start with. The user can override this if
       !  running on a very slow processor.
       !-------------------------------------------------------------------------
-      N    = 1000     
+      N    = 1000
       IF (PRESENT(Npart))      N = Npart
 
       !-------------------------------------------------------------------------
