@@ -17,8 +17,11 @@ COMPILECMD = $(FC) $(INC) $(FFLAGS) -c -o $@ $<
 all: lib
 
 
-lib: $(OBJECTS)
+lib: clean $(OBJECTS)
 	ar r libcheck.a $(OBJECTS)
+
+clean:
+	rm -f *.o
 
 .f.o:
 	$(COMPILECMD)
