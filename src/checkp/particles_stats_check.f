@@ -1,7 +1,7 @@
             SUBROUTINE store_particles_stats_d_(cpfile_id, &
                      pstat_id, stats)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, stat_group
+               INTEGER(HID_T) :: group_id
                CHARACTER(LEN=20) :: pstat_id
                CLASS(particles_stats_d_), INTENT(IN), POINTER :: stats
                INTEGER :: rank = 0, error

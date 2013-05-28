@@ -23,7 +23,7 @@
                ! Store the classes
                ! Replace the ID assign line when we have reference
                ! tracking
-               WRITE(pstat,'(I20)') 0
+               WRITE(pstat,'(I20)') 1
                pstat = adjustl(pstat)
                IF (associated(particle%stats)) THEN
                   CALL store_particles_stats_d_(cpfile_id, pstat, &
