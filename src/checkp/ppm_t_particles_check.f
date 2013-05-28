@@ -6,21 +6,15 @@
                INTEGER(HID_T) :: group_id
                !CHARACTER (LEN=20) :: particle_id ! look at boundary case
                INTEGER :: error, rank = 0
-               INTEGER(HID_T) :: space_id, dset_id
                INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
                CHARACTER(LEN=*), INTENT(IN):: particle_id
                TYPE(ppm_t_particles_d), POINTER :: particle
                INTEGER(HSIZE_T), DIMENSION(2) :: dims2
-               CHARACTER, DIMENSION(ppm_param_length_partflags) :: chfl
-               INTEGER :: I ! loop variable
 
                ! Identifiers for class pointers
                CHARACTER(LEN=20) :: tprop, cprop, pstat, abstr, discr, &
                   mapping, neighborlist
 
-
-               ! Change later
-               !CHARACTER (LEN=*), intent(IN) :: particle
 
                ! Create a group for our particle
                CALL h5gcreate_f(cpfile_id, 'particles/'//particle_id, &
@@ -31,43 +25,87 @@
                ! tracking
                WRITE(pstat,'(I20)') 0
                pstat = adjustl(pstat)
-               CALL store_particles_stats_d_(cpfile_id, pstat, &
-                        particle%stats)
-               CALL h5ltmake_dataset_string_f(group_id, 'stat', pstat, &
-                        error)
+               IF (associated(particle%stats)) THEN
+                  CALL store_particles_stats_d_(cpfile_id, pstat, &
+                           particle%stats)
+                  CALL h5ltmake_dataset_string_f(group_id, 'stat', &
+                           pstat, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'stat', &
+                           '0', error)
+               ENDIF
 
                !tprop = particle_id//'_tprop'
                tprop = pstat
-               CALL store_ppm_t_part_prop_d_(cpfile_id, tprop, &
-                  particle%gi)
-               CALL h5ltmake_dataset_string_f(group_id, 'gi', tprop, &
-                  error)
+               IF (associated(particle%gi)) THEN
+                  CALL store_ppm_t_part_prop_d_(cpfile_id, tprop, &
+                     particle%gi)
+                  CALL h5ltmake_dataset_string_f(group_id, 'gi', tprop,&
+                     error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'gi', '0',&
+                     error)
+               ENDIF
 
                !cprop = particle_id//'_stat'
                cprop = pstat
-               CALL store_ppm_c_part_prop_d_(cpfile_id, cprop, &
-                  particle%props)
-               CALL h5ltmake_dataset_string_f(group_id, 'props', cprop,&
-                  error)
+               IF (associated(particle%props)) THEN
+                  CALL store_ppm_c_part_prop_d_(cpfile_id, cprop, &
+                     particle%props)
+                  CALL h5ltmake_dataset_string_f(group_id, 'props', &
+                     cprop, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'props', '0'&
+                     , error)
+               ENDIF
 
                !abstr = particle_id//'_field_ptr'
                abstr = pstat
-               CALL store_ppm_v_main_abstr(cpfile_id, abstr, &
-                  particle%field_ptr)
-               CALL h5ltmake_dataset_string_f(group_id, 'field_ptr',&
-                  abstr, error)
+               IF (associated(particle%field_ptr)) THEN
+                  CALL store_ppm_v_main_abstr(cpfile_id, abstr, &
+                     particle%field_ptr)
+                  CALL h5ltmake_dataset_string_f(group_id, 'field_ptr',&
+                     abstr, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'field_ptr',&
+                     '0', error)
+               ENDIF
 
                !neighborlist = particle_id//'neighs'
                neighborlist = pstat
-               CALL store_ppm_c_neighlist_d_(cpfile_id, abstr, &
-                  particle%neighs)
-               CALL h5ltmake_dataset_string_f(group_id, 'neighs', &
-                  neighborlist, error)
+               IF (associated(particle%neighs)) THEN
+                  CALL store_ppm_c_neighlist_d_(cpfile_id, abstr, &
+                     particle%neighs)
+                  CALL h5ltmake_dataset_string_f(group_id, 'neighs', &
+                     neighborlist, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'neighs', &
+                     '0', error)
+               ENDIF
 
                !discr = particle_id//'ops'
                discr = pstat
+               IF (associated(particle%ops)) THEN
+                  CALL store_ppm_c_operator_discr_(cpfile_id, discr, &
+                     particle%ops)
+                  CALL h5ltmake_dataset_string_f(group_id, 'ops', &
+                     discr, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'ops', &
+                     '0', error)
+               ENDIF
+
                !mapping = particle_id//'maps'
                mapping = pstat
+               IF (associated(particle%maps)) THEN
+                  CALL store_ppm_c_part_mapping_d(cpfile_id, mapping, &
+                     particle%maps)
+                  CALL h5ltmake_dataset_string_f(group_id, 'maps', &
+                     mapping, error)
+               ELSE
+                  CALL h5ltmake_dataset_string_f(group_id, 'maps', &
+                     '0', error)
+               ENDIF
 
                ! Store the integer values of the particle
                CALL h5ltmake_dataset_int_f(group_id, 'Npart', rank, &
@@ -104,22 +142,8 @@
                CALL h5ltmake_dataset_double_f(group_id, 'pcost', &
                   rank, dims, particle%pcost, error)
 
-               ! Convert flags to char and store
-               DO i=1, ppm_param_length_partflags
-                  IF (particle%flags(i)) THEN
-                     chfl(i) = 'T'
-                  ELSE
-                     chfl(i) = 'F'
-                  END IF
-               ENDDO
-               dims = (/ppm_param_length_partflags/)
-               CALL h5screate_simple_f(rank, dims, space_id, error)
-               CALL h5dcreate_f(group_id, "flags", H5T_NATIVE_CHARACTER&
-                  , space_id, dset_id, error)
-               CALL h5dwrite_f(dset_id, H5T_NATIVE_CHARACTER, chfl, &
-                     dims, error)
-               CALL h5dclose_f(dset_id, error)
-               CALL h5sclose_f(space_id, error)
+               CALL store_logical_dim(group_id, 'flags', &
+                     particle%flags, ppm_param_length_partflags)
 
                ! Close the group and file
                CALL h5gclose_f(group_id, error)
