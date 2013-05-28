@@ -1,0 +1,35 @@
+
+# basic settings
+conf.project_name = "part_test"
+conf.binary = "part_test"
+conf.build.optflags = "-O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none -Wall -ffpe-trap=zero,overflow,underflow -I/home/kevin/ppm-library/checkpoint -I/usr/include -lhdf5_fortran" #"-g" #-O3"
+conf.ppm.base_path = "/home/kevin/ppm-library/ppm"
+conf.ppm.numerics.base_path = "/home/kevin/ppm-library/ppmnumerics"
+
+# numerics settings
+conf.ppm.prec = "ppm_kind_double" # "ppm_kind_single"
+conf.ppm.tolexp = -14
+conf.ppm.dim = 3
+
+# time stepping
+conf.step.type = :real # :integer
+
+# I/O settings
+conf.out.format = :vtk # :hdf5
+conf.out.basename = "output"
+
+# cluster execution and benchmarking
+conf.bench.target = "brutus"
+conf.bench.ctrl = "Ctrl"
+conf.bench.nprocs = [1,2,4,8,16]
+conf.bench.nreps = 5
+conf.bench.runargs = {1 => '',2 => '',4 => '',8 => '',16 => ''}
+conf.bench.brutus.exec = """
+bsub -n <%= conf.bench.nprocs.max %> -W 01:00 -R \"select[model==Opteron8380]\" -R \"span[ptile=16]\" < job.sh
+"""
+conf.bench.cbl1.exec = """
+qsub -n <%= conf.bench.nprocs.max %> job.pbs
+"""
+conf.bench.local.exec = """
+./job.sh
+"""

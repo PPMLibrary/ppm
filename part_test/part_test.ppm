@@ -1,0 +1,100 @@
+client adv
+INCLUDE 'checkpoint.f'
+  integer, dimension(6) :: bcdef = ppm_param_bcdef_periodic
+  real(mk), dimension(3) :: r_pq
+  real(mk)               :: r_s_pq2
+  real(mk), dimension(3) :: dF
+  real(mk)               :: scaldF
+  real(mk)               :: cutoff
+  real(mk), dimension(3) :: displacement
+  real(mk), dimension(:,:), pointer :: xp => NULL()
+  real(mk), dimension(:),pointer  :: disp_vector => NULL()
+  integer                :: st = 0, vtkcounter=0,nsubs_x,total_part
+  real(mk)               :: disp,maxdisp,allmaxdisp
+  real(mk)               :: skin
+  real(mk)               :: sigma6,sigma12,side_len,x1,y1,z1
+  class(ppm_t_part_prop_d_), pointer :: prop => null()
+  integer                :: iter_time, map_time, fcalc_time, before_dlb_time,id,j,globalID
+  real(mk)               :: time_diff
+  integer, dimension(:),pointer   :: nvlist=>NULL()
+  integer, dimension(:,:),pointer :: vlist=>NULL()
+  character(len=15)               :: vtkfilename
+  character(len=3)                :: procbuf
+
+  ! Prepare VTK filename
+  write(procbuf,'(I3)')   ppm_nproc
+  write(vtkfilename,'(A,A5)') trim(ADJUSTL(procbuf)),'_test'
+  
+  ! Read input arguments from Ctrl file
+  add_arg(m,<#real(mk)#>,1.0_mk,0.0_mk,'mass','mass of particles')
+  add_arg(eps,<#real(mk)#>,1.0_mk,0.0_mk,'epsilon','Potential well depth')
+  add_arg(sigma,<#real(mk)#>,1.0_mk,0.0_mk,'sigma','distance of potential well')
+  add_arg(dt,<#real(mk)#>,1.0_mk,0.0_mk,'delta_t','time step')
+  
+  ! Initialize ppm
+  ppm_init()
+
+  cutoff = 0.05_mk
+  skin = 0.1_mk*cutoff
+
+  ! Create topology
+  topo = create_topology(bcdef,ghost_size=<#cutoff + skin#>)
+  ! Create particles
+  parts = create_particles(topo,ghost_size=<#cutoff + skin#>)
+  ! Apply boundary conditions
+  call parts%apply_bc(info)
+  ! Do the global mapping
+  global_mapping(parts, topo)
+  ! Create particle properties
+  !v = create_property(parts, ppm_dim, "velocity",zero=true)
+  !a = create_property(parts, ppm_dim, "acceleration",zero=true)
+  !F = create_property(parts, ppm_dim, "force",zero=true)
+  !E = create_property(parts, 1, "energy",zero=true)
+  dx = create_property(parts, ppm_dim, "displace",zero=true)
+  procid = create_property(parts,1,"proc ID",zero=true)
+  !displace = create_property(parts,1,"displace",zero=true)
+  ! Find the ghost particles
+  ghost_mapping(parts)
+
+  ! Create neighbor lists (i.e. neighbors of each particle)  
+  nlist = create_neighlist(parts,cutoff=<#cutoff#>,skin=<#skin#>,sym=<#.false.#>)
+  
+  ! Time statistics
+  call ppm_tstats_setup(1,info)
+  call ppm_tstats_add('iteration',iter_time,info)
+  ! Enter the time loop
+  t = timeloop(tstart=0.0_mk,deltat=dt,tend=stop_time)
+    call ppm_tstats_tic(iter_time,st+1,info)
+         
+    maxdisp = 0.0_mk
+    allmaxdisp = 0.0_mk
+    stdout("**********TIME STEP**********: ",'st+1')
+    ! Move the particles a bit
+    foreach p in particles(parts) with positions(x,writex=true) sca_props(procid) prec(ppm_kind_double)
+      x_p(:) = x_p(:) + 0.25_mk*cutoff !displacement 
+    end foreach
+    
+    ! Apply the boundary conditions again to correct particle positions  
+    call parts%apply_bc(info)
+    partial_mapping(parts)
+    foreach p in particles(parts) with sca_props(procid) vec_props(dx) prec(ppm_kind_double)
+        dx_p(:) = sin(cos(sin(cos(tan(sin(sin(cos(30._mk))))))))
+        procid_p = ppm_rank
+    end foreach
+    ! Re-do the ghost mappings
+    ghost_mapping(parts)
+    ! Re-compute neighbor lists
+    comp_neighlist(parts)    
+    nlist%uptodate = .TRUE.
+    
+    t = t + dt
+    st = st + 1
+    call ppm_tstats_toc(iter_time,st,time_diff,info) 
+    ! Visualize particles using Paraview
+    call ppm_vtk_particles(vtkfilename,parts,info,step=st)
+
+  end timeloop
+  call ppm_tstats_collect('time.dat',info)
+  ppm_finalize()
+end client
+

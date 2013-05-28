@@ -1,0 +1,7 @@
+*.o
+*.mod
+*vtp
+*.log
+lib*.a
+*.h5
+*.zip
