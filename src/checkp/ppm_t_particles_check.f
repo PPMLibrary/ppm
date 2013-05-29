@@ -1,14 +1,81 @@
+            SUBROUTINE make_ppm_t_particles_d_type(dtype_id)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(OUT) :: dtype_id
+               INTEGER(HID_T) :: bool_id
+               INTEGER :: error
+               INTEGER(HSIZE_T) :: int_size, double_size, type_size, &
+                  offset, char_size, bool_size
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER :: rank
+               rank = 1
+               dims = (/ppm_param_length_partflags/)
+
+               CALL h5tarray_create_f(H5T_NATIVE_CHARACTER, rank, &
+                  dims, bool_id, error)
+
+               type_size = 0
+               CALL h5tget_size_f(H5T_NATIVE_INTEGER, int_size, error)
+               CALL h5tget_size_f(H5T_NATIVE_DOUBLE, double_size, error)
+               CALL h5tget_size_f(H5T_NATIVE_CHARACTER, char_size, &
+                     error)
+               CALL h5tget_size_f(bool_id, bool_size, error)
+
+               type_size = (6*int_size) + (4*double_size) + &
+                  bool_size
+
+               CALL h5tcreate_f(H5T_COMPOUND_F, type_size, dtype_id, &
+                  error)
+
+               CALL h5tinsert_f(dtype_id, "Npart", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+               CALL h5tinsert_f(dtype_id, "Mpart", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+               CALL h5tinsert_f(dtype_id, "active_topoid", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+               CALL h5tinsert_f(dtype_id, "isymm", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+               CALL h5tinsert_f(dtype_id, "NewNpart", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+               CALL h5tinsert_f(dtype_id, "itime", offset, &
+                  H5T_NATIVE_INTEGER, error)
+               offset = offset + int_size
+
+               ! Insert the doubles
+               CALL h5tinsert_f(dtype_id, "time", offset, &
+                  H5T_NATIVE_DOUBLE, error)
+               offset = offset + double_size
+               CALL h5tinsert_f(dtype_id, "ghostlayer", offset, &
+                  H5T_NATIVE_DOUBLE, error)
+               offset = offset + double_size
+               CALL h5tinsert_f(dtype_id, "h_avg", offset, &
+                  H5T_NATIVE_DOUBLE, error)
+               offset = offset + double_size
+               CALL h5tinsert_f(dtype_id, "h_min", offset, &
+                  H5T_NATIVE_DOUBLE, error)
+               offset = offset + double_size
+
+               ! Finally the logical flags
+               CALL h5tinsert_f(dtype_id, "flags", offset, &
+                  bool_id, error)
+               offset = offset + bool_size
+
+            END SUBROUTINE
             SUBROUTINE store_ppm_t_particles_d(cpfile_id, particle_id, &
                         particle)
                IMPLICIT NONE
 
                INTEGER(HID_T) :: cpfile_id
-               INTEGER(HID_T) :: group_id
+               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id
                !CHARACTER (LEN=20) :: particle_id ! look at boundary case
                INTEGER :: error, rank = 0
                INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
                CHARACTER(LEN=*), INTENT(IN):: particle_id
-               TYPE(ppm_t_particles_d), POINTER :: particle
+               CLASS(ppm_t_particles_d), POINTER :: particle
                INTEGER(HSIZE_T), DIMENSION(2) :: dims2
 
                ! Identifiers for class pointers
@@ -107,31 +174,6 @@
                      '0', error)
                ENDIF
 
-               ! Store the integer values of the particle
-               CALL h5ltmake_dataset_int_f(group_id, 'Npart', rank, &
-                  dims, (/particle%Npart/), error)
-               CALL h5ltmake_dataset_int_f(group_id, 'Mpart', rank, &
-                  dims, (/particle%Mpart/), error)
-               CALL h5ltmake_dataset_int_f(group_id, 'active_topoid', &
-                  rank, dims, (/particle%active_topoid/), error)
-               CALL h5ltmake_dataset_int_f(group_id, 'isymm', &
-                  rank, dims, (/particle%isymm/), error)
-               CALL h5ltmake_dataset_int_f(group_id, 'NewNpart', &
-                  rank, dims, (/particle%NewNpart/), error)
-               CALL h5ltmake_dataset_int_f(group_id, 'itime', &
-                  rank, dims, (/particle%itime/), error)
-
-
-               ! Store the Real arguements of the particle
-               CALL h5ltmake_dataset_double_f(group_id, 'time', &
-                  rank, dims, (/particle%time/), error)
-               CALL h5ltmake_dataset_double_f(group_id, 'ghostlayer', &
-                  rank, dims, (/particle%ghostlayer/), error)
-               CALL h5ltmake_dataset_double_f(group_id, 'h_avg', &
-                  rank, dims, (/particle%h_avg/), error)
-               CALL h5ltmake_dataset_double_f(group_id, 'h_min', &
-                  rank, dims, (/particle%h_min/), error)
-
                ! Store the subtypes
                dims2 = shape(particle%xp)
                rank = 2
@@ -145,6 +187,50 @@
                CALL store_logical_dim(group_id, 'flags', &
                      particle%flags, ppm_param_length_partflags)
 
+
+               CALL make_ppm_t_particles_d_type(type_id)
+               CALL h5screate_f(H5S_SCALAR_F, space_id, error)
+               CALL h5dcreate_f(group_id, particle_id, type_id, &
+                  space_id, dset_id, error)
+               CALL write_ppm_t_particles_d(dset_id, particle)
+               CALL h5dclose_f(dset_id, error)
+               CALL h5sclose_f(space_id, error)
                ! Close the group and file
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE store_ppm_t_particles_d
+
+            SUBROUTINE write_ppm_t_particles_d(dset_id, particle)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CLASS(ppm_t_particles_d), POINTER :: particle
+
+               ! Integers
+               CALL write_attribute(dset_id, 'Npart', &
+                  particle%Npart)
+               CALL write_attribute(dset_id, 'Mpart', &
+                  particle%Mpart)
+               CALL write_attribute(dset_id, 'active_topoid', &
+                  particle%active_topoid)
+               CALL write_attribute(dset_id, 'isymm', &
+                  particle%isymm)
+               CALL write_attribute(dset_id, 'NewNpart', &
+                  particle%NewNpart)
+               CALL write_attribute(dset_id, 'itime', &
+                  particle%itime)
+
+               ! Doubles
+               CALL write_attribute(dset_id, 'time', &
+                  particle%time)
+               CALL write_attribute(dset_id, 'ghostlayer', &
+                  particle%ghostlayer)
+               CALL write_attribute(dset_id, 'h_avg', &
+                  particle%h_avg)
+               CALL write_attribute(dset_id, 'h_min', &
+                  particle%h_min)
+
+               ! Logicals
+               CALL write_attribute(dset_id, "flags", &
+                  particle%flags, ppm_param_length_partflags)
+            END SUBROUTINE
+
+

@@ -6,6 +6,11 @@
             !MODULE PROCEDURE store_ppm_t_part_prop_d_, &
                !store_particles_stats_d_
          !END INTERFACE store_type
+         INTERFACE write_attribute
+            module procedure write_integer_attribute, &
+                  write_double_attribute, &
+                  write_logical_array
+         END INTERFACE
          INTERFACE store_type
          END INTERFACE
          INTERFACE store_collection
@@ -39,6 +44,9 @@
 
                ! ppm_c_part_mapping
                CALL h5gcreate_f(file_id, 'maps', group_id, error)
+               CALL h5gclose_f(group_id, error)
+               ! ppm_t_part_mapping
+               CALL h5gcreate_f(file_id, 'maps_t', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_v_main_abstr
@@ -108,14 +116,124 @@
                CALL h5sclose_f(space_id, error)
             END SUBROUTINE store_logical_dim
 
-            SUBROUTINE checkpoint_type(data_pointer)
-               CLASS(ppm_t_main_abstr), POINTER, INTENT(IN) :: &
-                  data_pointer
-            END SUBROUTINE checkpoint_type
-            SUBROUTINE checkpoint_container(container_ptr)
-               CLASS(ppm_t_container), POINTER, INTENT(IN) :: &
-                  container_ptr
-            END SUBROUTINE checkpoint_container
+            SUBROUTINE write_logical_array(dset_id, &
+                  dname, buffer, length)
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: dname
+               LOGICAL, DIMENSION(length) :: buffer
+               INTEGER, INTENT(in) :: length
+               CHARACTER, DIMENSION(length) :: charbuf
+
+               INTEGER(HID_T) :: attr_id, plist_id, bool_id
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER(HSIZE_T) :: csize, arr_size, offset
+               INTEGER :: error, i, rank
+               rank = 1
+               dims = (/length/)
+               offset = 0
+
+               DO i=1, length
+                  IF (buffer(i)) THEN
+                     charbuf(i) = 'T'
+                  ELSE
+                     charbuf(i) = 'F'
+                  ENDIF
+               ENDDO
+
+               ! Create the type properties
+               ! preserve partially initialized fields
+               CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+               CALL h5pset_preserve_f(plist_id, .TRUE., error)
+
+               ! Get the data size
+               CALL h5tget_size_f(H5T_NATIVE_CHARACTER, csize, error)
+               arr_size = length*csize
+
+               ! Create the array type for the attribute
+               CALL h5tarray_create_f(H5T_NATIVE_CHARACTER, rank, dims,&
+                  bool_id, error)
+               CALL h5tget_size_f(bool_id, arr_size, error)
+               CALL h5tcreate_f(H5T_COMPOUND_F, arr_size, attr_id, &
+                  error)
+               CALL h5tinsert_f(attr_id, dname, offset, bool_id, error)
+
+               CALL h5dwrite_f(dset_id, attr_id , charbuf, &
+                  dims, error)
+               CALL h5tclose_f(attr_id, error)
+            END SUBROUTINE write_logical_array
+
+            !SUBROUTINE checkpoint_type(data_pointer)
+            !   CLASS(ppm_t_main_abstr), POINTER, INTENT(IN) :: &
+            !      data_pointer
+            !END SUBROUTINE checkpoint_type
+            !SUBROUTINE checkpoint_container(container_ptr)
+            !   CLASS(ppm_t_container), POINTER, INTENT(IN) :: &
+            !      container_ptr
+            !END SUBROUTINE checkpoint_container
+
+            SUBROUTINE write_INTEGER_attribute(dset_id, &
+                  vname, val)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: vname
+               INTEGER :: val
+
+               INTEGER error
+               INTEGER(HID_T) :: plist_id, attr_id
+               INTEGER(HSIZE_T) :: isize, offset
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
+               offset = 0
+
+               ! Create the type properties
+               ! preserve partially initialized fields
+               CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+               CALL h5pset_preserve_f(plist_id, .TRUE., error)
+
+               ! Get the data size
+               CALL h5tget_size_f(H5T_NATIVE_INTEGER, isize, error)
+
+               ! Create the compound type for the attribute
+               CALL h5tcreate_f(H5T_COMPOUND_F, isize, attr_id, error)
+               CALL h5tinsert_f(attr_id, vname, offset, &
+                   H5T_NATIVE_INTEGER, error)
+               CALL h5dwrite_f(dset_id, attr_id, val, dims, &
+                     error, xfer_prp = plist_id)
+
+               CALL h5tclose_f(attr_id, error)
+
+            END SUBROUTINE write_INTEGER_attribute
+
+            SUBROUTINE write_double_attribute(dset_id, vname, &
+                  val)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: vname
+               REAL(ppm_kind_double) :: val
+
+               INTEGER error
+               INTEGER(HID_T) :: plist_id, attr_id
+               INTEGER(HSIZE_T) :: dsize, offset
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
+               offset = 0
+
+               ! Create the type properties
+               ! preserve partially initialized fields
+               CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+               CALL h5pset_preserve_f(plist_id, .TRUE., error)
+
+               ! Get the data size
+               CALL h5tget_size_f(H5T_NATIVE_DOUBLE, dsize, error)
+
+               ! Create the compound type for the attribute
+               CALL h5tcreate_f(H5T_COMPOUND_F, dsize, attr_id, error)
+               CALL h5tinsert_f(attr_id, vname, offset, &
+                   H5T_NATIVE_DOUBLE, error)
+               CALL h5dwrite_f(dset_id, attr_id, val, dims, &
+                     error, xfer_prp = plist_id)
+
+               CALL h5tclose_f(attr_id, error)
+
+            END SUBROUTINE
             !SUBROUTINE store_pointer(cpfid, loc, ident, vname, ptr)
                !INTEGER(HID_T), INTENT(IN) :: cpfid, loc
                !CHARACTER(LEN=*), INTENT(IN) :: ident, vname
@@ -149,6 +267,8 @@
             ! collection
             INCLUDE 'checkp/ppm_c_part_mapping_check.f'
             INCLUDE 'checkp/ppm_t_part_mapping_check.f'
+
+            INCLUDE 'checkp/ppm_t_mapping_check.f'
 
             INCLUDE 'checkp/ppm_v_main_abstr_check.f'
 
