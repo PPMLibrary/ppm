@@ -1,3 +1,4 @@
+      ! Add the type definitions for the various pointers
             SUBROUTINE make_ppm_t_particles_d_type(dtype_id)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(OUT) :: dtype_id
@@ -184,17 +185,21 @@
                CALL h5ltmake_dataset_double_f(group_id, 'pcost', &
                   rank, dims, particle%pcost, error)
 
-               CALL store_logical_dim(group_id, 'flags', &
-                     particle%flags, ppm_param_length_partflags)
-
-
+               ! Get Datatype
                CALL make_ppm_t_particles_d_type(type_id)
+
+               ! Create the dataset
                CALL h5screate_f(H5S_SCALAR_F, space_id, error)
                CALL h5dcreate_f(group_id, particle_id, type_id, &
                   space_id, dset_id, error)
+
+               ! Write the dataset
                CALL write_ppm_t_particles_d(dset_id, particle)
+
+               ! Close the dataset
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(space_id, error)
+
                ! Close the group and file
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE store_ppm_t_particles_d

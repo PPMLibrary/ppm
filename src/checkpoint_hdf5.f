@@ -2,21 +2,28 @@
          USE hdf5
          USE h5lt
          USE ppm_module_core
-         !INTERFACE store_type
-            !MODULE PROCEDURE store_ppm_t_part_prop_d_, &
-               !store_particles_stats_d_
-         !END INTERFACE store_type
+
+         ! Generic interface definitions for abstract storage functions
+
+         ! Write an attribute to a dataset
          INTERFACE write_attribute
             module procedure write_integer_attribute, &
                   write_double_attribute, &
                   write_logical_array
          END INTERFACE
+
+         ! Store a defined Datatype
          INTERFACE store_type
          END INTERFACE
+
+         ! Generic abstraction in order to store generic containers
          INTERFACE store_collection
             MODULE PROCEDURE store_ppm_c_neighlist_d_
          END INTERFACE store_collection
+
          CONTAINS
+            ! Creates and initializes the checkpoint file
+            ! Creates necessary groups in the file for types
             SUBROUTINE make_checkpoint_file(filename, file_id)
                IMPLICIT NONE
 
@@ -78,6 +85,25 @@
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE make_checkpoint_file
 
+            ! Opens an existing checkpoint file
+            SUBROUTINE open_checkpoint_file(filename, file_id)
+               IMPLICIT NONE
+
+               ! The filename of the checkpoint
+               CHARACTER(LEN=*), INTENT(IN) :: filename
+
+               INTEGER(HID_T), INTENT(out):: file_id
+               INTEGER(HID_T) :: group_id
+               INTEGER :: error
+
+               ! Open the interface and create the file
+               CALL h5open_f(error)
+               CALL h5fcreate_f(filename, H5F_ACC_RDWR_F, file_id, &
+                        error)
+            END SUBROUTINE open_checkpoint_file
+
+            ! Close the checkpoint file
+            ! Called at the end of the checkpoint
             SUBROUTINE close_checkpoint_file(file_id, error)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: file_id
@@ -86,6 +112,7 @@
                CALL h5close_f(error)
             END SUBROUTINE close_checkpoint_file
 
+            ! This function will be removed for the genericized version
             SUBROUTINE store_logical_dim(group_id, dname, buffer,&
                    length)
                INTEGER(HID_T), INTENT(IN) :: group_id
@@ -116,6 +143,7 @@
                CALL h5sclose_f(space_id, error)
             END SUBROUTINE store_logical_dim
 
+            ! Write a BOOL array attribute to a dataset
             SUBROUTINE write_logical_array(dset_id, &
                   dname, buffer, length)
                INTEGER(HID_T), INTENT(IN) :: dset_id
@@ -171,6 +199,7 @@
             !      container_ptr
             !END SUBROUTINE checkpoint_container
 
+            ! Write integer attribute to a dataset
             SUBROUTINE write_INTEGER_attribute(dset_id, &
                   vname, val)
                IMPLICIT NONE
@@ -203,6 +232,7 @@
 
             END SUBROUTINE write_INTEGER_attribute
 
+            ! Write double attribute to a dataset
             SUBROUTINE write_double_attribute(dset_id, vname, &
                   val)
                IMPLICIT NONE
@@ -249,30 +279,30 @@
             !END SUBROUTINE
 
 
-            ! Done except for pointers
+            ! Basic abstraction layer, no pointers
+            ! Still in sub group for compatibility
             INCLUDE 'checkp/ppm_t_particles_check.f'
 
-            ! Done except for pointers
             INCLUDE 'checkp/particles_stats_check.f'
 
             INCLUDE 'checkp/ppm_t_part_prop_check.f'
 
             INCLUDE 'checkp/ppm_c_part_prop_check.f'
 
-            ! Done except for pointers
             INCLUDE 'checkp/ppm_c_neighlist_check.f'
             INCLUDE 'checkp/ppm_t_neighlist_check.f'
 
             ! Need to test these, default tests have a null
             ! collection
+            ! Needs container abstraction layer
             INCLUDE 'checkp/ppm_c_part_mapping_check.f'
+            ! Simple abstraction layer, no pointers
             INCLUDE 'checkp/ppm_t_part_mapping_check.f'
-
+            ! Basic Abstraction Layer, no pointers, only 2 vars
             INCLUDE 'checkp/ppm_t_mapping_check.f'
 
             INCLUDE 'checkp/ppm_v_main_abstr_check.f'
 
-            ! Done except for pointers
             ! Need to test these, default tests have a null
             ! collection
             INCLUDE 'checkp/ppm_c_operator_discr_check.f'

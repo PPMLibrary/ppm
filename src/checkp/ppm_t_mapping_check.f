@@ -21,6 +21,9 @@
                CALL h5tinsert_f(dtype_id, "target_topoid", offset, &
                   H5T_NATIVE_INTEGER, error)
             END SUBROUTINE make_ppm_t_mapping_d_type
+
+            ! Add store subroutine
+
             SUBROUTINE write_ppm_t_mapping_d_(dset_id, map)
                INTEGER(HID_T), INTENT(IN) :: dset_id
                CLASS(ppm_t_mapping_d_), POINTER, INTENT(IN) :: map
