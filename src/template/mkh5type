@@ -6,6 +6,9 @@
 # mkh5type type.def classname [classparent]
 use warnings;
 
+my $typename;
+my $parenttype;
+
 my %ints;
 my %dubs;
 my %chars;
@@ -20,18 +23,24 @@ my $write_section = "";
 open FILE, $ARGV[0] or die $!;
 
 for my $line (<FILE>) {
+   if ($line =~ m/ *#/) {
+      # Ignore comment lines
+      continue;
+   }
    if ($line =~ m/integer (\w*) *(\w*)?/) {
       if ($2) { $ints{$1} = $2; } else { $ints{$1} = '1'; }
    }
-   if ($line =~ m/real (\w*) *(\w*)?/){
+   elsif ($line =~ m/real (\w*) *(\w*)?/){
       if ($2) { $dubs{$1} = $2; } else { $dubs{$1} = '1'; }
    }
-   if ($line =~ m/character (\w*) *(\w*)?/){
+   elsif ($line =~ m/character (\w*) *(\w*)?/){
       if ($2) { $chars{$1} = $2; } else { $chars{$1} = '1'; }
    }
-   if ($line =~ m/logical (\w*) *(\w*)?/){
+   elsif ($line =~ m/logical (\w*) *(\w*)?/){
       if ($2) { $bools{$1} = $2; } else { $bools{$1} = '1'; }
    }
+   else {
+      print "Failed to evaluate expr: ".$line
 }
 $calc_section .= "\n";
 
@@ -124,23 +133,30 @@ print_attr("H5T_NATIVE_CHARACTER", \%bools, "csize");
 $create_section .= "\n";
 
 # Now we write the file from the template
-$target_name = $ARGV[1];
+if ($ARGV[1]) {
+   $typename = $ARGV[1];
+}
+if ($ARGV[2]) {
+   $parenttype = $ARGV[2];
+}
 
 open FILE2, "+<", "type.f.in" or die $!;
 
-for (<FILE2>) {
-   if (m/isize/ and (not %ints)) {}
-   elsif (m/dsize/ and (not %ints)) {}
-   elsif (m/csize/ and (not %bool) and (not %chars)) {}
-   elsif (/PARENT/i ) {
-      if ($ARGV[2]){
-         s/PARENT/$ARGV[2]/;
-      }
-   }
-   else {
-      s/ *!CREATE_STUB/$create_section/;
-      s/ *!CALCULATE_STUB/$calc_section/;
-      s/TYPE/$target_name/;
-      print;
+for (<TEMPLATE>) {
+   # Make the template substitutions
+   s/TYPE/$typename/;
+   s/ *!CREATE_STUB/$create_section/;
+   s/ *!CALCULATE_STUB/$calc_section/;
+   #s/ *!WRITE_STUB/$write_section/;
+   #s/ *!READ_STUB/$read_section/;
+
+   # if its not an omitted line, print
+   if (not ((m/isize/ and (not %ints))
+      or (m/dsize/ and (not %ints))
+      or (m/csize/ and (not %bool) and (not %chars))))
+      or ((/[sg]et_size/ or /PARENT/i) and (not $parenttype))) {
+
+      s/PARENT/$ARGV[2]/;
+      print
    }
 }
