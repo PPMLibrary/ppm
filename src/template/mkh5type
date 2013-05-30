@@ -1,0 +1,146 @@
+#!/usr/bin/perl
+
+# Take a profile of an argument, and generate the required hdf5 code
+# to make the data type
+# usage
+# mkh5type type.def classname [classparent]
+use warnings;
+
+my %ints;
+my %dubs;
+my %chars;
+my %bool;
+my $spaces= " "x15;
+my $tsizeline = $spaces . "tsize = tsize";
+
+my $calc_section = "";
+my $create_section = "";
+my $write_section = "";
+
+open FILE, $ARGV[0] or die $!;
+
+for my $line (<FILE>) {
+   if ($line =~ m/integer (\w*) *(\w*)?/) {
+      if ($2) { $ints{$1} = $2; } else { $ints{$1} = '1'; }
+   }
+   if ($line =~ m/real (\w*) *(\w*)?/){
+      if ($2) { $dubs{$1} = $2; } else { $dubs{$1} = '1'; }
+   }
+   if ($line =~ m/character (\w*) *(\w*)?/){
+      if ($2) { $chars{$1} = $2; } else { $chars{$1} = '1'; }
+   }
+   if ($line =~ m/logical (\w*) *(\w*)?/){
+      if ($2) { $bools{$1} = $2; } else { $bools{$1} = '1'; }
+   }
+}
+$calc_section .= "\n";
+
+$calc_section .= $spaces . "! Calculate datatype size\n";
+if (%ints) {
+   $calc_section .= $spaces;
+   $calc_section .= "CALL h5tget_size_f(H5T_NATIVE_INTEGER, isize, error)\n";
+}
+if (%dubs) {
+   $calc_section .= $spaces;
+   $calc_section .= "CALL h5tget_size_f(H5T_NATIVE_DOUBLE, dsize, error)\n";
+}
+if (%bool or %chars) {
+   $calc_section .= $spaces;
+   $calc_section .= "CALL h5tget_size_f(H5T_NATIVE_CHARACTER, csize, error)\n";
+}
+
+$calc_section .= "\n";
+my $hash, my $var, my $count;
+my $key;
+sub sum_type {
+   $hash = $_[0];
+   $var = $_[1];
+   $count = 0;
+   $cline = $var . "*(";
+   for $key (keys %$hash) {
+      if ($$hash{$key} =~ /\d/){
+         $count += $$hash{$key};
+      }
+      else {
+         $cline .= $$hash{$key} . "+";
+      }
+      #$calc_section .= $key . ' ' . $$hash{$key};
+   }
+   if ($count > 0 or not $cline eq $var . "*("){
+      $tsizeline .= " + ". $cline . $count . ")";
+   }
+}
+&sum_type(\%ints, 'isize');
+&sum_type(\%dubs, 'dsize');
+&sum_type(\%bool, 'csize');
+&sum_type(\%chars, 'csize');
+
+$calc_section .= "\n";
+$calc_section .= $tsizeline . "\n\n";
+
+# Now to make the arguments
+$create_section .= $spaces . "! Insert the members\n";
+sub print_attr {
+   $type = $_[0];
+   $names = $_[1];
+   for $var (keys %$names){
+      if ($$names{$var} eq '1'){
+         print_el ($var, $type, $_[2]);
+      }
+      else {
+         print_arr($type, $var, $_[2]."*".$$names{$var});
+      }
+   }
+}
+sub print_el {
+   $create_section .= $spaces;
+   $create_section .= "CALL h5tinsert_f(dtype_id, \"".$_[0]."\", offset, &\n";
+   $create_section .= $spaces . "      " . $_[1] .", error)\n";
+   $create_section .= $spaces . "offset = offset + ". $_[2] . "\n";
+}
+sub print_arr {
+   $type = $_[0];
+   $var = $_[1];
+   $num = $_[2];
+   $create_section .= $spaces . "dims = (/$num/)\n";
+   $create_section .= $spaces . "CALL h5tarray_create_f(".$type.", rank, &\n";
+   $create_section .= $spaces . "    dims, array_id, error)\n";
+   $create_section .= $spaces . "CALL h5tinsert_f(dtype_id, \"".$var."\", offset, &\n";
+   $create_section .= $spaces . "    array_id, error)\n";
+   $create_section .= $spaces . "offset = offset + (". $num. ")\n";
+}
+
+$create_section .= $spaces . "! Integer members\n";
+print_attr("H5T_NATIVE_INTEGER", \%ints, "isize");
+$create_section .= "\n";
+$create_section .= $spaces . "! Real members\n";
+print_attr("H5T_NATIVE_DOUBLE", \%dubs, "dsize");
+$create_section .= "\n";
+$create_section .= $spaces . "! Character members\n";
+print_attr("H5T_NATIVE_CHARACTER", \%chars, "csize");
+$create_section .= "\n";
+$create_section .= $spaces . "! Logical members\n";
+print_attr("H5T_NATIVE_CHARACTER", \%bools, "csize");
+$create_section .= "\n";
+
+# Now we write the file from the template
+$target_name = $ARGV[1];
+
+open FILE2, "+<", "type.f.in" or die $!;
+
+for (<FILE2>) {
+   if (m/isize/ and (not %ints)) {}
+   elsif (m/dsize/ and (not %ints)) {}
+   elsif (m/csize/ and (not %bool) and (not %chars)) {}
+   elsif (/PARENT/i ) {
+      if ($ARGV[2]){
+         s/PARENT/$ARGV[2]/;
+      }
+   }
+   else {
+      s/ *!CREATE_STUB/$create_section/;
+      s/ *!CALCULATE_STUB/$calc_section/;
+      s/TYPE/$target_name/;
+      print;
+   }
+}

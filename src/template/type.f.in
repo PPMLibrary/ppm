@@ -3,8 +3,14 @@
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(OUT) :: dtype_id
                INTEGER(HID_T) :: parent_id
-               INTEGER error 
+               INTEGER(HID_T) :: array_id
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER rank
+               INTEGER error
                INTEGER(HSIZE_T) :: tsize, offset, subsize
+               INTEGER(HSIZE_T) :: isize
+               INTEGER(HSIZE_T) :: dsize
+               INTEGER(HSIZE_T) :: csize
 
                offset = 0
                tsize = 0
@@ -15,12 +21,14 @@
 
                ! Calculate datatype size
                CALL h5tget_size_f(dtype_id, tsize, error) ! initial size
+               !CALCULATE_STUB
 
                ! Create/Expand the datatype
                CALL h5tset_size_f(dtype_id, tsize, error)
                CALL h5tcreate_f(H5T_COMPOUND_F, tsize, dtype_id, error)
 
                ! Insert the members
+               !CREATE_STUB
 
             END SUBROUTINE make_type_TYPE
 
@@ -56,6 +64,8 @@
                INTEGER(HID_T), INTENT(IN) :: dset_id
                CLASS(TYPE), POINTER :: type_ptr
                CLASS(PARENT), POINTER :: parent
+
+               !WRITE_STUB
 
                parent => type_ptr
                CALL write_PARENT(dset_id, parent)
