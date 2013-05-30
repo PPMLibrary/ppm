@@ -63,7 +63,7 @@
                CALL h5gopen_f(cpfile_id, 'ppm_t_mapping', group_id, &
                   error)
 
-               CALL make_ppm_t_mapping_d_type(dtype_id)
+               CALL make_type_ppm_t_mapping_d_(dtype_id)
                CALL h5screate_f(H5S_SCALAR_F, space_id, error)
                CALL h5dcreate_f(group_id, mapping_id, dtype_id, &
                   space_id, dset_id, error)

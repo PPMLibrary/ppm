@@ -23,7 +23,7 @@
                DO WHILE(associated(nl))
                   WRITE(buffer,*) id
                   buffer = adjustl(buffer)
-                  CALL store_ppm_t_neighlist(cpfile_id, &
+                  CALL store_ppm_t_neighlist_d_(cpfile_id, &
                      buffer, nl)
                   idlist(id) = id
                   id = id + 1

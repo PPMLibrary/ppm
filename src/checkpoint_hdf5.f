@@ -311,14 +311,8 @@
             INCLUDE 'checkp/ppm_c_part_mapping_check.f'
             ! Simple abstraction layer, no pointers
             INCLUDE 'checkp/ppm_t_part_mapping_check.f'
-#define TYPE_NAME 'ppm_t_part_mapping_d_'
-#define FUNC_NAME ppm_t_part_mapping_d_
-#include "template/store_type.f"
             ! Basic Abstraction Layer, no pointers, only 2 vars
             INCLUDE 'checkp/ppm_t_mapping_check.f'
-#define TYPE_NAME 'ppm_t_mapping_d_'
-#define FUNC_NAME ppm_t_mapping_d_
-#include "template/store_type.f"
 
             INCLUDE 'checkp/ppm_v_main_abstr_check.f'
 
