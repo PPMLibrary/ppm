@@ -3,6 +3,8 @@
          USE h5lt
          USE ppm_module_core
 
+         ! Include the type definitions for reference
+         !INCLUDE 'types/typedef.inc'
          ! Generic interface definitions for abstract storage functions
 
          ! Write an attribute to a dataset
@@ -13,7 +15,17 @@
          END INTERFACE
 
          ! Store a defined Datatype
-         INTERFACE store_type
+         ! These interfaces have issues with arguments that
+         ! derive one another
+         !INTERFACE store_type
+         !   MODULE PROCEDURE store_ppm_t_particles_d, &
+         !         store_ppm_t_part_mapping_d_
+         !END INTERFACE
+
+         INTERFACE write_type
+            MODULE PROCEDURE write_ppm_t_particles_d, &
+                  write_ppm_t_part_mapping_d_
+                  !write_ppm_t_mapping_d_
          END INTERFACE
 
          ! Generic abstraction in order to store generic containers
@@ -42,7 +54,8 @@
                ! Use a group to encapsulate all objects of a given class
 
                ! ppm_t_particles
-               CALL h5gcreate_f(file_id, 'particles', group_id, error)
+               CALL h5gcreate_f(file_id, 'ppm_t_particles', group_id, &
+                  error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_particle_stats
@@ -53,7 +66,8 @@
                CALL h5gcreate_f(file_id, 'maps', group_id, error)
                CALL h5gclose_f(group_id, error)
                ! ppm_t_part_mapping
-               CALL h5gcreate_f(file_id, 'maps_t', group_id, error)
+               CALL h5gcreate_f(file_id, 'ppm_t_part_mapping', &
+                  group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_v_main_abstr
@@ -93,7 +107,6 @@
                CHARACTER(LEN=*), INTENT(IN) :: filename
 
                INTEGER(HID_T), INTENT(out):: file_id
-               INTEGER(HID_T) :: group_id
                INTEGER :: error
 
                ! Open the interface and create the file
@@ -298,8 +311,14 @@
             INCLUDE 'checkp/ppm_c_part_mapping_check.f'
             ! Simple abstraction layer, no pointers
             INCLUDE 'checkp/ppm_t_part_mapping_check.f'
+#define TYPE_NAME 'ppm_t_part_mapping_d_'
+#define FUNC_NAME ppm_t_part_mapping_d_
+#include "template/store_type.f"
             ! Basic Abstraction Layer, no pointers, only 2 vars
             INCLUDE 'checkp/ppm_t_mapping_check.f'
+#define TYPE_NAME 'ppm_t_mapping_d_'
+#define FUNC_NAME ppm_t_mapping_d_
+#include "template/store_type.f"
 
             INCLUDE 'checkp/ppm_v_main_abstr_check.f'
 
@@ -307,4 +326,6 @@
             ! collection
             INCLUDE 'checkp/ppm_c_operator_discr_check.f'
             INCLUDE 'checkp/ppm_t_operator_discr_check.f'
+
+            INCLUDE 'checkp/ppm_t_container_check.f'
       END MODULE

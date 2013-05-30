@@ -7,7 +7,7 @@ LDFLAGS = -L/home/kevin/ppm-library/metis/lib -latlas -lblas -lmetis -L$(PPMDIR)
 OPT= -O3 -ffree-form -ffree-line-length-none -ffree-line-length-none -O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none -Wall -ffpe-trap=zero,overflow,underflow -I/home/kevin/ppm-library/checkpoint -I/usr/include -lhdf5_fortran
 
 INC = -I$(PPMDIR)/include/ppm -I$(PPMNUMDIR)/include/ppm -I/usr/include
-FFLAGS = $(OPT) $(INC)
+FFLAGS = $(OPT) $(INC) -cpp
 
 SOURCES=checkpoint_hdf5.f
 OBJECTS=checkpoint_hdf5.o

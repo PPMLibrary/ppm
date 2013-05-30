@@ -66,6 +66,7 @@
                offset = offset + bool_size
 
             END SUBROUTINE
+
             SUBROUTINE store_ppm_t_particles_d(cpfile_id, particle_id, &
                         particle)
                IMPLICIT NONE
@@ -85,8 +86,8 @@
 
 
                ! Create a group for our particle
-               CALL h5gcreate_f(cpfile_id, 'particles/'//particle_id, &
-                  group_id, error)
+               CALL h5gcreate_f(cpfile_id, &
+                  'ppm_t_particles/'//particle_id, group_id, error)
 
                ! Store the classes
                ! Replace the ID assign line when we have reference
