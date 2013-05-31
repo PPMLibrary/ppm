@@ -250,6 +250,7 @@
                CALL h5tget_size_f(bool_id, arr_size, error)
                CALL h5tcreate_f(H5T_COMPOUND_F, arr_size, attr_id, &
                   error)
+               CALL h5tinsert_f(attr_id, dname, offset, bool_id, error)
 
                CALL h5dwrite_f(dset_id, attr_id , charbuf, &
                   dims, error)
@@ -425,4 +426,5 @@
 
             INCLUDE 'checkp/ppm_t_discr_kind_check.f'
             INCLUDE 'checkp/ppm_t_discr_data_check.f'
+            INCLUDE 'checkp/ppm_t_main_abstr_check.f'
       END MODULE
