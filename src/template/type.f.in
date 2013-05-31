@@ -7,7 +7,7 @@
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER rank
                INTEGER error
-               INTEGER(HSIZE_T) :: tsize, offset, subsize
+               INTEGER(HSIZE_T) :: tsize, offset
                INTEGER(HSIZE_T) :: isize
                INTEGER(HSIZE_T) :: dsize
                INTEGER(HSIZE_T) :: csize

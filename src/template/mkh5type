@@ -16,6 +16,8 @@ my %bool;
 my $spaces= " "x15;
 my $tsizeline = $spaces . "tsize = tsize";
 
+my $numarr = 0;
+
 my $calc_section = "";
 my $create_section = "";
 my $write_section = "";
@@ -41,6 +43,9 @@ for my $line (<FILE>) {
    }
    elsif ($line =~ m/type (\w*)/) {
       $typename = $1;
+   }
+   elsif ($line =~ m/parent (\w*)/) {
+      $parenttype = $1;
    }
    else {
       die  "Failed to evaluate expr: ".$line
@@ -122,6 +127,7 @@ sub print_arr {
    $create_section .= $spaces . "CALL h5tinsert_f(dtype_id, \"".$var."\", offset, &\n";
    $create_section .= $spaces . "    array_id, error)\n";
    $create_section .= $spaces . "offset = offset + (". $num. ")\n";
+   $numarr += 1;
 }
 
 $create_section .= $spaces . "! Integer members\n";
@@ -140,7 +146,12 @@ print_attr("H5T_NATIVE_CHARACTER", \%bool, "csize");
 for $map (\%ints, \%dubs, \%chars, \%bool) {
    for $key (keys %$map) {
       $write_section .= $spaces . "CALL write_attribute(dset_id, \'$key\', &\n";
-      $write_section .= $spaces . "    type_ptr%$key)\n";
+      if ($$map{$key} eq '1'){
+         $write_section .= $spaces . "    type_ptr%$key)\n";
+      }
+      else {
+         $write_section .= $spaces . "    type_ptr%$key, $$map{$key})\n";
+      }
    }
 }
 
@@ -156,14 +167,16 @@ if (not $typename) {
 }
 
 open TEMPLATE, "+<", "type.f.in" or die $!;
-open OUTFILE, ">", $typename or die $!;
+open OUTFILE, ">", $typename . "_check.f" or die $!;
 
 for (<TEMPLATE>) {
 
    # if its not an omitted line, print
    if (not ((m/isize/ and (not %ints))
-          or (m/dsize/ and (not %ints))
+          or (m/dsize/ and (not %dubs))
           or (m/csize/ and (not %bool) and (not %chars))
+          or ((m/array_id/ or m/dims/ or m/rank/) and ($numarr == 0))
+          or (m/subsize/ and ($numarr == 0))
           or ((/[sg]et_size/ or /PARENT/i) and (not $parenttype)))) {
 
       # Make the template substitutions
@@ -172,7 +185,7 @@ for (<TEMPLATE>) {
       $_ =~ s/ *!CALCULATE_STUB/$calc_section/;
       s/ *!WRITE_STUB/$write_section/;
       #s/ *!READ_STUB/$read_section/;
-      $_ =~ s/PARENT/$ARGV[2]/;
+      $_ =~ s/PARENT/$parenttype/;
       print OUTFILE;
    }
 }
