@@ -11,8 +11,12 @@
          INTERFACE write_attribute
             module procedure write_integer_attribute, &
                   write_double_attribute, &
-                  write_logical_array
-         END INTERFACE
+                  write_logical_attribute, &
+                  write_character_attribute, &
+                  write_logical_array, &
+                  write_character_array, &
+                  write_string_attribute
+         END INTERFACE write_attribute
 
          ! Store a defined Datatype
          ! These interfaces have issues with arguments that
@@ -165,13 +169,7 @@
                INTEGER, INTENT(in) :: length
                CHARACTER, DIMENSION(length) :: charbuf
 
-               INTEGER(HID_T) :: attr_id, plist_id, bool_id
-               INTEGER(HSIZE_T), DIMENSION(1) :: dims
-               INTEGER(HSIZE_T) :: csize, arr_size, offset
-               INTEGER :: error, i, rank
-               rank = 1
-               dims = (/length/)
-               offset = 0
+               INTEGER :: i
 
                DO i=1, length
                   IF (buffer(i)) THEN
@@ -180,6 +178,25 @@
                      charbuf(i) = 'F'
                   ENDIF
                ENDDO
+               CALL write_character_array(dset_id, dname, &
+                  charbuf, length)
+
+            END SUBROUTINE write_logical_array
+
+            SUBROUTINE write_character_array(dset_id, dname, &
+                  charbuf, length)
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: dname
+               CHARACTER, DIMENSION(length) :: charbuf
+               INTEGER, INTENT(in) :: length
+
+               INTEGER(HID_T) :: attr_id, plist_id, bool_id
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER(HSIZE_T) :: csize, arr_size, offset
+               INTEGER :: error, rank
+               rank = 1
+               dims = (/length/)
+               offset = 0
 
                ! Create the type properties
                ! preserve partially initialized fields
@@ -201,7 +218,43 @@
                CALL h5dwrite_f(dset_id, attr_id , charbuf, &
                   dims, error)
                CALL h5tclose_f(attr_id, error)
-            END SUBROUTINE write_logical_array
+            END SUBROUTINE write_character_array
+
+            SUBROUTINE write_string_attribute(dset_id, dname, charbuf, &
+               length)
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: dname
+               CHARACTER(LEN=length) :: charbuf
+               INTEGER, INTENT(in) :: length
+
+               INTEGER(HID_T) :: attr_id, plist_id, bool_id
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER(HSIZE_T) :: csize, arr_size, offset
+               INTEGER :: error, rank
+               rank = 1
+               dims = (/length/)
+               offset = 0
+
+               ! Create the type properties
+               ! preserve partially initialized fields
+               CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+               CALL h5pset_preserve_f(plist_id, .TRUE., error)
+
+               ! Get the data size
+               CALL h5tget_size_f(H5T_NATIVE_CHARACTER, csize, error)
+               arr_size = length*csize
+
+               ! Create the array type for the attribute
+               CALL h5tcreate_f(H5T_STRING_F, arr_size, &
+                  bool_id, error)
+               CALL h5tget_size_f(bool_id, arr_size, error)
+               CALL h5tcreate_f(H5T_COMPOUND_F, arr_size, attr_id, &
+                  error)
+
+               CALL h5dwrite_f(dset_id, attr_id , charbuf, &
+                  dims, error)
+               CALL h5tclose_f(attr_id, error)
+            END SUBROUTINE write_string_attribute
 
             !SUBROUTINE checkpoint_type(data_pointer)
             !   CLASS(ppm_t_main_abstr), POINTER, INTENT(IN) :: &
@@ -276,7 +329,54 @@
 
                CALL h5tclose_f(attr_id, error)
 
-            END SUBROUTINE
+            END SUBROUTINE write_double_attribute
+
+            SUBROUTINE write_logical_attribute(dset_id, &
+                  vname, val)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: vname
+               LOGICAL :: val
+               CHARACTER :: c
+               IF (val) THEN
+                  c = 'T'
+               ELSE
+                  c = 'F'
+               ENDIF
+               CALL write_character_attribute(dset_id, vname, c)
+            END SUBROUTINE write_logical_attribute
+
+            SUBROUTINE write_character_attribute(dset_id, &
+                  vname, val)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(IN) :: dset_id
+               CHARACTER(LEN=*), INTENT(IN) :: vname
+               CHARACTER :: val
+
+               INTEGER error
+               INTEGER(HID_T) :: plist_id, attr_id
+               INTEGER(HSIZE_T) :: csize, offset
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
+               offset = 0
+
+               ! Create the type properties
+               ! preserve partially initialized fields
+               CALL h5pcreate_f(H5P_DATASET_XFER_F, plist_id, error)
+               CALL h5pset_preserve_f(plist_id, .TRUE., error)
+
+               ! Get the data size
+               CALL h5tget_size_f(H5T_NATIVE_CHARACTER, csize, error)
+
+               ! Create the compound type for the attribute
+               CALL h5tcreate_f(H5T_COMPOUND_F, csize, attr_id, error)
+               CALL h5tinsert_f(attr_id, vname, offset, &
+                   H5T_NATIVE_CHARACTER, error)
+               CALL h5dwrite_f(dset_id, attr_id, val, dims, &
+                     error, xfer_prp = plist_id)
+
+               CALL h5tclose_f(attr_id, error)
+
+            END SUBROUTINE write_character_attribute
             !SUBROUTINE store_pointer(cpfid, loc, ident, vname, ptr)
                !INTEGER(HID_T), INTENT(IN) :: cpfid, loc
                !CHARACTER(LEN=*), INTENT(IN) :: ident, vname
@@ -322,4 +422,7 @@
             INCLUDE 'checkp/ppm_t_operator_discr_check.f'
 
             INCLUDE 'checkp/ppm_t_container_check.f'
+
+            INCLUDE 'checkp/ppm_t_discr_kind_check.f'
+            INCLUDE 'checkp/ppm_t_discr_data_check.f'
       END MODULE
