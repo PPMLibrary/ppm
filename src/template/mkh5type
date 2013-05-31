@@ -25,7 +25,7 @@ open FILE, $ARGV[0] or die $!;
 for my $line (<FILE>) {
    if ($line =~ m/ *#/) {
       # Ignore comment lines
-      continue;
+      next;
    }
    if ($line =~ m/integer (\w*) *(\w*)?/) {
       if ($2) { $ints{$1} = $2; } else { $ints{$1} = '1'; }
@@ -37,14 +37,18 @@ for my $line (<FILE>) {
       if ($2) { $chars{$1} = $2; } else { $chars{$1} = '1'; }
    }
    elsif ($line =~ m/logical (\w*) *(\w*)?/){
-      if ($2) { $bools{$1} = $2; } else { $bools{$1} = '1'; }
+      if ($2) { $bool{$1} = $2; } else { $bool{$1} = '1'; }
+   }
+   elsif ($line =~ m/type (\w*)/) {
+      $typename = $1;
    }
    else {
-      print "Failed to evaluate expr: ".$line
+      die  "Failed to evaluate expr: ".$line
+   }
 }
 $calc_section .= "\n";
 
-$calc_section .= $spaces . "! Calculate datatype size\n";
+#$calc_section .= $spaces . "! Calculate datatype size\n";
 if (%ints) {
    $calc_section .= $spaces;
    $calc_section .= "CALL h5tget_size_f(H5T_NATIVE_INTEGER, isize, error)\n";
@@ -100,6 +104,7 @@ sub print_attr {
          print_arr($type, $var, $_[2]."*".$$names{$var});
       }
    }
+   $create_section .= "\n";
 }
 sub print_el {
    $create_section .= $spaces;
@@ -121,16 +126,23 @@ sub print_arr {
 
 $create_section .= $spaces . "! Integer members\n";
 print_attr("H5T_NATIVE_INTEGER", \%ints, "isize");
-$create_section .= "\n";
+
 $create_section .= $spaces . "! Real members\n";
 print_attr("H5T_NATIVE_DOUBLE", \%dubs, "dsize");
-$create_section .= "\n";
+
 $create_section .= $spaces . "! Character members\n";
 print_attr("H5T_NATIVE_CHARACTER", \%chars, "csize");
-$create_section .= "\n";
+
 $create_section .= $spaces . "! Logical members\n";
-print_attr("H5T_NATIVE_CHARACTER", \%bools, "csize");
-$create_section .= "\n";
+print_attr("H5T_NATIVE_CHARACTER", \%bool, "csize");
+
+# Now we generate the code for the write function
+for $map (\%ints, \%dubs, \%chars, \%bool) {
+   for $key (keys %$map) {
+      $write_section .= $spaces . "CALL write_attribute(dset_id, \'$key\', &\n";
+      $write_section .= $spaces . "    type_ptr%$key)\n";
+   }
+}
 
 # Now we write the file from the template
 if ($ARGV[1]) {
@@ -139,24 +151,30 @@ if ($ARGV[1]) {
 if ($ARGV[2]) {
    $parenttype = $ARGV[2];
 }
+if (not $typename) {
+   die "No type specified";
+}
 
-open FILE2, "+<", "type.f.in" or die $!;
+open TEMPLATE, "+<", "type.f.in" or die $!;
+open OUTFILE, ">", $typename or die $!;
 
 for (<TEMPLATE>) {
-   # Make the template substitutions
-   s/TYPE/$typename/;
-   s/ *!CREATE_STUB/$create_section/;
-   s/ *!CALCULATE_STUB/$calc_section/;
-   #s/ *!WRITE_STUB/$write_section/;
-   #s/ *!READ_STUB/$read_section/;
 
    # if its not an omitted line, print
    if (not ((m/isize/ and (not %ints))
-      or (m/dsize/ and (not %ints))
-      or (m/csize/ and (not %bool) and (not %chars))))
-      or ((/[sg]et_size/ or /PARENT/i) and (not $parenttype))) {
+          or (m/dsize/ and (not %ints))
+          or (m/csize/ and (not %bool) and (not %chars))
+          or ((/[sg]et_size/ or /PARENT/i) and (not $parenttype)))) {
 
-      s/PARENT/$ARGV[2]/;
-      print
+      # Make the template substitutions
+      $_ =~ s/TYPE/$typename/;
+      $_ =~ s/ *!CREATE_STUB/$create_section/;
+      $_ =~ s/ *!CALCULATE_STUB/$calc_section/;
+      s/ *!WRITE_STUB/$write_section/;
+      #s/ *!READ_STUB/$read_section/;
+      $_ =~ s/PARENT/$ARGV[2]/;
+      print OUTFILE;
    }
 }
+close TEMPLATE;
+close OUTFILE;
