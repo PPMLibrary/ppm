@@ -1,0 +1,4 @@
+#parent ppm_t_main_abstr
+type ppm_t_discr_kind
+integer id
+character name ppm_char

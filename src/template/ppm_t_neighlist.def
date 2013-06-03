@@ -1,0 +1,8 @@
+type ppm_t_neighlist_d_
+character name ppm_char
+real cutoff
+real skin
+integer isymm
+logical uptodate
+integer nneighmin
+integer nneighmax
