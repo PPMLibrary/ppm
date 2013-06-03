@@ -6,7 +6,7 @@
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER rank
                INTEGER error
-               INTEGER(HSIZE_T) :: tsize, offset, subsize
+               INTEGER(HSIZE_T) :: tsize, offset
                INTEGER(HSIZE_T) :: isize
                INTEGER(HSIZE_T) :: dsize
                INTEGER(HSIZE_T) :: csize
@@ -16,20 +16,17 @@
 
 
                ! Calculate datatype size
-               CALL h5tget_size_f(dtype_id, tsize, error) ! initial size
 
-               ! Calculate datatype size
                CALL h5tget_size_f(H5T_NATIVE_INTEGER, isize, error)
                CALL h5tget_size_f(H5T_NATIVE_DOUBLE, dsize, error)
                CALL h5tget_size_f(H5T_NATIVE_CHARACTER, csize, error)
 
 
-               tsize = tsize + isize*(3) + dsize*(2) + csize*(ppm_char+0)
+               tsize = tsize + isize*(3) + dsize*(2) + csize*(1) + csize*(ppm_char+0)
 
 
 
                ! Create/Expand the datatype
-               CALL h5tset_size_f(dtype_id, tsize, error)
                CALL h5tcreate_f(H5T_COMPOUND_F, tsize, dtype_id, error)
 
                ! Insert the members
@@ -102,6 +99,20 @@
                INTEGER(HID_T), INTENT(IN) :: dset_id
                CLASS(ppm_t_neighlist_d_), POINTER :: type_ptr
 
-               !WRITE_STUB
+               CALL write_attribute(dset_id, 'nneighmin', &
+                   type_ptr%nneighmin)
+               CALL write_attribute(dset_id, 'isymm', &
+                   type_ptr%isymm)
+               CALL write_attribute(dset_id, 'nneighmax', &
+                   type_ptr%nneighmax)
+               CALL write_attribute(dset_id, 'skin', &
+                   type_ptr%skin)
+               CALL write_attribute(dset_id, 'cutoff', &
+                   type_ptr%cutoff)
+               CALL write_attribute(dset_id, 'name', &
+                   type_ptr%name)
+               CALL write_attribute(dset_id, 'uptodate', &
+                   type_ptr%uptodate)
+
 
             END SUBROUTINE write_ppm_t_neighlist_d_

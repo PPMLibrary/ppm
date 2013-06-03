@@ -426,5 +426,5 @@
 
             INCLUDE 'checkp/ppm_t_discr_kind_check.f'
             INCLUDE 'checkp/ppm_t_discr_data_check.f'
-            INCLUDE 'checkp/ppm_t_main_abstr_check.f'
+            !INCLUDE 'checkp/ppm_t_main_abstr_check.f'
       END MODULE
