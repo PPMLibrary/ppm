@@ -18,4 +18,8 @@
          CALL store_ppm_t_particles_d(cpfile_id, '10', parts)
          CALL close_checkpoint_file(cpfile_id, error)
 
+         error = hash_abstr(parts)
+         WRITE(*,*) error
+         error = hash_mapping(map)
+         WRITE(*,*) error
       END PROGRAM test_cases

@@ -2,6 +2,7 @@
          USE hdf5
          USE h5lt
          USE ppm_module_core
+         USE pointer_tracker
 
          ! Include the type definitions for reference
          !INCLUDE 'types/typedef.inc'
@@ -23,7 +24,15 @@
          ! derive one another
          !INTERFACE store_type
          !   MODULE PROCEDURE store_ppm_t_particles_d, &
-         !         store_ppm_t_part_mapping_d_
+         !         store_ppm_t_part_mapping_d_, &
+         !         store_ppm_c_neighlist_d_, &
+         !         store_ppm_c_part_prop_d_, &
+         !         store_ppm_t_discr_data, &
+         !         store_ppm_t_discr_kind, &
+         !         store_ppm_t_mapping_d_, &
+         !         store_ppm_t_neighlist_d_, &
+         !         store_ppm_t_part_prop_d_, &
+         !         store_ppm_v_main_abstr
          !END INTERFACE
 
          INTERFACE write_type

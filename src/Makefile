@@ -9,8 +9,8 @@ OPT= -O3 -ffree-form -ffree-line-length-none -ffree-line-length-none -O0 -g -fbo
 INC = -I$(PPMDIR)/include/ppm -I$(PPMNUMDIR)/include/ppm -I/usr/include
 FFLAGS = $(OPT) $(INC) -cpp
 
-SOURCES=checkpoint_hdf5.f
-OBJECTS=checkpoint_hdf5.o
+SOURCES=pointer_tracker.f checkpoint_hdf5.f
+OBJECTS=pointer_tracker.o checkpoint_hdf5.o
 
 COMPILECMD = $(FC) $(INC) $(FFLAGS) -c -o $@ $<
 
