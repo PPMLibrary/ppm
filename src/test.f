@@ -3,7 +3,10 @@
          USE ppm_module_init
 
          CLASS(ppm_t_part_mapping_d_), POINTER :: map
+         CLASS(ppm_t_mapping_d_), POINTER :: map_type
+         CLASS(ppm_t_main_abstr), POINTER :: abstr_type
          CLASS(ppm_t_particles_d), POINTER :: parts
+         CHARACTER(32) :: pointer_addr
          INTEGER(HID_T) :: cpfile_id
          INTEGER :: error
 
@@ -18,8 +21,8 @@
          CALL store_ppm_t_particles_d(cpfile_id, '10', parts)
          CALL close_checkpoint_file(cpfile_id, error)
 
-         error = hash_abstr(parts)
-         WRITE(*,*) error
-         error = hash_mapping(map)
-         WRITE(*,*) error
+         pointer_addr = get_pointer(parts)
+         WRITE(*,*) pointer_addr
+         pointer_addr = get_pointer(map)
+         WRITE(*,*) pointer_addr
       END PROGRAM test_cases
