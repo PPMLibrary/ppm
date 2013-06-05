@@ -4,8 +4,6 @@
          USE ppm_module_core
          USE pointer_tracker
 
-         ! Include the type definitions for reference
-         !INCLUDE 'types/typedef.inc'
          ! Generic interface definitions for abstract storage functions
 
          ! Write an attribute to a dataset
@@ -18,22 +16,27 @@
                   write_character_array, &
                   write_string_attribute
          END INTERFACE write_attribute
+         INTERFACE store_integer
+            MODULE PROCEDURE store_integer_ptr, &
+                  store_integer1d, &
+                  store_integer2d
+         END INTERFACE store_integer
 
          ! Store a defined Datatype
          ! These interfaces have issues with arguments that
          ! derive one another
-         !INTERFACE store_type
-         !   MODULE PROCEDURE store_ppm_t_particles_d, &
-         !         store_ppm_t_part_mapping_d_, &
-         !         store_ppm_c_neighlist_d_, &
-         !         store_ppm_c_part_prop_d_, &
-         !         store_ppm_t_discr_data, &
-         !         store_ppm_t_discr_kind, &
-         !         store_ppm_t_mapping_d_, &
-         !         store_ppm_t_neighlist_d_, &
+         INTERFACE store_type
+            MODULE PROCEDURE store_ppm_t_particles_d, &
+                  store_ppm_t_part_mapping_d_, &
+                  store_ppm_c_neighlist_d_, &
+                  store_ppm_c_part_prop_d_, &
+         !         store_ppm_t_discr_data, & is abstract
+         !         store_ppm_t_discr_kind, & is abstract
+         !         store_ppm_t_mapping_d_, & is abstract
+                  store_ppm_t_neighlist_d_
          !         store_ppm_t_part_prop_d_, &
-         !         store_ppm_v_main_abstr
-         !END INTERFACE
+         !         store_ppm_v_main_abstr is abstract
+         END INTERFACE
 
          INTERFACE write_type
             MODULE PROCEDURE write_ppm_t_particles_d, &
@@ -67,7 +70,7 @@
                ! Use a group to encapsulate all objects of a given class
 
                ! ppm_t_particles
-               CALL h5gcreate_f(file_id, 'ppm_t_particles', group_id, &
+               CALL h5gcreate_f(file_id, 'ppm_t_particles_d', group_id,&
                   error)
                CALL h5gclose_f(group_id, error)
 
@@ -96,11 +99,11 @@
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_neighlist (collections of neighlists)
-               CALL h5gcreate_f(file_id, 'neighs', group_id, error)
+               CALL h5gcreate_f(file_id, 'ppm_c_neighlist', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_t_neighlist (the actual neighlists)
-               CALL h5gcreate_f(file_id, 'neighlists', group_id, error)
+               CALL h5gcreate_f(file_id, 'ppm_t_neighlist_d_', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_part_prop
@@ -110,6 +113,15 @@
                ! ppm_t_part_prop
                CALL h5gcreate_f(file_id, 'gi', group_id, error)
                CALL h5gclose_f(group_id, error)
+
+               ! other group for miscellaneous and fortran type pointers
+               CALL h5gcreate_f(file_id, 'other', group_id, error)
+               CALL h5gclose_f(group_id, error)
+
+               ! Abstract groups, should remove these later if possible
+               CALL h5gcreate_f(file_id, 'ppm_t_discr_data', group_id, error)
+               CALL h5gclose_f(group_id, error)
+
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
@@ -182,7 +194,6 @@
                INTEGER :: i
 
                DO i=1, length
-                  WRITE(*,*) length , i
                   IF (buffer(i)) THEN
                      charbuf(i) = 'T'
                   ELSE
@@ -278,7 +289,7 @@
             !END SUBROUTINE checkpoint_container
 
             ! Write integer attribute to a dataset
-            SUBROUTINE write_INTEGER_attribute(dset_id, &
+            SUBROUTINE write_integer_attribute(dset_id, &
                   vname, val)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
@@ -308,7 +319,7 @@
 
                CALL h5tclose_f(attr_id, error)
 
-            END SUBROUTINE write_INTEGER_attribute
+            END SUBROUTINE write_integer_attribute
 
             ! Write double attribute to a dataset
             SUBROUTINE write_double_attribute(dset_id, vname, &
@@ -389,6 +400,60 @@
                CALL h5tclose_f(attr_id, error)
 
             END SUBROUTINE write_character_attribute
+            SUBROUTINE store_integer_ptr(cpfile_id, mem_id, &
+                  buffer)
+               INTEGER(HID_T), INTENT(IN) :: cpfile_id
+               INTEGER(HID_T) :: group_id
+               CHARACTER(LEN=*), INTENT(IN) :: mem_id
+               INTEGER :: rank
+               INTEGER, INTENT(in) :: buffer
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER :: error
+
+               rank = 0
+               dims = (/0/)
+               CALL h5gopen_f(cpfile_id, "other", group_id, error)
+               CALL h5ltmake_dataset_int_f(group_id, mem_id, rank, &
+                  dims, (/buffer/), error)
+
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE store_integer_ptr
+            SUBROUTINE store_integer1d(cpfile_id, mem_id, &
+                  buffer)
+               INTEGER(HID_T), INTENT(IN) :: cpfile_id
+               INTEGER(HID_T) :: group_id
+               CHARACTER(LEN=*), INTENT(IN) :: mem_id
+               INTEGER :: rank
+               INTEGER, DIMENSION(:), INTENT(in) :: buffer
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER :: error
+
+               rank = 1
+               dims = shape(buffer)
+               CALL h5gopen_f(cpfile_id, "other", group_id, error)
+               CALL h5ltmake_dataset_int_f(group_id, mem_id, rank, &
+                  dims, buffer, error)
+
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE store_integer1d
+            SUBROUTINE store_integer2d(cpfile_id, mem_id, &
+                  buffer)
+               INTEGER(HID_T), INTENT(IN) :: cpfile_id
+               INTEGER(HID_T) :: group_id
+               CHARACTER(LEN=*), INTENT(IN) :: mem_id
+               INTEGER :: rank
+               INTEGER, DIMENSION(:,:), INTENT(in) :: buffer
+               INTEGER(HSIZE_T), DIMENSION(2) :: dims
+               INTEGER :: error
+
+               rank = 2
+               dims = shape(buffer)
+               CALL h5gopen_f(cpfile_id, "other", group_id, error)
+               CALL h5ltmake_dataset_int_f(group_id, mem_id, rank, &
+                  dims, buffer, error)
+
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE store_integer2d
             !SUBROUTINE store_pointer(cpfid, loc, ident, vname, ptr)
                !INTEGER(HID_T), INTENT(IN) :: cpfid, loc
                !CHARACTER(LEN=*), INTENT(IN) :: ident, vname

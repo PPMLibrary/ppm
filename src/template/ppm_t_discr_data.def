@@ -1,8 +1,8 @@
 #parent ppm_t_main_abstr
 type ppm_t_discr_data
 integer data_type
-#pointer field_ptr ppm_t_main_abstr
-#pointer discr ppm_t_discr_kind
+pointer field_ptr ppm_t_main_abstr
+pointer discr ppm_t_discr_kind
 character name ppm_char
 logical flags ppm_param_length_pptflags
 integer lda

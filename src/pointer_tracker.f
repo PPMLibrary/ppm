@@ -11,7 +11,9 @@
          END TYPE abstr_ptr
          INTERFACE get_pointer
             MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
-                  get_particles_stats_pointer
+                  get_particles_stats_pointer, &
+                  get_integer1d_pointer, &
+                  get_integer2d_pointer
          END INTERFACE get_pointer
          CONTAINS
             INTEGER FUNCTION FNVHash(int_str, numwords)
@@ -80,6 +82,39 @@
                !WRITE(*,*) trim(phex)
                get_particles_stats_pointer=phex
             END FUNCTION get_particles_stats_pointer
+            CHARACTER(32) FUNCTION get_integer1d_pointer(some_ptr)
+               integer, DIMENSION(:), POINTER :: some_ptr
+               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
+               CHARACTER(LEN=32) :: phex
+               CHARACTER(LEN=20) :: format_
+               INTEGER length
+
+               length = size(transfer(some_ptr, chars))
+               ALLOCATE (chars(length))
+               chars = transfer(some_ptr, chars)
+
+               WRITE (*,*) length
+               WRITE(format_, '("(", I0, "Z2.2)")') length
+               WRITE (phex, format_) chars
+               !WRITE(*,*) trim(phex)
+               get_integer1d_pointer=phex
+            END FUNCTION get_integer1d_pointer
+            CHARACTER(32) FUNCTION get_integer2d_pointer(some_ptr)
+               integer, DIMENSION(:,:), POINTER :: some_ptr
+               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
+               CHARACTER(LEN=32) :: phex
+               CHARACTER(LEN=20) :: format_
+               INTEGER length
+
+               length = size(transfer(some_ptr, chars))
+               ALLOCATE (chars(length))
+               chars = transfer(some_ptr, chars)
+
+               WRITE(format_, '("(", I0, "Z2.2)")') length
+               WRITE (phex, format_) chars
+               !WRITE(*,*) trim(phex)
+               get_integer2d_pointer=phex
+            END FUNCTION get_integer2d_pointer
             CHARACTER(32) FUNCTION get_real1_pointer(some_ptr)
                REAL, DIMENSION(:), POINTER :: some_ptr
                CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars

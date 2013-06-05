@@ -14,6 +14,7 @@
 
                offset = 0
                tsize = 0
+               rank = 1
 
                ! Start with the parent Type
                CALL make_type_PARENT(parent_id)
@@ -51,7 +52,8 @@
                CALL h5dcreate_f(group_id, type_ptr_id, type_id, &
                    dspace_id, dset_id, error)
 
-               CALL write_TYPE(dset_id, type_ptr)
+               CALL write_TYPE(cpfile_id, dset_id, type_ptr)
+               !CALL write_TYPE(dset_id, type_ptr)
 
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(dspace_id, error)
@@ -59,9 +61,12 @@
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE store_TYPE
 
-            SUBROUTINE write_TYPE(dset_id, type_ptr)
+            SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
+            !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
+               INTEGER(HID_T), INTENT(in) :: cpfile_id
+               CHARACTER(LEN=32) :: pointer_addr
                CLASS(TYPE), POINTER :: type_ptr
                CLASS(PARENT), POINTER :: parent
 
