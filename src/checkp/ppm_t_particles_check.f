@@ -7,6 +7,7 @@
                INTEGER(HSIZE_T) :: int_size, double_size, type_size, &
                   offset, char_size, bool_size
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
+               INTEGER(HSIZE_T) , PARAMETER :: pointer_length = 32
                INTEGER :: rank
                rank = 1
                dims = (/ppm_param_length_partflags/)
@@ -22,7 +23,7 @@
                CALL h5tget_size_f(bool_id, bool_size, error)
 
                type_size = (6*int_size) + (4*double_size) + &
-                  bool_size
+                  bool_size + (32*char_size)
 
                CALL h5tcreate_f(H5T_COMPOUND_F, type_size, dtype_id, &
                   error)
@@ -64,6 +65,11 @@
                CALL h5tinsert_f(dtype_id, "flags", offset, &
                   bool_id, error)
                offset = offset + bool_size
+
+               ! And now the pointers
+               CALL h5tcreate_f(H5T_STRING_F, 32*char_size, &
+                  bool_id, error)
+               CALL h5tinsert_f(dtype_id, "stats", offset, bool_id, error)
 
             END SUBROUTINE
 
@@ -195,7 +201,8 @@
                   space_id, dset_id, error)
 
                ! Write the dataset
-               CALL write_ppm_t_particles_d(dset_id, particle)
+               CALL write_ppm_t_particles_d(cpfile_id, dset_id, &
+                  particle)
 
                ! Close the dataset
                CALL h5dclose_f(dset_id, error)
@@ -205,10 +212,12 @@
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE store_ppm_t_particles_d
 
-            SUBROUTINE write_ppm_t_particles_d(dset_id, particle)
+            SUBROUTINE write_ppm_t_particles_d(cpfile_id, dset_id, &
+                  particle)
                IMPLICIT NONE
-               INTEGER(HID_T), INTENT(IN) :: dset_id
+               INTEGER(HID_T), INTENT(IN) :: dset_id, cpfile_id
                CLASS(ppm_t_particles_d), POINTER :: particle
+               CHARACTER(LEN=32) :: pointer_addr
 
                ! Integers
                CALL write_attribute(dset_id, 'Npart', &
@@ -237,6 +246,17 @@
                ! Logicals
                CALL write_attribute(dset_id, "flags", &
                   particle%flags, ppm_param_length_partflags)
+
+               ! Pointers
+               IF (associated(particle%stats)) THEN
+                  pointer_addr = get_pointer(particle%stats)
+                  CALL store_particles_stats_d_(cpfile_id, &
+                     pointer_addr, particle%stats)
+               ELSE
+                  pointer_addr = "00000000000000000000000000000000"
+               ENDIF
+               WRITE (*,*) pointer_addr
+               CALL write_attribute(dset_id, "stats", pointer_addr, 32)
             END SUBROUTINE
 
 

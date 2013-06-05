@@ -174,13 +174,15 @@
                   dname, buffer, length)
                INTEGER(HID_T), INTENT(IN) :: dset_id
                CHARACTER(LEN=*), INTENT(IN) :: dname
-               LOGICAL, DIMENSION(length) :: buffer
+               LOGICAL, DIMENSION(:) :: buffer
                INTEGER, INTENT(in) :: length
                CHARACTER, DIMENSION(length) :: charbuf
+               !ALLOCATE(charbuf(length))
 
                INTEGER :: i
 
                DO i=1, length
+                  WRITE(*,*) length , i
                   IF (buffer(i)) THEN
                      charbuf(i) = 'T'
                   ELSE
@@ -241,7 +243,7 @@
                INTEGER(HSIZE_T) :: csize, arr_size, offset
                INTEGER :: error, rank
                rank = 1
-               dims = (/length/)
+               dims = (/0/)
                offset = 0
 
                ! Create the type properties
