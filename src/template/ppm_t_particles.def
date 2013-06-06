@@ -1,0 +1,22 @@
+# we can update this for specificity later
+# need to test containers
+type ppm_t_particles_d
+#real xp
+integer Npart
+logical flags ppm_param_length_partflags
+integer active_topoid
+#pointer gi ppm_t_part_prop_d_
+real ghostlayer
+integer isymm
+#pointer props ppm_c_part_prop_d_
+#pointer neighs ppm_c_neighlist_d_
+#pointer maps ppm_c_part_mapping_d_
+integer NewNpart
+#pointer pcost real
+#pointer field_ptr ppm_v_main_abstr <- wtf do we do with this?
+#pointer ops ppm_c_operator_discr_
+pointer stats particles_stats_d_
+real time
+integer itime
+real h_avg
+real h_min
