@@ -7,3 +7,10 @@ lib*.a
 *.zip
 src/template/*.f
 src/checkp/backups/*
+src/types/*.f
+src/pointers/*.f
+part_test/bin
+gen
+time.dat
+*.bak
+*.swp
