@@ -1,5 +1,5 @@
-      ! Store routines for TYPE
-            SUBROUTINE make_type_TYPE(dtype_id)
+      ! Store routines for DTYPE
+            SUBROUTINE make_type_DTYPE(dtype_id)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(OUT) :: dtype_id
                INTEGER(HID_T) :: parent_id
@@ -31,47 +31,47 @@
                ! Insert the members
                !CREATE_STUB
 
-            END SUBROUTINE make_type_TYPE
+            END SUBROUTINE make_type_DTYPE
 
-            SUBROUTINE store_TYPE(cpfile_id, &
+            SUBROUTINE store_DTYPE(cpfile_id, &
                   type_ptr_id, type_ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
                INTEGER(HID_T) :: group_id, type_id, dset_id, &
                   dspace_id
                CHARACTER(LEN=*), INTENT(IN) :: type_ptr_id
-               CLASS(TYPE), POINTER :: type_ptr
+               CLASS(DTYPE), POINTER :: type_ptr
                INTEGER error
 
-               CALL h5gopen_f(cpfile_id, 'TYPE', &
+               CALL h5gopen_f(cpfile_id, 'DTYPE', &
                   group_id, error)
 
 
                ! Make our dataset
-               CALL make_type_TYPE(type_id) ! get type
+               CALL make_type_DTYPE(type_id) ! get type
                CALL h5screate_f(H5S_SCALAR_F, dspace_id, error)  ! get space
                CALL h5dcreate_f(group_id, type_ptr_id, type_id, &
                    dspace_id, dset_id, error)
 
-               CALL write_TYPE(cpfile_id, dset_id, type_ptr)
+               CALL write_DTYPE(cpfile_id, dset_id, type_ptr)
                !CALL write_TYPE(dset_id, type_ptr)
 
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(dspace_id, error)
 
                CALL h5gclose_f(group_id, error)
-            END SUBROUTINE store_TYPE
+            END SUBROUTINE store_DTYPE
 
-            SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
+            SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)
             !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
                INTEGER(HID_T), INTENT(in) :: cpfile_id
                CHARACTER(LEN=32) :: pointer_addr
-               CLASS(TYPE), POINTER :: type_ptr
+               CLASS(DTYPE), POINTER :: type_ptr
                CLASS(PARENT), POINTER :: parent
 
                !WRITE_STUB
 
                parent => type_ptr
-               CALL write_PARENT(dset_id, parent)
-            END SUBROUTINE write_TYPE
+               CALL write_PARENT(cpfile_id, dset_id, parent)
+            END SUBROUTINE write_DTYPE

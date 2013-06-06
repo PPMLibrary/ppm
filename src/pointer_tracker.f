@@ -9,13 +9,16 @@
             CLASS(ppm_t_main_abstr), POINTER :: ptr
             TYPE(abstr_ptr), POINTER :: next => null()
          END TYPE abstr_ptr
-         INTERFACE get_pointer
-            MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
-                  get_particles_stats_pointer, &
-                  get_integer1d_pointer, &
-                  get_integer2d_pointer
-         END INTERFACE get_pointer
+         INCLUDE 'pointers/ppm_pointers_interface.f'
+         !INTERFACE get_pointer
+         !   MODULE PROCEDURE get_ppm_pointer
+            !MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
+            !      get_particles_stats_pointer, &
+            !      get_integer1d_pointer, &
+            !      get_integer2d_pointer
+         !END INTERFACE get_pointer
          CONTAINS
+            INCLUDE 'pointers/ppm_pointers.f'
             INTEGER FUNCTION FNVHash(int_str, numwords)
                IMPLICIT NONE
                !INTEGER(8), PARAMETER :: PRIME_8 = 14695981039346656037
@@ -35,53 +38,6 @@
                FNVHash = x
 
             END FUNCTION FNVHash
-            CHARACTER(32) FUNCTION get_abstr_pointer(some_ptr)
-               CLASS(ppm_t_main_abstr), INTENT(in) :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
-               INTEGER length
-
-               length = size(transfer(some_ptr, chars))
-               chars = transfer(some_ptr, chars)
-
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_abstr_pointer=phex
-            END FUNCTION get_abstr_pointer
-            CHARACTER(32) FUNCTION get_mapping_pointer(some_ptr)
-               CLASS(ppm_t_mapping_d_), INTENT(in) :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
-               INTEGER length
-
-               length = size(transfer(some_ptr, chars))
-               ALLOCATE (chars(length))
-               chars = transfer(some_ptr, chars)
-
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_mapping_pointer=phex
-            END FUNCTION get_mapping_pointer
-            CHARACTER(32) FUNCTION get_particles_stats_pointer(some_ptr)
-               CLASS(particles_stats_d_), INTENT(in) :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
-               INTEGER length
-
-               length = size(transfer(some_ptr, chars))
-               ALLOCATE (chars(length))
-               chars = transfer(some_ptr, chars)
-
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_particles_stats_pointer=phex
-            END FUNCTION get_particles_stats_pointer
             CHARACTER(32) FUNCTION get_integer1d_pointer(some_ptr)
                integer, DIMENSION(:), POINTER :: some_ptr
                CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars

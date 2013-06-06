@@ -14,13 +14,18 @@ OBJECTS=pointer_tracker.o checkpoint_hdf5.o
 
 COMPILECMD = $(FC) $(INC) $(FFLAGS) -c -o $@ $<
 
+.PHONY: source lib
+
 all: test
 
 test: lib test.f
 	$(FC) -o test test.f $(INC) -L. -lcheck $(LDFLAGS)
-	
 
-lib: clean $(OBJECTS)
+source:
+	$(MAKE) -C pointers
+	$(MAKE) -C types install
+
+lib: source clean $(OBJECTS)
 	ar r libcheck.a $(OBJECTS)
 
 clean:

@@ -44,10 +44,11 @@
                   !write_ppm_t_mapping_d_
          END INTERFACE
 
+
          ! Generic abstraction in order to store generic containers
-         INTERFACE store_collection
-            MODULE PROCEDURE store_ppm_c_neighlist_d_
-         END INTERFACE store_collection
+         !INTERFACE store_collection
+         !   MODULE PROCEDURE store_ppm_c_neighlist_d_
+         !END INTERFACE store_collection
 
          CONTAINS
             ! Creates and initializes the checkpoint file
