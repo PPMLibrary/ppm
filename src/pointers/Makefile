@@ -1,5 +1,5 @@
 
-all: ppm_pointers.f
+all:
 
 ppm_pointers.f: pointer.in typelist.in
 	./gen_get_ptr.pl $@

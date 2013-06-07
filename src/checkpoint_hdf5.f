@@ -83,7 +83,7 @@
                CALL h5gcreate_f(file_id, 'maps', group_id, error)
                CALL h5gclose_f(group_id, error)
                ! ppm_t_part_mapping
-               CALL h5gcreate_f(file_id, 'ppm_t_part_mapping', &
+               CALL h5gcreate_f(file_id, 'ppm_t_part_mapping_d_', &
                   group_id, error)
                CALL h5gclose_f(group_id, error)
 
@@ -504,4 +504,5 @@
             INCLUDE 'checkp/ppm_t_discr_kind_check.f'
             INCLUDE 'checkp/ppm_t_discr_data_check.f'
             !INCLUDE 'checkp/ppm_t_main_abstr_check.f'
+            INCLUDE 'poly/ppm_t_mapping_check.f'
       END MODULE

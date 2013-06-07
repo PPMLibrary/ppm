@@ -23,10 +23,8 @@
          ALLOCATE(ppm_t_particles_d::parts)
 
          CALL make_checkpoint_file('test.h5', cpfile_id)
-         !CALL store_ppm_t_part_mapping_d_(cpfile_id, '10', map)
 
-         CALL store_ppm_t_particles_d(cpfile_id, '10', parts)
-         CALL store_ppm_t_neighlist_d_(cpfile_id, '10', neigh)
+         CALL store_mapping(cpfile_id, '10', map)
          CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)

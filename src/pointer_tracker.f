@@ -6,10 +6,19 @@
          USE ppm_module_core
          TYPE abstr_ptr
             CHARACTER(LEN=10) :: hash
-            CLASS(ppm_t_main_abstr), POINTER :: ptr
+            INTEGER, DIMENSION(:), POINTER :: ptr
             TYPE(abstr_ptr), POINTER :: next => null()
          END TYPE abstr_ptr
+         TYPE ptr_map
+            INTEGER ::  nextpointer = 1
+            TYPE(abstr_ptr) :: map(100)
+            !CONTAINS
+            !   PROCEDURE :: insert
+            !   PROCEDURE :: lookup
+         END TYPE ptr_map
          INCLUDE 'pointers/ppm_pointers_interface.f'
+         INCLUDE 'maps/pmap_typedef.f'
+         INCLUDE 'maps/primitive_maps.f'
          !INTERFACE get_pointer
          !   MODULE PROCEDURE get_ppm_pointer
             !MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
@@ -19,6 +28,7 @@
          !END INTERFACE get_pointer
          CONTAINS
             INCLUDE 'pointers/ppm_pointers.f'
+            INCLUDE 'maps/primitive_maps_procedures.f'
             INTEGER FUNCTION FNVHash(int_str, numwords)
                IMPLICIT NONE
                !INTEGER(8), PARAMETER :: PRIME_8 = 14695981039346656037
@@ -38,54 +48,34 @@
                FNVHash = x
 
             END FUNCTION FNVHash
-            CHARACTER(32) FUNCTION get_integer1d_pointer(some_ptr)
-               integer, DIMENSION(:), POINTER :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
+            INTEGER FUNCTION get_integer1d_pointer(some_ptr)
+               INTEGER, DIMENSION(:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
                INTEGER length
 
-               length = size(transfer(some_ptr, chars))
-               ALLOCATE (chars(length))
-               chars = transfer(some_ptr, chars)
+               length = size(transfer(some_ptr, buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
 
                WRITE (*,*) length
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_integer1d_pointer=phex
+               IF (associated(buffer, TARGET=some_ptr)) THEN
+                  WRITE(*,*) "We can use this"
+               ELSE
+                  WRITE(*,*) "We need to 1337 h4cks"
+               ENDIF
+
+               get_integer1d_pointer=FNVHash(buffer, length)
             END FUNCTION get_integer1d_pointer
-            CHARACTER(32) FUNCTION get_integer2d_pointer(some_ptr)
-               integer, DIMENSION(:,:), POINTER :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
-               INTEGER length
 
-               length = size(transfer(some_ptr, chars))
-               ALLOCATE (chars(length))
-               chars = transfer(some_ptr, chars)
+            INTEGER FUNCTION get_integer2d_pointer(some_ptr)
+               INTEGER, DIMENSION(:,:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
 
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_integer2d_pointer=phex
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               get_integer2d_pointer=FNVHash(buffer, size(buffer))
             END FUNCTION get_integer2d_pointer
-            CHARACTER(32) FUNCTION get_real1_pointer(some_ptr)
-               REAL, DIMENSION(:), POINTER :: some_ptr
-               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
-               CHARACTER(LEN=32) :: phex
-               CHARACTER(LEN=20) :: format_
-               INTEGER length
-
-               length = size(transfer(some_ptr, chars))
-               ALLOCATE (chars(length))
-               chars = transfer(some_ptr, chars)
-
-               WRITE(format_, '("(", I0, "Z2.2)")') length
-               WRITE (phex, format_) chars
-               !WRITE(*,*) trim(phex)
-               get_real1_pointer=phex
-            END FUNCTION get_real1_pointer
 
       END MODULE
