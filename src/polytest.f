@@ -24,7 +24,7 @@
 
          CALL make_checkpoint_file('test.h5', cpfile_id)
 
-         CALL store_mapping(cpfile_id, '10', map)
+         CALL store_TYPE(cpfile_id, '10', map)
          CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)

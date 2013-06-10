@@ -27,9 +27,10 @@
          ! derive one another
          INTERFACE store_type
             MODULE PROCEDURE store_ppm_t_particles_d, &
-                  store_ppm_t_part_mapping_d_, &
-                  store_ppm_c_neighlist_d_, &
-                  store_ppm_c_part_prop_d_, &
+                  store_ppm_t_mapping_d_, &
+                  !store_ppm_c_neighlist_d_, &
+                  !store_ppm_c_part_prop_d_, &
+                  store_ppm_t_container, &
          !         store_ppm_t_discr_data, & is abstract
          !         store_ppm_t_discr_kind, & is abstract
          !         store_ppm_t_mapping_d_, & is abstract
@@ -40,7 +41,7 @@
 
          INTERFACE write_type
             MODULE PROCEDURE write_ppm_t_particles_d, &
-                  write_ppm_t_part_mapping_d_
+                  write_ppm_t_mapping_d_
                   !write_ppm_t_mapping_d_
          END INTERFACE
 
@@ -83,7 +84,7 @@
                CALL h5gcreate_f(file_id, 'maps', group_id, error)
                CALL h5gclose_f(group_id, error)
                ! ppm_t_part_mapping
-               CALL h5gcreate_f(file_id, 'ppm_t_part_mapping_d_', &
+               CALL h5gcreate_f(file_id, 'ppm_t_mapping_d_', &
                   group_id, error)
                CALL h5gclose_f(group_id, error)
 
@@ -97,6 +98,10 @@
 
                ! ppm_t_operator_discr_ (actual ops)
                CALL h5gcreate_f(file_id, 'ops_t', group_id, error)
+               CALL h5gclose_f(group_id, error)
+
+               ! ppm_c_neighlist (collections of neighlists)
+               CALL h5gcreate_f(file_id, 'ppm_t_container', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_neighlist (collections of neighlists)
@@ -472,15 +477,15 @@
 
             ! Basic abstraction layer, no pointers
             ! Still in sub group for compatibility
-            INCLUDE 'checkp/ppm_t_particles_check.f'
+            !INCLUDE 'checkp/ppm_t_particles_check.f'
 
             INCLUDE 'checkp/particles_stats_check.f'
 
             INCLUDE 'checkp/ppm_t_part_prop_check.f'
 
-            INCLUDE 'checkp/ppm_c_part_prop_check.f'
+            !INCLUDE 'checkp/ppm_c_part_prop_check.f'
 
-            INCLUDE 'checkp/ppm_c_neighlist_check.f'
+            !INCLUDE 'checkp/ppm_c_neighlist_check.f'
             INCLUDE 'checkp/ppm_t_neighlist_check.f'
 
             ! Need to test these, default tests have a null
@@ -488,21 +493,22 @@
             ! Needs container abstraction layer
             INCLUDE 'checkp/ppm_c_part_mapping_check.f'
             ! Simple abstraction layer, no pointers
-            INCLUDE 'checkp/ppm_t_part_mapping_check.f'
-            ! Basic Abstraction Layer, no pointers, only 2 vars
-            INCLUDE 'checkp/ppm_t_mapping_check.f'
+            !INCLUDE 'checkp/ppm_t_part_mapping_check.f'
+            !INCLUDE 'checkp/ppm_t_mapping_check.f'
 
-            INCLUDE 'checkp/ppm_v_main_abstr_check.f'
+            !INCLUDE 'checkp/ppm_v_main_abstr_check.f'
 
             ! Need to test these, default tests have a null
             ! collection
             INCLUDE 'checkp/ppm_c_operator_discr_check.f'
             INCLUDE 'checkp/ppm_t_operator_discr_check.f'
 
-            INCLUDE 'checkp/ppm_t_container_check.f'
+            !INCLUDE 'checkp/ppm_t_container_check.f'
 
             INCLUDE 'checkp/ppm_t_discr_kind_check.f'
             INCLUDE 'checkp/ppm_t_discr_data_check.f'
             !INCLUDE 'checkp/ppm_t_main_abstr_check.f'
+            INCLUDE 'poly/ppm_t_particles_check.f'
             INCLUDE 'poly/ppm_t_mapping_check.f'
+            INCLUDE 'poly/ppm_t_container_check.f'
       END MODULE

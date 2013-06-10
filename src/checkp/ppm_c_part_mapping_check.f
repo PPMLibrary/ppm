@@ -21,7 +21,7 @@
                DO WHILE(associated(mapl))
                   WRITE(buffer,*) id
                   buffer = adjustl(buffer)
-                  CALL store_ppm_t_part_mapping_d_(cpfile_id, &
+                  CALL store_ppm_t_mapping_d_(cpfile_id, &
                      buffer, mapl)
                   idlist(id) = id
                   id = id +1

@@ -9,10 +9,10 @@ type ppm_t_mapping_d_
    integer ppm_recvbufsize
    integer ppm_buffer_set
    integer ppm_map_type
-   integer ppm_nsendlist
-   integer ppm_nrecvlist
       type ppm_t_part_mapping_d_
          integer oldNpart
          integer newNpart
       end
+   integer ppm_nsendlist
+   integer ppm_nrecvlist
 end
