@@ -280,7 +280,7 @@ integer :: gen1mb_info
   END IF
 9999 continue
    CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-   CALL store_ppm_t_particles_d(checkpoint_file,'p1', parts)
+   CALL store_TYPE(checkpoint_file,'p1', parts)
    CALL close_checkpoint_file(checkpoint_file, info)
 end program
 

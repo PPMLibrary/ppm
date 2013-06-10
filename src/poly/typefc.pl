@@ -49,20 +49,26 @@ sub parse_type {
       }
       elsif (m/\btype *(\w+)/){
          my $type = $1;
-         print "pushing $1\n";
+         #print "pushing $1\n";
          push @typestack, $type;
-         @eval = &parse_type();
+         my @subtype = &parse_type();
          $type = pop @typestack;
+         #print "pop $type\n";
          if (@typestack){
-            for (@eval) {
+            for (@subtype) {
+               if ($_){
                $_  = join("\n   ", split('\n', $_)) . "\n";
                $_ = "\n" . &spaces() ."SELECT TYPE(type_ptr)\n" .&spaces().
                       "   CLASS IS($type)\n" .
                       $_ . &spaces(). "END SELECT\n";
+                   }
             }
          }
          else {
             $root = $type;
+         }
+         for (0..2){
+            $eval[$_] .= $subtype[$_];
          }
       }
       elsif (m/\bend\b/) {
@@ -80,6 +86,7 @@ sub parse_type {
          else { $eval[$_] = $ret[$_]; }
       }
    }
+   #print $eval[0];
    return ($eval[0],$eval[1], $eval[2]);
 }
 
@@ -121,7 +128,6 @@ sub eval_calc {
    $tsizeline .= &sum_type($bool, 'csize');
    $tsizeline .= &sum_type($chars, 'csize');
    if (%$pointers) {
-      print "Sum pointers\n";
       $tsizeline .= " + csize*32*". keys(%$pointers);
    }
 
@@ -246,7 +252,8 @@ sub eval_write {
    for my $ptr (keys %$pointers) {
       $write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
       $write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
-      $write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
+      #$write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
+      $write_section .= &spaces() . "   CALL store_type(cpfile_id, &\n";
       $write_section .= &spaces() . "       pointer_addr, type_ptr%$ptr)\n";
       $write_section .= &spaces() . "ELSE\n";
       $write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";

@@ -26,7 +26,7 @@
          ! These interfaces have issues with arguments that
          ! derive one another
          INTERFACE store_type
-            MODULE PROCEDURE store_ppm_t_particles_d, &
+            MODULE PROCEDURE store_ppm_t_main_abstr, &
                   store_ppm_t_mapping_d_, &
                   !store_ppm_c_neighlist_d_, &
                   !store_ppm_c_part_prop_d_, &
@@ -40,7 +40,7 @@
          END INTERFACE
 
          INTERFACE write_type
-            MODULE PROCEDURE write_ppm_t_particles_d, &
+            MODULE PROCEDURE write_ppm_t_main_abstr, &
                   write_ppm_t_mapping_d_
                   !write_ppm_t_mapping_d_
          END INTERFACE
@@ -72,7 +72,10 @@
                ! Use a group to encapsulate all objects of a given class
 
                ! ppm_t_particles
-               CALL h5gcreate_f(file_id, 'ppm_t_particles_d', group_id,&
+               !CALL h5gcreate_f(file_id, 'ppm_t_particles_d', group_id,&
+               !   error)
+               !CALL h5gclose_f(group_id, error)
+               CALL h5gcreate_f(file_id, 'ppm_t_main_abstr', group_id,&
                   error)
                CALL h5gclose_f(group_id, error)
 
@@ -481,12 +484,12 @@
 
             INCLUDE 'checkp/particles_stats_check.f'
 
-            INCLUDE 'checkp/ppm_t_part_prop_check.f'
+            !INCLUDE 'checkp/ppm_t_part_prop_check.f'
 
             !INCLUDE 'checkp/ppm_c_part_prop_check.f'
 
             !INCLUDE 'checkp/ppm_c_neighlist_check.f'
-            INCLUDE 'checkp/ppm_t_neighlist_check.f'
+            !INCLUDE 'checkp/ppm_t_neighlist_check.f'
 
             ! Need to test these, default tests have a null
             ! collection
@@ -505,10 +508,11 @@
 
             !INCLUDE 'checkp/ppm_t_container_check.f'
 
-            INCLUDE 'checkp/ppm_t_discr_kind_check.f'
-            INCLUDE 'checkp/ppm_t_discr_data_check.f'
+            !INCLUDE 'checkp/ppm_t_discr_kind_check.f'
+            !INCLUDE 'checkp/ppm_t_discr_data_check.f'
             !INCLUDE 'checkp/ppm_t_main_abstr_check.f'
-            INCLUDE 'poly/ppm_t_particles_check.f'
+            INCLUDE 'poly/ppm_t_main_abstr_check.f'
             INCLUDE 'poly/ppm_t_mapping_check.f'
             INCLUDE 'poly/ppm_t_container_check.f'
+            INCLUDE 'poly/ppm_t_neighlist_check.f'
       END MODULE
