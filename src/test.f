@@ -14,7 +14,7 @@
          INTEGER :: error
          INTEGER, DIMENSION(:), POINTER :: datablock
          ALLOCATE(datablock(10))
-         ALLOCATE(ppm_c_part_mapping_d::maplist)
+         !ALLOCATE(ppm_c_part_mapping_d::maplist)
 
          ALLOCATE(ppm_t_part_mapping_d::map)
          map%oldNpart = 5
@@ -27,7 +27,7 @@
          CALL make_checkpoint_file('test.h5', cpfile_id)
          !CALL store_ppm_t_part_mapping_d_(cpfile_id, '10', map)
 
-         CALL push(maplist, map)
+         !CALL push(maplist, map)
          parts%id = 10
          parts%name = "kevin"
          parts%maps => maplist

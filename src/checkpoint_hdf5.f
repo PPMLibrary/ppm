@@ -31,6 +31,7 @@
                   !store_ppm_c_neighlist_d_, &
                   !store_ppm_c_part_prop_d_, &
                   store_ppm_t_container, &
+                  store_ppm_t_operator_discr_, &
          !         store_ppm_t_discr_data, & is abstract
          !         store_ppm_t_discr_kind, & is abstract
          !         store_ppm_t_mapping_d_, & is abstract
@@ -494,7 +495,7 @@
             ! Need to test these, default tests have a null
             ! collection
             ! Needs container abstraction layer
-            INCLUDE 'checkp/ppm_c_part_mapping_check.f'
+            !INCLUDE 'checkp/ppm_c_part_mapping_check.f'
             ! Simple abstraction layer, no pointers
             !INCLUDE 'checkp/ppm_t_part_mapping_check.f'
             !INCLUDE 'checkp/ppm_t_mapping_check.f'
@@ -504,7 +505,8 @@
             ! Need to test these, default tests have a null
             ! collection
             INCLUDE 'checkp/ppm_c_operator_discr_check.f'
-            INCLUDE 'checkp/ppm_t_operator_discr_check.f'
+            !INCLUDE 'checkp/ppm_t_operator_discr_check.f'
+            INCLUDE 'poly/ppm_t_operator_discr_check.f'
 
             !INCLUDE 'checkp/ppm_t_container_check.f'
 

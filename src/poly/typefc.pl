@@ -263,7 +263,7 @@ sub eval_write {
    return $write_section;
 }
 my ($calc, $create, $write) = &parse_type();
-print $calc;
+#print $calc;
 #print $create;
 #print $write;
 #print $root;

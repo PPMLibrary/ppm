@@ -16,4 +16,8 @@ type ppm_t_container
       #pointer vec ppm_t_ptr_main_abstr
       #pointer iterator ppm_t_main_abstr
    end
+   type ppm_c_part_mapping_d_
+      #pointer vec ppm_t_ptr_part_mapping_d
+      pointer iterator ppm_t_part_mapping_d_
+   end
 end
