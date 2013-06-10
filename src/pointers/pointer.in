@@ -12,5 +12,6 @@
                WRITE(format_, '("(", I0, "Z2.2)")') length
                WRITE (phex, format_) chars
                !WRITE(*,*) trim(phex)
+               deallocate(chars)
                get_ptr_DTYPE=phex
             END FUNCTION get_ptr_DTYPE

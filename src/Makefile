@@ -25,6 +25,7 @@ test: lib test.f
 source:
 	$(MAKE) -C pointers
 	$(MAKE) -C types
+	$(MAKE) -C poly
 
 lib: source clean $(OBJECTS)
 	ar r libcheck.a $(OBJECTS)

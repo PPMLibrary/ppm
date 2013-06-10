@@ -81,7 +81,8 @@
                CALL h5gclose_f(group_id, error)
 
                ! ppm_particle_stats
-               CALL h5gcreate_f(file_id, 'stats', group_id, error)
+               !CALL h5gcreate_f(file_id, 'stats', group_id, error)
+               CALL h5gcreate_f(file_id, 'particles_stats_d_', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_part_mapping

@@ -1,0 +1,31 @@
+type particles_stats_d_
+   integer nb_nl
+   integer nb_inl
+   integer nb_cinl
+   integer nb_xset_nl
+   integer nb_xset_inl
+   integer nb_dc_comp
+   integer nb_dc_apply
+   integer nb_kdtree
+   integer nb_global_map
+   integer nb_part_map
+   integer nb_ghost_get
+   integer nb_ghost_push
+   integer nb_ls
+   real t_nl
+   real t_inl
+   real t_cinl
+   real t_xset_inl
+   real t_xset_nl
+   real t_dc_comp
+   real t_dc_apply
+   real t_kdtree
+   real t_global_map
+   real t_part_map
+   real t_ghost_get
+   real t_ghost_push
+   real t_ls
+   real t_add
+   real t_del
+   real t_compD
+end

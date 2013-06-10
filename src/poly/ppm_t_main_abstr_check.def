@@ -34,12 +34,18 @@ type ppm_t_main_abstr
          pointer maps ppm_c_part_mapping_d_
          integer NewNpart
          #pointer pcost real
-         #pointer field_ptr ppm_v_main_abstr <- wtf do we do with this?
-         #pointer ops ppm_c_operator_discr_
+         pointer field_ptr ppm_v_main_abstr <- wtf do we do with this?
+         pointer ops ppm_c_operator_discr_
          #pointer stats particles_stats_d_
          real time
          integer itime
          real h_avg
          real h_min
       end
+   type ppm_t_operator_
+      #pointer degree integer1d
+      #pointer coeffs real1d
+      integer nterms
+      character name ppm_char
+   end
 end

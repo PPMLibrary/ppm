@@ -2,6 +2,6 @@ type ppm_t_operator_discr_
    pointer discr_src ppm_t_discr_kind
    pointer discr_to ppm_discr_kind
    #pointer order integer1d
-   #pointer op_ptr ppm_t_operator_
+   pointer op_ptr ppm_t_operator_
    logical flags ppm_param_length_opsflags
 end
