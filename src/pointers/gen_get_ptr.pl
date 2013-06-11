@@ -21,6 +21,17 @@ for my $class (@types) {
       print OUTPUT $line;
    }
 }
+open (PTRTYPES, "<ptrlist.in");
+for my $ptr (<PTRTYPES>){
+   chomp $ptr;
+   push @types, $ptr;
+   for (@template){
+      s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
+      s/DTYPE/$ptr/;
+      print OUTPUT;
+   }
+}
+
 close OUTPUT;
 open(OUTPUT, '>ppm_pointers_interface.f');
 print OUTPUT ' 'x9 . "INTERFACE get_pointer\n";

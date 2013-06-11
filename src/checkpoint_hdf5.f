@@ -35,6 +35,7 @@
          !         store_ppm_t_discr_data, & is abstract
          !         store_ppm_t_discr_kind, & is abstract
          !         store_ppm_t_mapping_d_, & is abstract
+                  store_ppm_t_ptr_main_abstr, &
                   store_ppm_t_neighlist_d_
          !         store_ppm_t_part_prop_d_, &
          !         store_ppm_v_main_abstr is abstract
@@ -522,4 +523,5 @@
             INCLUDE 'types/ppm_t_container_check.f'
             INCLUDE 'types/ppm_t_neighlist_check.f'
             INCLUDE 'types/particles_stats_check.f'
+            INCLUDE 'pointers/ppm_t_ptr.f'
       END MODULE

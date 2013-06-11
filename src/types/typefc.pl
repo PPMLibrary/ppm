@@ -269,7 +269,8 @@ my ($calc, $create, $write) = &parse_type();
 #print $root;
 
 my $filename = $ARGV[1];
-my $template = "type.f.in"
+my $template = "type.f.in";
+my $parenttype;
 if ($ARGV[2]) { $template = $ARGV[2]; }
 open TEMPLATE, "+<", $template or die $!;
 open OUTFILE, ">", $filename or die $!;
