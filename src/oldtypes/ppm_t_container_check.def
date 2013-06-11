@@ -1,0 +1,6 @@
+type ppm_t_container
+integer nb
+integer iter_id
+integer min_id
+integer max_id
+integer vec_size

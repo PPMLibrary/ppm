@@ -80,58 +80,61 @@
                   error)
                CALL h5gclose_f(group_id, error)
 
+               CALL h5gcreate_f(file_id, 'ppm_t_operator_discr_', group_id,&
+                  error)
+               CALL h5gclose_f(group_id, error)
                ! ppm_particle_stats
                !CALL h5gcreate_f(file_id, 'stats', group_id, error)
                CALL h5gcreate_f(file_id, 'particles_stats_d_', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_part_mapping
-               CALL h5gcreate_f(file_id, 'maps', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'maps', group_id, error)
+               !CALL h5gclose_f(group_id, error)
                ! ppm_t_part_mapping
                CALL h5gcreate_f(file_id, 'ppm_t_mapping_d_', &
                   group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_v_main_abstr
-               CALL h5gcreate_f(file_id, 'field_ptr', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'field_ptr', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! ppm_c_operator_discr_ (Collection)
-               CALL h5gcreate_f(file_id, 'ops', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'ops', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! ppm_t_operator_discr_ (actual ops)
-               CALL h5gcreate_f(file_id, 'ops_t', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'ops_t', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! ppm_c_neighlist (collections of neighlists)
                CALL h5gcreate_f(file_id, 'ppm_t_container', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_neighlist (collections of neighlists)
-               CALL h5gcreate_f(file_id, 'ppm_c_neighlist', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'ppm_c_neighlist', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! ppm_t_neighlist (the actual neighlists)
                CALL h5gcreate_f(file_id, 'ppm_t_neighlist_d_', group_id, error)
                CALL h5gclose_f(group_id, error)
 
                ! ppm_c_part_prop
-               CALL h5gcreate_f(file_id, 'props', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'props', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! ppm_t_part_prop
-               CALL h5gcreate_f(file_id, 'gi', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'gi', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! other group for miscellaneous and fortran type pointers
-               CALL h5gcreate_f(file_id, 'other', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'other', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
                ! Abstract groups, should remove these later if possible
-               CALL h5gcreate_f(file_id, 'ppm_t_discr_data', group_id, error)
-               CALL h5gclose_f(group_id, error)
+               !CALL h5gcreate_f(file_id, 'ppm_t_discr_data', group_id, error)
+               !CALL h5gclose_f(group_id, error)
 
             END SUBROUTINE make_checkpoint_file
 
@@ -484,7 +487,7 @@
             ! Still in sub group for compatibility
             !INCLUDE 'checkp/ppm_t_particles_check.f'
 
-            INCLUDE 'checkp/particles_stats_check.f'
+            !INCLUDE 'checkp/particles_stats_check.f'
 
             !INCLUDE 'checkp/ppm_t_part_prop_check.f'
 
@@ -505,17 +508,18 @@
 
             ! Need to test these, default tests have a null
             ! collection
-            INCLUDE 'checkp/ppm_c_operator_discr_check.f'
+            !INCLUDE 'checkp/ppm_c_operator_discr_check.f'
             !INCLUDE 'checkp/ppm_t_operator_discr_check.f'
-            INCLUDE 'poly/ppm_t_operator_discr_check.f'
 
             !INCLUDE 'checkp/ppm_t_container_check.f'
 
             !INCLUDE 'checkp/ppm_t_discr_kind_check.f'
             !INCLUDE 'checkp/ppm_t_discr_data_check.f'
             !INCLUDE 'checkp/ppm_t_main_abstr_check.f'
-            INCLUDE 'poly/ppm_t_main_abstr_check.f'
-            INCLUDE 'poly/ppm_t_mapping_check.f'
-            INCLUDE 'poly/ppm_t_container_check.f'
-            INCLUDE 'poly/ppm_t_neighlist_check.f'
+            INCLUDE 'types/ppm_t_operator_discr_check.f'
+            INCLUDE 'types/ppm_t_main_abstr_check.f'
+            INCLUDE 'types/ppm_t_mapping_check.f'
+            INCLUDE 'types/ppm_t_container_check.f'
+            INCLUDE 'types/ppm_t_neighlist_check.f'
+            INCLUDE 'types/particles_stats_check.f'
       END MODULE

@@ -6,6 +6,7 @@ lib*.a
 *.h5
 *.zip
 src/template/*.f
+src/oldtypes/*.f
 src/checkp/backups/*
 src/types/*.f
 src/pointers/*.f

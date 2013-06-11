@@ -1,13 +1,18 @@
 type ppm_t_mapping_d_
-integer source_topoid
-integer target_topoid
-integer old_nsendlist
-integer old_buffer_set
-integer ppm_nsendbuffer
-integer ppm_nrecvbuffer
-integer ppm_sendbufsize
-integer ppm_recvbufsize
-integer ppm_buffer_set
-integer ppm_map_type
-integer ppm_nsendlist
-integer ppm_nrecvlist
+   integer source_topoid
+   integer target_topoid
+   integer old_nsendlist
+   integer old_buffer_set
+   integer ppm_nsendbuffer
+   integer ppm_nrecvbuffer
+   integer ppm_sendbufsize
+   integer ppm_recvbufsize
+   integer ppm_buffer_set
+   integer ppm_map_type
+      type ppm_t_part_mapping_d_
+         integer oldNpart
+         integer newNpart
+      end
+   integer ppm_nsendlist
+   integer ppm_nrecvlist
+end
