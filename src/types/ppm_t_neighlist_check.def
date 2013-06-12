@@ -7,6 +7,6 @@ logical uptodate
 integer nneighmin
 integer nneighmax
 #pointer Part ppm_t_discr_kind
-#pointer nvlist integer1d
+pointer nvlist integer1d
 #pointer vlist integer2d
 end

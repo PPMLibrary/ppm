@@ -14,6 +14,7 @@
          INTEGER :: error
          INTEGER, DIMENSION(:), POINTER :: datablock
          ALLOCATE(datablock(10))
+         datablock(3) = 50
          !ALLOCATE(ppm_c_part_mapping_d::maplist)
 
          ALLOCATE(ppm_t_part_mapping_d::map)

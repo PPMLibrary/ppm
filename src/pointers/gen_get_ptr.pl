@@ -38,6 +38,9 @@ print OUTPUT ' 'x9 . "INTERFACE get_pointer\n";
 print OUTPUT ' 'x12 . "MODULE PROCEDURE ";
 
 my @functions = map { "get_ptr_" . $_; } @types;
-print OUTPUT join(", &\n" . ' 'x15, @functions) . "\n";
+print OUTPUT join(", &\n" . ' 'x15, @functions);
+
+print OUTPUT ", &\n";
+print OUTPUT ' 'x15 . "get_integer1d_pointer\n";
 
 print OUTPUT ' 'x9 . "END INTERFACE get_pointer\n";

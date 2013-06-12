@@ -5,7 +5,7 @@ all: $(SOURCES)
 ppm_t_ptr.f: ptrlist.in ppm_t_ptr.in
 	./store_ptr_list.pl
 
-ppm_pointers.f: pointer.in typelist.in
+ppm_pointers.f: pointer.in typelist.in gen_get_ptr.pl
 	./gen_get_ptr.pl $@
 
 clean:

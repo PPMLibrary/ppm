@@ -4,21 +4,14 @@
          ! hash, check if associated (linked list)
          ! return identifier
          USE ppm_module_core
+         INCLUDE 'pointers/ppm_pointers_interface.f'
+         INCLUDE 'trees/tree_abstract_typedef.f'
          TYPE abstr_ptr
             CHARACTER(LEN=10) :: hash
             INTEGER, DIMENSION(:), POINTER :: ptr
             TYPE(abstr_ptr), POINTER :: next => null()
          END TYPE abstr_ptr
-         TYPE ptr_map
-            INTEGER ::  nextpointer = 1
-            TYPE(abstr_ptr) :: map(100)
-            !CONTAINS
-            !   PROCEDURE :: insert
-            !   PROCEDURE :: lookup
-         END TYPE ptr_map
-         INCLUDE 'pointers/ppm_pointers_interface.f'
-         INCLUDE 'maps/pmap_typedef.f'
-         INCLUDE 'maps/primitive_maps.f'
+         TYPE(pointer_trees) :: pointer_data
          !INTERFACE get_pointer
          !   MODULE PROCEDURE get_ppm_pointer
             !MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
@@ -28,7 +21,7 @@
          !END INTERFACE get_pointer
          CONTAINS
             INCLUDE 'pointers/ppm_pointers.f'
-            INCLUDE 'maps/primitive_maps_procedures.f'
+            INCLUDE 'trees/tree_abstract.f'
             INTEGER FUNCTION FNVHash(int_str, numwords)
                IMPLICIT NONE
                !INTEGER(8), PARAMETER :: PRIME_8 = 14695981039346656037
@@ -48,10 +41,11 @@
                FNVHash = x
 
             END FUNCTION FNVHash
-            INTEGER FUNCTION get_integer1d_pointer(some_ptr)
+            CHARACTER(LEN=32) FUNCTION get_integer1d_pointer(some_ptr)
                INTEGER, DIMENSION(:), POINTER :: some_ptr
                INTEGER, DIMENSION(:), POINTER :: buffer
                INTEGER length
+               TYPE(integer1d_tree) :: nodelett
 
                length = size(transfer(some_ptr, buffer))
                ALLOCATE (buffer(length))
@@ -64,7 +58,11 @@
                   WRITE(*,*) "We need to 1337 h4cks"
                ENDIF
 
-               get_integer1d_pointer=FNVHash(buffer, length)
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_integer1d_pointer)
             END FUNCTION get_integer1d_pointer
 
             INTEGER FUNCTION get_integer2d_pointer(some_ptr)
