@@ -12,9 +12,10 @@ close TEMPLATE;
 
 for my $ptr (<INPUT>) {
    chomp $ptr;
-   for my $line (@template){
+   for (@template){
+      my $line = $_;
       $line =~ s/DTYPE/$ptr/g;
-      print OUTPUT $line;
+      print OUTPUT $line ;
    }
 }
 

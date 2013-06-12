@@ -22,12 +22,20 @@
          ! derive one another
          INTERFACE store_type
             MODULE PROCEDURE store_ppm_t_main_abstr, &
+                  store_particles_stats_d_, &
                   store_ppm_t_mapping_d_, &
                   store_ppm_t_container, &
                   store_ppm_t_operator_discr_, &
                   store_integer1d_pointer, &
+                  store_integer2d_pointer, &
+                  store_real1d_pointer, &
+                  store_real2d_pointer, &
+                  store_ppm_t_neighlist_d_, &
                   store_ppm_t_ptr_main_abstr, &
-                  store_ppm_t_neighlist_d_
+                  store_ppm_t_ptr_neighlist_d, &
+                  store_ppm_t_ptr_part_mapping_d, &
+                  store_ppm_t_ptr_part_prop_d, &
+                  store_ppm_t_ptr_operator_discr
          END INTERFACE
 
          CONTAINS

@@ -26,9 +26,10 @@ for my $ptr (<PTRTYPES>){
    chomp $ptr;
    push @types, $ptr;
    for (@template){
-      s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
-      s/DTYPE/$ptr/;
-      print OUTPUT;
+      my $line = $_;
+      $line =~ s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
+      $line =~ s/DTYPE/$ptr/;
+      print OUTPUT $line;
    }
 }
 
@@ -41,6 +42,9 @@ my @functions = map { "get_ptr_" . $_; } @types;
 print OUTPUT join(", &\n" . ' 'x15, @functions);
 
 print OUTPUT ", &\n";
+print OUTPUT ' 'x15 . "get_real1d_pointer, &\n";
+print OUTPUT ' 'x15 . "get_real2d_pointer, &\n";
+print OUTPUT ' 'x15 . "get_integer2d_pointer, &\n";
 print OUTPUT ' 'x15 . "get_integer1d_pointer\n";
 
 print OUTPUT ' 'x9 . "END INTERFACE get_pointer\n";

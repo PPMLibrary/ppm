@@ -12,13 +12,6 @@
             TYPE(abstr_ptr), POINTER :: next => null()
          END TYPE abstr_ptr
          TYPE(pointer_trees) :: pointer_data
-         !INTERFACE get_pointer
-         !   MODULE PROCEDURE get_ppm_pointer
-            !MODULE PROCEDURE get_abstr_pointer, get_mapping_pointer, &
-            !      get_particles_stats_pointer, &
-            !      get_integer1d_pointer, &
-            !      get_integer2d_pointer
-         !END INTERFACE get_pointer
          CONTAINS
             INCLUDE 'pointers/ppm_pointers.f'
             INCLUDE 'trees/tree_abstract.f'
@@ -52,11 +45,6 @@
                buffer = transfer(some_ptr, buffer)
 
                WRITE (*,*) length
-               IF (associated(buffer, TARGET=some_ptr)) THEN
-                  WRITE(*,*) "We can use this"
-               ELSE
-                  WRITE(*,*) "We need to 1337 h4cks"
-               ENDIF
 
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
@@ -65,15 +53,56 @@
                   get_integer1d_pointer)
             END FUNCTION get_integer1d_pointer
 
-            INTEGER FUNCTION get_integer2d_pointer(some_ptr)
+            CHARACTER(LEN=32) FUNCTION get_integer2d_pointer(some_ptr)
                INTEGER, DIMENSION(:,:), POINTER :: some_ptr
                INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(integer2d_tree) :: nodelett
 
                length = size(transfer(some_ptr,buffer))
                ALLOCATE (buffer(length))
                buffer = transfer(some_ptr, buffer)
 
-               get_integer2d_pointer=FNVHash(buffer, size(buffer))
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_integer2d_pointer)
             END FUNCTION get_integer2d_pointer
+            CHARACTER(LEN=32) FUNCTION get_real1d_pointer(some_ptr)
+               REAL(ppm_kind_double), DIMENSION(:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(real1d_tree) :: nodelett
+
+               length = size(transfer(some_ptr, buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               WRITE (*,*) length
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_real1d_pointer)
+            END FUNCTION get_real1d_pointer
+
+            CHARACTER(LEN=32) FUNCTION get_real2d_pointer(some_ptr)
+               REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(real2d_tree) :: nodelett
+
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_real2d_pointer)
+            END FUNCTION get_REAL2d_pointer
 
       END MODULE

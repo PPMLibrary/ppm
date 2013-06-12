@@ -5,19 +5,19 @@ type ppm_t_container
    integer max_id
    integer vec_size
    type ppm_c_neighlist_d_
-      #pointer vec ppm_ptr_neighlist_d
+      pointer vec ppm_ptr_neighlist_d
       pointer iterator ppm_t_neighlist_d_
    end
    type ppm_c_part_prop_d_
-      #pointer vec ppm_t_ptr_main_abstr
+      pointer vec ppm_t_ptr_part_prop_d
       pointer iterator ppm_t_part_prop_d_
    end
    type ppm_v_main_abstr
-      #pointer vec ppm_t_ptr_main_abstr
+      pointer vec ppm_t_ptr_main_abstr
       pointer iterator ppm_t_main_abstr
    end
    type ppm_c_part_mapping_d_
-      #pointer vec ppm_t_ptr_part_mapping_d
+      pointer vec ppm_t_ptr_part_mapping_d
       pointer iterator ppm_t_part_mapping_d_
    end
    type ppm_v_main_abstr
@@ -25,7 +25,7 @@ type ppm_t_container
       pointer iterator ppm_t_main_abstr
    end
    type ppm_c_operator_discr_
-      #pointer vec ppm_t_ptr_operator_discr
+      pointer vec ppm_t_ptr_operator_discr
       pointer iterator ppm_t_operator_discr_
    end
 end

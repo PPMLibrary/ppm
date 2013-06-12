@@ -23,3 +23,12 @@
       TYPE, extends(intrinsic_tree) :: integer1d_tree
          INTEGER, DIMENSION(:), POINTER :: val
       END TYPE
+      TYPE, extends(intrinsic_tree) :: integer2d_tree
+         INTEGER, DIMENSION(:,:), POINTER :: val
+      END TYPE
+      TYPE, extends(intrinsic_tree) :: REAL1d_tree
+         REAL(ppm_kind_double), DIMENSION(:), POINTER :: val
+      END TYPE
+      TYPE, extends(intrinsic_tree) :: REAL2d_tree
+         REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: val
+      END TYPE

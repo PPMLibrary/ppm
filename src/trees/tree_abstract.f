@@ -64,6 +64,12 @@
                      check_associated = associated(treenode%val, &
                         TARGET=newnode%val)
                   END SELECT
+               TYPE is (integer2d_tree)
+                  SELECT TYPE (newnode)
+                  TYPE is (integer2d_tree)
+                     check_associated = associated(treenode%val, &
+                        TARGET=newnode%val)
+                  END SELECT
                TYPE is (integer_tree)
                   SELECT TYPE (newnode)
                   TYPE is (integer_tree)

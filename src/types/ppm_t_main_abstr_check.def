@@ -3,17 +3,22 @@ type ppm_t_main_abstr
       integer data_type 
       #pointer field_ptr ppm_t_main_abstr 
       #pointer discr ppm_t_discr_kind 
-      character name ppm_char 
+      character name ppm_char
       logical flags ppm_param_length_pptflags 
       integer lda
-      type ppm_t_part_prop_d_ 
-         #pointer data_1d_i integerD 
-         #pointer data_2d_i integer2d 
-         #pointer data_1d_li integer64d 
-         #pointer data_2d_li integer642d 
-         # Theres more
-      end
    end
+      type ppm_t_part_prop_d_
+         pointer data_1d_i integerD
+         pointer data_2d_i integer2d
+         #pointer data_1d_li integer64d
+         #pointer data_2d_li integer642d
+         pointer data_1d_r real1d
+         pointer data_2d_r real2d
+         #pointer data_1d_c complex1d
+         #pointer data_2d_c complex2d
+         #pointer data_1d_l logical1d
+         #pointer data_2d_l logical2d
+      end
    type ppm_t_discr_kind 
       integer id 
       character name ppm_char
@@ -22,29 +27,29 @@ type ppm_t_main_abstr
       # need to test containers
    end
       type ppm_t_particles_d_
-         #real xp
+         pointer xp real2d
          integer Npart
          logical flags ppm_param_length_partflags
          integer active_topoid
          pointer gi ppm_t_part_prop_d_
          real ghostlayer
          integer isymm
-         #pointer props ppm_c_part_prop_d_
+         pointer props ppm_c_part_prop_d_
          pointer neighs ppm_c_neighlist_d_
          pointer maps ppm_c_part_mapping_d_
          integer NewNpart
-         #pointer pcost real
+         pointer pcost real1d
          pointer field_ptr ppm_v_main_abstr <- wtf do we do with this?
          pointer ops ppm_c_operator_discr_
-         #pointer stats particles_stats_d_
+         pointer stats particles_stats_d_
          real time
          integer itime
          real h_avg
          real h_min
       end
    type ppm_t_operator_
-      #pointer degree integer1d
-      #pointer coeffs real1d
+      pointer degree integer1d
+      pointer coeffs real1d
       integer nterms
       character name ppm_char
    end
