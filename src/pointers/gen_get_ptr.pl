@@ -22,14 +22,18 @@ for my $class (@types) {
    }
 }
 open (PTRTYPES, "<ptrlist.in");
+open(TEMPLATE2, "<ptr_pointers.in");
+@template = <TEMPLATE2>;
+close TEMPLATE2;
+
 for my $ptr (<PTRTYPES>){
    chomp $ptr;
    push @types, $ptr;
    for (@template){
-      my $line = $_;
-      $line =~ s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
-      $line =~ s/DTYPE/$ptr/;
-      print OUTPUT $line;
+   my $line = $_;
+   $line =~ s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
+   $line =~ s/DTYPE/$ptr/;
+   print OUTPUT $line;
    }
 }
 

@@ -1,0 +1,18 @@
+            CHARACTER(LEN=32) FUNCTION get_ptr_DTYPE(some_ptr)
+               TYPE(DTYPE), DIMENSION(:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(DTYPE_tree) :: nodelett
+
+               length = size(transfer(some_ptr, buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               WRITE (*,*) length
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_ptr_DTYPE)
+            END FUNCTION get_ptr_DTYPE
