@@ -8,12 +8,12 @@ type ppm_t_main_abstr
       integer lda
    end
       type ppm_t_part_prop_d_
-         pointer data_1d_i integerD
-         pointer data_2d_i integer2d
+         #pointer data_1d_i integer1d
+         #pointer data_2d_i integer2d
          #pointer data_1d_li integer64d
          #pointer data_2d_li integer642d
-         pointer data_1d_r real1d
-         pointer data_2d_r real2d
+         #pointer data_1d_r real1d
+         #pointer data_2d_r real2d
          #pointer data_1d_c complex1d
          #pointer data_2d_c complex2d
          #pointer data_1d_l logical1d
@@ -39,7 +39,7 @@ type ppm_t_main_abstr
          pointer maps ppm_c_part_mapping_d_
          integer NewNpart
          pointer pcost real1d
-         pointer field_ptr ppm_v_main_abstr <- wtf do we do with this?
+         pointer field_ptr ppm_v_main_abstr
          pointer ops ppm_c_operator_discr_
          pointer stats particles_stats_d_
          real time

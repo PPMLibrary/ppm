@@ -9,6 +9,7 @@
                   ! generate our character pointer here
                   CALL insert_intrinsic(tree_group%itree, node, &
                      tree_group%num_intrinsic)
+                  !WRITE (*,*) tree_group%num_intrinsic
                END SELECT
                intr_ptr = node%key
             END SUBROUTINE pointer_insert
@@ -16,7 +17,7 @@
             ! Unbalanced insert, perhaps improve later
             RECURSIVE SUBROUTINE insert_derived(tree, node)
                CLASS(derived_tree), INTENT(INOUT), POINTER :: tree
-               CLASS(derived_tree), INTENT(IN), TARGET :: node
+               CLASS(derived_tree), INTENT(INOUT), TARGET :: node
                IF (.NOT. associated(tree)) THEN
                   tree => node
                   RETURN
@@ -32,11 +33,11 @@
             ! assign
             RECURSIVE SUBROUTINE insert_intrinsic(tree, node, base)
                CLASS(intrinsic_tree), INTENT(INOUT), POINTER :: tree
-               CLASS(intrinsic_tree), INTENT(IN), TARGET :: node
+               CLASS(intrinsic_tree), INTENT(INOUT), TARGET :: node
                INTEGER, INTENT(INOUT) ::  base
                IF (.NOT. associated(tree)) THEN
+                  WRITE (node%key, *) "internal", base
                   tree => node
-                  WRITE (tree%key, *) "internal", base
                   base = base + 1
                   RETURN
                END IF
@@ -50,6 +51,8 @@
                   CALL insert_intrinsic(tree%left, node, base)
                !     check associated is an select typefunction to
                !     check the ptrs if they are associated
+               ELSE
+                  node%key = tree%key
                ENDIF
             END SUBROUTINE insert_intrinsic
 

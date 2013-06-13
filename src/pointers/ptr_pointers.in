@@ -8,8 +8,6 @@
                ALLOCATE (buffer(length))
                buffer = transfer(some_ptr, buffer)
 
-               WRITE (*,*) length
-
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
 

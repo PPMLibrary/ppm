@@ -39,10 +39,16 @@
                CHARACTER(LEN=*), INTENT(IN) :: type_ptr_id
                TYPE(DTYPE), DIMENSION(:) :: type_ptr
                INTEGER error
+               LOGICAL link_exist
+               WRITE (*,*) "storing DTYPE"
 
+               CALL h5lexists_f(cpfile_id, 'ptr_lists'//type_ptr_id, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
                CALL h5gopen_f(cpfile_id, 'ptr_lists', &
                   group_id, error)
-
 
                ! Make our dataset
                CALL make_type_DTYPE(type_ptr, type_id) ! get type
@@ -57,6 +63,7 @@
                CALL h5sclose_f(dspace_id, error)
 
                CALL h5gclose_f(group_id, error)
+               WRITE (*,*) "stored DTYPE"
             END SUBROUTINE store_DTYPE
 
             SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)
@@ -74,15 +81,21 @@
                CALL make_type_DTYPE(type_ptr, type_id) ! get type
                rank = 1
                dims(1) = size(type_ptr)
-               ALLOCATE(pointer_addresses(dims(1)))
+               ALLOCATE(CHARACTER(LEN=32)::pointer_addresses(dims(1)))
                DO i=1, int(dims(1))
-                  pointer_addresses(i) = get_pointer(type_ptr(i)%t)
-                  CALL store_type(cpfile_id, pointer_addresses(i), &
-                     type_ptr(i)%t)
+                  IF (associated(type_ptr(i)%t)) THEN
+                     pointer_addresses(i) = get_pointer(type_ptr(i)%t)
+                     CALL store_type(cpfile_id, pointer_addresses(i), &
+                        type_ptr(i)%t)
+                  ELSE
+                     pointer_addresses(i) = &
+                          '00000000000000000000000000000000'
+                  END IF
                ENDDO
                CALL h5dwrite_f(dset_id, type_id, pointer_addresses, &
                   dims, error)
                CALL h5tclose_f(type_id, error)
                !WRITE_STUB
+               DEALLOCATE(pointer_addresses)
 
             END SUBROUTINE write_DTYPE

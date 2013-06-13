@@ -120,10 +120,13 @@
                CALL h5tget_size_f(bool_id, arr_size, error)
                CALL h5tcreate_f(H5T_COMPOUND_F, arr_size, attr_id, &
                   error)
+               WRITE(*,*) "insert create error = " , error
                CALL h5tinsert_f(attr_id, dname, offset, bool_id, error)
+               WRITE(*,*) "insert type error = " , error
 
                CALL h5dwrite_f(dset_id, attr_id , charbuf, &
                   dims, error)
+               WRITE(*,*) "write string error = " , error
                CALL h5tclose_f(attr_id, error)
             END SUBROUTINE write_string_attribute
 

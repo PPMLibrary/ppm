@@ -35,6 +35,14 @@
                CHARACTER(LEN=*), INTENT(IN) :: type_ptr_id
                CLASS(DTYPE) :: type_ptr
                INTEGER error
+               LOGICAL link_exist
+
+               WRITE(*,*) "storing DTYPE"
+               CALL h5lexists_f(cpfile_id, 'DTYPE'//type_ptr_id, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                CALL h5gopen_f(cpfile_id, 'DTYPE', &
                   group_id, error)
@@ -53,6 +61,7 @@
                CALL h5sclose_f(dspace_id, error)
 
                CALL h5gclose_f(group_id, error)
+               WRITE(*,*) "stored DTYPE"
             END SUBROUTINE store_DTYPE
 
             SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)

@@ -85,6 +85,10 @@
                CALL h5gcreate_f(file_id, 'intrinsic', group_id, error)
                CALL h5gclose_f(group_id, error)
 
+               ! for the ptr types
+               CALL h5gcreate_f(file_id, 'ptr_lists', group_id, error)
+               CALL h5gclose_f(group_id, error)
+
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
