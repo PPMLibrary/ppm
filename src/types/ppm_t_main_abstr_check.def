@@ -8,8 +8,8 @@ type ppm_t_main_abstr
       integer lda
    end
       type ppm_t_part_prop_d_
-         #pointer data_1d_i integer1d
-         #pointer data_2d_i integer2d
+         pointer data_1d_i integer1d
+         pointer data_2d_i integer2d
          #pointer data_1d_li integer64d
          #pointer data_2d_li integer642d
          #pointer data_1d_r real1d

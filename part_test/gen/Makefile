@@ -10,12 +10,13 @@ PROGRAM  = part_test
 PPMDIR    = /home/kevin/ppm-library/ppm
 PPMNUMDIR = /home/kevin/ppm-library/ppmnumerics
 CHECKPOINT= /home/kevin/ppm-library/checkpoint/src
+HDF5 = /home/kevin/Downloads/hdf5-1.8.11/hdf5
 
 # Flags and settings, when you compile
 FC      = mpif90
-LDFLAGS = -L/home/kevin/ppm-library/metis/lib -latlas -lblas -lmetis  -L$(PPMDIR)/lib -L$(PPMNUMDIR)/lib -lppmnumerics -lppm -lmetis -llapack -lblas -lhdf5_fortran -lhdf5hl_fortran -I$(CHECKPOINT) -L$(CHECKPOINT) -lcheck
-OPT     = -O3 -ffree-form -ffree-line-length-none -ffree-line-length-none -O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none -Wall -ffpe-trap=zero,overflow,underflow -I/home/kevin/ppm-library/checkpoint -I/usr/include -lhdf5_fortran
-INCL    = -I$(PPMDIR)/include/ppm -I$(PPMNUMDIR)/include/ppm -I/usr/include -I/home/kevin/ppm-library/checkpoint/src
+LDFLAGS = -L/home/kevin/ppm-library/metis/lib -latlas -lblas -lmetis  -L$(PPMDIR)/lib -L$(PPMNUMDIR)/lib -lppmnumerics -lppm -lmetis -llapack -lblas -L$(HDF5)/lib -lhdf5_fortran -lhdf5hl_fortran -I$(CHECKPOINT) -L$(CHECKPOINT) -lcheck
+OPT     = -O3 -ffree-form -ffree-line-length-none -ffree-line-length-none -O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none -Wall -ffpe-trap=zero,overflow,underflow -I/home/kevin/ppm-library/checkpoint -I$(HDF5)/include -lhdf5_fortran
+INCL    = -I$(PPMDIR)/include/ppm -I$(PPMNUMDIR)/include/ppm -I$(HDF5)/include -I/home/kevin/ppm-library/checkpoint/src
 
 ### Usually you should not change these variables below.
 
