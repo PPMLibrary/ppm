@@ -5,13 +5,19 @@
                INTEGER, DIMENSION(:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                rank = 1
                dims(1) = size(ptr)
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
 
-               WRITE(*,*) "Writing integer"
                CALL h5ltmake_dataset_int_f(group_id, ptr_addr, &
                   rank, dims, ptr, error)
 
@@ -25,11 +31,16 @@
                INTEGER, DIMENSION(:,:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
 
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
                rank = 1
                dims = shape(ptr)
 
-               WRITE(*,*) "Writing integer"
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
 
                !CALL h5ltmake_dataset_int_f(group_id, ptr_addr, &
@@ -45,6 +56,13 @@
                INTEGER(8), DIMENSION(:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                rank = 1
                dims(1) = size(ptr)
@@ -64,6 +82,13 @@
                INTEGER(8), DIMENSION(:,:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                rank = 1
                dims = shape(ptr)
@@ -83,6 +108,13 @@
                REAL(ppm_kind_double), DIMENSION(:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                rank = 1
                dims(1) = size(ptr)
@@ -102,6 +134,13 @@
                REAL(ppm_kind_double), DIMENSION(:,:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
                INTEGER :: error, rank
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
+                  link_exist, error)
+               IF (link_exist) THEN
+                  RETURN
+               END IF
 
                rank = 1
                dims = shape(ptr)

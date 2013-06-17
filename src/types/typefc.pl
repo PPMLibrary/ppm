@@ -240,6 +240,8 @@ sub eval_write {
    # Now we generate the code for the write function
    for my $map ($ints, $dubs, $chars, $bool) {
       for my $key (keys %$map) {
+         # attribute level debug statements
+         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n";
          $write_section .= &spaces() . "CALL write_attribute(dset_id, \'$key\', &\n";
          if ($$map{$key} eq '1'){
             $write_section .= &spaces() . "    type_ptr%$key)\n";

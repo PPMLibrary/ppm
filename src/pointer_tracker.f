@@ -46,6 +46,7 @@
 
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
+               DEALLOCATE (buffer)
 
                CALL pointer_insert(pointer_data, nodelett, &
                   get_integer1d_pointer)
@@ -63,6 +64,7 @@
 
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
+               DEALLOCATE (buffer)
 
                CALL pointer_insert(pointer_data, nodelett, &
                   get_integer2d_pointer)
@@ -79,6 +81,7 @@
 
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
+               DEALLOCATE (buffer)
 
                CALL pointer_insert(pointer_data, nodelett, &
                   get_real1d_pointer)
@@ -96,6 +99,7 @@
 
                nodelett%hash = FNVHash(buffer, length)
                nodelett%val => some_ptr
+               DEALLOCATE (buffer)
 
                CALL pointer_insert(pointer_data, nodelett, &
                   get_real2d_pointer)

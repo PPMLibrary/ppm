@@ -9,6 +9,7 @@
                buffer = transfer(some_ptr, buffer)
 
                nodelett%hash = FNVHash(buffer, length)
+               DEALLOCATE(buffer)
                nodelett%val => some_ptr
 
                CALL pointer_insert(pointer_data, nodelett, &

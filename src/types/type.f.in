@@ -37,7 +37,7 @@
                INTEGER error
                LOGICAL link_exist
 
-               CALL h5lexists_f(cpfile_id, 'DTYPE'//type_ptr_id, &
+               CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
                   link_exist, error)
                IF (link_exist) THEN
                   RETURN
@@ -62,7 +62,7 @@
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE store_DTYPE
 
-            SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)
+            RECURSIVE SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)
             !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
