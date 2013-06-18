@@ -1,24 +1,24 @@
             ! This function will be removed for the genericized version
-            SUBROUTINE store_logical_dim(group_id, dname, buffer,&
-                   length)
+            SUBROUTINE write_logical_array_2d(group_id, dname, buffer,&
+                   dims)
                INTEGER(HID_T), INTENT(IN) :: group_id
                CHARACTER(LEN=*), INTENT(IN) :: dname
-               LOGICAL, DIMENSION(length) :: buffer
-               INTEGER, INTENT(in) :: length
-               CHARACTER, DIMENSION(length) :: charbuf
+               LOGICAL, DIMENSION(:,:) :: buffer
+               INTEGER(HSIZE_T), DIMENSION(2) :: dims
+               CHARACTER, DIMENSION(dims(1), dims(2)) :: charbuf
 
-               INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER(HID_T) :: space_id, dset_id
-               INTEGER :: error, i, rank
-               rank = 1
-               dims = (/length/)
+               INTEGER :: error, i, v, rank
+               rank = 2
 
-               DO i=1, length
-                  IF (buffer(i)) THEN
-                     charbuf(i) = 'T'
-                  ELSE
-                     charbuf(i) = 'F'
-                  ENDIF
+               DO i=1, int(dims(1))
+                  do v=1, int(dims(2))
+                     IF (buffer(i,v)) THEN
+                        charbuf(i,v) = 'T'
+                     ELSE
+                        charbuf(i,v) = 'F'
+                     ENDIF
+                  enddo
                ENDDO
                CALL h5screate_simple_f(rank, dims, space_id, error)
                CALL h5dcreate_f(group_id, dname, H5T_NATIVE_CHARACTER, &
@@ -27,7 +27,7 @@
                   dims, error)
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(space_id, error)
-            END SUBROUTINE store_logical_dim
+            END SUBROUTINE write_logical_array_2d
 
             ! Write a BOOL array attribute to a dataset
             SUBROUTINE write_logical_array(dset_id, &

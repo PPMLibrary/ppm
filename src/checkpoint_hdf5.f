@@ -26,6 +26,8 @@
                   store_ppm_t_mapping_d_, &
                   store_ppm_t_container, &
                   store_ppm_t_operator_discr_, &
+                  store_logical1d_pointer, &
+                  store_logical2d_pointer, &
                   store_integer1d_pointer, &
                   store_integer2d_pointer, &
                   store_real1d_pointer, &

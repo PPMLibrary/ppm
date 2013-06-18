@@ -9,6 +9,7 @@ src/template/*.f
 src/oldtypes/*.f
 src/checkp/backups/*
 src/types/*.f
+src/trees/*.f
 src/pointers/*.f
 part_test/bin
 gen

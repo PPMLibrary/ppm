@@ -31,23 +31,24 @@ sub parse_type {
          # Ignore comment lines
          next;
       }
-      if (m/integer (\w*) *(\w*)?/) {
+      if (m/integer +(\w+) *(\w*)?/) {
          if ($2) { $ints{$1} = $2; } else { $ints{$1} = '1'; }
       }
-      elsif (m/real (\w*) *(\w*)?/){
+      elsif (m/real +(\w+) *(\w*)?/){
          if ($2) { $dubs{$1} = $2; } else { $dubs{$1} = '1'; }
       }
-      elsif (m/character *(\w*) *(\w*)?/){
+      elsif (m/character +(\w+) *(\w*)?/){
          if ($2) { $chars{$1} = $2; } else { $chars{$1} = '1'; }
       }
-      elsif (m/logical *(\w*) *(\w*)?/){
+      elsif (m/logical +(\w+) *(\w*)?/){
+         print;
          if ($2) { $bool{$1} = $2; } else { $bool{$1} = '1'; }
       }
-      elsif (m/pointer *(\w*) *(\w*)/){
-         print "Parse pointer\n";
+      elsif (m/pointer +(\w+) *(\w*)?/){
+         print "pointer $1\n";
          $pointers{$1} = $2;
       }
-      elsif (m/\btype *(\w+)/){
+      elsif (m/\btype +(\w+)/){
          my $type = $1;
          #print "pushing $1\n";
          push @typestack, $type;
@@ -260,6 +261,7 @@ sub eval_write {
       $write_section .= &spaces() . "ELSE\n";
       $write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
       $write_section .= &spaces() . "ENDIF\n";
+       $write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n";
       $write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
    }
    return $write_section;

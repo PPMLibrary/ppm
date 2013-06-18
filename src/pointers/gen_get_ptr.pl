@@ -46,6 +46,8 @@ my @functions = map { "get_ptr_" . $_; } @types;
 print OUTPUT join(", &\n" . ' 'x15, @functions);
 
 print OUTPUT ", &\n";
+print OUTPUT ' 'x15 . "get_logical1d_pointer, &\n";
+print OUTPUT ' 'x15 . "get_logical2d_pointer, &\n";
 print OUTPUT ' 'x15 . "get_real1d_pointer, &\n";
 print OUTPUT ' 'x15 . "get_real2d_pointer, &\n";
 print OUTPUT ' 'x15 . "get_integer2d_pointer, &\n";
