@@ -105,3 +105,75 @@
                CALL pointer_insert(pointer_data, nodelett, &
                   get_logical2d_pointer)
             END FUNCTION get_logical2d_pointer
+
+            CHARACTER(LEN=32) FUNCTION get_integer64_1d_pointer(some_ptr)
+               INTEGER(8), DIMENSION(:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(integer64_1d_tree) :: nodelett
+
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+               DEALLOCATE (buffer)
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_integer64_1d_pointer)
+            END FUNCTION get_integer64_1d_pointer
+
+            CHARACTER(LEN=32) FUNCTION get_integer64_2d_pointer(some_ptr)
+               INTEGER(8), DIMENSION(:,:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(integer64_2d_tree) :: nodelett
+
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+               DEALLOCATE (buffer)
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_integer64_2d_pointer)
+            END FUNCTION get_integer64_2d_pointer
+
+            CHARACTER(LEN=32) FUNCTION get_complex1d_pointer(some_ptr)
+               COMPLEX(8), DIMENSION(:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(complex1d_tree) :: nodelett
+
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+               DEALLOCATE (buffer)
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_complex1d_pointer)
+            END FUNCTION get_complex1d_pointer
+
+            CHARACTER(LEN=32) FUNCTION get_complex2d_pointer(some_ptr)
+               COMPLEX(8), DIMENSION(:,:), POINTER :: some_ptr
+               INTEGER, DIMENSION(:), POINTER :: buffer
+               INTEGER length
+               TYPE(complex2d_tree) :: nodelett
+
+               length = size(transfer(some_ptr,buffer))
+               ALLOCATE (buffer(length))
+               buffer = transfer(some_ptr, buffer)
+
+               nodelett%hash = FNVHash(buffer, length)
+               nodelett%val => some_ptr
+               DEALLOCATE (buffer)
+
+               CALL pointer_insert(pointer_data, nodelett, &
+                  get_complex2d_pointer)
+            END FUNCTION get_complex2d_pointer

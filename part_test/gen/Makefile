@@ -10,7 +10,7 @@ PROGRAM  = part_test
 PPMDIR    = /home/kevin/ppm-library/ppm
 PPMNUMDIR = /home/kevin/ppm-library/ppmnumerics
 CHECKPOINT= /home/kevin/ppm-library/checkpoint/src
-HDF5 = /home/kevin/Downloads/hdf5-1.8.11/hdf5
+HDF5 = /home/kevin/hdf5-1.8.11/hdf5
 
 # Flags and settings, when you compile
 FC      = mpif90

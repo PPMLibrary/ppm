@@ -3,6 +3,7 @@
          USE h5lt
          USE ppm_module_core
          USE pointer_tracker
+         USE ISO_C_BINDING
 
          ! Generic interface definitions for abstract storage functions
 
@@ -30,6 +31,10 @@
                   store_logical2d_pointer, &
                   store_integer1d_pointer, &
                   store_integer2d_pointer, &
+                  store_complex1d_pointer, &
+                  store_complex2d_pointer, &
+                  store_integer64_1d_pointer, &
+                  store_integer64_2d_pointer, &
                   store_real1d_pointer, &
                   store_real2d_pointer, &
                   store_ppm_t_neighlist_d_, &

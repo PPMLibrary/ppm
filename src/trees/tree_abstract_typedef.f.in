@@ -38,3 +38,15 @@
       TYPE, extends(intrinsic_tree) :: logical2d_tree
          LOGICAL, DIMENSION(:,:), POINTER :: val
       END TYPE
+      TYPE, extends(intrinsic_tree) :: integer64_1d_tree
+         INTEGER(8), DIMENSION(:), POINTER :: val
+      END TYPE
+      TYPE, extends(intrinsic_tree) :: integer64_2d_tree
+         INTEGER(8), DIMENSION(:,:), POINTER :: val
+      END TYPE
+      TYPE, extends(intrinsic_tree) :: complex1d_tree
+         COMPLEX(8), DIMENSION(:), POINTER :: val
+      END TYPE
+      TYPE, extends(intrinsic_tree) :: complex2d_tree
+         COMPLEX(8), DIMENSION(:,:), POINTER :: val
+      END TYPE

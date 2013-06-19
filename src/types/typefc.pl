@@ -261,7 +261,7 @@ sub eval_write {
       $write_section .= &spaces() . "ELSE\n";
       $write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
       $write_section .= &spaces() . "ENDIF\n";
-       $write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n";
+      #  $write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n";
       $write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
    }
    return $write_section;
