@@ -38,13 +38,13 @@
                IF (link_exist) THEN
                   RETURN
                END IF
-               rank = 1
+               rank = 2
                dims = shape(ptr)
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
 
-               !CALL h5ltmake_dataset_int_f(group_id, ptr_addr, &
-               !   rank, dims, ptr, error)
+               CALL h5ltmake_dataset_int_f(group_id, ptr_addr, &
+                  rank, dims, ptr, error)
 
                CALL h5gclose_f(group_id, error)
 
@@ -229,12 +229,15 @@
             END SUBROUTINE store_logical2d_pointer
             SUBROUTINE store_complex1d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id
+               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+                  sub_id, array_id
                CHARACTER(LEN=32) :: ptr_addr
                COMPLEX(8), DIMENSION(:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
-               INTEGER :: error, rank
+               INTEGER(HSIZE_T) :: sizef, offset
+               INTEGER :: error, rank, i
                LOGICAL :: link_exist
+               REAL(8), DIMENSION(:), ALLOCATABLE :: buffer
 
                CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
                   link_exist, error)
@@ -247,18 +250,56 @@
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
 
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef*2, type_id, error)
+               CALL h5tinsert_f(type_id, "real", offset, &
+                  H5T_NATIVE_REAL, error)
+               offset = offset + sizef
+               CALL h5tinsert_f(type_id, "im", sizef, &
+                  H5T_NATIVE_REAL, error)
+
+               CALL h5tarray_create_f(type_id, rank, dims, array_id, &
+                     error)
+
+               ! store the real parts
+               ALLOCATE(buffer(int(dims(1))))
+               DO i=1, int(dims(1))
+                  buffer(i) = real(ptr(i))
+               ENDDO
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef, sub_id, error)
+               CALL h5tinsert_f(sub_id, "real", sizef, H5T_NATIVE_REAL, error)
+               CALL h5dwrite_f(dset_id, sub_id, buffer, dims, error)
+               CALL h5tclose_f(sub_id, error)
+
+               ! Now the imaginary parts
+               DO i=1, int(dims(1))
+                  buffer(i) = aimag(ptr(i))
+               ENDDO
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef, sub_id, error)
+               CALL h5tinsert_f(sub_id, "im", sizef, H5T_NATIVE_REAL, error)
+               CALL h5dwrite_f(dset_id, sub_id, buffer, dims, error)
+               CALL h5tclose_f(sub_id, error)
+               DEALLOCATE (buffer)
+
+               CALL h5tclose_f(sub_id, error)
+               CALL h5tclose_f(type_id, error)
 
                CALL h5gclose_f(group_id, error)
 
             END SUBROUTINE store_complex1d_pointer
             SUBROUTINE store_complex2d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id
+               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+                  sub_id, array_id
                CHARACTER(LEN=32) :: ptr_addr
                COMPLEX(8), DIMENSION(:,:) :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
-               INTEGER :: error, rank
+               INTEGER(HSIZE_T) :: sizef, offset
+               INTEGER :: error, rank, i,j
                LOGICAL :: link_exist
+               REAL(8), DIMENSION(:,:), ALLOCATABLE :: buffer
 
                CALL h5lexists_f(cpfile_id, 'intrinsic/'//ptr_addr, &
                   link_exist, error)
@@ -266,14 +307,50 @@
                   RETURN
                END IF
 
-               rank = 1
+               rank = 2
                dims = shape(ptr)
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
 
-               !CALL h5ltmake_dataset_long_f(group_id, ptr_addr, &
-               !   rank, dims, ptr, error)
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef*2, type_id, error)
+               CALL h5tinsert_f(type_id, "real", offset, &
+                  H5T_NATIVE_REAL, error)
+               offset = offset + sizef
+               CALL h5tinsert_f(type_id, "im", sizef, &
+                  H5T_NATIVE_REAL, error)
+
+               CALL h5tarray_create_f(type_id, rank, dims, array_id, &
+                     error)
+
+               ! store the real parts
+               ALLOCATE(buffer(int(dims(1)),int(dims(2))))
+               DO i=1, int(dims(1))
+                  DO j=1, int(dims(2))
+                     buffer(i,j) = real(ptr(i,j))
+                  ENDDO
+               ENDDO
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef, sub_id, error)
+               CALL h5tinsert_f(sub_id, "real", sizef, H5T_NATIVE_REAL, error)
+               CALL h5dwrite_f(dset_id, sub_id, buffer, dims, error)
+               CALL h5tclose_f(sub_id, error)
+
+               ! Now the imaginary parts
+               DO i=1, int(dims(1))
+                  DO j=1, int(dims(2))
+                     buffer(i,j) = aimag(ptr(i,j))
+                  ENDDO
+               ENDDO
+               offset = 0
+               CALL h5tcreate_f(H5T_COMPOUND_F, sizef, sub_id, error)
+               CALL h5tinsert_f(sub_id, "im", sizef, H5T_NATIVE_REAL, error)
+               CALL h5dwrite_f(dset_id, sub_id, buffer, dims, error)
+               CALL h5tclose_f(sub_id, error)
+               DEALLOCATE (buffer)
+
+               CALL h5tclose_f(sub_id, error)
+               CALL h5tclose_f(type_id, error)
 
                CALL h5gclose_f(group_id, error)
-
             END SUBROUTINE store_complex2d_pointer
