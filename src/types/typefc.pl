@@ -286,8 +286,12 @@ sub eval_read {
          }
       }
    }
+   my @unimplemented = qw(complex1d complex2d ppm_t_ptr_main_abstr ppm_t_ptr_neighlist_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_prop_d ppm_t_ptr_operator_discr);
    for my $ptr (keys %$pointers) {
+      next if (grep {qr/$pointers->{$ptr}/} @unimplemented);
       #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg
+      $read_section .= &spaces() . "CALL read_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
+      $read_section .= &spaces() . "CALL read_type(dset_id, pointer_addr, type_ptr%$ptr)\n";
       #$write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
       #$write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
       #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n"; # dbg

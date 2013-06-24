@@ -36,28 +36,27 @@
          END INTERFACE
 
          INTERFACE read_type
-            MODULE PROCEDURE read_integer1d_pointer, &
-                  read_ppm_t_main_abstr
-                  !store_particles_stats_d_, &
-                  !store_ppm_t_mapping_d_, &
-                  !store_ppm_t_container, &
-                  !store_ppm_t_operator_discr_, &
-                  !store_logical1d_pointer, &
-                  !store_logical2d_pointer, &
-                  !store_integer1d_pointer, &
-                  !store_integer2d_pointer, &
-                  !store_complex1d_pointer, &
-                  !store_complex2d_pointer, &
-                  !store_integer64_1d_pointer, &
-                  !store_integer64_2d_pointer, &
-                  !store_real1d_pointer, &
-                  !store_real2d_pointer, &
-                  !store_ppm_t_neighlist_d_, &
-                  !store_ppm_t_ptr_main_abstr, &
-                  !store_ppm_t_ptr_neighlist_d, &
-                  !store_ppm_t_ptr_part_mapping_d, &
-                  !store_ppm_t_ptr_part_prop_d, &
-                  !store_ppm_t_ptr_operator_discr
+            MODULE PROCEDURE read_ppm_t_main_abstr, &
+                  read_particles_stats_d_, &
+                  read_ppm_t_mapping_d_, &
+                  read_ppm_t_container, &
+                  read_ppm_t_operator_discr_, &
+                  read_logical1d_pointer, &
+                  read_logical2d_pointer, &
+                  !read_complex1d_pointer, &
+                  !read_complex2d_pointer, &
+                  read_integer64_1d_pointer, &
+                  read_integer64_2d_pointer, &
+                  read_real1d_pointer, &
+                  read_real2d_pointer, &
+                  read_ppm_t_neighlist_d_, &
+                  !read_ppm_t_ptr_main_abstr, &
+                  !read_ppm_t_ptr_neighlist_d, &
+                  !read_ppm_t_ptr_part_mapping_d, &
+                  !read_ppm_t_ptr_part_prop_d, &
+                  !read_ppm_t_ptr_operator_discr
+                  read_integer1d_pointer, &
+                  read_integer2d_pointer
          END INTERFACE read_type
 
          CONTAINS
