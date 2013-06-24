@@ -9,13 +9,13 @@
          CHARACTER(LEN=32) :: key
       END TYPE pointer_btree
       TYPE, abstract, extends(pointer_btree) :: derived_tree
-         CLASS(derived_tree), POINTER :: left
-         CLASS(derived_tree), POINTER :: right
+         CLASS(derived_tree), POINTER :: left => null()
+         CLASS(derived_tree), POINTER :: right => null()
       END TYPE derived_tree
       TYPE, abstract, extends(pointer_btree) :: intrinsic_tree
          INTEGER :: hash
-         CLASS(intrinsic_tree), POINTER :: left
-         CLASS(intrinsic_tree), POINTER :: right
+         CLASS(intrinsic_tree), POINTER :: left => null()
+         CLASS(intrinsic_tree), POINTER :: right => null()
       END TYPE intrinsic_tree
       TYPE, extends(intrinsic_tree) :: integer_tree
          INTEGER, POINTER :: val
@@ -30,7 +30,7 @@
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: val
       END TYPE
       TYPE, extends(intrinsic_tree) :: REAL2d_tree
-         REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: val
+         REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: val => null()
       END TYPE
       TYPE, extends(intrinsic_tree) :: logical1d_tree
          LOGICAL, DIMENSION(:), POINTER :: val

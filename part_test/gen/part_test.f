@@ -144,7 +144,12 @@ integer :: gen1mb_info
   !F = create_property(parts, ppm_dim, "force",zero=true)
   !E = create_property(parts, 1, "energy",zero=true)
   
+  ! this line, so part create_prop
   call parts%create_prop(info ,name='"displace"',lda=ppm_dim,part_prop=dx,zero=.true.)
+   CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
+   CALL store_TYPE(checkpoint_file,'p1', parts)
+   CALL close_checkpoint_file(checkpoint_file, info)
+   WRITE (*,*) parts%itime
   IF (info.NE.0) THEN
     info = ppm_error_error
     CALL ppm_error(ppm_err_sub_failed, &
@@ -188,6 +193,7 @@ integer :: gen1mb_info
     allmaxdisp = 0.0_mk
         WRITE(failbuf,*) "**********TIME STEP**********: ",&
     &    st+1
+        parts%itime = parts%itime + 1
         CALL ppm_write(ppm_rank,caller,failbuf,info)
     
     ! Move the particles a bit
@@ -279,9 +285,11 @@ integer :: gen1mb_info
     GOTO 9999
   END IF
 9999 continue
-   CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-   CALL store_TYPE(checkpoint_file,'p1', parts)
-   !CALL close_checkpoint_file(checkpoint_file, info)
+   WRITE (*,*) parts%itime
+   CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
+   CALL read_type(checkpoint_file,'p1', parts)
+   CALL close_checkpoint_file(checkpoint_file, info)
+   WRITE (*,*) parts%itime
 end program
 
 

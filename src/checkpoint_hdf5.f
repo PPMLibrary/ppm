@@ -6,17 +6,7 @@
          USE ISO_C_BINDING
 
          ! Generic interface definitions for abstract storage functions
-
-         ! Write an attribute to a dataset
-         INTERFACE write_attribute
-            module procedure write_integer_attribute, &
-                  write_double_attribute, &
-                  write_logical_attribute, &
-                  write_character_attribute, &
-                  write_logical_array, &
-                  write_character_array, &
-                  write_string_attribute
-         END INTERFACE write_attribute
+         INCLUDE 'intrinsic/interfaces.f'
 
          ! Store a defined Datatype
          ! These interfaces have issues with arguments that
@@ -44,6 +34,31 @@
                   store_ppm_t_ptr_part_prop_d, &
                   store_ppm_t_ptr_operator_discr
          END INTERFACE
+
+         INTERFACE read_type
+            MODULE PROCEDURE read_integer1d_pointer, &
+                  read_ppm_t_main_abstr
+                  !store_particles_stats_d_, &
+                  !store_ppm_t_mapping_d_, &
+                  !store_ppm_t_container, &
+                  !store_ppm_t_operator_discr_, &
+                  !store_logical1d_pointer, &
+                  !store_logical2d_pointer, &
+                  !store_integer1d_pointer, &
+                  !store_integer2d_pointer, &
+                  !store_complex1d_pointer, &
+                  !store_complex2d_pointer, &
+                  !store_integer64_1d_pointer, &
+                  !store_integer64_2d_pointer, &
+                  !store_real1d_pointer, &
+                  !store_real2d_pointer, &
+                  !store_ppm_t_neighlist_d_, &
+                  !store_ppm_t_ptr_main_abstr, &
+                  !store_ppm_t_ptr_neighlist_d, &
+                  !store_ppm_t_ptr_part_mapping_d, &
+                  !store_ppm_t_ptr_part_prop_d, &
+                  !store_ppm_t_ptr_operator_discr
+         END INTERFACE read_type
 
          CONTAINS
             ! Creates and initializes the checkpoint file
@@ -110,7 +125,7 @@
 
                ! Open the interface and create the file
                CALL h5open_f(error)
-               CALL h5fcreate_f(filename, H5F_ACC_RDWR_F, file_id, &
+               CALL h5fopen_f(filename, H5F_ACC_RDWR_F, file_id, &
                         error)
             END SUBROUTINE open_checkpoint_file
 
@@ -130,6 +145,11 @@
             ! subroutines for writing individual attributes of intrinsic
             ! types
             INCLUDE 'intrinsic/write_attributes.f'
+            INCLUDE 'intrinsic/read_attributes.f'
+
+            ! subroutines for reading intrinsic type pointers
+            INCLUDE 'intrinsic/read_types.f'
+
             ! subroutines for the storage of pointer references to
             ! intrinsic types
             INCLUDE 'intrinsic/store_types.f'

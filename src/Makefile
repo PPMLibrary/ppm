@@ -29,11 +29,14 @@ source:
 	$(MAKE) -C types
 	$(MAKE) -C trees
 
-lib: source clean $(OBJECTS)
+lib: rmsource source $(OBJECTS)
 	ar r libcheck.a $(OBJECTS)
 
-clean:
+rmsource:
 	rm -f *.o
+
+clean: rmsource
+	$(MAKE) -C types clean
 
 .f.o:
 	$(COMPILECMD)

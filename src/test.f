@@ -41,4 +41,5 @@
 
          !pointer_addr = get_pointer(map)
          !WRITE(*,*) pointer_addr
+         DEALLOCATE(map, stats, parts, neigh)
       END PROGRAM test_cases

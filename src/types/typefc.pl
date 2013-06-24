@@ -68,7 +68,7 @@ sub parse_type {
          else {
             $root = $type;
          }
-         for (0..2){
+         for (0..3){
             $eval[$_] .= $subtype[$_];
          }
       }
@@ -82,13 +82,13 @@ sub parse_type {
    }
    if (@typestack){
       my @ret = &eval_type(\%ints,\%dubs,\%chars,\%bool,\%pointers);
-      for (0..2) {
+      for (0..3) {
          if ($eval[$_]){ $eval[$_] = $ret[$_] . $eval[$_]; }
          else { $eval[$_] = $ret[$_]; }
       }
    }
    #print $eval[0];
-   return ($eval[0],$eval[1], $eval[2]);
+   return ($eval[0],$eval[1], $eval[2],$eval[3]);
 }
 
 # Evaluates the code for the type.
@@ -97,9 +97,10 @@ sub eval_type {
    my $calc = &eval_calc(@_);
    my $create = &eval_create(@_);
    my $write = &eval_write(@_);
+   my $read = &eval_read(@_);
    #return "Type evaluated\n";
    #return $create;
-   return ($calc, $create, $write);
+   return ($calc, $create, $write, $read);
 }
 sub eval_calc {
    my ($ints, $dubs, $chars, $bool, $pointers) = @_;
@@ -242,7 +243,7 @@ sub eval_write {
    for my $map ($ints, $dubs, $chars, $bool) {
       for my $key (keys %$map) {
          # attribute level debug statements
-         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n";
+         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n"; # dbg
          $write_section .= &spaces() . "CALL write_attribute(dset_id, \'$key\', &\n";
          if ($$map{$key} eq '1'){
             $write_section .= &spaces() . "    type_ptr%$key)\n";
@@ -253,20 +254,55 @@ sub eval_write {
       }
    }
    for my $ptr (keys %$pointers) {
+      #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg
       $write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
       $write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
+      #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n"; # dbg
       #$write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
       $write_section .= &spaces() . "   CALL store_type(cpfile_id, &\n";
       $write_section .= &spaces() . "       pointer_addr, type_ptr%$ptr)\n";
       $write_section .= &spaces() . "ELSE\n";
       $write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
+      # $write_section .= &spaces() . "   WRITE (*,*) \"   is null\"\n"; # dbg
       $write_section .= &spaces() . "ENDIF\n";
-      #  $write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n";
       $write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
    }
    return $write_section;
 }
-my ($calc, $create, $write) = &parse_type();
+sub eval_read {
+   my ($ints, $dubs, $chars, $bool, $pointers) = @_;
+   my $read_section = "";
+   # Now we generate the code for the write function
+   for my $map ($ints, $dubs, $chars, $bool) {
+      for my $key (keys %$map) {
+         # attribute level debug statements
+         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n";
+         $read_section .= &spaces() . "CALL read_attribute(dset_id, \'$key\', &\n";
+         if ($$map{$key} eq '1'){
+            $read_section .= &spaces() . "    type_ptr%$key)\n";
+         }
+         else {
+            $read_section .= &spaces() . "    type_ptr%$key, $$map{$key})\n";
+         }
+      }
+   }
+   for my $ptr (keys %$pointers) {
+      #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg
+      #$write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
+      #$write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
+      #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n"; # dbg
+      #$write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
+      #$write_section .= &spaces() . "   CALL store_type(cpfile_id, &\n";
+      #$write_section .= &spaces() . "       pointer_addr, type_ptr%$ptr)\n";
+      #$write_section .= &spaces() . "ELSE\n";
+      #$write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
+      # $write_section .= &spaces() . "   WRITE (*,*) \"   is null\"\n"; # dbg
+      #$write_section .= &spaces() . "ENDIF\n";
+      #$write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
+   }
+   return $read_section;
+}
+my ($calc, $create, $write,$read) = &parse_type();
 #print $calc;
 #print $create;
 #print $write;
@@ -297,7 +333,7 @@ for (<TEMPLATE>) {
       $_ =~ s/ *!CREATE_STUB/$create/;
       $_ =~ s/ *!CALCULATE_STUB/$calc/;
       s/ *!WRITE_STUB/$write/;
-      #s/ *!READ_STUB/$read_section/;
+      s/ *!READ_STUB/$read/;
       print OUTFILE;
    }
 }

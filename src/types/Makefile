@@ -10,6 +10,7 @@ all: $(TYPES) type.f.in
 .def.f:
 	./typefc.pl $< $@
 
+remake: clean all
 #install: all
 #	cp -v *.f ../checkp
 

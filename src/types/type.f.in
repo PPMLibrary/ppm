@@ -53,8 +53,10 @@
                CALL h5dcreate_f(group_id, type_ptr_id, type_id, &
                    dspace_id, dset_id, error)
 
+               !WRITE(*,*) "storing DTYPE"
                CALL write_DTYPE(cpfile_id, dset_id, type_ptr)
                !CALL write_TYPE(dset_id, type_ptr)
+               !WRITE(*,*) "stored DTYPE"
 
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(dspace_id, error)
@@ -73,3 +75,36 @@
                !WRITE_STUB
 
             END SUBROUTINE write_DTYPE
+
+            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, type_ptr)
+            !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
+               IMPLICIT NONE
+               INTEGER(HID_T), INTENT(in) :: cpfile_id
+               INTEGER(HID_T) :: type_id, group_id, dset_id
+               CHARACTER(LEN=*) :: type_ptr_id
+               CHARACTER(LEN=32) :: pointer_addr
+               CLASS(DTYPE) :: type_ptr
+               INTEGER :: error
+               LOGICAL :: link_exist
+
+               CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
+                  link_exist, error)
+               IF (.NOT. link_exist) THEN
+                  WRITE(*,*) "Does not exist"
+                  RETURN
+               END IF
+
+               CALL h5gopen_f(cpfile_id, 'DTYPE', &
+                  group_id, error)
+
+
+               ! open our dataset
+               CALL make_type_DTYPE(type_ptr, type_id) ! get type
+               !CALL h5screate_f(H5S_SCALAR_F, dspace_id, error)  ! get space
+               CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
+                   error)
+               !READ_STUB
+
+               CALL h5dclose_f(dset_id, error)
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE read_DTYPE

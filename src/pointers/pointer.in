@@ -14,4 +14,6 @@
                !WRITE(*,*) trim(phex)
                deallocate(chars)
                get_ptr_DTYPE=phex
+               !CALL pointer_insert(pointer_data, nodelett, &
+               !   get_ptr_DTYPE)
             END FUNCTION get_ptr_DTYPE
