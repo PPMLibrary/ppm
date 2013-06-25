@@ -97,6 +97,40 @@
                END SELECT
             END FUNCTION check_associated
 
+            RECURSIVE SUBROUTINE lookup_derived(key, tree_root, ptr)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(derived_tree), INTENT(in), POINTER :: tree_root
+               CLASS(derived_tree), POINTER,  INTENT(out) :: ptr
+               IF (.NOT. associated(tree_root)) THEN
+                  ptr => null()
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  CALL lookup_derived(key, tree_root%right, ptr)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  CALL lookup_derived(key, tree_root%left, ptr)
+               ELSE
+                  ptr => tree_root
+               ENDIF
+
+            END SUBROUTINE lookup_derived
+            RECURSIVE SUBROUTINE lookup_intrinsic(key, tree_root, ptr)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(intrinsic_tree), INTENT(in), POINTER :: tree_root
+               CLASS(intrinsic_tree), POINTER,  INTENT(out) :: ptr
+               IF (.NOT. associated(tree_root)) THEN
+                  ptr => null()
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  CALL lookup_intrinsic(key, tree_root%right, ptr)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  CALL lookup_intrinsic(key, tree_root%left, ptr)
+               ELSE
+                  ptr => tree_root
+               ENDIF
+
+            END SUBROUTINE lookup_intrinsic
             RECURSIVE SUBROUTINE write_tree(tree)
                CLASS(intrinsic_tree), POINTER, INTENT(in) :: tree
                IF (associated(tree)) THEN

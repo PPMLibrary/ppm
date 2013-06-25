@@ -286,7 +286,7 @@ sub eval_read {
          }
       }
    }
-   my @unimplemented = qw(complex1d complex2d ppm_t_ptr_main_abstr ppm_t_ptr_neighlist_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_prop_d ppm_t_ptr_operator_discr);
+   my @unimplemented = qw(ppm_t_ptr_main_abstr ppm_t_ptr_neighlist_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_mapping_d ppm_t_ptr_part_prop_d ppm_t_ptr_operator_discr);
    for my $ptr (keys %$pointers) {
       next if (grep {qr/$pointers->{$ptr}/} @unimplemented);
       #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg

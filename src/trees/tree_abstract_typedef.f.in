@@ -5,6 +5,9 @@
          CONTAINS
             PROCEDURE :: pointer_insert
       END TYPE
+      INTERFACE lookup_pointer
+         MODULE PROCEDURE lookup_derived, lookup_intrinsic
+      END INTERFACE lookup_pointer
       TYPE,abstract :: pointer_btree
          CHARACTER(LEN=32) :: key
       END TYPE pointer_btree
