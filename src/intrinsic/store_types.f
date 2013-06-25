@@ -52,7 +52,7 @@
             SUBROUTINE store_integer64_1d_pointer(cpfile_id, ptr_addr, ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id
+               INTEGER(HID_T) :: group_id, space_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER(8), DIMENSION(:), POINTER :: ptr
                !INTEGER(8), DIMENSION(1), TARGET :: test = (/10/)
@@ -229,7 +229,7 @@
             END SUBROUTINE store_logical2d_pointer
             SUBROUTINE store_complex1d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+               INTEGER(HID_T) :: group_id, dset_id, type_id, &
                   sub_id, array_id
                CHARACTER(LEN=32) :: ptr_addr
                COMPLEX(8), DIMENSION(:) :: ptr
@@ -291,7 +291,7 @@
             END SUBROUTINE store_complex1d_pointer
             SUBROUTINE store_complex2d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+               INTEGER(HID_T) :: group_id, dset_id, type_id, &
                   sub_id, array_id
                CHARACTER(LEN=32) :: ptr_addr
                COMPLEX(8), DIMENSION(:,:) :: ptr

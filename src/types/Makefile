@@ -15,4 +15,4 @@ remake: clean all
 #	cp -v *.f ../checkp
 
 clean:
-	rm *.f
+	rm -vf *.f

@@ -8,6 +8,9 @@
       INTERFACE lookup_pointer
          MODULE PROCEDURE lookup_derived, lookup_intrinsic
       END INTERFACE lookup_pointer
+      INTERFACE delete_tree
+         MODULE PROCEDURE delete_derived_tree, delete_intrinsic_tree
+      END INTERFACE delete_tree
       INTERFACE exists_pointer
          MODULE PROCEDURE exists_derived, exists_intrinsic
       END INTERFACE exists_pointer

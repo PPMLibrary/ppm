@@ -93,18 +93,20 @@
 
             SUBROUTINE read_string_attribute(dset_id, dname, charbuf, &
                length)
+               IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
                CHARACTER(LEN=*), INTENT(IN) :: dname
-               CHARACTER(LEN=length) :: charbuf
                INTEGER, INTENT(in) :: length
+               CHARACTER(LEN=length) :: charbuf
 
                INTEGER(HID_T) :: attr_id, plist_id, bool_id
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER(HSIZE_T) :: csize, arr_size, offset
                INTEGER :: error, rank
                rank = 1
-               dims = (/0/)
+               dims = (/length/)
                offset = 0
+               WRITE(*,*) "reading ptr ", dname
 
                ! Create the type properties
                ! preserve partially initialized fields

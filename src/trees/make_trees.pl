@@ -33,7 +33,7 @@ for (@typelist) {
    my $tree_t = $_ . "_tree";
    push @tree_types, $tree_t;
    print TYPEDEF_O $spaces . "TYPE, extends(derived_tree) :: $tree_t\n";
-   print TYPEDEF_O $spaces . "   TYPE($_), DIMENSION(:), POINTER :: val\n";
+   print TYPEDEF_O $spaces . "   CLASS($_), POINTER :: val\n";
    print TYPEDEF_O $spaces . "END TYPE\n";
 }
 

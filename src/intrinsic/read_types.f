@@ -1,12 +1,11 @@
             SUBROUTINE read_integer1d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, dset_id, space_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER, DIMENSION(:), POINTER :: ptr
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER :: error, rank, tclass
                INTEGER(SIZE_T) :: tsize
-               LOGICAL :: link_exist
                CLASS(intrinsic_tree), POINTER :: ptr_tree
 
                CALL lookup_pointer(ptr_addr, pointer_data%itree, ptr_tree)
@@ -47,14 +46,13 @@
             END SUBROUTINE read_integer1d_pointer
             SUBROUTINE read_integer2d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, dset_id, space_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER, DIMENSION(:), ALLOCATABLE :: int_buf
                INTEGER, DIMENSION(:,:), POINTER :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
                INTEGER :: error, rank, tclass, bsize
                INTEGER(SIZE_T) :: tsize
-               LOGICAL :: link_exist
                CLASS(intrinsic_tree), POINTER :: ptr_tree
 
                CALL lookup_pointer(ptr_addr, pointer_data%itree, ptr_tree)
@@ -99,14 +97,13 @@
             END SUBROUTINE read_integer2d_pointer
             SUBROUTINE read_REAL1d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, dset_id, space_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                REAL(ppm_kind_double), DIMENSION(:), POINTER :: ptr
                INTEGER, DIMENSION(:), ALLOCATABLE, TARGET :: int_buf
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
                INTEGER :: error, rank, tclass, bsize
                INTEGER(SIZE_T) :: tsize
-               LOGICAL :: link_exist
                CLASS(intrinsic_tree), POINTER :: ptr_tree
 
                CALL lookup_pointer(ptr_addr, pointer_data%itree, ptr_tree)
@@ -150,14 +147,13 @@
             END SUBROUTINE read_real1d_pointer
             SUBROUTINE read_real2d_pointer(cpfile_id, ptr_addr, ptr)
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, dset_id, space_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER, DIMENSION(:), ALLOCATABLE :: int_buf
                REAL(ppm_kind_double), DIMENSION(:,:), POINTER :: ptr
                INTEGER(HSIZE_T), DIMENSION(2) :: dims
                INTEGER :: error, rank, tclass, bsize
                INTEGER(SIZE_T) :: tsize
-               LOGICAL :: link_exist
                CLASS(intrinsic_tree), POINTER :: ptr_tree
 
                CALL lookup_pointer(ptr_addr, pointer_data%itree, ptr_tree)
@@ -203,7 +199,7 @@
             SUBROUTINE READ_integer64_1d_pointer(cpfile_id, ptr_addr, ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER(8), DIMENSION(:), POINTER :: ptr
                INTEGER, DIMENSION(:), POINTER :: int_buf
@@ -260,7 +256,7 @@
             SUBROUTINE READ_integer64_2d_pointer(cpfile_id, ptr_addr, ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: cpfile_id
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id
+               INTEGER(HID_T) :: group_id, dset_id
                CHARACTER(LEN=32) :: ptr_addr
                INTEGER(8), DIMENSION(:,:), POINTER :: ptr
                INTEGER, DIMENSION(:), POINTER :: int_buf
@@ -422,7 +418,7 @@
                INTEGER, DIMENSION(:), POINTER :: int_buf
                INTEGER(HSIZE_T) :: tsize, sizef, offset
                CLASS(intrinsic_tree), POINTER :: ptr_tree
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+               INTEGER(HID_T) :: group_id, dset_id, type_id, &
                   sub_id, array_id
                REAL(8), DIMENSION(:), ALLOCATABLE :: buffer
 
@@ -505,7 +501,7 @@
                INTEGER, DIMENSION(:), POINTER :: int_buf
                INTEGER(HSIZE_T) :: tsize, sizef, offset
                CLASS(intrinsic_tree), POINTER :: ptr_tree
-               INTEGER(HID_T) :: group_id, space_id, dset_id, type_id, &
+               INTEGER(HID_T) :: group_id, dset_id, type_id, &
                   sub_id, array_id
                REAL(8), DIMENSION(:,:), ALLOCATABLE :: buffer
 

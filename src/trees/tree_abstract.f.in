@@ -173,6 +173,22 @@
                   CALL write_tree(tree%right)
                ENDIF
             END SUBROUTINE write_tree
+            RECURSIVE SUBROUTINE delete_derived_tree(some_tree)
+               CLASS(derived_tree), POINTER :: some_tree
+               IF (associated(some_tree)) THEN
+                  CALL delete_derived_tree(some_tree%left)
+                  CALL delete_derived_tree(some_tree%right)
+                  DEALLOCATE (some_tree)
+               ENDIF
+            END SUBROUTINE delete_derived_tree
+            RECURSIVE SUBROUTINE delete_intrinsic_tree(some_tree)
+               CLASS(intrinsic_tree), POINTER :: some_tree
+               IF (associated(some_tree)) THEN
+                  CALL delete_intrinsic_tree(some_tree%left)
+                  CALL delete_intrinsic_tree(some_tree%right)
+                  DEALLOCATE (some_tree)
+               ENDIF
+            END SUBROUTINE delete_intrinsic_tree
             !SUBROUTINE lookup(tree, char_ptr)
             !   CLASS(pointer_btree) tree
             !   CHARACTER(LEN=32) :: char_ptr

@@ -8,8 +8,6 @@
                INTEGER rank
                INTEGER error
                INTEGER(HSIZE_T) :: tsize, offset
-               INTEGER(HSIZE_T) :: isize
-               INTEGER(HSIZE_T) :: dsize
                INTEGER(HSIZE_T) :: csize
 
                offset = 0

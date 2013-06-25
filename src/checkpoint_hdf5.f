@@ -43,18 +43,18 @@
                   read_ppm_t_operator_discr_, &
                   read_logical1d_pointer, &
                   read_logical2d_pointer, &
-                  !read_complex1d_pointer, &
-                  !read_complex2d_pointer, &
+                  read_complex1d_pointer, &
+                  read_complex2d_pointer, &
                   read_integer64_1d_pointer, &
                   read_integer64_2d_pointer, &
                   read_real1d_pointer, &
                   read_real2d_pointer, &
                   read_ppm_t_neighlist_d_, &
-                  !read_ppm_t_ptr_main_abstr, &
-                  !read_ppm_t_ptr_neighlist_d, &
-                  !read_ppm_t_ptr_part_mapping_d, &
-                  !read_ppm_t_ptr_part_prop_d, &
-                  !read_ppm_t_ptr_operator_discr
+                  read_ppm_t_ptr_main_abstr, &
+                  read_ppm_t_ptr_neighlist_d, &
+                  read_ppm_t_ptr_part_mapping_d, &
+                  read_ppm_t_ptr_part_prop_d, &
+                  read_ppm_t_ptr_operator_discr, &
                   read_integer1d_pointer, &
                   read_integer2d_pointer
          END INTERFACE read_type
@@ -136,6 +136,8 @@
                INTEGER error
                CALL h5fclose_f(file_id, error)
                CALL h5close_f(error)
+               CALL delete_tree(pointer_data%itree)
+               CALL delete_tree(pointer_data%dtree)
             END SUBROUTINE close_checkpoint_file
 
             ! pointer definitions for aquiring address of derived type

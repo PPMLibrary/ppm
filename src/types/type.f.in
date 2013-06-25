@@ -1,7 +1,7 @@
       ! Store routines for DTYPE
          SUBROUTINE make_type_DTYPE(type_ptr, dtype_id)
                IMPLICIT NONE
-               CLASS(DTYPE), INTENT(IN) :: type_ptr
+               CLASS(DTYPE), INTENT(IN), POINTER :: type_ptr
                INTEGER(HID_T), INTENT(OUT) :: dtype_id
                INTEGER(HID_T) :: array_id
                INTEGER(HSIZE_T), DIMENSION(1) :: dims
@@ -11,6 +11,9 @@
                INTEGER(HSIZE_T) :: isize
                INTEGER(HSIZE_T) :: dsize
                INTEGER(HSIZE_T) :: csize
+               IF (.NOT. associated(type_ptr)) THEN
+                  RETURN
+               ENDIF
 
                offset = 0
                tsize = 0
@@ -65,26 +68,30 @@
             END SUBROUTINE store_DTYPE
 
             RECURSIVE SUBROUTINE write_DTYPE(cpfile_id, dset_id, type_ptr)
-            !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: dset_id
                INTEGER(HID_T), INTENT(in) :: cpfile_id
                CHARACTER(LEN=32) :: pointer_addr
                CLASS(DTYPE) :: type_ptr
+               IF (cpfile_id == 0) THEN
+                  RETURN
+               ENDIF
 
                !WRITE_STUB
 
             END SUBROUTINE write_DTYPE
 
-            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, type_ptr)
+            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(in) :: cpfile_id
                INTEGER(HID_T) :: type_id, group_id, dset_id
                CHARACTER(LEN=*) :: type_ptr_id
                CHARACTER(LEN=32) :: pointer_addr
-               CLASS(DTYPE) :: type_ptr
+               CLASS(DTYPE), TARGET :: ptr
+               CLASS(DTYPE), POINTER :: type_ptr
                INTEGER :: error
                LOGICAL :: link_exist
+               CLASS(derived_tree), POINTER :: tree_node_ptr
 
                CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
                   link_exist, error)
@@ -93,9 +100,19 @@
                   RETURN
                END IF
 
+               type_ptr => ptr
+               CALL lookup_pointer(type_ptr_id, pointer_data%dtree, tree_node_ptr)
+               IF (associated(tree_node_ptr)) THEN
+                  SELECT TYPE(tree_node_ptr)
+                  CLASS is (DTYPE_tree)
+                     type_ptr => tree_node_ptr%val
+                  END SELECT
+                  RETURN
+               ENDIF
                CALL h5gopen_f(cpfile_id, 'DTYPE', &
                   group_id, error)
 
+               WRITE(*,*) "Reading DTYPE"
 
                ! open our dataset
                CALL make_type_DTYPE(type_ptr, type_id) ! get type
