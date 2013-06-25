@@ -130,15 +130,15 @@
       ! timer
       REAL(MK)                                   :: t0
       ! effective number of particles
-! ! !       REAL(MK), DIMENSION(ppm_dim)               :: min_phys,max_phys
-! ! !       ! domain extents
-! ! !       REAL(MK), DIMENSION(ppm_dim)               :: xmin,xmax
-! ! !       ! subdomain extents
+! !       REAL(MK), DIMENSION(ppm_dim)               :: min_phys,max_phys
+! !       ! domain extents
+! !       REAL(MK), DIMENSION(ppm_dim)               :: xmin,xmax
+! !       ! subdomain extents
       INTEGER                                    :: npdx
       ! counters
-      INTEGER                                    :: i,idom,ibox,jbox,nbox
+      INTEGER                                    :: i,idom,ibox,jbox   ! !,nbox
       INTEGER                                    :: ipart,jpart,ip,jp,maxvlen
-      INTEGER                                    :: cbox,iinter,j,k
+      INTEGER                                    :: cbox,iinter,j,k,maxvlen1
       INTEGER                                    :: ii,jj,kk
       ! coordinate difference
       REAL(MK)                                   :: dx,dy,dz
@@ -169,7 +169,7 @@
       LOGICAL                                    :: lst
       LOGICAL                                    :: valid
       TYPE(ppm_t_topo)       , POINTER           :: topo => NULL()
-! ! !       REAL(MK)                                   :: eps
+! !       REAL(MK)                                   :: eps
       LOGICAL                                    :: lpidx
       !-------------------------------------------------------------------------
       !  Externals
@@ -215,11 +215,11 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
-! ! ! #if   __KIND == __DOUBLE_PRECISION
-! ! !       eps = ppm_myepsd
-! ! ! #elif __KIND == __SINGLE_PRECISION
-! ! !       eps = ppm_myepss
-! ! ! #endif
+! ! #if   __KIND == __DOUBLE_PRECISION
+! !       eps = ppm_myepsd
+! ! #elif __KIND == __SINGLE_PRECISION
+! !       eps = ppm_myepss
+! ! #endif
 
 
       !-------------------------------------------------------------------------
@@ -244,13 +244,13 @@
           END SELECT
       ENDDO
 
-! ! ! #if   __KIND == __DOUBLE_PRECISION
-! ! !       min_phys(:) = topo%min_physd
-! ! !       max_phys(:) = topo%max_physd
-! ! ! #elif __KIND == __SINGLE_PRECISION
-! ! !       min_phys(:) = topo%min_physs
-! ! !       max_phys(:) = topo%max_physs
-! ! ! #endif
+! ! #if   __KIND == __DOUBLE_PRECISION
+! !       min_phys(:) = topo%min_physd
+! !       max_phys(:) = topo%max_physd
+! ! #elif __KIND == __SINGLE_PRECISION
+! !       min_phys(:) = topo%min_physs
+! !       max_phys(:) = topo%max_physs
+! ! #endif
 
       !-------------------------------------------------------------------------
       !  Boxes need to be cutoff+skin in all directions !
@@ -304,194 +304,214 @@
      &         'Verlet list sizes NVLIST',__LINE__,info)
           GOTO 9999
       ENDIF
-      nvlist(1:npdx) = 0
+! ! ! !       nvlist(1:npdx) = 0
 
+
+! ! ! !       !-------------------------------------------------------------------------
+! ! ! !       !  Determine size of Verlet lists
+! ! ! !       !-------------------------------------------------------------------------
+! ! ! !       DO idom=1,topo%nsublist
+! !               !-----------------------------------------------------------------
+! !               !  Copy subdomain extent into precision agnostic variables
+! !               !-----------------------------------------------------------------
+! ! #if   __KIND == __DOUBLE_PRECISION
+! !               xmin(1) = topo%min_subd(1,idom)
+! !               xmax(1) = topo%max_subd(1,idom)
+! !               xmin(2) = topo%min_subd(2,idom)
+! !               xmax(2) = topo%max_subd(2,idom)
+! !           IF (ppm_dim .EQ. 3) THEN
+! !               xmin(3) = topo%min_subd(3,idom)
+! !               xmax(3) = topo%max_subd(3,idom)
+! !           ENDIF
+! ! #elif __KIND == __SINGLE_PRECISION
+! !               xmin(1) = topo%min_subs(1,idom)
+! !               xmax(1) = topo%max_subs(1,idom)
+! !               xmin(2) = topo%min_subs(2,idom)
+! !               xmax(2) = topo%max_subs(2,idom)
+! !           IF (ppm_dim .EQ. 3) THEN
+! !               xmin(3) = topo%min_subs(3,idom)
+! !               xmax(3) = topo%max_subs(3,idom)
+! !           ENDIF
+! ! #endif
+! ! !           !---------------------------------------------------------------------
+! ! !           !  Lower box bound depends on symmetry and boundary condition
+! ! !           !---------------------------------------------------------------------
+! ! !           IF (lsymm) THEN
+! ! !               lb(:) = 0
+! ! !           ELSE
+! ! !               lb(:) = 1
+! ! !           ENDIF
+! ! ! !           n1  = cl(idom)%nm(1)
+! ! ! !           n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
+! ! ! !           IF (ppm_dim.EQ.3) THEN
+! ! ! !               nz  = cl(idom)%nm(3)
+! ! ! !           ELSE IF (ppm_dim .EQ. 2) THEN
+! ! ! !               n2 = 0
+! ! ! !               nz = lb(3)+2
+! ! ! !           ENDIF
+! ! ! !           ! loop over all REAL cells (the -2 at the end does this)
+! ! ! !           DO k=lb(3),nz-2
+! ! ! !               DO j=lb(2),cl(idom)%nm(2)-2
+! ! ! !                   DO i=lb(1),cl(idom)%nm(1)-2
+! ! ! !                       ! index of the center box
+! ! ! !                       cbox = i + 1 + n1*j + n2*k
+! ! ! !                       ! loop over all box-box interactions
+! ! ! !                       DO iinter=1,nnp
+! ! ! !                           ! determine box indices for this interaction
+! ! ! !                           ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
+! ! ! !      &                           n2*inp(3,iinter))
+! ! ! !                           jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
+! ! ! !      &                           n2*jnp(3,iinter))
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           !  Read indices and check if empty
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           istart = cl(idom)%lhbx(ibox)
+! ! ! !                           iend   = cl(idom)%lhbx(ibox+1)-1
+! ! ! !                           IF (iend .LT. istart) CYCLE
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           !  Within the box itself use symmetry and avoid
+! ! ! !                           !  adding the particle itself to its own list
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           IF (ibox .EQ. jbox) THEN
+! ! ! !                               DO ipart=istart,iend
+! ! ! !                                   ip = cl(idom)%lpdx(ipart)
+! ! ! !                                   IF (npdx.LT.ip) CYCLE
+! ! ! !                                   IF (lsymm) THEN
+! ! ! !                                       DO jpart=(ipart+1),iend
+! ! ! !                                           jp = cl(idom)%lpdx(jpart)
+! ! ! !                                           ! translate to real particle
+! ! ! !                                           ! index if needed
+! ! ! !                                           IF (lpidx) THEN
+! ! ! !                                               IF (npdx.LT.jp) CYCLE
+! ! ! !                                               ii = pidx(ip)
+! ! ! !                                               jj = pidx(jp)
+! ! ! !                                           ELSE
+! ! ! !                                               ii = ip
+! ! ! !                                               jj = jp
+! ! ! !                                           ENDIF
+! ! ! !                                           dx = xp(1,ii) - xp(1,jj)
+! ! ! !                                           dy = xp(2,ii) - xp(2,jj)
+! ! ! !                                           IF (ppm_dim .GT. 2) THEN
+! ! ! !                                               dz = xp(3,ii) - xp(3,jj)
+! ! ! !                                               dij= (dx*dx)+(dy*dy)+(dz*dz)
+! ! ! !                                           ELSE
+! ! ! !                                               dz = 0.0_MK
+! ! ! !                                               dij= (dx*dx)+(dy*dy)
+! ! ! !                                           ENDIF
+! ! ! !                                           IF (dij .GT. cut2) CYCLE
+! ! ! !                                           ! add particle jp to list of
+! ! ! !                                           ! particle ip
+! ! ! !                                           nvlist(ip) = nvlist(ip) + 1
+! ! ! !                                       ENDDO
+! ! ! !                                   ELSE
+! ! ! ! #ifdef __VECTOR
+! ! ! !                                       DO jpart=istart,iend
+! ! ! !                                           jp = cl(idom)%lpdx(jpart)
+! ! ! !                                           IF (jp .EQ. ip) CYCLE
+! ! ! ! #else
+! ! ! !                                       DO jpart=(ipart+1),iend
+! ! ! !                                           jp = cl(idom)%lpdx(jpart)
+! ! ! ! #endif
+! ! ! !                                           ! translate to real particle
+! ! ! !                                           ! index if needed
+! ! ! !                                           IF (lpidx) THEN
+! ! ! !                                               IF (npdx.LT.jp) CYCLE
+! ! ! !                                               ii = pidx(ip)
+! ! ! !                                               jj = pidx(jp)
+! ! ! !                                           ELSE
+! ! ! !                                               ii = ip
+! ! ! !                                               jj = jp
+! ! ! !                                           ENDIF
+! ! ! !                                           dx = xp(1,ii) - xp(1,jj)
+! ! ! !                                           dy = xp(2,ii) - xp(2,jj)
+! ! ! !                                           IF (ppm_dim .GT. 2) THEN
+! ! ! !                                               dz = xp(3,ii) - xp(3,jj)
+! ! ! !                                               dij= (dx*dx)+(dy*dy)+(dz*dz)
+! ! ! !                                           ELSE
+! ! ! !                                               dz = 0.0_MK
+! ! ! !                                               dij= (dx*dx)+(dy*dy)
+! ! ! !                                           ENDIF
+! ! ! !                                           IF (dij .GT. cut2) CYCLE
+! ! ! !                                           ! add particle jp to list of
+! ! ! !                                           ! particle ip
+! ! ! !                                           nvlist(ip) = nvlist(ip) + 1
+! ! ! ! #ifndef __VECTOR
+! ! ! !                                           nvlist(jp) = nvlist(jp) + 1
+! ! ! ! #endif
+! ! ! !                                       ENDDO
+! ! ! !                                   ENDIF
+! ! ! !                               ENDDO
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           !  For the other boxes check all particles
+! ! ! !                           !-----------------------------------------------------
+! ! ! !                           ELSE
+! ! ! !                               ! get pointers to first and last particle
+! ! ! !                               jstart = cl(idom)%lhbx(jbox)
+! ! ! !                               jend   = cl(idom)%lhbx(jbox+1)-1
+! ! ! !                               ! skip this iinter if empty
+! ! ! !                               If (jend .LT. jstart) CYCLE
+! ! ! !                               ! loop over all particles inside this cell
+! ! ! !                               DO ipart=istart,iend
+! ! ! !                                   ip = cl(idom)%lpdx(ipart)
+! ! ! !                                   ! check against all particles
+! ! ! !                                   ! in the other cell
+! ! ! !                                   DO jpart=jstart,jend
+! ! ! !                                       jp = cl(idom)%lpdx(jpart)
+! ! ! !                                       ! translate to real particle
+! ! ! !                                       ! index if needed
+! ! ! !                                       IF (lpidx) THEN
+! ! ! !                                           ii = pidx(ip)
+! ! ! !                                           jj = pidx(jp)
+! ! ! !                                       ELSE
+! ! ! !                                           ii = ip
+! ! ! !                                           jj = jp
+! ! ! !                                       ENDIF
+! ! ! !                                       dx = xp(1,ii) - xp(1,jj)
+! ! ! !                                       dy = xp(2,ii) - xp(2,jj)
+! ! ! !                                       IF (ppm_dim .GT. 2) THEN
+! ! ! !                                           dz = xp(3,ii) - xp(3,jj)
+! ! ! !                                           dij= (dx*dx)+(dy*dy)+(dz*dz)
+! ! ! !                                       ELSE
+! ! ! !                                           dz = 0.0_MK
+! ! ! !                                           dij= (dx*dx)+(dy*dy)
+! ! ! !                                       ENDIF
+! ! ! !                                       IF (dij .GT. cut2) CYCLE
+! ! ! !                                       ! add particle jp to Verlet
+! ! ! !                                       ! list of particle ip
+! ! ! !                                       nvlist(ip) = nvlist(ip) + 1
+! ! ! !                                   ENDDO
+! ! ! !                               ENDDO
+! ! ! !                           ENDIF       ! ibox .EQ. jbox
+! ! ! !                       ENDDO           ! iinter
+! ! ! !                   ENDDO               ! i
+! ! ! !               ENDDO                   ! j
+! ! ! !           ENDDO                       ! k
+! ! ! !       ENDDO                           ! idom
 
       !-------------------------------------------------------------------------
       !  Determine size of Verlet lists
       !-------------------------------------------------------------------------
+      maxvlen  = 0
       DO idom=1,topo%nsublist
-! ! !               !-----------------------------------------------------------------
-! ! !               !  Copy subdomain extent into precision agnostic variables
-! ! !               !-----------------------------------------------------------------
-! ! ! #if   __KIND == __DOUBLE_PRECISION
-! ! !               xmin(1) = topo%min_subd(1,idom)
-! ! !               xmax(1) = topo%max_subd(1,idom)
-! ! !               xmin(2) = topo%min_subd(2,idom)
-! ! !               xmax(2) = topo%max_subd(2,idom)
-! ! !           IF (ppm_dim .EQ. 3) THEN
-! ! !               xmin(3) = topo%min_subd(3,idom)
-! ! !               xmax(3) = topo%max_subd(3,idom)
-! ! !           ENDIF
-! ! ! #elif __KIND == __SINGLE_PRECISION
-! ! !               xmin(1) = topo%min_subs(1,idom)
-! ! !               xmax(1) = topo%max_subs(1,idom)
-! ! !               xmin(2) = topo%min_subs(2,idom)
-! ! !               xmax(2) = topo%max_subs(2,idom)
-! ! !           IF (ppm_dim .EQ. 3) THEN
-! ! !               xmin(3) = topo%min_subs(3,idom)
-! ! !               xmax(3) = topo%max_subs(3,idom)
-! ! !           ENDIF
-! ! ! #endif
-          !---------------------------------------------------------------------
-          !  Lower box bound depends on symmetry and boundary condition
-          !---------------------------------------------------------------------
-          IF (lsymm) THEN
-              lb(:) = 0
-          ELSE
-              lb(:) = 1
-          ENDIF
-          n1  = cl(idom)%nm(1)
-          n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
-          IF (ppm_dim.EQ.3) THEN
-              nz  = cl(idom)%nm(3)
-          ELSE IF (ppm_dim .EQ. 2) THEN
-              n2 = 0
-              nz = lb(3)+2
-          ENDIF
-          ! loop over all REAL cells (the -2 at the end does this)
-          DO k=lb(3),nz-2
-              DO j=lb(2),cl(idom)%nm(2)-2
-                  DO i=lb(1),cl(idom)%nm(1)-2
-                      ! index of the center box
-                      cbox = i + 1 + n1*j + n2*k
-                      ! loop over all box-box interactions
-                      DO iinter=1,nnp
-                          ! determine box indices for this interaction
-                          ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-     &                           n2*inp(3,iinter))
-                          jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-     &                           n2*jnp(3,iinter))
-                          !-----------------------------------------------------
-                          !  Read indices and check if empty
-                          !-----------------------------------------------------
-                          istart = cl(idom)%lhbx(ibox)
-                          iend   = cl(idom)%lhbx(ibox+1)-1
-                          IF (iend .LT. istart) CYCLE
-                          !-----------------------------------------------------
-                          !  Within the box itself use symmetry and avoid
-                          !  adding the particle itself to its own list
-                          !-----------------------------------------------------
-                          IF (ibox .EQ. jbox) THEN
-                              DO ipart=istart,iend
-                                  ip = cl(idom)%lpdx(ipart)
-                                  IF (npdx.LT.ip) CYCLE
-                                  IF (lsymm) THEN
-                                      DO jpart=(ipart+1),iend
-                                          jp = cl(idom)%lpdx(jpart)
-                                          ! translate to real particle
-                                          ! index if needed
-                                          IF (lpidx) THEN
-                                              IF (npdx.LT.jp) CYCLE
-                                              ii = pidx(ip)
-                                              jj = pidx(jp)
-                                          ELSE
-                                              ii = ip
-                                              jj = jp
-                                          ENDIF
-                                          dx = xp(1,ii) - xp(1,jj)
-                                          dy = xp(2,ii) - xp(2,jj)
-                                          IF (ppm_dim .GT. 2) THEN
-                                              dz = xp(3,ii) - xp(3,jj)
-                                              dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                          ELSE
-                                              dz = 0.0_MK
-                                              dij= (dx*dx)+(dy*dy)
-                                          ENDIF
-                                          IF (dij .GT. cut2) CYCLE
-                                          ! add particle jp to list of
-                                          ! particle ip
-                                          nvlist(ip) = nvlist(ip) + 1
-                                      ENDDO
-                                  ELSE
-#ifdef __VECTOR
-                                      DO jpart=istart,iend
-                                          jp = cl(idom)%lpdx(jpart)
-                                          IF (jp .EQ. ip) CYCLE
-#else
-                                      DO jpart=(ipart+1),iend
-                                          jp = cl(idom)%lpdx(jpart)
-#endif
-                                          ! translate to real particle
-                                          ! index if needed
-                                          IF (lpidx) THEN
-                                              IF (npdx.LT.jp) CYCLE
-                                              ii = pidx(ip)
-                                              jj = pidx(jp)
-                                          ELSE
-                                              ii = ip
-                                              jj = jp
-                                          ENDIF
-                                          dx = xp(1,ii) - xp(1,jj)
-                                          dy = xp(2,ii) - xp(2,jj)
-                                          IF (ppm_dim .GT. 2) THEN
-                                              dz = xp(3,ii) - xp(3,jj)
-                                              dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                          ELSE
-                                              dz = 0.0_MK
-                                              dij= (dx*dx)+(dy*dy)
-                                          ENDIF
-                                          IF (dij .GT. cut2) CYCLE
-                                          ! add particle jp to list of
-                                          ! particle ip
-                                          nvlist(ip) = nvlist(ip) + 1
-#ifndef __VECTOR
-                                          nvlist(jp) = nvlist(jp) + 1
-#endif
-                                      ENDDO
-                                  ENDIF
-                              ENDDO
-                          !-----------------------------------------------------
-                          !  For the other boxes check all particles
-                          !-----------------------------------------------------
-                          ELSE
-                              ! get pointers to first and last particle
-                              jstart = cl(idom)%lhbx(jbox)
-                              jend   = cl(idom)%lhbx(jbox+1)-1
-                              ! skip this iinter if empty
-                              If (jend .LT. jstart) CYCLE
-                              ! loop over all particles inside this cell
-                              DO ipart=istart,iend
-                                  ip = cl(idom)%lpdx(ipart)
-                                  ! check against all particles
-                                  ! in the other cell
-                                  DO jpart=jstart,jend
-                                      jp = cl(idom)%lpdx(jpart)
-                                      ! translate to real particle
-                                      ! index if needed
-                                      IF (lpidx) THEN
-                                          ii = pidx(ip)
-                                          jj = pidx(jp)
-                                      ELSE
-                                          ii = ip
-                                          jj = jp
-                                      ENDIF
-                                      dx = xp(1,ii) - xp(1,jj)
-                                      dy = xp(2,ii) - xp(2,jj)
-                                      IF (ppm_dim .GT. 2) THEN
-                                          dz = xp(3,ii) - xp(3,jj)
-                                          dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                      ELSE
-                                          dz = 0.0_MK
-                                          dij= (dx*dx)+(dy*dy)
-                                      ENDIF
-                                      IF (dij .GT. cut2) CYCLE
-                                      ! add particle jp to Verlet
-                                      ! list of particle ip
-                                      nvlist(ip) = nvlist(ip) + 1
-                                  ENDDO
-                              ENDDO
-                          ENDIF       ! ibox .EQ. jbox
-                      ENDDO           ! iinter
-                  ENDDO               ! i
-              ENDDO                   ! j
-          ENDDO                       ! k
-      ENDDO                           ! idom
+         maxvlen1 = MAXVAL(CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx)
+         maxvlen  = MAX(maxvlen,maxvlen1)
+      ENDDO ! idom
+
+      ! Maximum Verlet list length is computed as
+      ! the maximum density per cell times volume of
+      ! a sphere (or an area of a 2D circle) with
+      ! radius equlas to cutoff radius
+
+      IF (ppm_dim.EQ.3) THEN
+         maxvlen = INT(4.18_MK*maxvlen)
+      Else If (ppm_dim.EQ.2) THEN
+         maxvlen = INT(3.14_MK*maxvlen)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Maximum Verlet list length
       !-------------------------------------------------------------------------
-      maxvlen = MAXVAL(nvlist)
+! ! ! !       maxvlen = MAXVAL(nvlist)
       IF (ppm_debug .GT. 0) THEN
           WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
           CALL ppm_write(ppm_rank,'ppm_neighlist_vlist',mesg,info)
@@ -500,16 +520,18 @@
       !  Only build and store the lists if needed
       !-------------------------------------------------------------------------
       IF (lst) THEN
-          !---------------------------------------------------------------------
-          !  Highest particle index with non-zero nvlist
-          !---------------------------------------------------------------------
+! ! ! !           !---------------------------------------------------------------------
+! ! ! !           !  Highest particle index with non-zero nvlist
+! ! ! !           !---------------------------------------------------------------------
           ii = npdx
-          DO ipart=npdx,1,-1
-              IF (nvlist(ipart) .GT. 0) THEN
-                  ii = ipart
-                  EXIT
-              ENDIF
-          ENDDO
+          ! because of the previous change in computation of
+          ! maxvlen size we will remove this part
+! ! ! !           DO ipart=npdx,1,-1
+! ! ! !               IF (nvlist(ipart) .GT. 0) THEN
+! ! ! !                   ii = ipart
+! ! ! !                   EXIT
+! ! ! !               ENDIF
+! ! ! !           ENDDO
           !---------------------------------------------------------------------
           !  Allocate memory for Verlet lists
           !---------------------------------------------------------------------
@@ -528,6 +550,16 @@
           !  BUILD VERLET LISTS
           !---------------------------------------------------------------------
           DO idom=1,topo%nsublist
+
+              !---------------------------------------------------------------------
+              !  Lower box bound depends on symmetry and boundary condition
+              !---------------------------------------------------------------------
+              IF (lsymm) THEN
+                  lb(:) = 0
+              ELSE
+                  lb(:) = 1
+              ENDIF
+
               n1  = cl(idom)%nm(1)
               n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
               IF (ppm_dim.EQ.3) THEN
@@ -536,8 +568,8 @@
                   n2 = 0
                   nz = lb(3)+2
               ENDIF
-              ! get number of cells in this subdomain
-              nbox = SIZE(cl(idom)%lhbx,1)-1
+! !               ! get number of cells in this subdomain
+! !               nbox = SIZE(cl(idom)%lhbx,1)-1
               ! loop over all REAL cells (the -2 at the end does this)
               DO k=lb(3),nz-2
                   DO j=lb(2),cl(idom)%nm(2)-2
