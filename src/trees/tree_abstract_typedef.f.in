@@ -8,6 +8,9 @@
       INTERFACE lookup_pointer
          MODULE PROCEDURE lookup_derived, lookup_intrinsic
       END INTERFACE lookup_pointer
+      INTERFACE exists_pointer
+         MODULE PROCEDURE exists_derived, exists_intrinsic
+      END INTERFACE exists_pointer
       TYPE,abstract :: pointer_btree
          CHARACTER(LEN=32) :: key
       END TYPE pointer_btree

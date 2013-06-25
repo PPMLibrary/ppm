@@ -131,6 +131,38 @@
                ENDIF
 
             END SUBROUTINE lookup_intrinsic
+            LOGICAL RECURSIVE FUNCTION exists_derived(key, tree_root) RESULT (rval)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(derived_tree), INTENT(in), POINTER :: tree_root
+               IF (.NOT. associated(tree_root)) THEN
+                  rval = .FALSE.
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  rval = exists_derived(key, tree_root%right)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  rval = exists_derived(key, tree_root%left)
+               ELSE
+                  rval = .TRUE.
+               ENDIF
+
+            END FUNCTION exists_derived
+            LOGICAL RECURSIVE FUNCTION exists_intrinsic(key, tree_root) RESULT (rval)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(intrinsic_tree), INTENT(in), POINTER :: tree_root
+               IF (.NOT. associated(tree_root)) THEN
+                  rval = .FALSE.
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  rval = exists_intrinsic(key, tree_root%right)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  rval = exists_intrinsic(key, tree_root%left)
+               ELSE
+                  rval = .TRUE.
+               ENDIF
+
+            END FUNCTION exists_intrinsic
             RECURSIVE SUBROUTINE write_tree(tree)
                CLASS(intrinsic_tree), POINTER, INTENT(in) :: tree
                IF (associated(tree)) THEN

@@ -77,7 +77,6 @@
             END SUBROUTINE write_DTYPE
 
             RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, type_ptr)
-            !SUBROUTINE write_TYPE(cpfile_id, dset_id, type_ptr)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(in) :: cpfile_id
                INTEGER(HID_T) :: type_id, group_id, dset_id
