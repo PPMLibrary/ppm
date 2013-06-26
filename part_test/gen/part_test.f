@@ -115,75 +115,75 @@ integer :: gen1mb_info
   cutoff = 0.05_mk
   skin = 0.1_mk*cutoff
 
-      CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
-      ALLOCATE (ppm_t_particles_d::parts)
-      CALL read_type(checkpoint_file,'p1', parts)
-      CALL close_checkpoint_file(checkpoint_file, info)
-!  ! Create topology
-!  call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
-!  ! Create particles
-!  allocate(parts,stat=info)
-!  IF (info.NE.0) THEN
-!    info = ppm_error_error
-!    CALL ppm_error(ppm_err_alloc, &
-!      "Could not allocate parts",&
-!      caller, 43 , info)
-!    GOTO 9999
-!  END IF
-!  call parts%initialize(Npart, info, topoid=topo, distrib=ppm_param_part_init_cartesian, cutoff=cutoff + skin)
-!  ! Apply boundary conditions
-!  call parts%apply_bc(info)
-!  ! Do the global mapping
-!  call parts%map(info,global=.true.,topoid=topo)
-!  IF (info.NE.0) THEN
-!    info = ppm_error_error
-!    CALL ppm_error(ppm_err_sub_failed, &
-!      "Global mapping failed.",&
-!      caller, 47 , info)
-!    GOTO 9999
-!  END IF
-!  ! Create particle properties
-!  !v = create_property(parts, ppm_dim, "velocity",zero=true)
-!  !a = create_property(parts, ppm_dim, "acceleration",zero=true)
-!  !F = create_property(parts, ppm_dim, "force",zero=true)
-!  !E = create_property(parts, 1, "energy",zero=true)
-!  
-!  ! this line, so part create_prop
-!  call parts%create_prop(info ,name='"displace"',lda=ppm_dim,part_prop=dx,zero=.true.)
-!   !CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-!   !CALL store_TYPE(checkpoint_file,'p1', parts)
-!   !CALL close_checkpoint_file(checkpoint_file, info)
-!   WRITE (*,*) parts%itime
-!  IF (info.NE.0) THEN
-!    info = ppm_error_error
-!    CALL ppm_error(ppm_err_sub_failed, &
-!      "Create property failed!",&
-!      caller, 53 , info)
-!    GOTO 9999
-!  END IF
-!  
-!  call parts%create_prop(info ,name='"proc ID"',lda=1,part_prop=procid,zero=.true.)
-!  IF (info.NE.0) THEN
-!    info = ppm_error_error
-!    CALL ppm_error(ppm_err_sub_failed, &
-!      "Create property failed!",&
-!      caller, 54 , info)
-!    GOTO 9999
-!  END IF
-!  !displace = create_property(parts,1,"displace",zero=true)
-!  ! Find the ghost particles
-!  call parts%map_ghosts(info)
-!
-!  ! Create neighbor lists (i.e. neighbors of each particle)  
-!  call parts%comp_neighlist(info,skin=skin,cutoff=cutoff,symmetry=.false.)
-!  IF (info.NE.0) THEN
-!    info = ppm_error_error
-!    CALL ppm_error(ppm_err_sub_failed, &
-!      "Could not compute neighlist",&
-!      caller, 60 , info)
-!    GOTO 9999
-!  END IF
-!  nlist => parts%get_neighlist()
+      !CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
+      !ALLOCATE (ppm_t_particles_d::parts)
+      !CALL read_type(checkpoint_file,'p1', parts)
+      !CALL close_checkpoint_file(checkpoint_file, info)
+  ! Create topology
+  call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
+  ! Create particles
+  allocate(parts,stat=info)
+  IF (info.NE.0) THEN
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_alloc, &
+      "Could not allocate parts",&
+      caller, 43 , info)
+    GOTO 9999
+  END IF
+  call parts%initialize(Npart, info, topoid=topo, distrib=ppm_param_part_init_cartesian, cutoff=cutoff + skin)
+  ! Apply boundary conditions
+  call parts%apply_bc(info)
+  ! Do the global mapping
+  call parts%map(info,global=.true.,topoid=topo)
+  IF (info.NE.0) THEN
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_sub_failed, &
+      "Global mapping failed.",&
+      caller, 47 , info)
+    GOTO 9999
+  END IF
+  ! Create particle properties
+  !v = create_property(parts, ppm_dim, "velocity",zero=true)
+  !a = create_property(parts, ppm_dim, "acceleration",zero=true)
+  !F = create_property(parts, ppm_dim, "force",zero=true)
+  !E = create_property(parts, 1, "energy",zero=true)
+  
+  ! this line, so part create_prop
+  call parts%create_prop(info ,name='"displace"',lda=ppm_dim,part_prop=dx,zero=.true.)
+   !CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
+   !CALL store_TYPE(checkpoint_file,'p1', parts)
+   !CALL close_checkpoint_file(checkpoint_file, info)
+   WRITE (*,*) parts%itime
+  IF (info.NE.0) THEN
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_sub_failed, &
+      "Create property failed!",&
+      caller, 53 , info)
+    GOTO 9999
+  END IF
+  
+  call parts%create_prop(info ,name='"proc ID"',lda=1,part_prop=procid,zero=.true.)
+  IF (info.NE.0) THEN
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_sub_failed, &
+      "Create property failed!",&
+      caller, 54 , info)
+    GOTO 9999
+  END IF
+  !displace = create_property(parts,1,"displace",zero=true)
+  ! Find the ghost particles
+  call parts%map_ghosts(info)
+
+  ! Create neighbor lists (i.e. neighbors of each particle)  
+  call parts%comp_neighlist(info,skin=skin,cutoff=cutoff,symmetry=.false.)
+  IF (info.NE.0) THEN
+    info = ppm_error_error
+    CALL ppm_error(ppm_err_sub_failed, &
+      "Could not compute neighlist",&
+      caller, 60 , info)
+    GOTO 9999
+  END IF
+  nlist => parts%get_neighlist()
 
   ! Time statistics
   call ppm_tstats_setup(1,info)
@@ -297,9 +297,9 @@ integer :: gen1mb_info
   END IF
 9999 continue
    WRITE (*,*) parts%itime
-   !CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
-   !CALL read_type(checkpoint_file,'p1', parts)
-   !CALL close_checkpoint_file(checkpoint_file, info)
+   CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
+   CALL store_type(checkpoint_file,'p1', parts)
+   CALL close_checkpoint_file(checkpoint_file, info)
    WRITE (*,*) parts%itime
 end program
 

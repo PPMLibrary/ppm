@@ -5,9 +5,9 @@ use strict;
 
 my $root;
 my ($csize, $isize, $dsize);
+my @allocatables;
 my $arrays = 0;
 my $numpointers = 0;
-my $numtypes = 0;
 
 open(TYPEDEF, "<", $ARGV[0]) or die;
 my @typedef = reverse <TYPEDEF>;
@@ -20,7 +20,7 @@ sub spaces {
 
 
 sub parse_type {
-   $numtypes++;
+   my ($type) = @_;
    my %ints;
    my %dubs;
    my %chars;
@@ -53,11 +53,22 @@ sub parse_type {
          $pointers{$1} = $2;
          $numpointers++;
       }
+      elsif (/allocatable/) {
+         print "allocatable list\n";
+         while (@typedef) {
+            $_ = pop @typedef;
+            chomp;
+            print;
+            last if m/\bend\b/;
+            m/(\w+)/;
+            push @allocatables, $1;
+         }
+      }
       elsif (m/\btype +(\w+)/){
          my $type = $1;
          #print "pushing $1\n";
          push @typestack, $type;
-         my @subtype = &parse_type();
+         my @subtype = &parse_type($type);
          $type = pop @typestack;
          #print "pop $type\n";
          if (@typestack){
@@ -212,31 +223,30 @@ sub print_arr {
 sub print_ptr {
    my $name = $_[0];
    my $create_section = "";
-   $create_section .= &spaces() . "CALL h5tcreate_f(H5T_STRING_F, 32*csize, &\n";
-   $create_section .= &spaces() . "    array_id, error)\n";
-   $create_section .= &spaces() . "CALL h5tinsert_f(dtype_id, \"".$name."\", offset, &\n";
-   $create_section .= &spaces() . "    array_id, error)\n";
-   $create_section .= &spaces() . "offset = offset + (32*csize)\n";
+   $create_section .= spaces() . "CALL h5tcreate_f(H5T_STRING_F, 32*csize, &\n";
+   $create_section .= spaces() . "    array_id, error)\n";
+   $create_section .= spaces() . "CALL h5tinsert_f(dtype_id, \"".$name."\", offset, &\n";
+   $create_section .= spaces() . "    array_id, error)\n";
+   $create_section .= spaces() . "offset = offset + (32*csize)\n";
    return $create_section;
 }
 sub eval_create {
    my ($ints, $dubs, $chars, $bool, $pointers) = @_;
-   my $create_section;
-   $create_section .= &spaces() . "! Insert the members\n";
+   my $create_section = "";
 
-   $create_section .= &spaces() . "! Integer members\n";
+   $create_section .= spaces() . "! Integer members\n";
    $create_section .= print_attr("H5T_NATIVE_INTEGER", $ints, "isize");
 
-   $create_section .= &spaces() . "! Real members\n";
+   $create_section .= spaces() . "! Real members\n";
    $create_section .= print_attr("H5T_NATIVE_DOUBLE", $dubs, "dsize");
 
-   $create_section .= &spaces() . "! Character members\n";
+   $create_section .= spaces() . "! Character members\n";
    $create_section .= print_attr("H5T_NATIVE_CHARACTER", $chars, "csize");
 
-   $create_section .= &spaces() . "! Logical members\n";
+   $create_section .= spaces() . "! Logical members\n";
    $create_section .= print_attr("logical", $bool, "csize");
 
-   $create_section .= &spaces() . "! Pointer members\n";
+   $create_section .= spaces() . "! Pointer members\n";
    $create_section .= print_attr("pointer", $pointers, "csize*32");
    return $create_section;
 }
@@ -303,21 +313,26 @@ sub eval_read {
       $read_section .= &spaces() . "      write(*,*) \"Failed reading $ptr\"\n";
       $read_section .= &spaces() . "   ENDIF\n";
       $read_section .= &spaces() . "ENDIF\n";
-      #$write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
-      #$write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
-      #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n"; # dbg
-      #$write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
-      #$write_section .= &spaces() . "   CALL store_type(cpfile_id, &\n";
-      #$write_section .= &spaces() . "       pointer_addr, type_ptr%$ptr)\n";
-      #$write_section .= &spaces() . "ELSE\n";
-      #$write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
-      # $write_section .= &spaces() . "   WRITE (*,*) \"   is null\"\n"; # dbg
-      #$write_section .= &spaces() . "ENDIF\n";
-      #$write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
    }
    return $read_section;
 }
 my ($calc, $create, $write,$read) = &parse_type();
+
+# collect our allocatable types into a select
+my $allocate_stmt = spaces() . "SELECT TYPE(type_ptr)\n";
+my $select_type = spaces() . "SELECT TYPE(type_ptr)\n";
+while (my ($ind, $var) = each @allocatables) {
+   $allocate_stmt .= spaces() . "TYPE IS ($var)\n";
+   $allocate_stmt .= spaces() . "   ALLOCATE(${var}::type_ptr)\n";
+   $select_type .= spaces() . "TYPE IS ($var)\n";
+   $select_type .= spaces() ."   type_num = $ind\n";
+}
+$allocate_stmt .= spaces() . "END SELECT\n";
+
+$select_type .= spaces() . "CLASS DEFAULT\n";
+$select_type .= spaces() . "   WRITE (*,*) \"Type is abstract, cannot store\"\n";
+$select_type .= spaces() . "   RETURN\n";
+$select_type .= spaces() . "END SELECT\n";
 #print $calc;
 #print $create;
 #print $write;
@@ -343,8 +358,7 @@ print $treetype;
 for (<TEMPLATE>) {
 
    # if its not an omitted line, print
-   if (not ((m/isize/ and (not $isize))
-            or (m/dsize/ and (not $dsize))
+   if (not ((m/dsize/ and (not $dsize))
             or (m/csize/ and (not $csize))
             or (m/dims/ and ($arrays == 0))
             or ((m/array_id/ or m/rank/) and ($arrays == 0) and ($numpointers==0))
@@ -360,7 +374,9 @@ for (<TEMPLATE>) {
       $_ =~ s/ *!CREATE_STUB/$create/;
       $_ =~ s/ *!CALCULATE_STUB/$calc/;
       s/ *!WRITE_STUB/$write/;
-      s/ *!READ_STUB/$read/;
+      s/ *!SELECT_TYPE/$select_type/;
+      #s/ *!READ_STUB/$read/;
+      #s/ *!ALLOCATE_STUB/$allocate_stmt/ if (@allocatables);
       print OUTFILE;
    }
 }

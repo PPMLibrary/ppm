@@ -54,3 +54,6 @@ type ppm_t_main_abstr
       character name ppm_char
    end
 end
+allocatable
+   ppm_t_particles_d
+end

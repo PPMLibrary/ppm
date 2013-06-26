@@ -96,75 +96,75 @@
                DEALLOCATE(pointer_addresses)
 
             END SUBROUTINE write_DTYPE
-            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, &
-                  type_ptr)
-               IMPLICIT NONE
-               INTEGER(HID_T), INTENT(in) :: cpfile_id
-               INTEGER(HID_T) :: type_id, group_id, dset_id
-               CHARACTER(LEN=*) :: type_ptr_id
-               LOGICAL :: link_exist
-               INTEGER i, rank, error, tclass
-               INTEGER(HSIZE_T) :: tsize
-               TYPE(DTYPE), DIMENSION(:), POINTER :: type_ptr
-               CHARACTER(LEN=32), DIMENSION(:), ALLOCATABLE ::&
-                     pointer_addresses
-               INTEGER(HSIZE_T), DIMENSION(1) :: dims
-               CLASS(intrinsic_tree), POINTER :: type_ptr_node
-               ! for holding the encapsulated type
-               CLASS(derived_tree), POINTER :: contained_type
-
-               CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
-                  link_exist, error)
-               IF (.NOT. link_exist) THEN
-                  WRITE(*,*) "Does not exist"
-                  RETURN
-               END IF
-
-               CALL h5gopen_f(cpfile_id, 'DTYPE', &
-                  group_id, error)
-
-               !CALL h5screate_f(H5S_SCALAR_F, dspace_id, error)  ! get space
-               CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
-                   error)
-               ! get the info, mainly the dimension
-               CALL h5ltget_dataset_info_f(group_id, type_ptr_id, dims,&
-                  tclass, tsize, error)
-               rank = 1
-
-               ! if we have it lets use it
-               CALL lookup_POINTER(type_ptr_id, pointer_data%itree, type_ptr_node)
-               IF (associated(type_ptr_node)) THEN
-                  ! stupid type casting necessary
-                  SELECT TYPE(type_ptr_node)
-                  CLASS is (DTYPE_tree)
-                     type_ptr => type_ptr_node%val
-                  END SELECT
-                  RETURN
-               END IF
-
-               ! Otherwise lets initialize the pointer and start
-               ! Reading in the data
-               ALLOCATE(DTYPE::type_ptr(int(dims(1))))
-               ALLOCATE(CHARACTER(LEN=32)::pointer_addresses(dims(1)))
-               ! read the pointer address from the dataset
-               CALL h5dread_f(dset_id, type_id, pointer_addresses, &
-                  dims, error)
-               ! Now we iterate over the pointers and read as necessary
-               DO i=1, int(dims(1))
-                  CALL lookup_pointer(pointer_addresses(i), &
-                           pointer_data%dtree, contained_type)
-                  IF (associated(contained_type)) THEN
-                     ! need some black magic here
-                     !type_ptr(i) => contained_type%val
-                  ELSE
-                     CALL read_type(cpfile_id,pointer_addresses(i), &
-                        type_ptr(i)%t)
-                  ENDIF
-               ENDDO
-               CALL h5tclose_f(type_id, error)
-               !WRITE_STUB
-               DEALLOCATE(pointer_addresses)
-
-               CALL h5dclose_f(dset_id, error)
-               CALL h5gclose_f(group_id, error)
-            END SUBROUTINE read_DTYPE
+!            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, &
+!                  type_ptr)
+!               IMPLICIT NONE
+!               INTEGER(HID_T), INTENT(in) :: cpfile_id
+!               INTEGER(HID_T) :: type_id, group_id, dset_id
+!               CHARACTER(LEN=*) :: type_ptr_id
+!               LOGICAL :: link_exist
+!               INTEGER i, rank, error, tclass
+!               INTEGER(HSIZE_T) :: tsize
+!               TYPE(DTYPE), DIMENSION(:), POINTER :: type_ptr
+!               CHARACTER(LEN=32), DIMENSION(:), ALLOCATABLE ::&
+!                     pointer_addresses
+!               INTEGER(HSIZE_T), DIMENSION(1) :: dims
+!               CLASS(intrinsic_tree), POINTER :: type_ptr_node
+!               ! for holding the encapsulated type
+!               CLASS(derived_tree), POINTER :: contained_type
+!
+!               CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
+!                  link_exist, error)
+!               IF (.NOT. link_exist) THEN
+!                  WRITE(*,*) "Does not exist"
+!                  RETURN
+!               END IF
+!
+!               CALL h5gopen_f(cpfile_id, 'DTYPE', &
+!                  group_id, error)
+!
+!               !CALL h5screate_f(H5S_SCALAR_F, dspace_id, error)  ! get space
+!               CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
+!                   error)
+!               ! get the info, mainly the dimension
+!               CALL h5ltget_dataset_info_f(group_id, type_ptr_id, dims,&
+!                  tclass, tsize, error)
+!               rank = 1
+!
+!               ! if we have it lets use it
+!               CALL lookup_POINTER(type_ptr_id, pointer_data%itree, type_ptr_node)
+!               IF (associated(type_ptr_node)) THEN
+!                  ! stupid type casting necessary
+!                  SELECT TYPE(type_ptr_node)
+!                  CLASS is (DTYPE_tree)
+!                     type_ptr => type_ptr_node%val
+!                  END SELECT
+!                  RETURN
+!               END IF
+!
+!               ! Otherwise lets initialize the pointer and start
+!               ! Reading in the data
+!               ALLOCATE(DTYPE::type_ptr(int(dims(1))))
+!               ALLOCATE(CHARACTER(LEN=32)::pointer_addresses(dims(1)))
+!               ! read the pointer address from the dataset
+!               CALL h5dread_f(dset_id, type_id, pointer_addresses, &
+!                  dims, error)
+!               ! Now we iterate over the pointers and read as necessary
+!               DO i=1, int(dims(1))
+!                  CALL lookup_pointer(pointer_addresses(i), &
+!                           pointer_data%dtree, contained_type)
+!                  IF (associated(contained_type)) THEN
+!                     ! need some black magic here
+!                     !type_ptr(i) => contained_type%val
+!                  ELSE
+!                     CALL read_type(cpfile_id,pointer_addresses(i), &
+!                        type_ptr(i)%t)
+!                  ENDIF
+!               ENDDO
+!               CALL h5tclose_f(type_id, error)
+!               !WRITE_STUB
+!               DEALLOCATE(pointer_addresses)
+!
+!               CALL h5dclose_f(dset_id, error)
+!               CALL h5gclose_f(group_id, error)
+!            END SUBROUTINE read_DTYPE

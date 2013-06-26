@@ -32,11 +32,11 @@
          parts%name = "kevin"
          parts%maps => maplist
 
-         !CALL store_TYPE(cpfile_id, '10', parts)
+         CALL store_TYPE(cpfile_id, '10', parts)
          !CALL store_TYPE(cpfile_id, '10', neigh)
-         pointer_addr= get_pointer(datablock)
-         CALL store_integer64_1d_pointer(cpfile_id,
-     *      pointer_addr, datablock)
+         !pointer_addr= get_pointer(datablock)
+         !CALL store_integer64_1d_pointer(cpfile_id,
+     *   !   pointer_addr, datablock)
          CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)

@@ -16,3 +16,6 @@ type ppm_t_mapping_d_
    integer ppm_nsendlist
    integer ppm_nrecvlist
 end
+allocatable
+   ppm_t_part_mapping_d
+end
