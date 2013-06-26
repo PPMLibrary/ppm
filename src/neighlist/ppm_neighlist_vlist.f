@@ -495,6 +495,13 @@
       DO idom=1,topo%nsublist
          maxvlen1 = MAXVAL(CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx)
          maxvlen  = MAX(maxvlen,maxvlen1)
+!          Write(*,*)Repeat('-',10),idom,SIZE(cl(idom)%lhbx),Repeat('-',10)
+!          Write(*,*)cl(idom)%lhbx
+!          Write(*,*)Repeat('-',40)
+!          Write(*,*)CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx
+!          Write(*,*)Repeat('-',40)
+!          Write(*,*)maxvlen1
+!          Write(*,*)Repeat('-',40)
       ENDDO ! idom
 
       ! Maximum Verlet list length is computed as
@@ -717,6 +724,11 @@
           ENDDO                           ! idom
       ENDIF       ! lstore
 
+      ii=MAXLOC(nvlist,1,nvlist.GT.0)
+      maxvlen = MAXVAL(nvlist)
+      vlist=>vlist(1:maxvlen,1:ii)
+      nvlist=>nvlist(1:ii)
+
       !-------------------------------------------------------------------------
       !  Free work cell lists
       !-------------------------------------------------------------------------
@@ -727,6 +739,7 @@
       !     CALL ppm_error(ppm_err_dealloc,'ppm_neighlist_vlist',  &
       !&         'Failed to destroy cell lists',__LINE__,info)
       ! ENDIF
+
       iopt = ppm_param_dealloc
       CALL ppm_alloc(inp,lda,iopt,info)
       IF (info .NE. 0) THEN
