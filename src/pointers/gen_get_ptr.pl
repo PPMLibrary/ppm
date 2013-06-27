@@ -26,13 +26,15 @@ open(TEMPLATE2, "<ptr_pointers.in");
 @template = <TEMPLATE2>;
 close TEMPLATE2;
 
-for my $ptr (<PTRTYPES>){
-   chomp $ptr;
+for (<PTRTYPES>){
+   chomp;
+   my ($ptr, $type) = split " ";
    push @types, $ptr;
    for (@template){
    my $line = $_;
    $line =~ s/CLASS\(DTYPE\)/TYPE\(DTYPE\), DIMENSION\(:\), POINTER/;
    $line =~ s/DTYPE/$ptr/;
+   $line =~ s/CTYPE/$type/;
    print OUTPUT $line;
    }
 }

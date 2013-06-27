@@ -90,47 +90,35 @@
 
             END SUBROUTINE write_DTYPE
 
-!            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, type_ptr_id, type_ptr)
-!               IMPLICIT NONE
-!               INTEGER(HID_T), INTENT(in) :: cpfile_id
-!               INTEGER(HID_T) :: type_id, group_id, dset_id
-!               CHARACTER(LEN=*) :: type_ptr_id
-!               CHARACTER(LEN=32) :: pointer_addr
-!               !CLASS(DTYPE), POINTER :: ptr
-!               CLASS(DTYPE), POINTER :: type_ptr
-!               INTEGER :: error
-!               LOGICAL :: link_exist
-!               CLASS(derived_tree), POINTER :: tree_node_ptr
-!
-!               CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
-!                  link_exist, error)
-!               IF (.NOT. link_exist) THEN
-!                  WRITE(*,*) "Does not exist"
-!                  RETURN
-!               END IF
-!
-!               ALLOCATE (type_ptr)
-!               !type_ptr => ptr
-!               CALL lookup_pointer(type_ptr_id, pointer_data%dtree, tree_node_ptr)
-!               IF (associated(tree_node_ptr)) THEN
-!                  SELECT TYPE(tree_node_ptr)
-!                  CLASS is (DTYPE_tree)
-!                     type_ptr => tree_node_ptr%val
-!                  END SELECT
-!                  RETURN
-!               ENDIF
-!               CALL h5gopen_f(cpfile_id, 'DTYPE', &
-!                  group_id, error)
-!
-!               WRITE(*,*) "Reading DTYPE"
-!
-!               ! open our dataset
-!               CALL make_type_DTYPE(type_ptr, type_id) ! get type
-!               !CALL h5screate_f(H5S_SCALAR_F, dspace_id, error)  ! get space
-!               CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
-!                   error)
-!               !READ_STUB
-!
-!               CALL h5dclose_f(dset_id, error)
-!               CALL h5gclose_f(group_id, error)
-!            END SUBROUTINE read_DTYPE
+            RECURSIVE SUBROUTINE read_DTYPE(cpfile_id, dset_id, type_ptr)
+               IMPLICIT NONE
+               !INTEGER(HID_T), INTENT(in) :: cpfile_id
+               !INTEGER(HID_T) :: type_id, group_id, dset_id
+               INTEGER(HID_T) :: dset_id, cpfile_id
+               !CHARACTER(LEN=*) :: type_ptr_id
+               CHARACTER(LEN=32) :: pointer_addr
+               !CLASS(DTYPE), POINTER :: ptr
+               CLASS(DTYPE) :: type_ptr
+               INTEGER :: error
+               !LOGICAL :: link_exist
+               CLASS(derived_tree), POINTER :: tree_node_ptr
+
+               !CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
+               !   link_exist, error)
+               !IF (.NOT. link_exist) THEN
+               !   WRITE(*,*) "Does not exist"
+               !   RETURN
+               !END IF
+
+               !ALLOCATE (type_ptr)
+               !type_ptr => ptr
+               !CALL h5gopen_f(cpfile_id, 'DTYPE', &
+               !   group_id, error)
+
+               WRITE(*,*) "Reading DTYPE"
+
+               !READ_STUB
+
+            END SUBROUTINE read_DTYPE
+
+            !RECOVER_FUNCTIONS

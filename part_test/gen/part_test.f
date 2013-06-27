@@ -12,7 +12,8 @@ integer :: comm
 integer :: rank
 integer :: nproc
 real(mk), dimension(:), pointer :: geng6f_cost  => null()
-type(ppm_t_particles_d), pointer :: parts
+TYPE(ppm_t_particles_d), pointer :: parts
+CLASS(ppm_t_particles_d_), pointer :: parts_abstr
 class(ppm_t_part_prop_d_), pointer :: dx
 class(ppm_t_part_prop_d_), pointer :: procid
 class(ppm_t_neighlist_d_), pointer :: nlist
@@ -116,9 +117,16 @@ integer :: gen1mb_info
   skin = 0.1_mk*cutoff
 
       !CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
-      !ALLOCATE (ppm_t_particles_d::parts)
-      !CALL read_type(checkpoint_file,'p1', parts)
+      !parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,'p1', parts_abstr)
+      !SELECT TYPE(parts_abstr)
+      !TYPE is(ppm_t_particles_d)
+      !   parts => parts_abstr
+      !END SELECT
+      !IF (.not. associated(parts)) THEN
+      !   STOP "Could not read in particle"
+      !END IF
       !CALL close_checkpoint_file(checkpoint_file, info)
+      ALLOCATE (ppm_t_particles_d::parts)
   ! Create topology
   call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
   ! Create particles
@@ -297,7 +305,7 @@ integer :: gen1mb_info
   END IF
 9999 continue
    WRITE (*,*) parts%itime
-   CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
+   CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
    CALL store_type(checkpoint_file,'p1', parts)
    CALL close_checkpoint_file(checkpoint_file, info)
    WRITE (*,*) parts%itime

@@ -1,11 +1,13 @@
 #!/usr/bin/perl
 
+package TypeCompiler;
 use warnings;
 use strict;
 
 my $root;
 my ($csize, $isize, $dsize);
 my @allocatables;
+my @derived_types;
 my $arrays = 0;
 my $numpointers = 0;
 
@@ -45,11 +47,9 @@ sub parse_type {
          if ($2) { $chars{$1} = $2; $arrays++; } else { $chars{$1} = '1'; }
       }
       elsif (m/logical +(\w+) *(\w*)?/){
-         print;
          if ($2) { $bool{$1} = $2; $arrays++; } else { $bool{$1} = '1'; }
       }
       elsif (m/pointer +(\w+) *(\w*)?/){
-         print "pointer $1\n";
          $pointers{$1} = $2;
          $numpointers++;
       }
@@ -58,7 +58,6 @@ sub parse_type {
          while (@typedef) {
             $_ = pop @typedef;
             chomp;
-            print;
             last if m/\bend\b/;
             m/(\w+)/;
             push @allocatables, $1;
@@ -68,6 +67,7 @@ sub parse_type {
          my $type = $1;
          #print "pushing $1\n";
          push @typestack, $type;
+         push @derived_types, $type;
          my @subtype = &parse_type($type);
          $type = pop @typestack;
          #print "pop $type\n";
@@ -89,7 +89,6 @@ sub parse_type {
          }
       }
       elsif (m/\bend\b/) {
-         print "End TYPE \n";
          last;
       }
       else {
@@ -113,10 +112,10 @@ sub eval_type {
    my $calc = &eval_calc(@_);
    my $create = &eval_create(@_);
    my $write = &eval_write(@_);
-   my $read = &eval_read(@_);
+   my $recover = &eval_recover(@_);
    #return "Type evaluated\n";
    #return $create;
-   return ($calc, $create, $write, $read);
+   return ($calc, $create, $write, $recover);
 }
 sub eval_calc {
    my ($ints, $dubs, $chars, $bool, $pointers) = @_;
@@ -284,59 +283,124 @@ sub eval_write {
    }
    return $write_section;
 }
-sub eval_read {
+sub eval_recover {
    my ($ints, $dubs, $chars, $bool, $pointers) = @_;
-   my $read_section = "";
+   my $recover_section = "";
    # Now we generate the code for the write function
    for my $map ($ints, $dubs, $chars, $bool) {
       for my $key (keys %$map) {
          # attribute level debug statements
          # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n";
-         $read_section .= &spaces() . "CALL read_attribute(dset_id, \'$key\', &\n";
+         $recover_section .= &spaces() . "CALL read_attribute(dset_id, \'$key\', &\n";
          if ($$map{$key} eq '1'){
-            $read_section .= &spaces() . "    type_ptr%$key)\n";
+            $recover_section .= &spaces() . "    type_ptr%$key)\n";
          }
          else {
-            $read_section .= &spaces() . "    type_ptr%$key, $$map{$key})\n";
+            $recover_section .= &spaces() . "    type_ptr%$key, $$map{$key})\n";
          }
       }
    }
    for my $ptr (keys %$pointers) {
       #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg
-      $read_section .= &spaces() . "CALL read_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
-      $read_section .= &spaces() . "WRITE (*,*) \"pointer addr is \", pointer_addr\n";
-      $read_section .= &spaces() . "IF (pointer_addr == \"00000000000000000000000000000000\") THEN\n";
-      $read_section .= &spaces() . "   type_ptr%$ptr => null()\n";
-      $read_section .= &spaces() . "ELSE\n";
-      $read_section .= &spaces() . "   CALL read_type(cpfile_id, pointer_addr, type_ptr%$ptr)\n";
-      $read_section .= &spaces() . "   IF (.NOT. associated(type_ptr%$ptr)) THEN\n";
-      $read_section .= &spaces() . "      write(*,*) \"Failed reading $ptr\"\n";
-      $read_section .= &spaces() . "   ENDIF\n";
-      $read_section .= &spaces() . "ENDIF\n";
+      $recover_section .= &spaces() . "CALL read_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
+      $recover_section .= &spaces() . "WRITE (*,*) \"pointer addr is \", pointer_addr\n";
+      $recover_section .= &spaces() . "IF (pointer_addr == \"00000000000000000000000000000000\") THEN\n";
+      $recover_section .= &spaces() . "   type_ptr%$ptr => null()\n";
+      $recover_section .= &spaces() . "ELSE\n";
+      #$recover_section .= &spaces() . "   type_ptr%$ptr => recover_type(cpfile_id, pointer_addr, type_ptr%$ptr)\n";
+      $recover_section .= &spaces() . "   type_ptr%$ptr => recover_$pointers->{$ptr}(cpfile_id, pointer_addr, type_ptr%$ptr)\n";
+      $recover_section .= &spaces() . "   IF (.NOT. associated(type_ptr%$ptr)) THEN\n";
+      $recover_section .= &spaces() . "      write(*,*) \"Failed recovering $ptr\"\n";
+      $recover_section .= &spaces() . "   ENDIF\n";
+      $recover_section .= &spaces() . "ENDIF\n";
    }
-   return $read_section;
+   return $recover_section;
 }
-my ($calc, $create, $write,$read) = &parse_type();
+my ($calc, $create, $write,$recover) = &parse_type();
 
-# collect our allocatable types into a select
-my $allocate_stmt = spaces() . "SELECT TYPE(type_ptr)\n";
-my $select_type = spaces() . "SELECT TYPE(type_ptr)\n";
+# Template for the function to recover a specific derived type
+# This is necessary since you must return bottom up when returning a pointer
+# in order to prevent losing information
+# This way we allocate the proper type in the right pointer type
+my $recover_function_template =<< "END_TEMPLATE";
+            CLASS(CTYPE) FUNCTION recover_CTYPE(cpfile_id, type_ptr_id, type_ptr)
+               POINTER :: recover_CTYPE
+               CLASS(CTYPE), POINTER :: type_ptr
+               CLASS(DTYPE), POINTER :: abstr_type_ptr
+               CLASS(derived_tree), POINTER :: tree_node_ptr
+               INTEGER(HID_T) :: cpfile_id, dset_id, group_id, &
+                  recover_type_id
+               CHARACTER(LEN=*) :: type_ptr_id
+               INTEGER(HSIZE_T) :: offset = 0, isize
+               INTEGER(HSIZE_T), DIMENSION(1) :: dims = (/0/)
+               INTEGER :: type_num, error
+               recover_CTYPE => type_ptr
+               CALL lookup_pointer(type_ptr_id, pointer_data%dtree, tree_node_ptr)
+               IF (associated(tree_node_ptr)) THEN
+                  SELECT TYPE(tree_node_ptr)
+                  CLASS is (DTYPE_tree)
+                     abstr_type_ptr => tree_node_ptr%val
+                  END SELECT
+               ELSE
+                  CALL h5gopen_f(cpfile_id, 'DTYPE', &
+                     group_id, error)
+                  CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
+                      error)
+
+                  CALL h5tget_size_f(H5T_NATIVE_INTEGER, isize, error)
+                  CALL h5tcreate_f(H5T_COMPOUND_F, isize, recover_type_id, error)
+                  CALL h5tinsert_f(recover_type_id, "type_num", offset, &
+                     H5T_NATIVE_INTEGER, error)
+                  CALL h5dread_f(dset_id, recover_type_id, type_num, dims,&
+                     error)
+                  !ALLOCATE_BLOCK
+                  IF (associated(abstr_type_ptr)) THEN
+                     CALL read_DTYPE(cpfile_id, dset_id, abstr_type_ptr)
+                  ELSE
+                     WRITE (*,*) "CTYPE Allocation Failed"
+                  ENDIF
+                  CALL h5dclose_f(dset_id, error)
+                  CALL h5gclose_f(group_id, error)
+               ENDIF
+               SELECT TYPE(abstr_type_ptr)
+               CLASS is (CTYPE)
+                  recover_CTYPE => abstr_type_ptr
+               CLASS DEFAULT
+                  WRITE (*,*) "Failed recovery of CTYPE"
+               END SELECT
+            END FUNCTION recover_CTYPE
+END_TEMPLATE
+
+# We use an if then block to decide which of our allocatable type we
+# should make our recover object
+my $allocate_stmt = "";
+my $select_stmt = spaces() . "SELECT TYPE(type_ptr)\n";
 while (my ($ind, $var) = each @allocatables) {
-   $allocate_stmt .= spaces() . "TYPE IS ($var)\n";
-   $allocate_stmt .= spaces() . "   ALLOCATE(${var}::type_ptr)\n";
-   $select_type .= spaces() . "TYPE IS ($var)\n";
-   $select_type .= spaces() ."   type_num = $ind\n";
+   $allocate_stmt .= spaces() . "IF (type_num == $ind) THEN\n";
+   $allocate_stmt .= spaces() . "   ALLOCATE(${var}::abstr_type_ptr)\n";
+   $allocate_stmt .= spaces() . "ENDIF\n";
+   $select_stmt .= spaces() . "CLASS is ($var)\n";
+   $select_stmt .= spaces() . "   type_num = $ind\n";
 }
-$allocate_stmt .= spaces() . "END SELECT\n";
+$select_stmt .= spaces() . "CLASS DEFAULT\n";
+$select_stmt .= spaces() . "   WRITE (*,*) \"CTYPE: What are you?????\"\n";
+$select_stmt .= spaces() . "END SELECT\n";
 
-$select_type .= spaces() . "CLASS DEFAULT\n";
-$select_type .= spaces() . "   WRITE (*,*) \"Type is abstract, cannot store\"\n";
-$select_type .= spaces() . "   RETURN\n";
-$select_type .= spaces() . "END SELECT\n";
-#print $calc;
-#print $create;
-#print $write;
-#print $root;
+# Generate the functions for each derived type
+sub generate_recover_function {
+   my ($ctype) = @_;
+   my @template = split '\n', $recover_function_template;
+   for (@template){
+      s/CTYPE/$ctype/g;
+      s/ *!ALLOCATE_BLOCK/$allocate_stmt/;
+   }
+   return join ("\n", @template) . "\n";
+}
+my $recover_functions;
+for (@derived_types) {
+   $recover_functions .= generate_recover_function($_);
+}
+#print $recover_functions;
 
 my $filename = $ARGV[1];
 my $template = "type.f.in";
@@ -353,7 +417,7 @@ sub treetype {
    return $treetype . "_tree";
 }
 my $treetype = treetype();
-print $treetype;
+#print $treetype;
 
 for (<TEMPLATE>) {
 
@@ -369,13 +433,14 @@ for (<TEMPLATE>) {
           or ((/[sg]et_size/ or /PARENT/i) and (not $parenttype)))) {
 
       # Make the template substitutions
-      $_ =~ s/DTYPE/$root/;
+      $_ =~ s/ *!RECOVER_FUNCTIONS/$recover_functions/;
+      $_ =~ s/DTYPE/$root/g;
       $_ =~ s/TREE_TYPE/$treetype/;
       $_ =~ s/ *!CREATE_STUB/$create/;
       $_ =~ s/ *!CALCULATE_STUB/$calc/;
       s/ *!WRITE_STUB/$write/;
-      s/ *!SELECT_TYPE/$select_type/;
-      #s/ *!READ_STUB/$read/;
+      s/ *!SELECT_TYPE/$select_stmt/;
+      s/ *!READ_STUB/$recover/;
       #s/ *!ALLOCATE_STUB/$allocate_stmt/ if (@allocatables);
       print OUTFILE;
    }

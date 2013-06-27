@@ -29,3 +29,6 @@ type particles_stats_d_
    real t_del
    real t_compD
 end
+allocatable
+   particles_stats_d
+end

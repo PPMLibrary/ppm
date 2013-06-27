@@ -6,7 +6,7 @@
 
          CLASS(ppm_t_part_mapping_d_), POINTER :: map
          CLASS(ppm_c_part_mapping_d_), POINTER :: maplist
-         CLASS(ppm_t_particles_d), POINTER :: parts
+         CLASS(ppm_t_particles_d_), POINTER :: parts
          CLASS(particles_stats_d_), POINTER :: stats
          CLASS(ppm_t_neighlist_d_), POINTER :: neigh
          CHARACTER(32) :: pointer_addr
@@ -25,18 +25,21 @@
          ALLOCATE(ppm_t_particles_d::parts)
 
          CALL make_checkpoint_file('test.h5', cpfile_id)
-         !CALL store_ppm_t_part_mapping_d_(cpfile_id, '10', map)
-
-         !CALL push(maplist, map)
          parts%id = 10
          parts%name = "kevin"
          parts%maps => maplist
-
          CALL store_TYPE(cpfile_id, '10', parts)
-         !CALL store_TYPE(cpfile_id, '10', neigh)
-         !pointer_addr= get_pointer(datablock)
-         !CALL store_integer64_1d_pointer(cpfile_id,
-     *   !   pointer_addr, datablock)
+         CALL store_TYPE(cpfile_id, '10', neigh)
+
+         deallocate(parts)
+         parts => recover_ppm_t_particles_d_(cpfile_id, "10", parts)
+         WRITE(*,*) parts%name
+         CALL close_checkpoint_file(cpfile_id, error)
+
+         CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
+         DEALLOCATE (parts)
+         parts => recover_ppm_t_particles_d_(cpfile_id, "p1", parts)
+         WRITE(*,*) parts%isymm
          CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)

@@ -5,7 +5,7 @@ type ppm_t_container
    integer max_id
    integer vec_size
    type ppm_c_neighlist_d_
-      pointer vec ppm_ptr_neighlist_d
+      pointer vec ppm_t_ptr_neighlist_d
       pointer iterator ppm_t_neighlist_d_
    end
    type ppm_c_part_prop_d_
@@ -24,4 +24,10 @@ type ppm_t_container
       pointer vec ppm_t_ptr_operator_discr
       pointer iterator ppm_t_operator_discr_
    end
+end
+allocatable
+   ppm_c_neighlist_d
+   ppm_c_part_prop_d
+   ppm_v_main_abstr
+   ppm_c_operator_discr
 end

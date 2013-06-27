@@ -2,6 +2,7 @@
          USE hdf5
          USE h5lt
          USE ppm_module_core
+         USE ppm_module_mapping_typedef
          USE pointer_tracker
          USE ISO_C_BINDING
 
@@ -35,29 +36,29 @@
                   store_ppm_t_ptr_operator_discr
          END INTERFACE
 
-!         INTERFACE read_type
-!            MODULE PROCEDURE read_ppm_t_main_abstr, &
-!                  read_particles_stats_d_, &
-!                  read_ppm_t_mapping_d_, &
-!                  read_ppm_t_container, &
-!                  read_ppm_t_operator_discr_, &
-!                  read_logical1d_pointer, &
-!                  read_logical2d_pointer, &
-!                  read_complex1d_pointer, &
-!                  read_complex2d_pointer, &
-!                  read_integer64_1d_pointer, &
-!                  read_integer64_2d_pointer, &
-!                  read_real1d_pointer, &
-!                  read_real2d_pointer, &
-!                  read_ppm_t_neighlist_d_, &
-!                  read_ppm_t_ptr_main_abstr, &
-!                  read_ppm_t_ptr_neighlist_d, &
-!                  read_ppm_t_ptr_part_mapping_d, &
-!                  read_ppm_t_ptr_part_prop_d, &
-!                  read_ppm_t_ptr_operator_discr, &
-!                  read_integer1d_pointer, &
-!                  read_integer2d_pointer
-!         END INTERFACE read_type
+!         INTERFACE recover_type
+!            MODULE PROCEDURE recover_ppm_t_ptr_main_abstr, &
+!                  recover_ppm_t_ptr_neighlist_d, &
+!                  recover_ppm_t_ptr_part_mapping_d, &
+!                  recover_ppm_t_ptr_part_prop_d, &
+!                  recover_ppm_t_ptr_operator_discr, &
+!                  recover_integer1d_pointer, &
+!                  recover_integer2d_pointer, &
+!                  recover_logical1d_pointer, &
+!                  recover_logical2d_pointer, &
+!                  recover_complex1d_pointer, &
+!                  recover_complex2d_pointer, &
+!                  recover_integer64_1d_pointer, &
+!                  recover_integer64_2d_pointer, &
+!                  recover_real1d_pointer, &
+!                  recover_real2d_pointer, &
+!                  INCLUDE 'types/read_derived.f'
+!!                  read_ppm_t_main_abstr, &
+!!                  read_particles_stats_d_, &
+!!                  read_ppm_t_mapping_d_, &
+!!                  read_ppm_t_container, &
+!!                  read_ppm_t_operator_discr_, &
+!         END INTERFACE recover_type
 !
          CONTAINS
             ! Creates and initializes the checkpoint file
@@ -113,7 +114,7 @@
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
-            SUBROUTINE open_checkpoint_file(filename, file_id)
+            SUBROUTINE open_checkpoint_file(file_id, filename, error)
                IMPLICIT NONE
 
                ! The filename of the checkpoint
@@ -146,10 +147,11 @@
             ! subroutines for writing individual attributes of intrinsic
             ! types
             INCLUDE 'intrinsic/write_attributes.f'
-            !INCLUDE 'intrinsic/read_attributes.f'
+            INCLUDE 'intrinsic/read_attributes.f'
 
             ! subroutines for reading intrinsic type pointers
             !INCLUDE 'intrinsic/read_types.f'
+            INCLUDE 'intrinsic/recover_types.f'
 
             ! subroutines for the storage of pointer references to
             ! intrinsic types

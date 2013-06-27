@@ -10,11 +10,13 @@ open(OUTPUT, ">ppm_t_ptr.f") or die $!;
 my @template = <TEMPLATE>;
 close TEMPLATE;
 
-for my $ptr (<INPUT>) {
-   chomp $ptr;
+for (<INPUT>) {
+   chomp;
+   my ($ptr, $type) = split " ";
    for (@template){
       my $line = $_;
       $line =~ s/DTYPE/$ptr/g;
+      $line =~ s/CTYPE/$type/g;
       print OUTPUT $line ;
    }
 }
