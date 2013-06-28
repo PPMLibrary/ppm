@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_alloc_5d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -165,7 +165,8 @@
       lcopy    = .FALSE.
       lalloc   = .FALSE.
       lrealloc = .FALSE.
-      IF     (iopt.EQ.ppm_param_alloc_fit_preserve) THEN
+      SELECT CASE (iopt)
+      CASE (ppm_param_alloc_fit_preserve)
          !----------------------------------------------------------------------
          !  fit memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -228,7 +229,7 @@
             lda_new(4) = lda(4)
             lda_new(5) = lda(5)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_fit) THEN
+      CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
@@ -286,7 +287,7 @@
             lda_new(4) = lda(4)
             lda_new(5) = lda(5)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow_preserve) THEN
+      CASE (ppm_param_alloc_grow_preserve)
          !----------------------------------------------------------------------
          !  grow memory and preserve the present contents
          !----------------------------------------------------------------------
@@ -348,7 +349,7 @@
             lda_new(4) = lda(4)
             lda_new(5) = lda(5)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_alloc_grow) THEN
+      CASE (ppm_param_alloc_grow)
          !----------------------------------------------------------------------
          !  grow memory but skip the present contents
          !----------------------------------------------------------------------
@@ -406,7 +407,7 @@
             lda_new(4) = lda(4)
             lda_new(5) = lda(5)
          ENDIF
-      ELSEIF (iopt.EQ.ppm_param_dealloc) THEN
+      CASE (ppm_param_dealloc)
          !----------------------------------------------------------------------
          !  deallocate
          !----------------------------------------------------------------------
@@ -419,7 +420,7 @@
      &             'DATA',__LINE__,info)
             ENDIF
          ENDIF
-      ELSE
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
@@ -427,7 +428,7 @@
          CALL ppm_error(ppm_err_argument,'ppm_alloc_5d',                       &
      &                  'unknown iopt',__LINE__,info)
          GOTO 9999
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate new memory

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_alloc_1d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -84,16 +84,17 @@
       !-------------------------------------------------------------------------
       lalloc   = .FALSE.
       ldealloc = .FALSE.
-      IF (iopt.EQ.ppm_param_alloc_fit) THEN
+      SELECT CASE (iopt)
+      CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
          !----------------------------------------------------------------------
          IF (ASSOCIATED(topo)) ldealloc = .TRUE.
          lalloc   = .TRUE.
-      ELSEIF (iopt.EQ.ppm_param_dealloc) THEN
+      CASE (ppm_param_dealloc)
          ldealloc = .TRUE.
 
-      ELSE
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
@@ -101,7 +102,7 @@
          CALL ppm_error(ppm_err_argument,'ppm_alloc_topo',                       &
      &                  'unknown iopt',__LINE__,info)
          GOTO 9999
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  If reallocating, deallocate old data first

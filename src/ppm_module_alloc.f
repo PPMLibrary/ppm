@@ -46,58 +46,58 @@
       !!! When extending the PPM core or numerical routines these routines *must*
       !!! be used. PPM clients may take advantage of these functionalities.
 
-         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double,&
+        USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double,&
                                   & ppm_kind_int64
 
          !----------------------------------------------------------------------
          !  Work arrays for reallocation.
          !----------------------------------------------------------------------
-      REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work_1ds => NULL()
-      REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: work_1dd => NULL()
-      COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: work_1dsc => NULL()
-      COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: work_1ddc => NULL()
-      INTEGER                 , DIMENSION(:), POINTER :: work_1di => NULL()
-      INTEGER(ppm_kind_int64) , DIMENSION(:), POINTER :: work_1dli => NULL()
-      LOGICAL                 , DIMENSION(:), POINTER :: work_1dl => NULL()
+        REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work_1ds => NULL()
+        REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: work_1dd => NULL()
+        COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: work_1dsc => NULL()
+        COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: work_1ddc => NULL()
+        INTEGER                 , DIMENSION(:), POINTER :: work_1di => NULL()
+        INTEGER(ppm_kind_int64) , DIMENSION(:), POINTER :: work_1dli => NULL()
+        LOGICAL                 , DIMENSION(:), POINTER :: work_1dl => NULL()
 
-      REAL(ppm_kind_single)   , DIMENSION(:,:), POINTER :: work_2ds => NULL()
-      REAL(ppm_kind_double)   , DIMENSION(:,:), POINTER :: work_2dd => NULL()
-      COMPLEX(ppm_kind_single), DIMENSION(:,:), POINTER :: work_2dsc => NULL()
-      COMPLEX(ppm_kind_double), DIMENSION(:,:), POINTER :: work_2ddc => NULL()
-      INTEGER                 , DIMENSION(:,:), POINTER :: work_2di => NULL()
-      INTEGER(ppm_kind_int64) , DIMENSION(:,:), POINTER :: work_2dli => NULL()
-      LOGICAL                 , DIMENSION(:,:), POINTER :: work_2dl => NULL()
+        REAL(ppm_kind_single)   , DIMENSION(:,:), POINTER :: work_2ds => NULL()
+        REAL(ppm_kind_double)   , DIMENSION(:,:), POINTER :: work_2dd => NULL()
+        COMPLEX(ppm_kind_single), DIMENSION(:,:), POINTER :: work_2dsc => NULL()
+        COMPLEX(ppm_kind_double), DIMENSION(:,:), POINTER :: work_2ddc => NULL()
+        INTEGER                 , DIMENSION(:,:), POINTER :: work_2di => NULL()
+        INTEGER(ppm_kind_int64) , DIMENSION(:,:), POINTER :: work_2dli => NULL()
+        LOGICAL                 , DIMENSION(:,:), POINTER :: work_2dl => NULL()
 
-      REAL(ppm_kind_single)   ,DIMENSION(:,:,:),POINTER :: work_3ds => NULL()
-      REAL(ppm_kind_double)   ,DIMENSION(:,:,:),POINTER :: work_3dd => NULL()
-      COMPLEX(ppm_kind_single),DIMENSION(:,:,:),POINTER :: work_3dsc => NULL()
-      COMPLEX(ppm_kind_double),DIMENSION(:,:,:),POINTER :: work_3ddc => NULL()
-      INTEGER                 ,DIMENSION(:,:,:),POINTER :: work_3di => NULL()
-      INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:),POINTER :: work_3dli => NULL()
-      LOGICAL                 ,DIMENSION(:,:,:),POINTER :: work_3dl => NULL()
+        REAL(ppm_kind_single)   ,DIMENSION(:,:,:),POINTER :: work_3ds => NULL()
+        REAL(ppm_kind_double)   ,DIMENSION(:,:,:),POINTER :: work_3dd => NULL()
+        COMPLEX(ppm_kind_single),DIMENSION(:,:,:),POINTER :: work_3dsc => NULL()
+        COMPLEX(ppm_kind_double),DIMENSION(:,:,:),POINTER :: work_3ddc => NULL()
+        INTEGER                 ,DIMENSION(:,:,:),POINTER :: work_3di => NULL()
+        INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:),POINTER :: work_3dli => NULL()
+        LOGICAL                 ,DIMENSION(:,:,:),POINTER :: work_3dl => NULL()
 
-      REAL(ppm_kind_single)   ,DIMENSION(:,:,:,:),POINTER :: work_4ds => NULL()
-      REAL(ppm_kind_double)   ,DIMENSION(:,:,:,:),POINTER :: work_4dd => NULL()
-      COMPLEX(ppm_kind_single),DIMENSION(:,:,:,:),POINTER :: work_4dsc => NULL()
-      COMPLEX(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: work_4ddc => NULL()
-      INTEGER                 ,DIMENSION(:,:,:,:),POINTER :: work_4di => NULL()
-      INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:,:),POINTER :: work_4dli => NULL()
-      LOGICAL                 ,DIMENSION(:,:,:,:),POINTER :: work_4dl => NULL()
+        REAL(ppm_kind_single)   ,DIMENSION(:,:,:,:),POINTER :: work_4ds => NULL()
+        REAL(ppm_kind_double)   ,DIMENSION(:,:,:,:),POINTER :: work_4dd => NULL()
+        COMPLEX(ppm_kind_single),DIMENSION(:,:,:,:),POINTER :: work_4dsc => NULL()
+        COMPLEX(ppm_kind_double),DIMENSION(:,:,:,:),POINTER :: work_4ddc => NULL()
+        INTEGER                 ,DIMENSION(:,:,:,:),POINTER :: work_4di => NULL()
+        INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:,:),POINTER :: work_4dli => NULL()
+        LOGICAL                 ,DIMENSION(:,:,:,:),POINTER :: work_4dl => NULL()
 
-      REAL(ppm_kind_single)   ,DIMENSION(:,:,:,:,:),POINTER::work_5ds => NULL()
-      REAL(ppm_kind_double)   ,DIMENSION(:,:,:,:,:),POINTER::work_5dd => NULL()
-      COMPLEX(ppm_kind_single),DIMENSION(:,:,:,:,:),POINTER::work_5dsc => NULL()
-      COMPLEX(ppm_kind_double),DIMENSION(:,:,:,:,:),POINTER::work_5ddc => NULL()
-      INTEGER                 ,DIMENSION(:,:,:,:,:),POINTER::work_5di => NULL()
-      INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:,:,:),POINTER::work_5dli => NULL()
-      LOGICAL                 ,DIMENSION(:,:,:,:,:),POINTER::work_5dl => NULL()
+        REAL(ppm_kind_single)   ,DIMENSION(:,:,:,:,:),POINTER::work_5ds => NULL()
+        REAL(ppm_kind_double)   ,DIMENSION(:,:,:,:,:),POINTER::work_5dd => NULL()
+        COMPLEX(ppm_kind_single),DIMENSION(:,:,:,:,:),POINTER::work_5dsc => NULL()
+        COMPLEX(ppm_kind_double),DIMENSION(:,:,:,:,:),POINTER::work_5ddc => NULL()
+        INTEGER                 ,DIMENSION(:,:,:,:,:),POINTER::work_5di => NULL()
+        INTEGER(ppm_kind_int64) ,DIMENSION(:,:,:,:,:),POINTER::work_5dli => NULL()
+        LOGICAL                 ,DIMENSION(:,:,:,:,:),POINTER::work_5dl => NULL()
 
-      PRIVATE :: work_1ds,work_1dd,work_1dsc,work_1ddc,work_1di,work_1dl
-      PRIVATE :: work_2ds,work_2dd,work_2dsc,work_2ddc,work_2di,work_2dl
-      PRIVATE :: work_3ds,work_3dd,work_3dsc,work_3ddc,work_3di,work_3dl
-      PRIVATE :: work_4ds,work_4dd,work_4dsc,work_4ddc,work_4di,work_4dl
-      PRIVATE :: work_5ds,work_5dd,work_5dsc,work_5ddc,work_5di,work_5dl
-      PRIVATE :: work_1dli,work_2dli,work_3dli,work_4dli,work_5dli
+        PRIVATE :: work_1ds,work_1dd,work_1dsc,work_1ddc,work_1di,work_1dl
+        PRIVATE :: work_2ds,work_2dd,work_2dsc,work_2ddc,work_2di,work_2dl
+        PRIVATE :: work_3ds,work_3dd,work_3dsc,work_3ddc,work_3di,work_3dl
+        PRIVATE :: work_4ds,work_4dd,work_4dsc,work_4ddc,work_4di,work_4dl
+        PRIVATE :: work_5ds,work_5dd,work_5dsc,work_5ddc,work_5di,work_5dl
+        PRIVATE :: work_1dli,work_2dli,work_3dli,work_4dli,work_5dli
 
          !----------------------------------------------------------------------
          !  Define interfaces to allocation routines
