@@ -33,16 +33,28 @@
 
          deallocate(parts)
          parts => recover_ppm_t_particles_d_(cpfile_id, "10", parts)
-         WRITE(*,*) parts%name
+         IF (associated(parts)) THEN
+            WRITE(*,*) parts%name
+            DEALLOCATE (parts)
+         ELSE
+            WRITE(*,*) "Recovery test 1 failed"
+         ENDIF
          CALL close_checkpoint_file(cpfile_id, error)
 
          CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
-         DEALLOCATE (parts)
          parts => recover_ppm_t_particles_d_(cpfile_id, "p1", parts)
-         WRITE(*,*) parts%isymm
+         IF (associated(parts)) THEN
+            WRITE(*,*) parts%isymm
+            DEALLOCATE(parts)
+         ELSE
+            WRITE(*,*) "Recovery test 2 failed"
+         ENDIF
          CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)
-         !WRITE(*,*) pointer_addr
-         DEALLOCATE(map, stats, parts, neigh)
+         DEALLOCATE(map, stats, neigh)
+
+         IF ("000" == "000") THEN
+            WRITE(*,*) "Equal"
+         ENDIF
       END PROGRAM test_cases

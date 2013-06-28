@@ -86,6 +86,8 @@
 
                !SELECT_TYPE
 
+               CALL write_attribute(dset_id, 'type_id', type_num)
+
                !WRITE_STUB
 
             END SUBROUTINE write_DTYPE
@@ -99,9 +101,9 @@
                CHARACTER(LEN=32) :: pointer_addr
                !CLASS(DTYPE), POINTER :: ptr
                CLASS(DTYPE) :: type_ptr
-               INTEGER :: error
+               !INTEGER :: error
                !LOGICAL :: link_exist
-               CLASS(derived_tree), POINTER :: tree_node_ptr
+               !CLASS(derived_tree), POINTER :: tree_node_ptr
 
                !CALL h5lexists_f(cpfile_id, 'DTYPE/'//type_ptr_id, &
                !   link_exist, error)
@@ -118,6 +120,8 @@
                WRITE(*,*) "Reading DTYPE"
 
                !READ_STUB
+
+               WRITE(*,*) "Done reading DTYPE"
 
             END SUBROUTINE read_DTYPE
 

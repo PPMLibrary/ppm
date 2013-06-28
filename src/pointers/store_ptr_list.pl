@@ -4,7 +4,7 @@ use warnings;
 use strict;
 
 open(INPUT, "<ptrlist.in") or die $!;
-open(TEMPLATE, "<ppm_t_ptr.in") or die $!;
+open(TEMPLATE, "<ppm_t_ptr.f.in") or die $!;
 open(OUTPUT, ">ppm_t_ptr.f") or die $!;
 
 my @template = <TEMPLATE>;

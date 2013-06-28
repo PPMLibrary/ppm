@@ -1,17 +1,21 @@
             SUBROUTINE pointer_insert(tree_group, node, intr_ptr)
                CLASS(pointer_trees), INTENT(INOUT) :: tree_group
                CLASS(pointer_btree) :: node
-               CHARACTER(LEN=32), INTENT(OUT) :: intr_ptr
+               CHARACTER(LEN=*), INTENT(OUT), OPTIONAL :: intr_ptr
                SELECT TYPE (node)
                CLASS is (derived_tree)
                   CALL insert_derived(pointer_data%dtree, node)
                CLASS is (intrinsic_tree)
                   ! generate our character pointer here
-                  CALL insert_intrinsic(tree_group%itree, node, &
-                     pointer_data%num_intrinsic)
+                  IF (present(intr_ptr)) THEN
+                     CALL insert_intrinsic(tree_group%itree, node, &
+                        pointer_data%num_intrinsic)
+                     intr_ptr = node%key
+                  ELSE
+                     CALL insert_intrinsic(tree_group%itree, node)
+                  ENDIF
                   !WRITE (*,*) tree_group%num_intrinsic
                END SELECT
-               intr_ptr = node%key
             END SUBROUTINE pointer_insert
 
             ! Unbalanced insert, perhaps improve later
