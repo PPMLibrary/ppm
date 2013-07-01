@@ -131,18 +131,7 @@
       TYPE(ppm_t_topo),               POINTER :: topo => NULL()
 
       ! timer
-<<<<<<< HEAD
       REAL(MK)                                :: t0
-=======
-      REAL(MK)                                   :: t0
-      ! effective number of particles
-      INTEGER                                    :: npdx
-      ! counters
-      INTEGER                                    :: i,idom,ibox,jbox
-      INTEGER                                    :: ipart,jpart,ip,jp,maxvlen
-      INTEGER                                    :: cbox,iinter,j,k,maxvlen1
-      INTEGER                                    :: ii,jj,kk
->>>>>>> b5b405f5561e052251f7800843cb85d04917ceea
       ! coordinate difference
       REAL(MK)                                :: dx,dy,dz
       ! inter particle distance
@@ -176,16 +165,9 @@
       CHARACTER(LEN=ppm_char)                 :: mesg
 
       ! store vlist?
-<<<<<<< HEAD
       LOGICAL                                 :: lst
       LOGICAL                                 :: valid
       LOGICAL                                 :: lpidx
-=======
-      LOGICAL                                    :: lst
-      LOGICAL                                    :: valid
-      TYPE(ppm_t_topo)       , POINTER           :: topo => NULL()
-      LOGICAL                                    :: lpidx
->>>>>>> b5b405f5561e052251f7800843cb85d04917ceea
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -230,31 +212,6 @@
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
-<<<<<<< HEAD
-=======
-      !-------------------------------------------------------------------------
-      ! Determine if there are any (non-)symmetric boundary conditions
-      !-------------------------------------------------------------------------
-      nsbc = 0
-      isbc(:) = .FALSE.
-      DO i=1,2*ppm_dim
-          SELECT CASE (topo%bcdef(i))
-          CASE (ppm_param_bcdef_symmetry)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_antisymmetry)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_neumann)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          CASE (ppm_param_bcdef_dirichlet)
-              nsbc = nsbc + 1
-              isbc(i) = .TRUE.
-          END SELECT
-      ENDDO
-
->>>>>>> b5b405f5561e052251f7800843cb85d04917ceea
       !-------------------------------------------------------------------------
       !  Boxes need to be cutoff+skin in all directions !
       !-------------------------------------------------------------------------
@@ -309,7 +266,6 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-<<<<<<< HEAD
       !  Only build and store the lists if needed
       !-------------------------------------------------------------------------
       SELECT CASE (lst)
@@ -474,15 +430,6 @@
              ENDDO                       ! k
           ENDDO                          ! idom
 
-          !-------------------------------------------------------------------------
-          !  Maximum Verlet list length
-          !-------------------------------------------------------------------------
-          maxvlen = MAXVAL(nvlist)
-          IF (ppm_debug .GT. 0) THEN
-             WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
-             CALL ppm_write(ppm_rank,'ppm_neighlist_vlist',mesg,info)
-          ENDIF
-
       CASE (.TRUE.)       ! IF (lst) THEN
           !-------------------------------------------------------------------------
           !  Determine the aproximate size of Verlet lists
@@ -503,38 +450,12 @@
              maxvlen = INT(3.14_MK*maxvlen)
           ENDIF
 
-=======
-      !  Determine the aproximate size of Verlet lists
-      !-------------------------------------------------------------------------
-      maxvlen  = 0
-      DO idom=1,topo%nsublist
-         maxvlen1 = MAXVAL(CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx)
-         maxvlen  = MAX(maxvlen,maxvlen1)
-      ENDDO ! idom
-
-      ! Maximum Verlet list length is computed as
-      ! the maximum density per cell times volume of
-      ! a sphere (or an area of a 2D circle) with
-      ! radius equlas to cutoff radius
-      IF (ppm_dim.EQ.3) THEN
-         maxvlen = INT(4.18_MK*maxvlen)
-      Else If (ppm_dim.EQ.2) THEN
-         maxvlen = INT(3.14_MK*maxvlen)
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Only build and store the lists if needed
-      !-------------------------------------------------------------------------
-      IF (lst) THEN
->>>>>>> b5b405f5561e052251f7800843cb85d04917ceea
-          ii = npdx
-
           !---------------------------------------------------------------------
           !  Allocate memory for Verlet lists
           !---------------------------------------------------------------------
           iopt = ppm_param_alloc_grow
           lda(1) = maxvlen
-          lda(2) = ii
+          lda(2) = npdx
           CALL ppm_alloc(vlist,lda,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
@@ -712,7 +633,6 @@
               ENDDO                       ! k
           ENDDO                           ! idom
 
-<<<<<<< HEAD
           !---------------------------------------------------------------------
           !  Highest particle index with non-zero nvlist
           !---------------------------------------------------------------------
@@ -748,44 +668,8 @@
 !               GOTO 9999
 !           ENDIF
           vlist=>vlist(1:maxvlen,1:ii)
+
       END SELECT ! lstore
-=======
-      !---------------------------------------------------------------------
-      !  Highest particle index with non-zero nvlist
-      !---------------------------------------------------------------------
-      ii=MAXLOC(nvlist,1,nvlist.GT.0)
-      !-------------------------------------------------------------------------
-      !  Maximum Verlet list length
-      !-------------------------------------------------------------------------
-      maxvlen = MAXVAL(nvlist)
-      IF (ppm_debug .GT. 0) THEN
-          WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
-          CALL ppm_write(ppm_rank,'ppm_neighlist_vlist',mesg,info)
-      ENDIF
-
-!       iopt = ppm_param_alloc_fit_preserve
-!       lda(1) = ii
-!       CALL ppm_alloc(nvlist,lda,iopt,info)
-!       IF (info .NE. 0) THEN
-!           info = ppm_error_fatal
-!           CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-!      &         'Verlet list sizes NVLIST',__LINE__,info)
-!           GOTO 9999
-!       ENDIF
-      nvlist=>nvlist(1:ii)
->>>>>>> b5b405f5561e052251f7800843cb85d04917ceea
-
-!       iopt = ppm_param_alloc_fit_preserve
-!       lda(1) = maxvlen
-!       lda(2) = ii
-!       CALL ppm_alloc(vlist,lda,iopt,info)
-!       IF (info .NE. 0) THEN
-!           info = ppm_error_fatal
-!           CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-!      &         'Verlet list sizes NVLIST',__LINE__,info)
-!           GOTO 9999
-!       ENDIF
-      vlist=>vlist(1:maxvlen,1:ii)
 
       !-------------------------------------------------------------------------
       !  Free work cell lists
