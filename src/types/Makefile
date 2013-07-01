@@ -10,7 +10,8 @@ all: $(TYPES) type.f.in read_derived.f
 read_derived.f: read_gen.pl
 	./read_gen.pl $(TYPES:.f=.def)
 
-.def.f:
+#.def.f:
+%.f:%.def type.f.in typefc.pl
 	./typefc.pl $< $@
 
 remake: clean all
