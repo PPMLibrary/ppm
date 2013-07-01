@@ -41,6 +41,7 @@ INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 #define  _MK _ppm_kind_double
 #include "part/particles_typedef.f"
 
+CHARACTER(LEN=ppm_char)         :: cbuf
 INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 !!! Number of elements in all dimensions for allocation
 
