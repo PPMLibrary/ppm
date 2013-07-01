@@ -46,6 +46,10 @@ integer :: gen1mb_info
   integer, dimension(:,:),pointer :: vlist=>NULL()
   character(len=15)               :: vtkfilename
   character(len=3)                :: procbuf
+  INTEGER :: error
+  CHARACTER(LEN=32) :: pointer_addr
+  LOGICAL :: TEST_READ = .TRUE.
+  !LOGICAL :: TEST_READ = .FALSE.
 
   ! Prepare VTK filename
   write(procbuf,'(I3)')   ppm_nproc
@@ -116,19 +120,29 @@ integer :: gen1mb_info
   cutoff = 0.05_mk
   skin = 0.1_mk*cutoff
 
-      !CALL OPEN_checkpoint_file('checkpoint.h5', checkpoint_file)
-      !parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,'p1', parts_abstr)
-      !SELECT TYPE(parts_abstr)
-      !TYPE is(ppm_t_particles_d)
-      !   parts => parts_abstr
-      !END SELECT
-      !IF (.not. associated(parts)) THEN
-      !   STOP "Could not read in particle"
-      !END IF
-      !CALL close_checkpoint_file(checkpoint_file, info)
-      ALLOCATE (ppm_t_particles_d::parts)
   ! Create topology
   call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
+
+IF (TEST_READ) THEN
+      CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5', error)
+      pointer_addr = "30788A02000000004096700000000000"
+      parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,pointer_addr, parts_abstr)
+      IF (.not. associated(parts_abstr)) THEN
+         STOP "Could not read in particle"
+      ELSE
+         SELECT TYPE(parts_abstr)
+         TYPE is(ppm_t_particles_d)
+            parts => parts_abstr
+            dx => parts%props%vec(1)%t
+            procid => parts%props%vec(2)%t
+            call parts%comp_neighlist(info)
+            nlist => parts%get_neighlist()
+            call parts%apply_bc(info)
+         END SELECT
+      END IF
+      CALL close_checkpoint_file(checkpoint_file, info)
+ELSE
+! BEGIN INITIALIZATIONS
   ! Create particles
   allocate(parts,stat=info)
   IF (info.NE.0) THEN
@@ -140,7 +154,7 @@ integer :: gen1mb_info
   END IF
   call parts%initialize(Npart, info, topoid=topo, distrib=ppm_param_part_init_cartesian, cutoff=cutoff + skin)
   ! Apply boundary conditions
-  call parts%apply_bc(info)
+ call parts%apply_bc(info)
   ! Do the global mapping
   call parts%map(info,global=.true.,topoid=topo)
   IF (info.NE.0) THEN
@@ -158,10 +172,6 @@ integer :: gen1mb_info
   
   ! this line, so part create_prop
   call parts%create_prop(info ,name='"displace"',lda=ppm_dim,part_prop=dx,zero=.true.)
-   !CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-   !CALL store_TYPE(checkpoint_file,'p1', parts)
-   !CALL close_checkpoint_file(checkpoint_file, info)
-   WRITE (*,*) parts%itime
   IF (info.NE.0) THEN
     info = ppm_error_error
     CALL ppm_error(ppm_err_sub_failed, &
@@ -191,23 +201,29 @@ integer :: gen1mb_info
       caller, 60 , info)
     GOTO 9999
   END IF
-  nlist => parts%get_neighlist()
-
+ nlist => parts%get_neighlist()
+   CALL make_checkpoint_file('checkpoint-end.h5', checkpoint_file)
+   pointer_addr =  get_pointer(parts)
+   WRITE(*,*) pointer_addr
+   CALL store_type(checkpoint_file,pointer_addr, parts)
+   CALL close_checkpoint_file(checkpoint_file, info)
+ENDIF
+! END INITIALIZATIONS
   ! Time statistics
-  call ppm_tstats_setup(1,info)
-  call ppm_tstats_add('iteration',iter_time,info)
+ call ppm_tstats_setup(1,info)
+ call ppm_tstats_add('iteration',iter_time,info)
   ! Enter the time loop
   t = 0.0_mk
   do while (t .le. stop_time)
     call ppm_tstats_tic(iter_time,st+1,info)
     
-    IF (t == 10 ) THEN
-      CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-      CALL store_TYPE(checkpoint_file,'p1', parts)
-      CALL close_checkpoint_file(checkpoint_file, info)
-      WRITE(*,*) "write checkpoint"
-      WRITE (*,*) parts%itime
-   ENDIF
+    !IF (t == 10 ) THEN
+      !CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
+      !CALL store_TYPE(checkpoint_file,'p1', parts)
+      !CALL close_checkpoint_file(checkpoint_file, info)
+      !WRITE(*,*) "write checkpoint"
+      !WRITE (*,*) parts%itime
+   !ENDIF
     maxdisp = 0.0_mk
     allmaxdisp = 0.0_mk
         WRITE(failbuf,*) "**********TIME STEP**********: ",&
@@ -273,8 +289,10 @@ integer :: gen1mb_info
     ! Re-do the ghost mappings
     call parts%map_ghosts(info)
     
+    WRITE(*,*) "Comp neighlists"
     ! Re-compute neighbor lists
     call parts%comp_neighlist(info)
+    WRITE(*,*) "done comp neighlists"
     
     nlist%uptodate = .TRUE.
     
@@ -304,11 +322,6 @@ integer :: gen1mb_info
     GOTO 9999
   END IF
 9999 continue
-   WRITE (*,*) parts%itime
-   CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
-   CALL store_type(checkpoint_file,'p1', parts)
-   CALL close_checkpoint_file(checkpoint_file, info)
-   WRITE (*,*) parts%itime
 end program
 
 

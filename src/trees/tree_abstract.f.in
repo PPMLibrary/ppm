@@ -69,7 +69,7 @@
                !     check associated is an select typefunction to
                !     check the ptrs if they are associated
                ELSE
-                  !WRITE(*,*) "same thing, overwriting"
+                  WRITE(*,*) "Overwriting existing key"
                   tree%key = node%key
                ENDIF
             END SUBROUTINE insert_intrinsic

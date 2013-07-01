@@ -4,6 +4,14 @@ package TypeCompiler;
 use warnings;
 use strict;
 
+# 5:debug
+# 4:info
+# 3:warning
+# 2:error
+# 1:critical
+# 0:none
+my $debug = 5;
+
 my $root;
 my ($csize, $isize, $dsize);
 my @allocatables;
@@ -257,29 +265,30 @@ sub eval_write {
    for my $map ($ints, $dubs, $chars, $bool) {
       for my $key (keys %$map) {
          # attribute level debug statements
-         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n"; # dbg
-         $write_section .= &spaces() . "CALL write_attribute(dset_id, \'$key\', &\n";
+         $write_section .= spaces() . "WRITE (*,*) \"$key\"\n" if $debug >= 4;
+         $write_section .= spaces() . "CALL write_attribute(dset_id, \'$key\', &\n";
          if ($$map{$key} eq '1'){
-            $write_section .= &spaces() . "    type_ptr%$key)\n";
+            $write_section .= spaces() . "    type_ptr%$key)\n";
          }
          else {
-            $write_section .= &spaces() . "    type_ptr%$key, $$map{$key})\n";
+            $write_section .= spaces() . "    type_ptr%$key, $$map{$key})\n";
          }
       }
    }
    for my $ptr (keys %$pointers) {
-      #$write_section .= &spaces() . "WRITE (*,*) \"$ptr\"\n"; # dbg
-      $write_section .= &spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
-      $write_section .= &spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
-      #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n"; # dbg
+      $write_section .= spaces() . "WRITE (*,*) \"$ptr\"\n" if $debug >= 4 ;
+      $write_section .= spaces() . "IF (associated(type_ptr%$ptr)) THEN\n";
+      $write_section .= spaces() . "   pointer_addr = get_pointer(type_ptr%$ptr)\n";
+      $write_section .= spaces() . "   WRITE(*,*) pointer_addr\n" if $debug >= 5;
+      #$write_section .= &spaces() . "   call write_tree(pointer_data%itree)\n";
       #$write_section .= &spaces() . "   CALL store_$$pointers{$ptr}(cpfile_id, &\n";
-      $write_section .= &spaces() . "   CALL store_type(cpfile_id, &\n";
-      $write_section .= &spaces() . "       pointer_addr, type_ptr%$ptr)\n";
-      $write_section .= &spaces() . "ELSE\n";
-      $write_section .= &spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
-      # $write_section .= &spaces() . "   WRITE (*,*) \"   is null\"\n"; # dbg
-      $write_section .= &spaces() . "ENDIF\n";
-      $write_section .= &spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
+      $write_section .= spaces() . "   CALL store_type(cpfile_id, &\n";
+      $write_section .= spaces() . "       pointer_addr, type_ptr%$ptr)\n";
+      $write_section .= spaces() . "ELSE\n";
+      $write_section .= spaces() . "   pointer_addr = \"00000000000000000000000000000000\"\n";
+      $write_section .= spaces() . "   WRITE (*,*) \"   is null\"\n" if $debug >= 4;
+      $write_section .= spaces() . "ENDIF\n";
+      $write_section .= spaces() . "CALL write_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
    }
    return $write_section;
 }
@@ -290,18 +299,18 @@ sub eval_recover {
    for my $map ($ints, $dubs, $chars, $bool) {
       for my $key (keys %$map) {
          # attribute level debug statements
-         # $write_section .= &spaces() . "WRITE (*,*) \"$key\"\n";
-         $recover_section .= &spaces() . "CALL read_attribute(dset_id, \'$key\', &\n";
+         $recover_section .= spaces() . "WRITE (*,*) \"$key\"\n" if $debug >= 4;
+         $recover_section .= spaces() . "CALL read_attribute(dset_id, \'$key\', &\n";
          if ($$map{$key} eq '1'){
-            $recover_section .= &spaces() . "    type_ptr%$key)\n";
+            $recover_section .= spaces() . "    type_ptr%$key)\n";
          }
          else {
-            $recover_section .= &spaces() . "    type_ptr%$key, $$map{$key})\n";
+            $recover_section .= spaces() . "    type_ptr%$key, $$map{$key})\n";
          }
       }
    }
    for my $ptr (keys %$pointers) {
-      $recover_section .= spaces() . "WRITE (*,*) \"attr_read $ptr\"\n"; # dbg
+      $recover_section .= spaces() . "WRITE (*,*) \"attr_read $ptr\"\n" if $debug >= 4;
       $recover_section .= spaces() . "CALL read_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
       $recover_section .= spaces() . "WRITE (*,*) \"pointer addr is \", pointer_addr\n";
       $recover_section .= spaces() . "IF (pointer_addr .EQ. \"00000000000000000000000000000000\") THEN\n";

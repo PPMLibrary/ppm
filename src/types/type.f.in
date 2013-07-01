@@ -62,7 +62,7 @@
                CALL h5dcreate_f(group_id, type_ptr_id, type_id, &
                    dspace_id, dset_id, error)
 
-               !WRITE(*,*) "storing DTYPE"
+               WRITE(*,*) "storing DTYPE"
                CALL write_DTYPE(cpfile_id, dset_id, type_ptr)
                !CALL write_TYPE(dset_id, type_ptr)
                !WRITE(*,*) "stored DTYPE"

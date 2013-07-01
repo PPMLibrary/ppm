@@ -160,7 +160,7 @@
                   RETURN
                END IF
 
-               rank = 1
+               rank = 2
                dims = shape(ptr)
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
@@ -216,7 +216,7 @@
                   RETURN
                END IF
 
-               rank = 1
+               rank = 2
                dims = shape(ptr)
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)

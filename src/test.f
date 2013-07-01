@@ -4,6 +4,7 @@
          IMPLICIT NONE
 
 
+         TYPE(ppm_t_particles_d), POINTER :: dumb
          CLASS(ppm_t_part_mapping_d_), POINTER :: map
          CLASS(ppm_c_part_mapping_d_), POINTER :: maplist
          CLASS(ppm_t_particles_d_), POINTER :: parts
@@ -42,9 +43,20 @@
          CALL close_checkpoint_file(cpfile_id, error)
 
          CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
-         parts => recover_ppm_t_particles_d_(cpfile_id, "p1", parts)
+         pointer_addr = "30788A02000000004096700000000000"
+         parts => recover_ppm_t_particles_d_(cpfile_id,
+     C      pointer_addr, parts)
          IF (associated(parts)) THEN
             WRITE(*,*) parts%isymm
+            WRITE(*,*) parts%stats%nb_ghost_push
+            WRITE (*,*) parts%neighs%vec_size
+            WRITE(*,*) parts%neighs%vec(1)%t%isymm
+            SELECT TYPE (parts)
+            TYPE is(ppm_t_particles_d)
+               neigh => parts%neighs%begin()
+               WRITE(*,*) neigh%nneighmax
+               !neigh => parts%get_neighlist()
+            END SELECT
             DEALLOCATE(parts)
          ELSE
             WRITE(*,*) "Recovery test 2 failed"
