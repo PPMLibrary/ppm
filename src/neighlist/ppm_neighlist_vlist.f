@@ -301,9 +301,9 @@
                          DO iinter=1,nnp
                              ! determine box indices for this interaction
                              ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-        &                           n2*inp(3,iinter))
+                             &                          n2*inp(3,iinter))
                              jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-        &                           n2*jnp(3,iinter))
+                             &                          n2*jnp(3,iinter))
                              !-----------------------------------------------------
                              !  Read indices and check if empty
                              !-----------------------------------------------------
@@ -445,9 +445,9 @@
           ! a sphere (or an area of a 2D circle) with
           ! radius equlas to cutoff radius
           IF (ppm_dim.EQ.3) THEN
-             maxvlen = INT(4.18_MK*maxvlen)
+             maxvlen = INT(4.18*maxvlen)
           Else If (ppm_dim.EQ.2) THEN
-             maxvlen = INT(3.14_MK*maxvlen)
+             maxvlen = INT(3.14*maxvlen)
           ENDIF
 
           !---------------------------------------------------------------------
@@ -497,9 +497,9 @@
                           DO iinter=1,nnp
                               ! determine box indices for this interaction
                               ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-     &                           n2*inp(3,iinter))
+                              &                          n2*inp(3,iinter))
                               jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-     &                           n2*jnp(3,iinter))
+                              &                          n2*jnp(3,iinter))
                               !-------------------------------------------------
                               !  Read indices and check if empty
                               !-------------------------------------------------
