@@ -10,7 +10,7 @@ use strict;
 # 2:error
 # 1:critical
 # 0:none
-my $debug = 5;
+my $debug = 3;
 
 my $root;
 my ($csize, $isize, $dsize);

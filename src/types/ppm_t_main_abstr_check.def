@@ -29,6 +29,7 @@ type ppm_t_main_abstr
       type ppm_t_particles_d_
          pointer xp real2d_pointer
          integer Npart
+         integer Mpart
          logical flags ppm_param_length_partflags
          integer active_topoid
          pointer gi ppm_t_part_prop_d_

@@ -48,6 +48,7 @@ integer :: gen1mb_info
   character(len=3)                :: procbuf
   INTEGER :: error
   CHARACTER(LEN=32) :: pointer_addr
+  CHARACTER(LEN=32) :: init_part = "30E8BF0000000000C09E700000000000"
   LOGICAL :: TEST_READ = .TRUE.
   !LOGICAL :: TEST_READ = .FALSE.
 
@@ -125,8 +126,7 @@ integer :: gen1mb_info
 
 IF (TEST_READ) THEN
       CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5', error)
-      pointer_addr = "30788A02000000004096700000000000"
-      parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,pointer_addr, parts_abstr)
+      parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,init_part, parts_abstr)
       IF (.not. associated(parts_abstr)) THEN
          STOP "Could not read in particle"
       ELSE
@@ -135,9 +135,14 @@ IF (TEST_READ) THEN
             parts => parts_abstr
             dx => parts%props%vec(1)%t
             procid => parts%props%vec(2)%t
-            call parts%comp_neighlist(info)
-            nlist => parts%get_neighlist()
+            WRITE(*,*) "xp", (parts%xp(1,info), info=1,10)
+            call parts%map_ghosts(info)
+            !parts%active_topoid = topo
+            WRITE(*,*) "Mpart", parts%Mpart
+            !call parts%comp_neighlist(info)
+            WRITE(*,*) "Mpart after shit", parts%Mpart
             call parts%apply_bc(info)
+            nlist => parts%get_neighlist()
          END SELECT
       END IF
       CALL close_checkpoint_file(checkpoint_file, info)
@@ -214,6 +219,7 @@ ENDIF
  call ppm_tstats_add('iteration',iter_time,info)
   ! Enter the time loop
   t = 0.0_mk
+  WRITE(*,*) "Mpart check " , parts%Mpart
   do while (t .le. stop_time)
     call ppm_tstats_tic(iter_time,st+1,info)
     
@@ -286,11 +292,13 @@ ENDIF
       gen865_procid_wp(gen865_p) = ppm_rank
     end do
     
+  WRITE(*,*) "Mpart check 1 " , parts%Mpart
     ! Re-do the ghost mappings
     call parts%map_ghosts(info)
     
     WRITE(*,*) "Comp neighlists"
     ! Re-compute neighbor lists
+  WRITE(*,*) "Mpart check prior " , parts%Mpart
     call parts%comp_neighlist(info)
     WRITE(*,*) "done comp neighlists"
     

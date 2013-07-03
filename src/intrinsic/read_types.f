@@ -121,7 +121,7 @@
                   tclass, tsize, error)
                ALLOCATE (ptr(int(dims(1))))
                CALL h5dopen_f(group_id, ptr_addr, dset_id, error)
-               CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, &
+               CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, &
                   ptr, dims, error)
                CALL h5dclose_f(dset_id, error)
                !CALL h5ltread_dataset_f(group_id, "test", &
@@ -165,13 +165,14 @@
                   RETURN
                ENDIF
                rank = 2
+               write(*,*) "Reading 2d real pointer"
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
                CALL h5ltget_dataset_info_f(group_id, ptr_addr, dims, &
                   tclass, tsize, error)
                ALLOCATE (ptr(int(dims(1)),int(dims(2))))
                CALL h5dopen_f(group_id, ptr_addr, dset_id, error)
-               CALL h5dread_f(dset_id, H5T_NATIVE_INTEGER, &
+               CALL h5dread_f(dset_id, H5T_NATIVE_DOUBLE, &
                   ptr, dims, error)
                CALL h5dclose_f(dset_id, error)
                !CALL h5ltread_dataset_f(group_id, "test", &

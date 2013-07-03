@@ -55,6 +55,7 @@
             TYPE is(ppm_t_particles_d)
                neigh => parts%neighs%begin()
                WRITE(*,*) neigh%nneighmax
+               WRITE(*,*) (parts%xp(1,error), error=1,20)
                !neigh => parts%get_neighlist()
             END SELECT
             DEALLOCATE(parts)
