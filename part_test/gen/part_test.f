@@ -135,12 +135,11 @@ IF (TEST_READ) THEN
             parts => parts_abstr
             dx => parts%props%vec(1)%t
             procid => parts%props%vec(2)%t
-            WRITE(*,*) "xp", (parts%xp(1,info), info=1,10)
+            !WRITE(*,*) "xp", (parts%xp(1,info), info=1,10)
             call parts%map_ghosts(info)
             !parts%active_topoid = topo
-            WRITE(*,*) "Mpart", parts%Mpart
+            !WRITE(*,*) "Mpart", parts%Mpart
             !call parts%comp_neighlist(info)
-            WRITE(*,*) "Mpart after shit", parts%Mpart
             call parts%apply_bc(info)
             nlist => parts%get_neighlist()
          END SELECT
@@ -219,7 +218,6 @@ ENDIF
  call ppm_tstats_add('iteration',iter_time,info)
   ! Enter the time loop
   t = 0.0_mk
-  WRITE(*,*) "Mpart check " , parts%Mpart
   do while (t .le. stop_time)
     call ppm_tstats_tic(iter_time,st+1,info)
     
@@ -292,15 +290,11 @@ ENDIF
       gen865_procid_wp(gen865_p) = ppm_rank
     end do
     
-  WRITE(*,*) "Mpart check 1 " , parts%Mpart
     ! Re-do the ghost mappings
     call parts%map_ghosts(info)
     
-    WRITE(*,*) "Comp neighlists"
     ! Re-compute neighbor lists
-  WRITE(*,*) "Mpart check prior " , parts%Mpart
     call parts%comp_neighlist(info)
-    WRITE(*,*) "done comp neighlists"
     
     nlist%uptodate = .TRUE.
     
