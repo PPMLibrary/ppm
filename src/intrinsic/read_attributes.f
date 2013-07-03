@@ -106,7 +106,7 @@
                rank = 1
                dims = (/length/)
                offset = 0
-               WRITE(*,*) "reading ptr ", dname
+               !WRITE(*,*) "reading ptr ", dname !INFO
 
                ! Create the type properties
                ! preserve partially initialized fields

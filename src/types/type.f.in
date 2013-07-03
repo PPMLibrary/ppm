@@ -62,10 +62,10 @@
                CALL h5dcreate_f(group_id, type_ptr_id, type_id, &
                    dspace_id, dset_id, error)
 
-               WRITE(*,*) "storing DTYPE"
+               WRITE(*,*) "storing DTYPE" !INFO
                CALL write_DTYPE(cpfile_id, dset_id, type_ptr)
                !CALL write_TYPE(dset_id, type_ptr)
-               !WRITE(*,*) "stored DTYPE"
+               WRITE(*,*) "stored DTYPE" !INFO
 
                CALL h5dclose_f(dset_id, error)
                CALL h5sclose_f(dspace_id, error)
@@ -117,11 +117,11 @@
                !CALL h5gopen_f(cpfile_id, 'DTYPE', &
                !   group_id, error)
 
-               WRITE(*,*) "Reading DTYPE"
+               WRITE(*,*) "Reading DTYPE" !INFO
 
                !READ_STUB
 
-               WRITE(*,*) "Done reading DTYPE"
+               WRITE(*,*) "Done reading DTYPE" !INFO
 
             END SUBROUTINE read_DTYPE
 

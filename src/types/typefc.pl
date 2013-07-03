@@ -312,9 +312,9 @@ sub eval_recover {
    for my $ptr (keys %$pointers) {
       $recover_section .= spaces() . "WRITE (*,*) \"attr_read $ptr\"\n" if $debug >= 4;
       $recover_section .= spaces() . "CALL read_attribute(dset_id, \"$ptr\", pointer_addr, 32)\n";
-      $recover_section .= spaces() . "WRITE (*,*) \"pointer addr is \", pointer_addr\n";
+      $recover_section .= spaces() . "WRITE (*,*) \"pointer addr is \", pointer_addr\n" if $debug >= 5;
       $recover_section .= spaces() . "IF (pointer_addr .EQ. \"00000000000000000000000000000000\") THEN\n";
-      $recover_section .= spaces() . "   WRITE(*,*) \"Null pointer\"\n";
+      $recover_section .= spaces() . "   WRITE(*,*) \"Null pointer\"\n" if $debug >= 5;
       $recover_section .= spaces() . "   type_ptr%$ptr => null()\n";
       $recover_section .= spaces() . "ELSE\n";
       #$recover_section .= &spaces() . "   type_ptr%$ptr => recover_type(cpfile_id, pointer_addr, type_ptr%$ptr)\n";
@@ -346,16 +346,16 @@ my $recover_function_template =<< "END_TEMPLATE";
                INTEGER :: type_num, error
                type_ptr_res => type_ptr
                type_num = -1
-               WRITE(*,*) \"Start CTYPE recovery\"
+               WRITE(*,*) \"Start CTYPE recovery\" !DEBUG
                CALL lookup_pointer(type_ptr_id, pointer_data%dtree, tree_node_ptr)
                IF (associated(tree_node_ptr)) THEN
-                  WRITE(*,*) \"Cached, associating from tree\"
+                  WRITE(*,*) \"Cached, associating from tree\" !INFO
                   SELECT TYPE(tree_node_ptr)
                   CLASS is (DTYPE_tree)
                      abstr_type_ptr => tree_node_ptr%val
                   END SELECT
                ELSE
-                  WRITE(*,*) \"Reading from checkpoint file\"
+                  WRITE(*,*) \"Reading from checkpoint file\" !INFO
                   CALL h5gopen_f(cpfile_id, 'DTYPE', &
                      group_id, error)
                   CALL h5dopen_f(group_id, type_ptr_id, dset_id, &
@@ -367,17 +367,17 @@ my $recover_function_template =<< "END_TEMPLATE";
                      H5T_NATIVE_INTEGER, error)
                   CALL h5dread_f(dset_id, recover_type_id, type_num, dims,&
                      error)
-                  WRITE (*,*) \"Allocating memory for input with type_id\", type_num
+                  WRITE (*,*) \"Allocating memory for input with type_id\", type_num !INFO
                   !ALLOCATE_BLOCK
                   IF (associated(abstr_type_ptr)) THEN
-                     WRITE(*,*) \"Recording allocated pointer in tree\"
+                     WRITE(*,*) \"Recording allocated pointer in tree\" !INFO
                      ALLOCATE(new_pointer)
                      new_pointer%val => abstr_type_ptr
                      new_pointer%key = type_ptr_id
                      CALL pointer_insert(pointer_data, new_pointer)
                      CALL read_DTYPE(cpfile_id, dset_id, abstr_type_ptr)
                   ELSE
-                     WRITE (*,*) "CTYPE Allocation Failed"
+                     WRITE (*,*) "CTYPE Allocation Failed" !ERROR
                   ENDIF
                   CALL h5dclose_f(dset_id, error)
                   CALL h5gclose_f(group_id, error)
@@ -387,7 +387,7 @@ my $recover_function_template =<< "END_TEMPLATE";
                   type_ptr_res => abstr_type_ptr
                CLASS DEFAULT
                   type_ptr_res => null()
-                  WRITE (*,*) "Failed recovery of CTYPE"
+                  WRITE (*,*) "Failed recovery of CTYPE" !ERROR
                END SELECT
             END FUNCTION recover_CTYPE
 END_TEMPLATE
@@ -396,7 +396,7 @@ END_TEMPLATE
 # should make our recover object
 my $allocate_stmt = spaces() . "IF (type_num < 0) THEN\n";
 $allocate_stmt .= spaces() . "   abstr_type_ptr => null()\n";
-$allocate_stmt .= spaces() . "   WRITE (*,*) \"This type doesn't exist\", type_num\n";
+$allocate_stmt .= spaces() . "   WRITE (*,*) \"This type doesn't exist\", type_num\n" if $debug >= 2;
 my $select_stmt = spaces() . "SELECT TYPE(type_ptr)\n";
 while (my ($ind, $var) = each @allocatables) {
    $allocate_stmt .= spaces() . "ELSE IF (type_num == $ind) THEN\n";
@@ -407,7 +407,7 @@ while (my ($ind, $var) = each @allocatables) {
 $allocate_stmt .= spaces() . "ENDIF\n";
 $select_stmt .= spaces() . "CLASS DEFAULT\n";
 $select_stmt .= spaces() . "   type_num = -1\n";
-$select_stmt .= spaces() . "   WRITE (*,*) \"CTYPE: What are you?????\"\n";
+$select_stmt .= spaces() . "   WRITE (*,*) \"CTYPE: What are you?????\"\n" if $debug >= 3;
 $select_stmt .= spaces() . "END SELECT\n";
 
 sub treetype {
@@ -418,11 +418,26 @@ sub treetype {
 }
 my $treetype = treetype();
 
+sub check_log_level {
+   my $line = $_;
+   if (( ($line =~ /!CRITICAL/) and $debug < 1) or
+       ( ($line =~ /!ERROR/) and $debug < 2) or
+       ( ($line =~ /!WARNING/) and $debug < 3) or
+       ( ($line =~ /!INFO/) and $debug < 4) or
+       ( ($line =~ /!DEBUG/) and $debug < 5)  ) {
+       return 1;
+   }
+   return 0;
+}
+
 # Generate the functions for each derived type
 sub generate_recover_function {
    my ($ctype) = @_;
    my @template = split '\n', $recover_function_template;
    for (@template){
+      if (check_log_level() != 0) {
+         s/WRITE/!WRITE/;
+      }
       s/CTYPE/$ctype/g;
       s/ *!ALLOCATE_BLOCK/$allocate_stmt/;
    }
@@ -452,6 +467,7 @@ for (<TEMPLATE>) {
             or (m/dims/ and ($arrays == 0))
             or ((m/array_id/ or m/rank/) and ($arrays == 0) and ($numpointers==0))
             or (m/pointer_addr/ and ($numpointers == 0))
+            or (check_log_level() != 0)
          #   or (m/!MTYPE/ and ($numtypes == 1))
          #   or (m/!STYPE/ and ($numtypes > 1))
          #or (m/subsize/ and ($numarr == 0))

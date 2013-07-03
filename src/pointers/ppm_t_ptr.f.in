@@ -38,7 +38,7 @@
                TYPE(DTYPE), DIMENSION(:) :: type_ptr
                INTEGER error
                LOGICAL link_exist
-               !WRITE (*,*) "storing DTYPE"
+               WRITE (*,*) "storing DTYPE" !INFO
 
                CALL h5lexists_f(cpfile_id, 'ptr_lists'//type_ptr_id, &
                   link_exist, error)
@@ -118,7 +118,7 @@
                CALL h5lexists_f(cpfile_id, 'ptr_lists/'//type_ptr_id, &
                   link_exist, error)
                IF (.NOT. link_exist) THEN
-                  WRITE(*,*) "Does not exist"
+                  WRITE(*,*) "Does not exist" !ERROR
                   RETURN
                END IF
                type_ptr2 => null()
@@ -133,7 +133,7 @@
                ! if we have it lets use it
                CALL lookup_POINTER(type_ptr_id, pointer_data%itree, type_ptr_node)
                IF (associated(type_ptr_node)) THEN
-                  WRITE(*,*) "We have already have this, associating"
+                  WRITE(*,*) "We have already have this, associating" !INFO
                   ! stupid type casting necessary
                   SELECT TYPE(type_ptr_node)
                   CLASS is (DTYPE_tree)
@@ -154,10 +154,10 @@
                !CALL h5ltget_dataset_info_f(group_id, type_ptr_id, dims,&
                !   tclass, tsize, error)
                ! Reading in the data
-               WRITE (*,*) "Dimension of ptr is ", dims(1)
+               WRITE (*,*) "Dimension of ptr is ", dims(1) !DEBUG
                ALLOCATE(DTYPE::type_ptr(int(dims(1))))
                ALLOCATE(CHARACTER(LEN=32)::pointer_addresses(dims(1)))
-               WRITE(*,*) "Recording pointer in tree"
+               WRITE(*,*) "Recording pointer in tree" !INFO
                ALLOCATE(new_pointer_node)
                new_pointer_node%val => type_ptr
                new_pointer_node%key = type_ptr_id
@@ -165,34 +165,34 @@
                ! read the pointer address from the dataset
                CALL h5dread_f(dset_id, array_id, pointer_addresses, &
                   dims, error)
-               WRITE(*,*) "Pointer Array Populated"
+               WRITE(*,*) "Pointer Array Populated" !INFO
                ! Now we iterate over the pointers and read as necessary
                DO i=1, int(dims(1))
                   IF (.NOT. pointer_addresses(i) == &
                            "00000000000000000000000000000000") THEN
-                     WRITE(*,*) "Check for pointer ", pointer_addresses(i)
+                     WRITE(*,*) "Check for pointer ", pointer_addresses(i) !INFO
                      CALL lookup_pointer(pointer_addresses(i), &
                               pointer_data%dtree, contained_type)
                      IF (associated(contained_type)) THEN
-                        WRITE(*,*) "FIX ME i need to be associated here"
+                        WRITE(*,*) "FIX ME i need to be associated here" !CRITICAL
                         ! need some black magic
                         !SELECT TYPE (contained_type)
                         !CLASS is(CTYPE_tree)
                         !   type_ptr(i)%t => contained_type%val
                         !END SELECT
                      ELSE
-                        WRITE(*,*) "Recovering DTYPE member: ", i
+                        WRITE(*,*) "Recovering DTYPE member: ", i !INFO
                         type_ptr(i)%t => recover_CTYPE(cpfile_id, &
                               pointer_addresses(i), type_ptr(i)%t)
                      ENDIF
                   ELSE
-                     WRITE(*,*) "Null pointer"
+                     WRITE(*,*) "Null pointer" !INFO
                      type_ptr(i)%t => null()
                   ENDIF
                ENDDO
                !CALL h5tclose_f(type_id, error)
                DEALLOCATE(pointer_addresses)
-               WRITE (*,*) "Done reading, recording in tree"
+               WRITE (*,*) "Done reading, recording in tree" !INFO
 
                CALL h5dclose_f(dset_id, error)
                CALL h5gclose_f(group_id, error)
