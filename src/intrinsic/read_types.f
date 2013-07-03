@@ -165,7 +165,6 @@
                   RETURN
                ENDIF
                rank = 2
-               write(*,*) "Reading 2d real pointer"
 
                CALL h5gopen_f(cpfile_id, "intrinsic", group_id, error)
                CALL h5ltget_dataset_info_f(group_id, ptr_addr, dims, &
