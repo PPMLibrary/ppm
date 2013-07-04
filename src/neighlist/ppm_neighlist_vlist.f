@@ -646,28 +646,28 @@
               CALL ppm_write(ppm_rank,'ppm_neighlist_vlist',mesg,info)
           ENDIF
 
-!           iopt = ppm_param_alloc_fit_preserve
-!           lda(1) = ii
-!           CALL ppm_alloc(nvlist,lda,iopt,info)
-!           IF (info .NE. 0) THEN
-!               info = ppm_error_fatal
-!               CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-!          &         'Verlet list sizes NVLIST',__LINE__,info)
-!               GOTO 9999
-!           ENDIF
-          nvlist=>nvlist(1:ii)
+          iopt = ppm_param_alloc_fit_preserve
+          lda(1) = ii
+          CALL ppm_alloc(nvlist,lda,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
+         &         'Verlet list sizes NVLIST',__LINE__,info)
+              GOTO 9999
+          ENDIF
+!           nvlist=>nvlist(1:ii)
 
-!           iopt = ppm_param_alloc_fit_preserve
-!           lda(1) = maxvlen
-!           lda(2) = ii
-!           CALL ppm_alloc(vlist,lda,iopt,info)
-!           IF (info .NE. 0) THEN
-!               info = ppm_error_fatal
-!               CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-!          &         'Verlet list sizes NVLIST',__LINE__,info)
-!               GOTO 9999
-!           ENDIF
-          vlist=>vlist(1:maxvlen,1:ii)
+          iopt = ppm_param_alloc_fit_preserve
+          lda(1) = maxvlen
+          lda(2) = ii
+          CALL ppm_alloc(vlist,lda,iopt,info)
+          IF (info .NE. 0) THEN
+              info = ppm_error_fatal
+              CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
+         &         'Verlet list sizes NVLIST',__LINE__,info)
+              GOTO 9999
+          ENDIF
+!           vlist=>vlist(1:maxvlen,1:ii)
 
       END SELECT ! lstore
 

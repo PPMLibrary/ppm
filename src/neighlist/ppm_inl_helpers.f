@@ -44,7 +44,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
           REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
-          !!! Particle coordinates array. 
+          !!! Particle coordinates array.
           !!! i.e., `xp(1, i)` is the x-coor of particle i.
           INTEGER , INTENT(IN)                       :: Np
           !!! Number of real particles
@@ -252,7 +252,7 @@
           isNeigh = .FALSE.
 
           ! Return FALSE if they are the same particle
-          IF(p_idx .EQ. p_neigh)    RETURN
+          IF (p_idx .EQ. p_neigh) RETURN
 
           ! Initialize euclidian distance to 0
           total_dist = 0
@@ -262,7 +262,7 @@
           DO i = 3, ppm_dim
               total_dist = total_dist + (xp(i, p_idx) - xp(i, p_neigh))**2
           END DO
-          total_dist = sqrt(total_dist)
+          total_dist = SQRT(total_dist)
 
           ! Pick smallest cutoff radius and add skin on it
           rcutoff = MIN(cutoff(p_idx), cutoff(p_neigh)) + skin
@@ -333,7 +333,7 @@
           DO i = 3, ppm_dim
               total_dist = total_dist + (red(i, red_idx) - blue(i, blue_idx))**2
           END DO
-          total_dist = sqrt(total_dist)
+          total_dist = SQRT(total_dist)
 
           ! Pick smallest cutoff radius and add skin on it
           rcutoff = MIN(rcred(red_idx), rcblue(blue_idx)) + skin
