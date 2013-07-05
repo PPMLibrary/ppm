@@ -46,87 +46,88 @@
       !!! Given the particle index, this subroutine locates the cell that this
       !!! cell is located in, gathers all particles in these cells and updates
       !!! verlet lists of all these particles.
-          
+
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER,  INTENT(IN)                 :: red_refidx
+          INTEGER,                        INTENT(IN   ) :: red_refidx
           !!! Particle index
-          TYPE(ppm_clist)  , INTENT(IN)        :: red_clist
+          TYPE(ppm_clist),                INTENT(IN   ) :: red_clist
           !!! cell list red
-          TYPE(ppm_clist)  , INTENT(IN)        :: blue_clist
+          TYPE(ppm_clist),                INTENT(IN   ) :: blue_clist
           !!! cell list blue
-          REAL(MK), DIMENSION(2*ppm_dim)       :: domain
+          REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: domain
           !!! Pysical extent of whole domain including ghost layers
-          REAL(MK), INTENT(IN), DIMENSION(:,:) :: red 
+          REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: red
           !!! Particle coordinates red
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcred
+          REAL(MK), DIMENSION(:),         INTENT(IN   ) :: rcred
           !!! Particle cutoff radii red
-          REAL(MK), INTENT(IN), DIMENSION(:,:) :: blue
+          REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: blue
           !!! Particle coordinates blue
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: rcblue
+          REAL(MK), DIMENSION(:),         INTENT(IN   ) :: rcblue
           !!! Particle cutoff radii blue
-          REAL(MK), INTENT(IN)                 :: skin
+          REAL(MK),                       INTENT(IN   ) :: skin
           !!! Skin parameter
 #if __ACTION == __GET
-          INTEGER,  DIMENSION(:,:)             :: vlist
+          INTEGER,  DIMENSION(:,:),       INTENT(INOUT) :: vlist
           !!! Verlet list, where vlist(j, i) contains the jth neighbor of
           !!! ith particle
 #endif
-          INTEGER,  DIMENSION(:)               :: nvlist
+          INTEGER,  DIMENSION(:),         INTENT(INOUT) :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.
-          INTEGER                              :: info
+          INTEGER,                        INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-          INTEGER                              :: red_idx !p_ref
-          ! Reference particle
-          INTEGER                              :: blue_idx !p_neigh
-          ! Particle in the neighbor cell
-          REAL(MK),    DIMENSION(ppm_dim)      :: offset_coor
+          REAL(MK), DIMENSION(ppm_dim) :: offset_coor
           ! Offset from midpoint coordinates of reference array to get to
           ! neighbor cells.
-          REAL(MK),    DIMENSION(ppm_dim)      :: c_coor
+          REAL(MK), DIMENSION(ppm_dim) :: c_coor
           ! cell Coordinates reference
-          REAL(MK),    DIMENSION(ppm_dim)      :: n_coor
+          REAL(MK), DIMENSION(ppm_dim) :: n_coor
           ! Coordinates of neighbor cell
-          INTEGER(ppm_kind_int64)              :: c_idx
-          ! Cell index reference
-          INTEGER(ppm_kind_int64)              :: n_idx
-          ! Cell index neighbor
-          INTEGER(ppm_kind_int64)              :: parentIdx
-          ! Index of parent cell
-          REAL(MK),    DIMENSION(ppm_dim)      :: red_coor !p_coor
+          REAL(MK), DIMENSION(ppm_dim) :: red_coor !p_coor
           ! Particle coordinates red
-          REAL(MK),    DIMENSION(ppm_dim)      :: blue_coor
+          REAL(MK), DIMENSION(ppm_dim) :: blue_coor
           ! Particle coordinates blue
-          INTEGER                              :: red_depth !p_depth
+
+          INTEGER(ppm_kind_int64)      :: c_idx
+          ! Cell index reference
+          INTEGER(ppm_kind_int64)      :: n_idx
+          ! Cell index neighbor
+          INTEGER(ppm_kind_int64)      :: parentIdx
+          ! Index of parent cell
+          INTEGER                      :: red_idx !p_ref
+          ! Reference particle
+          INTEGER                      :: blue_idx !p_neigh
+          ! Particle in the neighbor cell
+          INTEGER                      :: red_depth !p_depth
           ! Depth of the particle red
-          INTEGER                              :: blue_depth
+          INTEGER                      :: blue_depth
           ! Depth of the particle blue
-          INTEGER                              :: c_depth
+          INTEGER                      :: c_depth
           ! Depth of cell
 
       !-------------------------------------------------------------------------
       !  Counters
       !-------------------------------------------------------------------------
-          INTEGER                              :: i
-          INTEGER                              :: j
-          INTEGER                              :: m
-          INTEGER                              :: n
+          INTEGER                      :: i
+          INTEGER                      :: j
+          INTEGER                      :: m
+          INTEGER                      :: n
 
           !---------------------------------------------------------------------
           !  If this particle was visited before, skip it.
           !---------------------------------------------------------------------
-          IF(used(red_refidx))   RETURN
+          IF (used(red_refidx)) RETURN
 
           !---------------------------------------------------------------------
           !  Initialize position on empty list to 0.
@@ -147,7 +148,7 @@
           !  Get coordinates and depth of the cell, choose maxdepth from red
           !  particles
           !---------------------------------------------------------------------
-          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, & 
+          CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
  &                               red_clist%max_depth, info)
 
           !---------------------------------------------------------------------
@@ -187,7 +188,7 @@
           !  Get red particles that are in the same cell with input particle.
           !---------------------------------------------------------------------
           CALL getParticlesInCell(c_idx, red, red_clist, own_red, own_nred)
-          
+
           !---------------------------------------------------------------------
           !  Get blue particles that are in the same cell with input particle.
           !---------------------------------------------------------------------
@@ -328,7 +329,7 @@
 
                       ! Get index of the neighbor cell
                       n_idx = getCellIdx(n_coor, c_depth, domain)
-                      
+
                       ! if parent of neighbor is empty,
                       ! add to emptylist and skip
 !                      IF (inEmptyList(parent(n_idx))) THEN

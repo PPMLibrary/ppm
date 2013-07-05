@@ -513,19 +513,20 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER,  INTENT(IN)                 :: p_idx
-          REAL(MK), DIMENSION(2*ppm_dim)       :: domain
-          REAL(MK), DIMENSION(:)               :: p_coor
-          INTEGER,  INTENT(INOUT)              :: p_depth
-          REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
-          REAL(MK), INTENT(IN)                 :: skin
+          INTEGER,                        INTENT(IN   ) :: p_idx
+          REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: domain
+          REAL(MK), DIMENSION(:) ,        INTENT(  OUT) :: p_coor
+          INTEGER,                        INTENT(  OUT) :: p_depth
+          REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: xp
+          REAL(MK), DIMENSION(:),         INTENT(IN   ) :: cutoff
+          REAL(MK),                       INTENT(IN   ) :: skin
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          REAL(MK)                             :: minSideLength
-          INTEGER                              :: i
+          REAL(MK) :: minSideLength
+
+          INTEGER  :: i
 
           ! Get maximum side length of the domain
           minSideLength = getMinimumSideLength(domain)
@@ -533,7 +534,7 @@
           ! Initialize p_depth to 0 and keep on incrementing until we reach the
           ! correct depth.
           p_depth = 0
-          DO WHILE(minSideLength .GT. (cutoff(p_idx) + skin))
+          DO WHILE (minSideLength .GT. (cutoff(p_idx) + skin))
               minSideLength = minSideLength/2
               p_depth = p_depth + 1
           END DO
@@ -625,7 +626,7 @@
                    right_end = 5
               END IF
           ! For 3D case
-          ELSEIF(ppm_dim .EQ. 3)   THEN
+          ELSEIF (ppm_dim .EQ. 3)   THEN
               ! If the cell does not contain any particles that are in deeper
               ! levels in its region ...
               IF(clist%borders(10, border_idx) .EQ. 1)  THEN

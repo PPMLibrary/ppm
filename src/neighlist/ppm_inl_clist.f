@@ -869,20 +869,18 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:)         :: domain
+      REAL(MK), DIMENSION(:), INTENT(IN) :: domain
       !!! Physical extent of the domain
-      REAL(MK)                                   :: minLength
+      REAL(MK)                           :: minLength
       !!! Maximum side length
 
       !---------------------------------------------------------------------
       !  Counters
       !---------------------------------------------------------------------
-      INTEGER                                    :: i ! Counter
+      INTEGER :: i ! Counter
+      i=2*ppm_dim
+      minLength=MINVAL(domain(2:i:2)-domain(1:i:2))
 
-      minLength = domain(2) - domain(1)
-      DO i = 2, ppm_dim
-          minLength = min(minLength, (domain(2*i) - domain(2*i-1)))
-      END DO
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION getMinimumSideLength_s
 #elif __KIND == __DOUBLE_PRECISION

@@ -35,7 +35,7 @@
       SUBROUTINE inl_vlist_d(topoid, xp, Np, Mp, cutoff, skin, lsymm,    &
      & ghostlayer, info, vlist, nvlist, lstore)
 #endif
-      
+
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -107,7 +107,7 @@
       INTEGER, DIMENSION(2)                 :: lda
 
       CALL substart('ppm_inl_vlist',t0,info)
-      
+
       !-------------------------------------------------------------------------
       !  Check Arguments
       !-------------------------------------------------------------------------
@@ -452,7 +452,7 @@
       !  Call getVerletLists subroutine. If lstore is not present, default case
       !  which is lstore = TRUE is applied.
       !-------------------------------------------------------------------------
-          IF(present(lstore)) THEN
+          IF(PRESENT(lstore)) THEN
               lst = lstore
           ELSE
               lst = .TRUE.
@@ -633,7 +633,7 @@
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
       !-------------------------------------------------------------------------
-          IF(lsymm .EQV. .TRUE.)   THEN ! If lists are symmetric
+          IF (lsymm) THEN ! If lists are symmetric
               DO p_idx = 1, clist%n_all_p
                   CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,&
                   & actual_domain, xp, cutoff, skin, nvlist)
