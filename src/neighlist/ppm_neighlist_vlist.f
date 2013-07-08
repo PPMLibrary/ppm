@@ -636,7 +636,13 @@
           !---------------------------------------------------------------------
           !  Highest particle index with non-zero nvlist
           !---------------------------------------------------------------------
-          ii=MAXLOC(nvlist,1,nvlist.GT.0)
+          ii=npdx
+          DO ipart=npdx,1,-1
+             IF (nvlist(ipart) .GT. 0) THEN
+                ii = ipart
+                EXIT
+             ENDIF
+          ENDDO
           !-------------------------------------------------------------------------
           !  Maximum Verlet list length
           !-------------------------------------------------------------------------
@@ -652,7 +658,7 @@
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-         &         'Verlet list sizes NVLIST',__LINE__,info)
+              &         'Verlet list sizes NVLIST',__LINE__,info)
               GOTO 9999
           ENDIF
 !           nvlist=>nvlist(1:ii)
@@ -664,7 +670,7 @@
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_neighlist_vlist',  &
-         &         'Verlet list sizes NVLIST',__LINE__,info)
+              &         'Verlet list sizes NVLIST',__LINE__,info)
               GOTO 9999
           ENDIF
 !           vlist=>vlist(1:maxvlen,1:ii)

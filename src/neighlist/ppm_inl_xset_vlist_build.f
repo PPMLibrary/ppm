@@ -82,7 +82,6 @@
           INTEGER,  DIMENSION(:),         INTENT(INOUT) :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.
-          INTEGER,                        INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables
@@ -115,6 +114,7 @@
           ! Depth of the particle blue
           INTEGER                      :: c_depth
           ! Depth of cell
+          INTEGER                      :: info
 
       !-------------------------------------------------------------------------
       !  Counters
@@ -137,8 +137,8 @@
           !---------------------------------------------------------------------
           !  Get coordinates and depth of the particle
           !---------------------------------------------------------------------
-          CALL getParticleCoorDepth(red_refidx, domain, red_coor, red_depth, red, &
- &                                 rcred, skin)
+          CALL getParticleCoorDepth(red_refidx, domain, red_coor, &
+          &                         red_depth, red, rcred, skin)
           !---------------------------------------------------------------------
           !  Get index of the cell that this particle is located in.
           !---------------------------------------------------------------------
@@ -149,7 +149,7 @@
           !  particles
           !---------------------------------------------------------------------
           CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
- &                               red_clist%max_depth, info)
+          &                      red_clist%max_depth, info)
 
           !---------------------------------------------------------------------
           !  Compute offset coordinates, which will be used to find neighbor cells

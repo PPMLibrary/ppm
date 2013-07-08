@@ -150,7 +150,7 @@
       work => work_1ddc
 #elif __KIND == __INTEGER
       work => work_1di
-#elif __KIND == __INTEGER
+#elif __KIND == __LONGINT
       work => work_1dli
 #elif __KIND == __LOGICAL
       work => work_1dl
