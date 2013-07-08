@@ -12,7 +12,6 @@ src/types/*.f
 src/trees/*.f
 src/pointers/*.f
 part_test/bin
-gen
 time.dat
 *.bak
 *.swp

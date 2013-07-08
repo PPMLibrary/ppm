@@ -157,6 +157,19 @@
 
                CALL h5gclose_f(group_id, error)
             END SUBROUTINE save_pointer
+
+            SUBROUTINE get_saved_pointer(cpfile_id, varname, pointer_addr)
+               INTEGER(HID_T), INTENT(IN) :: cpfile_id
+               CHARACTER(LEN=*), INTENT(in) :: varname
+               CHARACTER(LEN=*), INTENT(OUT) :: pointer_addr
+               INTEGER(HID_T) :: group_id
+               INTEGER :: error
+               CALL h5gopen_f(cpfile_id, 'checkpoint_data', group_id, error)
+
+               CALL h5ltread_dataset_string_f(group_id, varname, pointer_addr, error)
+
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE get_saved_pointer
             ! pointer definitions for aquiring address of derived type
             INCLUDE 'pointers/ppm_t_ptr.f'
 

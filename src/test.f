@@ -29,11 +29,17 @@
          parts%id = 10
          parts%name = "kevin"
          parts%maps => maplist
-         CALL store_TYPE(cpfile_id, '10', parts)
-         CALL store_TYPE(cpfile_id, '10', neigh)
-
+         pointer_addr = get_pointer(parts)
+         CALL store_TYPE(cpfile_id, pointer_addr, parts)
+         CALL save_pointer(cpfile_id, 'parts', pointer_addr)
+         !CALL store_TYPE(cpfile_id, '10', neigh)
          deallocate(parts)
-         parts => recover_ppm_t_particles_d_(cpfile_id, "10", parts)
+         CALL close_checkpoint_file(cpfile_id, error)
+
+         CALL open_checkpoint_file(cpfile_id, 'test.h5', error)
+         CALL get_saved_pointer(cpfile_id, 'parts', pointer_addr)
+         parts => recover_ppm_t_particles_d_(cpfile_id, pointer_addr,
+     C      parts)
          IF (associated(parts)) THEN
             WRITE(*,*) parts%name
             DEALLOCATE (parts)
@@ -42,32 +48,28 @@
          ENDIF
          CALL close_checkpoint_file(cpfile_id, error)
 
-         CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
-         pointer_addr = "30788A02000000004096700000000000"
-         parts => recover_ppm_t_particles_d_(cpfile_id,
-     C      pointer_addr, parts)
-         IF (associated(parts)) THEN
-            WRITE(*,*) parts%isymm
-            WRITE(*,*) parts%stats%nb_ghost_push
-            WRITE (*,*) parts%neighs%vec_size
-            WRITE(*,*) parts%neighs%vec(1)%t%isymm
-            SELECT TYPE (parts)
-            TYPE is(ppm_t_particles_d)
-               neigh => parts%neighs%begin()
-               WRITE(*,*) neigh%nneighmax
-               WRITE(*,*) (parts%xp(1,error), error=1,20)
-               !neigh => parts%get_neighlist()
-            END SELECT
-            DEALLOCATE(parts)
-         ELSE
-            WRITE(*,*) "Recovery test 2 failed"
-         ENDIF
-         CALL close_checkpoint_file(cpfile_id, error)
+         !CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
+         !pointer_addr = "30788A02000000004096700000000000"
+         !parts => recover_ppm_t_particles_d_(cpfile_id,
+        !   pointer_addr, parts)
+         !IF (associated(parts)) THEN
+         !   WRITE(*,*) parts%isymm
+         !   WRITE(*,*) parts%stats%nb_ghost_push
+         !   WRITE (*,*) parts%neighs%vec_size
+         !   WRITE(*,*) parts%neighs%vec(1)%t%isymm
+         !   SELECT TYPE (parts)
+         !   TYPE is(ppm_t_particles_d)
+         !      neigh => parts%neighs%begin()
+         !      WRITE(*,*) neigh%nneighmax
+         !      WRITE(*,*) (parts%xp(1,error), error=1,20)
+         !      !neigh => parts%get_neighlist()
+         !   END SELECT
+         !   DEALLOCATE(parts)
+         !ELSE
+         !   WRITE(*,*) "Recovery test 2 failed"
+         !ENDIF
+         !CALL close_checkpoint_file(cpfile_id, error)
 
          !pointer_addr = get_pointer(map)
          DEALLOCATE(map, stats, neigh)
-
-         IF ("000" == "000") THEN
-            WRITE(*,*) "Equal"
-         ENDIF
       END PROGRAM test_cases

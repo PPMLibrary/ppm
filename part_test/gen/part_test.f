@@ -48,7 +48,7 @@ integer :: gen1mb_info
   character(len=3)                :: procbuf
   INTEGER :: error
   CHARACTER(LEN=32) :: pointer_addr
-  CHARACTER(LEN=32) :: init_part = "30E8BF0000000000C09E700000000000"
+  !CHARACTER(LEN=32) :: init_part = "30E8BF0000000000C09E700000000000"
   LOGICAL :: TEST_READ = .TRUE.
   !LOGICAL :: TEST_READ = .FALSE.
 
@@ -126,22 +126,31 @@ integer :: gen1mb_info
 
 IF (TEST_READ) THEN
       CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5', error)
-      parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,init_part, parts_abstr)
+
+      CALL get_saved_pointer(checkpoint_file, 'parts', pointer_addr)
+      parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,pointer_addr, parts_abstr)
       IF (.not. associated(parts_abstr)) THEN
          STOP "Could not read in particle"
       ELSE
          SELECT TYPE(parts_abstr)
          TYPE is(ppm_t_particles_d)
             parts => parts_abstr
-            dx => parts%props%vec(1)%t
+            !dx => parts%props%vec(1)%t
+            CALL get_saved_pointer(checkpoint_file, 'dx', pointer_addr)
+            dx => recover_ppm_t_part_prop_d_(checkpoint_file, pointer_addr, dx)
+
             procid => parts%props%vec(2)%t
+            CALL get_saved_pointer(checkpoint_file, 'procid', pointer_addr)
+            procid => recover_ppm_t_part_prop_d_(checkpoint_file, pointer_addr, procid)
             !WRITE(*,*) "xp", (parts%xp(1,info), info=1,10)
             call parts%map_ghosts(info)
             !parts%active_topoid = topo
             !WRITE(*,*) "Mpart", parts%Mpart
             !call parts%comp_neighlist(info)
             call parts%apply_bc(info)
-            nlist => parts%get_neighlist()
+            !nlist => parts%get_neighlist()
+            CALL get_saved_pointer(checkpoint_file, 'nlist', pointer_addr)
+            nlist => recover_ppm_t_neighlist_d_(checkpoint_file, pointer_addr, nlist)
          END SELECT
       END IF
       CALL close_checkpoint_file(checkpoint_file, info)
@@ -207,9 +216,23 @@ ELSE
   END IF
  nlist => parts%get_neighlist()
    CALL make_checkpoint_file('checkpoint-end.h5', checkpoint_file)
+
    pointer_addr =  get_pointer(parts)
-   WRITE(*,*) pointer_addr
    CALL store_type(checkpoint_file,pointer_addr, parts)
+   CALL save_pointer(checkpoint_file, 'parts', pointer_addr)
+
+   pointer_addr = get_pointer(dx)
+   CALL store_type(checkpoint_file, pointer_addr, dx)
+   CALL save_pointer(checkpoint_file, 'dx', pointer_addr)
+
+   pointer_addr = get_pointer(procid)
+   CALL store_type(checkpoint_file, pointer_addr, procid)
+   CALL save_pointer(checkpoint_file, 'procid', pointer_addr)
+
+   pointer_addr = get_pointer(nlist)
+   CALL store_type(checkpoint_file, pointer_addr, nlist)
+   CALL save_pointer(checkpoint_file, 'nlist', pointer_addr)
+
    CALL close_checkpoint_file(checkpoint_file, info)
 ENDIF
 ! END INITIALIZATIONS
