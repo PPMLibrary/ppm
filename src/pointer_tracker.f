@@ -11,7 +11,7 @@
             INTEGER, DIMENSION(:), POINTER :: ptr
             TYPE(abstr_ptr), POINTER :: next => null()
          END TYPE abstr_ptr
-         TYPE(pointer_trees) :: pointer_data
+         TYPE(pointer_trees), SAVE :: pointer_data
          CONTAINS
             INCLUDE 'pointers/ppm_pointers.f'
             INCLUDE 'trees/tree_abstract.f'
