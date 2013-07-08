@@ -111,6 +111,10 @@
                CALL h5gcreate_f(file_id, 'ptr_lists', group_id, error)
                CALL h5gclose_f(group_id, error)
 
+               ! for the checkpoint data
+               CALL h5gcreate_f(file_id, 'checkpoint_data', group_id, error)
+               CALL h5gclose_f(group_id, error)
+
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
@@ -141,6 +145,18 @@
                CALL delete_tree(pointer_data%dtree)
             END SUBROUTINE close_checkpoint_file
 
+            SUBROUTINE save_pointer(cpfile_id, varname, pointer_addr)
+               INTEGER(HID_T), INTENT(IN) :: cpfile_id
+               CHARACTER(LEN=*), INTENT(in) :: varname
+               CHARACTER(LEN=*), INTENT(IN) :: pointer_addr
+               INTEGER(HID_T) :: group_id
+               INTEGER :: error
+               CALL h5gopen_f(cpfile_id, 'checkpoint_data', group_id, error)
+
+               CALL h5ltmake_dataset_string_f(group_id, varname, pointer_addr, error)
+
+               CALL h5gclose_f(group_id, error)
+            END SUBROUTINE save_pointer
             ! pointer definitions for aquiring address of derived type
             INCLUDE 'pointers/ppm_t_ptr.f'
 
