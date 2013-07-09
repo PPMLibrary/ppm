@@ -81,37 +81,37 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), POINTER       :: xp
+      REAL(MK), DIMENSION(:,:),        POINTER, INTENT(IN   )           :: xp
       !!! particle co-ordinates
-      INTEGER                 , INTENT(IN   ) :: np
+      INTEGER,                                  INTENT(IN   )           :: np
       !!! number of particles.
       !!! The number of ghostparticles should be included to include
       !!! interactions between real and ghost-particles.
-      INTEGER                 , INTENT(IN   ) :: topoid
+      INTEGER,                                  INTENT(IN   )           :: topoid
       !!! ID of current topology
-      REAL(MK)                , INTENT(IN   ) :: cutoff
+      REAL(MK),                                 INTENT(IN   )           :: cutoff
       !!! cutoff radius for PP interactions
-      REAL(MK)                , INTENT(IN   ) :: skin
+      REAL(MK),                                 INTENT(IN   )           :: skin
       !!! Verlet list skin layer thickness.
-      LOGICAL                 , INTENT(IN   ) :: lsymm
+      LOGICAL,                                  INTENT(IN   )           :: lsymm
       !!! Use symmetry
-      INTEGER, DIMENSION(:,:) , POINTER       :: vlist
+      INTEGER, DIMENSION(:,:),         POINTER, INTENT(INOUT)           :: vlist
       !!! Verlet list. First index: particles with which particle ip interacts.
       !!! Second index: ip. The second index only runs up to the
       !!! largest ip with non-zero nvlist. This is to save memory since the
       !!! last particles are the ghosts and they do not have a verlet list.
       !!! This is only allocated and returned if lstore is .TRUE.
-      INTEGER, DIMENSION(  :) , POINTER       :: nvlist
+      INTEGER, DIMENSION(:) ,          POINTER, INTENT(INOUT)           :: nvlist
       !!! Number of particles with which ip has to interact. Index: ip.
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                                  INTENT(  OUT)           :: info
       !!! Returns status, 0 upon success
-      INTEGER, DIMENSION(  :) , OPTIONAL               :: pidx
+      INTEGER, DIMENSION(:),                    INTENT(IN   ), OPTIONAL :: pidx
       !!! OPTIONAL indices of those particles that are to be included in the
       !!! list. By default all particles are taken. If given, particles
       !!! indices in Verlet lists are relative to xp(:,pidx) and not xp(:,:)
-      INTEGER                 , OPTIONAL               :: npidx
+      INTEGER,                                                 OPTIONAL :: npidx
       !!! OPTIONAL upper bound of pidx
-      TYPE(ppm_t_clist), DIMENSION(:),POINTER,OPTIONAL :: clist
+      TYPE(ppm_t_clist), DIMENSION(:), POINTER, INTENT(INOUT), OPTIONAL :: clist
       !!! Cell list data structure. Pass this argument as null to force
       !!! this routine to recreate a cell list and store it in clist. Otherwise,
       !!! the cell list in clist is (re)used for the vlist being created.
@@ -119,7 +119,7 @@
       !!! argument is not passed.
       !!!
       !!! NOTE: use ppm_destroy_clist to deallocate the cell list.
-      LOGICAL, INTENT(IN)     , OPTIONAL               :: lstore
+      LOGICAL,                                  INTENT(IN   ), OPTIONAL :: lstore
       !!! OPTIONAL Set this to .TRUE. to store (and return) the Verlet lists in
       !!! vlist. If this is false, only nvlist is determined and returned.
       !!! Default is .TRUE.
