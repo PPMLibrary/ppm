@@ -1,0 +1,98 @@
+\documentclass{article}
+\title{PPM Checkpoint}
+\author{Kevin Brandstatter}
+\usepackage[margin=1in]{geometry}
+\begin{document}
+\maketitle
+\section{Motivation}
+The checkpoint functionality is a necessary component for the scalability of the application. Take for example the library running on a large cluster of 128+ nodes. If the application runs for a significant period of time, there is a good chance the system will experience a failure during the run which would render the simulation useless, as to retry would require starting the simulation from the beginning. However, with a checkpoint/restart mechanism, the application can periodically save its state, thus if a failure occurs the application can be restarted from the saved state which prevents the loss of previous computation.
+\section{Design}
+\subsection{Checkpoint}
+Checkpointing is done by storing the state of specified variables. The type functions are overloaded so that they can all be called with the same name. To begin we open a new checkpoint file with
+\begin{quote}
+CALL make\_checkpoint\_file(file\_id, filename, error)
+\end{quote}
+or we can open an existing checkpoint file with
+\begin{quote}
+   CALL open\_checkpoint\_file(file\_id, filename, error)
+\end{quote}
+
+Once we open a checkpoint file we need to store the desired state by storing each variable we want to hold on to. This is done with the following sequence of functions:
+\begin{quote}
+   pointer\_addr = get\_pointer(variable) ! Get the uid of the variable \\
+   CALL store\_type(file\_id, pointer\_addr, variable) ! store the variable \\
+   CALL save\_pointer(file\_id, variable\_name, pointer\_addr ! record the pointer for later) \\
+\end{quote}
+
+The checkpointing routines start by storing all of a types members, starting with the intrinsic types. Then it calls store\_type on each member that it points to so as to store all of its references. In order to prevent double storage and collisions, the pointers are recorded in a tree structure such that the routine can determine if it needs to proceed. Finally, a reference to the other type is stored with the main type for associative resiliancy.
+
+\subsection{Restart/Recover}
+\section{Implementation Details}
+\subsection{Type compiler}
+\subsection{Pointer Tracking}
+\subsubsection{Calculation}
+\subsubsection{Trees}
+\section{Scripts Documentation}
+\subsection{typefc.pl}
+\subsection{gen\_get\_ptr.pl}
+\subsection{store\_ptr\_list.pl}
+\subsection{make\_trees.pl}
+\section{API}
+\subsection{Subroutines/Functions}
+\newcommand{\farg}[2]{
+      \ \ \ #1 & :: #2 \\
+}
+\begin{tabular}{lp{\textwidth}}
+   Make a new checkpoint & CALL make\_checkpoint\_file(filename, file\_id) \\
+                    & \begin{tabular}{ll}
+                       \farg{INTEGER(HID\_T), INTENT(OUT)}{file\_id}
+                       \farg{CHARACTER(LEN=*), INTENT(IN)}{filename}
+                       \farg{INTEGER, INTENT(OUT)}{error}
+                     \end{tabular} \\
+                    [1ex] \hline
+   Open checkpoint file & CALL open\_checkpoint\_file(file\_id, filename, error) \\
+                    & \begin{tabular}{ll}
+                       \farg{INTEGER(HID\_T), INTENT(OUT)}{file\_id}
+                       \farg{CHARACTER(LEN=*), INTENT(IN)}{filename}
+                       \farg{INTEGER, INTENT(OUT)}{error}
+                     \end{tabular} \\
+                    [1ex] \hline
+   Close checkpoint file & CALL close\_checkpoint\_file(file\_id, error) \\
+                    & \begin{tabular}{ll}
+                       \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                       \farg{INTEGER, INTENT(OUT)}{error}
+                     \end{tabular} \\
+                    [1ex] \hline
+   Store a variable & CALL store\_type(file\_id, ptr\_addr, ptr) \\
+                    & \begin{tabular}{ll}
+                       \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                       \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
+                       \farg{INTEGER, INTENT(OUT)}{error}
+                     \end{tabular} \\
+                    [1ex] \hline
+   Recover a stored type & recover\_TYPE(file\_id, ptr\_addr, ptr) \\
+                         & \begin{tabular}{ll}
+                          \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                          \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
+                          \farg{CLASS(TYPE), POINTER}{ptr}
+                       \end{tabular} \\ [1ex] \hline
+   Save a pointer & CALL save\_pointer(file\_id, varname, ptr\_addr) \\
+                         & \begin{tabular}{ll}
+                          \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                          \farg{CHARACTER(LEN=*), INTENT(IN)}{varname}
+                          \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
+                       \end{tabular} \\ [1ex] \hline
+   Read a saved pointer & CALL get\_saved\_pointer(file\_id, varname, ptr\_addr) \\
+                         & \begin{tabular}{ll}
+                          \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                          \farg{CHARACTER(LEN=*), INTENT(IN)}{varname}
+                          \farg{CHARACTER(LEN=*), INTENT(OUT)}{ptr\_addr}
+                       \end{tabular} \\ [1ex] \hline
+
+
+\end{tabular}
+\subsection{Types}
+\begin{list}{}{}
+\item ppm\_t\_main\_abstr
+\end{list}
+\end{document}
