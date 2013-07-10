@@ -77,11 +77,52 @@ The trees are mostly used for intrinsic pointer assignment (ie, recording which 
 In order to make life easier and maintain sanity amidst a sea of Fortran code that just seemed to repeat itself a thousand times, a set of scripts in perl were developed in conjuction with the main code base in order to generate large amounts of repetitive code from templates. While much of this could have been done with INCLUDES and preprocessor directives, scripts seem to be a bit more elegant as they allow for more flexibility of design and features. For example, I can generate all the varieties of a function into one file and include the file once, instead of using a include file and including it N times with different parameters. However, since these scripts are not exactly standard or particularly well commented, it is important to discus what they do and how they work.
 \subsection{typefc.pl}
 \label{sec.typefc}
+\paragraph{}
 \subsubsection{Invocation and design}
 \subsubsection{The .def file format}
+
 \subsection{gen\_get\_ptr.pl}
+\paragraph{}
+This script is used to generate the functions for getting a pointer address for a specific reference. It uses a simple replace for each type and a common template to generate the functions, and also outputs an interface that abstracts the individual functions into a generic "get\_pointer" function
+\subsubsection{Input}
+\begin{list}{}{}
+\item pointer.in - Template file for get\_ptr function for standard(derived) types
+\item typelist.in - List of standard types to generate get\_ptr functions for
+\item ptr\_pointers.in - Template file for get\_ptr function for ppm\_t\_ptr types
+\item ptrlist.in - List of ppm\_t\_ptr types to generate get\_ptr function for
+\end{list}
+\subsubsection{Output}
+\begin{list}{}{}
+\item ppm\_pointers.f - get\_ptr* functions for derived types
+\item ppm\_pointers\_interfaces.f - get\_pointer interface for all types (including intrinsic types)
+\end{list}
+
 \subsection{store\_ptr\_list.pl}
+\paragraph{}
+As a legacy issue that should be addressed at some point, the initial template doesn't have built in support for storing arrays of derived types. Because of this it is necessary to use a different template for the ppm\_t\_ptr types. This also makes it easier as they do not extend any common type that could be leveraged for abstraction, thus it is easier to provide a psuedo layer of abstraction by using the same template for each. The script does essentialy the same thing as the type compiler, in that it provides the store, write, read, recover functions, however it uses a custome template as the types follow a common format.
+\subsubsection{Files}
+\begin{list}{}{}
+\item ptrlist.in - List of ppm\_t\_ptr types to generate functions for
+\item ppm\_t\_ptr.f.in - Template file
+\item ppm\_t\_ptr.f - Output file containing subroutine definitions for all types.
+\end{list}
+
 \subsection{make\_trees.pl}
+\paragraph{}
+In order to store the types in a generic tree, there have to be trees that store each familly and extend the root tree type. Thus, this script generates the tree definitions for the various types so that they can be stored in a single tree.
+\subsubsection{Input}
+\begin{list}{}{}
+\item tree\_abstract.f.in - Base file of common routines for trees, includes some generic ones
+\item tree\_abstract\_typedef.f.in - Base file for tree type definitions. Contains top level and intrinsic definitions
+\item typelist.in - list of parent derived types to make trees for
+\item ptr\_list.in - list of ppm\_t\_ptr types to make trees for
+\end{list}
+\subsubsection{Output}
+\begin{list}{}{}
+\item tree\_abstract\_typedef.f - Tree typedefs for the various types
+\item tree\_abstract.f - Subroutines for modifying/accessing the trees
+\end{list}
+
 \section{API}
 \subsection{Subroutines/Functions}
 \newcommand{\farg}[2]{
@@ -135,9 +176,10 @@ In order to make life easier and maintain sanity amidst a sea of Fortran code th
                        \end{tabular} \\ [1ex] \hline
 \end{tabular}
 
+\subsection{Internal Functions}
+
 \subsection{Currently Supported Types}
 \begin{list}{}{}
-\item ppm\_t\_main\_abstr
 \item particles\_stats\_d\_
 \item ppm\_t\_container
 \item ppm\_c\_neighlist\_d\_
