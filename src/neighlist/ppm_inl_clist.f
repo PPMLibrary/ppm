@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_clist_s(xp, Np, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, clist, info)
+      &                             ghost_extend, lsymm, clist, info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_clist_d(xp, Np, Mp, cutoff, skin, actual_domain, &
-     & ghost_extend, lsymm, clist, info)
+      &                             ghost_extend, lsymm, clist, info)
 #endif
       !!! Given particle coordinates(xp), number of all particles including
       !!! ghost particles(Mp), cutoff radii of particles(cutoff), skin parameter
@@ -139,7 +139,7 @@
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
- &                       'rank',__LINE__,info)
+          &                       'rank',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -149,8 +149,6 @@
       !  deallocate borders array. Then double the size and retry, until
       !  it is successful.
       !-------------------------------------------------------------------------
-
-
 
       clist%grow_htable = .TRUE.
       clist%ncell = CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
@@ -166,8 +164,8 @@
               CALL ppm_alloc(clist%borders, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
- &                               'borders',__LINE__,info)
+                  CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist', &
+                  &                               'borders',__LINE__,info)
               END IF
           ELSEIF(ppm_dim .EQ. 3)   THEN
               lda(1) = 10
@@ -175,8 +173,8 @@
               CALL ppm_alloc(clist%borders, lda, iopt, info)
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
- &                               'borders',__LINE__,info)
+                  CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist', &
+                  &                               'borders',__LINE__,info)
               END IF
           END IF
 
@@ -208,9 +206,9 @@
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_dealloc,'ppm_create_cell_list',   &
- &                               'borders',__LINE__,info)
+                  &                               'borders',__LINE__,info)
               END IF
-              clist%ncell = clist%ncell*2             ! Double the number of cells
+              clist%ncell = clist%ncell*2  ! Double the number of cells
           END IF
       END DO
 
@@ -259,25 +257,24 @@
       !  positions. So in the end, we have particles that are sorted by
       !  their position in their own chunk of depth.
       !-------------------------------------------------------------------------
-      CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(0):&
- &                      (clist%rc_borders(1) - 1)), clist, whole_domain, &
- &                      idx0, 1, clist%rc_borders(0)-1)
+      CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(0): &
+      &                (clist%rc_borders(1) - 1)), clist, whole_domain,   &
+      &                 idx0, 1, clist%rc_borders(0)-1)
 
       DO level = 2, clist%max_depth
-          CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(level-1):&
- &                          (clist%rc_borders(level) - 1)), clist, whole_domain, &
- &                          idx, level, clist%rc_borders(level-1)-1)
+          CALL SortByRC_Pos(xp, cutoff, skin, clist%rank(clist%rc_borders(level-1): &
+          &                (clist%rc_borders(level) - 1)), clist, whole_domain,     &
+          &                idx, level, clist%rc_borders(level-1)-1)
       END DO
-
 
       !-------------------------------------------------------------------------
       !  Deallocate rc_borders array as its of no use anymore.
       !-------------------------------------------------------------------------
-      CALL ppm_alloc(clist%rc_borders, lda, iopt, info)
+      CALL ppm_alloc(clist%rc_borders,lda,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'ppm_create_inl_clist',     &
-  &                      'rc_borders',__LINE__,info)
+          &                      'rc_borders',__LINE__,info)
           GOTO 9999
       END IF
 

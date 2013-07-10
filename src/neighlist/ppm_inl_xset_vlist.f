@@ -58,9 +58,9 @@
 
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-      INTEGER, PARAMETER :: mk = ppm_kind_single
+      INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-      INTEGER, PARAMETER :: mk = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
@@ -105,33 +105,35 @@
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(2*ppm_dim)             :: curr_sub
-      REAL(MK), DIMENSION(:,:), POINTER          :: red_sub    => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER          :: blue_sub   => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: rcred_sub => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: rcblue_sub => NULL()
-      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: red_p_id   => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: blue_p_id  => NULL()
-      INTEGER                                    :: nred_sub
-      INTEGER                                    :: mred_sub
-      INTEGER                                    :: nblue_sub
-      INTEGER                                    :: mblue_sub
-      INTEGER                                    :: rank_sub
-      INTEGER                                    :: neigh_max
-      INTEGER                                    :: n_part
-      TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
-      LOGICAL                                    :: lst
-      INTEGER                                    :: i
-      INTEGER                                    :: isub
-      INTEGER                                    :: j
-      REAL(MK)                                   :: t0
-      REAL(MK), POINTER   , DIMENSION(:)         :: rcred => NULL()
-      REAL(MK)                                   :: max_sub_size
+      TYPE(ppm_t_topo),         POINTER     :: topo       => NULL()
+
+      REAL(MK), DIMENSION(2*ppm_dim)        :: curr_sub
+      REAL(MK), DIMENSION(:,:), POINTER     :: red_sub    => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER     :: blue_sub   => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER     :: rcred_sub  => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER     :: rcblue_sub => NULL()
+      REAL(MK)                              :: t0
+      REAL(MK), DIMENSION(:),   POINTER     :: rcred      => NULL()
+      REAL(MK)                              :: max_sub_size
 #if   __MODE == __HNL
-      REAL(MK), POINTER, DIMENSION(:),SAVE       :: rcblue
+      REAL(MK), DIMENSION(:), POINTER, SAVE :: rcblue
 #endif
+      INTEGER , DIMENSION(:,:), POINTER     :: vlist_sub  => NULL()
+      INTEGER , DIMENSION(:)  , POINTER     :: nvlist_sub => NULL()
+      INTEGER , DIMENSION(:)  , POINTER     :: red_p_id   => NULL()
+      INTEGER , DIMENSION(:)  , POINTER     :: blue_p_id  => NULL()
+      INTEGER                               :: nred_sub
+      INTEGER                               :: mred_sub
+      INTEGER                               :: nblue_sub
+      INTEGER                               :: mblue_sub
+      INTEGER                               :: rank_sub
+      INTEGER                               :: neigh_max
+      INTEGER                               :: n_part
+      INTEGER                               :: i
+      INTEGER                               :: isub
+      INTEGER                               :: j
+
+      LOGICAL                               :: lst
 
       !-------------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
@@ -157,7 +159,7 @@
 #endif
       ! TODO: check wheter topology exists
       topo => ppm_topo(topoid)%t
-      
+
       lda(1) = nred
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
@@ -223,27 +225,23 @@
           ! of real particles (Np_sub) and total number of particles (Mp_sub)
           ! of this subdomain.
           !-----------------------------------------------------------------
-          CALL getSubdomainParticles(red,nred,mred,rcred,.FALSE.,&
- &                 curr_sub,ghostlayer, red_sub, rcred_sub, &
- &                 nred_sub,mred_sub,red_p_id)
-          
+          CALL getSubdomainParticles(red,nred,mred,rcred,.FALSE.,  &
+          &                 curr_sub,ghostlayer,red_sub,rcred_sub, &
+          &                 nred_sub,mred_sub,red_p_id)
+
           CALL getSubdomainParticles(blue,nblue,mblue,rcblue,.FALSE.,&
- &                 curr_sub,ghostlayer, blue_sub, rcblue_sub, &
- &                 nblue_sub,mblue_sub,blue_p_id)
+          &                 curr_sub,ghostlayer,blue_sub,rcblue_sub, &
+          &                 nblue_sub,mblue_sub,blue_p_id)
 
           !-----------------------------------------------------------------
           ! Create verlet lists for particles of this subdomain which will
           ! be stored in vlist_sub and nvlist_sub.
           !-----------------------------------------------------------------
-          IF(present(lstore))  THEN
-              lst = lstore
-          ELSE
-              lst = .TRUE.
-          END IF
+          lst=MERGE(lstore,.TRUE.,PRESENT(lstore))
 
           CALL create_inl_xset_vlist(red_sub,nred_sub,mred_sub,rcred_sub, &
- &                 blue_sub,nblue_sub,mblue_sub,rcblue_sub,skin,&
- &                 curr_sub,ghostlayer,info,vlist_sub,nvlist_sub,lst)
+          &                 blue_sub,nblue_sub,mblue_sub,rcblue_sub,skin, &
+          &                 curr_sub,ghostlayer,info,vlist_sub,nvlist_sub,lst)
 
           n_part = nred_sub
           DO i = 1, n_part
@@ -292,13 +290,13 @@
       !if __MODE == _HNL -> skip till end of file
 #if   __MODE == __INL
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE create_inl_xset_vlist_s(red,nred,mred,rcred,blue,nblue,&
- &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
- &                        vlist, nvlist, lstore)
+      SUBROUTINE create_inl_xset_vlist_s(red,nred,mred,rcred,blue,nblue,  &
+      &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+      &                        vlist, nvlist, lstore)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE create_inl_xset_vlist_d(red,nred,mred,rcred,blue,nblue,&
- &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
- &                        vlist, nvlist, lstore)
+      SUBROUTINE create_inl_xset_vlist_d(red,nred,mred,rcred,blue,nblue,  &
+      &                        mblue,rcblue,skin,curr_dom,ghostlayer,info,&
+      &                        vlist, nvlist, lstore)
 #endif
       !!! This subroutine creates verlet lists for particles whose coordinates
       !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -374,19 +372,18 @@
               whole_domain(2*i)   = curr_dom(2*i)   + ghostlayer(i)
           END DO
 
-
       !-------------------------------------------------------------------------
       !  Create inhomogeneous cell list for red and for blue
       !-------------------------------------------------------------------------
           CALL ppm_create_inl_clist(red, nred, mred, rcred, skin, curr_dom, &
-     & ghostlayer, .FALSE., red_clist, info)
+          &                         ghostlayer, .FALSE., red_clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
               CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
      &                    'ppm_create_inl_clist with red',__LINE__,info)
               GOTO 9999
           END IF
-          
+
           CALL ppm_create_inl_clist(blue, nblue, mblue, rcblue, skin, curr_dom, &
      & ghostlayer, .FALSE., blue_clist, info)
           IF(info .NE. 0) THEN
@@ -485,7 +482,7 @@
       !  Call get_xset_VerletLists subroutine. If lstore is not present, default case
       !  which is lstore = TRUE is applied.
       !-------------------------------------------------------------------------
-          IF(present(lstore)) THEN
+          IF(PRESENT(lstore)) THEN
               lst = lstore
           ELSE
               lst = .TRUE.
@@ -595,7 +592,7 @@
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
       !!! vlist array and fills it with neighbor particles IDs for each
-      !!! particle. 
+      !!! particle.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
           INTEGER, PARAMETER :: mk = ppm_kind_single
@@ -666,7 +663,7 @@
           used = .FALSE.
 
       !-------------------------------------------------------------------------
-      !  Set size of nvlist. 
+      !  Set size of nvlist.
       !-------------------------------------------------------------------------
           lda(1) = red_clist%n_real_p ! Store number of neighbors of real particles only
       !-------------------------------------------------------------------------
@@ -680,7 +677,7 @@
               GOTO 9999
           END IF
           nvlist = 0
-          
+
 
       !-------------------------------------------------------------------------
       !  Fill nvlist array with number of neighbors.
@@ -733,7 +730,7 @@
               !-----------------------------------------------------------------
               DO i = 1, red_clist%n_real_p
                   p_idx = red_clist%rank(i)
-                  CALL get_xset_neigh(p_idx, red_clist, blue_clist, & 
+                  CALL get_xset_neigh(p_idx, red_clist, blue_clist, &
  &                     whole_domain,  &
  &                     red, rcred, blue, rcblue, skin, vlist, nvlist)
               END DO

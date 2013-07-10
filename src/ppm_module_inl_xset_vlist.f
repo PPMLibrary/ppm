@@ -1,4 +1,4 @@
-     !--*- f90 -*-------------------------------------------------------------- 
+     !--*- f90 -*--------------------------------------------------------------
      !  Module   :                  ppm_module_inl_xset_vlist
      !-------------------------------------------------------------------------
      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
@@ -99,7 +99,7 @@
             MODULE PROCEDURE get_xset_neigh_s
             MODULE PROCEDURE get_xset_neigh_d
         END INTERFACE
-        
+
         INTERFACE getParticleCoorDepth
             MODULE PROCEDURE getParticleCoorDepth_s
             MODULE PROCEDURE getParticleCoorDepth_d
@@ -114,12 +114,12 @@
             MODULE PROCEDURE getSubdomainParticles_s
             MODULE PROCEDURE getSubdomainParticles_d
         END INTERFACE
-        
+
         INTERFACE inDomain
             MODULE PROCEDURE inDomain_s
             MODULE PROCEDURE inDomain_d
         END INTERFACE
-        
+
         INTERFACE is_xset_Neighbor
             MODULE PROCEDURE is_xset_Neighbor_s
             MODULE PROCEDURE is_xset_Neighbor_d

@@ -36,55 +36,56 @@
 #endif
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
+          REAL(MK), DIMENSION(:,:),                INTENT(IN   ) :: xp
           !!! Particle coordinates array.
           !!! i.e., `xp(1, i)` is the x-coor of particle i.
-          INTEGER , INTENT(IN)                       :: Np
+          INTEGER ,                                INTENT(IN   ) :: Np
           !!! Number of real particles
-          INTEGER , INTENT(IN)                       :: Mp
+          INTEGER ,                                INTENT(IN   ) :: Mp
           !!! Number of all particles including ghost particles
-          REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+          REAL(MK), DIMENSION(:),                  INTENT(IN   ) :: cutoff
           !!! Particles cutoff radii
-          LOGICAL,  INTENT(IN)                       :: lsymm
+          LOGICAL,                                 INTENT(IN   ) :: lsymm
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
           !!! layers only in (+) directions in all axes. Else, we have ghost
           !!! layers in all directions.
-          REAL(MK),             DIMENSION(2*ppm_dim) :: actual_subdomain
+          REAL(MK), DIMENSION(2*ppm_dim),          INTENT(IN   ) :: actual_subdomain
           ! Physical extent of actual domain without ghost layers.
-          REAL(MK), INTENT(IN), DIMENSION(ppm_dim)   :: ghost_extend
+          REAL(MK), DIMENSION(ppm_dim),            INTENT(IN   ) :: ghost_extend
           !!! Extra area/volume over the actual domain introduced by
           !!! ghost layers.
-          REAL(MK), POINTER   , DIMENSION(:,:)       :: xp_sub
+          REAL(MK), DIMENSION(:,:),       POINTER, INTENT(  OUT) :: xp_sub
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          REAL(MK), POINTER   , DIMENSION(:)         :: cutoff_sub
+          REAL(MK), DIMENSION(:),         POINTER, INTENT(  OUT) :: cutoff_sub
           !!! Particles cutoff radii
-          INTEGER , INTENT(OUT)                      :: Np_sub
+          INTEGER,                                 INTENT(  OUT) :: Np_sub
           !!! Number of real particles of subdomain
-          INTEGER , INTENT(OUT)                      :: Mp_sub
+          INTEGER,                                 INTENT(  OUT) :: Mp_sub
           !!! Number of all particles including ghost particles of subdomain
-          INTEGER , POINTER   , DIMENSION(:)        :: p_id
-      !-------------------------------------------------------------------------
-      !  Local variables, arrays and counters
-      !-------------------------------------------------------------------------
-          REAL(MK), DIMENSION(2*ppm_dim)             :: whole_subdomain
+          INTEGER, DIMENSION(:),          POINTER, INTENT(  OUT) :: p_id
+
+          !---------------------------------------------------------------------
+          !  Local variables, arrays and counters
+          !---------------------------------------------------------------------
+          REAL(MK), DIMENSION(2*ppm_dim) :: whole_subdomain
           !!! Physical extent of whole domain including ghost layers.
-          INTEGER                                    :: i
+          INTEGER                        :: i
 
-      !---------------------------------------------------------------------
-      !  Variables and parameters for ppm_alloc
-      !---------------------------------------------------------------------
-          INTEGER               :: iopt
-          INTEGER, DIMENSION(2) :: lda
-          INTEGER               :: info
+          !---------------------------------------------------------------------
+          !  Variables and parameters for ppm_alloc
+          !---------------------------------------------------------------------
+          INTEGER                        :: iopt
+          INTEGER, DIMENSION(2)          :: lda
+          INTEGER                        :: info
 
-          IF(lsymm .EQV. .TRUE.)  THEN
+          IF (lsymm)  THEN
               DO i = 1, ppm_dim
                   whole_subdomain(2*i-1) = actual_subdomain(2*i-1)
                   whole_subdomain(2*i)   = actual_subdomain(2*i) + ghost_extend(i)
@@ -116,7 +117,7 @@
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
           lda(1) = Mp_sub
@@ -124,32 +125,26 @@
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
           CALL ppm_alloc(p_id, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
+          Mp_sub = Np_sub
           Np_sub = 0
           DO i = 1, Mp
-              IF(inDomain(xp(:, i), actual_subdomain))  THEN   !REAL
+              IF (inDomain(xp(:, i), actual_subdomain)) THEN   !REAL
                    Np_sub = Np_sub + 1
                    p_id(Np_sub) = i
                    xp_sub(:, Np_sub) = xp(:, i)
                    cutoff_sub(Np_sub) = cutoff(i)
-              END IF
-          END DO
-
-          Mp_sub = Np_sub
-          DO i = 1, Mp
-              IF(inDomain(xp(:, i), actual_subdomain))  THEN   !REAL
-
               ELSE
-                  IF(inDomain(xp(:, i), whole_subdomain))  THEN !GHOST
+                  IF (inDomain(xp(:, i), whole_subdomain)) THEN !GHOST
                       Mp_sub = Mp_sub + 1
                       p_id(Mp_sub) = i
                       xp_sub(:, Mp_sub) = xp(:, i)
