@@ -5,19 +5,21 @@
 \begin{document}
 \maketitle
 \section{Motivation}
+\paragraph{}
 The checkpoint functionality is a necessary component for the scalability of the application. Take for example the library running on a large cluster of 128+ nodes. If the application runs for a significant period of time, there is a good chance the system will experience a failure during the run which would render the simulation useless, as to retry would require starting the simulation from the beginning. However, with a checkpoint/restart mechanism, the application can periodically save its state, thus if a failure occurs the application can be restarted from the saved state which prevents the loss of previous computation.
-\section{Design}
+\section{General Usage}
 \subsection{Checkpoint}
-Checkpointing is done by storing the state of specified variables. The type functions are overloaded so that they can all be called with the same name. To begin we open a new checkpoint file with
+\paragraph{}
+Checkpointing is done by storing the state of specified variables. The type functions are overloaded so that they can all be called with the same name. To begin open a new checkpoint file with
 \begin{quote}
 CALL make\_checkpoint\_file(file\_id, filename, error)
 \end{quote}
-or we can open an existing checkpoint file with
+or an existing checkpoint file can be opened with
 \begin{quote}
    CALL open\_checkpoint\_file(file\_id, filename, error)
 \end{quote}
 
-Once we open a checkpoint file we need to store the desired state by storing each variable we want to hold on to. This is done with the following sequence of functions:
+Once a checkpoint file has been opened, the next step is to store the desired state by storing each variable explicitly. This is done with the following sequence of functions:
 \begin{quote}
    pointer\_addr = get\_pointer(variable) ! Get the uid of the variable \\
    CALL store\_type(file\_id, pointer\_addr, variable) ! store the variable \\
@@ -27,13 +29,56 @@ Once we open a checkpoint file we need to store the desired state by storing eac
 The checkpointing routines start by storing all of a types members, starting with the intrinsic types. Then it calls store\_type on each member that it points to so as to store all of its references. In order to prevent double storage and collisions, the pointers are recorded in a tree structure such that the routine can determine if it needs to proceed. Finally, a reference to the other type is stored with the main type for associative resiliancy.
 
 \subsection{Restart/Recover}
+\paragraph{}
+Most of the restart behavior is expected to be done by a parent application. This module serves to provide access to the data stored by a checkpoint in an inverse way. In this way, it provides more of a recover functionality, so that the application can recover its previous state before beginning its main loop. Do do this open the checkpoint file in the same way as makeing a file, however, be careful not to use the "make" variety, as it will truncate the file. With the file descriptor, the state can retrieved using the simple set of operations that follow.
+\begin{quote}
+   CALL get\_saved\_pointer(file\_id, varname, pointer\_addr) \\
+   var =\textgreater recover\_DTYPE(file\_id, pointer\_addr, var) ! where DTYPE is the type of var
+\end{quote}
 \section{Implementation Details}
-\subsection{Type compiler}
+\subsection{Intrinsic Storage}
+\paragraph{}
+Intrinsic types (integers, reals, logicals, strings, etc) are stored using a combination of the hdf5 low interface and the lite high level hdf5 API. Currently, If you want to checkpoint an hd5f type by itself you need to manually call the hd5f code. The checkpoint module only provides the functions for storing intrinsic types as part of a derived type. However, the checkpoint module does provide support for storage of pointers to intrinsic arrays.
+\subsection{Derived Types}
+\paragraph{}
+In order to store derived types, the module groups each type into a familly. This familly is based on the highest level parent. For example, one familly is the ppm\_t\_main\_abstr because it does not extend anything. For each familly, there is a standard set of functions, whose behavior depends on what type is given. The functions provided are make\_type, store, write, read, and a collection of recover statements. The store function is the high level storage function that creates a dataset, writes the type and records the address. It uses the write function, which handles just the writing and storage of the various members. This includes storing pointers which it references and recording a reference to the stored location. The make\_type routine is necessary for generating the type of the dataset, which allocates the space and layout of the HDF5 dataset. Finally, the various recover functions are wrappers to the read function. The read function handles the reading of the data from the given dataset into the type. The recover functions handle the allocation of the appropriate fortran type and returns a pointer to the newly allocated data. This way we ensure that the type remains the same after a restart and that all the necessary data is recovered.
+
+All of these functions are computer generated with my specially written type compiler, which I explain in detail in Section \ref{sec.typefc}
 \subsection{Pointer Tracking}
+\paragraph{}
+One bit of the challange in checkpointing is the relational nature of the data and the usage of dynamically allocated memory and pointers. Because of this, the module needs to identify various pointer, tag them with a unique identifier, and be able to reassociate each pointer with the correct target. If this isn't done, restarts could have pointers to duplicate data, where changes in one target would not change in the other. This change in behavior is likely to break the running application as it may rely on the fact that these two pointers should reference the same data.
 \subsubsection{Calculation}
+\paragraph{}
+Unfortunately, calculation of pointers in fortran is not exactly efficient as the data has to do some translating to a common type. Also, calculation for intrinsic types and derived types is different because of internal represantation differences. Derived type "pointer address" calculation is fairly simple. We are able to use the "transfer" intrinsic function to convert the derived type reference to a 32 character string. This is unique to a givin target which allows the module to identify a target by this string. 
+
+For the intrinsic types, this method does not work. Instead, the module takes the hash of the data with FNVHash in order to provide a method of comparison. Then the pointer is inserted into a binary tree and assigned an incremental identifier. It assumes that variables of the same type, with the same hash are the same target. While not conclusive, this is an adequate assuption for the present and could be improved later depending on the limitations of the language. By recording in this binary tree, the same address can be retrieved for all references that satisfy the equality constraints.
+
 \subsubsection{Trees}
+\paragraph{}
+Binary trees are used as the mechanism for recording and tracking pointer references. A hash table would be ideal as it would allow for faster lookups and removes, but the complexity of writing one for this module is too much for the time being. Binary trees provide still fast lookup and are also much less complex to implement.
+
+The module uses a top level type of a pair of trees, intrinsic and derived as it proved simpler to differentiate these too than to attempt to completely abstract them. The derived trees store references to derived types and insert and lookup is done based on the value of the "address". For the intrinsic types, insert and lookup is done with comparisons of the hash and type of the reference.
+
+The trees are mostly used for intrinsic pointer assignment (ie, recording which address given to which reference) and also to record which pointers that have already recovered during the read phase. By storing the references in a tree, duplicate reads can be prevented and associative consistency maintained. That is to say, if a given piece of data has already been recovered and another type references that data, it can be directly associated to the recorded reference instead of duplicating the data.
+
+\subsection{Source Code Layout and Key Files}
+\begin{list}{}{}
+\item checkpoint\_hdf5.f - Main module source file. Contains the includes for the rest of the source and the API interface definitions.
+\item pointer\_tracker.f - Main module source file for pointer tracking. includes the files related to tracking references and the API interfaces
+\item src/ - the main directory of all the source code
+\item types/ - Contains the *.def files and the generated source files for derived type storage and recovery.
+\item pointers/ - Contains the source code files for the get\_pointer functions and for the storage of ppm\_t\_ptr* types
+\item intrinsic/ - Contains the source code responsible for the storage and recovery of intrinsic types and pointers.
+\item doc/ - Contains the documentation files
+\item trees/ - Contains the source code relating to the various binary trees used for pointer tracking
+\end{list}
 \section{Scripts Documentation}
+\paragraph{}
+In order to make life easier and maintain sanity amidst a sea of Fortran code that just seemed to repeat itself a thousand times, a set of scripts in perl were developed in conjuction with the main code base in order to generate large amounts of repetitive code from templates. While much of this could have been done with INCLUDES and preprocessor directives, scripts seem to be a bit more elegant as they allow for more flexibility of design and features. For example, I can generate all the varieties of a function into one file and include the file once, instead of using a include file and including it N times with different parameters. However, since these scripts are not exactly standard or particularly well commented, it is important to discus what they do and how they work.
 \subsection{typefc.pl}
+\label{sec.typefc}
+\subsubsection{Invocation and design}
+\subsubsection{The .def file format}
 \subsection{gen\_get\_ptr.pl}
 \subsection{store\_ptr\_list.pl}
 \subsection{make\_trees.pl}
@@ -70,7 +115,7 @@ The checkpointing routines start by storing all of a types members, starting wit
                        \farg{INTEGER, INTENT(OUT)}{error}
                      \end{tabular} \\
                     [1ex] \hline
-   Recover a stored type & recover\_TYPE(file\_id, ptr\_addr, ptr) \\
+   Recover a stored type & ptr =\textgreater recover\_TYPE(file\_id, ptr\_addr, ptr) \\
                          & \begin{tabular}{ll}
                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
@@ -88,11 +133,27 @@ The checkpointing routines start by storing all of a types members, starting wit
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{varname}
                           \farg{CHARACTER(LEN=*), INTENT(OUT)}{ptr\_addr}
                        \end{tabular} \\ [1ex] \hline
-
-
 \end{tabular}
-\subsection{Types}
+
+\subsection{Currently Supported Types}
 \begin{list}{}{}
 \item ppm\_t\_main\_abstr
+\item particles\_stats\_d\_
+\item ppm\_t\_container
+\item ppm\_c\_neighlist\_d\_
+\item ppm\_c\_part\_prop\_d\_
+\item ppm\_v\_main\_abstr
+\item ppm\_c\_part\_mapping\_d\_
+\item ppm\_c\_operator\_discr\_
+\item ppm\_t\_main\_abstr
+\item ppm\_t\_discr\_data
+\item ppm\_t\_part\_prop\_d\_
+\item ppm\_t\_discr\_kind
+\item ppm\_t\_particles\_d\_
+\item ppm\_t\_operator\_
+\item ppm\_t\_mapping\_d\_
+\item ppm\_t\_part\_mapping\_d\_
+\item ppm\_t\_neighlist\_d\_
+\item ppm\_t\_operator\_discr\_
 \end{list}
 \end{document}
