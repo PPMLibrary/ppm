@@ -19,7 +19,7 @@ COMPILECMD = $(FC) $(INC) $(FFLAGS) -c -o $@ $<
 
 .PHONY: source lib
 
-all: test
+all: test doc
 
 test: lib test.f
 	$(FC) -o test test.f $(INC) -L. -lcheck $(LDFLAGS)
@@ -29,6 +29,9 @@ source:
 	$(MAKE) -C pointers
 	$(MAKE) -C types
 	$(MAKE) -C trees
+
+doc:
+	$(MAKE) -C doc
 
 lib: rmsource source $(OBJECTS)
 	ar r libcheck.a $(OBJECTS)
