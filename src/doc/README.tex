@@ -78,8 +78,47 @@ In order to make life easier and maintain sanity amidst a sea of Fortran code th
 \subsection{typefc.pl}
 \label{sec.typefc}
 \paragraph{}
-\subsubsection{Invocation and design}
+The typefc script is essentially a type compiler. It takes a type definition and generates the functions required to store and recover the various types.
+\subsubsection{Invocation}
+\begin{quote}
+   typefc.pl input.def output.f
+\end{quote}
 \subsubsection{The .def file format}
+\newcommand{\syn}[2]{
+   \begin{tabular}{lp{0.7\textwidth}}
+      #1 - & #2
+   \end{tabular}
+}
+The def file is a very simple DSL that is parsed to generate the required fortran code. It has only a few syntactical features and is designed to look similar to fortran definitions.
+\begin{list}{}{}
+\item \syn {type}{Begins a type definition}
+\item \syn{fortran\_type name [number]}{Defines a member of an intrinsic fortran type. Optional parameter number is used for arrays and may be a variable}
+\item \syn{pointer type\_name}{Defines a pointer to some type}
+\item \syn{end}{Ends the type/allocatable definition}
+\item \syn{allocatable}{Begins enumeration of the allocatable types}
+\end{list}
+\begin{quote}
+   \begin{tabbing}
+! Example definition file \\
+type \= some\_type ! Main type is some\_type \\
+\> integer anInt ! An Integer member \\
+\> real aReal ! A Real member \\
+\> pointer some\_other\_type ! a reference to another type \\
+\> type \= sub\_type ! define a type that extends some\_type \\
+\> \> integer arr 10 ! An integer array \\
+\> end ! Ends the sub type definition\\
+end ! ends the main type definition\\
+allocatable
+\> some\_dtype ! not an abstract type that extends some\_type
+end
+\end{tabbing}
+\end{quote}
+
+\subsubsection{Script Design}
+\paragraph{}
+The script operation is fairly simple. The DSL is designed to be an LL Grammar which allows the parser to be very simple to implement and modify. The general parsing method is stack based, where each level is a different type. This stack is build using a basic REPL (Read eval print loop). The operations are simple. First it reads a line from the input. Then it evaluates it. If it is a type, it pushes a new context onto the stack. In this implementation, the "stack" is created through the use of recursive calls to the parse function, which eliminates the need for additional data structures, as the built in scoping handles the context stacking. If it is some type, the evaluator generates the required fortran code for each section (read, write, make\_type) and returns it to the parent. The parent collects all of these statements and formats them. When an "end" statement is reached, the definitions are wrapped in a type select statement and incorporated into the parent. If it is the parent, then the type parsing is complete.
+
+Within the "allocatable" statement, the parser simply collects the types, and then generates an "allocate block". This allocate block is used to allocate the correct type during recover. During storage, the types are enumerated, and the current type is recorded in the checkpoint. On recover, this is recovered and used to allocate the data to the appropriate type. This is necessary to allow for the higher level polymorphism to exist while still retaining the data from the lower level types.
 
 \subsection{gen\_get\_ptr.pl}
 \paragraph{}
