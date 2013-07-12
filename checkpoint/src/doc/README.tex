@@ -11,6 +11,16 @@
 \paragraph{}
 The checkpoint functionality is a necessary component for the scalability of the application. Take for example the library running on a large cluster of 128+ nodes. If the application runs for a significant period of time, there is a good chance the system will experience a failure during the run which would render the simulation useless, as to retry would require starting the simulation from the beginning. However, with a checkpoint/restart mechanism, the application can periodically save its state, thus if a failure occurs the application can be restarted from the saved state which prevents the loss of previous computation.
 \section{General Usage}
+\subsection{Building}
+Most of the building is handled by using Makefiles. In order to build all that is needed is to modify a few variables in the Makefile and run \emph{make}.
+\subsubsection{src/Makefile, part\_test/gen/Makefile}
+\begin{list}{}{}
+\item PPMDIR = /path/to/ppm
+\item PPMNUMDIR = /path/to/ppmnumerics
+\item HDF5 = /path/to/hdf5
+\item METIS = /path/to/metis/lib
+\end{list}
+
 \subsection{Checkpoint}
 \paragraph{}
 Checkpointing is done by storing the state of specified variables. The type functions are overloaded so that they can all be called with the same name. To begin open a new checkpoint file with

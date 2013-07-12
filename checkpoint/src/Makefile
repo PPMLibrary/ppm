@@ -1,10 +1,11 @@
 PPMDIR	= /home/kevin/ppm-library/ppm
 PPMNUMDIR = /home/kevin/ppm-library/ppmnumerics
 HDF5 = /home/kevin/hdf5-1.8.11/hdf5
+METIS = /home/kevin/ppm-library/metis/lib
 #HDF5 = /usr
 
 FC = mpif90
-LDFLAGS = -L/home/kevin/ppm-library/metis/lib -latlas -lblas -lmetis -L$(PPMDIR)/lib -L$(PPMNUMDIR)/lib -lppmnumerics -lppm -lmetis -llapack -lblas -L$(HDF5)/lib -lhdf5_fortran -lhdf5hl_fortran
+LDFLAGS = -L$(METIS) -latlas -lblas -lmetis -L$(PPMDIR)/lib -L$(PPMNUMDIR)/lib -lppmnumerics -lppm -lmetis -llapack -lblas -L$(HDF5)/lib -lhdf5_fortran -lhdf5hl_fortran
 #LDFLAGS = -L/home/kevin/ppm-library/metis/lib -lblas -lmetis -L$(PPMDIR)/lib -L$(PPMNUMDIR)/lib -lppmnumerics -lppm -lmetis -llapack -lblas -L$(HDF5)/lib -lhdf5_fortran -lhdf5hl_fortran
 
 OPT= -O3 -ffree-form -ffree-line-length-none -ffree-line-length-none -O0 -g -fbounds-check -fbacktrace -ftrapv -fno-automatic -ffree-line-length-none -Wall -ffpe-trap=zero,overflow,underflow -I/home/kevin/ppm-library/checkpoint -I/usr/include -lhdf5_fortran
