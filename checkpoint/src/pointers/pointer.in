@@ -1,0 +1,19 @@
+            CHARACTER(32) FUNCTION get_ptr_DTYPE(some_ptr)
+               CLASS(DTYPE), INTENT(IN) :: some_ptr
+               CHARACTER(LEN=1), DIMENSION(:), ALLOCATABLE :: chars
+               CHARACTER(LEN=32) :: phex
+               CHARACTER(LEN=20) :: format_
+               INTEGER length
+
+               length = size(transfer(some_ptr, chars))
+               ALLOCATE (chars(length))
+               chars = transfer(some_ptr, chars)
+
+               WRITE(format_, '("(", I0, "Z2.2)")') length
+               WRITE (phex, format_) chars
+               !WRITE(*,*) trim(phex)
+               deallocate(chars)
+               get_ptr_DTYPE=phex
+               !CALL pointer_insert(pointer_data, nodelett, &
+               !   get_ptr_DTYPE)
+            END FUNCTION get_ptr_DTYPE

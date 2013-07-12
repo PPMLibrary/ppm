@@ -1,0 +1,17 @@
+*.o
+*.mod
+*vtp
+*.log
+lib*.a
+*.h5
+*.zip
+src/template/*.f
+src/oldtypes/*.f
+src/checkp/backups/*
+src/types/*.f
+src/trees/*.f
+src/pointers/*.f
+part_test/bin
+time.dat
+*.bak
+*.swp

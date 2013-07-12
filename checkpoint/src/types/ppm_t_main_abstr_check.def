@@ -1,0 +1,61 @@
+type ppm_t_main_abstr
+   type ppm_t_discr_data
+      integer data_type 
+      pointer field_ptr ppm_t_main_abstr
+      pointer discr ppm_t_discr_kind
+      character name ppm_char
+      logical flags ppm_param_length_pptflags
+      integer lda
+   end
+      type ppm_t_part_prop_d_
+         pointer data_1d_i integer1d_pointer
+         pointer data_2d_i integer2d_pointer
+         pointer data_1d_l logical1d_pointer
+         pointer data_2d_l logical2d_pointer
+         pointer data_1d_li integer64_1d_pointer
+         pointer data_2d_li integer64_2d_pointer
+         pointer data_1d_r real1d_pointer
+         pointer data_2d_r real2d_pointer
+         pointer data_1d_c complex1d_pointer
+         pointer data_2d_c complex2d_pointer
+      end
+   type ppm_t_discr_kind
+      integer id
+      character name ppm_char
+      #
+      # we can update this for specificity later
+      # need to test containers
+   end
+      type ppm_t_particles_d_
+         pointer xp real2d_pointer
+         integer Npart
+         integer Mpart
+         logical flags ppm_param_length_partflags
+         integer active_topoid
+         pointer gi ppm_t_part_prop_d_
+         real ghostlayer
+         integer isymm
+         pointer props ppm_c_part_prop_d_
+         pointer neighs ppm_c_neighlist_d_
+         pointer maps ppm_c_part_mapping_d_
+         integer NewNpart
+         pointer pcost real1d_pointer
+         pointer field_ptr ppm_v_main_abstr
+         pointer ops ppm_c_operator_discr_
+         pointer stats particles_stats_d_
+         real time
+         integer itime
+         real h_avg
+         real h_min
+      end
+   type ppm_t_operator_
+      pointer degree integer1d_pointer
+      pointer coeffs real1d_pointer
+      integer nterms
+      character name ppm_char
+   end
+end
+allocatable
+   ppm_t_particles_d
+   ppm_t_part_prop_d
+end

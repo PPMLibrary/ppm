@@ -1,0 +1,200 @@
+            SUBROUTINE pointer_insert(tree_group, node, intr_ptr)
+               CLASS(pointer_trees), INTENT(INOUT) :: tree_group
+               CLASS(pointer_btree) :: node
+               CHARACTER(LEN=*), INTENT(OUT), OPTIONAL :: intr_ptr
+               SELECT TYPE (node)
+               CLASS is (derived_tree)
+                  CALL insert_derived(pointer_data%dtree, node)
+               CLASS is (intrinsic_tree)
+                  ! generate our character pointer here
+                  IF (present(intr_ptr)) THEN
+                     CALL insert_intrinsic(tree_group%itree, node, &
+                        pointer_data%num_intrinsic)
+                     intr_ptr = node%key
+                  ELSE
+                     CALL insert_intrinsic(tree_group%itree, node)
+                  ENDIF
+                  !WRITE (*,*) tree_group%num_intrinsic
+               END SELECT
+            END SUBROUTINE pointer_insert
+
+            ! Unbalanced insert, perhaps improve later
+            RECURSIVE SUBROUTINE insert_derived(tree, node)
+               CLASS(derived_tree), INTENT(INOUT), POINTER :: tree
+               CLASS(derived_tree), INTENT(INOUT), POINTER :: node
+               IF (.NOT. associated(tree)) THEN
+                  tree => node
+                  RETURN
+               END IF
+               IF (LGT(node%key, tree%key)) THEN
+                  CALL insert_derived(tree%right, node)
+               ELSE IF (LLT(node%key, tree%key)) THEN
+                  CALL insert_derived(tree%left, node)
+               ENDIF
+            END SUBROUTINE insert_derived
+
+            ! char_ptr arguemnt is next generated intrinsic pointer to
+            ! assign
+            RECURSIVE SUBROUTINE insert_intrinsic(tree, node, base)
+               CLASS(intrinsic_tree), INTENT(INOUT), POINTER :: tree
+               CLASS(intrinsic_tree), INTENT(INOUT), POINTER :: node
+               INTEGER, INTENT(INOUT), OPTIONAL ::  base
+               IF (.NOT. associated(tree)) THEN
+                  !WRITE (*,*) "bottom - insert"
+                  !tree%hash = node%hash
+                  tree => node
+                  IF (present(base)) THEN
+                     WRITE (tree%key, *) "internal", base
+                     WRITE (*,*) tree%key
+                     base = base + 1
+                  ENDIF
+                  RETURN
+               !ELSE
+                  !WRITE (*,*) "this level = ", tree%key
+               END IF
+               IF (node%hash .GT. tree%hash) THEN
+                  !WRITE (*,*) "going right"
+                  CALL insert_intrinsic(tree%right, node, base)
+                  !WRITE (*,*) "check " , tree%right%key
+               ELSE IF (node%hash .LT. tree%hash) THEN
+                  !WRITE (*,*) "going left"
+                  CALL insert_intrinsic(tree%left, node, base)
+                  !WRITE (*,*) "check " , tree%left%key
+               ! Check associativity with subfunction
+               ! to add later
+               ELSE IF (.NOT. check_associated(tree, node)) THEN
+                  !WRITE (*,*) "same going left"
+                  CALL insert_intrinsic(tree%left, node, base)
+                  !WRITE (*,*) "check " , tree%left%key
+               !     check associated is an select typefunction to
+               !     check the ptrs if they are associated
+               ELSE
+                  WRITE(*,*) "Overwriting existing key"
+                  tree%key = node%key
+               ENDIF
+            END SUBROUTINE insert_intrinsic
+
+            LOGICAL FUNCTION check_associated(treenode, newnode)
+               CLASS (pointer_btree) :: treenode
+               CLASS (pointer_btree) :: newnode
+               check_associated = .FALSE.
+               SELECT TYPE (treenode)
+               TYPE is (integer1d_tree)
+                  SELECT TYPE (newnode)
+                  TYPE is (integer1d_tree)
+                     check_associated = associated(treenode%val, &
+                        TARGET=newnode%val)
+                  END SELECT
+               TYPE is (integer2d_tree)
+                  SELECT TYPE (newnode)
+                  TYPE is (integer2d_tree)
+                     check_associated = associated(treenode%val, &
+                        TARGET=newnode%val)
+                  END SELECT
+               TYPE is (integer_tree)
+                  SELECT TYPE (newnode)
+                  TYPE is (integer_tree)
+                     check_associated = associated(treenode%val, &
+                        TARGET=newnode%val)
+                  END SELECT
+               ! TYPE_SELECT
+               END SELECT
+            END FUNCTION check_associated
+
+            RECURSIVE SUBROUTINE lookup_derived(key, tree_root, ptr)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(derived_tree), INTENT(in), POINTER :: tree_root
+               CLASS(derived_tree), POINTER,  INTENT(out) :: ptr
+               IF (.NOT. associated(tree_root)) THEN
+                  ptr => null()
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  CALL lookup_derived(key, tree_root%right, ptr)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  CALL lookup_derived(key, tree_root%left, ptr)
+               ELSE
+                  ptr => tree_root
+               ENDIF
+
+            END SUBROUTINE lookup_derived
+            RECURSIVE SUBROUTINE lookup_intrinsic(key, tree_root, ptr)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(intrinsic_tree), INTENT(in), POINTER :: tree_root
+               CLASS(intrinsic_tree), POINTER,  INTENT(out) :: ptr
+               IF (.NOT. associated(tree_root)) THEN
+                  ptr => null()
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  CALL lookup_intrinsic(key, tree_root%right, ptr)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  CALL lookup_intrinsic(key, tree_root%left, ptr)
+               ELSE
+                  ptr => tree_root
+               ENDIF
+
+            END SUBROUTINE lookup_intrinsic
+            LOGICAL RECURSIVE FUNCTION exists_derived(key, tree_root) RESULT (rval)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(derived_tree), INTENT(in), POINTER :: tree_root
+               IF (.NOT. associated(tree_root)) THEN
+                  rval = .FALSE.
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  rval = exists_derived(key, tree_root%right)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  rval = exists_derived(key, tree_root%left)
+               ELSE
+                  rval = .TRUE.
+               ENDIF
+
+            END FUNCTION exists_derived
+            LOGICAL RECURSIVE FUNCTION exists_intrinsic(key, tree_root) RESULT (rval)
+               CHARACTER(LEN=*), INTENT(IN) :: key
+               CLASS(intrinsic_tree), INTENT(in), POINTER :: tree_root
+               IF (.NOT. associated(tree_root)) THEN
+                  rval = .FALSE.
+                  RETURN
+               ENDIF
+               IF (LGT(key, tree_root%key)) THEN
+                  rval = exists_intrinsic(key, tree_root%right)
+               ELSE IF (LLT(key, tree_root%key)) THEN
+                  rval = exists_intrinsic(key, tree_root%left)
+               ELSE
+                  rval = .TRUE.
+               ENDIF
+
+            END FUNCTION exists_intrinsic
+            RECURSIVE SUBROUTINE write_tree(tree)
+               CLASS(intrinsic_tree), POINTER, INTENT(in) :: tree
+               IF (associated(tree)) THEN
+                  WRITE (*,*) "key: ", tree%key
+                  WRITE (*,*) "left: "
+                  CALL write_tree(tree%left)
+                  WRITE (*,*) "right: "
+                  CALL write_tree(tree%right)
+               ENDIF
+            END SUBROUTINE write_tree
+            RECURSIVE SUBROUTINE delete_derived_tree(some_tree)
+               CLASS(derived_tree), POINTER :: some_tree
+               IF (associated(some_tree)) THEN
+                  CALL delete_derived_tree(some_tree%left)
+                  CALL delete_derived_tree(some_tree%right)
+                  DEALLOCATE (some_tree)
+               ENDIF
+            END SUBROUTINE delete_derived_tree
+            RECURSIVE SUBROUTINE delete_intrinsic_tree(some_tree)
+               CLASS(intrinsic_tree), POINTER :: some_tree
+               IF (associated(some_tree)) THEN
+                  CALL delete_intrinsic_tree(some_tree%left)
+                  CALL delete_intrinsic_tree(some_tree%right)
+                  DEALLOCATE (some_tree)
+               ENDIF
+            END SUBROUTINE delete_intrinsic_tree
+            !SUBROUTINE lookup(tree, char_ptr)
+            !   CLASS(pointer_btree) tree
+            !   CHARACTER(LEN=32) :: char_ptr
+            !END SUBROUTINE
+

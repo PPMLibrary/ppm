@@ -1,0 +1,3 @@
+         TYPE DTYPE_tree
+            TYPE(DTYPE), POINTER :: val
+         END TYPE
