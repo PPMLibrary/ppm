@@ -2,6 +2,9 @@
 \title{PPM Checkpoint}
 \author{Kevin Brandstatter}
 \usepackage[margin=1in]{geometry}
+\newcommand{\farg}[2]{
+      \ \ \ #1 & :: #2 \\
+}
 \begin{document}
 \maketitle
 \section{Motivation}
@@ -30,7 +33,7 @@ The checkpointing routines start by storing all of a types members, starting wit
 
 \subsection{Restart/Recover}
 \paragraph{}
-Most of the restart behavior is expected to be done by a parent application. This module serves to provide access to the data stored by a checkpoint in an inverse way. In this way, it provides more of a recover functionality, so that the application can recover its previous state before beginning its main loop. Do do this open the checkpoint file in the same way as makeing a file, however, be careful not to use the "make" variety, as it will truncate the file. With the file descriptor, the state can retrieved using the simple set of operations that follow.
+Most of the restart behavior is expected to be done by a parent application. This module serves to provide access to the data stored by a checkpoint in an inverse way. In this way, it provides more of a recover functionality, so that the application can recover its previous state before beginning its main loop. Do do this open the checkpoint file in the same way as makeing a file, however, be careful not to use the \emph{make} variety, as it will truncate the file. With the file descriptor, the state can retrieved using the simple set of operations that follow.
 \begin{quote}
    CALL get\_saved\_pointer(file\_id, varname, pointer\_addr) \\
    var =\textgreater recover\_DTYPE(file\_id, pointer\_addr, var) ! where DTYPE is the type of var
@@ -49,7 +52,7 @@ All of these functions are computer generated with my specially written type com
 One bit of the challange in checkpointing is the relational nature of the data and the usage of dynamically allocated memory and pointers. Because of this, the module needs to identify various pointer, tag them with a unique identifier, and be able to reassociate each pointer with the correct target. If this isn't done, restarts could have pointers to duplicate data, where changes in one target would not change in the other. This change in behavior is likely to break the running application as it may rely on the fact that these two pointers should reference the same data.
 \subsubsection{Calculation}
 \paragraph{}
-Unfortunately, calculation of pointers in fortran is not exactly efficient as the data has to do some translating to a common type. Also, calculation for intrinsic types and derived types is different because of internal represantation differences. Derived type "pointer address" calculation is fairly simple. We are able to use the "transfer" intrinsic function to convert the derived type reference to a 32 character string. This is unique to a givin target which allows the module to identify a target by this string. 
+Unfortunately, calculation of pointers in fortran is not exactly efficient as the data has to do some translating to a common type. Also, calculation for intrinsic types and derived types is different because of internal represantation differences. Derived type \emph{pointer address} calculation is fairly simple. We are able to use the \emph{transfer} intrinsic function to convert the derived type reference to a 32 character string. This is unique to a givin target which allows the module to identify a target by this string. 
 
 For the intrinsic types, this method does not work. Instead, the module takes the hash of the data with FNVHash in order to provide a method of comparison. Then the pointer is inserted into a binary tree and assigned an incremental identifier. It assumes that variables of the same type, with the same hash are the same target. While not conclusive, this is an adequate assuption for the present and could be improved later depending on the limitations of the language. By recording in this binary tree, the same address can be retrieved for all references that satisfy the equality constraints.
 
@@ -57,7 +60,7 @@ For the intrinsic types, this method does not work. Instead, the module takes th
 \paragraph{}
 Binary trees are used as the mechanism for recording and tracking pointer references. A hash table would be ideal as it would allow for faster lookups and removes, but the complexity of writing one for this module is too much for the time being. Binary trees provide still fast lookup and are also much less complex to implement.
 
-The module uses a top level type of a pair of trees, intrinsic and derived as it proved simpler to differentiate these too than to attempt to completely abstract them. The derived trees store references to derived types and insert and lookup is done based on the value of the "address". For the intrinsic types, insert and lookup is done with comparisons of the hash and type of the reference.
+The module uses a top level type of a pair of trees, intrinsic and derived as it proved simpler to differentiate these too than to attempt to completely abstract them. The derived trees store references to derived types and insert and lookup is done based on the value of the \emph{address}. For the intrinsic types, insert and lookup is done with comparisons of the hash and type of the reference.
 
 The trees are mostly used for intrinsic pointer assignment (ie, recording which address given to which reference) and also to record which pointers that have already recovered during the read phase. By storing the references in a tree, duplicate reads can be prevented and associative consistency maintained. That is to say, if a given piece of data has already been recovered and another type references that data, it can be directly associated to the recorded reference instead of duplicating the data.
 
@@ -78,7 +81,7 @@ In order to make life easier and maintain sanity amidst a sea of Fortran code th
 \subsection{typefc.pl}
 \label{sec.typefc}
 \paragraph{}
-The typefc script is essentially a type compiler. It takes a type definition and generates the functions required to store and recover the various types.
+The typefc script is essentially a type compiler. It takes a type definition and generates the functions required to store and recover the various types. It uses the type.f.in file as a template for each type. It then parses a definition file to learn the types and relations, generate the necessary section of code, and insert them into the template.
 \subsubsection{Invocation}
 \begin{quote}
    typefc.pl input.def output.f
@@ -97,8 +100,13 @@ The def file is a very simple DSL that is parsed to generate the required fortra
 \item \syn{end}{Ends the type/allocatable definition}
 \item \syn{allocatable}{Begins enumeration of the allocatable types}
 \end{list}
+Also, for pointers to dimensions of intrinsic types, the type is of the form:
 \begin{quote}
-   \begin{tabbing}
+   typeNd\_pointer where type = the intrinsic type, N = 1,2 (n dimensions) \\
+   ex: integer2d\_pointer for a 2 dimensional integer
+\end{quote}
+\subsubsection{Example def file}
+\begin{tabbing}
 ! Example definition file \\
 type \= some\_type ! Main type is some\_type \\
 \> integer anInt ! An Integer member \\
@@ -106,23 +114,22 @@ type \= some\_type ! Main type is some\_type \\
 \> pointer some\_other\_type ! a reference to another type \\
 \> type \= sub\_type ! define a type that extends some\_type \\
 \> \> integer arr 10 ! An integer array \\
-\> end ! Ends the sub type definition\\
-end ! ends the main type definition\\
-allocatable
-\> some\_dtype ! not an abstract type that extends some\_type
-end
+\> end ! Ends the sub type definition \\
+end ! ends the main type definition \\
+allocatable \\
+\> some\_dtype ! not an abstract type that extends some\_type \\
+end \\
 \end{tabbing}
-\end{quote}
 
 \subsubsection{Script Design}
 \paragraph{}
-The script operation is fairly simple. The DSL is designed to be an LL Grammar which allows the parser to be very simple to implement and modify. The general parsing method is stack based, where each level is a different type. This stack is build using a basic REPL (Read eval print loop). The operations are simple. First it reads a line from the input. Then it evaluates it. If it is a type, it pushes a new context onto the stack. In this implementation, the "stack" is created through the use of recursive calls to the parse function, which eliminates the need for additional data structures, as the built in scoping handles the context stacking. If it is some type, the evaluator generates the required fortran code for each section (read, write, make\_type) and returns it to the parent. The parent collects all of these statements and formats them. When an "end" statement is reached, the definitions are wrapped in a type select statement and incorporated into the parent. If it is the parent, then the type parsing is complete.
+The script operation is fairly simple. The DSL is designed to be an LL Grammar which allows the parser to be very simple to implement and modify. The general parsing method is stack based, where each level is a different type. This stack is build using a basic REPL (Read eval print loop). The operations are simple. First it reads a line from the input. Then it evaluates it. If it is a type, it pushes a new context onto the stack. In this implementation, the \emph{stack} is created through the use of recursive calls to the parse function, which eliminates the need for additional data structures, as the built in scoping handles the context stacking. If it is some type, the evaluator generates the required fortran code for each section (read, write, make\_type) and returns it to the parent. The parent collects all of these statements and formats them. When an \emph{end} statement is reached, the definitions are wrapped in a type select statement and incorporated into the parent. If it is the parent, then the type parsing is complete.
 
-Within the "allocatable" statement, the parser simply collects the types, and then generates an "allocate block". This allocate block is used to allocate the correct type during recover. During storage, the types are enumerated, and the current type is recorded in the checkpoint. On recover, this is recovered and used to allocate the data to the appropriate type. This is necessary to allow for the higher level polymorphism to exist while still retaining the data from the lower level types.
+Within the \emph{allocatable} statement, the parser simply collects the types, and then generates an \emph{allocate block}. This allocate block is used to allocate the correct type during recover. During storage, the types are enumerated, and the current type is recorded in the checkpoint. On recover, this is recovered and used to allocate the data to the appropriate type. This is necessary to allow for the higher level polymorphism to exist while still retaining the data from the lower level types.
 
 \subsection{gen\_get\_ptr.pl}
 \paragraph{}
-This script is used to generate the functions for getting a pointer address for a specific reference. It uses a simple replace for each type and a common template to generate the functions, and also outputs an interface that abstracts the individual functions into a generic "get\_pointer" function
+This script is used to generate the functions for getting a pointer address for a specific reference. It uses a simple replace for each type and a common template to generate the functions, and also outputs an interface that abstracts the individual functions into a generic \emph{get\_pointer} function
 \subsubsection{Input}
 \begin{list}{}{}
 \item pointer.in - Template file for get\_ptr function for standard(derived) types
@@ -164,10 +171,7 @@ In order to store the types in a generic tree, there have to be trees that store
 
 \section{API}
 \subsection{Subroutines/Functions}
-\newcommand{\farg}[2]{
-      \ \ \ #1 & :: #2 \\
-}
-\begin{tabular}{lp{\textwidth}}
+\begin{tabular}{p{0.2\textwidth}p{0.8\textwidth}}
    Make a new checkpoint & CALL make\_checkpoint\_file(filename, file\_id) \\
                     & \begin{tabular}{ll}
                        \farg{INTEGER(HID\_T), INTENT(OUT)}{file\_id}
@@ -216,8 +220,45 @@ In order to store the types in a generic tree, there have to be trees that store
 \end{tabular}
 
 \subsection{Internal Functions}
+\begin{tabular}{p{0.2\textwidth}p{0.8\textwidth}}
+   Make hdf5 type representation & CALL make\_type\_DTYPE(ptr, type\_id) \\
+                                 & \begin{tabular}{ll}
+                                   \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
+                                   \farg{INTEGER(HID\_T), INTENT(OUT)}{type\_id}
+                                \end{tabular} \\ [1ex] \hline
+   Write derived type & CALL write\_DTYPE(file\_id, dset\_id, ptr) \\
+                      & \begin{tabular}{lp{\textwidth}}
+                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                           \farg{INTEGER(HID\_T), INTENT(IN)}{dset\_id}
+                           \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
+                        \end{tabular} \\ [1ex] \hline
+   Insert pointer & CALL pointer\_insert(tree\_group, node, intr\_ptr) \\
+                  & \begin{tabular}{lp{\textwidth}}
+                        \farg{CLASS(pointer\_trees)}{tree\_group}
+                        \farg{CLASS(pointer\_btree)}{node}
+                        \farg{CHARACTER(LEN=*), OPTIONAL}{intr\_ptr}
+                     \end{tabular} \\ [1ex] \hline
+   Delete tree & CALL delete\_tree(some\_tree) \\
+                  & \begin{tabular}{lp{\textwidth}}
+                      \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
+                   \end{tabular} \\ [1ex] \hline
+   Check for existing tree & rval = exists\_pointer(key, some\_tree) \\
+               & \begin{tabular}{lp{\textwidth}}
+                   \farg{CHARACTER(LEN=*), INTENT(IN)}{key}
+                   \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
+                \end{tabular} \\ [1ex] \hline
+   Lookup pointer in tree & CALL lookup\_pointer(key, some\_tree, ptr) \\
+               & \begin{tabular}{lp{\textwidth}}
+                   \farg{CHARACTER(LEN=*), INTENT(IN)}{key}
+                   \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
+                   \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{ptr}
+                \end{tabular} \\ [1ex] \hline
+
+\end{tabular}
+
 
 \subsection{Currently Supported Types}
+This section lists all the types for which a \emph{recover} function is generated. Read/write/store/make\_type functions are only generated for the patriarch class (the one that does not extend anything) and use SELECT statements to operate polymorphically on all children.
 \begin{list}{}{}
 \item particles\_stats\_d\_
 \item ppm\_t\_container
