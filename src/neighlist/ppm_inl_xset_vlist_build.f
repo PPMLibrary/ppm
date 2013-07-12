@@ -29,18 +29,18 @@
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE count_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, nvlist)
+      &               red, rcred, blue, rcblue, skin, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE count_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, nvlist)
+      &               red, rcred, blue, rcblue, skin, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE get_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+      &               red, rcred, blue, rcblue, skin, vlist, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE get_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
- &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+      &               red, rcred, blue, rcblue, skin, vlist, nvlist)
 #endif
 #endif
       !!! Given the particle index, this subroutine locates the cell that this

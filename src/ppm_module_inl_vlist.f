@@ -1,4 +1,4 @@
-     !--*- f90 -*-------------------------------------------------------------- 
+     !--*- f90 -*--------------------------------------------------------------
      !  Module   :                  ppm_module_inl_vlist
      !-------------------------------------------------------------------------
      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
@@ -47,11 +47,11 @@
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER,       DIMENSION(:),   POINTER :: own_plist => NULL()
-        INTEGER,       DIMENSION(:),   POINTER :: neigh_plist => NULL()
-        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: empty_list => NULL()
-        INTEGER,       DIMENSION(:,:), POINTER :: ncells => NULL()
-        LOGICAL,       DIMENSION(:) ,  POINTER :: used => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: own_plist => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: neigh_plist => NULL()
+        INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: empty_list => NULL()
+        INTEGER,                 DIMENSION(:,:), POINTER :: ncells => NULL()
+        LOGICAL,                 DIMENSION(:) ,  POINTER :: used => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables
@@ -89,7 +89,7 @@
             MODULE PROCEDURE isNeighbor_s
             MODULE PROCEDURE isNeighbor_d
         END INTERFACE
-        
+
         INTERFACE cross_neighbor
             MODULE PROCEDURE cross_neighbor_s
             MODULE PROCEDURE cross_neighbor_d
@@ -100,7 +100,7 @@
             MODULE PROCEDURE count_neigh_d
         END INTERFACE
 
-        INTERFACE count_neigh_sym 
+        INTERFACE count_neigh_sym
             MODULE PROCEDURE count_neigh_sym_s
             MODULE PROCEDURE count_neigh_sym_d
         END INTERFACE

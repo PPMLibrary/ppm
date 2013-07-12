@@ -50,64 +50,64 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:,:)         :: xp
+      REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: xp
       !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-      INTEGER , INTENT(IN)                         :: Np
+      INTEGER ,                       INTENT(IN   ) :: Np
       !!! Number of real particles
-      INTEGER , INTENT(IN)                         :: Mp
+      INTEGER ,                       INTENT(IN   ) :: Mp
       !!! Number of all particles including ghost particles
-      REAL(MK), INTENT(IN), DIMENSION(:)           :: cutoff
+      REAL(MK), DIMENSION(:),         INTENT(IN   ) :: cutoff
       !!! Particles cutoff radii
-      REAL(MK), INTENT(IN)                         :: skin
+      REAL(MK),                       INTENT(IN   ) :: skin
       !!! Skin parameter
-      REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim)   :: actual_domain
+      REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: actual_domain
       ! Physical extent of actual domain without ghost layers.
-      REAL(MK), INTENT(IN), DIMENSION(ppm_dim)     :: ghost_extend
+      REAL(MK), DIMENSION(ppm_dim),   INTENT(IN   ) :: ghost_extend
       !!! Extra area/volume over the actual domain introduced by
       !!! ghost layers.
-      LOGICAL,  INTENT(IN)                         :: lsymm
+      LOGICAL,                        INTENT(IN   ) :: lsymm
       !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
       !!! layers only in (+) directions in all axes. Else, we have ghost
       !!! layers in all directions.
-      INTEGER , INTENT(OUT)                        :: info
+      TYPE(ppm_clist),                INTENT(INOUT) :: clist
+      INTEGER ,                       INTENT(  OUT) :: info
       !!! Info to be returned. 0 if SUCCESSFUL.
-      TYPE(ppm_clist), INTENT(INOUT)               :: clist
 
       !---------------------------------------------------------------------
       !  Local variables and parameters
       !---------------------------------------------------------------------
-      REAL(MK),                DIMENSION(2*ppm_dim) :: whole_domain
+      REAL(MK), DIMENSION(2*ppm_dim)     :: whole_domain
       ! Physical extent of whole domain including ghost layers.
-      INTEGER(ppm_kind_int64), PARAMETER            :: idx = 1
+      INTEGER(ppm_kind_int64), PARAMETER :: idx = 1
       ! Parameter used for recursive functions.
-      INTEGER(ppm_kind_int64), PARAMETER            :: idx0 = 0
+      INTEGER(ppm_kind_int64), PARAMETER :: idx0 = 0
       ! Parameter used for recursive function for first level only.
-      INTEGER                                       :: level
+      INTEGER                            :: level
       ! Depth level.
 
-      REAL(MK)                                      :: max_size
-      REAL(MK)                                      :: size_diff
+      REAL(MK)                           :: max_size
+      REAL(MK)                           :: size_diff
 
       !---------------------------------------------------------------------
       !  Parameters for ppm_alloc
       !---------------------------------------------------------------------
-      INTEGER                                       :: iopt
-      INTEGER, DIMENSION(2)                         :: lda
-      INTEGER, DIMENSION(1)                         :: ldl
-      INTEGER, DIMENSION(1)                         :: ldu
+      INTEGER                            :: iopt
+      INTEGER, DIMENSION(2)              :: lda
+      INTEGER, DIMENSION(1)              :: ldl
+      INTEGER, DIMENSION(1)              :: ldu
 
       !---------------------------------------------------------------------
       !  Counters
       !---------------------------------------------------------------------
-      INTEGER                                       :: i
-      REAL(MK)                                      :: t0
+      INTEGER                            :: i
+      REAL(MK)                           :: t0
 
       !<<<<<<<<<<<<<<<<<<<<<<<<< Start of the code >>>>>>>>>>>>>>>>>>>>>>>>>!
 
       CALL substart('ppm_create_inl_clist',t0,info)
 
       max_size = 0.0_mk
-      IF(lsymm) THEN
+      IF (lsymm) THEN
           DO i = 1, ppm_dim
               whole_domain(2*i-1) = actual_domain(2*i-1)
               whole_domain(2*i)   = actual_domain(2*i) + ghost_extend(i)
@@ -184,7 +184,7 @@
           clist%borders_pos_max = 0
 
           clist%borders_pos = clist%borders_pos + 1
-          CALL hash_insert(clist%lookup,idx0, clist%borders_pos, info)
+          CALL hash_insert(clist%lookup,idx0,clist%borders_pos,info)
           IF (ppm_dim .EQ. 2) THEN
               clist%borders(6, clist%borders_pos)  = clist%n_all_p
           ELSE
@@ -196,7 +196,7 @@
           END DO
 
           ! Sort particles by their position
-          CALL SortByPosition(xp, cutoff, skin, clist%rank, clist, whole_domain, idx, 0)
+          CALL SortByPosition(xp,cutoff,skin,clist%rank,clist,whole_domain,idx,0)
           IF (clist%grow_htable) THEN ! If hash table is not sufficient
               CALL destroy_htable(clist%lookup,info)        ! Destroy hash table
               iopt = ppm_param_dealloc
@@ -239,7 +239,7 @@
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist',     &
- &                       'rc_borders',__LINE__,info)
+          &                       'rc_borders',__LINE__,info)
           GOTO 9999
       END IF
       clist%rc_borders(0) = 1
@@ -282,15 +282,15 @@
       !  Set last rows of borders arrays to -1 if that cell contains
       !  particles in deeper levels and otherwise set to 1.
       !-------------------------------------------------------------------------
-      IF(ppm_dim .EQ. 2)  THEN
+      IF     (ppm_dim .EQ. 2) THEN
           DO i = 1, clist%borders_pos_max
-              IF((clist%borders(5, i) - clist%borders(1, i)) .NE. clist%borders(6, i))  THEN
+              IF ((clist%borders(5, i) - clist%borders(1, i)) .NE. clist%borders(6, i))  THEN
                   clist%borders(6, i) = -1
               ELSE
                   clist%borders(6, i) = 1
               END IF
           END DO
-      ELSEIF(ppm_dim .EQ. 3)  THEN
+      ELSEIF (ppm_dim .EQ. 3)  THEN
           DO i = 1, clist%borders_pos_max
               IF((clist%borders(9, i) - clist%borders(1, i)) .NE. clist%borders(10, i))  THEN
                   clist%borders(10, i) = -1
@@ -319,15 +319,15 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_clist), INTENT(INOUT)               :: clist
-      INTEGER , INTENT(OUT)                        :: info
+      TYPE(ppm_clist), INTENT(INOUT) :: clist
+      INTEGER ,        INTENT(  OUT) :: info
       !!! Info to be returned. 0 if SUCCESSFUL.
       !---------------------------------------------------------------------
       !  Local Variables
       !---------------------------------------------------------------------
-      INTEGER                                       :: iopt
-      INTEGER, DIMENSION(2)                         :: lda
-      REAL(ppm_kind_single)                         :: t0
+      INTEGER               :: iopt
+      INTEGER, DIMENSION(2) :: lda
+      REAL(ppm_kind_single) :: t0
 
       CALL substart('ppm_destroy_inl_clist',t0,info)
 
@@ -467,7 +467,7 @@
       empty = .TRUE.                           ! Set empty to TRUE
       parentIdx   = parent(c_idx)              ! Get index of parent cell
       borders_pos = hash_search(lookup,parentIdx) ! Search parent in hash table
-      IF(borders_pos .EQ. htable_null)  RETURN ! Return FALSE if not found
+      IF (borders_pos .EQ. htable_null) RETURN ! Return FALSE if not found
       empty = .FALSE.                          ! Set empty to FALSE and return
       END FUNCTION isEmpty
 #endif
@@ -496,7 +496,7 @@
       !        As intrinsic log ops are defined for real parameters.
 
       ! Keep on incrementing depth, until you reach the father.
-      DO WHILE(idx .GT. 1)
+      DO WHILE (idx .GT. 1)
           idx   = parent(idx)
           depth = depth + 1
       END DO
@@ -507,10 +507,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getCellCoor_Depth_s(cell_idx, domain, coor, cell_depth, &
- &                     max_depth,info)
+      &                     max_depth,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getCellCoor_Depth_d(cell_idx, domain, coor, cell_depth, &
- &                     max_depth,info)
+      &                     max_depth,info)
 #endif
       !!! Given the cell index and the domain, modifies coor and
       !!! cell_depth variables such that coor contains midpoint
@@ -576,7 +576,6 @@
       ! Set minimum and maximum physical extent of first cell,
       ! which is the domain itself. Later, as we go deeper, we restrict
       ! these coordinates to get midpoint coordinates of the input cell.
-
       start_coor(1) = domain(1)
       end_coor(1)   = domain(2)
       start_coor(2) = domain(3)
@@ -596,7 +595,7 @@
       ! Fill levelList array with indices of ancestors. So, if the
       ! cell index is 16 which is a child of 4, which is a child of 1,
       ! levelList(1:3) will contain (1, 4, 16) respectively.
-      DO WHILE(idx .GT. 0)
+      DO WHILE (idx .GT. 0)
           levelList(depth) = idx
           idx   = parent(idx)
           depth = depth - 1
@@ -607,10 +606,10 @@
       ! coordinates in the end.
       DO i = 1, cell_depth - 1
 
-          mid_coor(1) = (start_coor(1) + end_coor(1))/2
-          mid_coor(2) = (start_coor(2) + end_coor(2))/2
+          mid_coor(1) = (start_coor(1) + end_coor(1))/2._MK
+          mid_coor(2) = (start_coor(2) + end_coor(2))/2._MK
           DO j = 3, ppm_dim
-              mid_coor(j) = (start_coor(j) + end_coor(j))/2
+              mid_coor(j) = (start_coor(j) + end_coor(j))/2._MK
           END DO
 
           parent_idx = levelList(i)
@@ -618,17 +617,17 @@
           childnum = child_idx - ((2**ppm_dim)*(parent_idx-1) + 2)
 
           DO j = 1, ppm_dim
-              IF(MOD(childnum/(2**(ppm_dim-j)),2) .EQ. 0) THEN
+              IF (MOD(childnum/(2**(ppm_dim-j)),2) .EQ. 0) THEN
                   end_coor(j)   = mid_coor(j)
               ELSE
                   start_coor(j) = mid_coor(j)
               END IF
           END DO
 
-          coor(1) = (start_coor(1) + end_coor(1))/2
-          coor(2) = (start_coor(2) + end_coor(2))/2
+          coor(1) = (start_coor(1) + end_coor(1))/2._MK
+          coor(2) = (start_coor(2) + end_coor(2))/2._MK
           DO j = 3, ppm_dim
-              coor(j) = (start_coor(j) + end_coor(j))/2
+              coor(j) = (start_coor(j) + end_coor(j))/2._MK
           END DO
       END DO
 
@@ -660,24 +659,26 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK),     INTENT(IN), DIMENSION(ppm_dim)   :: coor
+      REAL(MK), DIMENSION(ppm_dim),   INTENT(IN) :: coor
       !!! Input coordinates of the cell whose index is asked for.
-      INTEGER,      INTENT(IN)                       :: cell_depth
+      INTEGER,                        INTENT(IN) :: cell_depth
       !!! Depth of the cell whose index is asked for.
-      REAL(MK),     INTENT(IN), DIMENSION(2*ppm_dim) :: domain
+      REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN) :: domain
       !!! Physical extent of whole domain including ghost layers.
+
+      INTEGER(ppm_kind_int64)                    :: cell_idx
 
       !---------------------------------------------------------------------
       !  Counters and local variables
       !---------------------------------------------------------------------
-      INTEGER(ppm_kind_int64)                        :: cell_idx
-      REAL(MK),    DIMENSION(ppm_dim)                :: mid_coor
-      REAL(MK),    DIMENSION(ppm_dim)                :: start_coor
-      REAL(MK),    DIMENSION(ppm_dim)                :: end_coor
-      INTEGER                                        :: increment
-      INTEGER                                        :: i
-      INTEGER                                        :: j
-      INTEGER,     DIMENSION(0:ppm_dim)              :: powdim
+      REAL(MK), DIMENSION(ppm_dim)   :: mid_coor
+      REAL(MK), DIMENSION(ppm_dim)   :: start_coor
+      REAL(MK), DIMENSION(ppm_dim)   :: end_coor
+
+      INTEGER                        :: increment
+      INTEGER                        :: i
+      INTEGER                        :: j
+      INTEGER,  DIMENSION(0:ppm_dim) :: powdim
 
       ! Initialize physical extent of the cell whose index is asked
       ! for. Later in the loop, this physical extent will be
@@ -696,10 +697,10 @@
       cell_idx = 1     ! Set cell_idx to greatest ancestor.
       DO i = 1, cell_depth - 1
           ! Compute current midpoint coordinates
-          mid_coor(1) = (start_coor(1) + end_coor(1))/2
-          mid_coor(2) = (start_coor(2) + end_coor(2))/2
+          mid_coor(1) = (start_coor(1) + end_coor(1))/2._MK
+          mid_coor(2) = (start_coor(2) + end_coor(2))/2._MK
           DO j = 3, ppm_dim
-              mid_coor(j) = (start_coor(j) + end_coor(j))/2
+              mid_coor(j) = (start_coor(j) + end_coor(j))/2._MK
           END DO
 
           ! Set cell_idx to first child (bottom-left)
@@ -709,20 +710,20 @@
           increment = 0
 
           ! Compute rank of the child
-          increment = increment + (powdim(ppm_dim-1))*INT&
- &                     ((coor(1)-start_coor(1))/(mid_coor(1)-start_coor(1)))
-          increment = increment + (powdim(ppm_dim-2))*INT&
- &                     ((coor(2)-start_coor(2))/(mid_coor(2)-start_coor(2)))
+          increment = increment + (powdim(ppm_dim-1))* &
+          &           INT((coor(1)-start_coor(1))/(mid_coor(1)-start_coor(1)))
+          increment = increment + (powdim(ppm_dim-2))* &
+          &           INT((coor(2)-start_coor(2))/(mid_coor(2)-start_coor(2)))
           DO j = 3, ppm_dim
-              increment = increment + (powdim(ppm_dim-j))*INT&
- &                         ((coor(j)-start_coor(j))/(mid_coor(j)-start_coor(j)))
+              increment = increment + (powdim(ppm_dim-j))* &
+              &           INT((coor(j)-start_coor(j))/(mid_coor(j)-start_coor(j)))
           END DO
 
           ! Add the rank of the child on the first child to get
           ! correct index of the child cell.
           cell_idx = cell_idx + increment
           DO j = 1, ppm_dim
-              IF(MOD(increment/(powdim(ppm_dim-j)),2) .EQ. 0) THEN
+              IF (MOD(increment/(powdim(ppm_dim-j)),2) .EQ. 0) THEN
                   end_coor(j)   = mid_coor(j)
               ELSE
                   start_coor(j) = mid_coor(j)
@@ -751,13 +752,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK),  INTENT(IN), DIMENSION(:) :: cutoff
+      REAL(MK), DIMENSION(:), INTENT(IN) :: cutoff
       !!! Cutoff radii array
-      REAL(MK),  INTENT(IN)               :: skin
+      REAL(MK),               INTENT(IN) :: skin
       !!! Skin parameter
-      INTEGER,   INTENT(IN), DIMENSION(:) :: rank
+      INTEGER, DIMENSION(:),  INTENT(IN) :: rank
       !!! Rank array, containing particles ranks
-      REAL(MK)                            :: minRC
+      REAL(MK)                           :: minRC
       !!! Minimum cutoff radius to be returned
 
       !---------------------------------------------------------------------
@@ -796,27 +797,28 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN),    DIMENSION(:)            :: ownregion
+      REAL(MK), DIMENSION(:),   INTENT(IN   ) :: ownregion
       !!! Coordinates of input region containing minimum and maximum
       !!! physical extents of it.
-      REAL(MK), INTENT(INOUT), DIMENSION(:,:) :: subregions
+      REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: subregions
       !!! Array of subregions, which will contain minimum and maximum
       !!! physical extents of each subregion. For example, subregions(5,3)
       !!! contains the x-coordinate of maximum physical extent of 5th
       !!! subregion.
-      INTEGER                                                   :: info
+      INTEGER,                  INTENT(  OUT) :: info
 
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)    :: mid_coor
-      REAL(MK), DIMENSION(ppm_dim)    :: start_coor
-      REAL(MK), DIMENSION(ppm_dim)    :: end_coor
-      INTEGER                         :: i
-      INTEGER                         :: j
-      REAL(MK)                        :: t0
+      REAL(MK), DIMENSION(ppm_dim) :: mid_coor
+      REAL(MK), DIMENSION(ppm_dim) :: start_coor
+      REAL(MK), DIMENSION(ppm_dim) :: end_coor
+      REAL(MK)                     :: t0
 
-      IF(ppm_debug.GE.3)THEN
+      INTEGER                      :: i
+      INTEGER                      :: j
+
+      IF (ppm_debug.GE.3)THEN
           CALL substart('setSubregions',t0,info)
       ENDIF
 
@@ -831,7 +833,7 @@
       ! Distribute shares accordingly.
       DO i = 1, 2**ppm_dim ! over all subregions
           DO j = 1, ppm_dim ! over all dimensions
-              IF(MOD((i-1)/(2**(ppm_dim - j)) ,2) .EQ. 0) THEN
+              IF (MOD((i-1)/(2**(ppm_dim - j)) ,2) .EQ. 0) THEN
                   subregions(i, 2*j - 1) = start_coor(j)
                   subregions(i, 2*j)     = mid_coor(j)
               ELSE
@@ -841,7 +843,7 @@
           END DO
       END DO
 
-      IF(ppm_debug.GE.3)THEN
+      IF (ppm_debug.GE.3)THEN
           CALL substop('setSubregions',t0,info)
       ENDIF
 #if   __KIND == __SINGLE_PRECISION
@@ -875,6 +877,7 @@
       !  Counters
       !---------------------------------------------------------------------
       INTEGER :: i ! Counter
+
       i=2*ppm_dim
       minLength=MINVAL(domain(2:i:2)-domain(1:i:2))
 
@@ -886,10 +889,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_s(xp, cutoff, skin, rank, clist, &
- &                         ownregion, idx, increment)
+      &                         ownregion, idx, increment)
 #elif __KIND == __DOUBLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_d(xp, cutoff, skin, rank, clist, &
- &                         ownregion, idx, increment)
+      &                         ownregion, idx, increment)
 #endif
       !!! The recursive subroutine which sorts the particles by their position;
       !!! given particles coordinates, their cutoff radii, skin parameter,
@@ -926,20 +929,21 @@
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-      INTEGER,   DIMENSION(1:2**ppm_dim)              :: incArray
-      REAL(MK),  DIMENSION(1:2**ppm_dim, 1:2*ppm_dim) :: subregions
-      REAL(MK),  DIMENSION(ppm_dim)                   :: mid_coor
-      INTEGER                                         :: bx
-      INTEGER                                         :: byLeft
-      INTEGER                                         :: byRight
-      INTEGER                                         :: bzBottomLeft
-      INTEGER                                         :: bzBottomRight
-      INTEGER                                         :: bzTopLeft
-      INTEGER                                         :: bzTopRight
-      REAL(MK)                                        :: minRC
-      REAL(MK)                                        :: minSideLength
-      INTEGER                                         :: i
-      INTEGER                                         :: info
+      REAL(MK), DIMENSION(1:2**ppm_dim, 1:2*ppm_dim) :: subregions
+      REAL(MK), DIMENSION(ppm_dim)                   :: mid_coor
+      REAL(MK)                                       :: minRC
+      REAL(MK)                                       :: minSideLength
+
+      INTEGER, DIMENSION(1:2**ppm_dim)               :: incArray
+      INTEGER                                        :: bx
+      INTEGER                                        :: byLeft
+      INTEGER                                        :: byRight
+      INTEGER                                        :: bzBottomLeft
+      INTEGER                                        :: bzBottomRight
+      INTEGER                                        :: bzTopLeft
+      INTEGER                                        :: bzTopRight
+      INTEGER                                        :: i
+      INTEGER                                        :: info
 
       ! If hash table is not sufficiently large, RETURN
       ! Use of grow_htable parameter globally ensures that
@@ -955,13 +959,11 @@
       minRC = getMinimumRC(cutoff, skin, rank)
 
       ! If the cell is small enough, stop recursion for this cell.
-      IF(minRC .GE. minSideLength) THEN
-        RETURN
-      END IF
+      IF (minRC .GE. minSideLength) RETURN
 
       ! Set midpoint coordinates
       DO i = 1, ppm_dim
-          mid_coor(i) = (ownregion(2*i-1) + ownregion(2*i))/2
+          mid_coor(i) = (ownregion(2*i-1) + ownregion(2*i))/2._MK
       END DO
 
       ! Divide particles to 2, that are on the left of midpoint
@@ -976,10 +978,10 @@
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
       CALL partition(xp, rank(bx:),    mid_coor(2), byRight, 2)
       ! Increment border for upper-right portion
-      byRight       = byRight       + bx      - 1
+      byRight = byRight + bx - 1
 
       ! If in 3D, keep on subdividing
-      IF(ppm_dim .EQ. 3)  THEN
+      IF (ppm_dim .EQ. 3)  THEN
           CALL partition(xp, rank(1:byLeft-1),   mid_coor(3), bzBottomLeft,  3)
           CALL partition(xp, rank(byLeft:bx-1),  mid_coor(3), bzBottomRight, 3)
           CALL partition(xp, rank(bx:byRight-1), mid_coor(3), bzTopLeft,     3)
@@ -996,29 +998,29 @@
 
       ! Insert current cell in hash table.
       clist%borders_pos = clist%borders_pos + 1
-      CALL hash_insert(clist%lookup,idx, clist%borders_pos, info)
-      IF (info .NE. 0)   THEN
+      CALL hash_insert(clist%lookup,idx,clist%borders_pos,info)
+      IF (info .NE. 0) THEN
           clist%grow_htable = .TRUE.
           RETURN
       END IF
 
       ! Keep track of maximum number of cells, to be used later.
-      IF(clist%borders_pos .GT. clist%borders_pos_max)   THEN
+      IF (clist%borders_pos .GT. clist%borders_pos_max)   THEN
           clist%borders_pos_max = clist%borders_pos
       END IF
 
       ! Set last row as number of particles within the physical region
       ! of the cell, later to be used to understand whether the cell has
       ! particles in deeper levels or not.
-      IF (ppm_dim .EQ. 2)       THEN
+      IF     (ppm_dim .EQ. 2) THEN
           clist%borders(6, clist%borders_pos) = SIZE(rank)
-      ELSEIF (ppm_dim .EQ. 3)   THEN
+      ELSEIF (ppm_dim .EQ. 3) THEN
           clist%borders(10, clist%borders_pos) = SIZE(rank)
       END IF
 
       ! Set increment parameters for recursive calls. This one is done
       ! genericly for 2D and 3D
-      incArray(1) = increment
+      incArray(1)                 = increment
       incArray(  (ppm_dim-1) + 1) = increment + byLeft  - 1
       incArray(2*(ppm_dim-1) + 1) = increment + bx      - 1
       incArray(3*(ppm_dim-1) + 1) = increment + byRight - 1
@@ -1032,31 +1034,31 @@
 
       ! Call recursive calls
       IF     (ppm_dim .EQ. 2) THEN
-          CALL SortByPosition(xp, cutoff, skin, rank(1:byLeft-1), clist,      &
- &                    subregions(1,:), 4*idx-2, incArray(1))
+          CALL SortByPosition(xp, cutoff, skin, rank(1:byLeft-1), clist, &
+          &                    subregions(1,:), 4*idx-2, incArray(1))
           CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bx-1), clist, &
- &                    subregions(2,:), 4*idx-1, incArray(2))
+          &                    subregions(2,:), 4*idx-1, incArray(2))
           CALL SortByPosition(xp, cutoff, skin, rank(bx:byRight-1), clist, &
- &                    subregions(3,:), 4*idx,   incArray(3))
+          &                    subregions(3,:), 4*idx,   incArray(3))
           CALL SortByPosition(xp, cutoff, skin, rank(byRight:), clist, &
- &                    subregions(4,:), 4*idx+1, incArray(4))
+          &                    subregions(4,:), 4*idx+1, incArray(4))
       ELSEIF (ppm_dim .EQ. 3)   THEN
-           CALL SortByPosition(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist,  &
- &                    subregions(1,:), 8*idx-6, incArray(1))
+           CALL SortByPosition(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist, &
+          &                    subregions(1,:), 8*idx-6, incArray(1))
            CALL SortByPosition(xp, cutoff, skin, rank(bzBottomLeft:byLeft-1),clist, &
- &                    subregions(2,:), 8*idx-5, incArray(2))
-           CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bzBottomRight-1),clist,&
- &                    subregions(3,:), 8*idx-4, incArray(3))
-           CALL SortByPosition(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist,&
- &                    subregions(4,:), 8*idx-3, incArray(4))
-           CALL SortByPosition(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist,  &
- &                    subregions(5,:), 8*idx-2, incArray(5))
+          &                    subregions(2,:), 8*idx-5, incArray(2))
+           CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bzBottomRight-1),clist, &
+          &                    subregions(3,:), 8*idx-4, incArray(3))
+           CALL SortByPosition(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist, &
+          &                    subregions(4,:), 8*idx-3, incArray(4))
+           CALL SortByPosition(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist, &
+          &                    subregions(5,:), 8*idx-2, incArray(5))
            CALL SortByPosition(xp, cutoff, skin, rank(bzTopLeft:byRight-1),clist, &
- &                    subregions(6,:), 8*idx-1, incArray(6))
-           CALL SortByPosition(xp, cutoff, skin, rank(byRight:bzTopRight-1),clist,&
- &                    subregions(7,:), 8*idx  , incArray(7))
+          &                    subregions(6,:), 8*idx-1, incArray(6))
+           CALL SortByPosition(xp, cutoff, skin, rank(byRight:bzTopRight-1),clist, &
+          &                    subregions(7,:), 8*idx  , incArray(7))
            CALL SortByPosition(xp, cutoff, skin, rank(bzTopRight:),clist, &
- &                    subregions(8,:), 8*idx+1, incArray(8))
+          &                    subregions(8,:), 8*idx+1, incArray(8))
       END IF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE SortByPosition_s
@@ -1086,43 +1088,44 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK),  INTENT(IN),    DIMENSION(:,:)        :: xp
+      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Input array for particles coordinates
-      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: cutoff
+      REAL(MK), DIMENSION(:),   INTENT(IN   ) :: cutoff
       !!! Input array for particles cutoff radii
-      REAL(MK),  INTENT(IN)                           :: skin
+      REAL(MK),                 INTENT(IN   ) :: skin
       !!! Skin parameter
-      INTEGER, INTENT(INOUT), DIMENSION(:)            :: rank
+      INTEGER,  DIMENSION(:),   INTENT(INOUT) :: rank
       !!! rank array
-      TYPE(ppm_clist), INTENT(INOUT)                  :: clist
+      TYPE(ppm_clist),          INTENT(INOUT) :: clist
       !!! cell list
-      REAL(MK),  INTENT(IN),    DIMENSION(:)          :: ownregion
+      REAL(MK), DIMENSION(:),   INTENT(IN   ) :: ownregion
       !!! Region that will be used to sort particles within
-      INTEGER(ppm_kind_int64),  INTENT(IN)            :: idx
+      INTEGER(ppm_kind_int64),  INTENT(IN   ) :: idx
       !!! Index of cell to be processed
-      INTEGER,   INTENT(IN)                           :: level
+      INTEGER,                  INTENT(IN   ) :: level
       !!! Destination level that particles of this depth level
       !!! will be sorted.
-      INTEGER,   INTENT(IN)                           :: increment
+      INTEGER,                  INTENT(IN   ) :: increment
       !!! Start index in particles arrays.
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-      INTEGER,   DIMENSION(2**ppm_dim)                   :: incArray
-      REAL(MK),  DIMENSION(2**ppm_dim, 2*ppm_dim)        :: subregions
-      REAL(MK),  DIMENSION(ppm_dim)                      :: mid_coor
-      INTEGER                                            :: bx
-      INTEGER                                            :: byLeft
-      INTEGER                                            :: byRight
-      INTEGER                                            :: bzBottomLeft
-      INTEGER                                            :: bzBottomRight
-      INTEGER                                            :: bzTopLeft
-      INTEGER                                            :: bzTopRight
-      INTEGER                                            :: i
-      INTEGER                                            :: info
+      REAL(MK), DIMENSION(2**ppm_dim, 2*ppm_dim) :: subregions
+      REAL(MK), DIMENSION(ppm_dim)               :: mid_coor
+
+      INTEGER,  DIMENSION(2**ppm_dim)            :: incArray
+      INTEGER                                    :: bx
+      INTEGER                                    :: byLeft
+      INTEGER                                    :: byRight
+      INTEGER                                    :: bzBottomLeft
+      INTEGER                                    :: bzBottomRight
+      INTEGER                                    :: bzTopLeft
+      INTEGER                                    :: bzTopRight
+      INTEGER                                    :: i
+      INTEGER                                    :: info
 
       ! If no particles are assigned, return
-      IF(SIZE(rank) .LT. 1) RETURN
+      IF (SIZE(rank) .LT. 1) RETURN
 
       ! Set midpoint coordinates
       DO i = 1, ppm_dim
@@ -1140,7 +1143,7 @@
       ! Divide particles that are on the right of midpoint x-coordinate
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
       CALL partition(xp, rank(bx:),    mid_coor(2), byRight, 2)
-      byRight       = byRight       + bx      - 1
+      byRight = byRight + bx - 1
 
       ! If in 3D, keep on subdividing
       IF(ppm_dim .EQ. 3)  THEN
@@ -1195,30 +1198,30 @@
 
           IF(ppm_dim .EQ. 2)  THEN
               CALL SortByRC_Pos(xp, cutoff, skin, rank(1:byLeft-1),clist, &
-&                    subregions(1,:), 4*idx-2, level, incArray(1))
+              &                 subregions(1,:), 4*idx-2, level, incArray(1))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(byLeft:bx-1),clist, &
-&                    subregions(2,:), 4*idx-1, level, incArray(2))
+              &                 subregions(2,:), 4*idx-1, level, incArray(2))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:byRight-1),clist,&
-&                    subregions(3,:), 4*idx, level, incArray(3))
+              &                 subregions(3,:), 4*idx, level, incArray(3))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(byRight:),clist,&
-&                    subregions(4,:), 4*idx+1, level, incArray(4))
+              &                 subregions(4,:), 4*idx+1, level, incArray(4))
           ELSEIF(ppm_dim .EQ. 3)   THEN
               CALL SortByRC_Pos(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist, &
-&                    subregions(1,:), 8*idx-6, level, incArray(1))
+              &                 subregions(1,:), 8*idx-6, level, incArray(1))
               CALL SortByRC_Pos(xp, cutoff, skin,rank(bzBottomLeft:byLeft-1),clist, &
-&                    subregions(2,:), 8*idx-5, level, incArray(2))
+              &                 subregions(2,:), 8*idx-5, level, incArray(2))
               CALL SortByRC_Pos(xp, cutoff, skin,rank(byLeft:bzBottomRight-1),clist,&
-&                    subregions(3,:), 8*idx-4, level, incArray(3))
+              &                 subregions(3,:), 8*idx-4, level, incArray(3))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist,&
-&                    subregions(4,:), 8*idx-3, level, incArray(4))
+              &                 subregions(4,:), 8*idx-3, level, incArray(4))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist,  &
-&                    subregions(5,:), 8*idx-2, level, incArray(5))
+              &                 subregions(5,:), 8*idx-2, level, incArray(5))
               CALL SortByRC_Pos(xp, cutoff, skin,rank(bzTopLeft:byRight-1),clist,&
-&                    subregions(6,:), 8*idx-1, level, incArray(6))
+              &                 subregions(6,:), 8*idx-1, level, incArray(6))
               CALL SortByRC_Pos(xp, cutoff, skin,rank(byRight:bzTopRight-1),clist,  &
-&                    subregions(7,:), 8*idx, level, incArray(7))
+              &                 subregions(7,:), 8*idx, level, incArray(7))
               CALL SortByRC_Pos(xp, cutoff, skin, rank(bzTopRight:),clist, &
-&                    subregions(8,:), 8*idx+1, level, incArray(8))
+              &                 subregions(8,:), 8*idx+1, level, incArray(8))
           END IF
       END IF
 #if   __KIND == __SINGLE_PRECISION
@@ -1274,13 +1277,13 @@
       DO
           j = j - 1
           DO WHILE(j .GT. 0)
-              IF(xp(axis, rank(j)) .LT. midPoint) exit
+              IF (xp(axis, rank(j)) .LT. midPoint) exit
               j = j-1
           END DO
 
           i = i+1
-          DO WHILE(i .LE. SIZE(rank))
-              IF(xp(axis, rank(i)) .GE. midPoint) exit
+          DO WHILE (i .LE. SIZE(rank))
+              IF (xp(axis, rank(i)) .GE. midPoint) exit
               i = i+1
           END DO
 
@@ -1545,11 +1548,11 @@
       DO i = 1, clist%max_depth
           ! minimum cutoff radius has to be greater than
           ! half of the maximum side length
-          rc_limit  = minSideLength/2
+          rc_limit  = minSideLength/2._MK
           rc_border = lastIdxForRC(cutoff, skin, clist, rc_limit)
           clist%rc_borders(i) = rc_border
           ! maximum side length after a subdivision
-          minSideLength = minSideLength/2
+          minSideLength = minSideLength/2._MK
       END DO
 
       CALL substop('getRC_Borders',t0,info)

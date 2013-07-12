@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :              ppm_mesh_block_intersect
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,7 @@
       !!! The reason is that this routine is typically called from inside a
       !!! loop and we do not want to redo the checks at every iteration.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
@@ -59,7 +59,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: from_topoid
       !!! Source topology identifier
@@ -104,7 +104,7 @@
       LOGICAL, DIMENSION(3)   , INTENT(IN   ), OPTIONAL :: lsymm
       !!! Use symmetry and chop last point
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)            :: ldu
       INTEGER, DIMENSION(ppm_dim)      :: iblockstart,nblocksize
@@ -120,11 +120,11 @@
       TYPE(ppm_t_topo),      POINTER   :: from_topo => NULL()
       TYPE(ppm_t_topo),      POINTER   :: to_topo   => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_mesh_block_intersect',t0,info)
       pdim = ppm_dim
@@ -155,14 +155,14 @@
       !-------------------------------------------------------------------------
       chop = 0
       IF (PRESENT(lsymm)) THEN
-         IF (lsymm(1).EQV..TRUE.) THEN
+         IF (lsymm(1)) THEN
             chop(1) = 1
          END IF
-         IF (lsymm(2).EQV..TRUE.) THEN
+         IF (lsymm(2)) THEN
             chop(2) = 1
          END IF
          IF (pdim .GT. 2) THEN
-            IF (lsymm(3).EQV..TRUE.) THEN
+            IF (lsymm(3)) THEN
                chop(3) = 1
             END IF
          END IF
@@ -237,7 +237,7 @@
               ENDIF
           ENDIF
           !---------------------------------------------------------------------
-          !  send block (isendblkstart...isendblkstart+nblocksize-1) 
+          !  send block (isendblkstart...isendblkstart+nblocksize-1)
           !  from sub isub to sub jsub
           !---------------------------------------------------------------------
           ! global sub index of local sub where the blocks come from
@@ -253,7 +253,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_mesh_block_intersect',t0,info)

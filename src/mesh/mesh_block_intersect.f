@@ -1,15 +1,15 @@
       SUBROUTINE equi_mesh_block_intersect(this,to_mesh,isub_loc,isub,jsub,&
               offset,nsendlist,isendfromsub,isendtosub,isendpatchid,&
               isendblkstart,isendblksize,ioffset,info,lsymm)
-      !!! This routine determines, for each patch, common mesh blocks 
-      !!! (intersections) of two subpatches, on different subdomains, 
+      !!! This routine determines, for each patch, common mesh blocks
+      !!! (intersections) of two subpatches, on different subdomains,
       !!! possibly shifted and/or extended with ghostlayers.
       !!! Start and size of all blocks found are stored and returned. This
       !!! routine is used by `ppm_map_field_global` and
       !!! `ppm_map_field_ghost_init`.
       !!!
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
@@ -19,7 +19,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)                  :: this
       !!! Source mesh
@@ -60,7 +60,7 @@
       LOGICAL, DIMENSION(3)   , INTENT(IN   ), OPTIONAL :: lsymm
       !!! Use symmetry and chop last point
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)            :: ldu
       INTEGER, DIMENSION(ppm_dim)      :: iblockstart,nblocksize
@@ -75,9 +75,9 @@
       TYPE(ppm_t_topo),      POINTER   :: to_topo   => NULL()
       TYPE(ppm_t_subpatch),  POINTER   :: p   => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       start_subroutine("mesh_block_intersect")
 
       pdim = ppm_dim
@@ -98,14 +98,14 @@
       !-------------------------------------------------------------------------
       chop = 0
       IF (PRESENT(lsymm)) THEN
-         IF (lsymm(1).EQV..TRUE.) THEN
+         IF (lsymm(1)) THEN
             chop(1) = 1
          END IF
-         IF (lsymm(2).EQV..TRUE.) THEN
+         IF (lsymm(2)) THEN
             chop(2) = 1
          END IF
          IF (pdim .GT. 2) THEN
-            IF (lsymm(3).EQV..TRUE.) THEN
+            IF (lsymm(3)) THEN
                chop(3) = 1
             END IF
          END IF
@@ -188,7 +188,7 @@
 
                   !size of the block (+1 if mesh nodes at the boundary
                   ! between blocks are NOT duplicated, and should thus be
-                  ! counted as ghosts) 
+                  ! counted as ghosts)
                   nblocksize(k)  = iblockstopk-iblockstart(k)+1
                   ! do not send if there is nothing to be sent
                   IF (nblocksize(k).LT.1) dosend = .FALSE.
@@ -231,7 +231,7 @@
                       or_fail_alloc("ioffset")
                   ENDIF
                   !---------------------------------------------------------------
-                  !  send block (isendblkstart...isendblkstart+nblocksize-1) 
+                  !  send block (isendblkstart...isendblkstart+nblocksize-1)
                   !  from sub isub to sub jsub
                   !---------------------------------------------------------------
                   ! global sub index of local sub where the blocks come from
@@ -252,7 +252,7 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
       end_subroutine()
 

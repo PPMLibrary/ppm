@@ -123,18 +123,13 @@
       ! verlet lists of real particles only, hence we allocate nvlist for
       ! real particles (Np) only.
       !---------------------------------------------------------------------
-      IF(lsymm)   THEN
-          lda(1) = Mp
-      ELSE
-          lda(1) = Np
-      ENDIF
-
+      lda(1) = MERGE(Mp,Np,lsymm)
       iopt = ppm_param_alloc_fit
       CALL ppm_alloc(nvlist, lda, iopt, info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',     &
-    &                       'nvlist',__LINE__,info)
+          &                       'nvlist',__LINE__,info)
       END IF
 
       !---------------------------------------------------------------------
@@ -169,56 +164,39 @@
           ! of this subdomain.
           !-----------------------------------------------------------------
           CALL getSubdomainParticles(xp,Np,Mp,cutoff,lsymm,actual_subdomain,&
- &                 ghostlayer, xp_sub, cutoff_sub, Np_sub,Mp_sub,p_id)
+          &                 ghostlayer, xp_sub, cutoff_sub, Np_sub,Mp_sub,p_id)
 
           !-----------------------------------------------------------------
           ! Create verlet lists for particles of this subdomain which will
           ! be stored in vlist_sub and nvlist_sub.
           !-----------------------------------------------------------------
-          IF(present(lstore))  THEN
-              lst = lstore
-          ELSE
-              lst = .TRUE.
-          END IF
+          lst = MERGE(lstore,.TRUE.,PRESENT(lstore))
 
           CALL create_inl_vlist(xp_sub, Np_sub, Mp_sub, cutoff_sub,   &
-     &             skin, lsymm, actual_subdomain, ghostlayer, info, vlist_sub,&
-     &             nvlist_sub,lst)
+          &             skin, lsymm, actual_subdomain, ghostlayer, info, vlist_sub,&
+          &             nvlist_sub,lst)
 
-          IF(lsymm)  THEN
-              n_part = Mp_sub
-          ELSE
-              n_part = Np_sub
-          END IF
+          n_part = MERGE(Mp_sub,Np_sub,lsymm)
 
           DO i = 1, n_part
               nvlist(p_id(i)) = nvlist_sub(i)
           ENDDO
 
-          IF(lst)  THEN
+          IF (lst)  THEN
               IF(neigh_max .LT. MAXVAL(nvlist_sub))  THEN
                   neigh_max = MAXVAL(nvlist_sub)
                   lda(1) = neigh_max
-                  IF(lsymm)  THEN
-                      lda(2) = Mp
-                  ELSE
-                      lda(2) = Np
-                  ENDIF
-
+                  lda(2) = MERGE(Mp,Np,lsymm)
                   iopt = ppm_param_alloc_grow_preserve
                   CALL ppm_alloc(vlist, lda, iopt, info)
                   IF (info.NE.0) THEN
                       info = ppm_error_fatal
                       CALL ppm_error(ppm_err_alloc,'ppm_inl_vlist',        &
-                &                       'vlist',__LINE__,info)
+                      &                       'vlist',__LINE__,info)
                   END IF
               ENDIF
 
-              IF(lsymm)  THEN
-                  n_part = Mp_sub
-              ELSE
-                  n_part = Np_sub
-              ENDIF
+              n_part = MERGE(Mp_sub,Np_sub,lsymm)
 
               DO i = 1, n_part
                   DO j = 1, nvlist_sub(i)
@@ -285,9 +263,9 @@
       !!! vlist is also allocated and filled.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !---------------------------------------------------------------------
       !  Arguments
@@ -345,7 +323,7 @@
 
           max_size = 0._MK
 
-          IF(lsymm .EQV. .TRUE.)  THEN
+          IF (lsymm)  THEN
               DO i = 1, ppm_dim
                   whole_domain(2*i-1) = actual_domain(2*i-1)
                   whole_domain(2*i)   = actual_domain(2*i) + ghostlayer(i)
@@ -612,7 +590,7 @@
       !  Set size of nvlist. If lsymm = TRUE, we also need to store number of
       !  neighbors of some ghost particles.
       !-------------------------------------------------------------------------
-          IF(lsymm .EQV. .TRUE.)  THEN
+          IF (lsymm)  THEN
               lda(1) = clist%n_all_p  ! Store number of neighbors also of ghost particles
           ELSE
               lda(1) = clist%n_real_p ! Store number of neighbors of real particles only
@@ -673,11 +651,7 @@
               !  of some ghost particles, so we allocate columns of vlist
               !  by number of all particles.
               !-----------------------------------------------------------------
-              IF(lsymm .EQV. .TRUE.)  THEN
-                  lda(2) = clist%n_all_p
-              ELSE
-                  lda(2) = clist%n_real_p
-              ENDIF
+              lda(2) = MERGE(clist%n_all_p,clist%n_real_p,lsymm)
               !-----------------------------------------------------------------
               !  Allocate vlist
               !-----------------------------------------------------------------
@@ -685,7 +659,7 @@
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
-            &                       'vlist',__LINE__,info)
+                  &                       'vlist',__LINE__,info)
                   GOTO 9999
               END IF
 
@@ -693,7 +667,7 @@
               !  Fill in verlet lists depending on whether lists will be
               !  symmetric or not.
               !-----------------------------------------------------------------
-              IF(lsymm .EQV. .TRUE.)    THEN ! If symmetric
+              IF (lsymm)    THEN ! If symmetric
                   DO p_idx = 1, clist%n_all_p
                       CALL get_neigh_sym(clist%rank(p_idx),clist, &
                       & whole_domain, actual_domain, xp, cutoff, skin, vlist, nvlist)
