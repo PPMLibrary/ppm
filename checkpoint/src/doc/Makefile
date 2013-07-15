@@ -1,7 +1,7 @@
 .SUFFIXES:
 .SUFFIXES: .tex .pdf
 
-all: README.pdf
+.PHONY: all
 
-.tex.pdf:
-	pdflatex $<
+all:
+	pdflatex README.tex
