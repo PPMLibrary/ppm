@@ -49,8 +49,8 @@ integer :: gen1mb_info
   INTEGER :: error
   CHARACTER(LEN=32) :: pointer_addr
   !CHARACTER(LEN=32) :: init_part = "30E8BF0000000000C09E700000000000"
-  LOGICAL :: TEST_READ = .TRUE.
-  !LOGICAL :: TEST_READ = .FALSE.
+  !LOGICAL :: TEST_READ = .TRUE.
+  LOGICAL :: TEST_READ = .FALSE.
 
   ! Prepare VTK filename
   write(procbuf,'(I3)')   ppm_nproc
