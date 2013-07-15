@@ -2,6 +2,9 @@
 \title{PPM Checkpoint}
 \author{Kevin Brandstatter}
 \usepackage[margin=1in]{geometry}
+\usepackage{graphicx}
+\usepackage{floatflt}
+\usepackage{graphics}
 \newcommand{\farg}[2]{
       \ \ \ #1 & :: #2 \\
 }
@@ -10,14 +13,43 @@
 \section{Motivation}
 \paragraph{}
 The checkpoint functionality is a necessary component for the scalability of the application. Take for example the library running on a large cluster of 128+ nodes. If the application runs for a significant period of time, there is a good chance the system will experience a failure during the run which would render the simulation useless, as to retry would require starting the simulation from the beginning. However, with a checkpoint/restart mechanism, the application can periodically save its state, thus if a failure occurs the application can be restarted from the saved state which prevents the loss of previous computation.
+
+\section{Background Information}
+\subsection{PPM}
+\paragraph{}
+PPM Description goes here
+\subsection{HDF5}
+\paragraph{}
+% Expand more
+HDF5 (hierarchical data format version 5) is a file format for the storage of programatic data using hierarchies of groups and datasets for organization. It has built in support for storage of Fortran's built in types, and can be used to store complex data by creating compound types. This is the file format used for the storage of the checkpoint data.
+
+\subsection{Fortran Types}
+\subsubsection{Intrinsic Types}
+\paragraph{}
+An intrinsic type is any type that is built into the Fortran programming language. This includes INTEGER, REAL, etc. These are the base units of programming and may be encapsulated into derived types.
+
+\subsubsection{Derived Types}
+\paragraph{}
+A derived type is a type that is defined in Fortran using the ``TYPE'' Keyword. These are used to encapsulated intrinsic types into more complicated structures, and to reuse attributes by extending other derived types. The derived types of PPM are partially outlined in \ref{fig.typechart}.
+
+\subsubsection{Pointer Lists}
+\paragraph{}
+One limitation of Fortran is that it does not allow arrays of pointers. However, it does allow for arrays of derived types. Because of this, there are several specific derived types whose only purpose is to encapsulate a pointer for use in an array. These are generally referred to in this report as the ``ppm\_t\_ptr'' types as they share this common prefix. Pointer lists are arrays of these types. Since they do not extend anything, they do not belong to any of ppm's typical type families and thus must be handled differently. These differences are outlined further in Section \ref{sec.ptrlists}.
+
+\subsection{Jargon}
+\begin{list}{}{}
+\item Type Family - A group of types that share a common ancestor. Usually referenced by the highest type in the tree that does not extend any other types.
+\item ppm\_t\_ptr - A group of derived types that only serve to encapsulate a pointer to another derived type for use in lists.
+\end{list}
+
 \section{General Usage}
 \subsection{Building}
 Most of the building is handled by using Makefiles. In order to build all that is needed is to modify a few variables in the Makefile and run \emph{make}.
-\subsubsection{src/Makefile, part\_test/gen/Makefile}
+\subsubsection*{src/Makefile, part\_test/gen/Makefile}
 \begin{list}{}{}
 \item PPMDIR = /path/to/ppm
 \item PPMNUMDIR = /path/to/ppmnumerics
-\item HDF5 = /path/to/hdf5
+\item HDF5 = /path/to/HDF5
 \item METIS = /path/to/metis/lib
 \end{list}
 
@@ -39,32 +71,123 @@ Once a checkpoint file has been opened, the next step is to store the desired st
    CALL save\_pointer(file\_id, variable\_name, pointer\_addr ! record the pointer for later) \\
 \end{quote}
 
-The checkpointing routines start by storing all of a types members, starting with the intrinsic types. Then it calls store\_type on each member that it points to so as to store all of its references. In order to prevent double storage and collisions, the pointers are recorded in a tree structure such that the routine can determine if it needs to proceed. Finally, a reference to the other type is stored with the main type for associative resiliancy.
+The checkpointing routines start by storing all of a types members, starting with the intrinsic types. Then it calls store\_type on each member that it points to so as to store all of its references. In order to prevent double storage and collisions, the pointers are recorded in a tree structure such that the routine can determine if it needs to proceed. Finally, a reference to the other type is stored with the main type for associative resiliency.
 
 \subsection{Restart/Recover}
 \paragraph{}
-Most of the restart behavior is expected to be done by a parent application. This module serves to provide access to the data stored by a checkpoint in an inverse way. In this way, it provides more of a recover functionality, so that the application can recover its previous state before beginning its main loop. Do do this open the checkpoint file in the same way as makeing a file, however, be careful not to use the \emph{make} variety, as it will truncate the file. With the file descriptor, the state can retrieved using the simple set of operations that follow.
+Most of the restart behavior is expected to be done by a parent application. This module serves to provide access to the data stored by a checkpoint in an inverse way. In this way, it provides more of a recover functionality, so that the application can recover its previous state before beginning its main loop. To do this, open the checkpoint file in the same way as making a file, however, be careful not to use the \emph{make} variety, as it will truncate the file. With the file descriptor, the state can retrieved using the simple set of operations that follow.
 \begin{quote}
    CALL get\_saved\_pointer(file\_id, varname, pointer\_addr) \\
    var =\textgreater recover\_DTYPE(file\_id, pointer\_addr, var) ! where DTYPE is the type of var
 \end{quote}
 \section{Implementation Details}
+\subsection{Checkpoint File Format}
+\subsubsection{Base File}
+\begin{list}{}{}
+\item /checkpoint\_data - Explicitly saved references
+\item /intrinsic - Intrinsic types
+\item /ptr\_lists - Stored ptr lists
+\item /particles\_stats\_d\_
+\item /ppm\_t\_container
+\item /ppm\_t\_main\_abstr
+\item /ppm\_t\_mapping\_d\_
+\item /ppm\_t\_neighlist\_d\_
+\item /ppm\_t\_operator\_discr\_
+\end{list}
+
+\subsubsection{Data Representation}
+\begin{quote}
+Ex. /ppm\_t\_container/3068ED0000000000E0C66F0000000000 is a stored object
+\end{quote}
+\paragraph{}
+\begin{floatingfigure}[r]{0.2\textwidth}
+   \centering
+   \includegraphics[width=0.2\textwidth]{container.eps}
+   \caption{Example HDF5 representation}
+   \label{fig:datarep}
+\end{floatingfigure}
+Figure \ref{fig:datarep} Shows what this might look like in an HDF5 context. The format is very simple to understand. First, the module creates a custom HDF5 type for the ppm type based on what members it has. The type compiler (See Section \ref(sec.typefc)) handles the calculation of the number and type of the arguments and creates the necessary HDF5 code to initialize the type. Once the type is created, sub types are added to this type as members identified by the variable name. This makes it easy to read and write attributes to the dataset by variable name.
+
+As an additional note, this example shows how datasets are named. Datasets stored by the checkpoint module are referenced using the calculated or generated pointer address string. This string is 32 characters and is in hexadecimal form for derived types. Intrinsic and ppm\_t\_ptr type pointers are based on an internal counter and prefixed with ``internal''.
+
+Finally, if an element is explicitly saved with the ``save\_pointer'' function, then the dataset name is user defined (conventionally it should be the name of the variable) and the value it holds is the pointer address. Section \ref{sec:ptrrep} explains this in more detail.
+
+\subsubsection{Pointer Representation}
+\label{sec:ptrrep}
+Take this simple example of a checkpointed particle (Note: unused groups omitted for brevity)
+\begin{list}{}{}
+\item /checkpoint\_data/parts contains ``3068ED0000000000E0C66F0000000000''
+\item /ppm\_t\_main\_abstr/3068ED0000000000E0C66F0000000000 is a stored particle.
+\end{list}
+In order to keep references, a pointer is stored as a string dataset. This string is the address returned by get pointer, and recorded by the pointer\_tracker module (See Section \ref{sec.ptrtrack}). To re-associate the variable ``parts'' with the correct data, the module can read the pointer address from the ``parts'' dataset. This string is the name of the dataset of the corresponding data. Thus it need only be passed to the appropriate ``recover'' function in order to read and associate the data.
+
+Null pointers are represented by a string of 32 ``0''s.
+%
+%\begin{list}{}{}
+%\item /checkpoint\_data         Group
+%\item /checkpoint\_data/dx      Dataset {SCALAR}
+%\item /checkpoint\_data/nlist   Dataset {SCALAR}
+%\item /checkpoint\_data/parts   Dataset {SCALAR}
+%\item /checkpoint\_data/procid  Dataset {SCALAR}
+%\item /intrinsic               Group
+%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 2 Dataset {29791, 18}
+%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 3 Dataset {35937}
+%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 5 Dataset {35937, 3}
+%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 6 Dataset {35937}
+%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 7 Dataset {35937, 3}
+%\item /particles\_stats\_d\_      Group
+%\item /particles\_stats\_d\_/F06AED000000000040CF6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_container         Group
+%\item /ppm\_t\_container/2084ED0000000000E04B6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_container/30C1EC0000000000A0CD6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_container/D0C0EC0000000000A0CE6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_main\_abstr        Group
+%\item /ppm\_t\_main\_abstr/3068ED0000000000E0C66F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_main\_abstr/8084ED000000000000CB6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_main\_abstr/9094ED000000000000CB6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_mapping\_d\_        Group
+%\item /ppm\_t\_neighlist\_d\_      Group
+%\item /ppm\_t\_neighlist\_d\_/2088ED0000000000E0CB6F0000000000 Dataset {SCALAR}
+%\item /ppm\_t\_operator\_discr\_   Group
+%\item /ptr\_lists               Group
+%\item /ptr\_lists/\ internal\ \ \ \ \ \ \ \ \ \ \ 1 Dataset {SCALAR}
+%\item /ptr\_lists/\ internal\ \ \ \ \ \ \ \ \ \ \ 4 Dataset {SCALAR}
+%\end{list}
 \subsection{Intrinsic Storage}
 \paragraph{}
-Intrinsic types (integers, reals, logicals, strings, etc) are stored using a combination of the hdf5 low interface and the lite high level hdf5 API. Currently, If you want to checkpoint an hd5f type by itself you need to manually call the hd5f code. The checkpoint module only provides the functions for storing intrinsic types as part of a derived type. However, the checkpoint module does provide support for storage of pointers to intrinsic arrays.
-\subsection{Derived Types}
-\paragraph{}
-In order to store derived types, the module groups each type into a familly. This familly is based on the highest level parent. For example, one familly is the ppm\_t\_main\_abstr because it does not extend anything. For each familly, there is a standard set of functions, whose behavior depends on what type is given. The functions provided are make\_type, store, write, read, and a collection of recover statements. The store function is the high level storage function that creates a dataset, writes the type and records the address. It uses the write function, which handles just the writing and storage of the various members. This includes storing pointers which it references and recording a reference to the stored location. The make\_type routine is necessary for generating the type of the dataset, which allocates the space and layout of the HDF5 dataset. Finally, the various recover functions are wrappers to the read function. The read function handles the reading of the data from the given dataset into the type. The recover functions handle the allocation of the appropriate fortran type and returns a pointer to the newly allocated data. This way we ensure that the type remains the same after a restart and that all the necessary data is recovered.
+Intrinsic types (integers, reals, logicals, strings, etc) are stored using a combination of the HDF5 low interface and the lite high level HDF5 API. Currently, If you want to checkpoint an HDF5 type by itself you need to manually call the HDF5 code. The checkpoint module only provides the functions for storing intrinsic types as part of a derived type. However, the checkpoint module does provide support for storage of pointers to intrinsic arrays.
 
-All of these functions are computer generated with my specially written type compiler, which I explain in detail in Section \ref{sec.typefc}
-\subsection{Pointer Tracking}
+Code for reading and writing intrinsic types and pointers is located in the ``intrinsic'' subdirectory.
+
+\subsection{Derived Type Storage}
 \paragraph{}
-One bit of the challange in checkpointing is the relational nature of the data and the usage of dynamically allocated memory and pointers. Because of this, the module needs to identify various pointer, tag them with a unique identifier, and be able to reassociate each pointer with the correct target. If this isn't done, restarts could have pointers to duplicate data, where changes in one target would not change in the other. This change in behavior is likely to break the running application as it may rely on the fact that these two pointers should reference the same data.
+In order to store derived types, the module groups each type into a family. This family is based on the highest level parent. For example, one family is the ppm\_t\_main\_abstr because it does not extend anything. For each family, there is a standard set of functions, whose behavior depends on what type is given. The functions provided are make\_type, store, write, read, and a collection of recover statements. The store function is the high level storage function that creates a dataset, writes the type and records the address. It uses the write function, which handles just the writing and storage of the various members. This includes storing pointers which it references and recording a reference to the stored location. The make\_type routine is necessary for generating the type of the dataset, which allocates the space and layout of the HDF5 dataset. Finally, the various recover functions are wrappers to the read function. The read function handles the reading of the data from the given dataset into the type. The recover functions handle the allocation of the appropriate Fortran type and returns a pointer to the newly allocated data. This way it can ensure that the type remains the same after a restart and that all the necessary data is recovered.
+
+All of these functions are computer generated with my specially written type compiler, which is explained in more detail in Section \ref{sec.typefc}.
+
+The code for storing these types is contained in the ``types'' subdirectory.
+
+\subsection{Pointer Lists}
+\label{sec.ptrlists}
+\paragraph{}
+Since Fortran does not support arrays of pointers, arrays of ppm\_t\_ptr types were used instead. However, because they do not extend any common class, they could not be stored using built in Fortran polymorphism even though they were identical except for which type they encapsulated. Because of this, it was simple to write templates specifically for these types and do what amounts to a search and replace of the type parameter. This process was automated using scripts so that if future encapsulated types need to be added, they only need to be added to the input file.
+
+The reason these are not generated with def files like other derived types is because they do not work exactly like other derived types. The main difference is that the behavior of the transfer function when calculating the address is more similar to that of an intrinsic type. Because of this, pointer lists are treated as intrinsic types for pointer tracking. Also, because there is not an HDF5 function to store an array of potentially different types, the array is stored as a list of pointer addresses. The pointer addresses actually refer to the encapsulated pointer and not the derived type that it is stored in. Because of this explicit unwrapping, it requires additional code, which is why there is a separate template for these types.
+
+The checkpoint code for these types is contained in the ``pointers'' subdirectory.
+
+\subsection{Pointer Tracking}
+\label{sec.ptrtrack}
+\paragraph{}
+One bit of the challenge in checkpointing is the relational nature of the data and the usage of dynamically allocated memory and pointers. Because of this, the module needs to identify various pointers, tag them with a unique identifier, and be able to re-associate each pointer with the correct target. If this isn't done, restarts could have pointers to duplicate data, where changes in one target would not change in the other. This change in behavior is likely to break the running application as it may rely on the fact that these two pointers should reference the same data. Finally, if a pointer to be inserted matches the hash and type of a recorded pointer, an associated() call determines whether or not they are the same thing.
+
+The source files that handle generating, retrieving, and tracking pointers is contained in the ``pointers'' subdirectory. The code for the binary trees resides in the ``trees'' subdirectory.
+
 \subsubsection{Calculation}
 \paragraph{}
-Unfortunately, calculation of pointers in fortran is not exactly efficient as the data has to do some translating to a common type. Also, calculation for intrinsic types and derived types is different because of internal represantation differences. Derived type \emph{pointer address} calculation is fairly simple. We are able to use the \emph{transfer} intrinsic function to convert the derived type reference to a 32 character string. This is unique to a givin target which allows the module to identify a target by this string. 
+Unfortunately, calculation of pointers in Fortran is not exactly efficient as the data has to do some translating to a common type. Also, calculation for intrinsic types and derived types is different because of internal representation differences. Derived type \emph{pointer address} calculation is fairly simple. We are able to use the \emph{transfer} intrinsic function to convert the derived type reference to a 32 character string. This is unique to a given target which allows the module to identify a target by this string. 
 
-For the intrinsic types, this method does not work. Instead, the module takes the hash of the data with FNVHash in order to provide a method of comparison. Then the pointer is inserted into a binary tree and assigned an incremental identifier. It assumes that variables of the same type, with the same hash are the same target. While not conclusive, this is an adequate assuption for the present and could be improved later depending on the limitations of the language. By recording in this binary tree, the same address can be retrieved for all references that satisfy the equality constraints.
+For the intrinsic types, this method does not work. Instead, the module takes the hash of the data with FNVHash in order to provide a method of comparison. Then the pointer is inserted into a binary tree and assigned an incremental identifier. It assumes that variables of the same type, with the same hash are the same target. While not conclusive, this is an adequate assumption for the present and could be improved later depending on the limitations of the language. By recording in this binary tree, the same address can be retrieved for all references that satisfy the equality constraints.
 
 \subsubsection{Trees}
 \paragraph{}
@@ -75,8 +198,9 @@ The module uses a top level type of a pair of trees, intrinsic and derived as it
 The trees are mostly used for intrinsic pointer assignment (ie, recording which address given to which reference) and also to record which pointers that have already recovered during the read phase. By storing the references in a tree, duplicate reads can be prevented and associative consistency maintained. That is to say, if a given piece of data has already been recovered and another type references that data, it can be directly associated to the recorded reference instead of duplicating the data.
 
 \subsection{Source Code Layout and Key Files}
+%Replace these with subsections instead
 \begin{list}{}{}
-\item checkpoint\_hdf5.f - Main module source file. Contains the includes for the rest of the source and the API interface definitions.
+\item checkpoint\_HDF5.f - Main module source file. Contains the includes for the rest of the source and the API interface definitions.
 \item pointer\_tracker.f - Main module source file for pointer tracking. includes the files related to tracking references and the API interfaces
 \item src/ - the main directory of all the source code
 \item types/ - Contains the *.def files and the generated source files for derived type storage and recovery.
@@ -85,9 +209,10 @@ The trees are mostly used for intrinsic pointer assignment (ie, recording which 
 \item doc/ - Contains the documentation files
 \item trees/ - Contains the source code relating to the various binary trees used for pointer tracking
 \end{list}
+
 \section{Scripts Documentation}
 \paragraph{}
-In order to make life easier and maintain sanity amidst a sea of Fortran code that just seemed to repeat itself a thousand times, a set of scripts in perl were developed in conjuction with the main code base in order to generate large amounts of repetitive code from templates. While much of this could have been done with INCLUDES and preprocessor directives, scripts seem to be a bit more elegant as they allow for more flexibility of design and features. For example, I can generate all the varieties of a function into one file and include the file once, instead of using a include file and including it N times with different parameters. However, since these scripts are not exactly standard or particularly well commented, it is important to discus what they do and how they work.
+In order to make life easier and maintain sanity amidst a sea of Fortran code that just seemed to repeat itself a thousand times, a set of scripts in perl were developed in conjunction with the main code base in order to generate large amounts of repetitive code from templates. While much of this could have been done with INCLUDES and preprocessor directives, scripts seem to be a bit more elegant as they allow for more flexibility of design and features. For example, it can generate all the varieties of a function into one file and include the file once, instead of using a include file and including it N times with different parameters. However, since these scripts are not exactly standard or particularly well commented, it is important to discus what they do and how they work.
 \subsection{typefc.pl}
 \label{sec.typefc}
 \paragraph{}
@@ -102,10 +227,10 @@ The typefc script is essentially a type compiler. It takes a type definition and
       #1 - & #2
    \end{tabular}
 }
-The def file is a very simple DSL that is parsed to generate the required fortran code. It has only a few syntactical features and is designed to look similar to fortran definitions.
+The def file is a very simple DSL that is parsed to generate the required Fortran code. It has only a few syntactical features and is designed to look similar to Fortran definitions.
 \begin{list}{}{}
 \item \syn {type}{Begins a type definition}
-\item \syn{fortran\_type name [number]}{Defines a member of an intrinsic fortran type. Optional parameter number is used for arrays and may be a variable}
+\item \syn{Fortran\_type name [number]}{Defines a member of an intrinsic Fortran type. Optional parameter number is used for arrays and may be a variable}
 \item \syn{pointer type\_name}{Defines a pointer to some type}
 \item \syn{end}{Ends the type/allocatable definition}
 \item \syn{allocatable}{Begins enumeration of the allocatable types}
@@ -133,7 +258,7 @@ end \\
 
 \subsubsection{Script Design}
 \paragraph{}
-The script operation is fairly simple. The DSL is designed to be an LL Grammar which allows the parser to be very simple to implement and modify. The general parsing method is stack based, where each level is a different type. This stack is build using a basic REPL (Read eval print loop). The operations are simple. First it reads a line from the input. Then it evaluates it. If it is a type, it pushes a new context onto the stack. In this implementation, the \emph{stack} is created through the use of recursive calls to the parse function, which eliminates the need for additional data structures, as the built in scoping handles the context stacking. If it is some type, the evaluator generates the required fortran code for each section (read, write, make\_type) and returns it to the parent. The parent collects all of these statements and formats them. When an \emph{end} statement is reached, the definitions are wrapped in a type select statement and incorporated into the parent. If it is the parent, then the type parsing is complete.
+The script operation is fairly simple. The DSL is designed to be an LL Grammar which allows the parser to be very simple to implement and modify. The general parsing method is stack based, where each level is a different type. This stack is build using a basic REPL (Read eval print loop). The operations are simple. First it reads a line from the input. Then it evaluates it. If it is a type, it pushes a new context onto the stack. In this implementation, the \emph{stack} is created through the use of recursive calls to the parse function, which eliminates the need for additional data structures, as the built in scoping handles the context stacking. If it is some type, the evaluator generates the required Fortran code for each section (read, write, make\_type) and returns it to the parent. The parent collects all of these statements and formats them. When an \emph{end} statement is reached, the definitions are wrapped in a type select statement and incorporated into the parent. If it is the parent, then the type parsing is complete.
 
 Within the \emph{allocatable} statement, the parser simply collects the types, and then generates an \emph{allocate block}. This allocate block is used to allocate the correct type during recover. During storage, the types are enumerated, and the current type is recorded in the checkpoint. On recover, this is recovered and used to allocate the data to the appropriate type. This is necessary to allow for the higher level polymorphism to exist while still retaining the data from the lower level types.
 
@@ -155,7 +280,7 @@ This script is used to generate the functions for getting a pointer address for 
 
 \subsection{store\_ptr\_list.pl}
 \paragraph{}
-As a legacy issue that should be addressed at some point, the initial template doesn't have built in support for storing arrays of derived types. Because of this it is necessary to use a different template for the ppm\_t\_ptr types. This also makes it easier as they do not extend any common type that could be leveraged for abstraction, thus it is easier to provide a psuedo layer of abstraction by using the same template for each. The script does essentialy the same thing as the type compiler, in that it provides the store, write, read, recover functions, however it uses a custome template as the types follow a common format.
+As a legacy issue that should be addressed at some point, the initial template does not have built in support for storing arrays of derived types. Because of this it is necessary to use a different template for the ppm\_t\_ptr types. This also makes it easier as they do not extend any common type that could be leveraged for abstraction, thus it is easier to provide a pseudo layer of abstraction by using the same template for each. The script does essentially the same thing as the type compiler, in that it provides the store, write, read, recover functions, however it uses a custom template as the types follow a common format.
 \subsubsection{Files}
 \begin{list}{}{}
 \item ptrlist.in - List of ppm\_t\_ptr types to generate functions for
@@ -165,7 +290,7 @@ As a legacy issue that should be addressed at some point, the initial template d
 
 \subsection{make\_trees.pl}
 \paragraph{}
-In order to store the types in a generic tree, there have to be trees that store each familly and extend the root tree type. Thus, this script generates the tree definitions for the various types so that they can be stored in a single tree.
+In order to store the types in a generic tree, there have to be trees that store each family and extend the root tree type. Thus, this script generates the tree definitions for the various types so that they can be stored in a single tree.
 \subsubsection{Input}
 \begin{list}{}{}
 \item tree\_abstract.f.in - Base file of common routines for trees, includes some generic ones
@@ -178,6 +303,9 @@ In order to store the types in a generic tree, there have to be trees that store
 \item tree\_abstract\_typedef.f - Tree typedefs for the various types
 \item tree\_abstract.f - Subroutines for modifying/accessing the trees
 \end{list}
+
+\section{Future Work}
+\subsection{PHDF5}
 
 \section{API}
 \subsection{Subroutines/Functions}
@@ -231,7 +359,7 @@ In order to store the types in a generic tree, there have to be trees that store
 
 \subsection{Internal Functions}
 \begin{tabular}{p{0.2\textwidth}p{0.8\textwidth}}
-   Make hdf5 type representation & CALL make\_type\_DTYPE(ptr, type\_id) \\
+   Make HDF5 type representation & CALL make\_type\_DTYPE(ptr, type\_id) \\
                                  & \begin{tabular}{ll}
                                    \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
                                    \farg{INTEGER(HID\_T), INTENT(OUT)}{type\_id}
@@ -266,9 +394,8 @@ In order to store the types in a generic tree, there have to be trees that store
 
 \end{tabular}
 
-
 \subsection{Currently Supported Types}
-This section lists all the types for which a \emph{recover} function is generated. Read/write/store/make\_type functions are only generated for the patriarch class (the one that does not extend anything) and use SELECT statements to operate polymorphically on all children.
+This section lists all the types for which a \emph{recover} function is generated. Read/write/store/make\_type functions are only generated for the patriarch class (the one that does not extend anything) and use SELECT statements to operate using polymorphism for all children.
 \begin{list}{}{}
 \item particles\_stats\_d\_
 \item ppm\_t\_container
@@ -288,4 +415,11 @@ This section lists all the types for which a \emph{recover} function is generate
 \item ppm\_t\_neighlist\_d\_
 \item ppm\_t\_operator\_discr\_
 \end{list}
+
+\subsection{Type Chart}
+\begin{figure}[h!]
+   \label{fig.typechart}
+   \includegraphics[width=\textwidth]{ClassDiagram.png}
+\end{figure}
+
 \end{document}
