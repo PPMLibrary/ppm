@@ -63,15 +63,19 @@
          CONTAINS
             ! Creates and initializes the checkpoint file
             ! Creates necessary groups in the file for types
-            SUBROUTINE make_checkpoint_file(filename, file_id)
+            SUBROUTINE make_checkpoint_file(file_id, filename)
                IMPLICIT NONE
 
                ! The filename of the checkpoint
-               CHARACTER(LEN=*), INTENT(IN) :: filename
+               CHARACTER(LEN=*), OPTIONAL :: filename
 
                INTEGER(HID_T), INTENT(out):: file_id
                INTEGER(HID_T) :: group_id
                INTEGER :: error
+
+               IF (.NOT. present(filename)) THEN
+                  READ(*,*) filename
+               ENDIF
 
                ! Open the interface and create the file
                CALL h5open_f(error)
@@ -118,14 +122,18 @@
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
-            SUBROUTINE open_checkpoint_file(file_id, filename, error)
+            SUBROUTINE open_checkpoint_file(file_id, filename)
                IMPLICIT NONE
 
                ! The filename of the checkpoint
-               CHARACTER(LEN=*), INTENT(IN) :: filename
+               CHARACTER(LEN=*), OPTIONAL :: filename
 
-               INTEGER(HID_T), INTENT(out):: file_id
+               INTEGER(HID_T), INTENT(OUT):: file_id
                INTEGER :: error
+
+               IF (.NOT. present(filename)) THEN
+                  READ(*,*) filename
+               ENDIF
 
                ! Open the interface and create the file
                CALL h5open_f(error)
@@ -135,7 +143,7 @@
 
             ! Close the checkpoint file
             ! Called at the end of the checkpoint
-            SUBROUTINE close_checkpoint_file(file_id, error)
+            SUBROUTINE close_checkpoint_file(file_id)
                IMPLICIT NONE
                INTEGER(HID_T), INTENT(IN) :: file_id
                INTEGER error

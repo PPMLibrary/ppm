@@ -125,7 +125,7 @@ integer :: gen1mb_info
   call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
 
 IF (TEST_READ) THEN
-      CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5', error)
+      CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5')
 
       CALL get_saved_pointer(checkpoint_file, 'parts', pointer_addr)
       parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,pointer_addr, parts_abstr)
@@ -153,7 +153,7 @@ IF (TEST_READ) THEN
             nlist => recover_ppm_t_neighlist_d_(checkpoint_file, pointer_addr, nlist)
          END SELECT
       END IF
-      CALL close_checkpoint_file(checkpoint_file, info)
+      CALL close_checkpoint_file(checkpoint_file)
 ELSE
 ! BEGIN INITIALIZATIONS
   ! Create particles
@@ -215,8 +215,7 @@ ELSE
     GOTO 9999
   END IF
  nlist => parts%get_neighlist()
-   !CALL make_checkpoint_file('checkpoint-end.h5', checkpoint_file)
-   CALL make_checkpoint_file('checkpoint.h5', checkpoint_file)
+   CALL make_checkpoint_file(checkpoint_file, 'checkpoint-end.h5')
 
    pointer_addr =  get_pointer(parts)
    CALL store_type(checkpoint_file,pointer_addr, parts)
@@ -234,7 +233,7 @@ ELSE
    CALL store_type(checkpoint_file, pointer_addr, nlist)
    CALL save_pointer(checkpoint_file, 'nlist', pointer_addr)
 
-   CALL close_checkpoint_file(checkpoint_file, info)
+   CALL close_checkpoint_file(checkpoint_file)
 ENDIF
 ! END INITIALIZATIONS
   ! Time statistics

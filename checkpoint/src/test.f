@@ -25,7 +25,7 @@
          ALLOCATE(ppm_t_neighlist_d::neigh)
          ALLOCATE(ppm_t_particles_d::parts)
 
-         CALL make_checkpoint_file('test.h5', cpfile_id)
+         CALL make_checkpoint_file(cpfile_id, 'test.h5')
          parts%id = 10
          parts%name = "kevin"
          parts%maps => maplist
@@ -34,9 +34,9 @@
          CALL save_pointer(cpfile_id, 'parts', pointer_addr)
          !CALL store_TYPE(cpfile_id, '10', neigh)
          deallocate(parts)
-         CALL close_checkpoint_file(cpfile_id, error)
+         CALL close_checkpoint_file(cpfile_id)
 
-         CALL open_checkpoint_file(cpfile_id, 'test.h5', error)
+         CALL open_checkpoint_file(cpfile_id, 'test.h5')
          CALL get_saved_pointer(cpfile_id, 'parts', pointer_addr)
          parts => recover_ppm_t_particles_d_(cpfile_id, pointer_addr,
      C      parts)
@@ -46,7 +46,7 @@
          ELSE
             WRITE(*,*) "Recovery test 1 failed"
          ENDIF
-         CALL close_checkpoint_file(cpfile_id, error)
+         CALL close_checkpoint_file(cpfile_id)
 
          !CALL open_checkpoint_file(cpfile_id, 'checkpoint.h5', error)
          !pointer_addr = "30788A02000000004096700000000000"

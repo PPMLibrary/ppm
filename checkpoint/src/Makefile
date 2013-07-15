@@ -24,7 +24,7 @@ all: test doc
 
 test: lib test.f
 	$(FC) -o test test.f $(INC) -L. -lcheck $(LDFLAGS)
-	$(FC) -o polytest polytest.f $(INC) -L. -lcheck $(LDFLAGS)
+	#$(FC) -o polytest polytest.f $(INC) -L. -lcheck $(LDFLAGS)
 
 source:
 	$(MAKE) -C pointers
