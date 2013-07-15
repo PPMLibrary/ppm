@@ -17,7 +17,7 @@ IMPLICIT NONE
 PRIVATE
 
 !----------------------------------------------------------------------
-! Global variables 
+! Global variables
 !----------------------------------------------------------------------
 
 #define  DTYPE(a) a/**/_s
@@ -32,7 +32,7 @@ PRIVATE
 #define  _MK _ppm_kind_double
 #include "vbp/vbp_typedef.f"
 
-INTEGER, PRIVATE, DIMENSION(3)    :: ldc
+INTEGER, PRIVATE, DIMENSION(3) :: ldc
 !!! Number of elements in all dimensions for allocation
 
 PUBLIC :: ppm_t_vbp_s, ppm_t_vbp_d

@@ -5,23 +5,23 @@ SUBROUTINE DTYPE(vbp_create)(Pc,Npart,info,name)
     !  Arguments
     !-------------------------------------------------------------------------
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_vbp))                                :: Pc
+    CLASS(DTYPE(ppm_t_vbp))                 :: Pc
     !!! Data structure containing the particles
-    INTEGER,                                INTENT(IN   )  :: Npart
-    !!! Number of particles 
-    INTEGER,                                INTENT(  OUT)  :: info
+    INTEGER,                 INTENT(IN   )  :: Npart
+    !!! Number of particles
+    INTEGER,                 INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
     !-------------------------------------------------------------------------
     !  Optional arguments
     !-------------------------------------------------------------------------
-    CHARACTER(LEN=*) , OPTIONAL                            :: name
+    CHARACTER(LEN=*) , OPTIONAL             :: name
     !!! give a name to this Particle set
     !-------------------------------------------------------------------------
     !  Local variables
     !-------------------------------------------------------------------------
+    LOGICAL :: lalloc,ldealloc
 
-    LOGICAL                                         :: lalloc,ldealloc
-    INTEGER                                         :: i
+    INTEGER :: i
 
     start_subroutine("vbp_create")
 
@@ -45,13 +45,12 @@ SUBROUTINE DTYPE(vbp_destroy)(Pc,info)
     !  Arguments
     !-------------------------------------------------------------------------
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_vbp))                                :: Pc
+    CLASS(DTYPE(ppm_t_vbp))                :: Pc
     !!! Data structure containing the particles
-    INTEGER,                                INTENT(  OUT)  :: info
+    INTEGER,                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
 
     start_subroutine("vbp_destroy")
-
 
     !re-initialize the few fields that are specific to VBP
     Pc%adaptive = .FALSE.
@@ -59,8 +58,7 @@ SUBROUTINE DTYPE(vbp_destroy)(Pc,info)
 
     !Call the parent function
     CALL Pc%DTYPE(ppm_t_particles)%destroy(info)
-        or_fail("failed to destroy vbp particle set")
-
+    or_fail("failed to destroy vbp particle set")
 
     end_subroutine()
 END SUBROUTINE DTYPE(vbp_destroy)
@@ -89,7 +87,7 @@ SUBROUTINE DTYPE(vbp_set_cutoff)(Pc,cutoff,info,Nlist)
     !!! Neighbor list for which this cutoff radius
     !!! applies. By default, this is the "standard" Verlet list, with neighbours
     !!! sought within the particle set itself.
-    
+
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -100,28 +98,27 @@ SUBROUTINE DTYPE(vbp_set_cutoff)(Pc,cutoff,info,Nlist)
 
     start_subroutine("vbp_set_cutoff")
 
-    IF (associated(Pc%rcp)) THEN
-        !Varying-blob particle set already has a varying cutoff radius. Let us 
+    IF (ASSOCIATED(Pc%rcp)) THEN
+        !Varying-blob particle set already has a varying cutoff radius. Let us
         !overwrite it with the new value.
         ! NOTE: a better thing to do would be to delete it and use the constant
         ! cutoff instead. This is doable but would require every routine to
         ! check which of the two cutoffs are defined (the scalar or the vector
         ! variable) and use the right one.
-        allocate(cutoff_v(1:Pc%Npart),STAT=info)
-            or_fail_alloc("cutoff_v")
+        ALLOCATE(cutoff_v(1:Pc%Npart),STAT=info)
+        or_fail_alloc("cutoff_v")
         cutoff_v = cutoff
         CALL Pc%set_varying_cutoff(cutoff_v,info,Nlist)
             or_fail("Failed to set constant cutoff radius")
         Pc%adaptive = .TRUE.
-        deallocate(cutoff_v,STAT=info)
-            or_fail_dealloc("cutoff_v")
+        DEALLOCATE(cutoff_v,STAT=info)
+        or_fail_dealloc("cutoff_v")
     ELSE
         CALL Pc%DTYPE(ppm_t_particles)%set_cutoff(cutoff,info,Nlist)
-            or_fail("Failed to set constant cutoff radius")
+        or_fail("Failed to set constant cutoff radius")
         Pc%adaptive = .FALSE.
     ENDIF
 
-            
     end_subroutine()
 END SUBROUTINE DTYPE(vbp_set_cutoff)
 
@@ -150,7 +147,7 @@ SUBROUTINE DTYPE(vbp_set_varying_cutoff)(Pc,cutoff,info,Nlist)
     !!! Neighbor list for which this cutoff radius
     !!! applies. By default, this is the "standard" Verlet list, with neighbours
     !!! sought within the particle set itself.
-    
+
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -164,7 +161,7 @@ SUBROUTINE DTYPE(vbp_set_varying_cutoff)(Pc,cutoff,info,Nlist)
     !-------------------------------------------------------------------------
     !  Set new cutoff
     !-------------------------------------------------------------------------
-    IF (.NOT.associated(Pc%rcp)) THEN
+    IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
         CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,&
             name='rcp')
         or_fail("could not create property for varying cutoff radius rcp")
@@ -189,7 +186,7 @@ SUBROUTINE DTYPE(vbp_set_varying_cutoff)(Pc,cutoff,info,Nlist)
         nl%cutoff = max_cutoff
     ENDIF
 
-    
+
     ! Compute ghostlayer sizes
     IF (max_cutoff.GT.Pc%ghostlayer) THEN
         !If the new cutoff is larger than the current ghostsize
@@ -229,7 +226,7 @@ SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
     !!! name of this neighbour list
     REAL(MK), OPTIONAL                                          :: skin
     REAL(MK), OPTIONAL                                          :: cutoff
-    LOGICAL, OPTIONAL                                           :: symmetry    
+    LOGICAL, OPTIONAL                                           :: symmetry
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER,OPTIONAL,INTENT(OUT) :: Nlist
     !!! returns a pointer to the newly created verlet list
 
@@ -258,7 +255,7 @@ SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
     IF (.NOT.ASSOCIATED(this%rcp)) THEN
 
         CALL this%create_prop(info,part_prop=this%rcp,&
-            dtype=ppm_type_real,name='rcp',with_ghosts=ghosts) 
+            dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
         or_fail("Creating property for rcp failed")
     ENDIF
 
@@ -272,7 +269,7 @@ SUBROUTINE DTYPE(vbp_neigh_create)(this,Part_src,info,&
     ENDIF
     CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts)
     END ASSOCIATE
-    Nl%cutoff = -1._MK 
+    Nl%cutoff = -1._MK
     !this field should not be used with adaptive particles
 
     IF (PRESENT(skin)) THEN
@@ -325,7 +322,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     USE ppm_module_inl_k_vlist
     USE ppm_module_kdtree
 #endif
-    
+
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -347,7 +344,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     !!! name of this neighbour list
     REAL(MK), OPTIONAL                                     :: skin
     !!! skin
-    LOGICAL, OPTIONAL                                      :: symmetry    
+    LOGICAL, OPTIONAL                                      :: symmetry
     !!! if using symmetry
     REAL(MK), OPTIONAL                                     :: cutoff
     !!! cutoff radius
@@ -406,7 +403,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         IF (.NOT.ASSOCIATED(Part_src,this)) THEN
             xset_neighlists = .TRUE.
         ENDIF
-    ELSE    
+    ELSE
         Part_src => this
     ENDIF
 
@@ -473,7 +470,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
             Nlist%nneighmax = 0
         ENDIF
     ELSE
-        !hack to build (potentially incomplete) neighbour lists even 
+        !hack to build (potentially incomplete) neighbour lists even
         !for ghost particles
         np_target = this%Npart
         IF (PRESENT(incl_ghosts)) THEN
@@ -533,7 +530,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
                 fail("option required the kdtree module.")
 #endif
 !__WITH_KDTREE
-        ELSE  
+        ELSE
 
                 !FIXME: when adaptive ghost layers are available
                 ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
@@ -627,7 +624,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         Nlist%nneighmin = MINVAL(Nlist%nvlist(1:this%Npart))
         Nlist%nneighmax = MAXVAL(Nlist%nvlist(1:np_target))
 
-        ! DC operators that do not use a xset neighbour list, if they exist, 
+        ! DC operators that do not use a xset neighbour list, if they exist,
         ! are no longer valid (they depend on the neighbour lists)
         IF (ASSOCIATED(this%ops)) THEN
             op => this%ops%begin()
@@ -644,7 +641,7 @@ SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         IF (ASSOCIATED(Nlist%Part,this)) THEN
             this%flags(ppm_part_neighlists) = .TRUE.
         ENDIF
-        
+
         Nlist => NULL()
 
 
@@ -670,7 +667,7 @@ SUBROUTINE DTYPE(vbp_updated_cutoff)(this,max_cutoff,info,Nlist)
     !!! Neighbor list for which this cutoff radius
     !!! applies. By default, this is the "standard" Verlet list, with neighbours
     !!! sought within the particle set itself.
-    
+
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -693,7 +690,7 @@ SUBROUTINE DTYPE(vbp_updated_cutoff)(this,max_cutoff,info,Nlist)
         nl%cutoff = max_cutoff
     ENDIF
 
-    
+
     ! Compute ghostlayer sizes
     IF (max_cutoff.GT.this%ghostlayer) THEN
         !If the new cutoff is larger than the current ghostsize

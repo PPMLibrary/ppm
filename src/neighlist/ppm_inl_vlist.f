@@ -42,69 +42,72 @@
       USE ppm_module_check_id
       IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-      INTEGER, PARAMETER :: mk = ppm_kind_single
+      INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-      INTEGER, PARAMETER :: mk = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER,  INTENT(IN)                       :: topoid
+      INTEGER,                           INTENT(IN   )           :: topoid
       !!! ID of the topology.
-      REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
+      REAL(MK), DIMENSION(:,:),          INTENT(IN   )           :: xp
       !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-      INTEGER , INTENT(IN)                       :: Np
+      INTEGER,                           INTENT(IN   )           :: Np
       !!! Number of real particles
-      INTEGER , INTENT(IN)                       :: Mp
+      INTEGER,                           INTENT(IN   )           :: Mp
       !!! Number of all particles including ghost particles
-      REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+      REAL(MK), DIMENSION(:),            INTENT(IN   )           :: cutoff
       !!! Particle cutoff radii array
-      REAL(MK), INTENT(IN)                       :: skin
+      REAL(MK),                          INTENT(IN   )           :: skin
       !!! Skin parameter
-      LOGICAL,  INTENT(IN)                       :: lsymm
+      LOGICAL,                           INTENT(IN   )           :: lsymm
       !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
       !!! layers only in (+) directions in all axes. Else, we have ghost
       !!! layers in all directions.
-      REAL(MK), INTENT(IN), DIMENSION(2*ppm_dim) :: ghostlayer
+      REAL(MK), DIMENSION(2*ppm_dim),    INTENT(IN   )           :: ghostlayer
       !!! Extra area/volume over the actual domain introduced by
       !!! ghost layers.
-      INTEGER , INTENT(OUT)                      :: info
+      INTEGER,                           INTENT(  OUT)           :: info
       !!! Info to be RETURNed. 0 if SUCCESSFUL.
-      INTEGER , POINTER,    DIMENSION(:, :)      :: vlist
+      INTEGER,  DIMENSION(:,:), POINTER, INTENT(INOUT)           :: vlist
       !!! verlet lists. vlist(3, 6) is the 3rd neighbor of particle 6.
-      INTEGER , POINTER,    DIMENSION(:)         :: nvlist
+      INTEGER,  DIMENSION(:),   POINTER, INTENT(INOUT)           :: nvlist
       !!! number of neighbors of particles. nvlist(i) is number of
       !!! neighbors particle i has.
-      LOGICAL,  INTENT(IN), OPTIONAL             :: lstore
+      LOGICAL,                           INTENT(IN   ), OPTIONAL :: lstore
       !!! OPTIONAL logical parameter to choose whether to store
       !!! vlist or not. By default, it is set to TRUE.
 
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(2*ppm_dim)             :: actual_subdomain
-      REAL(MK), DIMENSION(:,:), POINTER          :: xp_sub     => NULL()
-      REAL(MK), DIMENSION(:)  , POINTER          :: cutoff_sub => NULL()
-      INTEGER , DIMENSION(:,:), POINTER          :: vlist_sub  => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: nvlist_sub => NULL()
-      INTEGER , DIMENSION(:)  , POINTER          :: p_id       => NULL()
-      INTEGER                                    :: Np_sub
-      INTEGER                                    :: Mp_sub
-      INTEGER                                    :: rank_sub
-      INTEGER                                    :: neigh_max
-      INTEGER                                    :: n_part
-      TYPE(ppm_t_topo)        , POINTER          :: topo      => NULL()
-      LOGICAL                                    :: lst
-      INTEGER                                    :: isub
-      INTEGER                                    :: i
-      INTEGER                                    :: j
-      REAL(MK)                                   :: t0
+      TYPE(ppm_t_topo),         POINTER :: topo       => NULL()
+
+      REAL(MK), DIMENSION(2*ppm_dim)    :: actual_subdomain
+      REAL(MK), DIMENSION(:,:), POINTER :: xp_sub     => NULL()
+      REAL(MK), DIMENSION(:)  , POINTER :: cutoff_sub => NULL()
+      REAL(MK)                          :: t0
+
+      INTEGER,  DIMENSION(:,:), POINTER :: vlist_sub  => NULL()
+      INTEGER,  DIMENSION(:)  , POINTER :: nvlist_sub => NULL()
+      INTEGER,  DIMENSION(:)  , POINTER :: p_id       => NULL()
+      INTEGER                           :: Np_sub
+      INTEGER                           :: Mp_sub
+      INTEGER                           :: rank_sub
+      INTEGER                           :: neigh_max
+      INTEGER                           :: n_part
+      INTEGER                           :: isub
+      INTEGER                           :: i
+      INTEGER                           :: j
+
+      LOGICAL                           :: lst
 
       !-------------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
       !-------------------------------------------------------------------------
-      INTEGER                               :: iopt
-      INTEGER, DIMENSION(2)                 :: lda
+      INTEGER                           :: iopt
+      INTEGER, DIMENSION(2)             :: lda
 
       CALL substart('ppm_inl_vlist',t0,info)
 
@@ -163,7 +166,7 @@
           ! of real particles (Np_sub) and total number of particles (Mp_sub)
           ! of this subdomain.
           !-----------------------------------------------------------------
-          CALL getSubdomainParticles(xp,Np,Mp,cutoff,lsymm,actual_subdomain,&
+          CALL getSubdomainParticles(xp,Np,Mp,cutoff,lsymm,actual_subdomain, &
           &                 ghostlayer, xp_sub, cutoff_sub, Np_sub,Mp_sub,p_id)
 
           !-----------------------------------------------------------------
@@ -249,10 +252,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_vlist_s(xp, Np, Mp, cutoff, skin, lsymm, &
-     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_vlist_d(xp, Np, Mp, cutoff, skin, lsymm, &
-     & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
 #endif
       !!! This subroutine creates verlet lists for particles whose coordinates
       !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -270,48 +273,50 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
+          REAL(MK), DIMENSION(:,:),           INTENT(IN   )           :: xp
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          INTEGER , INTENT(IN)                       :: Np
+          INTEGER,                            INTENT(IN   )           :: Np
           !!! Number of real particles
-          INTEGER , INTENT(IN)                       :: Mp
+          INTEGER,                            INTENT(IN   )           :: Mp
           !!! Number of all particles including ghost particles
-          REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+          REAL(MK), DIMENSION(:),             INTENT(IN   )           :: cutoff
           !!! Particles cutoff radii
-          REAL(MK), INTENT(IN)                       :: skin
+          REAL(MK),                           INTENT(IN   )           :: skin
           !!! Skin parameter
-          LOGICAL,  INTENT(IN)                       :: lsymm
+          LOGICAL,                            INTENT(IN   )           :: lsymm
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
           !!! layers only in (+) directions in all axes. Else, we have ghost
           !!! layers in all directions.
-          REAL(MK), DIMENSION(2*ppm_dim)             :: actual_domain
+          REAL(MK), DIMENSION(2*ppm_dim),     INTENT(IN   )           :: actual_domain
           ! Physical extent of actual domain without ghost layers.
-          REAL(MK), INTENT(IN), DIMENSION(ppm_dim)   :: ghostlayer
+          REAL(MK), DIMENSION(ppm_dim),       INTENT(IN   )           :: ghostlayer
           !!! Extra area/volume over the actual domain introduced by
           !!! ghost layers.
-          INTEGER , INTENT(OUT)                      :: info
+          INTEGER,                            INTENT(  OUT)           :: info
           !!! Info to be RETURNed. 0 if SUCCESSFUL.
-          INTEGER , POINTER,    DIMENSION(:, :)      :: vlist
+          INTEGER,  DIMENSION(:, :), POINTER, INTENT(INOUT)           :: vlist
           !!! verlet lists. vlist(3, 6) is the 3rd neighbor of particle 6.
-          INTEGER , POINTER,    DIMENSION(:)         :: nvlist
+          INTEGER,  DIMENSION(:),    POINTER, INTENT(INOUT)           :: nvlist
           !!! number of neighbors of particles. nvlist(i) is number of
           !!! neighbors particle i has.
-          LOGICAL,  INTENT(IN), OPTIONAL             :: lstore
+          LOGICAL,                            INTENT(IN   ), OPTIONAL :: lstore
           !!! OPTIONAL logical parameter to choose whether to store
           !!! vlist or not. By default, it is set to TRUE.
 
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-          REAL(MK), DIMENSION(2*ppm_dim)             :: whole_domain
+          REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
           ! Physical extent of whole domain including ghost layers.
-          INTEGER                                    :: i
-          INTEGER                                    :: j
-          REAL(MK)                                   :: t0
-          LOGICAL                                    :: lst
+          REAL(MK)                       :: t0
+          REAL(MK)                       :: max_size
+          REAL(MK)                       :: size_diff
 
-          REAL(MK)                                      :: max_size
-          REAL(MK)                                      :: size_diff
+          INTEGER                        :: i
+          INTEGER                        :: j
+
+          LOGICAL                        :: lst
+
       !---------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
       !---------------------------------------------------------------------
@@ -342,17 +347,15 @@
               END IF
           END DO
 
-          clist%n_real_p = Np !Set number of real particles
-
       !-------------------------------------------------------------------------
       !  Create inhomogeneous cell list
       !-------------------------------------------------------------------------
           CALL ppm_create_inl_clist(xp, Np, Mp, cutoff, skin, actual_domain, &
-     & ghostlayer, lsymm, clist, info)
+          &                         ghostlayer, lsymm, clist, info)
           IF(info .NE. 0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
-     &                       'ppm_create_inl_clist',__LINE__,info)
+              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist', &
+              &              'ppm_create_inl_clist',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -368,8 +371,8 @@
           CALL ppm_alloc(own_plist, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'own_plist',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,'create_inl_vlist', &
+              &              'own_plist',__LINE__,info)
              GOTO 9999
           END IF
 
@@ -383,8 +386,8 @@
           CALL ppm_alloc(neigh_plist, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'neigh_plist',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,'create_inl_vlist', &
+              &              'neigh_plist',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -397,7 +400,7 @@
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'ncells',__LINE__,info)
+              &                       'ncells',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -421,8 +424,8 @@
           CALL ppm_alloc(empty_list, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'create_inl_vlist',     &
-     &                       'empty_list',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,'create_inl_vlist', &
+              &              'empty_list',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -430,18 +433,14 @@
       !  Call getVerletLists subroutine. If lstore is not present, default case
       !  which is lstore = TRUE is applied.
       !-------------------------------------------------------------------------
-          IF(PRESENT(lstore)) THEN
-              lst = lstore
-          ELSE
-              lst = .TRUE.
-          END IF
+          lst=MERGE(lstore,.TRUE.,PRESENT(lstore))
 
           CALL getVerletLists(xp, cutoff, clist, skin, lsymm, whole_domain, &
-     &                        actual_domain, vlist, nvlist, lst,info)
+          &                   actual_domain, vlist, nvlist, lst,info)
           IF (info.NE.0) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist',     &
-     &                       'call to getVerletLists failed',__LINE__,info)
+              CALL ppm_error(ppm_err_sub_failed,'create_inl_vlist', &
+              &              'call to getVerletLists failed',__LINE__,info)
               GOTO 9999
           END IF
 
@@ -508,11 +507,11 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain,    &
-     & actual_domain, vlist, nvlist, lstore,info)
+      SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain, &
+      &                           actual_domain, vlist, nvlist, lstore,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain,    &
-     & actual_domain, vlist, nvlist, lstore,info)
+      SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain, &
+      &                           actual_domain, vlist, nvlist, lstore,info)
 #endif
       !!! This subroutine allocates nvlist and fills it with number of
       !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
@@ -521,52 +520,52 @@
       !!! subroutine.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)  :: xp
+          REAL(MK), DIMENSION(:,:),           INTENT(IN   ) :: xp
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          REAL(MK), INTENT(IN), DIMENSION(:)    :: cutoff
+          REAL(MK), DIMENSION(:),             INTENT(IN   ) :: cutoff
           !!! Particles cutoff radii
-          REAL(MK), INTENT(IN)                  :: skin
+          REAL(MK),                           INTENT(IN   ) :: skin
           !!! Skin parameter
-          TYPE(ppm_clist), INTENT(IN)           :: clist
+          TYPE(ppm_clist),                    INTENT(IN   ) :: clist
           !!! cell list
-          LOGICAL,  INTENT(IN)                  :: lsymm
+          LOGICAL,                            INTENT(IN   ) :: lsymm
           !!! Logical parameter to define whether lists are symmetric or not
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
           !!! layers only in (+) directions in all axes. Else, we have ghost
           !!! layers in all directions.
-          REAL(MK), DIMENSION(2*ppm_dim)        :: whole_domain
+          REAL(MK), DIMENSION(2*ppm_dim),     INTENT(IN   ) :: whole_domain
           !!! Physical extent of whole domain including ghost layers.
-          REAL(MK), DIMENSION(2*ppm_dim)        :: actual_domain
+          REAL(MK), DIMENSION(2*ppm_dim),     INTENT(IN   ) :: actual_domain
           !!! Physical extent of actual domain without ghost layers.
-          INTEGER , POINTER,    DIMENSION(:, :) :: vlist
+          INTEGER,  DIMENSION(:, :), POINTER, INTENT(INOUT) :: vlist
           !!! Verlet lists of particles. vlist(j, i) corresponds to jth neighbor
           !!! of particle i.
-          INTEGER , POINTER,    DIMENSION(: )   :: nvlist
+          INTEGER,  DIMENSION(: ),   POINTER, INTENT(INOUT) :: nvlist
           !!! Number of neighbors that particles have. nvlist(i) is the
           !!! number of neighbor particle i has.
-          LOGICAL,  INTENT(IN)                  :: lstore
+          LOGICAL,                            INTENT(IN   ) :: lstore
           !!! Logical parameter to choose whether to store vlist or not.
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          INTEGER                               :: p_idx
+          REAL(MK)              :: t0
 
-          REAL(MK)                              :: t0
+          INTEGER               :: p_idx
 
       !-------------------------------------------------------------------------
       !  Variables and parameters for ppm_alloc
       !-------------------------------------------------------------------------
-          INTEGER                               :: iopt
-          INTEGER                               :: info
-          INTEGER, DIMENSION(2)                 :: lda
+          INTEGER               :: iopt
+          INTEGER               :: info
+          INTEGER, DIMENSION(2) :: lda
 
       !-------------------------------------------------------------------------
       !  Allocate used array, which will be used as a mask for particles,
@@ -574,14 +573,15 @@
       !  initialize it to FALSE.
       !-------------------------------------------------------------------------
 
-      CALL substart('getVerletLists',t0,info)
+          CALL substart('getVerletLists',t0,info)
+
           iopt = ppm_param_alloc_fit
           lda(1) = clist%n_all_p
           CALL ppm_alloc(used, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
-        &                       'used',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,'getVerletLists', &
+              &              'used',__LINE__,info)
               GOTO 9999
           END IF
           used = .FALSE.
@@ -602,8 +602,8 @@
           CALL ppm_alloc(nvlist, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'getVerletLists',     &
-        &                       'nvlist',__LINE__,info)
+              CALL ppm_error(ppm_err_alloc,'getVerletLists', &
+              &              'nvlist',__LINE__,info)
               GOTO 9999
           END IF
           nvlist = 0
@@ -613,11 +613,11 @@
       !-------------------------------------------------------------------------
           IF (lsymm) THEN ! If lists are symmetric
               DO p_idx = 1, clist%n_all_p
-                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain,&
+                  CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain, &
                   & actual_domain, xp, cutoff, skin, nvlist)
               END DO
-          ELSE                          ! If lists are not symmetric
-              DO p_idx = 1, clist%n_all_p
+          ELSE            ! If lists are not symmetric
+              DO p_idx = 1, clist%n_real_p
                   CALL count_neigh(clist%rank(p_idx), clist, whole_domain, &
                   & xp, cutoff, skin, nvlist)
               END DO
@@ -626,7 +626,7 @@
       !-------------------------------------------------------------------------
       !  If vlist will be stored,
       !-------------------------------------------------------------------------
-          IF(lstore) THEN
+          IF (lstore) THEN
               !-----------------------------------------------------------------
               !  Get maximum number of neighbors, for allocation of vlist
               !-----------------------------------------------------------------

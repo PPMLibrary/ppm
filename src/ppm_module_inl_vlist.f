@@ -51,12 +51,14 @@
         INTEGER,                 DIMENSION(:),   POINTER :: neigh_plist => NULL()
         INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: empty_list => NULL()
         INTEGER,                 DIMENSION(:,:), POINTER :: ncells => NULL()
+
         LOGICAL,                 DIMENSION(:) ,  POINTER :: used => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables
         !-------------------------------------------------------------------------
         TYPE(ppm_clist), SAVE :: clist
+
         INTEGER               :: own_nplist
         INTEGER               :: neigh_nplist
         INTEGER               :: empty_pos

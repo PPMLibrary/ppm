@@ -69,7 +69,7 @@
           !!! Number of real particles of subdomain
           INTEGER,                                 INTENT(  OUT) :: Mp_sub
           !!! Number of all particles including ghost particles of subdomain
-          INTEGER, DIMENSION(:),          POINTER, INTENT(  OUT) :: p_id
+          INTEGER,  DIMENSION(:),         POINTER, INTENT(  OUT) :: p_id
 
           !---------------------------------------------------------------------
           !  Local variables, arrays and counters

@@ -158,7 +158,7 @@
           lda(2) = clist%lookup%nrow
           iopt = ppm_param_alloc_fit
           ! Number of rows of "borders" array depends on dimensionality.
-          IF(ppm_dim .EQ. 2)       THEN
+          IF (ppm_dim .EQ. 2)       THEN
               lda(1) = 6
               ! Allocate "borders" array for 2D case
               CALL ppm_alloc(clist%borders, lda, iopt, info)
@@ -167,7 +167,7 @@
                   CALL ppm_error(ppm_err_alloc,'ppm_create_inl_clist', &
                   &                               'borders',__LINE__,info)
               END IF
-          ELSEIF(ppm_dim .EQ. 3)   THEN
+          ELSEIF (ppm_dim .EQ. 3)   THEN
               lda(1) = 10
               ! Allocate "borders" array for 3D case
               CALL ppm_alloc(clist%borders, lda, iopt, info)
@@ -284,7 +284,7 @@
       !-------------------------------------------------------------------------
       IF     (ppm_dim .EQ. 2) THEN
           DO i = 1, clist%borders_pos_max
-              IF ((clist%borders(5, i) - clist%borders(1, i)) .NE. clist%borders(6, i))  THEN
+              IF ((clist%borders(5, i) - clist%borders(1, i)) .NE. clist%borders(6, i)) THEN
                   clist%borders(6, i) = -1
               ELSE
                   clist%borders(6, i) = 1
@@ -292,7 +292,7 @@
           END DO
       ELSEIF (ppm_dim .EQ. 3)  THEN
           DO i = 1, clist%borders_pos_max
-              IF((clist%borders(9, i) - clist%borders(1, i)) .NE. clist%borders(10, i))  THEN
+              IF ((clist%borders(9, i) - clist%borders(1, i)) .NE. clist%borders(10, i)) THEN
                   clist%borders(10, i) = -1
               ELSE
                   clist%borders(10, i) = 1

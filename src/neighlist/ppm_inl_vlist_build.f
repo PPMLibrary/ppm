@@ -51,62 +51,62 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER,  INTENT(IN)                 :: p_idx
+          INTEGER,                        INTENT(IN   ) :: p_idx
           !!! Particle index
-          TYPE(ppm_clist)  , INTENT(IN)        :: clist
+          TYPE(ppm_clist),                INTENT(IN   ) :: clist
           !!! cell list
-          REAL(MK), DIMENSION(2*ppm_dim)       :: domain
+          REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: domain
           !!! Pysical extent of whole domain including ghost layers
-          REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
+          REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: xp
           !!! Particle coordinates
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
+          REAL(MK), DIMENSION(:),         INTENT(IN   ) :: cutoff
           !!! Particle cutoff radii
-          REAL(MK), INTENT(IN)                 :: skin
+          REAL(MK),                       INTENT(IN   ) :: skin
           !!! Skin parameter
 #if __ACTION == __GET
-          INTEGER,  DIMENSION(:,:)             :: vlist
+          INTEGER,  DIMENSION(:,:),       INTENT(INOUT) :: vlist
           !!! Verlet list, where vlist(j, i) contains the jth neighbor of
           !!! ith particle
 #endif
-          INTEGER,  DIMENSION(:)               :: nvlist
+          INTEGER,  DIMENSION(:)  ,       INTENT(INOUT) :: nvlist
           !!! Number of neighbors of particles. nvlist(i) contains number of
           !!! neighbors particle i has.
-          INTEGER                              :: info
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-          INTEGER                              :: p_ref
-          ! Reference particle
-          INTEGER                              :: p_neigh
-          ! Particle in the neighbor cell
-          REAL(MK),    DIMENSION(ppm_dim)      :: offset_coor
+          REAL(MK), DIMENSION(ppm_dim) :: offset_coor
           ! Offset from midpoint coordinates of reference array to get to
           ! neighbor cells.
-          REAL(MK),    DIMENSION(ppm_dim)      :: c_coor
+          REAL(MK), DIMENSION(ppm_dim) :: c_coor
           ! Coordinates
-          REAL(MK),    DIMENSION(ppm_dim)      :: n_coor
+          REAL(MK), DIMENSION(ppm_dim) :: n_coor
           ! Coordinates of neighbor cell
-          INTEGER(ppm_kind_int64)              :: c_idx
-          ! Cell index
-          INTEGER(ppm_kind_int64)              :: n_idx
-          ! Cell index
-          INTEGER(ppm_kind_int64)              :: parentIdx
-          ! Index of parent cell
-          REAL(MK),    DIMENSION(ppm_dim)      :: p_coor
+          REAL(MK), DIMENSION(ppm_dim) :: p_coor
           ! Particle coordinates
-          INTEGER                              :: p_depth
-          ! Depth of the particle
-          INTEGER                              :: c_depth
-          ! Depth of cell
 
+          INTEGER                      :: p_ref
+          ! Reference particle
+          INTEGER                      :: p_neigh
+          ! Particle in the neighbor cell
+          INTEGER(ppm_kind_int64)      :: c_idx
+          ! Cell index
+          INTEGER(ppm_kind_int64)      :: n_idx
+          ! Cell index
+          INTEGER(ppm_kind_int64)      :: parentIdx
+          ! Index of parent cell
+          INTEGER                      :: p_depth
+          ! Depth of the particle
+          INTEGER                      :: c_depth
+          ! Depth of cell
+          INTEGER                      :: info
       !-------------------------------------------------------------------------
       !  Counters
       !-------------------------------------------------------------------------
-          INTEGER                              :: i
-          INTEGER                              :: j
-          INTEGER                              :: m
-          INTEGER                              :: n
+          INTEGER                      :: i
+          INTEGER                      :: j
+          INTEGER                      :: m
+          INTEGER                      :: n
 
           !---------------------------------------------------------------------
           !  If this particle was visited before, skip it.
@@ -308,7 +308,7 @@
                   offset_coor(2) = (domain(4) - domain(3))/(2**(c_depth-1))
                   DO i = 3, ppm_dim
                       offset_coor(i) = (domain(2*i) - domain(2*i-1))/&
- &                                     (2**(c_depth-1))
+                      &                (2**(c_depth-1))
                   END DO
 
                   ! For each neighbor
