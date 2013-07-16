@@ -2,9 +2,8 @@ _-*| Task
  * checkpoint file format
  * pointer lists storage
  * chart
+ * code walkthrough / more detailed source description
    ppm intro
  - hdf5 intro
-   code walkthrough
-   more detailed source description
    jargon
    future work
