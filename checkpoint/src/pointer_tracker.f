@@ -6,11 +6,6 @@
          USE ppm_module_core
          INCLUDE 'pointers/ppm_pointers_interface.f'
          INCLUDE 'trees/tree_abstract_typedef.f'
-         TYPE abstr_ptr
-            CHARACTER(LEN=10) :: hash
-            INTEGER, DIMENSION(:), POINTER :: ptr
-            TYPE(abstr_ptr), POINTER :: next => null()
-         END TYPE abstr_ptr
          TYPE(pointer_trees), SAVE :: pointer_data
          CONTAINS
             INCLUDE 'pointers/ppm_pointers.f'
