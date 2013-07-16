@@ -31,22 +31,22 @@
 #if   __KIND == __SINGLE_PRECISION
 #if   __MODE == __INL
       SUBROUTINE inl_xset_vlist_s(topoid,red,nred,mred, &
- &                   blue,nblue,mblue,rcblue,skin,    &
- &                   ghostlayer,info,vlist,nvlist,lstore)
+      &          blue,nblue,mblue,rcblue,skin,          &
+      &          ghostlayer,info,vlist,nvlist,lstore)
 #elif __MODE == __HNL
       SUBROUTINE hnl_xset_vlist_s(topoid,red,nred,mred, &
- &                   blue,nblue,mblue,cutoff,skin,    &
- &                   ghostlayer,info,vlist,nvlist,lstore)
+      &          blue,nblue,mblue,cutoff,skin,          &
+      &          ghostlayer,info,vlist,nvlist,lstore)
 #endif
 #elif __KIND == __DOUBLE_PRECISION
 #if   __MODE == __INL
-      SUBROUTINE inl_xset_vlist_d(topoid,red,nred,mred,&
- &                   blue,nblue,mblue,rcblue,skin,    &
- &                   ghostlayer,info,vlist,nvlist,lstore)
+      SUBROUTINE inl_xset_vlist_d(topoid,red,nred,mred, &
+      &          blue,nblue,mblue,rcblue,skin,          &
+      &          ghostlayer,info,vlist,nvlist,lstore)
 #elif __MODE == __HNL
-      SUBROUTINE hnl_xset_vlist_d(topoid,red,nred,mred,&
- &                   blue,nblue,mblue,cutoff,skin,    &
- &                   ghostlayer,info,vlist,nvlist,lstore)
+      SUBROUTINE hnl_xset_vlist_d(topoid,red,nred,mred, &
+      &          blue,nblue,mblue,cutoff,skin,          &
+      &          ghostlayer,info,vlist,nvlist,lstore)
 #endif
 #endif
       !!! Inhomogeneous cross-set neighborlists. This routine provides

@@ -207,10 +207,10 @@
                   ! Pick a candidate for neighbor particle
                   blue_idx = own_blue(j)
                   ! If they are neighbors and ...
-                  IF(is_xset_Neighbor(red_idx,blue_idx,red,rcred,&
- &                                    blue,rcblue,skin))  THEN
+                  IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, &
+                  &                    blue, rcblue, skin)) THEN
                       ! If the reference particle is a real particle ...
-                      IF(red_idx .LE. red_clist%n_real_p)   THEN
+                      IF (red_idx .LE. red_clist%n_real_p) THEN
                           ! Store neighbor particle in verlet list of reference
                           ! particle
                           nvlist(red_idx) = nvlist(red_idx) + 1
@@ -245,7 +245,7 @@
 
               ! Get particles in the neighbor cell
               CALL getParticlesInCell(n_idx, blue, blue_clist, &
- &                                    neigh_blue, neigh_nblue)
+              &    neigh_blue, neigh_nblue)
               ! For each particle in the reference cell
               DO m = 1, own_nred
                   ! Pick a reference particle
@@ -255,8 +255,8 @@
                       ! Pick a candidate for neighbor particle
                       blue_idx = neigh_blue(n)
                       ! If particles are neighbors and ...
-                      IF(is_xset_Neighbor(red_idx,blue_idx,red,rcred,blue,&
- &                                        rcblue,skin))  THEN
+                      IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, blue, &
+                      &   rcblue, skin)) THEN
                           ! If reference particle is a real particle ...
                           IF(red_idx .LE. red_clist%n_real_p)   THEN
                               ! Store neighbor particle in verlet list of

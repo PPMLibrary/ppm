@@ -33,7 +33,7 @@ SUBROUTINE DTYPE(vbp_create)(Pc,Npart,info,name)
     !and update the few fields that are specific to VBP
     Pc%adaptive = .FALSE.
     check_false(<#associated(Pc%rcp)#>,&
-        "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
+      "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
     Pc%rcp => NULL()
 
     end_subroutine()

@@ -530,7 +530,7 @@
           ! correct depth.
           p_depth = 0
           DO WHILE (minSideLength .GT. (cutoff(p_idx) + skin))
-              minSideLength = minSideLength/2
+              minSideLength = minSideLength/2._MK
               p_depth = p_depth + 1
           END DO
 

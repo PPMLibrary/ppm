@@ -70,6 +70,7 @@
       !!! layers only in (+) directions in all axes. Else, we have ghost
       !!! layers in all directions.
       TYPE(ppm_clist),                INTENT(INOUT) :: clist
+
       INTEGER ,                       INTENT(  OUT) :: info
       !!! Info to be returned. 0 if SUCCESSFUL.
 
@@ -507,10 +508,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getCellCoor_Depth_s(cell_idx, domain, coor, cell_depth, &
-      &                     max_depth,info)
+      &          max_depth, info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getCellCoor_Depth_d(cell_idx, domain, coor, cell_depth, &
-      &                     max_depth,info)
+      &          max_depth, info)
 #endif
       !!! Given the cell index and the domain, modifies coor and
       !!! cell_depth variables such that coor contains midpoint
@@ -538,7 +539,7 @@
       !!! Depth of the cell to be returned.
       INTEGER,                        INTENT(IN   ) :: max_depth
       !!! maximum cell depth in cell tree
-      INTEGER                                       :: info
+      INTEGER                         INTENT(  OUT) :: info
       !!! 0 on success
 
       !---------------------------------------------------------------------
@@ -571,7 +572,6 @@
       IF (ppm_debug .GE. 3) THEN
           CALL substart('GetCellCoor_Depth',t0,info)
       ENDIF
-
 
       ! Set minimum and maximum physical extent of first cell,
       ! which is the domain itself. Later, as we go deeper, we restrict
@@ -675,10 +675,10 @@
       REAL(MK), DIMENSION(ppm_dim)   :: start_coor
       REAL(MK), DIMENSION(ppm_dim)   :: end_coor
 
+      INTEGER,  DIMENSION(0:ppm_dim) :: powdim
       INTEGER                        :: increment
       INTEGER                        :: i
       INTEGER                        :: j
-      INTEGER,  DIMENSION(0:ppm_dim) :: powdim
 
       ! Initialize physical extent of the cell whose index is asked
       ! for. Later in the loop, this physical extent will be
@@ -697,10 +697,10 @@
       cell_idx = 1     ! Set cell_idx to greatest ancestor.
       DO i = 1, cell_depth - 1
           ! Compute current midpoint coordinates
-          mid_coor(1) = (start_coor(1) + end_coor(1))/2._MK
-          mid_coor(2) = (start_coor(2) + end_coor(2))/2._MK
+          mid_coor(1) = (start_coor(1) + end_coor(1))/2
+          mid_coor(2) = (start_coor(2) + end_coor(2))/2
           DO j = 3, ppm_dim
-              mid_coor(j) = (start_coor(j) + end_coor(j))/2._MK
+              mid_coor(j) = (start_coor(j) + end_coor(j))/2
           END DO
 
           ! Set cell_idx to first child (bottom-left)
@@ -889,10 +889,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_s(xp, cutoff, skin, rank, clist, &
-      &                         ownregion, idx, increment)
+      &                    ownregion, idx, increment)
 #elif __KIND == __DOUBLE_PRECISION
       RECURSIVE SUBROUTINE SortByPosition_d(xp, cutoff, skin, rank, clist, &
-      &                         ownregion, idx, increment)
+      &                    ownregion, idx, increment)
 #endif
       !!! The recursive subroutine which sorts the particles by their position;
       !!! given particles coordinates, their cutoff radii, skin parameter,
@@ -1521,25 +1521,25 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), INTENT(IN), DIMENSION(:) :: cutoff
+      REAL(MK), DIMENSION(:),         INTENT(IN   ) :: cutoff
       !!! Input array for particles cutoff radii
-      REAL(MK), INTENT(IN)               :: skin
+      REAL(MK),                       INTENT(IN   ) :: skin
       !!! Skin parameter
-      TYPE(ppm_clist), INTENT(INOUT)     :: clist
+      TYPE(ppm_clist),                INTENT(INOUT) :: clist
       !!! the cell list
-      REAL(MK), DIMENSION(2*ppm_dim)     :: domain
+      REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: domain
       !!! Physical extent of whole domain including ghost layers
-      INTEGER                            :: info
+      INTEGER                       , INTENT(  OUT) :: info
 
       !---------------------------------------------------------------------
       !  Local variables and counters
       !---------------------------------------------------------------------
-      INTEGER                            :: i
-      REAL(MK)                           :: rc_limit
-      REAL(MK)                           :: minSideLength
-      INTEGER                            :: rc_border
+      REAL(MK) :: rc_limit
+      REAL(MK) :: minSideLength
+      REAL(MK) :: t0
 
-      REAL(MK)                           :: t0
+      INTEGER  :: i
+      INTEGER  :: rc_border
 
       CALL substart('getRC_Borders',t0,info)
 
