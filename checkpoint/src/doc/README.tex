@@ -30,7 +30,7 @@ An intrinsic type is any type that is built into the Fortran programming languag
 
 \subsubsection{Derived Types}
 \paragraph{}
-A derived type is a type that is defined in Fortran using the ``TYPE'' Keyword. These are used to encapsulated intrinsic types into more complicated structures, and to reuse attributes by extending other derived types. The derived types of PPM are partially outlined in \ref{fig.typechart}.
+A derived type is a type that is defined in Fortran using the ``TYPE'' Keyword. These are used to encapsulated intrinsic types into more complicated structures, and to reuse attributes by extending other derived types. The derived types of PPM are partially outlined in Section \ref{fig.typechart}.
 
 \subsubsection{Pointer Lists}
 \paragraph{}
@@ -83,6 +83,7 @@ Most of the restart behavior is expected to be done by a parent application. Thi
 \section{Implementation Details}
 \subsection{Checkpoint File Format}
 \subsubsection{Base File}
+\label{sec:basefile}
 \begin{list}{}{}
 \item /checkpoint\_data - Explicitly saved references
 \item /intrinsic - Intrinsic types
@@ -106,7 +107,7 @@ Ex. /ppm\_t\_container/3068ED0000000000E0C66F0000000000 is a stored object
    \caption{Example HDF5 representation}
    \label{fig:datarep}
 \end{floatingfigure}
-Figure \ref{fig:datarep} Shows what this might look like in an HDF5 context. The format is very simple to understand. First, the module creates a custom HDF5 type for the ppm type based on what members it has. The type compiler (See Section \ref(sec.typefc)) handles the calculation of the number and type of the arguments and creates the necessary HDF5 code to initialize the type. Once the type is created, sub types are added to this type as members identified by the variable name. This makes it easy to read and write attributes to the dataset by variable name.
+Figure \ref{fig:datarep} Shows what this might look like in an HDF5 context. The format is very simple to understand. First, the module creates a custom HDF5 type for the ppm type based on what members it has. The type compiler (See Section \ref{sec:typefc}) handles the calculation of the number and type of the arguments and creates the necessary HDF5 code to initialize the type. Once the type is created, sub types are added to this type as members identified by the variable name. This makes it easy to read and write attributes to the dataset by variable name.
 
 As an additional note, this example shows how datasets are named. Datasets stored by the checkpoint module are referenced using the calculated or generated pointer address string. This string is 32 characters and is in hexadecimal form for derived types. Intrinsic and ppm\_t\_ptr type pointers are based on an internal counter and prefixed with ``internal''.
 
@@ -122,50 +123,19 @@ Take this simple example of a checkpointed particle (Note: unused groups omitted
 In order to keep references, a pointer is stored as a string dataset. This string is the address returned by get pointer, and recorded by the pointer\_tracker module (See Section \ref{sec.ptrtrack}). To re-associate the variable ``parts'' with the correct data, the module can read the pointer address from the ``parts'' dataset. This string is the name of the dataset of the corresponding data. Thus it need only be passed to the appropriate ``recover'' function in order to read and associate the data.
 
 Null pointers are represented by a string of 32 ``0''s.
-%
-%\begin{list}{}{}
-%\item /checkpoint\_data         Group
-%\item /checkpoint\_data/dx      Dataset {SCALAR}
-%\item /checkpoint\_data/nlist   Dataset {SCALAR}
-%\item /checkpoint\_data/parts   Dataset {SCALAR}
-%\item /checkpoint\_data/procid  Dataset {SCALAR}
-%\item /intrinsic               Group
-%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 2 Dataset {29791, 18}
-%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 3 Dataset {35937}
-%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 5 Dataset {35937, 3}
-%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 6 Dataset {35937}
-%\item /intrinsic/\ internal\ \ \ \ \ \ \ \ \ \ \ 7 Dataset {35937, 3}
-%\item /particles\_stats\_d\_      Group
-%\item /particles\_stats\_d\_/F06AED000000000040CF6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_container         Group
-%\item /ppm\_t\_container/2084ED0000000000E04B6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_container/30C1EC0000000000A0CD6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_container/D0C0EC0000000000A0CE6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_main\_abstr        Group
-%\item /ppm\_t\_main\_abstr/3068ED0000000000E0C66F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_main\_abstr/8084ED000000000000CB6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_main\_abstr/9094ED000000000000CB6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_mapping\_d\_        Group
-%\item /ppm\_t\_neighlist\_d\_      Group
-%\item /ppm\_t\_neighlist\_d\_/2088ED0000000000E0CB6F0000000000 Dataset {SCALAR}
-%\item /ppm\_t\_operator\_discr\_   Group
-%\item /ptr\_lists               Group
-%\item /ptr\_lists/\ internal\ \ \ \ \ \ \ \ \ \ \ 1 Dataset {SCALAR}
-%\item /ptr\_lists/\ internal\ \ \ \ \ \ \ \ \ \ \ 4 Dataset {SCALAR}
-%\end{list}
 \subsection{Intrinsic Storage}
 \paragraph{}
 Intrinsic types (integers, reals, logicals, strings, etc) are stored using a combination of the HDF5 low interface and the lite high level HDF5 API. Currently, If you want to checkpoint an HDF5 type by itself you need to manually call the HDF5 code. The checkpoint module only provides the functions for storing intrinsic types as part of a derived type. However, the checkpoint module does provide support for storage of pointers to intrinsic arrays.
 
-Code for reading and writing intrinsic types and pointers is located in the ``intrinsic'' subdirectory.
+Code for reading and writing intrinsic types and pointers is located in the ``intrinsic'' subdirectory (See Section \ref{sec:dirintrinsic}).
 
 \subsection{Derived Type Storage}
 \paragraph{}
 In order to store derived types, the module groups each type into a family. This family is based on the highest level parent. For example, one family is the ppm\_t\_main\_abstr because it does not extend anything. For each family, there is a standard set of functions, whose behavior depends on what type is given. The functions provided are make\_type, store, write, read, and a collection of recover statements. The store function is the high level storage function that creates a dataset, writes the type and records the address. It uses the write function, which handles just the writing and storage of the various members. This includes storing pointers which it references and recording a reference to the stored location. The make\_type routine is necessary for generating the type of the dataset, which allocates the space and layout of the HDF5 dataset. Finally, the various recover functions are wrappers to the read function. The read function handles the reading of the data from the given dataset into the type. The recover functions handle the allocation of the appropriate Fortran type and returns a pointer to the newly allocated data. This way it can ensure that the type remains the same after a restart and that all the necessary data is recovered.
 
-All of these functions are computer generated with my specially written type compiler, which is explained in more detail in Section \ref{sec.typefc}.
+All of these functions are computer generated with my specially written type compiler, which is explained in more detail in Section \ref{sec:typefc}.
 
-The code for storing these types is contained in the ``types'' subdirectory.
+The code for storing these types is contained in the ``types'' subdirectory (See Section \ref{sec:dirtypes}).
 
 \subsection{Pointer Lists}
 \label{sec.ptrlists}
@@ -181,7 +151,7 @@ The checkpoint code for these types is contained in the ``pointers'' subdirector
 \paragraph{}
 One bit of the challenge in checkpointing is the relational nature of the data and the usage of dynamically allocated memory and pointers. Because of this, the module needs to identify various pointers, tag them with a unique identifier, and be able to re-associate each pointer with the correct target. If this isn't done, restarts could have pointers to duplicate data, where changes in one target would not change in the other. This change in behavior is likely to break the running application as it may rely on the fact that these two pointers should reference the same data. Finally, if a pointer to be inserted matches the hash and type of a recorded pointer, an associated() call determines whether or not they are the same thing.
 
-The source files that handle generating, retrieving, and tracking pointers is contained in the ``pointers'' subdirectory. The code for the binary trees resides in the ``trees'' subdirectory.
+The source files that handle generating, retrieving, and tracking pointers is contained in the ``pointers'' subdirectory (See Section \ref{sec:dirpointers}). The code for the binary trees resides in the ``trees'' subdirectory (See Section \ref{sec:dirtrees}).
 
 \subsubsection{Calculation}
 \paragraph{}
@@ -198,23 +168,68 @@ The module uses a top level type of a pair of trees, intrinsic and derived as it
 The trees are mostly used for intrinsic pointer assignment (ie, recording which address given to which reference) and also to record which pointers that have already recovered during the read phase. By storing the references in a tree, duplicate reads can be prevented and associative consistency maintained. That is to say, if a given piece of data has already been recovered and another type references that data, it can be directly associated to the recorded reference instead of duplicating the data.
 
 \subsection{Source Code Layout and Key Files}
+The checkpoint source code is organized by function and included into the main modules. All of the relavant code is placed in directories in the \texttt{src/} folder. This section goes more in depth about what code is where, and what that code actually responsible for.
+
+\subsubsection{checkpoint\_hdf5.f}
+\paragraph{}
+This is the main checkpoint module source file. Th bulk of this file is including the relavant source files for the different components and such. The other main part of this file is to defined the relavant user level interfaces, namely \texttt{store\_type}. This interface combines all of the various store\_type functions into one interface that can be used to genericize the process. This interface is also why types needed to be grouped by ``families'', as two types of the same family in this interface would cause an error as it would not be clear to the compiler which one to use.
+
+The second responsibility of this main file is the handling of the checkpoint file, more specifically, the basic file operations. There is create, open, and close. The open function opens an existing function, and the close closes an open file. The create function is a little more detailed. First it creates a new hdf5 file, then it adds the base set of groups to the file. This creates the base file format shown in Section \ref{sec:basefile}. This ensures that all the groups exist when the module attempts to create datasets for the various types.
+
+\subsubsection{types/}
+\label{sec:dirtypes}
+\paragraph{}
+This directory contains the type definitions and derived type checkpoint code. Each Fortran source file is named according to the type family that it is responsible for. These files are generated with a custom written domain specific language from the corresponding \texttt{def} file using the \texttt{typefc.pl} script. This process is described in more detail in Section \ref{sec:typefc}.
+
+The source files that are generated provide the key functions for storage and recovery of derived types. The functions provided are \texttt{make\_type\_}, \texttt{store\_type\_}, \texttt{write\_type\_}, \texttt{read\_type\_}, and several \texttt{recover} funcitons. The recover functions are generated for each type in the family. This is necessary because in order to satisfy the static typing of Fortran, the function must return a pointer to the same type as is requested. Otherwise there could be an issue of the program treating the data as the wrong type. These functions are suffixed with the type of the pointer that they return. The other subroutines are suffixed with the family name, or the highest common ancestor.
+
+The \texttt{make\_type} subroutine is used to create a custom HDF5 datatype with all the properties of the target PPM datatype. It is called by the \texttt{store\_type} function in order to provide the datatype for the newly created dataset.
+
+The \texttt{store\_type} subroutine is higher level function that is responsible for handling tasks needed before writing data to disk. In detail, it first looks up the type to store in the pointer\_trees to determine if it has already been stored. If it has not been, it calls the appropriate \texttt{make\_type} function in order to get the datatype, then it creates a new HDF5 dataset with this datatype in the appropriate group (See Section \ref{sec:basefile} for information about the dataset groups). Next, it calls the \texttt{write\_type} function, which does the work of writing the input to the dataset. Once thats completed, it closes the various handles as necessary and finishes.
+
+The \texttt{write\_type} subroutine handles writing the individual members of the data to the dataset. It makes heavy use of SELECT TYPE statements to determine which members it needs to store. This allows one write routine to be able to write all the different types in a given family. As an added layer of abstraction, this function does not have to make any calls to the hdf5 library. Its main task is to determine what to write. The low level writing of types is passed of to the \texttt{write\_attribute} interface that is explained in Section \ref{sec:dirintrinsic}. Also, to ensure a complete map, this routine will call \texttt{store\_type} on any associated pointers and record the pointer address. This way references to other types can be retained (See Section \ref{sec:ptrrep} for an explanation of how pointers are represented).
+
+The \texttt{read\_type} subroutine is essentially the inverse of \texttt{write\_type}. It determines the type that it should read, and then uses the \texttt{read\_attribute} interface (See Section \ref{sec:dirintrinsic} to initialize the data with the saved data. If the attribute to read is a pointer, it is also recovered using the appropriate \texttt{recover} function.
+
+The \texttt{recover} functions are necessary wrappers to the read subroutines. Their task is to determine the type that is intended to be read, and to allocate the space for it. However, before it allocates space, it first looks up the address in the pointer\_tree. If it exists it returns the appropriate pointer. This maintains the reference tree of the application before the checkpoint. If the pointer is not in the tree, it then needs to be restored. This is done by reading a special member from the target dataset. This dataset gives a ``type\_id''. This is an interger that referres to an enumeration of the allocatable types. With this id the recover function can determine what the actual type of the data was at the time of checkpoint. This is necessary because it is often the case the the pointer returned is an abstract type that could refer to a number of different types. It is important to be able to save the actual type status in order to know what type to allocate. Once the appropriate type is allocated, it is passed to the \texttt{read\_type} function, which like the \texttt{write\_function} can determine what members to read based on the input type. After reading the data, a pointer to this data is returned to the caller.
+
+As a final note, it is important to point out that there is no generic \texttt{recover\_type} interface at the moment. This is do to an issue mentioned briefly before in regards to Fortran interfaces. The issue is that when the interface has ``ambiguous'' references. In this case it is the fact that two functions may have the same interface, but all that differs is the input type. For these functions, because there are several for each type family, the interface cannot distinguish which one to use for the abstract types. This is because they satisfy the parameters of more than one of the functions and thus is ambiguous.
+
+\subsubsection{intrinsic/}
+\label{sec:dirintrinsic}
+\paragraph{}
+
+\subsubsection{pointer\_tracker.f}
+\paragraph{}
+
+\subsubsection{pointers/}
+\label{sec:dirpointers}
+
+\subsubsection{trees/}
+\label{sec:dirtrees}
+
+\subsubsection{doc/}
+\paragraph{}
+This directory contains these documentation files. The documentation is in PDF format, and generated by \LaTeX
+
+
 %Replace these with subsections instead
-\begin{list}{}{}
-\item checkpoint\_HDF5.f - Main module source file. Contains the includes for the rest of the source and the API interface definitions.
-\item pointer\_tracker.f - Main module source file for pointer tracking. includes the files related to tracking references and the API interfaces
-\item src/ - the main directory of all the source code
-\item types/ - Contains the *.def files and the generated source files for derived type storage and recovery.
-\item pointers/ - Contains the source code files for the get\_pointer functions and for the storage of ppm\_t\_ptr* types
-\item intrinsic/ - Contains the source code responsible for the storage and recovery of intrinsic types and pointers.
-\item doc/ - Contains the documentation files
-\item trees/ - Contains the source code relating to the various binary trees used for pointer tracking
-\end{list}
+%\begin{list}{}{}
+%\item checkpoint\_HDF5.f - Main module source file. Contains the includes for the rest of the source and the API interface definitions.
+%\item pointer\_tracker.f - Main module source file for pointer tracking. includes the files related to tracking references and the API interfaces
+%\item src/ - the main directory of all the source code
+%\item types/ - Contains the *.def files and the generated source files for derived type storage and recovery.
+%\item pointers/ - Contains the source code files for the get\_pointer functions and for the storage of ppm\_t\_ptr* types
+%\item intrinsic/ - Contains the source code responsible for the storage and recovery of intrinsic types and pointers.
+%\item doc/ - Contains the documentation files
+%\item trees/ - Contains the source code relating to the various binary trees used for pointer tracking
+%\end{list}
 
 \section{Scripts Documentation}
 \paragraph{}
 In order to make life easier and maintain sanity amidst a sea of Fortran code that just seemed to repeat itself a thousand times, a set of scripts in perl were developed in conjunction with the main code base in order to generate large amounts of repetitive code from templates. While much of this could have been done with INCLUDES and preprocessor directives, scripts seem to be a bit more elegant as they allow for more flexibility of design and features. For example, it can generate all the varieties of a function into one file and include the file once, instead of using a include file and including it N times with different parameters. However, since these scripts are not exactly standard or particularly well commented, it is important to discus what they do and how they work.
 \subsection{typefc.pl}
-\label{sec.typefc}
+\label{sec:typefc}
 \paragraph{}
 The typefc script is essentially a type compiler. It takes a type definition and generates the functions required to store and recover the various types. It uses the type.f.in file as a template for each type. It then parses a definition file to learn the types and relations, generate the necessary section of code, and insert them into the template.
 \subsubsection{Invocation}
