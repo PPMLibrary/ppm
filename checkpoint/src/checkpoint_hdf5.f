@@ -63,19 +63,24 @@
          CONTAINS
             ! Creates and initializes the checkpoint file
             ! Creates necessary groups in the file for types
-            SUBROUTINE make_checkpoint_file(file_id, filename)
+            SUBROUTINE make_checkpoint_file(file_id, filename_arg)
                IMPLICIT NONE
 
                ! The filename of the checkpoint
-               CHARACTER(LEN=*), OPTIONAL :: filename
+               CHARACTER(LEN=*), OPTIONAL :: filename_arg
+               CHARACTER(LEN=50) :: filename
 
                INTEGER(HID_T), INTENT(out):: file_id
                INTEGER(HID_T) :: group_id
                INTEGER :: error
 
-               IF (.NOT. present(filename)) THEN
-                  READ(*,*) filename
+               IF (.NOT. present(filename_arg)) THEN
+                  WRITE(*,*) "Enter checkpoint filename"
+                  READ(*,'(A)') filename
+               ELSE
+                  WRITE(filename, *) filename_arg
                ENDIF
+               WRITE(*,*) filename
 
                ! Open the interface and create the file
                CALL h5open_f(error)
@@ -122,18 +127,23 @@
             END SUBROUTINE make_checkpoint_file
 
             ! Opens an existing checkpoint file
-            SUBROUTINE open_checkpoint_file(file_id, filename)
+            SUBROUTINE open_checkpoint_file(file_id, filename_arg)
                IMPLICIT NONE
 
                ! The filename of the checkpoint
-               CHARACTER(LEN=*), OPTIONAL :: filename
+               CHARACTER(LEN=*), OPTIONAL :: filename_arg
+               CHARACTER(LEN=50) :: filename
 
                INTEGER(HID_T), INTENT(OUT):: file_id
                INTEGER :: error
 
-               IF (.NOT. present(filename)) THEN
-                  READ(*,*) filename
+               IF (.NOT. present(filename_arg)) THEN
+                  WRITE(*,*) "Enter checkpoint filename"
+                  READ(*,'(A)') filename
+               ELSE
+                  WRITE(filename, *) filename_arg
                ENDIF
+               WRITE(*,*) filename
 
                ! Open the interface and create the file
                CALL h5open_f(error)
