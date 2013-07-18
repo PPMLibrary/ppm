@@ -1,4 +1,0 @@
-parent ppm_t_container
-type ppm_c_part_prop_d_
-#pointer vec ppm_t_ptr_main_abstr
-#pointer iterator ppm_t_part_prop_d_

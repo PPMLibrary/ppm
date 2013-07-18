@@ -1,4 +1,0 @@
-parent ppm_t_container
-type ppm_c_neighlist_d_
-#pointer vec ppm_ptr_neighlist_d
-pointer iterator ppm_t_neighlist_d_

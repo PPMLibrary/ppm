@@ -1,7 +1,0 @@
-parent ppm_t_discr_data
-type ppm_t_part_prop_d_
-#pointer data_1d_i integerD
-#pointer data_2d_i integer2d
-#pointer data_1d_li integer64d
-#pointer data_2d_li integer642d
-# Theres more

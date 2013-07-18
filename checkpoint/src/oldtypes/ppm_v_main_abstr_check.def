@@ -1,4 +1,0 @@
-parent ppm_t_container
-type ppm_v_main_abstr
-#pointer vec ppm_t_ptr_main_abstr
-#pointer interator ppm_t_main_abstr
