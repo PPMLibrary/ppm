@@ -17,10 +17,10 @@ The checkpoint functionality is a necessary component for the scalability of the
 \section{Background Information}
 \subsection{PPM}
 \paragraph{}
-PPM Description goes here
+The PPM (Parallel Particle Mesh) Library is a middleware for creating distributed memory hybrid particle-mesh simulations. It is designed to simplify the task of writing efficient distributed parallelized code and allow for improved performance of the simulations in parallel and distributed environments.
+
 \subsection{HDF5}
 \paragraph{}
-% Expand more
 HDF5 (hierarchical data format version 5) is a file format for the storage of programmatic data using hierarchies of groups and datasets for organization. It has built in support for storage of Fortran's built in types, and can be used to store complex data by creating compound types. This is the file format used for the storage of the checkpoint data.
 
 \subsection{Fortran Types}
@@ -336,6 +336,8 @@ In order to store the types in a generic tree, there have to be trees that store
 
 \section{Future Work}
 \subsection{PHDF5}
+\paragraph{}
+In the future, the goal will be to support PHDF5, which is a parallel version of HDF5 to allow concurrent writes in order to improve performance. Currently the checkpoint module does not support this, and the operations are done in serial.
 
 \section{API}
 \subsection{Subroutines/Functions}
