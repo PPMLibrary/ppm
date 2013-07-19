@@ -342,46 +342,53 @@ In the future, the goal will be to support PHDF5, which is a parallel version of
 \section{API}
 \subsection{Subroutines/Functions}
 \begin{tabular}{p{0.2\textwidth}p{0.8\textwidth}}
-   Make a new checkpoint & CALL make\_checkpoint\_file(filename, file\_id) \\
+   & CALL make\_checkpoint\_file(filename, file\_id) \\
+   Make a new checkpoint
                     & \begin{tabular}{ll}
                        \farg{INTEGER(HID\_T), INTENT(OUT)}{file\_id}
                        \farg{CHARACTER(LEN=*), INTENT(IN)}{filename}
                        \farg{INTEGER, INTENT(OUT)}{error}
                      \end{tabular} \\
                     [1ex] \hline
-   Open checkpoint file & CALL open\_checkpoint\_file(file\_id, filename, error) \\
+   & CALL open\_checkpoint\_file(file\_id, filename, error) \\
+   Open checkpoint file
                     & \begin{tabular}{ll}
                        \farg{INTEGER(HID\_T), INTENT(OUT)}{file\_id}
                        \farg{CHARACTER(LEN=*), INTENT(IN)}{filename}
                        \farg{INTEGER, INTENT(OUT)}{error}
                      \end{tabular} \\
                     [1ex] \hline
-   Close checkpoint file & CALL close\_checkpoint\_file(file\_id, error) \\
+   & CALL close\_checkpoint\_file(file\_id, error) \\
+   Close checkpoint file
                     & \begin{tabular}{ll}
                        \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                        \farg{INTEGER, INTENT(OUT)}{error}
                      \end{tabular} \\
                     [1ex] \hline
-   Store a variable & CALL store\_type(file\_id, ptr\_addr, ptr) \\
+   & CALL store\_type(file\_id, ptr\_addr, ptr) \\
+   Store a variable
                     & \begin{tabular}{ll}
                        \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                        \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
                        \farg{INTEGER, INTENT(OUT)}{error}
                      \end{tabular} \\
                     [1ex] \hline
-   Recover a stored type & ptr =\textgreater recover\_TYPE(file\_id, ptr\_addr, ptr) \\
+   & ptr =\textgreater recover\_TYPE(file\_id, ptr\_addr, ptr) \\
+   Recover a stored type
                          & \begin{tabular}{ll}
                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
                           \farg{CLASS(TYPE), POINTER}{ptr}
                        \end{tabular} \\ [1ex] \hline
-   Save a pointer & CALL save\_pointer(file\_id, varname, ptr\_addr) \\
+   & CALL save\_pointer(file\_id, varname, ptr\_addr) \\
+   Save a pointer
                          & \begin{tabular}{ll}
                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{varname}
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{ptr\_addr}
                        \end{tabular} \\ [1ex] \hline
-   Read a saved pointer & CALL get\_saved\_pointer(file\_id, varname, ptr\_addr) \\
+   & CALL get\_saved\_pointer(file\_id, varname, ptr\_addr) \\
+   Read a saved pointer
                          & \begin{tabular}{ll}
                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                           \farg{CHARACTER(LEN=*), INTENT(IN)}{varname}
@@ -391,38 +398,63 @@ In the future, the goal will be to support PHDF5, which is a parallel version of
 
 \subsection{Internal Functions}
 \begin{tabular}{p{0.2\textwidth}p{0.8\textwidth}}
-   Make HDF5 type representation & CALL make\_type\_DTYPE(ptr, type\_id) \\
+   & CALL make\_type\_DTYPE(ptr, type\_id) \\
+   Make HDF5 type representation
                                  & \begin{tabular}{ll}
                                    \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
                                    \farg{INTEGER(HID\_T), INTENT(OUT)}{type\_id}
                                 \end{tabular} \\ [1ex] \hline
-   Write derived type & CALL write\_DTYPE(file\_id, dset\_id, ptr) \\
+   & CALL write\_DTYPE(file\_id, dset\_id, ptr) \\
+   Write type
                       & \begin{tabular}{lp{\textwidth}}
                            \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
                            \farg{INTEGER(HID\_T), INTENT(IN)}{dset\_id}
                            \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
                         \end{tabular} \\ [1ex] \hline
-   Insert pointer & CALL pointer\_insert(tree\_group, node, intr\_ptr) \\
+   & CALL read\_DTYPE(file\_id, dset\_id, ptr) \\
+   Read a type
+                      & \begin{tabular}{lp{\textwidth}}
+                           \farg{INTEGER(HID\_T), INTENT(IN)}{file\_id}
+                           \farg{INTEGER(HID\_T), INTENT(IN)}{dset\_id}
+                           \farg{CLASS(DTYPE), POINTER, INTENT(IN)}{ptr}
+                        \end{tabular} \\ [1ex] \hline
+   & CALL pointer\_insert(tree\_group, node, intr\_ptr) \\
+   Insert pointer
                   & \begin{tabular}{lp{\textwidth}}
                         \farg{CLASS(pointer\_trees)}{tree\_group}
                         \farg{CLASS(pointer\_btree)}{node}
                         \farg{CHARACTER(LEN=*), OPTIONAL}{intr\_ptr}
                      \end{tabular} \\ [1ex] \hline
-   Delete tree & CALL delete\_tree(some\_tree) \\
+   & CALL delete\_tree(some\_tree) \\
+   Delete tree
                   & \begin{tabular}{lp{\textwidth}}
                       \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
                    \end{tabular} \\ [1ex] \hline
-   Check for existing tree & rval = exists\_pointer(key, some\_tree) \\
+   & rval = exists\_pointer(key, some\_tree) \\
+   Check for existing tree
                & \begin{tabular}{lp{\textwidth}}
                    \farg{CHARACTER(LEN=*), INTENT(IN)}{key}
                    \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
                 \end{tabular} \\ [1ex] \hline
-   Lookup pointer in tree & CALL lookup\_pointer(key, some\_tree, ptr) \\
+   & CALL lookup\_pointer(key, some\_tree, ptr) \\
+   Lookup pointer in tree
                & \begin{tabular}{lp{\textwidth}}
                    \farg{CHARACTER(LEN=*), INTENT(IN)}{key}
                    \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{some\_tree}
                    \farg{CLASS(intrinsic\_tree|derived\_tree), POINTER}{ptr}
                 \end{tabular} \\ [1ex] \hline
+                & CALL delete\_tree(some\_tree) \\
+   Deleting a pointer tree
+                & \begin{tabular}{lp{\textwidth}}
+                     \farg{pointer\_btree}{some\_tree}
+                  \end{tabular} \\ [1ex] \hline
+                & CALL check\_associated(treenode, newnode) \\
+   Check if two pointers are the same (tree context)
+                & \begin{tabular}{lp{\textwidth}}
+                     \farg{pointer\_btree}{treenode}
+                     \farg{pointer\_btree}{newnode}
+                  \end{tabular} \\ [1ex] \hline
+
 
 \end{tabular}
 
