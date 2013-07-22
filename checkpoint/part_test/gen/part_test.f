@@ -49,8 +49,14 @@ integer :: gen1mb_info
   INTEGER :: error
   CHARACTER(LEN=32) :: pointer_addr
   !CHARACTER(LEN=32) :: init_part = "30E8BF0000000000C09E700000000000"
-  !LOGICAL :: TEST_READ = .TRUE.
-  LOGICAL :: TEST_READ = .FALSE.
+  LOGICAL :: TEST_READ = .TRUE.
+  !LOGICAL :: TEST_READ = .FALSE.
+
+  WRITE (*,*) "Enter 0 for write, 1 for read"
+  READ (*, '(I1)') info
+  IF (info == 0) THEN
+     TEST_READ = .FALSE.
+  ENDIF
 
   ! Prepare VTK filename
   write(procbuf,'(I3)')   ppm_nproc
@@ -125,7 +131,8 @@ integer :: gen1mb_info
   call ppm_mktopo(topo,domain_decomposition,processor_assignment,min_phys,max_phys,bcdef, cutoff + skin,geng6f_cost,info)
 
 IF (TEST_READ) THEN
-      CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5')
+      !CALL open_checkpoint_file(checkpoint_file, 'checkpoint.h5')
+      CALL open_checkpoint_file(checkpoint_file)
 
       CALL get_saved_pointer(checkpoint_file, 'parts', pointer_addr)
       parts_abstr => recover_ppm_t_particles_d_(checkpoint_file,pointer_addr, parts_abstr)
@@ -215,7 +222,8 @@ ELSE
     GOTO 9999
   END IF
  nlist => parts%get_neighlist()
-   CALL make_checkpoint_file(checkpoint_file, 'checkpoint-end.h5')
+   !CALL make_checkpoint_file(checkpoint_file, 'checkpoint-end.h5')
+   CALL make_checkpoint_file(checkpoint_file)
 
    pointer_addr =  get_pointer(parts)
    CALL store_type(checkpoint_file,pointer_addr, parts)
