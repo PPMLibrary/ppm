@@ -21,7 +21,7 @@
       !!! the local processor.
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data_mesh
       IMPLICIT NONE
@@ -30,16 +30,16 @@
       !-------------------------------------------------------------------------
 #ifdef __MPI
       INCLUDE 'mpif.h'
-#endif 
+#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)               :: this
       !!!
       INTEGER              , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ibuffer,jbuffer,bdim,offs
@@ -47,9 +47,10 @@
       CHARACTER(ppm_char)   :: mesg
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
+      INTEGER                             :: commreq
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
       start_subroutine("mesh_map_send")
 
@@ -69,7 +70,7 @@
       !-------------------------------------------------------------------------
       !  Allocate
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit 
+      iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(nsend,ldu,iopt,info)
           or_fail_alloc("nsend")
@@ -80,12 +81,12 @@
           or_fail_alloc("nrecv")
       CALL ppm_alloc(precv,ldu,iopt,info)
           or_fail_alloc("precv")
-      ldu(1) = ppm_nrecvlist 
-      ldu(2) = ppm_buffer_set 
+      ldu(1) = ppm_nrecvlist
+      ldu(2) = ppm_buffer_set
       CALL ppm_alloc(pp,ldu,iopt,info)
           or_fail_alloc("pp")
-      ldu(1) = ppm_nsendlist 
-      ldu(2) = ppm_buffer_set 
+      ldu(1) = ppm_nsendlist
+      ldu(2) = ppm_buffer_set
       CALL ppm_alloc(qq,ldu,iopt,info)
           or_fail_alloc("qq")
 
@@ -120,7 +121,7 @@
       DO j=1,ppm_buffer_set
          bdim     = ppm_buffer_dim(j)
          ibuffer  = ibuffer  + bdim*Ndata
-      ENDDO 
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Initialize the buffer counters
@@ -241,12 +242,12 @@
       !  Allocate the memory for the copy of the particle buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_nrecvbuffer 
+      ldu(1) = ppm_nrecvbuffer
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
       ELSE
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
-      ENDIF 
+      ENDIF
           or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
       !-------------------------------------------------------------------------
@@ -263,7 +264,7 @@
              CALL ppm_alloc(recvd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(recvs,ldu,iopt,info)
-          ENDIF 
+          ENDIF
               or_fail_alloc("local receive buffer recv")
       ENDIF
 
@@ -273,7 +274,7 @@
              CALL ppm_alloc(sendd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(sends,ldu,iopt,info)
-          ENDIF 
+          ENDIF
               or_fail_alloc("local send buffer send")
       ENDIF
 
@@ -284,8 +285,8 @@
       allrecv = SUM(precv(1:ppm_nrecvlist))
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main send 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main send
+      !  buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
@@ -307,8 +308,8 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main receive 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main receive
+      !  buffer
       !-------------------------------------------------------------------------
       bdim = 0
       offs = 0
@@ -338,8 +339,8 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbufferd(ibuffer) = ppm_sendbufferd(jbuffer)
-            ENDDO 
-         ENDDO 
+            ENDDO
+         ENDDO
       ELSE
          DO k=1,ppm_buffer_set
             ibuffer = pp(1,k) - 1
@@ -348,9 +349,9 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbuffers(ibuffer) = ppm_sendbuffers(jbuffer)
-            ENDDO 
-         ENDDO 
-      ENDIF 
+            ENDDO
+         ENDDO
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist(); skip the first entry
@@ -374,8 +375,8 @@
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
                   sendd(ibuffer) = ppm_sendbufferd(jbuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
 
             !-------------------------------------------------------------------
             !  Perform the actual send/recv as needed
@@ -392,6 +393,7 @@
      &                      ' from ',ppm_irecvlist(k)
                         CALL ppm_write(ppm_rank,caller,mesg,info)
                     ENDIF
+                    CALL MPI_Irecv(recvd,nrecv(k),ppm_mpi_kind,
                     CALL MPI_SendRecv(sendd,nsend(k),ppm_mpi_kind,  &
      &                 ppm_isendlist(k),tag1,recvd,nrecv(k),ppm_mpi_kind,  &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
@@ -430,8 +432,8 @@
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbufferd(jbuffer) = recvd(ibuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
          ENDDO
       ELSE
          !----------------------------------------------------------------------
@@ -451,8 +453,8 @@
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
                   sends(ibuffer) = ppm_sendbuffers(jbuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
 
             !-------------------------------------------------------------------
             !  Perform the actual send/recv as needed
@@ -494,10 +496,10 @@
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbuffers(jbuffer) = recvs(ibuffer)
-               ENDDO 
+               ENDDO
             ENDDO
          ENDDO
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Deallocate the send buffer to save memory
@@ -509,7 +511,7 @@
           CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
       ENDIF
           or_fail_dealloc("ppm_sendbuffer")
-    
+
       !-------------------------------------------------------------------------
       !  Deallocate
       !-------------------------------------------------------------------------
@@ -536,7 +538,7 @@
       or_fail_dealloc("sends")
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
       end_subroutine()
       RETURN

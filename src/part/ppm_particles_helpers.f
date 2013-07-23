@@ -29,7 +29,7 @@ FUNCTION particles_dflt_pptname(i,ndim)
 END FUNCTION
 
 FUNCTION particles_dflt_nlname(i)
-    !!! Default name for an operator
+    !!! Default name for a neighlist
     CHARACTER(LEN=ppm_char)   :: particles_dflt_nlname
     INTEGER                   :: i
     CHARACTER(LEN=ppm_char)   :: buf
