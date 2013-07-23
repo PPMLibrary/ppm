@@ -539,7 +539,7 @@
       !!! Depth of the cell to be returned.
       INTEGER,                        INTENT(IN   ) :: max_depth
       !!! maximum cell depth in cell tree
-      INTEGER                         INTENT(  OUT) :: info
+      INTEGER,                        INTENT(  OUT) :: info
       !!! 0 on success
 
       !---------------------------------------------------------------------
