@@ -71,7 +71,6 @@
       REAL(ppm_kind_double) :: t0
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
-      INTEGER                             :: request
 #endif
       TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
       REAL(MK), DIMENSION(:), POINTER  :: send => NULL()
@@ -234,13 +233,9 @@
      &               map%psend(k)
                  CALL ppm_write(ppm_rank,caller,mesg,info)
              ENDIF
-             CALL MPI_Irecv(map%precv(k),1,MPI_INTEGER,map%ppm_irecvlist(k),tag1,ppm_comm,request,info)
-             CALL MPI_Send(map%psend(k),1,MPI_INTEGER,map%ppm_isendlist(k),tag1,ppm_comm,info)
-             Call MPI_Wait(request,status,info)
-             ! yaser : in my experience this is much faster than sendrecv
-!              CALL MPI_SendRecv(map%psend(k),1,MPI_INTEGER,map%ppm_isendlist(k),tag1, &
-!      &                         map%precv(k),1,MPI_INTEGER,map%ppm_irecvlist(k),tag1, &
-!      &                         ppm_comm,status,info)
+             CALL MPI_SendRecv(map%psend(k),1,MPI_INTEGER,map%ppm_isendlist(k),tag1, &
+     &                         map%precv(k),1,MPI_INTEGER,map%ppm_irecvlist(k),tag1, &
+     &                         ppm_comm,status,info)
 
              ! Compute nrecv(k) from precv(k)
              map%nrecv(k) = sbdim*map%precv(k)
@@ -451,13 +446,10 @@
           ! (only needed in the partial mapping).
           IF (map%ppm_isendlist(k) .GE. 0 .AND. map%ppm_irecvlist(k) .GE. 0) THEN
               tag1 = 300
-              CALL MPI_Irecv(recv,map%nrecv(k),ppm_mpi_kind,map%ppm_irecvlist(k),tag1,ppm_comm,request,info)
-              CALL MPI_Send(send,map%nsend(k),ppm_mpi_kind,map%ppm_isendlist(k),tag1,ppm_comm,info)
-              Call MPI_Wait(request,status,info)
-!               CALL MPI_SendRecv( &
-!                   &             send,map%nsend(k),ppm_mpi_kind,map%ppm_isendlist(k),tag1, &
-!                   &             recv,map%nrecv(k),ppm_mpi_kind,map%ppm_irecvlist(k),tag1, &
-!                   &             ppm_comm,status,info)
+              CALL MPI_SendRecv( &
+                  &             send,map%nsend(k),ppm_mpi_kind,map%ppm_isendlist(k),tag1, &
+                  &             recv,map%nrecv(k),ppm_mpi_kind,map%ppm_irecvlist(k),tag1, &
+                  &             ppm_comm,status,info)
           ENDIF
 #else
           recv = send

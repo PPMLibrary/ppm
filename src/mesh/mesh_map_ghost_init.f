@@ -57,7 +57,6 @@
       LOGICAL                          :: lsouth,lnorth,least,lwest,ltop,lbottom
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
-      INTEGER                             :: commreq
 #endif
       TYPE(ppm_t_topo), POINTER        :: topo => NULL()
       !-------------------------------------------------------------------------
@@ -468,13 +467,9 @@
                  ! How many blocks am I sending to that guy
                  nsend = ub - lb
                  tag1 = 100
-                 CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,commreq,info)
-                 CALL MPI_Send(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,info)
-                 Call MPI_Wait(commreq,commstat,info)
-!                  CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
-!      &               MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
-!                  or_fail_MPI("MPI_SendRecv")
-                     or_fail_MPI("MPI_Irecv or MPI_Send or MPI_Wait")
+                 CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
+     &               MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
+                     or_fail_MPI("MPI_SendRecv")
                  ! How many blocks will I receive from the guy?
                  this%ghost_nrecv = this%ghost_nrecv + nrecv
                  this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
@@ -532,14 +527,10 @@
                  ENDDO
                  ! Send it to the destination processor and get my stuff
                  tag1 = 200
-                 CALL MPI_Irecv(recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,recvrank,tag1,ppm_comm,commreq,info)
-                 CALL MPI_Send(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,info)
-                 CALL MPI_Wait(commreq,commstat,info)
-!                  CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
-!      &                             recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
-!      &                             recvrank,tag1,ppm_comm,commstat,info)
-!                      or_fail_MPI("MPI_SendRecv")
-                 or_fail_MPI("MPI_Irecv or MPI_Send or MPI_Wait")
+                 CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
+     &                             recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
+     &                             recvrank,tag1,ppm_comm,commstat,info)
+                     or_fail_MPI("MPI_SendRecv")
                  ! Unpack the received data
                  lb = this%ghost_recvblk(i)
                  ub = this%ghost_recvblk(ibuffer)

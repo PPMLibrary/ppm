@@ -47,7 +47,6 @@
       CHARACTER(ppm_char)   :: mesg
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
-      INTEGER                             :: commreq
 #endif
       !-------------------------------------------------------------------------
       !  Externals
@@ -393,7 +392,6 @@
      &                      ' from ',ppm_irecvlist(k)
                         CALL ppm_write(ppm_rank,caller,mesg,info)
                     ENDIF
-                    CALL MPI_Irecv(recvd,nrecv(k),ppm_mpi_kind,
                     CALL MPI_SendRecv(sendd,nsend(k),ppm_mpi_kind,  &
      &                 ppm_isendlist(k),tag1,recvd,nrecv(k),ppm_mpi_kind,  &
      &                 ppm_irecvlist(k),tag1,ppm_comm,commstat,info)
