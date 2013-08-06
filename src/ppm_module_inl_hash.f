@@ -35,6 +35,9 @@
          USE ppm_module_data
          USE ppm_module_alloc
          USE ppm_module_error
+
+         IMPLICIT NONE
+
         !-------------------------------------------------------------------------
         !  Declaration of parameters
         !-------------------------------------------------------------------------

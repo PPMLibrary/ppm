@@ -18,8 +18,8 @@
          USE ppm_module_particles_typedef
          USE ppm_module_vbp_typedef
 
-
          IMPLICIT NONE
+
          !----------------------------------------------------------------------
          ! Global parameters
          !----------------------------------------------------------------------
@@ -59,7 +59,7 @@ minclude ppm_create_collection(operator,operator,generate="extend")
 
 
          CONTAINS
-         
+
 minclude ppm_create_collection_procedures(operator,operator_)
 
 #define DTYPE(a) a/**/_s
@@ -123,9 +123,9 @@ SUBROUTINE operator_create(this,nterms,coeffs,degree,info,name)
     ldc(1) = nterms
     CALL ppm_alloc(this%coeffs,ldc,ppm_param_alloc_fit,info)
         or_fail_alloc("this%coeffs")
-    this%coeffs = coeffs 
-    this%degree = degree 
-    this%nterms = nterms 
+    this%coeffs = coeffs
+    this%degree = degree
+    this%nterms = nterms
     IF (PRESENT(name)) THEN
         this%name = TRIM(ADJUSTL(name))
     ELSE
@@ -161,7 +161,7 @@ SUBROUTINE operator_discretize_on(this,Discr_to,op_discr,opts,info,&
     CLASS(ppm_t_options)                       :: opts
     !!! Arguments for the discretized operator
     !!!    - method (ppm_param_op_fd, ppm_param_op_pse, ppm_param_op_dcpse)
-    !!!    - with_ghosts (true if this operator is also applied to 
+    !!!    - with_ghosts (true if this operator is also applied to
     !!!             ghost particles, default is false)
     !!!    - vector (if the result should be a vector, default is false)
     !!!    - interp (if the operator is an interpolant, default is false)

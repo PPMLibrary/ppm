@@ -1,9 +1,8 @@
 include macro overload_function(func_name)
-%conf.ppm.type.all.each do |type_name| 
+%conf.ppm.type.all.each do |type_name|
             SUBROUTINE <%=func_name%>_<%= type_name %>
-% end 
+% end
 end macro
-
 
 include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=false,def_ptr=true,abstr_type=nil,ptr_type=nil)
 % gen = generate.to_s.gsub( /\A"/m, "" ).gsub( /"\Z/m, "" )
@@ -29,13 +28,13 @@ include macro ppm_create_collection(coll_type,el_type,generate="concrete",vec=fa
 % else
 % collection_type = 'ppm_c_'+coll_type.to_s
 % abstr_collection_type = 'ppm_c_'+abstr_type.to_s
-!collection of objects (stored as pointers, but removing an element also 
+!collection of objects (stored as pointers, but removing an element also
 ! deletes the object itself)
 % end
 % if def_pointer && gen != "extend"
 TYPE  <%= element_ptr_type %>
     CLASS(<%= element_type %>),                  POINTER :: t => NULL()
-END TYPE 
+END TYPE
 % end
 % proc_list = ['begin','next','last','prev','destroy','exists','has','get_id','push','remove','grow_size','at']
 % if gen == "concrete"
@@ -47,18 +46,18 @@ TYPE,EXTENDS(ppm_t_container) ::  <%= collection_type %>
 %proc_list.each do |func_name|
     PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
 % end
-END TYPE 
+END TYPE
 % end
 %#
 % if gen == "extend"
 %#
 !
-TYPE, EXTENDS(<%= abstr_collection_type %>) ::  <%= collection_type %>
+TYPE, EXTENDS(<%= abstr_collection_type %>) :: <%= collection_type %>
         CONTAINS
 %proc_list.each do |func_name|
-    PROCEDURE       :: <%=func_name%>  => <%= collection_type %>_<%=func_name%>
+    PROCEDURE :: <%=func_name%> => <%= collection_type %>_<%=func_name%>
 % end
-END TYPE 
+END TYPE
 % end
 % if gen == "abstract"
 %#
@@ -68,9 +67,9 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_container) ::  <%= collection_type %>
     CLASS(<%= element_type %>),                 POINTER :: iterator => NULL()
     CONTAINS
 %proc_list.each do |func_name|
-    PROCEDURE(<%= collection_type %>_<%=func_name%>),  DEFERRED :: <%=func_name%>
+    PROCEDURE(<%= collection_type %>_<%=func_name%>), DEFERRED :: <%=func_name%>
 % end
-END TYPE 
+END TYPE
 % end
 end macro
 
@@ -84,7 +83,7 @@ include macro ppm_create_collection_interfaces(coll_type,el_type,vec=false)
 !itself, just the pointer to the object)
 % else
 % collection_type = 'ppm_c_'+coll_type.to_s
-!collection of objects (stored as pointers, but removing an element also 
+!collection of objects (stored as pointers, but removing an element also
 ! deletes the object itself)
 % end
 !FIRST ELEMENT
@@ -102,41 +101,41 @@ END FUNCTION
 !PREVIOUS ELEMENT
 FUNCTION <%= collection_type %>_prev(this) RESULT (iterator)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER             :: iterator
+    CLASS(<%= collection_type %>), INTENT(INOUT) :: this
+    CLASS(<%= element_type %>),    POINTER       :: iterator
 END FUNCTION
 !LAST ELEMENT
 FUNCTION <%= collection_type %>_last(this) RESULT (iterator)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    CLASS(<%= element_type %>),POINTER             :: iterator
+    CLASS(<%= collection_type %>), INTENT(INOUT) :: this
+    CLASS(<%= element_type %>),    POINTER       :: iterator
 END FUNCTION
 !DESTROY COLLECTION
 SUBROUTINE <%= collection_type %>_destroy(this,info)
     IMPORT <%= collection_type %>
-    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    INTEGER,                       INTENT(OUT  )   :: info
+    CLASS(<%= collection_type %>), INTENT(INOUT) :: this
+    INTEGER,                       INTENT(OUT  ) :: info
 END SUBROUTINE
 !EXISTS
 FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
     IMPORT <%= collection_type %>
-    CLASS(<%= collection_type %>)                  :: this
-    LOGICAL                                        :: exists
-    INTEGER,                       INTENT(IN   )   :: id
+    CLASS(<%= collection_type %>)                :: this
+    LOGICAL                                      :: exists
+    INTEGER,                       INTENT(IN   ) :: id
 END FUNCTION
 !HAS
 FUNCTION <%= collection_type %>_has(this,element) RESULT(has)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>)                  :: this
-    LOGICAL                                        :: has
-    CLASS(<%= element_type %>),TARGET,INTENT(IN)   :: element
+    CLASS(<%= collection_type %>)                :: this
+    LOGICAL                                      :: has
+    CLASS(<%= element_type %>),TARGET,INTENT(IN) :: element
 END FUNCTION
 !GET_ID
 FUNCTION <%= collection_type %>_get_id(this,element) RESULT(id)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>)                  :: this
-    INTEGER                                        :: id
-    CLASS(<%= element_type %>),TARGET,INTENT(IN)   :: element
+    CLASS(<%= collection_type %>)                :: this
+    INTEGER                                      :: id
+    CLASS(<%= element_type %>),TARGET,INTENT(IN) :: element
 END FUNCTION
 !PUSH ELEMENT INTO COLLECTION
 SUBROUTINE <%= collection_type %>_push(this,element,info,id)
@@ -149,22 +148,22 @@ END SUBROUTINE
 !REMOVE ELEMENT FROM COLLECTION
 SUBROUTINE <%= collection_type %>_remove(this,info,element)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>)            :: this
-    INTEGER,          INTENT(  OUT)          :: info
+    CLASS(<%= collection_type %>)                     :: this
+    INTEGER,                            INTENT(  OUT) :: info
     CLASS(<%= element_type %>),OPTIONAL,INTENT(INOUT) :: element
 END SUBROUTINE
 !GROW COLLECTION SIZE
 SUBROUTINE <%= collection_type %>_grow_size(this,info)
     IMPORT <%= collection_type %>
-    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    INTEGER,                       INTENT(OUT  )   :: info
+    CLASS(<%= collection_type %>), INTENT(INOUT) :: this
+    INTEGER,                       INTENT(OUT  ) :: info
 END SUBROUTINE
 !AT
 FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
     IMPORT <%= collection_type %>,<%= element_type %>
-    CLASS(<%= collection_type %>), INTENT(INOUT)   :: this
-    INTEGER,                       INTENT(IN   )   :: i
-    CLASS(<%= element_type %>),POINTER             :: element
+    CLASS(<%= collection_type %>), INTENT(INOUT) :: this
+    INTEGER,                       INTENT(IN   ) :: i
+    CLASS(<%= element_type %>),POINTER           :: element
 END FUNCTION
 end macro
 
@@ -178,7 +177,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 !itself, just the pointer to the object)
 % else
 % collection_type = 'ppm_c_'+coll_type.to_s
-!collection of objects (stored as pointers, but removing an element also 
+!collection of objects (stored as pointers, but removing an element also
 ! deletes the object itself)
 % end
 % if ptr_type == nil
@@ -259,7 +258,7 @@ SUBROUTINE <%= collection_type %>_destroy(this,info)
         or_fail_dealloc("Could not deallocate collection element")
         p => this%next()
     ENDDO
-%end 
+%end
     IF (ASSOCIATED(this%vec))  DEALLOCATE(this%vec,STAT=info)
     or_fail_dealloc("Could not deallocate collection array")
     this%iter_id = 0
@@ -305,7 +304,7 @@ FUNCTION <%= collection_type %>_exists(this,id) RESULT(exists)
     ENDIF
     exists = .TRUE.
 
-    9999 CONTINUE
+9999 CONTINUE
     RETURN
 
 END FUNCTION
@@ -526,8 +525,8 @@ FUNCTION <%= collection_type %>_at(this,i) RESULT (element)
     CLASS(<%= element_type %>),POINTER             :: element
 
     INTEGER                                        :: j
-    
-    IF (i.LE.0) THEN 
+
+    IF (i.LE.0) THEN
         element => NULL()
         RETURN
     ENDIF

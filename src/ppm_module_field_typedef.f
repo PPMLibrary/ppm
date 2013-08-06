@@ -1,4 +1,4 @@
-!minclude ppm_header(ppm_module_field_typedef)
+! minclude ppm_header(ppm_module_field_typedef)
 
 MODULE ppm_module_field_typedef
 !!! Declares field data type
@@ -22,12 +22,12 @@ IMPLICIT NONE
 !----------------------------------------------------------------------
 
 !----------------------------------------------------------------------
-! Global variables 
+! Global variables
 !----------------------------------------------------------------------
 INTEGER                            :: ppm_nb_fields = 0
 
 !----------------------------------------------------------------------
-! Module variables 
+! Module variables
 !----------------------------------------------------------------------
 INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 
@@ -100,7 +100,7 @@ SUBROUTINE field_create(this,lda,info,dtype,name,init_func)
     IF (PRESENT(dtype)) THEN
         check_true(<#dtype.GT.0#>,"dtype must be > 0")
         this%data_type = dtype
-    ELSE   
+    ELSE
         this%data_type = ppm_type_real
     ENDIF
     check_false(<#ASSOCIATED(this%discr_info)#>,&
@@ -160,7 +160,7 @@ SUBROUTINE discr_info_destroy(this,info)
     INTEGER,               INTENT(OUT) :: info
 
     start_subroutine("part_discr_info_destroy")
-    
+
     this%discrID = 0
     this%discr_ptr => NULL()
     this%discr_data => NULL()
@@ -357,7 +357,7 @@ SUBROUTINE field_map_ghost_pop(this,mesh,info)
 END SUBROUTINE field_map_ghost_pop
 
 FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
-    !!! Returns a pointer to the discretization (mesh or particles) 
+    !!! Returns a pointer to the discretization (mesh or particles)
     !!! on which the field is discretized.
     !!! TODO: Optionally, can retrieve discretizations at different time points
     !!! (like n-1, n-2, etc...).
@@ -397,7 +397,7 @@ FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
 END FUNCTION field_get_pid
 
 SUBROUTINE field_get_discr(this,discr_kind,discr_data,info,tstep)
-    !!! Returns a pointer to the discretization (mesh or particles) 
+    !!! Returns a pointer to the discretization (mesh or particles)
     !!! on which the field is discretized.
     !!! TODO: Optionally, can retrieve discretizations at different time points
     !!! (like n-1, n-2, etc...).
@@ -440,7 +440,7 @@ END SUBROUTINE field_get_discr
 
 FUNCTION field_is_discretized_on(this,discr_kind,tstep) RESULT(res)
     !!! Check if this field has been discretized on this
-    !!! discretization kind (mesh or particles) 
+    !!! discretization kind (mesh or particles)
     !!! TODO: Optionally, check for discretizations at different time points
     !!! (like n-1, n-2, etc...).
     CLASS(ppm_t_field)                           :: this

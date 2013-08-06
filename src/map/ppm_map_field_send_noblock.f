@@ -56,7 +56,7 @@
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
-      integer, parameter :: mk = ppm_kind_double
+      INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------

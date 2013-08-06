@@ -27,7 +27,7 @@ MODULE ppm_module_ctrl
 !!! all your global variables (which we will call +client_global+) and
 !!! gives you an easy way of supplying values for these variables,
 !!! either through command line arguments or control files.
-!!! 
+!!!
 !!! To do this, you have to create a subroutine (which we will call
 !!! +define_args+) that will hold the initialization code. See the
 !!! following example.
@@ -39,13 +39,13 @@ MODULE ppm_module_ctrl
 !!!   INTEGER :: example
 !!! CONTAINS
 !!!   SUBROUTINE define_args
-!!!      CALL arg(exampe, 'example',     &
+!!!      CALL arg(example, 'example',    &
 !!!               flag      = '-e',      &
 !!!               ctrl_name = 'example')
 !!!   END SUBROUTINE define_args
 !!! END MODULE client_global
 !!! ----
-!!! 
+!!!
 !!! This will create an argument of type +integer+ that can be set
 !!! either through the command line flag _'-e'_ or the control file
 !!! variable _'example'_. Please take note that the command line flag
@@ -53,7 +53,7 @@ MODULE ppm_module_ctrl
 !!! supplied.
 !!!
 !!! For this code to work you need to +call define_args+ somewhere in
-!!! your initialization code, followed by a +call parse_args(info)+. 
+!!! your initialization code, followed by a +call parse_args(info)+.
 !!! After +parse_args+ completes your globals will be initialized
 !!! with the supplied values.
 !!!
@@ -104,8 +104,8 @@ MODULE ppm_module_ctrl
   USE ppm_module_substart
   USE ppm_module_substop
   USE ppm_module_error
-  IMPLICIT NONE
 
+  IMPLICIT NONE
 
   !------------------------------------------------------------------------
   !  Interface
@@ -113,8 +113,8 @@ MODULE ppm_module_ctrl
   PUBLIC :: arg, arg_group, parse_args, disable_help, disable_ctrl, &
        &    set_ctrl_name,                                          &
 #ifdef __F2003
-       &    integer_func, longint_func, single_func, double_func,   & 
-       &    logical_func, string_func, complex_func, dcomplex_func, & 
+       &    integer_func, longint_func, single_func, double_func,   &
+       &    logical_func, string_func, complex_func, dcomplex_func, &
        &    integer_array_func, longint_array_func,                 &
        &    single_array_func, double_array_func,                   &
        &    logical_array_func, string_array_func,                  &
@@ -384,8 +384,8 @@ CONTAINS
     !  Local variables
     !----------------------------------------------------------------------
     REAL(8)                                 :: t0
-    CHARACTER(LEN=*), PARAMETER             :: caller='parse_args'
-    CHARACTER(LEN=256)                      :: value
+    CHARACTER(LEN=ppm_char), PARAMETER      :: caller='parse_args'
+    CHARACTER(LEN=ppm_char)                 :: value
     LOGICAL                                 :: ok
     LOGICAL                                 :: printing_ctrl = .FALSE.
     INTEGER                                 :: info2
@@ -718,13 +718,13 @@ CONTAINS
 #ifdef __SUPER_UX
        nargc = iargc()
        start = 0
-#elif defined __SunOS 
+#elif defined __SunOS
        nargc = iargc() - 6
        start = 0
-#elif defined __HP_UX 
+#elif defined __HP_UX
        nargc = iargc() + 1
        start = 1
-#elif defined __IRIX64 
+#elif defined __IRIX64
        nargc = iargc() - 4
        start = 1
 #elif defined __Linux
@@ -862,7 +862,7 @@ CONTAINS
        READ(iUnit,'(A)', END=100, ERR=200) cbuf
        ilen = LEN_TRIM(cbuf)
        !----------------------------------------------------------
-       !  Skip comment or empty lines 
+       !  Skip comment or empty lines
        !----------------------------------------------------------
        IF (ilen .GT. 0 .AND. cbuf(1:1) .NE. '#') THEN
           !-------------------------------------------------------
@@ -903,7 +903,7 @@ CONTAINS
           CALL UpperCase(carg, idx-1, info)
           !-------------------------------------------------------
           !  Find the variable
-          !-------------------------------------------------------          
+          !-------------------------------------------------------
           ! scalar
 #define DTYPE INTEGER
 #include "ctrl/parse_ctrl.f"

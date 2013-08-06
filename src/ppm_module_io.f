@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_io
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -43,8 +43,11 @@
       !!!
       !!! This module contains all data structures and definitions that
       !!! are private to the I/O routines.
-         
+
          USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
+
+         IMPLICIT NONE
+
          PRIVATE :: ppm_kind_single,ppm_kind_double
 
          !----------------------------------------------------------------------
@@ -61,7 +64,7 @@
          COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: abuf_dc => NULL()
          INTEGER                 , DIMENSION(:), POINTER :: abuf_i => NULL()
          LOGICAL                 , DIMENSION(:), POINTER :: abuf_l => NULL()
-         
+
          PRIVATE :: abuf_s, abuf_d, abuf_sc, abuf_dc, abuf_i, abuf_l
 
          REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: rbuf_s => NULL()
@@ -328,7 +331,7 @@
 #include "io/ppm_io.f"
 #undef __KIND
 #undef __DIM
-         
+
 #define __DIM 3
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
@@ -349,7 +352,7 @@
 #include "io/ppm_io.f"
 #undef __KIND
 #undef __DIM
-         
+
 #define __DIM 4
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
@@ -370,7 +373,7 @@
 #include "io/ppm_io.f"
 #undef __KIND
 #undef __DIM
-         
+
 #define __DIM 5
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_io.f"
@@ -390,7 +393,7 @@
 #define __KIND __DOUBLE_PRECISION_COMPLEX
 #include "io/ppm_io.f"
 #undef __KIND
-#undef __DIM 
+#undef __DIM
 
 #define __KIND __SINGLE_PRECISION
 #include "io/ppm_doio.f"

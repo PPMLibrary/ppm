@@ -49,9 +49,10 @@
         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double,&
                                   & ppm_kind_int64
 
-         !----------------------------------------------------------------------
-         !  Work arrays for reallocation.
-         !----------------------------------------------------------------------
+        IMPLICIT NONE
+        !----------------------------------------------------------------------
+        !  Work arrays for reallocation.
+        !----------------------------------------------------------------------
         REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work_1ds => NULL()
         REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: work_1dd => NULL()
         COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: work_1dsc => NULL()

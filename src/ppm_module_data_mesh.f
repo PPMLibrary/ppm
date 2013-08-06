@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :               ppm_module_data_mesh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -35,6 +35,8 @@
       !!! The variables declared in this module should not be accessed by the
       !!! PPM client developer. They are managed interally by the library.
 
+         IMPLICIT NONE
+
          !----------------------------------------------------------------------
          !  Mesh mapping, send and receive lists
          !----------------------------------------------------------------------
@@ -46,20 +48,18 @@
          ! start (lower-left corner) of mesh block to be sent in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendpatchid => NULL()
-         !!! list of source patch ids to send from local processor 
+         !!! list of source patch ids to send from local processor
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_isendblksize => NULL()
          ! size (in grid points) of blocks to be sent
          INTEGER, DIMENSION(:  ), POINTER :: ppm_mesh_irecvtosub => NULL()
          ! list of destination subs to recv to on local processors (local sub
          ! number on destination processor)
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvpatchid => NULL()
-         !!! list of source patch ids to receive from local processor 
+         !!! list of source patch ids to receive from local processor
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblkstart => NULL()
          ! start (lower-left corner) of mesh block to be recvd in GLOBAL
          ! mesh coordinates. First index: x,y[,z], 2nd: isendlist
          INTEGER, DIMENSION(:,:), POINTER :: ppm_mesh_irecvblksize => NULL()
          ! size (in grid points) of blocks to be recvd
-
-
 
       END MODULE ppm_module_data_mesh

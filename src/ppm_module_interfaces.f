@@ -1,14 +1,14 @@
 !minclude ppm_header(ppm_module_interfaces)
 
-#define __REAL 3 
-#define __COMPLEX 4 
-#define __INTEGER 5 
-#define __LONGINT 6 
-#define __LOGICAL 7 
-#define __CHAR 8 
+#define __REAL 3
+#define __COMPLEX 4
+#define __INTEGER 5
+#define __LONGINT 6
+#define __LOGICAL 7
+#define __CHAR 8
 
 MODULE ppm_module_interfaces
-!!! Declares all data types 
+!!! Declares all data types
 !!! The derived types are declared as abstract. They contain all the
 !!! different fields as well as the interfaces to the type-bound
 !!! procedures.
@@ -53,7 +53,7 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_mdat_reqput = 2
 INTEGER,PARAMETER,PUBLIC   :: ppm_mdat_map_ghosts = 3
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_mdatflags = 3
 
-!User parameters 
+!User parameters
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_part_init_cartesian = 1
 INTEGER,PARAMETER,PUBLIC   :: ppm_param_part_init_random = 2
 
@@ -92,12 +92,12 @@ INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 4
 
 
 !----------------------------------------------------------------------
-! Global variables 
+! Global variables
 !----------------------------------------------------------------------
 INTEGER                            :: ppm_nb_meshes    = 0
 INTEGER                            :: ppm_nb_part_sets = 0
 !----------------------------------------------------------------------
-! Module variables 
+! Module variables
 !----------------------------------------------------------------------
 INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 
@@ -126,7 +126,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_data
     INTEGER                                        :: data_type
     !!! Data type for this property
     !!! One of: ppm_type_int, ppm_type_real, ppm_type_comp, ppm_type_logical
-    !!! 
+    !!!
     CLASS(ppm_t_main_abstr),POINTER                :: field_ptr => NULL()
     !!! Pointer to the field for which this is a discretization
     CLASS(ppm_t_discr_kind),POINTER                :: discr => NULL()
@@ -159,9 +159,9 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     !!! Generic differential operator
     !!! (It only contains semantic information on the operator)
     INTEGER, DIMENSION(:), POINTER                 :: degree =>NULL()
-    !!! degree of each term in the linear combination of differential ops 
+    !!! degree of each term in the linear combination of differential ops
     REAL(ppm_kind_double), DIMENSION(:), POINTER   :: coeffs =>NULL()
-    !!! array where the coefficients in linear combinations of 
+    !!! array where the coefficients in linear combinations of
     !!! differential ops are stored
     INTEGER                                        :: nterms = 0
     !!! number of terms
@@ -191,10 +191,10 @@ TYPE,ABSTRACT :: ppm_t_operator_discr_
     LOGICAL, DIMENSION(ppm_param_length_opsflags)  :: flags = .FALSE.
     !!! logical flags
     !!!    ppm_ops_inc_ghosts
-    !!!           true if the operator should be computed for ghost 
-    !!!           particles too.  Note that the resulting values 
+    !!!           true if the operator should be computed for ghost
+    !!!           particles too.  Note that the resulting values
     !!!           will be wrong for the ghost particles
-    !!!           that have some neighbours outside the ghost layers. 
+    !!!           that have some neighbours outside the ghost layers.
     !!!           Default is false.
     !!!    ppm_ops_interp
     !!!          true if the op interpolates data from one set of particles
@@ -218,12 +218,6 @@ TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
     PROCEDURE :: compute => operator_discr_compute
 END TYPE
 minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
-
-
-
-
-
-
 
 
 #define  DTYPE(a) a/**/_s
@@ -252,7 +246,7 @@ TYPE,ABSTRACT ::  ppm_t_discr_info_
     !!!  field, denoted by fieldID)
     !!! Data structure containing info about the current discretization
     !!! of fieldID on a given Mesh or particle set
-    !!! 
+    !!!
     !!! Contains pointers to the data and bookkeeping information
     !!! for a mesh on which fieldID has been discretized.
 
@@ -268,7 +262,7 @@ TYPE,ABSTRACT ::  ppm_t_discr_info_
     !!! For meshes:
     !!!     Storage index for the subpatch_data object which contains the data where
     !!! fieldID has been discretized on this mesh.
-    !!! (A mesh stores data for several fields. Each subpatch thus 
+    !!! (A mesh stores data for several fields. Each subpatch thus
     !!!  contains a list of data arrays, corresponding to the different
     !!!  fields. The data_ptr points to the location of the data array
     !!!  corresponding to fieldID within this list)
@@ -284,13 +278,13 @@ END TYPE
 minclude ppm_create_collection(discr_info_,discr_info_,generate="abstract")
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
-    !!! Data structure for fields 
+    !!! Data structure for fields
     !!! A field represents a mathematical concept (e.g. velocity, or
-    !!! vorticity) and links to its discretized representation on meshes 
+    !!! vorticity) and links to its discretized representation on meshes
     !!! and/or on particles.
 
     INTEGER                                         :: ID = 0
-    !!! global identifier 
+    !!! global identifier
     CHARACTER(LEN=ppm_char)                         :: name
     !!! string description
     INTEGER                                         :: data_type = 0
@@ -301,7 +295,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
     !!!     ppm_type_real
     !!!     ppm_type_comp
     !!!     ppm_type_logical
-    !!! 
+    !!!
     INTEGER                                         :: lda = 0
     !!! number of components (1 for scalar fields)
     !!!
@@ -374,7 +368,7 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
 
     CONTAINS
     PROCEDURE(subpatch_data_create_), DEFERRED :: create
-    PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy 
+    PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy
 END TYPE
 minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract")
 minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract",vec=true,def_ptr=false,generate="abstract")
@@ -383,7 +377,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     CLASS(ppm_v_subpatch_data_),POINTER     :: subpatch => NULL()
     CONTAINS
     PROCEDURE(mesh_discr_data_create_), DEFERRED :: create
-    PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy 
+    PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy
 END TYPE
 minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract")
 minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract",vec=true,def_ptr=false)
@@ -428,19 +422,19 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
     !!! located inside that region)
     INTEGER, DIMENSION(:),POINTER :: bc       => NULL()
     !!! boundary conditions on a subpatch:
-    !!! 
+    !!!
     !!! - west  : 1
     !!! - east  : 2
     !!! - south : 3
     !!! - north : 4
     !!! - bottom: 5
     !!! - top   : 6
-    !!! 
+    !!!
     !!! index 1: the index of the 4 or 6 faces in 2 and 3 D
     !!! index 2: the global sub id
-    !!! 
+    !!!
     !!! states:
-    !!! 
+    !!!
     !!! - value: 0 the face is internal
     !!! - value: 1 otherwise
     INTEGER, DIMENSION(:),POINTER :: nnodes   => NULL()
@@ -542,7 +536,7 @@ END TYPE
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     !!! Type for equispaced cartesian meshes on subs
-   
+
     INTEGER                                    :: topoid = 0
     !!! ID of the topology for which this mesh is defined
 
@@ -565,7 +559,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     INTEGER, DIMENSION(:,:), POINTER           :: iend    => NULL()
 
     CLASS(ppm_c_subpatch_),POINTER             :: subpatch => NULL()
-    !!! container for subdomains patches (these contain all the data 
+    !!! container for subdomains patches (these contain all the data
     !!! discretized on this mesh)
 
     CLASS(ppm_v_mesh_discr_data_),POINTER      :: mdata => NULL()
@@ -647,7 +641,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
     PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
     PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-      &                                   DEFERRED :: new_subpatch_data_ptr 
+      &                                   DEFERRED :: new_subpatch_data_ptr
     PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
     PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
     PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
@@ -851,7 +845,7 @@ SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
     LOGICAL,OPTIONAL,       INTENT(IN   )     :: interp
     INTEGER,             OPTIONAL,INTENT(IN)  :: order
     INTEGER,DIMENSION(:),OPTIONAL,POINTER,INTENT(IN)  :: order_v
-    CLASS(ppm_t_discr_data),OPTIONAL,TARGET   :: prop 
+    CLASS(ppm_t_discr_data),OPTIONAL,TARGET   :: prop
     start_subroutine("operator_discr_create")
         fail("this dummy routine should not be called")
     end_subroutine()

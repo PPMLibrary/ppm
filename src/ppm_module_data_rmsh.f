@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_data_rmsh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,17 +36,19 @@
         !-----------------------------------------------------------------------
         !  Includes
         !-----------------------------------------------------------------------
-        USE ppm_module_data,ONLY:ppm_kind_single,ppm_kind_double
-        !PRIVATE :: ppm_kind_single,ppm_kind_double
+        USE ppm_module_data, ONLY:ppm_kind_single,ppm_kind_double
+
         IMPLICIT NONE
+
+        PRIVATE :: ppm_kind_single,ppm_kind_double
         ! time
-        REAL(KIND(1.0D0)) :: t0
+        REAL(ppm_kind_double) :: t0
 
         !  number of currently implemented kernels
         INTEGER, PARAMETER :: max_defkernels = 4
 
         !  kernel sizes
-        INTEGER, DIMENSION(4) :: ppm_rmsh_kernelsize 
+        INTEGER, DIMENSION(4) :: ppm_rmsh_kernelsize
         DATA ppm_rmsh_kernelsize /1,2,2,3/
 
         !  internal weights
@@ -58,22 +60,21 @@
         REAL(ppm_kind_double),   DIMENSION(:,:,:), POINTER :: wx3_d => NULL()
 
         !  internal fields
-        REAL(ppm_kind_single), DIMENSION(:,:,:,:), POINTER :: tuc_2ds => NULL()
-        REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: tuc_2dd => NULL()
-        REAL(ppm_kind_single),DIMENSION(:,:,:,:,:), POINTER :: tuc_3ds => NULL()
-        REAL(ppm_kind_double),DIMENSION(:,:,:,:,:), POINTER :: tuc_3dd => NULL()
+        REAL(ppm_kind_single), DIMENSION(:,:,:,:),   POINTER :: tuc_2ds => NULL()
+        REAL(ppm_kind_double), DIMENSION(:,:,:,:),   POINTER :: tuc_2dd => NULL()
+        REAL(ppm_kind_single), DIMENSION(:,:,:,:,:), POINTER :: tuc_3ds => NULL()
+        REAL(ppm_kind_double), DIMENSION(:,:,:,:,:), POINTER :: tuc_3dd => NULL()
 
         !  internal particle lists
-        INTEGER          , DIMENSION(:,:), POINTER :: list_sub => NULL()
-        INTEGER          , DIMENSION(:  ), POINTER :: store_info => NULL()
+        INTEGER, DIMENSION(:,:), POINTER :: list_sub => NULL()
+        INTEGER, DIMENSION(:  ), POINTER :: store_info => NULL()
 
 
         !  fill data
         INTEGER, DIMENSION(5) :: imasf
         DATA imasf /1,2,3,4,5/
 
-
       END MODULE ppm_module_data_rmsh
 
 
-      
+
