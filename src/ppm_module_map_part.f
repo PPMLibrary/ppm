@@ -43,12 +43,12 @@
       !!!
       !!! The module also holds the needed work arrays for these routines.
 
+         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
          USE ppm_module_topo_typedef
          USE ppm_module_map_part_util
          USE ppm_module_map_part_ghost
          USE ppm_module_map_part_global
          USE ppm_module_map_part_partial
-         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double
 
          IMPLICIT NONE
 

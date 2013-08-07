@@ -27,7 +27,7 @@
          ! Local variables
          !----------------------------------------------------------------------
 
-         INTEGER, PRIVATE, DIMENSION(3)    :: ldc
+         INTEGER, PRIVATE, DIMENSION(3) :: ldc
          !!! Number of elements in all dimensions for allocation
          !----------------------------------------------------------------------
          ! Type declaration

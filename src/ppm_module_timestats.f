@@ -28,13 +28,13 @@
       !-------------------------------------------------------------------------
 
       MODULE ppm_module_timestats
-         USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
-         USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm,&
-                                         ppm_char, ppm_error_fatal, &
-                                         ppm_kind_single, ppm_kind_double,&
-                                         ppm_error_error
-         USE ppm_module_substart,  ONLY: substart
-         USE ppm_module_substop,   ONLY: substop
+         USE ppm_module_error,    ONLY : ppm_error, ppm_err_argument
+         USE ppm_module_data,     ONLY : ppm_rank, ppm_nproc, ppm_comm,&
+                                       & ppm_char, ppm_error_fatal, &
+                                       & ppm_kind_single, ppm_kind_double,&
+                                       & ppm_error_error
+         USE ppm_module_substart, ONLY : substart
+         USE ppm_module_substop,  ONLY : substop
 
          IMPLICIT NONE
 
@@ -57,7 +57,5 @@
 #include "util/ppm_util_timestats_setup.f"
 #include "util/ppm_util_tic.f"
 #include "util/ppm_util_toc.f"
-
-
 
       END MODULE ppm_module_timestats

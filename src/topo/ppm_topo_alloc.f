@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_topo_alloc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,23 +46,23 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER, INTENT(IN   ) :: nsubs
       !!! Total number of subs on all procs
-      INTEGER                 , INTENT(IN   ) :: nsublist
+      INTEGER, INTENT(IN   ) :: nsublist
       !!! Local number of subs on this proc
-      INTEGER                 , INTENT(IN   ) :: maxneigh
+      INTEGER, INTENT(IN   ) :: maxneigh
       !!! Maximum number of neighbours of any sub on this processor
-      INTEGER                 , INTENT(IN   ) :: prec
+      INTEGER, INTENT(IN   ) :: prec
       !!! Precision for storage. One of:
       !!!
       !!! * ppm_kind_single
       !!! * ppm_kind_double
-      INTEGER                 , INTENT(INOUT) :: topoid
+      INTEGER, INTENT(INOUT) :: topoid
       !!! Topology id structure to be (re)allocated
       !!!
       !!! if topoid == 0 then a new topology should be allocated, else the
       !!! topology with id == topoid is reallocated
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Return status, on success 0.
 
 

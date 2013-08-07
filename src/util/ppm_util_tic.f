@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_tstats_tic
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -41,23 +41,26 @@
       USE ppm_module_write
       USE ppm_module_error
       USE ppm_module_util_time
+
       IMPLICIT NONE
+
       INTEGER, PARAMETER :: MK = ppm_kind_double
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                , INTENT(IN   ) :: id
-      INTEGER                , INTENT(IN   ) :: step
-      INTEGER                , INTENT(  OUT) :: info
+      INTEGER, INTENT(IN   ) :: id
+      INTEGER, INTENT(IN   ) :: step
+      INTEGER, INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      CHARACTER(LEN=ppm_char)             :: caller = 'ppm_tstats_tic'
-      INTEGER, DIMENSION(3)               :: ldu
-      INTEGER                             :: iopt
-      INTEGER                             :: istat
-      
+      INTEGER, DIMENSION(3)   :: ldu
+      INTEGER                 :: iopt
+      INTEGER                 :: istat
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_tstats_tic'
+
       info = 0
       !-------------------------------------------------------------------------
       !  Call ppm_util_time

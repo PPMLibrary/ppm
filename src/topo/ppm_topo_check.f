@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_check
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -102,7 +102,8 @@
       !-------------------------------------------------------------------------
       !  Check all particles
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
           DO ipart=1,Npart
               ison = 0
               DO j=1,topo%nsublist
@@ -151,7 +152,7 @@
                   GOTO 9999
               ENDIF
           ENDDO
-      ELSEIF (ppm_dim .EQ. 3) THEN
+      CASE (3)
           DO ipart=1,Npart
               ison = 0
               DO j=1,topo%nsublist
@@ -210,7 +211,7 @@
                   GOTO 9999
               ENDIF
           ENDDO
-      END IF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Return
