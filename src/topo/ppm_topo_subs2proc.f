@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_topo_subs2proc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@
       !!!
       !!! NOTE: Do we need the truncation handling?
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -63,7 +63,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: cost
       !!! The estimated cost associated with the subdomains
@@ -82,7 +82,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK):: costsum,totalcost,t0
       INTEGER , DIMENSION(:), POINTER :: list         => NULL()
@@ -96,11 +96,11 @@
       CHARACTER(ppm_char) :: mesg
       INTEGER :: assignedtorank
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_subs2proc',t0,info)
 
@@ -113,7 +113,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Make sure we have enough memory for the sub2proc 
+      !  Make sure we have enough memory for the sub2proc
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsubs
@@ -152,15 +152,15 @@
             sub2proc(isub) = ppm_rank
          ENDDO
          GOTO 9999
-      ENDIF 
+      ENDIF
       !-------------------------------------------------------------------------
-      !  and allocate some memory for the lists of logicals and initialize 
+      !  and allocate some memory for the lists of logicals and initialize
       !  them to true, since none of the subdomains have been assigned yet.
       !  the list not_assigned indicate if the subdomain has been assigned
       !  to a processor and the list: not_listed holds the subdomains that
-      !  have been pushed onto the stack (list(:)) of subs to be assigned - 
-      !  we need this stack since one new subdomain will have several 
-      !  neighbours and the way subs are assigned to procs requires this stack 
+      !  have been pushed onto the stack (list(:)) of subs to be assigned -
+      !  we need this stack since one new subdomain will have several
+      !  neighbours and the way subs are assigned to procs requires this stack
       !-------------------------------------------------------------------------
       CALL ppm_alloc(not_assigned,ldc,iopt,info)
       IF (info.NE.0) THEN
@@ -185,12 +185,12 @@
       !-------------------------------------------------------------------------
       !  Initialize the lists to true
       !-------------------------------------------------------------------------
-      not_assigned = .TRUE. 
+      not_assigned = .TRUE.
       not_listed   = .TRUE.
       !-------------------------------------------------------------------------
       !  Allocate some memory for the stack (list(:))
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit 
+      iopt   = ppm_param_alloc_fit
       isize  = MAXVAL(nneigh)
       ldc(1) = isize
       CALL ppm_alloc(list,ldc,iopt,info)
@@ -212,14 +212,14 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Push the first subdomain onto the stack 
+      !  Push the first subdomain onto the stack
       !-------------------------------------------------------------------------
       isub             = 1
       nlist            = 1
       ilist            = 0
-      
+
       list(nlist)      = isub
-      
+
       nassigned        = 0
 
       !-------------------------------------------------------------------------
@@ -242,18 +242,18 @@
          assignedtorank   = 0
          !----------------------------------------------------------------------
          !  keep including subdomains until the cost exceeds the average cost
-         !  but make sure you get at least one sub and leave at least one sub 
+         !  but make sure you get at least one sub and leave at least one sub
          !  to the remaining procs
          !  the factor 0.5 helps splitting the load more equal amongst the procs
          !  Assign also at least one subdomain to each processor
          !----------------------------------------------------------------------
          !PRINT *, ppm_rank,'s2p totalcost',rank,totalcost*REAL(ppm_proc_speed(rank),MK)
-         
+
          DO WHILE ((assignedtorank.EQ.0).OR.                                    &
      &             (nassigned+1.EQ.nsubs-(ppm_nproc-rank-1).OR.                 &
      &             (nassigned.LT.nsubs-(ppm_nproc-rank-1).AND.                  &
      &    costsum+0.5_MK*cost(isub).LE.totalcost*REAL(ppm_proc_speed(rank),MK))))
-            
+
 !            PRINT *, ppm_rank, 's2p 1',(assignedtorank.EQ.0)
 !            PRINT *, ppm_rank, 's2p 2',nassigned+1.EQ.nsubs-(ppm_nproc-rank-1)
 !            PRINT *, ppm_rank, 's2p 3',nassigned.LT.nsubs-(ppm_nproc-rank-1)
@@ -306,12 +306,12 @@
                   nlist            = nlist + 1
                   list(nlist)      = jsub
                   not_listed(jsub) = .FALSE.
-               ENDIF 
+               ENDIF
             ENDDO
 
             !-------------------------------------------------------------------
             !  If there is no new elements evailable, it can mean two things:
-            !  1) either we are done (have assigned all subs) or 
+            !  1) either we are done (have assigned all subs) or
             !  2) we have stranded on an island and need to get a ferry
             !-------------------------------------------------------------------
             IF (ilist+1.GT.nlist) THEN
@@ -328,7 +328,7 @@
                isub = 0
                DO i=1,nsubs,1
                   IF (not_assigned(i)) THEN
-                     isub = i 
+                     isub = i
                   ENDIF
                ENDDO
 #else
@@ -339,7 +339,7 @@
                !  be treated as a bug !
                !----------------------------------------------------------------
                isub = nsubs
-               DO WHILE (.NOT.not_assigned(isub)) 
+               DO WHILE (.NOT.not_assigned(isub))
                   isub = isub - 1
                   IF (isub.LT.1) EXIT
                ENDDO
@@ -356,14 +356,14 @@
      &                   'found an island. Chosen sub as new land: ',isub
                      CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info)
                   ENDIF
-               ENDIF 
+               ENDIF
 
                !----------------------------------------------------------------
                !  or we did reach an island and push the new land onto the stack
                !----------------------------------------------------------------
                nlist       = nlist + 1
                list(nlist) = isub
-            ENDIF 
+            ENDIF
          ENDDO
       ENDDO
 
@@ -374,7 +374,7 @@
          IF (not_assigned(isub)) THEN
             sub2proc(isub)     = ppm_nproc - 1
             not_assigned(isub) = .FALSE.
-         ENDIF    
+         ENDIF
       ENDDO
       !-------------------------------------------------------------------------
       !  Debugging: check that all subdomains have been assigned
@@ -383,7 +383,7 @@
          i = 0
          DO isub=1,nsubs
             IF (not_assigned(isub)) THEN
-               i = i + 1 
+               i = i + 1
             ENDIF
          ENDDO
 
@@ -411,13 +411,13 @@
                ENDDO
                WRITE(mesg,'(A,I5,A,E12.4)') 'cost for processor: ',rank, &
      &                                      ' is ',costsum
-               CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info) 
+               CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info)
             ENDDO
          ENDIF
          !----------------------------------------------------------------------
          !  End of Debugging: check that all subdomains have been assigned
          !----------------------------------------------------------------------
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate the local list of subdomains assigned to the local processor
@@ -441,7 +441,7 @@
          IF (sub2proc(i).EQ.ppm_rank) THEN
             nsublist           = nsublist + 1
             isublist(nsublist) = i
-         ENDIF 
+         ENDIF
       ENDDO
       !-------------------------------------------------------------------------
       !  Free the memory again
@@ -470,7 +470,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_subs2proc',t0,info)

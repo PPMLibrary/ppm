@@ -12,7 +12,7 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     INTEGER,                        INTENT(  OUT) :: info
     !!! Returns status, 0 upon success.
     LOGICAL,OPTIONAL,               INTENT(IN   ) :: with_ghosts
-    !!! True if the operator should be computed for ghost particles too. 
+    !!! True if the operator should be computed for ghost particles too.
     !!! Note that the resulting values will be wrong for the ghost particles
     !!! that have some neighbours outside the ghost layers. Default is false.
     LOGICAL,OPTIONAL,               INTENT(IN   ) :: vector
@@ -21,14 +21,14 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     !!! True if the operator interpolates data from one set of particles to
     !!! another. Default is false.
     !!! WARNING: on output of this routine, one has to update the ghost
-    !!! values for the Part_src particle set (because it will have a 
+    !!! values for the Part_src particle set (because it will have a
     !!! new property that stores nearest-neighbour distances, the ghost
     !!! values of which will be needed)
     INTEGER             ,OPTIONAL,  INTENT(IN   ) :: order
     !!! Order of approximation for all terms of the differential operator
     INTEGER,DIMENSION(:),OPTIONAL,POINTER,INTENT(IN   ) :: order_v
     !!! Order of approximation for each term of the differential operator
-    CLASS(ppm_t_discr_data),OPTIONAL,TARGET       :: prop 
+    CLASS(ppm_t_discr_data),OPTIONAL,TARGET       :: prop
 
     INTEGER,      DIMENSION(:),   POINTER      :: nvlist => NULL()
     INTEGER,      DIMENSION(:,:), POINTER      :: vlist  => NULL()
@@ -86,7 +86,7 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
             SELECT TYPE(Part_src)
             CLASS IS (DTYPE(ppm_t_particles)_)
                 !Create a new property and make this%nn_sq point to it
-                call Part_src%create_prop(info,part_prop=this%nn_sq,&
+                CALL Part_src%create_prop(info,part_prop=this%nn_sq,&
                     dtype=ppm_type_real,name='nearest_neighb_squared')
                     or_fail("could not create property for nn_sq")
                 CALL Part_src%get(this%nn_sq,nn2,info)
@@ -111,7 +111,7 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
             SELECT TYPE(prop)
             CLASS IS (DTYPE(ppm_t_part_prop)_)
                 this%nn_sq => prop
-            CLASS DEFAULT 
+            CLASS DEFAULT
             fail("wrong type. Prop argument should be of class ppm_t_part_prop")
             END SELECT
         ENDIF
@@ -155,7 +155,7 @@ END SUBROUTINE DTYPE(dcop_destroy)
 
 !DESTROY ENTRY
 SUBROUTINE DTYPE(dcop_comp_weights)(this,info,c,min_sv)
-    !!! Compute the weights for a DC-PSE operator 
+    !!! Compute the weights for a DC-PSE operator
     !!! (this is an expensive step and has to
     !!! be re-done everytime the particles move)
     DEFINE_MK()
@@ -168,7 +168,7 @@ SUBROUTINE DTYPE(dcop_comp_weights)(this,info,c,min_sv)
     REAL(MK),                  OPTIONAL, INTENT(IN   )   :: c
     !!! ratio h/epsilon
     REAL(MK),                  OPTIONAL, INTENT(  OUT)   :: min_sv
-    !!! if present, compute the singular value decomposition of the 
+    !!! if present, compute the singular value decomposition of the
     !!! vandermonde matrix for each operator and return the smallest one
     start_subroutine("op_comp_weights")
 
@@ -199,7 +199,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     !!! The destination field, Field_to, must have been defined (using
     !!! Field_to%create()) but it does not have to be be discretized or
     !!! initialized. This will be done if necessary.
-    !!! The dimension of Field_to needs to conform the output of the 
+    !!! The dimension of Field_to needs to conform the output of the
     !!! operator (vector or scalar, type, etc...).
 #ifdef __MPI
     INCLUDE "mpif.h"
@@ -372,7 +372,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
 
     IF (vector_output) THEN
         CALL Part_to%get(data_to,dwpv,info,with_ghosts=with_ghosts)
-            or_fail("Cannot access data_to on this particle set") 
+            or_fail("Cannot access data_to on this particle set")
         DO ip = 1,np_target
             DO j=1,lda
                 dwpv(j,ip) = 0._MK
@@ -380,7 +380,7 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
         ENDDO
     ELSE
         CALL Part_to%get(data_to,dwps,info,with_ghosts=with_ghosts)
-            or_fail("Cannot access data_to on this particle set") 
+            or_fail("Cannot access data_to on this particle set")
         DO ip = 1,np_target
             dwps(ip) = 0._MK
         ENDDO

@@ -7,7 +7,6 @@ MODULE ppm_module_vbp_typedef
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-
 USE ppm_module_interfaces
 USE ppm_module_topo_typedef
 USE ppm_module_particles_typedef
@@ -19,7 +18,6 @@ PRIVATE
 !----------------------------------------------------------------------
 ! Global variables
 !----------------------------------------------------------------------
-
 #define  DTYPE(a) a/**/_s
 #define  CTYPE(a) a/**/_sc
 #define  MK ppm_kind_single
@@ -36,7 +34,6 @@ INTEGER, PRIVATE, DIMENSION(3) :: ldc
 !!! Number of elements in all dimensions for allocation
 
 PUBLIC :: ppm_t_vbp_s, ppm_t_vbp_d
-
 
 CONTAINS
 

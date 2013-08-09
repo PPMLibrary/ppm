@@ -180,22 +180,6 @@
           TYPE(ppm_t_topo), POINTER  :: t => NULL()
       END TYPE ppm_ptr_t_topo
 
-
-      !----------------------------------------------------------------------
-      ! Pointer to cell list (needed to make lists of cell lists)
-      !----------------------------------------------------------------------
-      TYPE ppm_t_clist
-          !!! Cell list data structure
-          INTEGER, DIMENSION(:), POINTER    :: nm  => NULL()
-          !!! Number of cells in x,y,(z) direction (including the ghosts
-          !!! cells) in each subdomain.
-          INTEGER, DIMENSION(:), POINTER    :: lpdx => NULL()
-          !!! particle index list
-          INTEGER, DIMENSION(:), POINTER    :: lhbx => NULL()
-          !!! first particle in each cell
-      END TYPE
-
-
       !----------------------------------------------------------------------
       ! DATA STORAGE for the topologies
       !----------------------------------------------------------------------
@@ -210,5 +194,19 @@
       !!! if it points within (1,size(ppm_topo)) this slot is (re)used to
       !!! store the new topology, if it is > size(ppm_topo) then the ppm_topo
       !!! array must be extended
+
+      !----------------------------------------------------------------------
+      ! Pointer to cell list (needed to make lists of cell lists)
+      !----------------------------------------------------------------------
+      TYPE ppm_t_clist
+          !!! Cell list data structure
+          INTEGER, DIMENSION(:), POINTER :: nm  => NULL()
+          !!! Number of cells in x,y,(z) direction (including the ghosts
+          !!! cells) in each subdomain.
+          INTEGER, DIMENSION(:), POINTER :: lpdx => NULL()
+          !!! particle index list
+          INTEGER, DIMENSION(:), POINTER :: lhbx => NULL()
+          !!! first particle in each cell
+      END TYPE
 
       END MODULE ppm_module_topo_typedef
