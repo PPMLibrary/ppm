@@ -34,72 +34,71 @@ IMPLICIT NONE
 !----------------------------------------------------------------------
 !PPM internal parameters used only to access entries in the
 !mesh data structures.
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdata_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdata_reqput = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdata_cartesian = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdata_lflags = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_mdata_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_mdata_reqput = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_mdata_cartesian = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_mdata_lflags = 3
 
 !PPM internal parameters used only to access entries in the
 !mesh data structures.
-INTEGER,PARAMETER,PUBLIC   :: ppm_mesh_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_mesh_reqput = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_mesh_cartesian = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_mesh_length_partflags = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_mesh_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_mesh_reqput = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_mesh_cartesian = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_mesh_length_partflags = 3
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdat_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdat_reqput = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_mdat_map_ghosts = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_mdatflags = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_mdat_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_mdat_reqput = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_mdat_map_ghosts = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_param_length_mdatflags = 3
 
 !User parameters
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_part_init_cartesian = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_part_init_random = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_param_part_init_cartesian = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_param_part_init_random = 2
 
 
 !PPM internal parameters used only to access entries in the
 !particle data structure.
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_part_ghosts = 1
 ! consider adding (?)
-!INTEGER,PARAMETER,PUBLIC   :: ppm_part_ghosts_exist = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_partial = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_reqput = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_areinside = 4
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_cartesian = 5
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_neighlists = 6
-INTEGER,PARAMETER,PUBLIC   :: ppm_part_global_index = 7
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_partflags = 8
+!INTEGER,PARAMETER,PUBLIC :: ppm_part_ghosts_exist = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_part_partial = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_part_reqput = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_part_areinside = 4
+INTEGER,PARAMETER,PUBLIC :: ppm_part_cartesian = 5
+INTEGER,PARAMETER,PUBLIC :: ppm_part_neighlists = 6
+INTEGER,PARAMETER,PUBLIC :: ppm_part_global_index = 7
+INTEGER,PARAMETER,PUBLIC :: ppm_param_length_partflags = 8
 
-INTEGER,PARAMETER,PUBLIC   :: ppm_pdata_lflags = 3
-
-!PPM internal parameters used only to access entries in the
-!particle's property data structure.
-INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_partial = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_reqput = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_parts = 4
-INTEGER,PARAMETER,PUBLIC   :: ppm_ppt_map_ghosts = 5
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_pptflags = 5
+INTEGER,PARAMETER,PUBLIC :: ppm_pdata_lflags = 3
 
 !PPM internal parameters used only to access entries in the
 !particle's property data structure.
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_inc_ghosts = 1
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_interp = 2
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_iscomputed = 3
-INTEGER,PARAMETER,PUBLIC   :: ppm_ops_vector = 4
-INTEGER,PARAMETER,PUBLIC   :: ppm_param_length_opsflags = 4
+INTEGER,PARAMETER,PUBLIC :: ppm_ppt_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_ppt_partial = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_ppt_reqput = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_ppt_map_parts = 4
+INTEGER,PARAMETER,PUBLIC :: ppm_ppt_map_ghosts = 5
+INTEGER,PARAMETER,PUBLIC :: ppm_param_length_pptflags = 5
 
+!PPM internal parameters used only to access entries in the
+!particle's property data structure.
+INTEGER,PARAMETER,PUBLIC :: ppm_ops_inc_ghosts = 1
+INTEGER,PARAMETER,PUBLIC :: ppm_ops_interp = 2
+INTEGER,PARAMETER,PUBLIC :: ppm_ops_iscomputed = 3
+INTEGER,PARAMETER,PUBLIC :: ppm_ops_vector = 4
+INTEGER,PARAMETER,PUBLIC :: ppm_param_length_opsflags = 4
 
 !----------------------------------------------------------------------
 ! Global variables
 !----------------------------------------------------------------------
-INTEGER                            :: ppm_nb_meshes    = 0
-INTEGER                            :: ppm_nb_part_sets = 0
+INTEGER :: ppm_nb_meshes    = 0
+INTEGER :: ppm_nb_part_sets = 0
 !----------------------------------------------------------------------
 ! Module variables
 !----------------------------------------------------------------------
-INTEGER, PRIVATE, DIMENSION(3)  :: ldc
+INTEGER, PRIVATE, DIMENSION(3) :: ldc
 
 !----------------------------------------------------------------------
 ! Type declaration
@@ -108,7 +107,7 @@ INTEGER, PRIVATE, DIMENSION(3)  :: ldc
 
 TYPE,ABSTRACT :: ppm_t_main_abstr
     !!! Generic type for all main PPM types
-END TYPE
+END TYPE ppm_t_main_abstr
 minclude ppm_create_collection(main_abstr,main_abstr,generate="concrete",vec=true)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
@@ -117,7 +116,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_kind
     !!! ID of the mesh or particle set in the belonging topology
     CHARACTER(LEN=ppm_char)           :: name
     !!! name (optional...)
-END TYPE
+END TYPE ppm_t_discr_kind
 minclude ppm_create_collection(discr_kind,discr_kind,generate="concrete",vec=true,def_ptr=true)
 
 
@@ -152,7 +151,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_discr_data
     !!!
     CONTAINS
     PROCEDURE :: has_ghosts => discr_data_has_ghosts
-END TYPE
+END TYPE ppm_t_discr_data
 minclude ppm_create_collection(discr_data,discr_data,generate="concrete",vec=true,def_ptr=true)
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
@@ -172,7 +171,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_operator_
     PROCEDURE(operator_create_),       DEFERRED :: create
     PROCEDURE(operator_destroy_),      DEFERRED :: destroy
     PROCEDURE(operator_discretize_on_),DEFERRED :: discretize_on
-END TYPE
+END TYPE ppm_t_operator_
 minclude ppm_create_collection(operator_,operator_,generate="abstract")
 
 
@@ -208,7 +207,7 @@ TYPE,ABSTRACT :: ppm_t_operator_discr_
     CONTAINS
     PROCEDURE(operator_discr_destroy_), DEFERRED :: destroy
     !PROCEDURE(operator_discr_compute_), DEFERRED :: compute
-END TYPE
+END TYPE ppm_t_operator_discr_
 minclude ppm_create_collection(operator_discr_,operator_discr_,generate="abstract")
 
 TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
@@ -216,7 +215,7 @@ TYPE,EXTENDS(ppm_t_operator_discr_) :: ppm_t_operator_discr
     PROCEDURE :: create  => operator_discr_create
     PROCEDURE :: destroy => operator_discr_destroy
     PROCEDURE :: compute => operator_discr_compute
-END TYPE
+END TYPE ppm_t_operator_discr
 minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
 
 
@@ -274,7 +273,7 @@ TYPE,ABSTRACT ::  ppm_t_discr_info_
     CONTAINS
     PROCEDURE(discr_info_create_), DEFERRED :: create
     PROCEDURE(discr_info_destroy_),DEFERRED :: destroy
-END TYPE
+END TYPE ppm_t_discr_info_
 minclude ppm_create_collection(discr_info_,discr_info_,generate="abstract")
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_main_abstr) :: ppm_t_field_
@@ -321,7 +320,7 @@ minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_pt
 !!----------------------------------------------------------------------
 !! Patches (contains the actual data arrays for this field)
 !!----------------------------------------------------------------------
-TYPE,ABSTRACT       :: ppm_t_subpatch_data_
+TYPE,ABSTRACT :: ppm_t_subpatch_data_
     !!! pointers to arrays where the data are stored
     INTEGER                                                :: fieldID = 0
     !!! ID of the field that is discretized here
@@ -369,7 +368,7 @@ TYPE,ABSTRACT       :: ppm_t_subpatch_data_
     CONTAINS
     PROCEDURE(subpatch_data_create_), DEFERRED :: create
     PROCEDURE(subpatch_data_destroy_),DEFERRED :: destroy
-END TYPE
+END TYPE ppm_t_subpatch_data_
 minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract")
 minclude ppm_create_collection(subpatch_data_,subpatch_data_,generate="abstract",vec=true,def_ptr=false,generate="abstract")
 
@@ -378,7 +377,7 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_data) :: ppm_t_mesh_discr_data_
     CONTAINS
     PROCEDURE(mesh_discr_data_create_), DEFERRED :: create
     PROCEDURE(mesh_discr_data_destroy_),DEFERRED :: destroy
-END TYPE
+END TYPE ppm_t_mesh_discr_data_
 minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract")
 minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstract",vec=true,def_ptr=false)
 
@@ -478,7 +477,7 @@ TYPE,ABSTRACT :: ppm_t_subpatch_
         &                   subpatch_get_field_2d_rs,subpatch_get_field_3d_rs,&
         &                   subpatch_get_field_4d_rs
     !PROCEDURE  :: get => subpatch_get
-END TYPE
+END TYPE ppm_t_subpatch_
 minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")
 
 TYPE,ABSTRACT :: ppm_t_A_subpatch_
@@ -492,7 +491,7 @@ TYPE,ABSTRACT :: ppm_t_A_subpatch_
     CONTAINS
     PROCEDURE(subpatch_A_create_) ,DEFERRED  :: create
     PROCEDURE(subpatch_A_destroy_),DEFERRED  :: destroy
-END TYPE
+END TYPE ppm_t_A_subpatch_
 minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
 
 TYPE ppm_t_mesh_maplist
@@ -525,13 +524,13 @@ TYPE ppm_t_mesh_maplist
     !!! send buffer pointer
     INTEGER, DIMENSION(:), POINTER  :: precvbuffer => NULL()
     !!! recv buffer pointer
-END TYPE
+END TYPE ppm_t_mesh_maplist
 
 TYPE ppm_t_subpatch_ptr_array
     INTEGER                                       :: size = 0
     INTEGER                                       :: nsubpatch = 0
     TYPE(ppm_t_ptr_subpatch),DIMENSION(:),POINTER :: vec => NULL()
-END TYPE
+END TYPE ppm_t_subpatch_ptr_array
 
 
 TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
@@ -652,23 +651,20 @@ TYPE,ABSTRACT,EXTENDS(ppm_t_discr_kind) :: ppm_t_equi_mesh_
     PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
     PROCEDURE(equi_mesh_print_vtk_),      DEFERRED :: print_vtk
     PROCEDURE(equi_mesh_m2p_),            DEFERRED :: interp_to_part
-END TYPE
+END TYPE ppm_t_equi_mesh_
 minclude ppm_create_collection(equi_mesh_,equi_mesh_,generate="abstract")
 
-TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_var_discr_pair
+TYPE, EXTENDS(ppm_t_main_abstr) :: ppm_t_var_discr_pair
   CLASS(ppm_t_main_abstr), POINTER   :: var => NULL()
   CLASS(ppm_t_discr_kind), POINTER   :: discr => NULL()
-END TYPE
+END TYPE ppm_t_var_discr_pair
 minclude ppm_create_collection(var_discr_pair,var_discr_pair,vec=true,generate="concrete")
 
-TYPE, EXTENDS(ppm_t_main_abstr) ::  ppm_t_field_discr_pair
+TYPE, EXTENDS(ppm_t_main_abstr) :: ppm_t_field_discr_pair
   CLASS(ppm_t_field_), POINTER       :: field => NULL()
   CLASS(ppm_t_discr_kind), POINTER   :: discr => NULL()
-END TYPE
+END TYPE ppm_t_field_discr_pair
 minclude ppm_create_collection(field_discr_pair,field_discr_pair,vec=true,generate="concrete")
-
-
-
 
 !----------------------------------------------------------------------
 !  INTERFACES
@@ -849,7 +845,7 @@ SUBROUTINE operator_discr_create(this,Op,Part_src,Part_to,info,&
     start_subroutine("operator_discr_create")
         fail("this dummy routine should not be called")
     end_subroutine()
-END SUBROUTINE
+END SUBROUTINE operator_discr_create
 !DESTROY (DUMMY ROUTINE)
 SUBROUTINE operator_discr_destroy(this,info)
     CLASS(ppm_t_operator_discr)        :: this
@@ -857,7 +853,7 @@ SUBROUTINE operator_discr_destroy(this,info)
     start_subroutine("operator_discr_destroy")
         fail("this dummy routine should not be called")
     end_subroutine()
-END SUBROUTINE
+END SUBROUTINE operator_discr_destroy
 !COMPUTE (DUMMY ROUTINE)
 SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
     CLASS(ppm_t_operator_discr)                  :: this
@@ -867,13 +863,13 @@ SUBROUTINE operator_discr_compute(this,Field_src,Field_to,info)
     start_subroutine("operator_discr_compute")
         fail("this dummy routine should not be called")
     end_subroutine()
-END SUBROUTINE
+END SUBROUTINE operator_discr_compute
 
 
 FUNCTION discr_data_has_ghosts(this) RESULT(res)
     CLASS (ppm_t_discr_data)  :: this
     LOGICAL                   :: res
     res = this%flags(ppm_ppt_ghosts)
-END FUNCTION
+END FUNCTION discr_data_has_ghosts
 
 END MODULE ppm_module_interfaces
