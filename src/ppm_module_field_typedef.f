@@ -176,7 +176,7 @@ SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
     !!! If the field has a procedure for initialization (e.g. an
     !!! initial condition), then the field is also initialized.
     !!! If the mesh has patches, the field is allocated only on these
-    !!! patches. If no patches have been defined, it is assumed that
+    !!! patches. If no patches have been defined, it is assumed
     !!! that the user expects the field to be allocated on the whole domain.
     !!! A single patch is then defined, covering all the subdomains.
     CLASS(ppm_t_field),TARGET          :: this

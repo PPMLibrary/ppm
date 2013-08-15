@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_mesh_on_subs
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -39,7 +39,7 @@
       !!! multiple of the mesh spacing in all directions. If this is not
       !!! the case this routine will fail.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_write
@@ -54,7 +54,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
       !!! The minimum coordinate of the physical/computational domain
@@ -64,21 +64,21 @@
       !!! Min. extent of the subdomains
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
       !!! Max. extent of the subdomains
+      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
+      !!! The number of mesh points (not cells) in each direction of the
+      !!! global comput. domain. (including those ON the boundaries)
+      INTEGER                 , INTENT(IN   ) :: nsubs
+      !!! Total number of subdomains
       INTEGER , DIMENSION(:,:), POINTER       :: istart
       !!! Start indices (i,j,k) (first index) of mesh in sub isub
       !!! (second index) in global mesh.
       INTEGER , DIMENSION(:,:), POINTER       :: ndata
       !!! Number of grid points in x,y[,z] (first index) of mesh on sub
       !!! isub (second index).
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
-      !!! The number of mesh points (not cells) in each direction of the
-      !!! global comput. domain. (including those ON the boundaries)
-      INTEGER                 , INTENT(IN   ) :: nsubs
-      !!! Total number of subdomains
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                          :: t0,lmyeps
       REAL(MK), DIMENSION(ppm_dim)      :: len_phys,dx,rat
@@ -86,11 +86,11 @@
       INTEGER                           :: iopt,i,j
       CHARACTER(LEN=ppm_char)           :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_mesh_on_subs',t0,info)
 #if   __KIND == __SINGLE_PRECISION
@@ -117,7 +117,7 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Allocate memory for the meshes 
+      !  Allocate memory for the meshes
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_fit
       ldu(1) = ppm_dim
@@ -155,31 +155,37 @@
               Nc(3)  = NINT(rat(3))
               IF (ABS(rat(1)-REAL(Nc(1),MK)) .GT. lmyeps*rat(1)) THEN
                   WRITE(mesg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',dx(1)
+                  & len_phys(1),' mesh_spacing=',dx(1)
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_subs_incomp,'ppm_mesh_on_subs',     &
-     &                mesg,__LINE__,info)
+                  &    mesg,__LINE__,info)
                   GOTO 9999
               ENDIF
               IF (ABS(rat(2)-REAL(Nc(2),MK)) .GT. lmyeps*rat(2)) THEN
                   WRITE(mesg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',dx(2)
+                  & len_phys(2),' mesh_spacing=',dx(2)
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_subs_incomp,'ppm_mesh_on_subs',     &
-     &                mesg,__LINE__,info)
+                  &    mesg,__LINE__,info)
                   GOTO 9999
               ENDIF
               IF (ABS(rat(3)-REAL(Nc(3),MK)) .GT. lmyeps*rat(3)) THEN
                   WRITE(mesg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
-     &                len_phys(3),' mesh_spacing=',dx(3)
+                  & len_phys(3),' mesh_spacing=',dx(3)
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_subs_incomp,'ppm_mesh_on_subs',     &
-     &                mesg,__LINE__,info)
+                  &    mesg,__LINE__,info)
                   GOTO 9999
               ENDIF
-              ndata(1,i) = Nc(1) + 1 
-              ndata(2,i) = Nc(2) + 1 
-              ndata(3,i) = Nc(3) + 1 
+              ndata(1,i) = Nc(1) + 1
+              ndata(2,i) = Nc(2) + 1
+              ndata(3,i) = Nc(3) + 1
+              !-----------------------------------------------------------------
+              !  Determine the start indices in the global mesh
+              !-----------------------------------------------------------------
+              istart(1,i) = NINT((min_sub(1,i)-min_phys(1))/dx(1)) + 1
+              istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
+              istart(3,i) = NINT((min_sub(3,i)-min_phys(3))/dx(3)) + 1
           ENDDO
       ELSE
           DO i=1,nsubs
@@ -191,36 +197,25 @@
               Nc(2)  = NINT(rat(2))
               IF (ABS(rat(1)-REAL(Nc(1),MK)) .GT. lmyeps*rat(1)) THEN
                   WRITE(mesg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-     &                len_phys(1),' mesh_spacing=',dx(1)
+                  & len_phys(1),' mesh_spacing=',dx(1)
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_subs_incomp,'ppm_mesh_on_subs',     &
-     &                mesg,__LINE__,info)
+                  &    mesg,__LINE__,info)
                   GOTO 9999
               ENDIF
               IF (ABS(rat(2)-REAL(Nc(2),MK)) .GT. lmyeps*rat(2)) THEN
                   WRITE(mesg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-     &                len_phys(2),' mesh_spacing=',dx(2)
+                  & len_phys(2),' mesh_spacing=',dx(2)
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_subs_incomp,'ppm_mesh_on_subs',     &
-     &                mesg,__LINE__,info)
+                  &    mesg,__LINE__,info)
                   GOTO 9999
               ENDIF
-              ndata(1,i) = Nc(1) + 1 
-              ndata(2,i) = Nc(2) + 1 
-          ENDDO
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Determine the start indices in the global mesh
-      !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
-          DO i=1,nsubs
-              istart(1,i) = NINT((min_sub(1,i)-min_phys(1))/dx(1)) + 1
-              istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
-              istart(3,i) = NINT((min_sub(3,i)-min_phys(3))/dx(3)) + 1
-          ENDDO
-      ELSE
-          DO i=1,nsubs
+              ndata(1,i) = Nc(1) + 1
+              ndata(2,i) = Nc(2) + 1
+              !-----------------------------------------------------------------
+              !  Determine the start indices in the global mesh
+              !-----------------------------------------------------------------
               istart(1,i) = NINT((min_sub(1,i)-min_phys(1))/dx(1)) + 1
               istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
           ENDDO
@@ -238,29 +233,29 @@
               DO i=1,nsubs
                   WRITE(mesg,'(I4,A,2I8)') i,' istart: ',istart(1:2,i)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &                   mesg,info)
+                  &    mesg,info)
                   WRITE(mesg,'(I4,A,2I8)') i,' ndata : ',ndata(1:2,i)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &                   mesg,info)
+                  &    mesg,info)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &                   '------------------------------------',info)
+                  &    '------------------------------------',info)
               ENDDO
           ELSE
               DO i=1,nsubs
                   WRITE(mesg,'(I4,A,3I8)') i,' istart: ',istart(1:3,i)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &                   mesg,info)
+                  &    mesg,info)
                   WRITE(mesg,'(I4,A,3I8)') i,' ndata : ',ndata(1:3,i)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &                   mesg,info)
+                  &    mesg,info)
                   CALL ppm_write(ppm_rank,'ppm_mesh_on_subs',  &
-     &            '------------------------------------------------',info)
+                  &    '------------------------------------',info)
               ENDDO
           ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_mesh_on_subs',t0,info)

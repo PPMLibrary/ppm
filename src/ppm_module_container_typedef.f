@@ -60,7 +60,6 @@
 
          TYPE, EXTENDS(ppm_t_container) :: idList
              INTEGER, DIMENSION(:), POINTER :: vec => NULL()
-
          END TYPE idList
          !----------------------------------------------------------------------
          ! Global variables

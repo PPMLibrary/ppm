@@ -29,12 +29,12 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
-     &                            isublist,nsublist,nneigh,ineigh,info)
+      &          subs_bc,sub2proc,nsubs,bcdef,ghostsize,                    &
+      &          isublist,nsublist,nneigh,ineigh,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,min_sub,max_sub, &
-     &                            subs_bc,sub2proc,nsubs,bcdef,ghostsize,&
-     &                            isublist,nsublist,nneigh,ineigh,info)
+      &          subs_bc,sub2proc,nsubs,bcdef,ghostsize,                    &
+      &          isublist,nsublist,nneigh,ineigh,info)
 #endif
       !!! This routine stores all relevant information about
       !!! the new topology (created by ppm_decomp routines) in
@@ -46,7 +46,7 @@
       !!! [NOTE]
       !!! This routine dellocates the array: subs_bc passed to it.
       !!! The choice of placing it here is somewhat arbitrary, but
-      !!! since this routine is call BOTH in ppm_topo_mkpart and
+      !!! since this routine is called BOTH in ppm_topo_mkpart and
       !!! ppm_topo_mkfield - why not do it in one place - here.
 
       !-------------------------------------------------------------------------
@@ -112,11 +112,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+
+      REAL(MK)                  :: t0
+
       INTEGER , DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
-      REAL(MK)                  :: t0
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -257,7 +259,7 @@
       !  store the data by looping over the subs handled by the current
       !  processor: isublist(1:nsublist)
       !-------------------------------------------------------------------------
-      IF (nsublist .LT. 1) THEN
+      IF (nsublist.LT.1) THEN
           ! dummy entry if we have no subs at all
           topo%nneighsubs(1) = ppm_param_undefined
       ENDIF
