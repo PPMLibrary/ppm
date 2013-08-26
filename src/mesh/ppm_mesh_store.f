@@ -92,31 +92,30 @@
       CALL ppm_error(ppm_err_argument,'ppm_mesh_store', &
           &  'this routine should be overwitten. FIXME!!',__LINE__,info)
       GOTO 9999
-      !!-------------------------------------------------------------------------
-      !!  Check arguments
-      !!-------------------------------------------------------------------------
-      !IF (ppm_debug .GT. 0) THEN
-        !CALL check
-        !IF (info .NE. 0) GOTO 9999
-      !ENDIF
+      !-------------------------------------------------------------------------
+      !  Check arguments
+      !-------------------------------------------------------------------------
+      IF (ppm_debug .GT. 0) THEN
+        CALL check
+        IF (info .NE. 0) GOTO 9999
+      ENDIF
+!
+!       topo => ppm_topo(topoid)%t
 
-
-      !topo => ppm_topo(topoid)%t
-
-      !IF (meshid .LE. 0) THEN
-        !!-----------------------------------------------------------------------
-        !!  Create a mesh identifier if the user specified none
-        !!-----------------------------------------------------------------------
-        !meshid = topo%max_meshid + 1
-        !topo%max_meshid = meshid
-      !ELSE
-        !IF (meshid .GT. topo%max_meshid) THEN
-            !info = ppm_error_error
-            !CALL ppm_error(ppm_err_argument,'ppm_mesh_store', &
-     !&                     'meshid is invalid',__LINE__,info)
-            !GOTO 9999
-        !ENDIF
-      !ENDIF
+!       IF (meshid .LE. 0) THEN
+!         !-----------------------------------------------------------------------
+!         !  Create a mesh identifier if the user specified none
+!         !-----------------------------------------------------------------------
+!         meshid = topo%max_meshid + 1
+!         topo%max_meshid = meshid
+!       ELSE
+!         IF (meshid .GT. topo%max_meshid) THEN
+!             info = ppm_error_error
+!             CALL ppm_error(ppm_err_argument,'ppm_mesh_store', &
+!      &                     'meshid is invalid',__LINE__,info)
+!             GOTO 9999
+!         ENDIF
+!       ENDIF
       !!-------------------------------------------------------------------------
       !!  (Re)allocate memory for the internal mesh list and Arrays at meshid
       !!-------------------------------------------------------------------------

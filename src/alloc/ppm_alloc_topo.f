@@ -113,31 +113,31 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(topo)) THEN
             ! first deallocate all content of topo
-          IF (ASSOCIATED(topo%min_physs)) DEALLOCATE(topo%min_physs,STAT=info)
-          IF (ASSOCIATED(topo%max_physs)) DEALLOCATE(topo%min_physd,STAT=info)
-          IF (ASSOCIATED(topo%min_physd)) DEALLOCATE(topo%max_physs,STAT=info)
-          IF (ASSOCIATED(topo%max_physd)) DEALLOCATE(topo%max_physd,STAT=info)
-          IF (ASSOCIATED(topo%bcdef)) DEALLOCATE(topo%bcdef,STAT=info)
-          IF (ASSOCIATED(topo%min_subs)) DEALLOCATE(topo%min_subs,STAT=info)
-          IF (ASSOCIATED(topo%max_subs)) DEALLOCATE(topo%max_subs,STAT=info)
-          IF (ASSOCIATED(topo%min_subd)) DEALLOCATE(topo%min_subd,STAT=info)
-          IF (ASSOCIATED(topo%max_subd)) DEALLOCATE(topo%max_subd,STAT=info)
-          IF (ASSOCIATED(topo%sub_costs)) DEALLOCATE(topo%sub_costs,STAT=info)
-          IF (ASSOCIATED(topo%sub_costd)) DEALLOCATE(topo%sub_costd,STAT=info)
-          IF (ASSOCIATED(topo%sub2proc)) DEALLOCATE(topo%sub2proc,STAT=info)
-          IF (ASSOCIATED(topo%isublist)) DEALLOCATE(topo%isublist,STAT=info)
-          IF (ASSOCIATED(topo%subs_bc)) DEALLOCATE(topo%subs_bc,STAT=info)
-          IF (ASSOCIATED(topo%ineighsubs)) DEALLOCATE(topo%ineighsubs,STAT=info)
-          IF (ASSOCIATED(topo%nneighsubs)) DEALLOCATE(topo%nneighsubs,STAT=info)
-          IF (ASSOCIATED(topo%ineighproc)) DEALLOCATE(topo%ineighproc,STAT=info)
-          IF (ASSOCIATED(topo%icommseq)) DEALLOCATE(topo%icommseq,STAT=info)
-          DEALLOCATE(topo,stat=info)
-          NULLIFY(topo)
-          IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,'ppm_alloc_topo',   &
-     &          'Deallocating topo',__LINE__,info)
-          ENDIF
+            IF (ASSOCIATED(topo%min_physs))  DEALLOCATE(topo%min_physs, STAT=info)
+            IF (ASSOCIATED(topo%max_physs))  DEALLOCATE(topo%min_physd, STAT=info)
+            IF (ASSOCIATED(topo%min_physd))  DEALLOCATE(topo%max_physs, STAT=info)
+            IF (ASSOCIATED(topo%max_physd))  DEALLOCATE(topo%max_physd, STAT=info)
+            IF (ASSOCIATED(topo%bcdef))      DEALLOCATE(topo%bcdef,     STAT=info)
+            IF (ASSOCIATED(topo%min_subs))   DEALLOCATE(topo%min_subs,  STAT=info)
+            IF (ASSOCIATED(topo%max_subs))   DEALLOCATE(topo%max_subs,  STAT=info)
+            IF (ASSOCIATED(topo%min_subd))   DEALLOCATE(topo%min_subd,  STAT=info)
+            IF (ASSOCIATED(topo%max_subd))   DEALLOCATE(topo%max_subd,  STAT=info)
+            IF (ASSOCIATED(topo%sub_costs))  DEALLOCATE(topo%sub_costs, STAT=info)
+            IF (ASSOCIATED(topo%sub_costd))  DEALLOCATE(topo%sub_costd, STAT=info)
+            IF (ASSOCIATED(topo%sub2proc))   DEALLOCATE(topo%sub2proc,  STAT=info)
+            IF (ASSOCIATED(topo%isublist))   DEALLOCATE(topo%isublist,  STAT=info)
+            IF (ASSOCIATED(topo%subs_bc))    DEALLOCATE(topo%subs_bc,   STAT=info)
+            IF (ASSOCIATED(topo%ineighsubs)) DEALLOCATE(topo%ineighsubs,STAT=info)
+            IF (ASSOCIATED(topo%nneighsubs)) DEALLOCATE(topo%nneighsubs,STAT=info)
+            IF (ASSOCIATED(topo%ineighproc)) DEALLOCATE(topo%ineighproc,STAT=info)
+            IF (ASSOCIATED(topo%icommseq))   DEALLOCATE(topo%icommseq,  STAT=info)
+            DEALLOCATE(topo,stat=info)
+            NULLIFY(topo)
+            IF (info .NE. 0) THEN
+               info = ppm_error_error
+               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_topo',   &
+               & 'Deallocating topo',__LINE__,info)
+            ENDIF
          ENDIF
       ENDIF
 
@@ -149,7 +149,7 @@
          IF (info .NE. 0) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_alloc,'ppm_alloc_topo',   &
-     &           'Allocating topo',__LINE__,info)
+             & 'Allocating topo',__LINE__,info)
              GOTO 9999
          ENDIF
          NULLIFY(topo%min_physs)

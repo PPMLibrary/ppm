@@ -60,37 +60,31 @@
       !!! Character string with the name of the calling subroutine
       REAL(MK)        , INTENT(IN   ) :: t0
       !!! System/cpu time at start of subroutine. (as returned by substart)
-      INTEGER         , INTENT(IN   ) :: info
+      INTEGER         , INTENT(INOUT) :: info
       !!! The final info of the calling subroutine. Is printed if debug.GT.1.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                       :: t1
-      CHARACTER(LEN=ppm_char)        :: cbuf
-      INTEGER                        :: info2
+      REAL(MK)                :: t1
+      CHARACTER(LEN=ppm_char) :: cbuf
 
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
 
-#ifdef __MPI
-      !-------------------------------------------------------------------------
-      !  In parallel collect the MIN info of the processors
-      !  THIS IS COMMENTED OUT AS IT IS VERY EXPENSIVE.
-      !-------------------------------------------------------------------------
-!     CALL MPI_AllReduce(info,i,1,MPI_INTEGER,MPI_MIN,comm,info2)
-!     info = i
-#endif
       !-------------------------------------------------------------------------
       !  Using debugging print the 'leaving <routine>'
       !-------------------------------------------------------------------------
-      CALL ppm_util_time(t1)
       IF     (ppm_debug.GT.1) THEN
+         CALL ppm_util_time(t1)
+
          WRITE(cbuf,'(A,I2,A,E12.4)') 'leaving with info=',info,'. took: ',t1-t0
-         CALL ppm_write(ppm_rank,caller,cbuf,info2)
+         CALL ppm_write(ppm_rank,caller,cbuf,info)
       ELSEIF (ppm_debug.GT.0) THEN
+         CALL ppm_util_time(t1)
+
          WRITE(cbuf,'(A,E12.4)') 'took: ',t1-t0
-         CALL ppm_write(ppm_rank,caller,cbuf,info2)
+         CALL ppm_write(ppm_rank,caller,cbuf,info)
       ENDIF
 
       !-------------------------------------------------------------------------

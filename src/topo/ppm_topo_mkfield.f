@@ -434,7 +434,7 @@
          !  slab bisection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build a binary tree
-         treetype         = ppm_param_tree_bin
+         treetype = ppm_param_tree_bin
          IF (Npart .GT. 0) THEN
              weights(1,1:2) = 0.5_MK    ! particles have 50% weight
              weights(2,1:2) = 0.5_MK

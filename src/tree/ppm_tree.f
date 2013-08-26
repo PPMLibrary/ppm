@@ -150,13 +150,13 @@
       !!! Min. extents of the boxes
       REAL(MK), DIMENSION(:,:), POINTER       :: max_box
       !!! Max. extents of the boxes
+      INTEGER                 , INTENT(IN   ) :: Np
+      !!! Number of data points.
+      !!! If <= 0, decomposition is based on geometry and mesh only.
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
       !!! Number of grid points in the global mesh. (0,0,0) if there is
       !!! no mesh. If a mesh is present, the box boundaries will be aligned
       !!! with mesh planes.
-      INTEGER                 , INTENT(IN   ) :: Np
-      !!! Number of data points.
-      !!! If <= 0, decomposition is based on geometry and mesh only.
       INTEGER                 , INTENT(IN   ) :: treetype
       !!! Type of multisection tree. One of:
       !!!
@@ -178,10 +178,11 @@
       !!! to not impose any limit.
       INTEGER                 , INTENT(  OUT) :: nbox
       !!! The total number of boxes
-      INTEGER                 , INTENT(  OUT) :: info
-      !!! Return status, 0 upon success
       INTEGER , DIMENSION(:  ), POINTER       :: nchld
       !!! Number of children of each box.
+      INTEGER                 , INTENT(  OUT) :: info
+      !!! Return status, 0 upon success
+
 #if   __TYPE == __TREE
       INTEGER                 , INTENT(IN   ) :: maxlevels
       !!! Maximum number of levels to create. Tree stops as soon as

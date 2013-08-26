@@ -25,7 +25,7 @@ IMPLICIT NONE
 ! Internal parameters
 !----------------------------------------------------------------------
 !----------------------------------------------------------------------
-! Module variables 
+! Module variables
 !----------------------------------------------------------------------
 INTEGER, PRIVATE, DIMENSION(4)  :: ldc
 
@@ -100,7 +100,7 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 !----------------------------------------------------------------------
 ! DATA STORAGE for the meshes
 !----------------------------------------------------------------------
-TYPE(ppm_c_equi_mesh)              :: ppm_mesh
+TYPE(ppm_c_equi_mesh) :: ppm_mesh
 
 !------------------------------------------------
 ! TODO: stuff that should be moved somewhere else:
@@ -138,7 +138,7 @@ TYPE(ppm_c_equi_mesh)              :: ppm_mesh
          INTEGER, DIMENSION(:,:), POINTER :: qq => NULL()
 
          PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,qq,pp
-         
+
 !----------------------------------------------------------------------
 !  Type-bound procedures
 !----------------------------------------------------------------------
@@ -662,7 +662,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
         !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
             ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
-               THEN 
+               THEN
            ASSOCIATE (sarray => this%subpatch_by_sub(i))
            IF (sarray%nsubpatch.GE.sarray%size) THEN
                size2 = MAX(2*sarray%size,5)
@@ -699,7 +699,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
         !----------------------------------------------------------------
         IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
             ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
-               THEN 
+               THEN
 
             !----------------------------------------------------------------
             !Finds the mesh nodes which are contained in the overlap region
@@ -724,7 +724,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
             !----------------------------------------------------------------
             !Intersect these coordinates with those of the subdomain
             !(some nodes may have been removed from the subdomain, e.g. to
-            !implement some boundary conditions and/or avoid node duplication. 
+            !implement some boundary conditions and/or avoid node duplication.
             !----------------------------------------------------------------
             istart(1:ppm_dim) = MAX(istart(1:ppm_dim),this%istart(1:ppm_dim,isub))
             iend(1:ppm_dim)   = MIN(iend(1:ppm_dim),this%iend(1:ppm_dim,isub))
@@ -760,7 +760,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
                     ENDIF
                 ENDIF
                 ! For periodic boundary conditions, subpatches that touch
-                ! the East, North, or Top domain boundary are 
+                ! the East, North, or Top domain boundary are
                 ! reduced by 1 mesh node so that real mesh nodes are not
                 ! duplicated.
                 IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
@@ -791,7 +791,7 @@ SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
             ! (there is a ghostlayer if and only if the border of the subpatch
             ! does not coincide with a border of the patch itself - in that
             ! case, the width of the ghostlayer is truncated by the "mesh-wide"
-            ! ghostsize parameter) 
+            ! ghostsize parameter)
             !----------------------------------------------------------------
             ghostsize(1) = MIN(istart(1)-istart_p(1),this%ghostsize(1))
             ghostsize(2) = MIN(iend_p(1)-iend(1)    ,this%ghostsize(1))
@@ -889,7 +889,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
     CLASS(ppm_t_equi_mesh)                                    :: this
     !!! cartesian mesh object
     INTEGER                 ,                   INTENT(IN   ) :: topoid
-    !!! Topology ID for which mesh has been created 
+    !!! Topology ID for which mesh has been created
     REAL(ppm_kind_double), DIMENSION(:),        INTENT(IN   ) :: Offset
     !!! Offset in each dimension
     INTEGER                                   , INTENT(  OUT) :: info
@@ -937,7 +937,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
     !TODO find something better? (needed if one creates and destroy
     ! many meshes)
     ppm_nb_meshes = ppm_nb_meshes + 1
-    this%ID = ppm_nb_meshes 
+    this%ID = ppm_nb_meshes
 
     !By default, there are no patches defined on this mesh yet.
     this%npatch = 0
@@ -1021,7 +1021,7 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
         !check for round-off problems and fix them if necessary
         DO k=1,ppm_dim
             DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
-                this%h(k)=this%h(k)+epsilon(this%h(k)) 
+                this%h(k)=this%h(k)+epsilon(this%h(k))
             ENDDO
         ENDDO
         check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
@@ -1070,11 +1070,11 @@ SUBROUTINE equi_mesh_create(this,topoid,Offset,info,Nm,h,ghostsize,name)
 
             !Decide what to do if a mesh node falls on a subdomain boundary
             DO k=1,ppm_dim
-                ! For internal boundaries, mesh nodes are not duplicated. If a 
+                ! For internal boundaries, mesh nodes are not duplicated. If a
                 ! node is on the boundary, only the West/South/Bottom one
                 ! is kept.
                 ! For periodic boundary conditions, subdomains that have a mesh
-                ! node right on the East, North, or Top domain boundary are 
+                ! node right on the East, North, or Top domain boundary are
                 ! reduced by 1 mesh node so that real mesh nodes are not
                 ! duplicated.
                 IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
@@ -1486,7 +1486,7 @@ SUBROUTINE equi_mesh_prop_zero(this,Field,info)
     IF (ppm_dim.EQ.2) THEN
         SELECT CASE (lda)
         CASE (1)
-        foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double) 
+        foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double)
             for all
                 Field_n = REAL(0,ppm_kind_double)
         end foreach

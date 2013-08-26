@@ -202,12 +202,6 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
-!      IF (topo_id .EQ. 0) THEN
-!         info = ppm_error_warning
-!         CALL ppm_error(ppm_err_argument, 'ppm_topo_mkgeom',    &
-!     &     'topo_id was reset for non-null decomposition',__LINE__, info)
-!         topo_id = -1
-!      ENDIF
       ! If the user defined nsubs then use those
       IF (PRESENT(user_nsubs)) THEN
           nsubs = user_nsubs

@@ -46,6 +46,11 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
+      INTEGER, INTENT(INOUT) :: topoid
+      !!! Topology id structure to be (re)allocated
+      !!!
+      !!! if topoid == 0 then a new topology should be allocated, else the
+      !!! topology with id == topoid is reallocated
       INTEGER, INTENT(IN   ) :: nsubs
       !!! Total number of subs on all procs
       INTEGER, INTENT(IN   ) :: nsublist
@@ -57,11 +62,6 @@
       !!!
       !!! * ppm_kind_single
       !!! * ppm_kind_double
-      INTEGER, INTENT(INOUT) :: topoid
-      !!! Topology id structure to be (re)allocated
-      !!!
-      !!! if topoid == 0 then a new topology should be allocated, else the
-      !!! topology with id == topoid is reallocated
       INTEGER, INTENT(  OUT) :: info
       !!! Return status, on success 0.
 
