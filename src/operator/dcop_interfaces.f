@@ -1,5 +1,5 @@
       !minclude define_abstract_collection_interfaces(DTYPE(ppm_t_dcop)_)
-      
+
       !!CREATE
       !SUBROUTINE DTYPE(dcop_create)_(op,nterms,coeffs,degree,order,&
               !name,with_ghosts,vector,interp,Part,nlid,info)
@@ -19,15 +19,15 @@
       !END SUBROUTINE
       !!DESTROY
       !SUBROUTINE DTYPE(dcop_destroy)_(this,info)
-          !IMPORT DTYPE(ppm_t_dcop)_    
+          !IMPORT DTYPE(ppm_t_dcop)_
           !CLASS(DTYPE(ppm_t_dcop)_)          :: this
           !INTEGER,               INTENT(OUT) :: info
       !END SUBROUTINE
       !!INIT
-      
+
       !!COMPUTE OPERATOR ON A DISCRETIZATION (PARTICLE SET OR MESH)
       !SUBROUTINE DTYPE(dcop_compute)_(this,Field_src,Field_to,info)
-          !IMPORT DTYPE(ppm_t_dcop)_,ppm_t_main_abstr    
+          !IMPORT DTYPE(ppm_t_dcop)_,ppm_t_main_abstr
           !CLASS(DTYPE(ppm_t_dcop)_)                    :: this
           !CLASS(ppm_t_main_abstr),TARGET,INTENT(IN)    :: Field_src
           !CLASS(ppm_t_main_abstr),TARGET,INTENT(INOUT) :: Field_to

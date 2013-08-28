@@ -47,13 +47,13 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo)          , POINTER       :: topo
-      INTEGER                   , INTENT(IN)    :: iopt
+      TYPE(ppm_t_topo), POINTER       :: topo
+      INTEGER,          INTENT(IN   ) :: iopt
       !!! Allocation mode. One of:
       !!!
       !!! * ppm_param_alloc_fit
       !!! * ppm_param_dealloc
-      INTEGER                   , INTENT(OUT)   :: info
+      INTEGER,          INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
       !-------------------------------------------------------------------------
       !  Local variables
@@ -75,9 +75,6 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       ! maybe add some sanity checks later
-
-
-
 
       !-------------------------------------------------------------------------
       !  Check the allocation type
@@ -176,8 +173,6 @@
          topo%nsublist = 0
          topo%nneighproc = 0
       ENDIF
-
-
 
       !-------------------------------------------------------------------------
       !  Return

@@ -238,7 +238,7 @@ SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
     CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
     CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
 
-    start_subroutine("set_xp") 
+    start_subroutine("set_xp")
 
     IF (PRESENT(ghosts_ok)) THEN
         IF (ghosts_ok) THEN
@@ -389,7 +389,7 @@ SUBROUTINE DTYPE(part_prop_destroy)(this,prop,info)
         fail("discretization data has to be of class ppm_t_part_prop")
     END SELECT
 
-    
+
 
     end_subroutine()
 END SUBROUTINE DTYPE(part_prop_destroy)
@@ -471,7 +471,7 @@ SUBROUTINE DTYPE(part_neigh_create)(this,Part_src,info,&
     !!! name of this neighbour list
     REAL(MK), OPTIONAL                                          :: skin
     REAL(MK), OPTIONAL                                          :: cutoff
-    LOGICAL, OPTIONAL                                           :: symmetry    
+    LOGICAL, OPTIONAL                                           :: symmetry
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER,OPTIONAL,INTENT(OUT) :: Nlist
     !!! returns a pointer to the newly created verlet list
 
@@ -557,7 +557,7 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
     CLASS(DTYPE(ppm_t_particles))                          :: Pc
     !!! Data structure containing the particles
     INTEGER,                                INTENT(IN   )  :: Npart
-    !!! Number of particles 
+    !!! Number of particles
     INTEGER,                                INTENT(  OUT)  :: info
     !!! Returns status, 0 upon success.
     !-------------------------------------------------------------------------
@@ -586,7 +586,7 @@ SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
     !TODO find something better? (needed if one creates and destroy
     ! many meshes)
     ppm_nb_part_sets = ppm_nb_part_sets + 1
-    Pc%ID = ppm_nb_part_sets 
+    Pc%ID = ppm_nb_part_sets
 
     !-----------------------------------------------------------------
     !  Allocate memory for the positions
@@ -1201,11 +1201,11 @@ SUBROUTINE DTYPE(part_map)(Pc,info,global,topoid)
         t1 = MPI_WTIME(info)
 #endif
         IF (partial) THEN
-            CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info) 
+            CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info)
                 or_fail("ppm_map_part_partial")
             Pc%stats%nb_part_map = Pc%stats%nb_part_map + 1
         ELSE
-            CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info) 
+            CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info)
                 or_fail("ppm_map_part_global")
             Pc%stats%nb_global_map = Pc%stats%nb_global_map + 1
         ENDIF
@@ -1360,11 +1360,11 @@ SUBROUTINE DTYPE(part_map_positions)(Pc,info,global,topoid)
         !nothing to do
     ELSE
         IF (partial) THEN
-            CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info) 
+            CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info)
                 or_fail("ppm_map_part_partial")
             Pc%stats%nb_part_map = Pc%stats%nb_part_map + 1
         ELSE
-            CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info) 
+            CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info)
                 or_fail("ppm_map_part_global")
             Pc%stats%nb_global_map = Pc%stats%nb_global_map + 1
         ENDIF
@@ -2343,7 +2343,7 @@ END SUBROUTINE DTYPE(part_map_ghost_push_pos)
 SUBROUTINE DTYPE(part_map_ghost_pop_pos)(Pc,info,ghostsize)
     !!! Pop ghost particles positions from the send buffer.
     !!!  Assumptions:
-    !!! * Needs to be called at the end of the 
+    !!! * Needs to be called at the end of the
     !!!  ghost_get, ghost_push, send and ghost_pop call sequence.
     !!!
     USE ppm_module_map
@@ -2644,7 +2644,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     USE ppm_module_inl_k_vlist
     USE ppm_module_kdtree
 #endif
-    
+
 #ifdef __MPI
     INCLUDE "mpif.h"
 #endif
@@ -2666,7 +2666,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
     !!! name of this neighbour list
     REAL(MK), OPTIONAL                                     :: skin
     !!! skin
-    LOGICAL, OPTIONAL                                      :: symmetry    
+    LOGICAL, OPTIONAL                                      :: symmetry
     !!! if using symmetry
     REAL(MK), OPTIONAL                                     :: cutoff
     !!! cutoff radius
@@ -2725,7 +2725,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         IF (.NOT.ASSOCIATED(Part_src,this)) THEN
             xset_neighlists = .TRUE.
         ENDIF
-    ELSE    
+    ELSE
         Part_src => this
     ENDIF
 
@@ -2787,7 +2787,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
             Nlist%nneighmax = 0
         ENDIF
     ELSE
-        !hack to build (potentially incomplete) neighbour lists even 
+        !hack to build (potentially incomplete) neighbour lists even
         !for ghost particles
         np_target = this%Npart
         IF (PRESENT(incl_ghosts)) THEN
@@ -2847,7 +2847,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
                 fail("option required the kdtree module.")
 #endif
 !__WITH_KDTREE
-        ELSE  
+        ELSE
 
                 IF (xset_neighlists) THEN
 
@@ -2904,7 +2904,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         Nlist%nneighmin = MINVAL(Nlist%nvlist(1:this%Npart))
         Nlist%nneighmax = MAXVAL(Nlist%nvlist(1:np_target))
 
-        ! DC operators that do not use a xset neighbour list, if they exist, 
+        ! DC operators that do not use a xset neighbour list, if they exist,
         ! are no longer valid (they depend on the neighbour lists)
         IF (ASSOCIATED(this%ops)) THEN
             op => this%ops%begin()
@@ -2921,7 +2921,7 @@ SUBROUTINE DTYPE(part_neighlist)(this,info,P_xset,name,skin,symmetry,cutoff,&
         IF (ASSOCIATED(Nlist%Part,this)) THEN
             this%flags(ppm_part_neighlists) = .TRUE.
         ENDIF
-        
+
         Nlist => NULL()
 
 
@@ -2955,7 +2955,7 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
     !!! Neighbor list for which this cutoff radius
     !!! applies. By default, this is the "standard" Verlet list, with neighbours
     !!! sought within the particle set itself.
-    
+
     !-------------------------------------------------------------------------
     ! local variables
     !-------------------------------------------------------------------------
@@ -2978,7 +2978,7 @@ SUBROUTINE DTYPE(part_set_cutoff)(Pc,cutoff,info,Nlist)
         nl%cutoff = cutoff
     ENDIF
 
-    
+
     ! Compute ghostlayer sizes
     IF (cutoff.GT.Pc%ghostlayer) THEN
         !If the new cutoff is larger than the current ghostsize
@@ -3077,13 +3077,13 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
             ENDDO
         ELSE
             IF (.NOT. ASSOCIATED(cont%vec)) THEN
-                !need to allocate the array of mapping pointers 
+                !need to allocate the array of mapping pointers
                 vec_size=20
                 ALLOCATE(cont%vec(vec_size),STAT=info)
                     or_fail_alloc("cont%vec")
                 id = 1
             ELSE
-                !need to resize the array of mapping pointers 
+                !need to resize the array of mapping pointers
                 vec_size=MAX(2*cont%vec_size,20)
                 ALLOCATE(vec_tmp(vec_size),STAT=info)
                     or_fail_alloc("vec_tmp")
@@ -3097,7 +3097,7 @@ SUBROUTINE DTYPE(part_map_create)(Pc,id,source_topoid,target_topoid,info)
             id = cont%nb + 1
         ENDIF
         cont%nb = cont%nb + 1
-            
+
 
         IF (id .GT. cont%max_id) cont%max_id = id
         IF (id .LT. cont%min_id) cont%min_id = id
@@ -3215,7 +3215,7 @@ SUBROUTINE DTYPE(part_get_discr)(this,Field,prop,info)
     INTEGER,                                INTENT(  OUT)  :: info
 
     start_subroutine("part_get_discr")
-    
+
     prop => this%props%begin()
     loop: DO WHILE(ASSOCIATED(prop))
         IF (ASSOCIATED(prop%field_ptr,Field)) THEN
@@ -3242,7 +3242,7 @@ SUBROUTINE DTYPE(part_prop_zero)(this,Field,info)
     INTEGER                        :: lda
 
     start_subroutine("part_prop_zero")
-    
+
     lda = Field%lda
     SELECT CASE(lda)
     CASE (1)
