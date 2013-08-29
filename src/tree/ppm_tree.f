@@ -545,14 +545,14 @@
               thisNm(2)    = 1
               ghostNm(1:4) = 0
               CALL ppm_util_rank2d(xp,Np,min_dom,max_dom,thisNm,ghostNm,     &
-     &            tree_lpdx,lhbx_cut,info)
+              &    tree_lpdx,lhbx_cut,info)
           ELSE
               thisNm(1)    = 1
               thisNm(2)    = 1
               thisNm(3)    = 1
               ghostNm(1:6) = 0
               CALL ppm_util_rank3d(xp,Np,min_dom,max_dom,thisNm,ghostNm,     &
-     &            tree_lpdx,lhbx_cut,info)
+              &    tree_lpdx,lhbx_cut,info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
           tree_lhbx(1,1) = lhbx_cut(1)
@@ -677,7 +677,7 @@
       !  Subdivide until done
       !-------------------------------------------------------------------------
       lctr = 0
-      DO WHILE (lcontinue)
+      lcontinue_do: DO WHILE (lcontinue)
           lctr = lctr + 1
 
 !         WRITE(mesg,'(a,i4.4)') 'boxes',lctr
@@ -739,10 +739,10 @@
           !---------------------------------------------------------------------
           IF (PRESENT(pcost)) THEN
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-     &                             inext,ncut,fixed,minboxsize,icut,info,pcost)
+              & inext,ncut,fixed,minboxsize,icut,info,pcost)
           ELSE
               CALL ppm_tree_cutdir(xp,Np,weights(:,1),min_box,max_box, &
-     &                             inext,ncut,fixed,minboxsize,icut,info)
+              & inext,ncut,fixed,minboxsize,icut,info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
 
@@ -751,10 +751,10 @@
           !---------------------------------------------------------------------
           IF (PRESENT(pcost)) THEN
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-     &                             inext,ncut,minboxsize,icut,cpos,info,pcost)
+              & inext,ncut,minboxsize,icut,cpos,info,pcost)
           ELSE
               CALL ppm_tree_cutpos(xp,Np,weights(:,2),min_box,max_box, &
-     &                             inext,ncut,minboxsize,icut,cpos,info)
+              & inext,ncut,minboxsize,icut,cpos,info)
           ENDIF
           IF (info .NE. ppm_param_success) GOTO 9999
 
@@ -774,7 +774,7 @@
                   !  Check if minboxsizes are respected
                   !-------------------------------------------------------------
                   IF (((cpos(i)-mins(j)) .LT. minboxsize(j)) .OR.   &
-     &                ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
+                  &   ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
                       IF (up) THEN
                           !-----------------------------------------------------
                           !  If we moved up, try down now
@@ -792,7 +792,7 @@
                       !  Check if minboxsizes are respected now
                       !---------------------------------------------------------
                       IF (((cpos(i)-mins(j)) .LT. minboxsize(j)) .OR.   &
-     &                    ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
+                      &   ((maxs(j)-cpos(i)) .LT. minboxsize(j))) THEN
                           !-----------------------------------------------------
                           !  Cannot subdivide this box along grid lines.
                           !  Remove it from the list of divisible boxes and
@@ -812,7 +812,7 @@
           !  Subdivide this box
           !---------------------------------------------------------------------
           CALL ppm_tree_boxcut(xp,inext,mins,maxs,ncut,icut,cpos,minc,maxc,  &
-     &        lhbx_cut,lpdx_cut,info)
+          &    lhbx_cut,lpdx_cut,info)
           IF (info .NE. ppm_param_success) GOTO 9999
 
           !---------------------------------------------------------------------
@@ -835,10 +835,10 @@
           !---------------------------------------------------------------------
           IF (PRESENT(pcost)) THEN
               CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc,   &
-     &            nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
+              & nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
           ELSE
               CALL ppm_tree_boxcost(Nmc,weights(:,1),minc,maxc,   &
-     &            nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
+              & nbpd,lhbx_cut,lpdx_cut,costc,info,pcost)
           ENDIF
 
           !---------------------------------------------------------------------
@@ -851,7 +851,7 @@
               !  If pruneboxes is set, only add boxes of non-zero cost.
               !-----------------------------------------------------------------
               IF ((pruneboxes .AND. ABS(boxcost(i)) .GT. lmyeps) .OR.   &
-     &            (.NOT. pruneboxes)) THEN
+              &   (.NOT. pruneboxes)) THEN
                   nbox = nbox + 1
                   k    = blevel(inext) + 1
                   IF (k .GT. nlevel) THEN
@@ -868,27 +868,27 @@
 #if   __TYPE == __TREE
                   IF (nbox .GT. nboxalloc .OR. nlevel .GT. nlevelalloc) THEN
                       IF(nbox.GT.nboxalloc) nboxalloc=nboxalloc+   &
-     &                    (nbpd**(nlevel-1))
+                      &  (nbpd**(nlevel-1))
                       IF(nlevel.GT.nlevelalloc) nlevelalloc=nlevelalloc+1
                       IF (ppm_debug .GT. 0) THEN
                           WRITE(mesg,'(A,I3,A,I6,A)') 'Reallocating to ',   &
-     &                        nlevelalloc,' levels and ',nboxalloc,' boxes.'
+                          & nlevelalloc,' levels and ',nboxalloc,' boxes.'
                           CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,nlevelalloc,  &
-     &                    min_box,max_box,boxcost,parent,nchld,child,&
-     &                    blevel,nbpl,info)
+                      &    min_box,max_box,boxcost,parent,nchld,child,&
+                      &    blevel,nbpl,info)
                   ENDIF
 #elif __TYPE == __DECOMP
                   IF (nbox .GT. nboxalloc) THEN
                       nboxalloc = nboxalloc + (nbpd**(nlevel-1))
                       IF (ppm_debug .GT. 0) THEN
                           WRITE(mesg,'(A,I3,A)') 'Reallocating to ',   &
-     &                        nboxalloc,' boxes.'
+                          & nboxalloc,' boxes.'
                           CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
                       ENDIF
                       CALL ppm_tree_alloc(iopt,nboxalloc,nbpd,min_box,max_box,&
-     &                    boxcost,nchld,blevel,info)
+                      &    boxcost,nchld,blevel,info)
                   ENDIF
 #endif
                   IF (info .NE. ppm_param_success) GOTO 9999
@@ -936,7 +936,7 @@
                       bpc                   = lhbx_cut(i+1)-lhbx_cut(i)
                       iend                  = istart+bpc-1
                       tree_lpdx(istart:iend)= lpdx_cut(lhbx_cut(i):   &
-     &                                                (lhbx_cut(i+1)-1))
+                      &                       (lhbx_cut(i+1)-1))
                       tree_lhbx(1,nbox)     = istart
                       tree_lhbx(2,nbox)     = iend
                       istart                = iend+1
@@ -954,8 +954,8 @@
               !-----------------------------------------------------------------
               ibox = nbox - nadd + 1
               CALL ppm_tree_divcheck(min_box(1:ppm_dim,ibox:nbox),    &
-     &            max_box(1:ppm_dim,ibox:nbox),nbpd,minboxsize,fixed, &
-     &            boxcost(ibox:nbox),ndiv,info)
+              &    max_box(1:ppm_dim,ibox:nbox),nbpd,minboxsize,fixed, &
+              &    boxcost(ibox:nbox),ndiv,info)
               IF (info .NE. 0) GOTO 9999
               k  = 0    ! number of added boxes
               k2 = 0    ! number of boxes of non-zero cost
@@ -985,8 +985,8 @@
                           IF (info.NE.0) THEN
                               info = ppm_error_fatal
                               CALL ppm_error(ppm_err_alloc,'ppm_tree',  &
-     &                            'list of divisible boxes BOXLIST',    &
-     &                            __LINE__,info)
+                              &    'list of divisible boxes BOXLIST',    &
+                              &    __LINE__,info)
                               GOTO 9999
                           ENDIF
                       ENDIF
@@ -1015,7 +1015,7 @@
           !  Determine if tree is finished
           !---------------------------------------------------------------------
  100      CALL ppm_tree_done(minboxes,nsubs,boxcost,boxlist,nboxlist,   &
-     &        nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
+          & nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
           IF (info .NE. ppm_param_success) GOTO 9999
 
           !---------------------------------------------------------------------
@@ -1027,10 +1027,10 @@
               WRITE(mesg,'(A,I8)') 'Total number of boxes: ',nbox
               CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
               WRITE(mesg,'(A,I8)') 'Number of further divisible boxes: ', &
-     &            nboxlist
+              & nboxlist
               CALL ppm_write(ppm_rank,'ppm_tree',mesg,info)
           ENDIF
-      ENDDO             ! while lcontinue
+      ENDDO lcontinue_do ! while lcontinue
 
 #if   __TYPE == __TREE
       !-------------------------------------------------------------------------

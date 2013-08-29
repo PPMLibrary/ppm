@@ -90,7 +90,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(INOUT) :: topoid
+      INTEGER,                  INTENT(INOUT) :: topoid
       !!! ID number identifying the topology.                                  +
       !!! If topoid == 0 on input a new topology is created and the new topoid
       !!! is returned here, else the indicated toplogy is replaced.
@@ -100,16 +100,16 @@
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
-      INTEGER                 , INTENT(INOUT) :: meshid
+      INTEGER,                  INTENT(INOUT) :: meshid
       !!! Mesh identifier (user numbering) for default mesh (as defined by
       !!! Nm) on the topology. If <0, ppm will create a number internally
       !!! and return it here on exit.
       REAL(MK), DIMENSION(:,:), POINTER       :: xp
       !!! Particle positions. If present, domain decomposition will be
       !!! guided by particle locations
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER,                  INTENT(IN   ) :: Npart
       !!! Number of particles. <=0 if no xp is given to guide the decomposition
-      INTEGER                 , INTENT(IN   ) :: decomp
+      INTEGER,                  INTENT(IN   ) :: decomp
       !!! The valid decomposition types are:
       !!!
       !!! * ppm_param_decomp_bisection
@@ -122,7 +122,7 @@
       !!! * ppm_param_decomp_cartesian
       !!! * ppm_param_decomp_cuboid
       !!! * ppm_param_decomp_user_defined
-      INTEGER                 , INTENT(IN   ) :: assig
+      INTEGER,                  INTENT(IN   ) :: assig
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
@@ -184,7 +184,7 @@
       !!!
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
-      INTEGER                 , OPTIONAL          :: user_nsubs
+      INTEGER,                  OPTIONAL          :: user_nsubs
       !!! Total number of subs on all processors.
       !!! parameter used when decomp is user defined
       INTEGER, DIMENSION(:  ),  OPTIONAL, POINTER :: user_sub2proc

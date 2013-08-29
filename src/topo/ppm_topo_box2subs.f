@@ -167,7 +167,7 @@
               IF (info.NE.0) THEN
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &                'stack of boxes to traverse BOXSTACK',__LINE__,info)
+                  & 'stack of boxes to traverse BOXSTACK',__LINE__,info)
                   GOTO 9999
               ENDIF
 
@@ -193,8 +193,8 @@
                           IF (info.NE.0) THEN
                               info = ppm_error_fatal
                               CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',&
-     &                            'stack of boxes to traverse BOXSTACK',   &
-     &                            __LINE__,info)
+                              &  'stack of boxes to traverse BOXSTACK',   &
+                              &   __LINE__,info)
                               GOTO 9999
                           ENDIF
                       ENDIF
@@ -212,7 +212,7 @@
               IF (info.NE.0) THEN
                   info = ppm_error_error
                   CALL ppm_error(ppm_err_dealloc,'ppm_topo_box2subs',        &
-     &                'stack of boxes to traverse BOXSTACK',__LINE__,info)
+                  & 'stack of boxes to traverse BOXSTACK',__LINE__,info)
               ENDIF
           ENDIF
       ELSE
@@ -297,8 +297,8 @@
       CALL ppm_alloc(subbox,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_error
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &        'list of box IDs SUBBOX',__LINE__,info)
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs', &
+          & 'list of box IDs SUBBOX',__LINE__,info)
       ENDIF
 
       !-------------------------------------------------------------------------

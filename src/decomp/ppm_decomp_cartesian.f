@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_decomp_cartesian
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -37,33 +37,33 @@
       !!! Decomposes space using a Cartesian domain decomposition topology.
       !!!
       !!! [TIP]
-      !!! In the user_defined case, the routine must be called with a non-zero 
-      !!! number of subdomains in `min_sub(:,:)`, `max_sub(:,:)` and this 
+      !!! In the user_defined case, the routine must be called with a non-zero
+      !!! number of subdomains in `min_sub(:,:)`, `max_sub(:,:)` and this
       !!! user-defined decomposition is used unchanged.                        +
-      !!! 
+      !!!
       !!! [NOTE]
       !!! This routine is unaware of particles and simply decomposes space into
-      !!! equal grid volumes. When used for particles, this should be followed 
+      !!! equal grid volumes. When used for particles, this should be followed
       !!! by a check of the cost balancing and possibly iterated with increasing
       !!! ndom.
       !!!
       !!! [NOTE]
-      !!! The computational domain is subdivided in exactly as many subdomains 
-      !!! as there are processors. This is done to minimize memory usage of 
+      !!! The computational domain is subdivided in exactly as many subdomains
+      !!! as there are processors. This is done to minimize memory usage of
       !!! ghost layers (grids need ghost layers also at intra-processor
-      !!! subdomain boundaries!) and to get good convergence of the grid solver 
+      !!! subdomain boundaries!) and to get good convergence of the grid solver
       !!! (artificial internal boundary conditionds at subdomain boundaries
       !!! deteriorate convergence). A quad-/oct-tree decomposition of the
-      !!! computational domain is made until the remaining number of subs 
+      !!! computational domain is made until the remaining number of subs
       !!! does not contain anymore a power of 2 factor. The remaining factor is
-      !!! used to do a parallel slab decomposition, such that the 
-      !!! surface-to-volume ratio is minimized (in terms of numbers of grid 
-      !!! points). This way, nproc equally sized subdomains with minimal 
+      !!! used to do a parallel slab decomposition, such that the
+      !!! surface-to-volume ratio is minimized (in terms of numbers of grid
+      !!! points). This way, nproc equally sized subdomains with minimal
       !!! collective surface nodes are created.                                +
       !!! The pencil decomposition works exactly the same
       !!! except that cuts in one direction are prohibited.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -78,7 +78,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), POINTER       :: min_sub
       !!! Minimum extend of the subs
@@ -107,7 +107,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Retuns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                          :: t0,minsv,lc,lx,ux,ly,uy,lz,uz
       INTEGER                           :: i,icut,jcut,kcut,nsrem,ncut,j,k
@@ -130,11 +130,11 @@
       INTEGER, DIMENSION(2)             :: ldu
       INTEGER                           :: iopt
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_decomp_cartesian',t0,info)
 
@@ -350,7 +350,7 @@
               lduold = ldu(2)
               nblocks(cutdim) = nblocks(cutdim) + 1
               Npx = Npxnew
-          ENDDO 
+          ENDDO
 
           !---------------------------------------------------------------------
           !  Compute and store the number of subs in each direction
@@ -474,7 +474,7 @@
                   GOTO 9999
               ENDIF
               rc = nsrem*nblocks(cutdim)
-              
+
               !-----------------------------------------------------------------
               !  Grow the new grid point array if needed
               !-----------------------------------------------------------------
@@ -678,7 +678,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_decomp_cartesian',t0,info)
