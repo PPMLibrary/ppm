@@ -176,14 +176,14 @@
       !----------------------------------------------------------------------
       ! Wrapper type to be able to have a pointer array to hold topologies
       !----------------------------------------------------------------------
-      TYPE ppm_ptr_t_topo
+      TYPE ppm_t_ptr_topo
           TYPE(ppm_t_topo), POINTER  :: t => NULL()
-      END TYPE ppm_ptr_t_topo
+      END TYPE ppm_t_ptr_topo
 
       !----------------------------------------------------------------------
       ! DATA STORAGE for the topologies
       !----------------------------------------------------------------------
-      TYPE(ppm_ptr_t_topo), DIMENSION(:), POINTER :: ppm_topo => null()
+      TYPE(ppm_t_ptr_topo), DIMENSION(:), POINTER :: ppm_topo => null()
       !!! the ppm topologies array
 
       INTEGER :: ppm_next_avail_topo

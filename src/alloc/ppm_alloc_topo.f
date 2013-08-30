@@ -96,8 +96,8 @@
          !  Unknown iopt
          !----------------------------------------------------------------------
          info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_topo',                       &
-     &                  'unknown iopt',__LINE__,info)
+         CALL ppm_error(ppm_err_argument,'ppm_alloc_topo', &
+         &    'unknown iopt',__LINE__,info)
          GOTO 9999
       END SELECT
 

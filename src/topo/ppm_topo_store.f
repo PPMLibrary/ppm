@@ -152,7 +152,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_store', &
-     &         'Could not allocate memory for Topology',__LINE__,info)
+          &    'Could not allocate memory for Topology',__LINE__,info)
           GOTO 9999
       ENDIF
       topo => ppm_topo(topoid)%t

@@ -173,7 +173,7 @@
       !  Add ghost domains for the periodic system
       !-------------------------------------------------------------------------
       CALL ppm_copy_image_subs(min_phys,max_phys,bcdef, &
-     &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
+      &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
       IF (info.NE.ppm_param_success) GOTO 9999
 
       !-------------------------------------------------------------------------
@@ -185,7 +185,7 @@
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'Number of neighbors NNEIGH',__LINE__,info)
+          &    'Number of neighbors NNEIGH',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -205,7 +205,7 @@
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'List of neighbors INEIGH',__LINE__,info)
+          &    'List of neighbors INEIGH',__LINE__,info)
           GOTO 9999
       ENDIF
 

@@ -84,17 +84,21 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK):: costsum,totalcost,t0
-      INTEGER , DIMENSION(:), POINTER :: list         => NULL()
-      LOGICAL , DIMENSION(:), POINTER :: not_assigned => NULL()
-      LOGICAL , DIMENSION(:), POINTER :: not_listed   => NULL()
-      INTEGER , DIMENSION(ppm_dim)    :: ldc
-      INTEGER                         :: i,j,ii,jj,k,iopt
-      INTEGER                         :: istat,isize,rank
-      INTEGER                         :: nlist,ilist
-      INTEGER                         :: isub,jsub,nassigned
+      REAL(MK) :: costsum,totalcost,t0
+
+      INTEGER, DIMENSION(:), POINTER :: list => NULL()
+      INTEGER, DIMENSION(ppm_dim)    :: ldc
+      INTEGER                        :: i,j,ii,jj,k,iopt
+      INTEGER                        :: istat,isize,rank
+      INTEGER                        :: nlist,ilist
+      INTEGER                        :: isub,jsub,nassigned
+      INTEGER                        :: assignedtorank
+
       CHARACTER(ppm_char) :: mesg
-      INTEGER :: assignedtorank
+
+      LOGICAL, DIMENSION(:), POINTER :: not_assigned => NULL()
+      LOGICAL, DIMENSION(:), POINTER :: not_listed   => NULL()
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -122,7 +126,7 @@
           info = ppm_error_fatal
           WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' sub2procs failed'
           CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',            &
-     &                   mesg,__LINE__,info)
+          &    mesg,__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -140,7 +144,7 @@
              info = ppm_error_fatal
              WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' isublist failed'
              CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',            &
-     &           mesg,__LINE__,info)
+             &    mesg,__LINE__,info)
              GOTO 9999
          ENDIF
          !----------------------------------------------------------------------
@@ -165,20 +169,20 @@
       CALL ppm_alloc(not_assigned,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)')                                 &
-     &    'allocating local array (1) of size ',nsubs,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-     &                   mesg,__LINE__,info)
+          WRITE (mesg,'(A,I10,A)') &
+          & 'allocating local array (1) of size ',nsubs,' failed'
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc', &
+          &    mesg,__LINE__,info)
           GOTO 9999
       ENDIF
 
       CALL ppm_alloc(not_listed  ,ldc,iopt,info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)')                                 &
-     &    'allocating local array (2) of size ',nsubs,' failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-     &                   mesg,__LINE__,info)
+          WRITE (mesg,'(A,I10,A)') &
+          & 'allocating local array (2) of size ',nsubs,' failed'
+          CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc', &
+          &    mesg,__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -197,30 +201,27 @@
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           WRITE (mesg,'(A,I10,A)')                                 &
-     &    'allocating local array (3) of size ',isize,' failed'
+          & 'allocating local array (3) of size ',isize,' failed'
           CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-     &                   mesg,__LINE__,info)
+          &    mesg,__LINE__,info)
           GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Compute the total cost and the average cost per processor
       !-------------------------------------------------------------------------
-      totalcost   = 0.0_MK
-      DO i=1,nsubs
-         totalcost = totalcost + cost(i)
-      ENDDO
+      totalcost   = SUM(cost)
 
       !-------------------------------------------------------------------------
       !  Push the first subdomain onto the stack
       !-------------------------------------------------------------------------
-      isub             = 1
-      nlist            = 1
-      ilist            = 0
+      isub        = 1
+      nlist       = 1
+      ilist       = 0
 
-      list(nlist)      = isub
+      list(nlist) = isub
 
-      nassigned        = 0
+      nassigned   = 0
 
       !-------------------------------------------------------------------------
       !  loop over the processors
@@ -249,10 +250,11 @@
          !----------------------------------------------------------------------
          !PRINT *, ppm_rank,'s2p totalcost',rank,totalcost*REAL(ppm_proc_speed(rank),MK)
 
-         DO WHILE ((assignedtorank.EQ.0).OR.                                    &
-     &             (nassigned+1.EQ.nsubs-(ppm_nproc-rank-1).OR.                 &
-     &             (nassigned.LT.nsubs-(ppm_nproc-rank-1).AND.                  &
-     &    costsum+0.5_MK*cost(isub).LE.totalcost*REAL(ppm_proc_speed(rank),MK))))
+         DO WHILE ((assignedtorank.EQ.0).OR.                    &
+         &         (nassigned+1.EQ.nsubs-(ppm_nproc-rank-1).OR. &
+         &         (nassigned.LT.nsubs-(ppm_nproc-rank-1).AND.  &
+         &         costsum+0.5_MK*cost(isub).LE.totalcost*      &
+         &         REAL(ppm_proc_speed(rank),MK))))
 
 !            PRINT *, ppm_rank, 's2p 1',(assignedtorank.EQ.0)
 !            PRINT *, ppm_rank, 's2p 2',nassigned+1.EQ.nsubs-(ppm_nproc-rank-1)
@@ -394,7 +396,7 @@
             info = ppm_error_error
             WRITE (mesg,'(A,I10,A)') 'missed: ',i,' sub domains'
             CALL ppm_error(ppm_err_subs_map,'ppm_topo_subs2proc',     &
-     &                   mesg,__LINE__,info)
+            &    mesg,__LINE__,info)
             GOTO 9999
          ENDIF
 
@@ -410,7 +412,7 @@
                   ENDIF
                ENDDO
                WRITE(mesg,'(A,I5,A,E12.4)') 'cost for processor: ',rank, &
-     &                                      ' is ',costsum
+               & ' is ',costsum
                CALL ppm_write(ppm_rank,'ppm_topo_subs2proc',mesg,info)
             ENDDO
          ENDIF
@@ -429,7 +431,7 @@
           info = ppm_error_fatal
           WRITE (mesg,'(A,I10,A)') 'isublist with dim ',nsubs,' failed'
           CALL ppm_error(ppm_err_alloc,'ppm_topo_subs2proc',     &
-     &                   mesg,__LINE__,info)
+          &    mesg,__LINE__,info)
           GOTO 9999
       ENDIF
 
