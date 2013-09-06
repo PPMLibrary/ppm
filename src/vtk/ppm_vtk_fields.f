@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                 ppm_vtk_fields
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,11 +36,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data
-      USE ppm_module_topo
-      USE ppm_module_error
-      USE ppm_module_substart
-      USE ppm_module_substop
 
       IMPLICIT NONE
 
@@ -51,14 +46,14 @@
       INCLUDE 'mpif.h'
 #endif
       INTEGER, PARAMETER :: MK = ppm_kind_double
-    
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh_),     INTENT(INOUT)    :: Mesh
-      CHARACTER(LEN=*),           INTENT(IN)    :: filename
-      INTEGER,                    INTENT(OUT)   :: info
-      INTEGER,          OPTIONAL, INTENT(IN)    :: step
+      CLASS(ppm_t_equi_mesh_),    INTENT(INOUT) :: Mesh
+      CHARACTER(LEN=*),           INTENT(IN   ) :: filename
+      INTEGER,                    INTENT(  OUT) :: info
+      INTEGER,          OPTIONAL, INTENT(IN   ) :: step
       !-------------------------------------------------------------------------
       !  Variables
       !-------------------------------------------------------------------------
@@ -85,28 +80,32 @@
       !-------------------------------------------------------------------------
       !  Code
       !-------------------------------------------------------------------------
-     
+
       topo => ppm_topo(Mesh%topoid)%t
       check_associated(topo)
 
       IF (PRESENT(step)) THEN
-         WRITE(fname,'(A,A,I0)') &
-              filename(1:LEN_TRIM(filename)), '.', step
+         WRITE(fname,'(A,A,I0)') filename(1:LEN_TRIM(filename)), '.', step
       ELSE
          fname = filename
       END IF
-      h(:) = 0
-      min_phys(:) = 0
-      max_phys(:) = 0
+      h(:) = 0.0_MK
+      min_phys(:) = 0.0_MK
+      max_phys(:) = 0.0_MK
       whole_ext(:) = 0
       extent(:) = 0
 
-      min_phys(1:ppm_dim) = topo%min_physd(1:ppm_dim)
-      max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
+      If (ASSOCIATED(topo%min_physd)) THEN
+         min_phys(1:ppm_dim) = topo%min_physd(1:ppm_dim)
+         max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
+      ELSE
+         min_phys(1:ppm_dim) = topo%min_physs(1:ppm_dim)
+         max_phys(1:ppm_dim) = topo%max_physs(1:ppm_dim)
+      ENDIF
 
       h(1:ppm_dim) = Mesh%h(1:ppm_dim)
 
-      DO i=1,2*ppm_dim,2 
+      DO i=1,2*ppm_dim,2
         whole_ext(i) = 0
         whole_ext(i+1) = Mesh%Nm((i+1)/2)-1
       ENDDO
@@ -130,7 +129,7 @@
 #define VTK_SPACING h
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
-          WRITE(iUnit,'(A)') "    <PPointData Scalars='scalars'>"              
+          WRITE(iUnit,'(A)') "    <PPointData Scalars='scalars'>"
 
           !print only the fields of type real
           field => Mesh%mdata%begin()
@@ -148,7 +147,7 @@
               ENDIF
               field => Mesh%mdata%next()
           ENDDO
-          WRITE(iUnit,'(A)') "    </PPointData>"              
+          WRITE(iUnit,'(A)') "    </PPointData>"
           ! find the basename of the file
           !DO l=1,topo%nsubs
 
@@ -210,7 +209,7 @@
 #define VTK_EXTENT extent
 #include "vtk/print_header.f"
 
-          WRITE(iUnit,'(A)',advance='no') "      <PointData" 
+          WRITE(iUnit,'(A)',advance='no') "      <PointData"
           WRITE(iUnit,'(A)',advance='no') " Scalars='"
 
 
@@ -257,7 +256,7 @@
 #define VTK_MESH_KLBOUND 1
 #define VTK_MESH_KUBOUND p%nnodes(3)
 #endif
-#undef VTK_MESH_COMPONENT 
+#undef VTK_MESH_COMPONENT
 #define VTK_MESH_ILBOUND 1
 #define VTK_MESH_IUBOUND p%nnodes(1)
 #define VTK_MESH_JLBOUND 1

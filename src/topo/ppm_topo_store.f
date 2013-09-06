@@ -74,6 +74,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
+      INTEGER,                  INTENT(INOUT) :: topoid
+      !!! Topology ID. If 0, then create a new topology structure and return
+      !!! ID. Else reallocate the topology with ID == topoid
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
       !!! Min. extent of the comput. domain
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_phys
@@ -82,33 +85,29 @@
       !!! Min. extent of the subdomains
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
       !!! Max. extent of the subdomains
-      INTEGER , DIMENSION(:,:), POINTER       :: subs_bc
+      INTEGER,  DIMENSION(:,:), POINTER       :: subs_bc
       !!! Boundary conditions for subs on ALL processors
-      INTEGER , DIMENSION(  :), INTENT(IN   ) :: sub2proc
+      INTEGER,  DIMENSION(  :), INTENT(IN   ) :: sub2proc
       !!! Assignment of subs to procs
-      INTEGER , DIMENSION(  :), INTENT(IN   ) :: isublist
-      !!! List of subs handled by this processor
-      INTEGER , DIMENSION(  :), INTENT(IN   ) :: bcdef
+      INTEGER,                  INTENT(IN   ) :: nsubs
+      !!! Total number of subs on all procs
+      INTEGER,  DIMENSION(  :), INTENT(IN   ) :: bcdef
       !!! Boundary conditions on the computational box
       REAL(MK),                 INTENT(IN   ) :: ghostsize
       !!! Size of the ghostlayers
-      INTEGER                 , INTENT(IN   ) :: nsubs
-      !!! Total number of subs on all procs
+      INTEGER,  DIMENSION(  :), INTENT(IN   ) :: isublist
+      !!! List of subs handled by this processor
       INTEGER                 , INTENT(IN   ) :: nsublist
       !!! Number of subs on current processor
-      INTEGER                 , INTENT(INOUT) :: topoid
-      !!! Topology ID. If 0, then create a new topology structure and return
-      !!! ID. Else reallocate the topology with ID == topoid
-      INTEGER                 , INTENT(  OUT) :: info
-      !!! Return status. 0 upon success.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: nneigh
+      INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: nneigh
       !!! Number of neighbors of each sub
-      INTEGER , DIMENSION(:,:), INTENT(IN   ) :: ineigh
+      INTEGER,  DIMENSION(:,:), INTENT(IN   ) :: ineigh
       !!! Neighbors of each sub.
       !!!
       !!! 1st index: 1...nneigh (neighbor index of sub)                        +
       !!! 2nd index: 1..nsubs (sub of which one wants to get the neighbors)
-
+      INTEGER,                  INTENT(  OUT) :: info
+      !!! Return status. 0 upon success.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -116,7 +115,7 @@
 
       REAL(MK)                  :: t0
 
-      INTEGER , DIMENSION(3)    :: ldc, ldl
+      INTEGER,  DIMENSION(3)    :: ldc, ldl
       INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
       INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
       !-------------------------------------------------------------------------
@@ -181,6 +180,10 @@
       topo%ghostsized = ghostsize
 #endif
 
+      !-------------------------------------------------------------------------
+      !  Store the number of subdomains in the current topology
+      !-------------------------------------------------------------------------
+      topo%nsubs = nsubs
 
       DO i=1,nsubs
           topo%sub2proc(i) = sub2proc(i)
@@ -190,11 +193,6 @@
       !  initialize optmization status flags
       !-------------------------------------------------------------------------
       topo%isoptimized = .FALSE.
-
-      !-------------------------------------------------------------------------
-      !  Store the number of subdomains in the current topology
-      !-------------------------------------------------------------------------
-      topo%nsubs = nsubs
 
       !-------------------------------------------------------------------------
       !  Store the extent of the subdomains
@@ -267,8 +265,6 @@
          j = nneigh(isublist(i))
          topo%nneighsubs(i) = j
       ENDDO
-
-
 
       !-------------------------------------------------------------------------
       !  store neighboring subs by looping over the subs handled by the current

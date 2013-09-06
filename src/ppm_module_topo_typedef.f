@@ -59,30 +59,29 @@
 
       TYPE ppm_t_topo
           !!! The topology type
-
-          INTEGER                                      :: ID
+          INTEGER                                        :: ID
           !!! ID of this topology
           !!!
           !!! It is the same as its index in the ppm_topo array
-          LOGICAL                                      :: isdefined = .FALSE.
+          LOGICAL                                        :: isdefined = .FALSE.
           !!! flag to tell if this topology is defined/in use
-          INTEGER                                      :: prec
+          INTEGER                                        :: prec
           !!! numerical precision (ppm_kind) for this topology
 
-          REAL(ppm_kind_single), DIMENSION(:), POINTER :: min_physs => NULL()
+          REAL(ppm_kind_single), DIMENSION(:),   POINTER :: min_physs => NULL()
           !!! minimum of physical extend of the computational domain (single)
           !!! Note: first index is ppm_dim
-          REAL(ppm_kind_single), DIMENSION(:), POINTER :: max_physs => NULL()
+          REAL(ppm_kind_single), DIMENSION(:),   POINTER :: max_physs => NULL()
           !!! maximum of physical extend of the computational domain (single)
           !!! Note: first index is ppm_dim
-          REAL(ppm_kind_double), DIMENSION(:), POINTER :: min_physd => NULL()
+          REAL(ppm_kind_double), DIMENSION(:),   POINTER :: min_physd => NULL()
           !!! minimum of physical extend of the computational domain (double)
           !!! Note: first index is ppm_dim
-          REAL(ppm_kind_double), DIMENSION(:), POINTER :: max_physd => NULL()
+          REAL(ppm_kind_double), DIMENSION(:),   POINTER :: max_physd => NULL()
           !!! maximum of physical extend of the computational domain (double)
           !!! Note: first index is ppm_dim
 
-          INTEGER              , DIMENSION(:  ), POINTER :: bcdef => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: bcdef => NULL()
           !!! boundary conditions for the topology
           !!! Note: first index is 1-6 (each of the faces)
 
@@ -102,26 +101,26 @@
           !!! maximum of extension of subs (double)
           !!! Note: 1st index: x,y,(z), 2nd: subID
 
-          REAL(ppm_kind_single), DIMENSION(:  ),POINTER :: sub_costs => NULL()
+          REAL(ppm_kind_single), DIMENSION(:),   POINTER :: sub_costs => NULL()
           !!! estimated cost associated with subdomains (single). Index: sub-ID.
-          REAL(ppm_kind_double), DIMENSION(:  ),POINTER :: sub_costd => NULL()
+          REAL(ppm_kind_double), DIMENSION(:),   POINTER :: sub_costd => NULL()
           !!! estimated cost associated with subdomains (double). Index: sub-ID.
 
-          INTEGER              , DIMENSION(:  ),POINTER :: sub2proc => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: sub2proc => NULL()
           !!! subdomain to processor assignment. index: subID (global)
 
-          INTEGER              , DIMENSION(:  ),POINTER :: part2sub => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: part2sub => NULL()
           !!! particle to subdomain assignment.  index: partID (global)
           !!! Given a particle ID, you get the global subID.
 
-          INTEGER                                       :: nsublist
+          INTEGER                                        :: nsublist
           !!! number of subs on the current processor.
 
-          INTEGER              , DIMENSION(:  ),POINTER :: isublist => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: isublist => NULL()
           !!! list of subs of the current processor. 1st index: local sub
           !!! number.
 
-          INTEGER              , DIMENSION(:,:),POINTER :: subs_bc => NULL()
+          INTEGER,               DIMENSION(:,:), POINTER :: subs_bc => NULL()
           !!! boundary conditions on a sub:
           !!!
           !!! - west  : 1
@@ -138,16 +137,16 @@
           !!!
           !!! - value: 0 the face is internal
           !!! - value: 1 otherwise
-          INTEGER            , DIMENSION(:,:), POINTER :: ineighsubs => NULL()
+          INTEGER,               DIMENSION(:,:), POINTER :: ineighsubs => NULL()
           !!! list of neighboring subs of all local subs.
           !!! - index 1: neighbor index
           !!! - index 2: sub id (local index, not global ID!)
 
-          INTEGER            , DIMENSION(:  ), POINTER :: nneighsubs => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: nneighsubs => NULL()
           !!! number of neighboring subs of all local subs.
           !!!
           !!! index 1: sub id (local index, not global ID!)
-          INTEGER            , DIMENSION(:  ), POINTER :: ineighproc => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: ineighproc => NULL()
           !!! list of neighboring processors. Index 1: neighbor index
           INTEGER                                        :: nneighproc
           !!! number of neighboring processors.
@@ -156,15 +155,13 @@
           !!! this topology?
           INTEGER                                        :: ncommseq
           !!! number of communication rounds needed for partial mapping
-          INTEGER            , DIMENSION(:  ), POINTER :: icommseq => NULL()
+          INTEGER,               DIMENSION(:),   POINTER :: icommseq => NULL()
           !!! optimal communication sequence for this processor. 1st index:
           !!! communication round
-          !          INTEGER                                        :: max_meshid
-          !          !!! Number of meshes defined on this topology
-
-          !TYPE(ppm_t_patch), DIMENSION(:),POINTER :: patches => NULL()
-          !!!! List of patches data structures on this topology.
-
+!           INTEGER                                      :: max_meshid
+!           !!! Number of meshes defined on this topology
+!           TYPE(ppm_t_patch),     DIMENSION(:),   POINTER :: patches => NULL()
+!           !!! List of patches data structures on this topology.
           REAL(ppm_kind_single)                          :: ghostsizes
           !!! max ghostsize width used when creating this topology (single)
           REAL(ppm_kind_double)                          :: ghostsized
@@ -177,7 +174,7 @@
       ! Wrapper type to be able to have a pointer array to hold topologies
       !----------------------------------------------------------------------
       TYPE ppm_t_ptr_topo
-          TYPE(ppm_t_topo), POINTER  :: t => NULL()
+          TYPE(ppm_t_topo), POINTER :: t => NULL()
       END TYPE ppm_t_ptr_topo
 
       !----------------------------------------------------------------------

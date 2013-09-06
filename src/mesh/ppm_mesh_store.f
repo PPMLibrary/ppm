@@ -36,7 +36,7 @@
       USE ppm_module_data
       !USE ppm_module_data_mesh
       USE ppm_module_topo_typedef
-      !USE ppm_module_mesh_typedef
+      USE ppm_module_mesh_typedef
       !USE ppm_module_util_invert_list
       USE ppm_module_error
       !USE ppm_module_mesh_alloc
@@ -69,14 +69,17 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo),        POINTER :: topo => NULL()
+      CLASS(ppm_t_equi_mesh_), POINTER :: mesh => NULL()
 
-      REAL(ppm_kind_double)     :: t0
+      REAL(ppm_kind_double) :: t0
 
-      INTEGER , DIMENSION(3)    :: ldc
-      INTEGER                   :: iopt,ld,ud,kk,i,j,isub
+      INTEGER, DIMENSION(3) :: ldc
+      INTEGER               :: iopt,ld,ud,kk,i,j,isub
 
-      LOGICAL                   :: valid
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_mesh_store'
+
+      LOGICAL :: valid
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -84,50 +87,56 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_mesh_store',t0,info)
+      CALL substart(caller,t0,info)
 
       !FIXME
       !TODO
-      info = ppm_error_error
-      CALL ppm_error(ppm_err_argument,'ppm_mesh_store', &
-          &  'this routine should be overwitten. FIXME!!',__LINE__,info)
-      GOTO 9999
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
+!         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-!
-!       topo => ppm_topo(topoid)%t
 
-!       IF (meshid .LE. 0) THEN
-!         !-----------------------------------------------------------------------
-!         !  Create a mesh identifier if the user specified none
-!         !-----------------------------------------------------------------------
-!         meshid = topo%max_meshid + 1
-!         topo%max_meshid = meshid
-!       ELSE
-!         IF (meshid .GT. topo%max_meshid) THEN
-!             info = ppm_error_error
-!             CALL ppm_error(ppm_err_argument,'ppm_mesh_store', &
-!      &                     'meshid is invalid',__LINE__,info)
-!             GOTO 9999
-!         ENDIF
-!       ENDIF
-      !!-------------------------------------------------------------------------
-      !!  (Re)allocate memory for the internal mesh list and Arrays at meshid
-      !!-------------------------------------------------------------------------
-      !iopt   = ppm_param_alloc_grow_preserve
-      !ldc(1) = topo%max_meshid
-      !CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-      !IF (info .NE. 0) THEN
-         !info = ppm_error_fatal
-         !CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
-     !&       'user meshid list ppm_t_topo%mesh',__LINE__,info)
-         !GOTO 9999
-      !ENDIF
+      topo => ppm_topo(topoid)%t
+
+      IF (meshid .LE. 0) THEN
+         !-----------------------------------------------------------------------
+         !  Create a mesh identifier if the user specified none
+         !-----------------------------------------------------------------------
+         meshid = ppm_mesh%max_id + 1
+         ppm_mesh%max_id = meshid
+
+         IF (.NOT.ppm_mesh%exists(meshid)) THEN
+
+            CALL ppm_mesh%grow_size(info)
+            or_fail("ppm_mesh%grow_size()")
+
+         ENDIF
+
+      ELSE
+
+         IF (meshid .GT. ppm_mesh%max_id) THEN
+            fail('meshid is invalid',ppm_err_argument,exit_point=9999)
+         ENDIF
+
+      ENDIF
+
+      mesh => ppm_mesh%vec(meshid)%t
+
+      !-------------------------------------------------------------------------
+      !  (Re)allocate memory for the internal mesh list and Arrays at meshid
+      !-------------------------------------------------------------------------
+!      iopt   = ppm_param_alloc_grow_preserve
+!      ldc(1) = topo%max_meshid
+!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
+!      IF (info .NE. 0) THEN
+!         info = ppm_error_fatal
+!         CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
+!     &       'user meshid list ppm_t_topo%mesh',__LINE__,info)
+!         GOTO 9999
+!      ENDIF
 
       !iopt   = ppm_param_alloc_fit
       !ldc(1) = SIZE(ndata,1)
@@ -200,7 +209,7 @@
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_mesh_store',t0,info)
+      CALL substop(caller,t0,info)
       !RETURN
       !CONTAINS
       !SUBROUTINE check

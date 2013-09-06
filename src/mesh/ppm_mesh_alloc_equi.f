@@ -45,9 +45,11 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , DIMENSION(:  ), INTENT(IN   ) :: lda
+      TYPE(ppm_t_equi_mesh), DIMENSION(:), POINTER       :: equi_mesh
+      !!! Array of TYPE(ppm_t_equi_mesh) which is to be (re)allocated.
+      INTEGER,               DIMENSION(:), INTENT(IN   ) :: lda
       !!! New size of mesh definition array
-      INTEGER                                 , INTENT(IN   ) :: iopt
+      INTEGER,                             INTENT(IN   ) :: iopt
       !!! Alloc action. One of:
       !!!
       !!! * ppm_param_alloc_fit_preserve
@@ -55,18 +57,19 @@
       !!! * ppm_param_alloc_grow_preserve
       !!! * ppm_param_alloc_grow
       !!! * ppm_param_dealloc
-      TYPE(ppm_t_equi_mesh)   , DIMENSION(:  ), POINTER :: equi_mesh
-      !!! Array of TYPE(ppm_t_equi_mesh) which is to be (re)allocated.
-      INTEGER                                 , INTENT(  OUT) :: info
+      INTEGER,                             INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER            :: i
-      INTEGER, DIMENSION(2) :: ldc
+      TYPE(ppm_t_equi_mesh), DIMENSION(:), POINTER :: work_mesh => NULL()
+
       REAL(ppm_kind_double) :: t0
-      TYPE(ppm_t_equi_mesh)   , DIMENSION(:  ), POINTER :: work_mesh => NULL()
-      LOGICAL            :: lcopy,lalloc,lrealloc,ldealloc
+
+      INTEGER               :: i
+      INTEGER, DIMENSION(2) :: ldc
+
+      LOGICAL :: lcopy,lalloc,lrealloc,ldealloc
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

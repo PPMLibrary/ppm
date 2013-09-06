@@ -412,33 +412,33 @@ minclude ppm_get_field_template(4,d)
 
           iopt = ppm_param_dealloc
           CALL ppm_alloc(p%nnodes,ldc,iopt,info)
-              or_fail_dealloc("p%nnodes")
+          or_fail_dealloc("p%nnodes")
           CALL ppm_alloc(p%istart,ldc,iopt,info)
-              or_fail_dealloc("p%istart")
+          or_fail_dealloc("p%istart")
           CALL ppm_alloc(p%iend,ldc,iopt,info)
-              or_fail_dealloc("p%iend")
+          or_fail_dealloc("p%iend")
           CALL ppm_alloc(p%start,ldc,iopt,info)
-              or_fail_dealloc("p%start")
+          or_fail_dealloc("p%start")
           CALL ppm_alloc(p%end,ldc,iopt,info)
-              or_fail_dealloc("p%end")
+          or_fail_dealloc("p%end")
           CALL ppm_alloc(p%start_ext,ldc,iopt,info)
-              or_fail_dealloc("p%start_ext")
+          or_fail_dealloc("p%start_ext")
           CALL ppm_alloc(p%end_ext,ldc,iopt,info)
-              or_fail_dealloc("p%end_ext")
+          or_fail_dealloc("p%end_ext")
           CALL ppm_alloc(p%start_red,ldc,iopt,info)
-              or_fail_dealloc("p%start_red")
+          or_fail_dealloc("p%start_red")
           CALL ppm_alloc(p%end_red,ldc,iopt,info)
-              or_fail_dealloc("p%end_red")
+          or_fail_dealloc("p%end_red")
           CALL ppm_alloc(p%lo_a,ldc,iopt,info)
-              or_fail_dealloc("p%lo_a")
+          or_fail_dealloc("p%lo_a")
           CALL ppm_alloc(p%hi_a,ldc,iopt,info)
-              or_fail_dealloc("p%hi_a")
+          or_fail_dealloc("p%hi_a")
           CALL ppm_alloc(p%istart_p,ldc,iopt,info)
-              or_fail_dealloc("p%istart_p")
+          or_fail_dealloc("p%istart_p")
           CALL ppm_alloc(p%iend_p,ldc,iopt,info)
-              or_fail_dealloc("p%iend_p")
+          or_fail_dealloc("p%iend_p")
           CALL ppm_alloc(p%ghostsize,ldc,iopt,info)
-              or_fail_dealloc("p%ghostsize")
+          or_fail_dealloc("p%ghostsize")
 
           p%meshID = 0
           p%isub = 0
@@ -635,10 +635,10 @@ minclude ppm_get_field_template(4,d)
           !  Allocate bookkeeping arrays (pointers between patches and subpatches)
           !-------------------------------------------------------------------------
           ALLOCATE(ppm_t_A_subpatch::A_p,STAT=info)
-              or_fail_alloc("could not allocate ppm_t_A_subpatch pointer")
+          or_fail_alloc("could not allocate ppm_t_A_subpatch pointer")
 
           CALL A_p%create(topo%nsublist,info,patchid)
-              or_fail("could not initialize ppm_t_A_subpatch pointer")
+          or_fail("could not initialize ppm_t_A_subpatch pointer")
 
           IF (PRESENT(patchid)) THEN
               pid = patchid
@@ -912,7 +912,6 @@ minclude ppm_get_field_template(4,d)
           TYPE(ppm_t_topo), POINTER :: topo => NULL()
 
           REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_phys,rat
-          REAL(ppm_kind_double)                     :: lmyeps
 
           INTEGER                     :: iopt,ld,ud,kk
           INTEGER                     :: i,j,k,isub,nsubs
@@ -932,9 +931,6 @@ minclude ppm_get_field_template(4,d)
               CALL check
               IF (info .NE. 0) GOTO 9999
           ENDIF
-
-          lmyeps = ppm_myepsd
-
 
           !This mesh is defined for a given topology
           this%topoid = topoid
@@ -1009,34 +1005,36 @@ minclude ppm_get_field_template(4,d)
           IF (PRESENT(h)) THEN
               this%h(1:ppm_dim) = h(1:ppm_dim)
               IF (ASSOCIATED(topo%max_physs)) THEN
-                  this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
-                      topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                 this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
+                 &                    topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
               ELSE
-                  this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
-                      topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
+                 this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
+                 &                    topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
               ENDIF
           ELSE
               this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
               IF (ASSOCIATED(topo%max_physs)) THEN
-                  this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) - &
-                      topo%min_physs(1:ppm_dim))/REAL(Nm(1:ppm_dim)-1,ppm_kind_single)
-                  !check for round-off problems and fix them if necessary
-                  DO k=1,ppm_dim
-                      DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
-                          this%h(k)=this%h(k)+EPSILON(this%h(k))
-                      ENDDO
-                  ENDDO
-                  check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
+                 this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) - &
+                 &                   topo%min_physs(1:ppm_dim))/  &
+                 &                   REAL(Nm(1:ppm_dim)-1,ppm_kind_single)
+                 !check for round-off problems and fix them if necessary
+                 DO k=1,ppm_dim
+                    DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
+                       this%h(k)=this%h(k)+EPSILON(this%h(k))
+                    ENDDO
+                 ENDDO
+                 check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
               ELSE
-                  this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) - &
-                      topo%min_physd(1:ppm_dim))/REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
-                  !check for round-off problems and fix them if necessary
-                  DO k=1,ppm_dim
-                      DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
-                          this%h(k)=this%h(k)+EPSILON(this%h(k))
-                      ENDDO
-                  ENDDO
-                  check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
+                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) - &
+                 &                   topo%min_physd(1:ppm_dim))/  &
+                 &                   REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
+                 !check for round-off problems and fix them if necessary
+                 DO k=1,ppm_dim
+                    DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
+                       this%h(k)=this%h(k)+EPSILON(this%h(k))
+                    ENDDO
+                 ENDDO
+                 check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
               ENDIF
           ENDIF
 
@@ -1067,47 +1065,89 @@ minclude ppm_get_field_template(4,d)
           !  Determine the start indices in the global mesh for each
           ! subdomain
           !-------------------------------------------------------------------------
-          DO i=1,nsubs
-             this%istart(1:ppm_dim,i) = 1 + CEILING((     &
-                 topo%min_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/this%h(1:ppm_dim))
-             this%iend(1:ppm_dim,i)   = 1 + FLOOR((       &
-                 topo%max_subd(1:ppm_dim,i)-Offset(1:ppm_dim))/&
-                 (this%h(1:ppm_dim)-EPSILON(this%h(1:ppm_dim))))
-             !WARNING: this is a hack to resolve a round-off issue when h is such
-             !that a node falls epsilon away from the subdomain boundary
+          IF (ASSOCIATED(topo%min_subd)) Then
+             DO i=1,nsubs
+                this%istart(1:ppm_dim,i) = 1 + CEILING((topo%min_subd(1:ppm_dim,i) &
+                &                        - Offset(1:ppm_dim))/this%h(1:ppm_dim))
+                this%iend(1:ppm_dim,i)   = 1 + FLOOR((topo%max_subd(1:ppm_dim,i)   &
+                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)   &
+                &                        - EPSILON(this%h(1:ppm_dim))))
+                !WARNING: this is a hack to resolve a round-off issue when h is such
+                !that a node falls epsilon away from the subdomain boundary
 
-             !stdout("#isub = ",i," BEFORE CHOP")
-             !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-             !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
-             !stdout("sub%bc = ",'topo%subs_bc(:,i)')
+                !stdout("#isub = ",i," BEFORE CHOP")
+                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+                !stdout("sub%bc = ",'topo%subs_bc(:,i)')
 
-             !Decide what to do if a mesh node falls on a subdomain boundary
-             DO k=1,ppm_dim
-                 ! For internal boundaries, mesh nodes are not duplicated. If a
-                 ! node is on the boundary, only the West/South/Bottom one
-                 ! is kept.
-                 ! For periodic boundary conditions, subdomains that have a mesh
-                 ! node right on the East, North, or Top domain boundary are
-                 ! reduced by 1 mesh node so that real mesh nodes are not
-                 ! duplicated.
-                 IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
-                     IF (topo%subs_bc(2*k,i).NE.1 .OR. &
-                         (topo%subs_bc(2*k,i).EQ.1.AND.&
-                         topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
+                !Decide what to do if a mesh node falls on a subdomain boundary
+                DO k=1,ppm_dim
+                   ! For internal boundaries, mesh nodes are not duplicated. If a
+                   ! node is on the boundary, only the West/South/Bottom one
+                   ! is kept.
+                   ! For periodic boundary conditions, subdomains that have a mesh
+                   ! node right on the East, North, or Top domain boundary are
+                   ! reduced by 1 mesh node so that real mesh nodes are not
+                   ! duplicated.
+                   IF ((this%iend(k,i)-1).GE.(topo%max_subd(k,i)-Offset(k))/this%h(k)) THEN
+                      IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
+                      &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
+                      &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
                          this%iend(k,i) = this%iend(k,i) -1
-                     ENDIF
-                 ENDIF
+                      ENDIF
+                   ENDIF
+                ENDDO
+
+                !Check that this subdomain is large enough and thus
+                !compatible with this mesh and its resolution h.
+                check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
+                "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                !stdout("#isub = ",i," AFTER CHOP")
+                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
              ENDDO
+          ELSE
+             DO i=1,nsubs
+                this%istart(1:ppm_dim,i) = 1 + CEILING((topo%min_subs(1:ppm_dim,i) &
+                &                        - Offset(1:ppm_dim))/this%h(1:ppm_dim))
+                this%iend(1:ppm_dim,i)   = 1 + FLOOR((topo%max_subs(1:ppm_dim,i)   &
+                &                        - Offset(1:ppm_dim))/(this%h(1:ppm_dim)   &
+                &                        - EPSILON(this%h(1:ppm_dim))))
+                !WARNING: this is a hack to resolve a round-off issue when h is such
+                !that a node falls epsilon away from the subdomain boundary
 
-             !Check that this subdomain is large enough and thus
-             !compatible with this mesh and its resolution h.
-             check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
-              "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
-             !stdout("#isub = ",i," AFTER CHOP")
-             !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-             !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
-          ENDDO
+                !stdout("#isub = ",i," BEFORE CHOP")
+                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+                !stdout("sub%bc = ",'topo%subs_bc(:,i)')
 
+                !Decide what to do if a mesh node falls on a subdomain boundary
+                DO k=1,ppm_dim
+                   ! For internal boundaries, mesh nodes are not duplicated. If a
+                   ! node is on the boundary, only the West/South/Bottom one
+                   ! is kept.
+                   ! For periodic boundary conditions, subdomains that have a mesh
+                   ! node right on the East, North, or Top domain boundary are
+                   ! reduced by 1 mesh node so that real mesh nodes are not
+                   ! duplicated.
+                   IF ((this%iend(k,i)-1).GE.(topo%max_subs(k,i)-Offset(k))/this%h(k)) THEN
+                      IF (topo%subs_bc(2*k,i).NE.1  .OR.  &
+                      &   (topo%subs_bc(2*k,i).EQ.1 .AND. &
+                      &   topo%bcdef(2*k).EQ.ppm_param_bcdef_periodic)) THEN
+                         this%iend(k,i) = this%iend(k,i) -1
+                      ENDIF
+                   ENDIF
+                ENDDO
+
+                !Check that this subdomain is large enough and thus
+                !compatible with this mesh and its resolution h.
+                check_true(<#ALL((topo%max_subs(1:ppm_dim,i)-topo%min_subs(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepss))#>,&
+                "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
+                !stdout("#isub = ",i," AFTER CHOP")
+                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+             ENDDO
+          ENDIF
 
           !-------------------------------------------------------------------------
           !  Return
@@ -1196,18 +1236,17 @@ minclude ppm_get_field_template(4,d)
           ldc = 1
           iopt   = ppm_param_dealloc
           CALL ppm_alloc(this%Nm,ldc,iopt,info)
-              or_fail_dealloc("Nm")
+          or_fail_dealloc("Nm")
           CALL ppm_alloc(this%Offset,ldc,iopt,info)
-              or_fail_dealloc("Offset")
+          or_fail_dealloc("Offset")
           CALL ppm_alloc(this%h,ldc,iopt,info)
-              or_fail_dealloc("h")
+          or_fail_dealloc("h")
           CALL ppm_alloc(this%ghostsize,ldc,iopt,info)
-              or_fail_dealloc("ghostsize")
-
+          or_fail_dealloc("ghostsize")
           CALL ppm_alloc(this%istart,ldc,iopt,info)
-              or_fail_dealloc("istart")
+          or_fail_dealloc("istart")
           CALL ppm_alloc(this%iend,ldc,iopt,info)
-              or_fail_dealloc("iend")
+          or_fail_dealloc("iend")
 
           destroy_collection_ptr(this%subpatch)
           destroy_collection_ptr(this%patch)
@@ -1218,7 +1257,6 @@ minclude ppm_get_field_template(4,d)
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
           !TODO !!!
-
 
           destroy_collection_ptr(this%field_ptr)
 

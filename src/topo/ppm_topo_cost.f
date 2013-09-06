@@ -68,28 +68,29 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
+      REAL(MK), DIMENSION(:,:),          INTENT(IN   ) :: xp
       !!! Particle positions
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_sub
+      INTEGER,                           INTENT(IN   ) :: Np
+      !!! Number of particles. Set to .LE. 0 if mesh-based costs are desired.
+      REAL(MK), DIMENSION(:,:),          INTENT(IN   ) :: min_sub
       !!! Min. extent of the subdomains
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
+      REAL(MK), DIMENSION(:,:),          INTENT(IN   ) :: max_sub
       !!! Max. extent of the subdomains
-      REAL(MK), DIMENSION(:  ), POINTER       :: cost
-      !!! Aggregate cost for each subdomain
-      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
-      !!! Per-particle costs. OPTIONAL. If  not present, a cost of 1 per
-      !!! particle is assumed.
-      INTEGER , DIMENSION(:,:), INTENT(IN   ) :: nnodes
+      INTEGER,                           INTENT(IN   ) :: nsubs
+      !!! Total number of subdomains
+      INTEGER , DIMENSION(:,:),          INTENT(IN   ) :: nnodes
       !!! Number of mesh nodes in each direction (first index) on each
       !!! sub (second index). If Np is .LE. 0, this is taken to compute the
       !!! cost. If SIZE(nnodes,2).LT.nsubs, and there are no particles, cost
       !!! is computed as geometric volume.
-      INTEGER                 , INTENT(IN   ) :: Np
-      !!! Number of particles. Set to .LE. 0 if mesh-based costs are desired.
-      INTEGER                 , INTENT(IN   ) :: nsubs
-      !!! Total number of subdomains
-      INTEGER                 , INTENT(  OUT) :: info
+      REAL(MK), DIMENSION(:  ),           POINTER       :: cost
+      !!! Aggregate cost for each subdomain
+      INTEGER,                            INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN   ) :: pcost
+      !!! Per-particle costs. OPTIONAL. If  not present, a cost of 1 per
+      !!! particle is assumed.
+
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -293,16 +294,16 @@
              IF (info .NE. 0) THEN
                  info = ppm_error_fatal
                  CALL ppm_error(ppm_err_alloc,'ppm_topo_cost',    &
-              &     'sum of costs of all processors COSTSUM',__LINE__,info)
+                 &    'sum of costs of all processors COSTSUM',__LINE__,info)
                  GOTO 9999
              ENDIF
              costsum = 0.0_MK
 #if   __KIND == __SINGLE_PRECISION
-             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL,MPI_SUM,    &
-              & ppm_comm,info)
+             CALL MPI_AllReduce(cost,costsum,nsubs,MPI_REAL, &
+             &    MPI_SUM,ppm_comm,info)
 #elif __KIND == __DOUBLE_PRECISION
              CALL MPI_AllReduce(cost,costsum,nsubs,MPI_DOUBLE_PRECISION,&
-              & MPI_SUM,ppm_comm,info)
+             &    MPI_SUM,ppm_comm,info)
 #endif
              !------------------------------------------------------------------
              !  Copy data back
@@ -317,7 +318,7 @@
              IF (info .NE. 0) THEN
                  info = ppm_error_error
                  CALL ppm_error(ppm_err_dealloc,'ppm_topo_cost',  &
-              &     'sum of costs costs COSTSUM',__LINE__,info)
+                 &    'sum of costs costs COSTSUM',__LINE__,info)
              ENDIF
           ENDIF
 #endif
@@ -375,14 +376,14 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
-              &  '----------------------------------------------',info)
+          &  '----------------------------------------------',info)
           DO i=1,nsubs
               WRITE(mesg,'(I4,A,F15.3)') i,' sub cost: ',cost(i)
               CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
               &      mesg,info)
           ENDDO
           CALL ppm_write(ppm_rank,'ppm_topo_cost',  &
-              &  '----------------------------------------------',info)
+          &  '----------------------------------------------',info)
       ENDIF
 
       !-------------------------------------------------------------------------

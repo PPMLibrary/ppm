@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   ppm_interp_m2p
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,7 +30,7 @@
 
       SUBROUTINE equi_mesh_m2p(this,Part,Field,kernel,info)
       !!! This subroutine carries out mesh to particle interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
@@ -185,7 +185,7 @@
                   !--------------------------------------------------------------
                   IF (ppm_dim.EQ.3) THEN
                       !---------------------------------------------------------
-                      !  The particle is in the region of influence of 
+                      !  The particle is in the region of influence of
                       !  the subpatch (its closure reduced by a ghostlayer)
                       !---------------------------------------------------------
                       IF(  xp(1,ipart).GE.p%start_red(1) .AND. &
@@ -466,12 +466,12 @@
               up_2d = 0.0_mk
           END SELECT
       ENDIF
-     
-    
+
+
       !-------------------------------------------------------------------------
       !  Beginning of the computation
       !-------------------------------------------------------------------------
-        
+
       SELECT CASE(kernel)
 
       CASE(ppm_param_rmsh_kernel_mp4)
@@ -515,7 +515,7 @@
       END SELECT ! kernel type
 
       !----------------------------------------------------------
-      !  Dont deallocate if something went wrong, as 
+      !  Dont deallocate if something went wrong, as
       !  the arrays may not even be associated
       !----------------------------------------------------------
       IF (info.NE.0) GOTO 9999
@@ -525,17 +525,17 @@
       iopt = ppm_param_dealloc
       ldu(1) = 0
       CALL ppm_alloc(ilist1,ldu,iopt,info)
-        or_fail_dealloc("ilist1")
+      or_fail_dealloc("ilist1")
       CALL ppm_alloc(ilist2,ldu,iopt,info)
-        or_fail_dealloc("ilist2")
+      or_fail_dealloc("ilist2")
       CALL ppm_alloc(store_info,ldu,iopt,info)
-        or_fail_dealloc("store_info")
+      or_fail_dealloc("store_info")
       CALL ppm_alloc(list_sub,ldu,iopt,info)
-        or_fail_dealloc("list_sub")
+      or_fail_dealloc("list_sub")
 
       !Updating internal state variables
       CALL Part%set_xp(xp,info,read_only=.true.)
-        or_fail("Set_xp failed")
+      or_fail("Set_xp failed")
 
 
       end_subroutine()

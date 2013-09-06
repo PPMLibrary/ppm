@@ -133,9 +133,9 @@
       REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: minboxsize
       !!! Miminum box size in all directions
       REAL(MK), DIMENSION(3,2), INTENT(IN   ) :: weights
-      !!! Weights for the three cost contributions (particles, mesh
-      !!! points, volume) (1st index) for box cost (weights(:,1)) and the
-      !!! determination of the cut planes (weights(:,2)).
+      !!! Weights for the three cost contributions (particles,
+      !!! mesh points, volume) (1st index) for box cost (weights(:,1))
+      !!! and the determination of the cut planes (weights(:,2)).
       REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
       !!! Argument of length Np, specifying the
       !!! cost of each data point.
@@ -282,8 +282,8 @@
       IF (Np .GT. 0) have_particles = .TRUE.
       IF (SIZE(Nm,1) .GE. ppm_dim) THEN
           IF (ppm_dim .GT. 2) THEN
-              IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1))      &
-     &            have_mesh = .TRUE.
+              IF ((Nm(1).GT.1).AND.(Nm(2).GT.1).AND.(Nm(3).GT.1)) &
+              &  have_mesh = .TRUE.
           ELSE
               IF ((Nm(1).GT.1).AND.(Nm(2).GT.1)) have_mesh = .TRUE.
           ENDIF
@@ -390,8 +390,8 @@
       !-------------------------------------------------------------------------
       !  Guess tree size based on assumed uniform distribution
       !-------------------------------------------------------------------------
-      nbox        = 1
-      nlevel      = 1
+      nbox   = 1
+      nlevel = 1
       IF (Np .GT. 0) THEN
           IF (maxboxcost .GT. 0.0_MK) THEN
               ! the number of levels needed under uniform particle

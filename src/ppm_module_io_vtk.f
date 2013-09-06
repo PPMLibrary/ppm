@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_io_vtk
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -37,9 +37,9 @@
       MODULE ppm_module_io_vtk
          USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
                                          ppm_kind_single, ppm_kind_double,&
-                                         ppm_error_error
+                                         ppm_error_error, ppm_rank, &
+                                         ppm_nproc, ppm_comm
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
-         USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_interfaces
@@ -63,12 +63,6 @@
              MODULE PROCEDURE ppm_vtk_particles_s
              MODULE PROCEDURE ppm_vtk_particles_d
           END INTERFACE
-
-!          INTERFACE ppm_vtk_fields
-!             MODULE PROCEDURE ppm_vtk_fields_2d
-!             MODULE PROCEDURE ppm_vtk_fields_3d
-!          END INTERFACE
-
 
          !----------------------------------------------------------------------
          !  Variables

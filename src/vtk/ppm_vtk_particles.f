@@ -38,7 +38,7 @@
            CLASS(ppm_t_main_abstr),       POINTER :: el => NULL()
 
            start_subroutine("ppm_vtk_particles")
-           
+
            IF (PRESENT(step)) THEN
               WRITE(fname,'(A,A,I0)') &
                    filename(1:LEN_TRIM(filename)), '.', step
@@ -212,7 +212,7 @@
                    "' type='Float64' />"
                   prop => props_vf%next()
               ENDDO
-              WRITE(iUnit,'(A)') "    </PPointData>"              
+              WRITE(iUnit,'(A)') "    </PPointData>"
               WRITE(iUnit,'(A)') "    <PPoints>"
               WRITE(iUnit,'(A)') "      <PDataArray NumberOfComponents='3' type='Float64' />"
               WRITE(iUnit,'(A)') "    </PPoints>"
@@ -261,7 +261,7 @@
            IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
 
               ! print names
-              WRITE(iUnit,'(A)',advance='no') "      <PointData" 
+              WRITE(iUnit,'(A)',advance='no') "      <PointData"
               IF (nvlist .OR. nb_wpi .GT. 0) THEN
                  WRITE(iUnit,'(A)',advance='no') " Integers='"
               ENDIF

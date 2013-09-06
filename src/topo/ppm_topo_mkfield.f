@@ -80,9 +80,9 @@
       USE ppm_module_topo_box2subs
       IMPLICIT NONE
 #if    __KIND == __SINGLE_PRECISION
-      INTEGER, PARAMETER :: MK = ppm_kind_single
+      INTEGER,  PARAMETER :: MK = ppm_kind_single
 #elif  __KIND == __DOUBLE_PRECISION
-      INTEGER, PARAMETER :: MK = ppm_kind_double
+      INTEGER,  PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Includes
@@ -90,8 +90,8 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER,                  INTENT(INOUT) :: topoid
-      !!! ID number identifying the topology.                                  +
+      INTEGER,                            INTENT(INOUT) :: topoid
+      !!! ID number identifying the topology.
       !!! If topoid == 0 on input a new topology is created and the new topoid
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
@@ -100,16 +100,16 @@
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
-      INTEGER,                  INTENT(INOUT) :: meshid
+      INTEGER,                            INTENT(INOUT) :: meshid
       !!! Mesh identifier (user numbering) for default mesh (as defined by
       !!! Nm) on the topology. If <0, ppm will create a number internally
       !!! and return it here on exit.
-      REAL(MK), DIMENSION(:,:), POINTER       :: xp
+      REAL(MK), DIMENSION(:,:),           POINTER       :: xp
       !!! Particle positions. If present, domain decomposition will be
       !!! guided by particle locations
-      INTEGER,                  INTENT(IN   ) :: Npart
+      INTEGER,                            INTENT(IN   ) :: Npart
       !!! Number of particles. <=0 if no xp is given to guide the decomposition
-      INTEGER,                  INTENT(IN   ) :: decomp
+      INTEGER,                            INTENT(IN   ) :: decomp
       !!! The valid decomposition types are:
       !!!
       !!! * ppm_param_decomp_bisection
@@ -122,7 +122,7 @@
       !!! * ppm_param_decomp_cartesian
       !!! * ppm_param_decomp_cuboid
       !!! * ppm_param_decomp_user_defined
-      INTEGER,                  INTENT(IN   ) :: assig
+      INTEGER,                            INTENT(IN   ) :: assig
       !!! The type of subdomain-to-processor assignment. One of:
       !!!
       !!! *  ppm_param_assign_internal
@@ -135,15 +135,15 @@
       !!! [NOTE]
       !!! The latter uses the external library METIS and is only
       !!! available if ppm was compiled with METIS support.
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: min_phys
       !!! Minimum of physical extend of the computational domain (double)
       !!!
       !!! First index is ppm_dim
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:),             INTENT(IN   ) :: max_phys
       !!! Maximum of physical extend of the computational domain (double)
       !!!
       !!! First index is ppm_dim
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: bcdef
+      INTEGER,  DIMENSION(:),             INTENT(IN   ) :: bcdef
       !!! Boundary conditions for the topology
       !!!
       !!! NOTE: first index is 1-6 (each of the faces)
@@ -153,41 +153,41 @@
       !!! - north : 4
       !!! - bottom: 5
       !!! - top   : 6
-      INTEGER,  DIMENSION(:  ), INTENT(IN   ) :: ighostsize
+      INTEGER,  DIMENSION(:),             INTENT(IN   ) :: ighostsize
       !!! Size (width) of the ghost layer.
-      REAL(MK), DIMENSION(:  ), POINTER       :: cost
+      REAL(MK), DIMENSION(:),             POINTER       :: cost
       !!! Estimated cost associated with subdomains. Either user-defined on
       !!! input or decomposition result on output. The cost of a subdomain
       !!! is given by its volume.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
+      INTEGER,  DIMENSION(:),             INTENT(IN   ) :: Nm
       !!! Number of *mesh points* (not cells) in each direction of the global
       !!! computational domain (including points ON its boundaries)
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                            INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
-      INTEGER , OPTIONAL      , INTENT(IN   ) :: ndom
+      INTEGER,                  OPTIONAL, INTENT(IN   ) :: ndom
       !!! Number of subdomains requested. If not given, the number
       !!! of subs will be equal to the number of processors. This is only
       !!! relevent for decomp_cartesian and pencils without particles.
-      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN) :: pcost
+      REAL(MK), DIMENSION(:),   OPTIONAL, INTENT(IN   ) :: pcost
       !!! Array of length Npart which specifies the computational
       !!! cost attributed to each particle. If this is absent, a unity cost is
       !!! assumed for each particle.
-      REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_minsub
+      REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER       :: user_minsub
       !!! Mimimum of extension of subs.
       !!! Used if decomp is user defined.
       !!!
-      !!! 1st index: x,y,(z)                                                   +
+      !!! 1st index: x,y,(z)
       !!! 2nd: subID
-      REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub
+      REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER       :: user_maxsub
       !!! Maximum of extension of subs.
       !!! Used if decomp is user defined.
       !!!
-      !!! 1st index: x,y,(z)                                                   +
+      !!! 1st index: x,y,(z)
       !!! 2nd: subID
-      INTEGER,                  OPTIONAL          :: user_nsubs
+      INTEGER,                  OPTIONAL, INTENT(IN   ) :: user_nsubs
       !!! Total number of subs on all processors.
       !!! parameter used when decomp is user defined
-      INTEGER, DIMENSION(:  ),  OPTIONAL, POINTER :: user_sub2proc
+      INTEGER,  DIMENSION(:),   OPTIONAL, POINTER       :: user_sub2proc
       !!! Subdomain to processor assignment. index: subID (global)
       !!!  parameter used if assignment is user defined.
 
@@ -693,8 +693,6 @@
           GOTO 9999
       ENDIF
 
-
-
       !-------------------------------------------------------------------------
       !  Store new mesh internally
       !-------------------------------------------------------------------------
@@ -743,7 +741,7 @@
       CALL ppm_alloc(ineigh,ldc,iopt,info)
       CALL ppm_alloc(nneigh,ldc,iopt,info)
       IF(decomp.NE.ppm_param_decomp_cartesian .AND.              &
-     &   decomp.NE.ppm_param_decomp_user_defined) THEN
+      &   decomp.NE.ppm_param_decomp_user_defined) THEN
          CALL ppm_alloc(min_box,ldc,iopt,info)
          CALL ppm_alloc(max_box,ldc,iopt,info)
          CALL ppm_alloc(nchld,ldc,iopt,info)
@@ -751,7 +749,7 @@
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'ppm_topo_mkfield',     &
-     &        'deallocation failed',__LINE__,info)
+          &    'deallocation failed',__LINE__,info)
       ENDIF
 
  9999 CONTINUE

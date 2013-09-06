@@ -80,11 +80,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                          :: t0,lmyeps
-      REAL(MK), DIMENSION(ppm_dim)      :: len_phys,dx,rat
-      INTEGER, DIMENSION(ppm_dim)       :: ldu,Nc
-      INTEGER                           :: iopt,i,j
-      CHARACTER(LEN=ppm_char)           :: mesg
+      REAL(MK)                     :: t0,lmyeps
+      REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx,rat
+
+      INTEGER, DIMENSION(ppm_dim) :: ldu,Nc
+      INTEGER                     :: iopt,i,j
+
+      CHARACTER(LEN=ppm_char) :: mesg
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -126,14 +128,14 @@
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_mesh_on_subs',    &
-     &        'sub mesh start indices ISTART',__LINE__,info)
+          &   'sub mesh start indices ISTART',__LINE__,info)
           GOTO 9999
       ENDIF
       CALL ppm_alloc(ndata,ldu,iopt,info)
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_mesh_on_subs',    &
-     &        'sub mesh sizes NDATA',__LINE__,info)
+          &    'sub mesh sizes NDATA',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -142,7 +144,8 @@
       !  number of mesh points. 2D and 3D case have separate loops for
       !  vectorization.
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
+      SELECT CASE (ppm_dim)
+      CASE (3)
           DO i=1,nsubs
               len_phys(1) = max_sub(1,i)-min_sub(1,i)
               len_phys(2) = max_sub(2,i)-min_sub(2,i)
@@ -187,7 +190,7 @@
               istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
               istart(3,i) = NINT((min_sub(3,i)-min_phys(3))/dx(3)) + 1
           ENDDO
-      ELSE
+      CASE DEFAULT
           DO i=1,nsubs
               len_phys(1) = max_sub(1,i)-min_sub(1,i)
               len_phys(2) = max_sub(2,i)-min_sub(2,i)
@@ -219,7 +222,7 @@
               istart(1,i) = NINT((min_sub(1,i)-min_phys(1))/dx(1)) + 1
               istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
           ENDDO
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Some diagnostics
