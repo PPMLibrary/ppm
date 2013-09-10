@@ -44,7 +44,7 @@
       !USE ppm_module_mesh_alloc
       USE ppm_module_substart
       USE ppm_module_substop
-      !USE ppm_module_check_id
+      USE ppm_module_check_id
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -89,14 +89,12 @@
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
-      !FIXME
-      !TODO
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-!         CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t
@@ -105,8 +103,9 @@
          !-----------------------------------------------------------------------
          !  Create a mesh identifier if the user specified none
          !-----------------------------------------------------------------------
-         meshid = ppm_mesh%max_id + 1
+         meshid          = ppm_mesh%max_id + 1
          ppm_mesh%max_id = meshid
+         ppm_mesh%nb     = ppm_mesh%nb + 1
 
          IF (.NOT.ppm_mesh%exists(meshid)) THEN
 
@@ -125,115 +124,69 @@
 
       mesh => ppm_mesh%vec(meshid)%t
 
+      iopt   = ppm_param_alloc_fit
+
+      ldc(1) = SIZE(ndata,1)
+      ldc(2) = SIZE(ndata,2)
+      CALL ppm_alloc(mesh%nnodes,ldc,iopt,info)
+      or_fail_alloc('mesh%nnodes')
+
+      ldc(1) = SIZE(istart,1)
+      ldc(2) = SIZE(istart,2)
+      CALL ppm_alloc(mesh%istart,ldc,iopt,info)
+      or_fail_alloc('mesh%istart')
+
+      CALL ppm_alloc(mesh%iend,ldc,iopt,info)
+      or_fail_alloc('mesh%iend')
+
+      ldc(1) = SIZE(Nm,1)
+      CALL ppm_alloc(mesh%Nm,ldc,iopt,info)
+      or_fail_alloc('mesh%Nm')
+
       !-------------------------------------------------------------------------
-      !  (Re)allocate memory for the internal mesh list and Arrays at meshid
+      !  Store the user-provided ID of this mesh
       !-------------------------------------------------------------------------
-!      iopt   = ppm_param_alloc_grow_preserve
-!      ldc(1) = topo%max_meshid
-!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-!      IF (info .NE. 0) THEN
-!         info = ppm_error_fatal
-!         CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
-!     &       'user meshid list ppm_t_topo%mesh',__LINE__,info)
-!         GOTO 9999
-!      ENDIF
+      mesh%ID=meshid
+      mesh%topoid=topoid
 
-      !iopt   = ppm_param_alloc_fit
-      !ldc(1) = SIZE(ndata,1)
-      !ldc(2) = SIZE(ndata,2)
-      !CALL ppm_alloc(topo%mesh(meshid)%nnodes,ldc,iopt,info)
-      !IF (info .NE. 0) THEN
-         !info = ppm_error_fatal
-         !CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
-     !&       'ppm_t_equi_mesh%nnodes',__LINE__,info)
-         !GOTO 9999
-      !ENDIF
-
-      !ldc(1) = SIZE(istart,1)
-      !ldc(2) = SIZE(istart,2)
-      !CALL ppm_alloc(topo%mesh(meshid)%istart,ldc,iopt,info)
-      !IF (info .NE. 0) THEN
-         !info = ppm_error_fatal
-         !CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
-     !&       'ppm_t_equi_mesh%istart',__LINE__,info)
-         !GOTO 9999
-      !ENDIF
-
-      !ldc(1) = SIZE(Nm,1)
-      !CALL ppm_alloc(topo%mesh(meshid)%Nm,ldc,iopt,info)
-      !IF (info .NE. 0) THEN
-         !info = ppm_error_fatal
-         !CALL ppm_error(ppm_err_alloc,'ppm_mesh_store',  &
-     !&       'ppm_t_equi_mesh%Nm',__LINE__,info)
-         !GOTO 9999
-      !ENDIF
-
-      !!-------------------------------------------------------------------------
-      !!  Store the user-provided ID of this mesh
-      !!-------------------------------------------------------------------------
-      !topo%mesh(meshid)%ID = meshid
-
-      !!-------------------------------------------------------------------------
-      !!  Store the mesh information
-      !!-------------------------------------------------------------------------
-
-      !IF (ppm_dim .EQ. 3) THEN
-          !DO isub = 1,topo%nsubs
-              !topo%mesh(meshid)%nnodes(1,isub) = ndata(1,isub)
-              !topo%mesh(meshid)%nnodes(2,isub) = ndata(2,isub)
-              !topo%mesh(meshid)%nnodes(3,isub) = ndata(3,isub)
-          !ENDDO
-          !DO isub = 1,topo%nsubs
-              !topo%mesh(meshid)%istart(1,isub) = istart(1,isub)
-              !topo%mesh(meshid)%istart(2,isub) = istart(2,isub)
-              !topo%mesh(meshid)%istart(3,isub) = istart(3,isub)
-          !ENDDO
-          !topo%mesh(meshid)%Nm(1) = Nm(1)
-          !topo%mesh(meshid)%Nm(2) = Nm(2)
-          !topo%mesh(meshid)%Nm(3) = Nm(3)
-
-      !ELSE
-          !DO isub = 1,topo%nsubs
-              !topo%mesh(meshid)%nnodes(1,isub) = ndata(1,isub)
-              !topo%mesh(meshid)%nnodes(2,isub) = ndata(2,isub)
-          !ENDDO
-          !DO isub = 1,topo%nsubs
-              !topo%mesh(meshid)%istart(1,isub) = istart(1,isub)
-              !topo%mesh(meshid)%istart(2,isub) = istart(2,isub)
-          !ENDDO
-          !topo%mesh(meshid)%Nm(1) = Nm(1)
-          !topo%mesh(meshid)%Nm(2) = Nm(2)
-      !ENDIF
+      !-------------------------------------------------------------------------
+      !  Store the mesh information
+      !-------------------------------------------------------------------------
+      DO isub = 1,topo%nsubs
+         mesh%nnodes(1:ppm_dim,isub) =  ndata(1:ppm_dim,isub)
+         mesh%istart(1:ppm_dim,isub) = istart(1:ppm_dim,isub)
+      ENDDO
+      mesh%Nm(1:ppm_dim) = Nm(1:ppm_dim)
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop(caller,t0,info)
-      !RETURN
-      !CONTAINS
-      !SUBROUTINE check
-          !CALL ppm_check_topoid(topoid,valid,info)
-          !IF (.NOT. valid) THEN
-              !info = ppm_error_error
-              !CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-     !&            'topoid not valid',__LINE__,info)
-              !GOTO 8888
-          !ENDIF
-          !IF (ppm_topo(topoid)%t%nsubs .LE. 0) THEN
-              !info = ppm_error_error
-              !CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-     !&            'nsubs must be >0',__LINE__,info)
-              !GOTO 8888
-          !ENDIF
-          !DO i=1,ppm_dim
-              !IF (Nm(i) .LT. 2) THEN
-                  !info = ppm_error_error
-                  !CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-     !&                'Nm must be >1 in all space dimensions',__LINE__,info)
-                  !GOTO 8888
-              !ENDIF
-          !ENDDO
- !8888     CONTINUE
-      !END SUBROUTINE check
+      RETURN
+      CONTAINS
+      SUBROUTINE check
+          CALL ppm_check_topoid(topoid,valid,info)
+          IF (.NOT. valid) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
+              &   'topoid not valid',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          IF (ppm_topo(topoid)%t%nsubs .LE. 0) THEN
+              info = ppm_error_error
+              CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
+              &   'nsubs must be >0',__LINE__,info)
+              GOTO 8888
+          ENDIF
+          DO i=1,ppm_dim
+              IF (Nm(i) .LT. 2) THEN
+                  info = ppm_error_error
+                  CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
+                  &   'Nm must be >1 in all space dimensions',__LINE__,info)
+                  GOTO 8888
+              ENDIF
+          ENDDO
+ 8888     CONTINUE
+      END SUBROUTINE check
       END SUBROUTINE ppm_mesh_store

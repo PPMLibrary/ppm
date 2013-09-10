@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_check_topoid
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,28 +44,31 @@
       USE ppm_module_error
       USE ppm_module_write
       USE ppm_module_topo_typedef
+
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER , INTENT(IN   )        :: topoid
+      INTEGER , INTENT(IN   ) :: topoid
       !!! Topology ID to be checked
-      LOGICAL , INTENT(  OUT)        :: valid
+      LOGICAL , INTENT(  OUT) :: valid
       !!! Returns `TRUE` if the given meshid is valid and defined,
       !!! `FALSE` otherwise.
-      INTEGER , INTENT(  OUT)        :: info
+      INTEGER , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)          :: t0
+      REAL(ppm_kind_double) :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_check_topoid'
 
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_check_topoid',t0,info)
+      CALL substart(caller,t0,info)
       valid = .FALSE.
 
       !-------------------------------------------------------------------------
@@ -81,8 +84,8 @@
       !-------------------------------------------------------------------------
 
       IF ((topoid .GE. 1) .AND. (topoid .LE. SIZE(ppm_topo)) .AND. &
-     &            (ppm_topo(topoid)%t%isdefined)) THEN
-          valid = .TRUE.
+      &   (ppm_topo(topoid)%t%isdefined)) THEN
+         valid = .TRUE.
       ENDIF
 
       !-------------------------------------------------------------------------

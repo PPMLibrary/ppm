@@ -169,33 +169,61 @@
 #if defined __MPI
       IF (ppm_debug .GT. 0) THEN
         WRITE(mesg,'(2A)') '*** This is the PPM library starting on ',&
-     &                    cbuf(1:ilen)
+        & cbuf(1:ilen)
         CALL ppm_log('ppm_init',mesg,info)
         CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       ELSE
         IF (ppm_rank .EQ. 0) THEN
            WRITE(mesg,'(A)') &
-      &    "**************************************************************"
+        &  "**************************************************************"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
            WRITE(mesg,'(A)') &
-      &    "***       Parallel Particle Mesh Library (PPM)       ***P*****"
+        &  "***       Parallel Particle Mesh Library (PPM)       *********"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
            WRITE(mesg,'(A)') &
-      &    "***          version:  1.2.2  /  October 2012        ****P****"
+        &  "***          version:  1.2.2  /  October 2012        ****___**"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
            WRITE(mesg,'(A,i12,A)') &
-      &    '***       Execution on  / ',ppm_nproc,'    node(s)    *****M***'
+        &  '***       Execution on  / ',ppm_nproc,'    node(s)    ***/ _ \*'
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A,i12,A)') &
+        &  "***                                                  **/ .__/*"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
            WRITE(mesg,'(A)') &
-      &    "*** Copyright MOSAIC Group, ETHZ and MPI-CBG Dresden *********"
+        &  "*** Contributors                                     */_/___**"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
            WRITE(mesg,'(A)') &
-      &    "**************************************************************"
+        &  "*** ------------                                     ***/ _ \*"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "*** CSE-lab at ETH Zurich (group of Professor Petros **/ .__/*"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "*** Koumoutsakos), MOSAIC group at (ETH Zurich,)     */_/___**"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "*** MPI-CBG Dresden (group of Dr. Ivo F.Sbalzarini)  **/  ' \*"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "*** and Center for Fluid Dynamics at DTU (group of   */_/_/_/*"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "*** Professor Jens Walther).                         *********"
+           CALL ppm_log('ppm_init',mesg,info)
+           CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+           WRITE(mesg,'(A)') &
+        &  "**************************************************************"
            CALL ppm_log('ppm_init',mesg,info)
            CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
         ENDIF
@@ -206,19 +234,47 @@
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       WRITE(mesg,'(A)') &
-      &    "***       Parallel Particle Mesh Library (PPM)       ***P*****"
+      &    "***       Parallel Particle Mesh Library (PPM)       *********"
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       WRITE(mesg,'(A)') &
-      &    "***          version:  1.2.2  /  October 2012        ****P****"
+      &    "***          version:  1.2.2  /  October 2012        ****___**"
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       WRITE(mesg,'(A)') &
-      &    "***        Execution in single-processor mode        *****M***"
+      &    "***        Execution in single-processor mode        ***/ _ \*"
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       WRITE(mesg,'(A)') &
-      &    "*** Copyright MOSAIC Group, ETHZ and MPI-CBG Dresden *********"
+      &    "***                                                  **/ .__/*"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** Contributors                                     */_/___**"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** ------------                                     ***/ _ \*"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** CSE-lab at ETH Zurich (group of Professor Petros **/ .__/*"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** Koumoutsakos), MOSAIC group at (ETH Zurich,)     */_/___**"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** MPI-CBG Dresden (group of Dr. Ivo F.Sbalzarini)  **/  ' \*"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** and Center for Fluid Dynamics at DTU (group of   */_/_/_/*"
+      CALL ppm_log('ppm_init',mesg,info)
+      CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
+      WRITE(mesg,'(A)') &
+      &    "*** Professor Jens Walther).                         *********"
       CALL ppm_log('ppm_init',mesg,info)
       CALL ppm_write(ppm_rank,'ppm_init',mesg,info)
       WRITE(mesg,'(A)') &
