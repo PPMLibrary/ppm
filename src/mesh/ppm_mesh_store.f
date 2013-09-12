@@ -45,6 +45,7 @@
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_check_id
+
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Includes
@@ -121,6 +122,11 @@
          ENDIF
 
       ENDIF
+
+      SELECT CASE(ASSOCIATED(ppm_mesh%vec(meshid)%t))
+      CASE (.FALSE.)
+         ALLOCATE(ppm_t_equi_mesh::ppm_mesh%vec(meshid)%t)
+      END SELECT
 
       mesh => ppm_mesh%vec(meshid)%t
 

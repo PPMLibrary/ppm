@@ -47,7 +47,7 @@
       !!! be used. PPM clients may take advantage of these functionalities.
 
         USE ppm_module_data, ONLY: ppm_kind_single,ppm_kind_double,&
-                                  & ppm_kind_int64
+                                 & ppm_kind_int64
 
         IMPLICIT NONE
         !----------------------------------------------------------------------
@@ -279,7 +279,6 @@
 #undef __KIND
 
 #include "alloc/ppm_alloc_topo.f"
-
 #include "alloc/ppm_alloc_argcheck.f"
 
       END MODULE ppm_module_alloc

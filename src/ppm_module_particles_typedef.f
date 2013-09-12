@@ -3,12 +3,12 @@ MODULE ppm_module_particles_typedef
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
 
-#define __REAL 3 
-#define __COMPLEX 4 
-#define __INTEGER 5 
-#define __LONGINT 6 
-#define __LOGICAL 7 
-#define __CHAR 8 
+#define __REAL 3
+#define __COMPLEX 4
+#define __INTEGER 5
+#define __LONGINT 6
+#define __LOGICAL 7
+#define __CHAR 8
 
 USE ppm_module_alloc
 USE ppm_module_interfaces
@@ -23,7 +23,7 @@ USE ppm_module_substop
 IMPLICIT NONE
 
 !----------------------------------------------------------------------
-! Global variables 
+! Global variables
 !----------------------------------------------------------------------
 
 INTEGER                               :: ppm_particles_seedsize
@@ -103,7 +103,7 @@ CONTAINS
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-# define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_single)
+#define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_single)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"
@@ -166,7 +166,7 @@ CONTAINS
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-# define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_double)
+#define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_double)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"

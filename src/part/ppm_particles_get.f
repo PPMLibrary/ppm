@@ -2,7 +2,7 @@
 
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(this,wp,info) 
+SUBROUTINE __FUNCNAME(this,wp,info)
     !!!------------------------------------------------------------------------!
     !!! Check whether a Data Structure exists and can be accessed at this id
     !!!------------------------------------------------------------------------!
@@ -20,7 +20,7 @@ SUBROUTINE __FUNCNAME(this,wp,info)
     INTEGER,                            INTENT(   OUT)  :: info
     !!! Return status, on success 0.
     INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
-    
+
     start_subroutine(__FUNCNAME)
     !-------------------------------------------------------------------------
     ! Check arguments
@@ -38,13 +38,13 @@ SUBROUTINE __FUNCNAME(this,wp,info)
 #if   __MYTYPE == __INTEGER
         ppm_type_int&
 #elif __MYTYPE == __LONGINT
-        ppm_type_longint& 
+        ppm_type_longint&
 #elif __MYTYPE == __REAL
-        ppm_type_real& 
+        ppm_type_real&
 #elif __MYTYPE == __COMPLEX
-        ppm_type_comp& 
+        ppm_type_comp&
 #elif __MYTYPE == __LOGICAL
-        ppm_type_logical& 
+        ppm_type_logical&
 #else
         ppm_type_none&
 #endif
@@ -84,7 +84,7 @@ SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only,skip_checks)
     INTEGER                         :: np
 
     start_subroutine(__FUNCNAME)
-    
+
     IF (PRESENT(skip_checks)) THEN
       skip = skip_checks
     ELSE
@@ -200,7 +200,7 @@ SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only,skip_checks)
     CLASS(ppm_t_field_)             :: Field
 #if   __DIM == 1
     __TYPE,DIMENSION(:),POINTER     :: wp
-    !!! data array 
+    !!! data array
 #elif __DIM == 2
     __TYPE,DIMENSION(:,:),POINTER   :: wp
     !!! data array

@@ -50,6 +50,7 @@
          !----------------------------------------------------------------------
          CONTAINS
 
+!#include "mesh/ppm_mesh_alloc.f"
 #include "mesh/ppm_mesh_store.f"
 
       END MODULE ppm_module_mesh_store
