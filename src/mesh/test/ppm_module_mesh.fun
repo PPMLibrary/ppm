@@ -17,6 +17,7 @@ integer                         :: decomp,assig,tolexp
 integer                         :: info,comm,rank,nproc
 real(mk)                        :: tol
 integer                         :: topoid=-1
+integer                         :: meshid=-1
 real(mk),dimension(:  ),pointer :: min_phys => NULL()
 real(mk),dimension(:  ),pointer :: max_phys => NULL()
 
@@ -33,12 +34,17 @@ real(mk),dimension(:  ),pointer :: h => NULL()
 type(ppm_t_topo),       pointer :: topo => NULL()
 
 type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+class(ppm_t_equi_mesh_),POINTER  :: Mesh3
+
 integer                          :: ipatch,isub,jsub
 class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
 integer                          :: mypatchid
 real(mk),dimension(2*ndim)       :: my_patch
 real(mk),dimension(ndim)         :: offset
+
+real(mk),dimension(:,:),POINTER :: xp
+integer                         :: Npart=0
 
 real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
 real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
@@ -50,10 +56,10 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
-            &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+        &        ighostsize(ndim),nm(ndim),h(ndim))
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -94,7 +100,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -109,17 +115,39 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.05_mk 
-        call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
-            &               bcdef,sca_ghostsize,cost,info)
-        Assert_Equal(info,0)
-
+        meshid = -1
+        sca_ghostsize = 0.05_mk
+        !call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys, &
+        !&               bcdef,sca_ghostsize,cost,info)
         Nm = 125
+        call ppm_mktopo(topoid,meshid,xp,Npart,decomp,assig, &
+        &          min_phys,max_phys,bcdef,ighostsize,cost,  &
+        &          nm,info)
+        Assert_Equal(info,0)
         offset = 0._mk
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
+
+
+        Mesh3 => ppm_mesh%vec(meshid)%t
+        Assert_Equal(Mesh3%ID,meshid)
+        Assert_Equal(Mesh3%topoid,topoid)
+
+        if (rank.eq.0) then
+        print*,"Mesh3",Mesh3%istart
+        print*,Mesh3%iend
+        Print*,repeat('-',100)
+        print*,"Mesh1",Mesh1%istart
+        print*,Mesh1%iend
+        end if
+
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
+
+
+        call Mesh3%destroy(info)
+        Assert_Equal(info,0)
+        !If(assocaited())
 
         h = (max_phys-min_phys)/Nm
         call Mesh1%create(topoid,offset,info,h=h)
@@ -138,11 +166,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(info,0)
 
         !One patch
-        my_patch(1:6) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_mk/)
+        my_patch(1:2*ndim) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_mk/)
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
-        call Mesh1%def_patch(my_patch,info,patchid(1)) 
+        call Mesh1%def_patch(my_patch,info,patchid(1))
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -156,7 +184,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 !count one subpatch
                 ipatch = ipatch + 1
             endif
-        enddo   
+        enddo
 
         isub = 0
         p => Mesh1%subpatch%begin()
@@ -167,14 +195,14 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(isub,ipatch)
 
         !Second patch
-        my_patch(1:6) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_mk/)
+        my_patch(1:2*ndim) = (/0.5_mk,0.3_mk,0.1_mk,5.1_mk,1.1_mk,10.0_mk/)
         my_patch(ndim) = 5.1
         my_patch(2*ndim) = 10.0
 
-        call Mesh1%def_patch(my_patch,info,patchid(2)) 
+        call Mesh1%def_patch(my_patch,info,patchid(2))
         Assert_Equal(info,0)
 
-        
+
         !Check that the patchids have been set properly
         DO i=1,2
             Assert_Equal(Mesh1%patch%vec(i)%t%patchid,patchid(i))
@@ -200,7 +228,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             DO j = 1,Nm(2)/4
                 mypatchid = mypatchid + 1
                 my_patch(1:4) = (/h(1)*i,h(2)*j,h(1)*(i+4),h(2)*(j+4)/)
-                call Mesh1%def_patch(my_patch,info,mypatchid) 
+                call Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
@@ -214,14 +242,14 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 mypatchid = mypatchid + 1
                 my_patch(1:6) = (/h(1)*i,h(2)*j,h(3)*k,&
                     h(1)*(i+4),h(2)*(j+4),h(3)*(k+4)/)
-                call Mesh1%def_patch(my_patch,info,mypatchid) 
+                call Mesh1%def_patch(my_patch,info,mypatchid)
                 Assert_Equal(info,0)
                 Assert_True(associated(Mesh1%subpatch))
             ENDDO
             ENDDO
             ENDDO
         endif
-        
+
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
 
@@ -241,7 +269,7 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         my_patch(1:ndim)        = min_phys(1:ndim)
         my_patch(ndim+1:2*ndim) = max_phys(1:ndim)
 
-        call Mesh1%def_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid)
             Assert_Equal(info,0)
 
         Assert_True(associated(Mesh1%subpatch))
@@ -287,14 +315,14 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
 
-        call Mesh1%def_patch(my_patch,info) 
+        call Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
-        call Field1%create(2,info,name='vecField') 
+        call Field1%create(2,info,name='vecField')
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField') 
+        call Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -491,14 +519,14 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 !
 !        call ppm_topo_get_meshinfo(topoid,meshid,nm,istart,ndata,maxndata,&
 !                        isublist,nsublist,info)
-!        
+!
 !        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
 !        &        stat=info) ! 2d
 !        allocate(field_ref((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)),nsublist),&
 !        &        stat=info) ! 2d
-!        
+!
 !!        allocate(field((1-ghostsize(1)):(maxndata(1)+ghostsize(1)),  &
 !!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
 !!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
@@ -507,11 +535,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 !!        &        (1-ghostsize(2)):(maxndata(2)+ghostsize(2)), &
 !!        &        (1-ghostsize(3)):(maxndata(3)+ghostsize(3)),nsublist),&
 !!        &       stat=info) ! 3d
-!        
+!
 !        do i=1,ndim
 !            h(i) = (max_phys(i) - min_phys(i)) / real(ndata(i,1)-1,mk)
 !        enddo
-!       
+!
 !        meshid_ref = -1
 !        nm_ref = nm
 !        call ppm_mesh_define(topoid,meshid_ref,nm_ref,istart_ref,ndata_ref,info)
