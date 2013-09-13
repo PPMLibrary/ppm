@@ -54,9 +54,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: topoid
+      INTEGER,                  INTENT(IN   ) :: topoid
       !!! Topology ID for which mesh has been created
-      INTEGER                 , INTENT(INOUT) :: meshid
+      INTEGER,                  INTENT(INOUT) :: meshid
       !!! Mesh ID. If <= 0 on input, the
       !!! routine will create a new mesh and return the ID here.
       INTEGER , DIMENSION(:,:), INTENT(IN   ) :: ndata
@@ -65,7 +65,7 @@
       !!! Start of sub mesh in global mesh
       INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
       !!! Global number of mesh points in the whole comput. domain
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                  INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -129,6 +129,8 @@
       END SELECT
 
       mesh => ppm_mesh%vec(meshid)%t
+
+!       CALL mesh%create(topoid,Offset,info,Nm)
 
       iopt   = ppm_param_alloc_fit
 

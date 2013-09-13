@@ -24,8 +24,8 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh)                  :: this
-      INTEGER                 , INTENT(  OUT) :: info
+      CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+      INTEGER,                INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -50,8 +50,8 @@
       !  Check if ghost mappings have been initalized, if no do so now.
       !-------------------------------------------------------------------------
       IF (.NOT. this%ghost_initialized) THEN
-        CALL this%map_ghost_init(info)
-            or_fail("map_field_ghost_init failed")
+         CALL this%map_ghost_init(info)
+         or_fail("map_field_ghost_init failed")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -77,15 +77,18 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = nsendlist
       CALL ppm_alloc(ppm_mesh_isendfromsub,ldu,iopt,info)
-           or_fail_alloc("ppm_mesh_isendfromsub")
+      or_fail_alloc("ppm_mesh_isendfromsub")
+
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(ppm_mesh_isendblkstart,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_isendblkstart")
+      or_fail_alloc("ppm_mesh_isendblkstart")
+
       CALL ppm_alloc(ppm_mesh_isendblksize,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_isendblksize")
+      or_fail_alloc("ppm_mesh_isendblksize")
+
       CALL ppm_alloc(ppm_mesh_isendpatchid,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_isendpatchid")
+      or_fail_alloc("ppm_mesh_isendpatchid")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global mesh receive lists
@@ -93,29 +96,35 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = nrecvlist
       CALL ppm_alloc(ppm_mesh_irecvtosub,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_irecvtosub")
+      or_fail_alloc("ppm_mesh_irecvtosub")
+
       ldu(1) = pdim
       ldu(2) = nrecvlist
       CALL ppm_alloc(ppm_mesh_irecvblkstart,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_irecvblkstart")
+      or_fail_alloc("ppm_mesh_irecvblkstart")
+
       CALL ppm_alloc(ppm_mesh_irecvblksize,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_irecvblksize")
+      or_fail_alloc("ppm_mesh_irecvblksize")
+
       CALL ppm_alloc(ppm_mesh_irecvpatchid,ldu,iopt,info)
-            or_fail_alloc("ppm_mesh_irecvpatchid")
+      or_fail_alloc("ppm_mesh_irecvpatchid")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global send/recv lists
       !-------------------------------------------------------------------------
       ldu(1) = topo%ncommseq
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-            or_fail_alloc("ppm_isendlist")
+      or_fail_alloc("ppm_isendlist")
+
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-            or_fail_alloc("ppm_irecvlist")
+      or_fail_alloc("ppm_irecvlist")
+
       ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-            or_fail_alloc("ppm_psendbuffer")
+      or_fail_alloc("ppm_psendbuffer")
+
       CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
-            or_fail_alloc("ppm_precvbuffer")
+      or_fail_alloc("ppm_precvbuffer")
 
       !-------------------------------------------------------------------------
       !  Reset the number of buffer entries

@@ -43,6 +43,7 @@
       USE ppm_module_substop
       USE ppm_module_error
       USE ppm_module_interface
+
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Arguments
@@ -90,6 +91,7 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(mesh)) ldealloc = .TRUE.
          lalloc   = .TRUE.
+
       CASE (ppm_param_dealloc)
          ldealloc = .TRUE.
 

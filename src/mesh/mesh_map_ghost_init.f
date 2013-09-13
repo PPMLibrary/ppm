@@ -41,8 +41,8 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh)                  :: this
-      INTEGER                 , INTENT(  OUT) :: info
+      CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+      INTEGER,                INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -80,14 +80,14 @@
         CALL ppm_util_commopt(this%topoid,info)
         IF (info.NE.0) GOTO 9999
         IF (ppm_debug .GT. 1) THEN
-            DO i=1,topo%nneighproc
-                WRITE(mesg,'(A,I4)') 'have neighbor: ',topo%ineighproc(i)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
-            END DO
-            DO i=1,topo%ncommseq
-                WRITE(mesg,'(A,I4)') 'communicate: ',topo%icommseq(i)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
-            END DO
+           DO i=1,topo%nneighproc
+              WRITE(mesg,'(A,I4)') 'have neighbor: ',topo%ineighproc(i)
+              CALL ppm_write(ppm_rank,caller,mesg,info)
+           END DO
+           DO i=1,topo%ncommseq
+              WRITE(mesg,'(A,I4)') 'communicate: ',topo%icommseq(i)
+              CALL ppm_write(ppm_rank,caller,mesg,info)
+           END DO
         ENDIF
       ENDIF
 
@@ -104,19 +104,19 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = isize
       CALL ppm_alloc(isendfromsub,ldu,iopt,info)
-            or_fail_alloc("isendfromsub,ldu")
+      or_fail_alloc("isendfromsub,ldu")
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
-            or_fail_alloc("isendtosub,ldu")
+      or_fail_alloc("isendtosub,ldu")
       ldu(1) = pdim
       ldu(2) = isize
       CALL ppm_alloc(isendpatchid,ldu,iopt,info)
-            or_fail_alloc("isendpatchid,ldu")
+      or_fail_alloc("isendpatchid,ldu")
       CALL ppm_alloc(isendblkstart,ldu,iopt,info)
-            or_fail_alloc("isendblkstart,ldu")
+      or_fail_alloc("isendblkstart,ldu")
       CALL ppm_alloc(isendblksize,ldu,iopt,info)
-            or_fail_alloc("isendblksize,ldu")
+      or_fail_alloc("isendblksize,ldu")
       CALL ppm_alloc(ioffset,ldu,iopt,info)
-            or_fail_alloc("ioffset,ldu")
+      or_fail_alloc("ioffset,ldu")
 
       !-------------------------------------------------------------------------
       !  Pre-calculate shift offsets for periodic ghost images of subs
@@ -142,9 +142,9 @@
               jdom = topo%ineighsubs(j,i)
               ! source and destination meshes and topologies are identical
               CALL this%block_intersect(this,i,       &
-     &           idom,jdom,ond(1:pdim,1),nsendlist,isendfromsub,     &
-     &           isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
-                 or_fail("block_intersect failed")
+              &    idom,jdom,ond(1:pdim,1),nsendlist,isendfromsub,     &
+              &    isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
+              or_fail("block_intersect failed")
           ENDDO
 
           !---------------------------------------------------------------------
@@ -155,23 +155,23 @@
           !---------------------------------------------------------------------
           lwest  = .FALSE.
           IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &        (topo%subs_bc(1,idom) .NE. 0)) lwest = .TRUE.
+          &   (topo%subs_bc(1,idom) .NE. 0)) lwest = .TRUE.
           least  = .FALSE.
           IF ((topo%bcdef(2) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &        (topo%subs_bc(2,idom) .NE. 0)) least = .TRUE.
+          &   (topo%subs_bc(2,idom) .NE. 0)) least = .TRUE.
           lsouth = .FALSE.
           IF ((topo%bcdef(3) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &        (topo%subs_bc(3,idom) .NE. 0)) lsouth = .TRUE.
+          &   (topo%subs_bc(3,idom) .NE. 0)) lsouth = .TRUE.
           lnorth = .FALSE.
           IF ((topo%bcdef(4) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &        (topo%subs_bc(4,idom) .NE. 0)) lnorth = .TRUE.
+          &   (topo%subs_bc(4,idom) .NE. 0)) lnorth = .TRUE.
           IF (pdim .GT. 2) THEN
               lbottom= .FALSE.
               IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &            (topo%subs_bc(5,idom) .NE. 0)) lbottom = .TRUE.
+              &   (topo%subs_bc(5,idom) .NE. 0)) lbottom = .TRUE.
               ltop   = .FALSE.
               IF ((topo%bcdef(6) .EQ. ppm_param_bcdef_periodic) .AND. &
-     &            (topo%subs_bc(6,idom) .NE. 0)) ltop = .TRUE.
+              &   (topo%subs_bc(6,idom) .NE. 0)) ltop = .TRUE.
           ENDIF
 
           !---------------------------------------------------------------------
@@ -320,17 +320,17 @@
               ! first with the original (non-shifted) image of itself
               jdom = idom
               CALL this%block_intersect(this,i,       &
-                  &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,     &
-                  &  isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
-                  or_fail("block_intersect failed")
+              &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,     &
+              &  isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
+              or_fail("block_intersect failed")
               ! Then with all the neighbors
               DO j=1,topo%nneighsubs(i)
                   jdom = topo%ineighsubs(j,i)
                   CALL this%block_intersect(this,i,   &
-                      &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,&
-                      &  isendtosub,isendpatchid,isendblkstart,isendblksize,&
-                      &  ioffset,info)
-                      or_fail("block_intersect failed")
+                  &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,&
+                  &  isendtosub,isendpatchid,isendblkstart,isendblksize,&
+                  &  ioffset,info)
+                  or_fail("block_intersect failed")
               ENDDO
           ENDDO
       ENDDO    ! i=1,ppm_nsublist
@@ -341,30 +341,30 @@
       iopt   = ppm_param_alloc_grow_preserve
       ldu(1) = nsendlist
       CALL ppm_alloc(this%ghost_fromsub,ldu,iopt,info)
-            or_fail_alloc("this%ghost_fromsub")
+      or_fail_alloc("this%ghost_fromsub")
       CALL ppm_alloc(this%ghost_tosub,ldu,iopt,info)
-            or_fail_alloc("this%ghost_tosub")
+      or_fail_alloc("this%ghost_tosub")
       CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
-            or_fail_alloc("this%ghost_recvtosub")
+      or_fail_alloc("this%ghost_recvtosub")
       ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(this%ghost_blk,ldu,iopt,info)
-            or_fail_alloc("this%ghost_blk")
+      or_fail_alloc("this%ghost_blk")
       CALL ppm_alloc(this%ghost_recvblk,ldu,iopt,info)
-            or_fail_alloc("this%ghost_recvblk")
+      or_fail_alloc("this%ghost_recvblk")
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(this%ghost_patchid,ldu,iopt,info)
-            or_fail_alloc("this%ghost_patchid")
+      or_fail_alloc("this%ghost_patchid")
       CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
-            or_fail_alloc("this%recvghost_patchid")
+      or_fail_alloc("this%recvghost_patchid")
       CALL ppm_alloc(this%ghost_blkstart,ldu,iopt,info)
-            or_fail_alloc("this%ghost_blkstart")
+      or_fail_alloc("this%ghost_blkstart")
       CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
-            or_fail_alloc("this%ghost_recvblkstart")
+      or_fail_alloc("this%ghost_recvblkstart")
       CALL ppm_alloc(this%ghost_blksize,ldu,iopt,info)
-            or_fail_alloc("this%ghost_blksize")
+      or_fail_alloc("this%ghost_blksize")
       CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
-            or_fail_alloc("this%ghost_recvblksize")
+      or_fail_alloc("this%ghost_recvblksize")
 
 
       !-------------------------------------------------------------------------
@@ -373,7 +373,7 @@
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(mesh_ghost_offset,ldu,iopt,info)
-            or_fail_alloc("mesh_ghost_offset,ldu")
+      or_fail_alloc("mesh_ghost_offset,ldu")
 
       !-------------------------------------------------------------------------
       !  loop over the neighboring processors according to the optimized
@@ -425,14 +425,14 @@
                      IF (ppm_debug .GT. 1) THEN
                          IF (ppm_dim .EQ. 2) THEN
                              WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
-     &                   isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-     &                   ' on sub ',isendfromsub(j),&
-     &                   ' to sub ',isendtosub(j),' on proc ',sendrank
+                             & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
+                             & ' on sub ',isendfromsub(j),&
+                             & ' to sub ',isendtosub(j),' on proc ',sendrank
                          ELSEIF (ppm_dim .EQ. 3) THEN
                              WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
-     &                   isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-     &                   ' on sub ',isendfromsub(j),&
-     &                   ' to sub ',isendtosub(j),' on proc ',sendrank
+                             & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
+                             & ' on sub ',isendfromsub(j),&
+                             & ' to sub ',isendtosub(j),' on proc ',sendrank
                          ENDIF
                          CALL ppm_write(ppm_rank,caller,mesg,info)
                      ENDIF
@@ -449,12 +449,12 @@
                  DO j=1,ub-1
                      this%ghost_recvtosub(j) = this%ghost_tosub(j)
                      this%ghost_recvpatchid(1:pdim,j) = &
-     &                   this%ghost_patchid(1:pdim,j)
+                     &    this%ghost_patchid(1:pdim,j)
                      this%ghost_recvblkstart(1:pdim,j) = &
-     &                   this%ghost_blkstart(1:pdim,j) + &
-     &                   mesh_ghost_offset(1:pdim,j)
+                     &    this%ghost_blkstart(1:pdim,j) + &
+                     &    mesh_ghost_offset(1:pdim,j)
                      this%ghost_recvblksize(1:pdim,j) = &
-     &                   this%ghost_blksize(1:pdim,j)
+                     &    this%ghost_blksize(1:pdim,j)
                  ENDDO
 
 #ifdef __MPI
@@ -468,8 +468,8 @@
                  nsend = ub - lb
                  tag1 = 100
                  CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
-     &               MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
-                     or_fail_MPI("MPI_SendRecv")
+                 &    MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
+                 or_fail_MPI("MPI_SendRecv")
                  ! How many blocks will I receive from the guy?
                  this%ghost_nrecv = this%ghost_nrecv + nrecv
                  this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
@@ -485,15 +485,15 @@
                      iopt = ppm_param_alloc_grow_preserve
                      ldu(1) = isize
                      CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
-                            or_fail_alloc("this%ghost_recvtosub")
+                     or_fail_alloc("this%ghost_recvtosub")
                      ldu(1) = pdim
                      ldu(2) = isize
                      CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
-                            or_fail_alloc("this%ghost_recvblkstart")
+                     or_fail_alloc("this%ghost_recvblkstart")
                      CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
-                            or_fail_alloc("this%ghost_recvblksize")
+                     or_fail_alloc("this%ghost_recvblksize")
                      CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
-                            or_fail_alloc("this%recvghost_patchid")
+                     or_fail_alloc("this%recvghost_patchid")
                  ENDIF
 
                  !--------------------------------------------------------------
@@ -502,10 +502,10 @@
                  iopt   = ppm_param_alloc_grow
                  ldu(1) = nsend*(3*pdim+1)
                  CALL ppm_alloc(sendbuf,ldu,iopt,info)
-                        or_fail_alloc("sendbuf")
+                 or_fail_alloc("sendbuf")
                  ldu(1) = nrecv*(3*pdim+1)
                  CALL ppm_alloc(recvbuf,ldu,iopt,info)
-                        or_fail_alloc("recvbuf")
+                 or_fail_alloc("recvbuf")
 
                  !--------------------------------------------------------------
                  !  Pack and send all the ghost mesh block data
@@ -518,19 +518,19 @@
                      sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
                      iset = iset + pdim
                      sendbuf(iset+1:iset+pdim) =    &
-     &                   this%ghost_blkstart(1:pdim,j) +  &
-     &                   mesh_ghost_offset(1:pdim,j)
+                     &    this%ghost_blkstart(1:pdim,j) +  &
+                     &    mesh_ghost_offset(1:pdim,j)
                      iset = iset + pdim
                      sendbuf(iset+1:iset+pdim) =    &
-     &                   this%ghost_blksize(1:pdim,j)
+                     &    this%ghost_blksize(1:pdim,j)
                      iset = iset + pdim
                  ENDDO
                  ! Send it to the destination processor and get my stuff
                  tag1 = 200
                  CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
-     &                             recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
-     &                             recvrank,tag1,ppm_comm,commstat,info)
-                     or_fail_MPI("MPI_SendRecv")
+                 &    recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
+                 &    recvrank,tag1,ppm_comm,commstat,info)
+                 or_fail_MPI("MPI_SendRecv")
                  ! Unpack the received data
                  lb = this%ghost_recvblk(i)
                  ub = this%ghost_recvblk(ibuffer)
@@ -539,15 +539,14 @@
                      iset = iset + 1
                      this%ghost_recvtosub(j)   = recvbuf(iset)
                      this%ghost_recvpatchid(1:pdim,j)  =   &
-     &                   recvbuf(iset+1:iset+pdim)
+                     &    recvbuf(iset+1:iset+pdim)
                      iset = iset + pdim
                      this%ghost_recvblkstart(1:pdim,j) =   &
-     &                   recvbuf(iset+1:iset+pdim)
+                     &    recvbuf(iset+1:iset+pdim)
                      iset = iset + pdim
                      this%ghost_recvblksize(1:pdim,j) =    &
-     &                   recvbuf(iset+1:iset+pdim)
+                     &    recvbuf(iset+1:iset+pdim)
                      iset = iset + pdim
-
                  ENDDO
 #endif
              ENDIF ! sendrank.EQ.ppm_rank
@@ -559,23 +558,23 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(recvbuf,ldu,iopt,info)
-            or_fail_dealloc("recvbuf")
+      or_fail_dealloc("recvbuf")
       CALL ppm_alloc(sendbuf,ldu,iopt,info)
-            or_fail_dealloc("sendbuf")
+      or_fail_dealloc("sendbuf")
       CALL ppm_alloc(isendfromsub,ldu,iopt,info)
-            or_fail_dealloc("isendfromsub")
+      or_fail_dealloc("isendfromsub")
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
-            or_fail_dealloc("isendtosub")
+      or_fail_dealloc("isendtosub")
       CALL ppm_alloc(isendpatchid,ldu,iopt,info)
-            or_fail_dealloc("isendpatchid")
+      or_fail_dealloc("isendpatchid")
       CALL ppm_alloc(isendblkstart,ldu,iopt,info)
-            or_fail_dealloc("isendblkstart")
+      or_fail_dealloc("isendblkstart")
       CALL ppm_alloc(isendblksize,ldu,iopt,info)
-            or_fail_dealloc("isendblksize")
+      or_fail_dealloc("isendblksize")
       CALL ppm_alloc(ioffset,ldu,iopt,info)
-            or_fail_dealloc("ioffset")
+      or_fail_dealloc("ioffset")
       CALL ppm_alloc(mesh_ghost_offset,ldu,iopt,info)
-            or_fail_dealloc("mesh_ghost_offset")
+      or_fail_dealloc("mesh_ghost_offset")
 
 
       this%ghost_initialized = .TRUE.

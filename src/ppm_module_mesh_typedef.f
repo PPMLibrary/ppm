@@ -163,6 +163,11 @@ minclude ppm_get_field_template(4,d)
 
       SUBROUTINE subpatch_data_create(this,discr_data,sp,info)
           !!! Constructor for subdomain_data data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data)                           :: this
           CLASS(ppm_t_mesh_discr_data_),TARGET,  INTENT(IN   ) :: discr_data
           !!! field that is discretized on this mesh patch
@@ -271,6 +276,11 @@ minclude ppm_get_field_template(4,d)
       !DESTROY
       SUBROUTINE subpatch_data_destroy(this,info)
           !!! Destructor for subdomain data data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data)         :: this
           INTEGER,               INTENT(OUT) :: info
 
@@ -312,6 +322,11 @@ minclude ppm_get_field_template(4,d)
       SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
               istart_p,iend_p,ghostsize,bcdef,info)
           !!! Constructor for subpatch data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch)              :: p
           CLASS(ppm_t_equi_mesh_),TARGET     :: mesh
           !! mesh
@@ -403,6 +418,11 @@ minclude ppm_get_field_template(4,d)
       !DESTROY
       SUBROUTINE subpatch_destroy(p,info)
           !!! Destructor for subpatch data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch)              :: p
           INTEGER,               INTENT(OUT) :: info
 
@@ -453,6 +473,11 @@ minclude ppm_get_field_template(4,d)
       !GET POSITION
       PURE FUNCTION subpatch_get_pos2d(p,i,j) RESULT (pos)
           !!! Return position of mesh node i,j,k
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch),  INTENT(IN) :: p
           INTEGER,                INTENT(IN) :: i
           INTEGER,                INTENT(IN) :: j
@@ -468,6 +493,11 @@ minclude ppm_get_field_template(4,d)
       END FUNCTION subpatch_get_pos2d
       PURE FUNCTION subpatch_get_pos3d(p,i,j,k) RESULT (pos)
           !!! Return position of mesh node i,j,k
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch),  INTENT(IN) :: p
           INTEGER,                INTENT(IN) :: i
           INTEGER,                INTENT(IN) :: j
@@ -487,6 +517,11 @@ minclude ppm_get_field_template(4,d)
       !CREATE
       SUBROUTINE subpatch_A_create(this,vecsize,info,patchid)
           !!! Constructor for subpatch Arrays data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_A_subpatch)            :: this
           INTEGER                            :: vecsize
           INTEGER,               INTENT(OUT) :: info
@@ -516,6 +551,11 @@ minclude ppm_get_field_template(4,d)
       !DESTROY
       SUBROUTINE subpatch_A_destroy(this,info)
           !!! Destructor for subpatch Arrays data structure
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_A_subpatch)            :: this
           INTEGER,               INTENT(OUT) :: info
 
@@ -539,6 +579,7 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
           USE ppm_module_check_id
+
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -547,7 +588,7 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh)                                       :: this
+          CLASS(ppm_t_equi_mesh),                        INTENT(INOUT) :: this
           !!! cartesian mesh object
           INTEGER,                                       INTENT(IN   ) :: topoid
           !!! Topology ID for which mesh has been created
@@ -718,6 +759,7 @@ minclude ppm_get_field_template(4,d)
           ldc(2) = nsubs
           CALL ppm_alloc(this%istart,ldc,iopt,info)
           or_fail_alloc("could not allocate this%istart")
+
           CALL ppm_alloc(this%iend,ldc,iopt,info)
           or_fail_alloc("could not allocate this%iend")
 
@@ -868,6 +910,7 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
           USE ppm_module_check_id
+
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -876,9 +919,9 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh)                  :: this
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
           !!! cartesian mesh object
-          INTEGER                 , INTENT(  OUT) :: info
+          INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           !-------------------------------------------------------------------------
           !  Local variables
@@ -903,6 +946,8 @@ minclude ppm_get_field_template(4,d)
           or_fail_dealloc("h")
           CALL ppm_alloc(this%ghostsize,ldc,iopt,info)
           or_fail_dealloc("ghostsize")
+          CALL ppm_alloc(this%nnodes,ldc,iopt,info)
+          or_fail_dealloc("nnodes")
           CALL ppm_alloc(this%istart,ldc,iopt,info)
           or_fail_dealloc("istart")
           CALL ppm_alloc(this%iend,ldc,iopt,info)
@@ -931,11 +976,16 @@ minclude ppm_get_field_template(4,d)
       END SUBROUTINE equi_mesh_destroy
 
       SUBROUTINE equi_mesh_create_prop(this,field,discr_data,info,p_idx)
-          CLASS(ppm_t_equi_mesh)                            :: this
-          CLASS(ppm_t_field_),                  INTENT(IN)  :: field
-          CLASS(ppm_t_mesh_discr_data_),POINTER,INTENT(OUT) :: discr_data
-          INTEGER,                              INTENT(OUT) :: info
-          INTEGER,OPTIONAL,                     INTENT(OUT) :: p_idx
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh),                 INTENT(INOUT) :: this
+          CLASS(ppm_t_field_),                    INTENT(IN   ) :: field
+          CLASS(ppm_t_mesh_discr_data_), POINTER, INTENT(  OUT) :: discr_data
+          INTEGER,                                INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,                       INTENT(  OUT) :: p_idx
 
           CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
           CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
@@ -950,52 +1000,58 @@ minclude ppm_get_field_template(4,d)
 
 
           ALLOCATE(ppm_t_mesh_discr_data::discr_data,STAT=info)
-                  or_fail_alloc("discr_data")
+          or_fail_alloc("discr_data")
+
           CALL discr_data%create(field,info)
-                  or_fail("discr_data%create()")
+          or_fail("discr_data%create()")
 
           !Create a new data array on the mesh to store this field
           p => this%subpatch%begin()
           DO WHILE (ASSOCIATED(p))
               ! create a new subpatch_data object
               subpdat => this%new_subpatch_data_ptr(info)
-                  or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
+              or_fail_alloc("could not get a new ppm_t_subpatch_data pointer")
 
               CALL subpdat%create(discr_data,p,info)
-                  or_fail("could not create new subpatch_data")
+              or_fail("could not create new subpatch_data")
 
               CALL discr_data%subpatch%push(subpdat,info)
-                  or_fail("could not add new subpatch_data to discr_data")
+              or_fail("could not add new subpatch_data to discr_data")
 
               CALL p%subpatch_data%push(subpdat,info,p_idx)
-                  or_fail("could not add new subpatch_data to subpatch collection")
+              or_fail("could not add new subpatch_data to subpatch collection")
 
               p => this%subpatch%next()
           ENDDO
 
           CALL this%mdata%push(discr_data,info)
-              or_fail("could not add new discr_data to discr%mdata")
-
+          or_fail("could not add new discr_data to discr%mdata")
 
           !check that the returned pointer makes sense
           check_associated(discr_data)
-
 
           end_subroutine()
       END SUBROUTINE equi_mesh_create_prop
 
       SUBROUTINE equi_mesh_prop_zero(this,Field,info)
-          !! Zero a property allocated on this mesh
-          CLASS(ppm_t_equi_mesh)                            :: this
-          CLASS(ppm_t_field_)                               :: Field
-          INTEGER,                              INTENT(OUT) :: info
-          INTEGER              :: lda
+          !!! Zero a property allocated on this mesh
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_field_),    INTENT(IN   ) :: Field
+          INTEGER,                INTENT(  OUT) :: info
+
+          INTEGER :: lda
 
           start_subroutine("equi_mesh_prop_zero")
 
           lda = Field%lda
 
-          IF (ppm_dim.EQ.2) THEN
+          SELECT CASE (ppm_dim)
+          CASE (2)
               SELECT CASE (lda)
               CASE (1)
               foreach n in equi_mesh(this) with sca_fields(Field) prec(ppm_kind_double)
@@ -1029,7 +1085,8 @@ minclude ppm_get_field_template(4,d)
                       Field_n(1:lda) = REAL(0,ppm_kind_double)
               end foreach
               END SELECT
-          ELSE
+
+          CASE DEFAULT
               SELECT CASE (lda)
               CASE (1)
               foreach n in equi_mesh(this) with sca_fields(Field) indices(i,j,k) prec(ppm_kind_double)
@@ -1063,7 +1120,7 @@ minclude ppm_get_field_template(4,d)
                       Field_n(1:lda) = REAL(0,ppm_kind_double)
               end foreach
               END SELECT
-          ENDIF
+          END SELECT
 
           end_subroutine()
       END SUBROUTINE equi_mesh_prop_zero
@@ -1073,20 +1130,28 @@ minclude ppm_get_field_template(4,d)
           !!! Add a patch to a mesh
           !!! The patch corners are given in terms of their absolute coordinates,
           !!! but the patch is then shrunk to the nearest mesh nodes.
+          !-------------------------------------------------------------------------
+          !  Modules
+          !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
 
-          CLASS(ppm_t_equi_mesh)                  :: this
-          REAL(ppm_kind_double),DIMENSION(:)      :: patch
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+
+          CLASS(ppm_t_equi_mesh),                     INTENT(INOUT) :: this
+          REAL(ppm_kind_double), DIMENSION(:),        INTENT(INOUT) :: patch
           !!! Positions of the corners of the patch
           !!! (x1,y1,z1,x2,y2,z2), where 1 is the lower-left-bottom corner
           !!! and 2 is the upper-right-top corner.
-          INTEGER                 , INTENT(  OUT) :: info
+          INTEGER,                                    INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
-          INTEGER, OPTIONAL                       :: patchid
+          INTEGER, OPTIONAL,                          INTENT(IN   ) :: patchid
           !!! id of the patch, if we want one.
-          LOGICAL, OPTIONAL                       :: infinite
+          LOGICAL, OPTIONAL,                          INTENT(IN   ) :: infinite
           !!! true if the patch should cover the whole domain
-          INTEGER, OPTIONAL,    DIMENSION(2*ppm_dim)  :: bcdef
+          INTEGER, OPTIONAL,    DIMENSION(2*ppm_dim), INTENT(IN   ) :: bcdef
           !!! Boundary conditions. Default is free-space boundary conditions if
           !!! strictly inside the computational domain, or the bcdef specified
           !!! for the comput. domain if not.
@@ -1143,24 +1208,24 @@ minclude ppm_get_field_template(4,d)
               iend_p(1:ppm_dim)   =  HUGE(1)/2
           ELSE
               istart_p(1:ppm_dim) = 1 + &
-                  CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))
+              & CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))
               iend_p(1:ppm_dim)   = 1 + &
-                  FLOOR((patch(ppm_dim+1:2*ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
+              & FLOOR((patch(ppm_dim+1:2*ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
           ENDIF
 
           !Re-define the patch boundaries so that its corners fall on mesh nodes
           patch(1:ppm_dim)           = (istart_p(1:ppm_dim) - 1) * &
-              &                                 h(1:ppm_dim) + Offset(1:ppm_dim)
+          &                             h(1:ppm_dim) + Offset(1:ppm_dim)
           patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim) - 1)   * &
-              &                                 h(1:ppm_dim) + Offset(1:ppm_dim)
+          &                             h(1:ppm_dim) + Offset(1:ppm_dim)
 
           !Bounds for the mesh nodes that are inside the computational
           !domain
           istart_d(1:ppm_dim) = 1 + &
-              CEILING(( topo%min_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
+          &   CEILING(( topo%min_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
           iend_d(1:ppm_dim)   = 1 + &
-              FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/&
-              (h(1:ppm_dim)-epsilon(h(1:ppm_dim))))
+          &   FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/&
+          &         (h(1:ppm_dim)-EPSILON(h(1:ppm_dim))))
 
           !stdout("istart_d = ",istart_d)
           !stdout("iend_d = ",iend_d)
@@ -1198,28 +1263,32 @@ minclude ppm_get_field_template(4,d)
               ! are going to be added)
               !----------------------------------------------------------------
               IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-                  ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
-                     THEN
-                 ASSOCIATE (sarray => this%subpatch_by_sub(i))
-                 IF (sarray%nsubpatch.GE.sarray%size) THEN
-                     size2 = MAX(2*sarray%size,5)
-                     IF (size_tmp.LT.size2) THEN
-                         dealloc_pointer(tmp_array)
-                         ALLOCATE(tmp_array(size2),STAT=info)
-                             or_fail_alloc("tmp_array")
-                     ENDIF
-                     DO j=1,sarray%nsubpatch
-                         tmp_array(j)%t => sarray%vec(j)%t
-                     ENDDO
-                     dealloc_pointer(sarray%vec)
+              &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
 
-                     ALLOCATE(sarray%vec(size2),STAT=info)
-                         or_fail_alloc("sarray%vec")
-                     DO j=1,sarray%nsubpatch
-                         sarray%vec(j)%t => tmp_array(j)%t
-                     ENDDO
-                     sarray%size = size2
-                 ENDIF
+                 ASSOCIATE (sarray => this%subpatch_by_sub(i))
+                    IF (sarray%nsubpatch.GE.sarray%size) THEN
+                        size2 = MAX(2*sarray%size,5)
+
+                        IF (size_tmp.LT.size2) THEN
+                            dealloc_pointer(tmp_array)
+                            ALLOCATE(tmp_array(size2),STAT=info)
+                            or_fail_alloc("tmp_array")
+                        ENDIF
+
+                        DO j=1,sarray%nsubpatch
+                           tmp_array(j)%t => sarray%vec(j)%t
+                        ENDDO
+
+                        dealloc_pointer(sarray%vec)
+
+                        ALLOCATE(sarray%vec(size2),STAT=info)
+                        or_fail_alloc("sarray%vec")
+
+                        DO j=1,sarray%nsubpatch
+                            sarray%vec(j)%t => tmp_array(j)%t
+                        ENDDO
+                        sarray%size = size2
+                    ENDIF
                  END ASSOCIATE
               ENDIF
           ENDDO
@@ -1235,8 +1304,7 @@ minclude ppm_get_field_template(4,d)
               ! check if the subdomain overlaps with the patch
               !----------------------------------------------------------------
               IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-                  ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub)))&
-                     THEN
+              &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
 
                   !----------------------------------------------------------------
                   !Finds the mesh nodes which are contained in the overlap region
@@ -1248,9 +1316,9 @@ minclude ppm_get_field_template(4,d)
                   !a particle is within a given subpatch)
                   !----------------------------------------------------------------
                   pstart(1:ppm_dim) = MAX(patch(1:ppm_dim),&
-                      topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+                  &   topo%min_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
                   pend(1:ppm_dim)   = MIN(patch(ppm_dim+1:2*ppm_dim),&
-                      topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
+                  &   topo%max_subd(1:ppm_dim,isub))-Offset(1:ppm_dim)
 
                   !----------------------------------------------------------------
                   !Coordinates on the grid
@@ -1321,7 +1389,7 @@ minclude ppm_get_field_template(4,d)
                   ! create a new subpatch object
                   !----------------------------------------------------------------
                   ALLOCATE(ppm_t_subpatch::p,STAT=info)
-                      or_fail_alloc("could not allocate ppm_t_subpatch pointer")
+                  or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
                   !----------------------------------------------------------------
                   ! determine ghostlayer size for this subpatch
@@ -1340,8 +1408,8 @@ minclude ppm_get_field_template(4,d)
                   ENDIF
 
                   CALL p%create(this,isub,istart,iend,pstart,pend,&
-                      istart_p,iend_p,ghostsize,bc,info)
-                      or_fail("could not create new subpatch")
+                  &    istart_p,iend_p,ghostsize,bc,info)
+                  or_fail("could not create new subpatch")
 
                   nsubpatch = nsubpatch+1
                   A_p%subpatch(nsubpatch)%t => p
@@ -1357,11 +1425,13 @@ minclude ppm_get_field_template(4,d)
                   ! put the subpatch object in the collection of subpatches on this mesh
                   !----------------------------------------------------------------
                   CALL this%subpatch%push(p,info,id)
-                      or_fail("could not add new subpatch to mesh")
+                  or_fail("could not add new subpatch to mesh")
               ENDIF
           ENDDO sub
+
           CALL this%patch%push(A_p,info,id)
-              or_fail("could not add new subpatch_ptr_array to mesh%patch")
+          or_fail("could not add new subpatch_ptr_array to mesh%patch")
+
           this%patch%vec(id)%t%nsubpatch = nsubpatch
           this%patch%vec(id)%t%patchid = pid
 
@@ -1378,10 +1448,15 @@ minclude ppm_get_field_template(4,d)
       SUBROUTINE equi_mesh_def_uniform(this,info,patchid)
           !!! Add a uniform patch to a mesh (the patch covers the whole computational
           !!! domain, effectively mimicking a normal usual mesh without patches).
-          CLASS(ppm_t_equi_mesh)                  :: this
-          INTEGER                 , INTENT(  OUT) :: info
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
-          INTEGER, OPTIONAL                       :: patchid
+          INTEGER, OPTIONAL,      INTENT(IN   ) :: patchid
           !!! id of the (uniform) patch, if we want one.
           !-------------------------------------------------------------------------
           !  Local variables
@@ -1402,7 +1477,7 @@ minclude ppm_get_field_template(4,d)
           ! computational domain)
           !----------------------------------------------------------------
           CALL this%def_patch(patch,info,patchid,infinite=.TRUE.)
-              or_fail("failed to add patch")
+          or_fail("failed to add patch")
 
           !TODO add some checks for the finiteness of the computational domain
 
@@ -1412,14 +1487,15 @@ minclude ppm_get_field_template(4,d)
 
       FUNCTION equi_mesh_new_subpatch_data_ptr(this,info) RESULT(sp)
           !!! returns a pointer to a new subpatch_data object
+
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh)                  :: this
+          CLASS(ppm_t_equi_mesh),      INTENT(IN   ) :: this
           !!! cartesian mesh object
-          CLASS(ppm_t_subpatch_data_),POINTER     :: sp
-          INTEGER                 , INTENT(  OUT) :: info
+          CLASS(ppm_t_subpatch_data_), POINTER       :: sp
+          INTEGER,                     INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           !-------------------------------------------------------------------------
           !  Local variables
@@ -1437,8 +1513,13 @@ minclude ppm_get_field_template(4,d)
       FUNCTION equi_mesh_list_of_fields(this,info) RESULT(fids)
           !!! Returns a pointer to an array containing the IDs of all the
           !!! fields that are currently discretized on this mesh
-          CLASS(ppm_t_equi_mesh)          :: this
-          INTEGER,DIMENSION(:),POINTER    :: fids
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          INTEGER, DIMENSION(:),  POINTER       :: fids
 
           INTEGER                         :: i,j
           CLASS(ppm_t_main_abstr),POINTER :: f => NULL()
@@ -1455,7 +1536,7 @@ minclude ppm_get_field_template(4,d)
           ENDIF
 
           ALLOCATE(fids(this%field_ptr%nb),STAT=info)
-              or_fail_alloc("fids")
+          or_fail_alloc("fids")
 
           !j=1
           !DO i=this%field_ptr%min_id,this%field_ptr%max_id
@@ -1483,18 +1564,23 @@ minclude ppm_get_field_template(4,d)
 
       SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
           !!! Push field data onto the mesh mappings buffers
-          CLASS(ppm_t_equi_mesh)             :: this
-          CLASS(ppm_t_field_)                :: field
-          !!! this mesh is discretized on that field
-          INTEGER,               INTENT(OUT) :: info
 
-          INTEGER                            :: p_idx
-          REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
-          REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
-          REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_field_),    INTENT(IN   ) :: field
+          !!! this mesh is discretized on that field
+          INTEGER,                INTENT(OUT) :: info
+
+          REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()
+          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: wp3_dummy => NULL()
+          REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: wp4_dummy => NULL()
+
+          INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_ghost_push")
-
 
           !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
@@ -1523,18 +1609,23 @@ minclude ppm_get_field_template(4,d)
 
       SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
           !!! Push field data onto the mesh mappings buffers
-          CLASS(ppm_t_equi_mesh)             :: this
-          CLASS(ppm_t_field_)                :: field
-          !!! this mesh is discretized on that field
-          INTEGER,               INTENT(OUT) :: info
 
-          INTEGER                            :: p_idx
-          REAL(ppm_kind_double),DIMENSION(:,:),POINTER    :: wp2_dummy => NULL()
-          REAL(ppm_kind_double),DIMENSION(:,:,:),POINTER  :: wp3_dummy => NULL()
-          REAL(ppm_kind_double),DIMENSION(:,:,:,:),POINTER:: wp4_dummy => NULL()
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_field_),    INTENT(INOUT) :: field
+          !!! this mesh is discretized on that field
+          INTEGER,                INTENT(  OUT) :: info
+
+          REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()
+          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: wp3_dummy => NULL()
+          REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: wp4_dummy => NULL()
+
+          INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_ghost_pop")
-
 
           !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
@@ -1561,25 +1652,36 @@ minclude ppm_get_field_template(4,d)
       END SUBROUTINE equi_mesh_map_ghost_pop
 
       SUBROUTINE mesh_discr_data_create(this,field,info)
-          CLASS(ppm_t_mesh_discr_data)            :: this
-          CLASS(ppm_t_field_),TARGET, INTENT(IN)  :: field
-          INTEGER,                    INTENT(OUT) :: info
-          start_subroutine("mesh_discr_data_create")
 
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_mesh_discr_data), INTENT(INOUT) :: this
+          CLASS(ppm_t_field_),TARGET,   INTENT(IN   ) :: field
+          INTEGER,                      INTENT(  OUT) :: info
+
+          start_subroutine("mesh_discr_data_create")
 
           this%data_type = field%data_type
           this%name = field%name
           this%lda = field%lda
           this%field_ptr => field
+
           ALLOCATE(ppm_v_subpatch_data::this%subpatch,STAT=info)
-              or_fail_alloc("this%subpatch")
+          or_fail_alloc("this%subpatch")
 
           end_subroutine()
       END SUBROUTINE
 
       SUBROUTINE mesh_discr_data_destroy(this,info)
-          CLASS(ppm_t_mesh_discr_data)        :: this
-          INTEGER,                INTENT(OUT) :: info
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_mesh_discr_data), INTENT(INOUT) :: this
+          INTEGER,                      INTENT(  OUT) :: info
           start_subroutine("mesh_discr_data_destroy")
 
           this%data_type = 0
@@ -1591,10 +1693,17 @@ minclude ppm_get_field_template(4,d)
       END SUBROUTINE
 
       SUBROUTINE equi_mesh_print_vtk(this,filename,info)
+
           USE ppm_module_io_vtk
-          CLASS(ppm_t_equi_mesh)                            :: this
-          CHARACTER(LEN=*)                                  :: filename
-          INTEGER,                              INTENT(OUT) :: info
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+
+          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CHARACTER(LEN=*),       INTENT(IN   ) :: filename
+          INTEGER,                INTENT(OUT) :: info
 
           start_subroutine("equi_mesh_print_vtk")
 
@@ -1613,7 +1722,6 @@ minclude ppm_get_field_template(4,d)
 #include "mesh/mesh_map_ghost_init.f"
 #include "mesh/mesh_map_ghost_get.f"
 #include "mesh/mesh_map_ghost_put.f"
-
 #include "mesh/mesh_map_send.f"
 
 #define __SFIELD 1
