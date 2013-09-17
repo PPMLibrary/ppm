@@ -1,6 +1,6 @@
 FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
-    !!! Check whether there exists a neighbour list between 
-    !!! one particle set and another 
+    !!! Check whether there exists a neighbour list between
+    !!! one particle set and another
     !!! (default is that the two sets are the same)
     CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
     !!! particle set
@@ -34,7 +34,7 @@ END FUNCTION DTYPE(has_neighlist)
 
 
 FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
-    !!! Returns the neighbour list between one particle set 
+    !!! Returns the neighbour list between one particle set
     !!! and another (default is of course that the two sets
     !!! are the same)
     CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
@@ -86,7 +86,7 @@ SUBROUTINE DTYPE(get_vlist)(this,nvlist,vlist,info,NList)
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
     start_subroutine("get_vlist")
 
-    
+
     IF (PRESENT(NList)) THEN
         nl => NList
     ELSE
@@ -117,7 +117,7 @@ SUBROUTINE DTYPE(get_nvlist)(this,nvlist,info,NList)
     CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
     start_subroutine("get_vlist")
 
-    
+
     IF (PRESENT(NList)) THEN
         nl => NList
     ELSE
@@ -125,7 +125,7 @@ SUBROUTINE DTYPE(get_nvlist)(this,nvlist,info,NList)
     ENDIF
 
     check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
-    check_true(<#nl%uptodate#>,"Neighbour lists need to be updated") 
+    check_true(<#nl%uptodate#>,"Neighbour lists need to be updated")
 
     nvlist => nl%nvlist
 

@@ -1,4 +1,4 @@
-MODULE ppm_module_particles_typedef
+      MODULE ppm_module_particles_typedef
 
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2
@@ -10,24 +10,24 @@ MODULE ppm_module_particles_typedef
 #define __LOGICAL 7
 #define __CHAR 8
 
-USE ppm_module_alloc
-USE ppm_module_interfaces
-USE ppm_module_topo_typedef
-USE ppm_module_mapping_typedef
-USE ppm_module_data
-USE ppm_module_error
-USE ppm_module_write
-USE ppm_module_substart
-USE ppm_module_substop
+      USE ppm_module_data
+      USE ppm_module_error
+      USE ppm_module_alloc
+      USE ppm_module_write
+      USE ppm_module_substart
+      USE ppm_module_substop
+      USE ppm_module_interfaces
+      USE ppm_module_topo_typedef
+      USE ppm_module_mapping_typedef
 
-IMPLICIT NONE
+      IMPLICIT NONE
 
-!----------------------------------------------------------------------
-! Global variables
-!----------------------------------------------------------------------
+      !----------------------------------------------------------------------
+      ! Global variables
+      !----------------------------------------------------------------------
 
-INTEGER                               :: ppm_particles_seedsize
-INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
+      INTEGER                               :: ppm_particles_seedsize
+      INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 
 #define  DTYPE(a) a/**/_s
 #define  CTYPE(a) a/**/_sc
@@ -41,11 +41,11 @@ INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
 #define  _MK _ppm_kind_double
 #include "part/particles_typedef.f"
 
-CHARACTER(LEN=ppm_char)         :: cbuf
-INTEGER, PRIVATE, DIMENSION(3)  :: ldc
-!!! Number of elements in all dimensions for allocation
+      CHARACTER(LEN=ppm_char)         :: cbuf
+      INTEGER, PRIVATE, DIMENSION(3)  :: ldc
+      !!! Number of elements in all dimensions for allocation
 
-CONTAINS
+      CONTAINS
 
 
 #include "part/ppm_particles_helpers.f"
@@ -175,5 +175,5 @@ CONTAINS
 #undef  DTYPE
 #undef  __KIND
 
-END MODULE ppm_module_particles_typedef
+      END MODULE ppm_module_particles_typedef
 

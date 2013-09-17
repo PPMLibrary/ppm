@@ -586,7 +586,7 @@
      &           'Assigning subs to processors failed',__LINE__,info)
             GOTO 9999
          ENDIF
-         ELSEIF (assig .EQ. ppm_param_assign_nodal_cut .OR.      &
+      ELSEIF (assig .EQ. ppm_param_assign_nodal_cut .OR.      &
      &       assig .EQ. ppm_param_assign_nodal_comm .OR.     &
      &       assig .EQ. ppm_param_assign_dual_cut .OR.       &
      &       assig .EQ. ppm_param_assign_dual_comm) THEN

@@ -575,7 +575,7 @@
           INTEGER             :: i
           INTEGER             :: info
 
-          ncolor = max_degree                     ! # colors is max_degree
+          ncolor = max_degree                     ! colors is max_degree
           DO i=1, nedges
               node(i)%color = 0                   ! no color
               node(i)%iscolored = .FALSE.         ! noone is colored yet

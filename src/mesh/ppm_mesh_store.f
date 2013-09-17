@@ -34,17 +34,13 @@
       !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
-      !USE ppm_module_data_mesh
-      USE ppm_module_topo_typedef
-      USE ppm_module_mesh_typedef
-      !USE ppm_module_util_invert_list
       USE ppm_module_error
-      !USE ppm_module_mesh_alloc
-      !USE ppm_module_alloc
-      !USE ppm_module_mesh_alloc
       USE ppm_module_substart
       USE ppm_module_substop
+      USE ppm_module_alloc
       USE ppm_module_check_id
+      USE ppm_module_topo_typedef
+      USE ppm_module_mesh_typedef
 
       IMPLICIT NONE
       !-------------------------------------------------------------------------
@@ -74,6 +70,7 @@
       CLASS(ppm_t_equi_mesh_), POINTER :: mesh => NULL()
 
       REAL(ppm_kind_double) :: t0
+      REAL(ppm_kind_double), DIMENSION(SIZE(NM)) :: Offset
 
       INTEGER, DIMENSION(3) :: ldc
       INTEGER               :: iopt,ld,ud,kk,i,j,isub
@@ -98,22 +95,21 @@
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
-      topo => ppm_topo(topoid)%t
-
       IF (meshid .LE. 0) THEN
+
          !-----------------------------------------------------------------------
-         !  Create a mesh identifier if the user specified none
+         !  Create a new mesh and mesh identifier if the user specified none
          !-----------------------------------------------------------------------
-         meshid          = ppm_mesh%max_id + 1
-         ppm_mesh%max_id = meshid
-         ppm_mesh%nb     = ppm_mesh%nb + 1
+         Offset=0.0_ppm_kind_double
+         ALLOCATE(ppm_t_equi_mesh::mesh, STAT=info)
+         or_fail_alloc("mesh pointer")
+         CALL mesh%create(topoid,Offset,info,Nm)
 
-         IF (.NOT.ppm_mesh%exists(meshid)) THEN
-
-            CALL ppm_mesh%grow_size(info)
-            or_fail("ppm_mesh%grow_size()")
-
-         ENDIF
+         !-----------------------------------------------------------------------
+         !  Push the created mesh and mesh identifier into the collection
+         !-----------------------------------------------------------------------
+         CALL ppm_mesh%push(mesh,info,meshid)
+         ppm_mesh%vec(meshid)%t%ID=meshid
 
       ELSE
 
@@ -121,50 +117,51 @@
             fail('meshid is invalid',ppm_err_argument,exit_point=9999)
          ENDIF
 
+         SELECT CASE(ASSOCIATED(ppm_mesh%vec(meshid)%t))
+         CASE (.FALSE.)
+            ALLOCATE(ppm_t_equi_mesh::ppm_mesh%vec(meshid)%t, STAT=info)
+            or_fail_alloc("ppm_mesh%vec(meshid)%t pointer")
+         END SELECT
+
+         topo   => ppm_topo(topoid)%t
+         mesh   => ppm_mesh%vec(meshid)%t
+
+         iopt   = ppm_param_alloc_fit
+
+         ldc(1) = SIZE(Nm,1)
+         CALL ppm_alloc(mesh%Nm,ldc,iopt,info)
+         or_fail_alloc('mesh%Nm')
+
+         ldc(1) = SIZE(ndata,1)
+         ldc(2) = SIZE(ndata,2)
+         CALL ppm_alloc(mesh%nnodes,ldc,iopt,info)
+         or_fail_alloc('mesh%nnodes')
+
+         ldc(1) = SIZE(istart,1)
+         ldc(2) = SIZE(istart,2)
+         CALL ppm_alloc(mesh%istart,ldc,iopt,info)
+         or_fail_alloc('mesh%istart')
+
+         CALL ppm_alloc(mesh%iend,ldc,iopt,info)
+         or_fail_alloc('mesh%iend')
+
+         !-------------------------------------------------------------------------
+         !  Store the user-provided ID of this mesh
+         !-------------------------------------------------------------------------
+         mesh%ID=meshid
+         mesh%topoid=topoid
+
+         !-------------------------------------------------------------------------
+         !  Store the mesh information
+         !-------------------------------------------------------------------------
+         DO isub = 1,topo%nsubs
+            mesh%nnodes(1:ppm_dim,isub) = ndata(1:ppm_dim,isub)
+            mesh%istart(1:ppm_dim,isub) = istart(1:ppm_dim,isub)
+            mesh%iend(1:ppm_dim,isub)   = istart(1:ppm_dim,isub)+ndata(1:ppm_dim,isub)-1
+         ENDDO
+         mesh%Nm(1:ppm_dim) = Nm(1:ppm_dim)
+
       ENDIF
-
-      SELECT CASE(ASSOCIATED(ppm_mesh%vec(meshid)%t))
-      CASE (.FALSE.)
-         ALLOCATE(ppm_t_equi_mesh::ppm_mesh%vec(meshid)%t)
-      END SELECT
-
-      mesh => ppm_mesh%vec(meshid)%t
-
-!       CALL mesh%create(topoid,Offset,info,Nm)
-
-      iopt   = ppm_param_alloc_fit
-
-      ldc(1) = SIZE(ndata,1)
-      ldc(2) = SIZE(ndata,2)
-      CALL ppm_alloc(mesh%nnodes,ldc,iopt,info)
-      or_fail_alloc('mesh%nnodes')
-
-      ldc(1) = SIZE(istart,1)
-      ldc(2) = SIZE(istart,2)
-      CALL ppm_alloc(mesh%istart,ldc,iopt,info)
-      or_fail_alloc('mesh%istart')
-
-      CALL ppm_alloc(mesh%iend,ldc,iopt,info)
-      or_fail_alloc('mesh%iend')
-
-      ldc(1) = SIZE(Nm,1)
-      CALL ppm_alloc(mesh%Nm,ldc,iopt,info)
-      or_fail_alloc('mesh%Nm')
-
-      !-------------------------------------------------------------------------
-      !  Store the user-provided ID of this mesh
-      !-------------------------------------------------------------------------
-      mesh%ID=meshid
-      mesh%topoid=topoid
-
-      !-------------------------------------------------------------------------
-      !  Store the mesh information
-      !-------------------------------------------------------------------------
-      DO isub = 1,topo%nsubs
-         mesh%nnodes(1:ppm_dim,isub) =  ndata(1:ppm_dim,isub)
-         mesh%istart(1:ppm_dim,isub) = istart(1:ppm_dim,isub)
-      ENDDO
-      mesh%Nm(1:ppm_dim) = Nm(1:ppm_dim)
 
       !-------------------------------------------------------------------------
       !  Return

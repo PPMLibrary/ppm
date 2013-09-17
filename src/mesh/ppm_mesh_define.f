@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_mesh_define
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -53,12 +53,12 @@
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
       !!! Topology ID for which to create mesh
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
-      !!! Number of mesh POINTS in each dimension. Subs must be compatible
-      !!! with this mesh, otherwise an error occurs.
       INTEGER                 , INTENT(INOUT) :: meshid
       !!! Mesh ID of the new mesh. If .LE. 0 on input,
       !!! the routine will create an automatic one and return it here.
+      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
+      !!! Number of mesh POINTS in each dimension. Subs must be compatible
+      !!! with this mesh, otherwise an error occurs.
       INTEGER , DIMENSION(:,:), POINTER       :: istart
       !!! Start indices of all subs meshes in global mesh
       INTEGER , DIMENSION(:,:), POINTER       :: ndata
@@ -69,9 +69,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)      :: t0
-      LOGICAL                    :: valid
       TYPE(ppm_t_topo), POINTER  :: topo => NULL()
+
+      REAL(ppm_kind_double)      :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_mesh_define'
+
+      LOGICAL                    :: valid
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -80,7 +84,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_mesh_define',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -95,48 +99,42 @@
       !-------------------------------------------------------------------------
       !  Create new mesh
       !-------------------------------------------------------------------------
-      IF (topo%prec .EQ. ppm_kind_single) THEN
-        CALL ppm_mesh_on_subs(Nm,topo%min_physs,topo%max_physs,topo%min_subs, &
-     &      topo%max_subs,topo%nsubs,istart,ndata,info)
-      ELSE
-        CALL ppm_mesh_on_subs(Nm,topo%min_physd,topo%max_physd,topo%min_subd, &
-     &      topo%max_subd,topo%nsubs,istart,ndata,info)
-      ENDIF
+      SELECT CASE (topo%prec)
+      CASE (ppm_kind_single)
+         CALL ppm_mesh_on_subs(Nm,topo%min_physs,topo%max_physs,topo%min_subs, &
+         &    topo%max_subs,topo%nsubs,istart,ndata,info)
 
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          GOTO 9999
-      ENDIF
+      CASE DEFAULT
+         CALL ppm_mesh_on_subs(Nm,topo%min_physd,topo%max_physd,topo%min_subd, &
+         &    topo%max_subd,topo%nsubs,istart,ndata,info)
+
+      END SELECT
+      or_fail('Defining meshes failed')
 
       !-------------------------------------------------------------------------
       !  Store new mesh
       !-------------------------------------------------------------------------
       CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_sub_failed,'ppm_mesh_define',   &
-     &        'Storing new mesh failed.',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail('Storing new mesh failed.')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_mesh_define',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_mesh_define',  &
+              CALL ppm_error(ppm_err_ppm_noinit,caller,  &
      &            'Please call ppm_init first!',__LINE__,info)
               GOTO 8888
           ENDIF
           CALL ppm_check_topoid(topoid,valid,info)
           IF (.NOT. valid) THEN
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_mesh_define',  &
+              CALL ppm_error(ppm_err_argument,caller,  &
      &            'topoid is invalid!',__LINE__,info)
               GOTO 8888
           ENDIF
