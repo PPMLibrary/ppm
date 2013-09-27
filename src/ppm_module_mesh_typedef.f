@@ -221,7 +221,7 @@ minclude ppm_get_field_template(4,d)
                   stdout("ndim = ",ndim)
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_argument,caller,   &
-                      &        'invalid type for mesh patch data',__LINE__,info)
+                  &    'invalid type for mesh patch data',__LINE__,info)
               END SELECT
           CASE (3)
               SELECT CASE (datatype)
@@ -244,7 +244,7 @@ minclude ppm_get_field_template(4,d)
                   stdout(ndim)
                   info = ppm_error_fatal
                   CALL ppm_error(ppm_err_argument,caller,   &
-                      &        'invalid type for mesh patch data',__LINE__,info)
+                  &    'invalid type for mesh patch data',__LINE__,info)
               END SELECT
           CASE (4)
               SELECT CASE (datatype)
@@ -1519,12 +1519,15 @@ minclude ppm_get_field_template(4,d)
           !  Arguments
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
 
           INTEGER                         :: i,j
           CLASS(ppm_t_main_abstr),POINTER :: f => NULL()
 
-          start_function("equi_mesh_list_of_fields")
+          CHARACTER(LEN=ppm_char) :: caller = "equi_mesh_list_of_fields"
+
+          info = 0
 
           IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
               fids => NULL()

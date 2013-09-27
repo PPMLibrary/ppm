@@ -3194,7 +3194,7 @@ FUNCTION DTYPE(has_ghosts)(this,Field) RESULT(res)
 
     IF (PRESENT(Field)) THEN
         CALL this%get_discr(Field,prop,info)
-            or_fail("this field is not discretized on this particle set")
+        or_fail("this field is not discretized on this particle set")
         res = prop%flags(ppm_ppt_ghosts)
     ELSE
         res = this%flags(ppm_part_ghosts)
