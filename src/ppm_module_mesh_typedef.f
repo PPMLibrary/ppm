@@ -105,39 +105,43 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       !------------------------------------------------
       ! TODO: stuff that should be moved somewhere else:
       !------------------------------------------------
-      !used to be in ppm_module_map_field_ghost.f
-      INTEGER, DIMENSION(:  ), POINTER :: isendfromsub  => NULL()
-      INTEGER, DIMENSION(:  ), POINTER :: isendtosub    => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: isendpatchid  => NULL()
-      INTEGER, DIMENSION(:  ), POINTER :: sendbuf       => NULL()
-      INTEGER, DIMENSION(:  ), POINTER :: recvbuf       => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: isendblkstart => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: isendblksize  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: ioffset       => NULL()
-      ! sorted (according to proc-proc interaction order) offset list)
-      INTEGER, DIMENSION(:,:), POINTER :: mesh_ghost_offset => NULL()
-
-      PRIVATE :: isendfromsub,isendtosub,sendbuf,recvbuf,isendblkstart
-      PRIVATE :: isendblksize,ioffset,mesh_ghost_offset,isendpatchid
-
-      INTEGER, DIMENSION(:), POINTER :: invsublist => NULL()
-      INTEGER, DIMENSION(:), POINTER :: sublist    => NULL()
-
-      PRIVATE :: invsublist,sublist
-
       !used to be in ppm_module_map_field.f
-      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: sends => NULL()
-      REAL(ppm_kind_single), DIMENSION(:),   POINTER :: recvs => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: sendd => NULL()
-      REAL(ppm_kind_double), DIMENSION(:),   POINTER :: recvd => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: nsend => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: nrecv => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: psend => NULL()
-      INTEGER,               DIMENSION(:),   POINTER :: precv => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: pp => NULL()
-      INTEGER,               DIMENSION(:,:), POINTER :: qq => NULL()
+      REAL(ppm_kind_single), DIMENSION(:),   PRIVATE, POINTER :: sends => NULL()
+      REAL(ppm_kind_single), DIMENSION(:),   PRIVATE, POINTER :: recvs => NULL()
+      REAL(ppm_kind_double), DIMENSION(:),   PRIVATE, POINTER :: sendd => NULL()
+      REAL(ppm_kind_double), DIMENSION(:),   PRIVATE, POINTER :: recvd => NULL()
 
-      PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,qq,pp
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: nsend => NULL()
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: nrecv => NULL()
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: psend => NULL()
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: precv => NULL()
+
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: pp => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: qq => NULL()
+
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: irecvfromsub  => NULL()
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: irecvtosub    => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvpatchid  => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvblkstart => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: irecvblksize  => NULL()
+
+      !used to be in ppm_module_map_field_ghost.f
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: isendfromsub  => NULL()
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: isendtosub    => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendpatchid  => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendblkstart => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: isendblksize  => NULL()
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: ioffset       => NULL()
+
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: sendbuf       => NULL()
+      INTEGER,               DIMENSION(:  ), PRIVATE, POINTER :: recvbuf       => NULL()
+
+      ! sorted (according to proc-proc interaction order) offset list)
+      INTEGER,               DIMENSION(:,:), PRIVATE, POINTER :: mesh_ghost_offset => NULL()
+
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: invsublist => NULL()
+      INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: sublist    => NULL()
+
 
       !----------------------------------------------------------------------
       !  Type-bound procedures
@@ -407,8 +411,8 @@ minclude ppm_get_field_template(4,d)
 
 
           IF (.NOT.ASSOCIATED(p%subpatch_data)) THEN
-              ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
-                  or_fail_alloc("could not allocate p%subpatch_data")
+             ALLOCATE(ppm_c_subpatch_data::p%subpatch_data,STAT=info)
+             or_fail_alloc("could not allocate p%subpatch_data")
           ENDIF
 
           end_subroutine()
@@ -530,13 +534,12 @@ minclude ppm_get_field_template(4,d)
           start_subroutine("subpatch_A_create")
 
           IF (ASSOCIATED(this%subpatch)) THEN
-              CALL this%destroy(info)
-              or_fail_dealloc("could not destroy this ppm_t_A_subpatch object")
+             CALL this%destroy(info)
+             or_fail_dealloc("could not destroy this ppm_t_A_subpatch object")
           ENDIF
-          IF (.NOT.ASSOCIATED(this%subpatch)) THEN
-              ALLOCATE(ppm_t_ptr_subpatch::this%subpatch(vecsize),STAT=info)
-              or_fail_alloc("could not allocate this%subpatch")
-          ENDIF
+
+          ALLOCATE(ppm_t_ptr_subpatch::this%subpatch(vecsize),STAT=info)
+          or_fail_alloc("could not allocate this%subpatch")
 
           this%nsubpatch = 0
           IF (PRESENT(patchid)) THEN
@@ -1238,13 +1241,16 @@ minclude ppm_get_field_template(4,d)
           ALLOCATE(ppm_t_A_subpatch::A_p,STAT=info)
           or_fail_alloc("could not allocate ppm_t_A_subpatch pointer")
 
-          CALL A_p%create(topo%nsublist,info,patchid)
-          or_fail("could not initialize ppm_t_A_subpatch pointer")
-
           IF (PRESENT(patchid)) THEN
-              pid = patchid
+             CALL A_p%create(topo%nsublist,info,patchid)
+             or_fail("could not initialize ppm_t_A_subpatch pointer")
+
+             pid = patchid
           ELSE
-              pid = 0
+             CALL A_p%create(topo%nsublist,info)
+             or_fail("could not initialize ppm_t_A_subpatch pointer")
+
+             pid = 0
           ENDIF
           !-------------------------------------------------------------------------
           !  intersect each subdomain with the patch and store the corresponding
@@ -1264,8 +1270,9 @@ minclude ppm_get_field_template(4,d)
               !----------------------------------------------------------------
               IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
               &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-
-                 ASSOCIATE (sarray => this%subpatch_by_sub(i))
+                 ! yaser: subpach_by_sub should contain global index
+                 ! so I would use isub instead of i
+                 ASSOCIATE (sarray => this%subpatch_by_sub(isub))
                     IF (sarray%nsubpatch.GE.sarray%size) THEN
                         size2 = MAX(2*sarray%size,5)
 
@@ -1299,7 +1306,9 @@ minclude ppm_get_field_template(4,d)
           sub: DO i = 1,topo%nsublist
               isub = topo%isublist(i)
               !how many subpatches do we already have here
-              nsubpatchi = this%subpatch_by_sub(i)%nsubpatch
+              ! yaser: subpach_by_sub should contain global index
+              ! so I would use isub instead of i
+              nsubpatchi = this%subpatch_by_sub(isub)%nsubpatch
               !----------------------------------------------------------------
               ! check if the subdomain overlaps with the patch
               !----------------------------------------------------------------
@@ -1418,8 +1427,10 @@ minclude ppm_get_field_template(4,d)
                   !add a pointer to this subpatch
                   !----------------------------------------------------------------
                   nsubpatchi = nsubpatchi + 1
-                  this%subpatch_by_sub(i)%vec(nsubpatchi)%t => p
-                  this%subpatch_by_sub(i)%nsubpatch = nsubpatchi
+                  ! yaser: subpach_by_sub should contain global index
+                  ! so I would use isub instead of i
+                  this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
+                  this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
 
                   !----------------------------------------------------------------
                   ! put the subpatch object in the collection of subpatches on this mesh

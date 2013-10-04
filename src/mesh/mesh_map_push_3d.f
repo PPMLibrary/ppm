@@ -25,6 +25,8 @@
       SUBROUTINE ppm_map_field_push_3d_vec_i(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
       SUBROUTINE ppm_map_field_push_3d_vec_l(this,fdata_dummy,lda,p_idx,info,mask)
+#endif
+#endif
       !!! This routine pushes field data onto the send buffer for 3D meshes.
       !!!
       !!! [NOTE]
@@ -52,8 +54,7 @@
       !!! [WARNING]
       !!! DIM is the dimension of the fdata array and not the space
       !!! dimension ppm_dim!
-#endif
-#endif
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -76,44 +77,44 @@
       !-------------------------------------------------------------------------
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:)   , POINTER         :: fdata_dummy
-      INTEGER , DIMENSION(:,:,:)   , POINTER         :: fdata
+      INTEGER , DIMENSION(:,:,:),          POINTER :: fdata_dummy
+      INTEGER , DIMENSION(:,:,:),          POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:)   , POINTER         :: fdata_dummy
-      LOGICAL , DIMENSION(:,:,:)   , POINTER         :: fdata
+      LOGICAL , DIMENSION(:,:,:),          POINTER :: fdata_dummy
+      LOGICAL , DIMENSION(:,:,:),          POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:), POINTER         :: fdata_dummy
-      COMPLEX(MK), DIMENSION(:,:,:), POINTER         :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:),       POINTER :: fdata_dummy
+      COMPLEX(MK), DIMENSION(:,:,:),       POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:)   , POINTER         :: fdata_dummy
-      REAL(MK), DIMENSION(:,:,:)   , POINTER         :: fdata
+      REAL(MK), DIMENSION(:,:,:),          POINTER :: fdata_dummy
+      REAL(MK), DIMENSION(:,:,:),          POINTER :: fdata
 #endif
 
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:,:)   , POINTER       :: fdata_dummy
-      INTEGER , DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      INTEGER , DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
+      INTEGER , DIMENSION(:,:,:,:),        POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:,:)   , POINTER       :: fdata_dummy
-      LOGICAL , DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      LOGICAL , DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
+      LOGICAL , DIMENSION(:,:,:,:),        POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:,:), POINTER       :: fdata_dummy
-      COMPLEX(MK), DIMENSION(:,:,:,:), POINTER       :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:,:),     POINTER :: fdata_dummy
+      COMPLEX(MK), DIMENSION(:,:,:,:),     POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:,:)   , POINTER       :: fdata_dummy
-      REAL(MK), DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      REAL(MK), DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
+      REAL(MK), DIMENSION(:,:,:,:),        POINTER :: fdata
 #endif
 #endif
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub 
+      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub
       !!! (i.e. (i,j)=(1,1) corresponds to istart)                             +
       !!! 4th: isub 1...nsublist (all subs on this processor).
       !!!
       !!! For scalar fields, the first index is omitted (the others shift
       !!! accordingly).
-      LOGICAL, DIMENSION(:,:,:),   POINTER, OPTIONAL :: mask
+      LOGICAL, DIMENSION(:,:,:), OPTIONAL, POINTER :: mask
       !!! Logical mask.
       !!!
       !!! Only the mesh nodes for which this is .TRUE. will be
@@ -122,15 +123,15 @@
       !!! 1st-2nd index: mesh (i,j)                                            +
       !!! 3rd: isub.
 #if   __DIM == __VFIELD
-      INTEGER                        , INTENT(IN   ) :: lda
+      INTEGER,                             INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
       !!! lda=1 for the case of scalar data
 #endif
-      INTEGER                        , INTENT(IN   ) :: p_idx
+      INTEGER,                             INTENT(IN   ) :: p_idx
       !!! The index where the data is stored on the subpatches
-      CLASS(ppm_t_equi_mesh)                         :: this
+      CLASS(ppm_t_equi_mesh)                             :: this
       !!! Source mesh
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER,                             INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables

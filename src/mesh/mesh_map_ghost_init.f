@@ -67,7 +67,7 @@
 
       pdim = ppm_dim
 
-      topo => ppm_topo(this%topoID)%t
+      topo => ppm_topo(this%topoid)%t
 
       !-------------------------------------------------------------------------
       !  check if the optimal communication protocol is known for this
@@ -105,28 +105,28 @@
       ldu(1) = isize
       CALL ppm_alloc(isendfromsub,ldu,iopt,info)
       or_fail_alloc("isendfromsub,ldu")
+
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
       or_fail_alloc("isendtosub,ldu")
+
       ldu(1) = pdim
       ldu(2) = isize
       CALL ppm_alloc(isendpatchid,ldu,iopt,info)
       or_fail_alloc("isendpatchid,ldu")
+
       CALL ppm_alloc(isendblkstart,ldu,iopt,info)
       or_fail_alloc("isendblkstart,ldu")
+
       CALL ppm_alloc(isendblksize,ldu,iopt,info)
       or_fail_alloc("isendblksize,ldu")
+
       CALL ppm_alloc(ioffset,ldu,iopt,info)
       or_fail_alloc("ioffset,ldu")
 
       !-------------------------------------------------------------------------
       !  Pre-calculate shift offsets for periodic ghost images of subs
       !-------------------------------------------------------------------------
-
-      op(1) = this%Nm(1) - 1
-      op(2) = this%Nm(2) - 1
-      IF (pdim .GT. 2) THEN
-          op(3) = this%Nm(3) - 1
-      ENDIF
+      op(1:pdim)=this%Nm(1:pdim)-1
 
       !-------------------------------------------------------------------------
       !  Find intersecting mesh domains to be sent for the ghost get
@@ -134,7 +134,7 @@
       nsendlist = 0
       DO i=1,topo%nsublist
           idom = topo%isublist(i)
-          ond(1:pdim,1:26) = 0
+          ond  = 0
           !---------------------------------------------------------------------
           !  First, we check the neighbors of the subdomain
           !---------------------------------------------------------------------
@@ -342,30 +342,39 @@
       ldu(1) = nsendlist
       CALL ppm_alloc(this%ghost_fromsub,ldu,iopt,info)
       or_fail_alloc("this%ghost_fromsub")
+
       CALL ppm_alloc(this%ghost_tosub,ldu,iopt,info)
       or_fail_alloc("this%ghost_tosub")
+
       CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
       or_fail_alloc("this%ghost_recvtosub")
+
       ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(this%ghost_blk,ldu,iopt,info)
       or_fail_alloc("this%ghost_blk")
+
       CALL ppm_alloc(this%ghost_recvblk,ldu,iopt,info)
       or_fail_alloc("this%ghost_recvblk")
+
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(this%ghost_patchid,ldu,iopt,info)
       or_fail_alloc("this%ghost_patchid")
+
       CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
       or_fail_alloc("this%recvghost_patchid")
+
       CALL ppm_alloc(this%ghost_blkstart,ldu,iopt,info)
       or_fail_alloc("this%ghost_blkstart")
+
       CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
       or_fail_alloc("this%ghost_recvblkstart")
+
       CALL ppm_alloc(this%ghost_blksize,ldu,iopt,info)
       or_fail_alloc("this%ghost_blksize")
+
       CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
       or_fail_alloc("this%ghost_recvblksize")
-
 
       !-------------------------------------------------------------------------
       !  Allocate local memory for sorted offset list
@@ -488,10 +497,13 @@
                      or_fail_alloc("this%ghost_recvtosub")
                      ldu(1) = pdim
                      ldu(2) = isize
+
                      CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
                      or_fail_alloc("this%ghost_recvblkstart")
+
                      CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
                      or_fail_alloc("this%ghost_recvblksize")
+
                      CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
                      or_fail_alloc("this%recvghost_patchid")
                  ENDIF
@@ -503,6 +515,7 @@
                  ldu(1) = nsend*(3*pdim+1)
                  CALL ppm_alloc(sendbuf,ldu,iopt,info)
                  or_fail_alloc("sendbuf")
+
                  ldu(1) = nrecv*(3*pdim+1)
                  CALL ppm_alloc(recvbuf,ldu,iopt,info)
                  or_fail_alloc("recvbuf")
@@ -559,23 +572,30 @@
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(recvbuf,ldu,iopt,info)
       or_fail_dealloc("recvbuf")
+
       CALL ppm_alloc(sendbuf,ldu,iopt,info)
       or_fail_dealloc("sendbuf")
+
       CALL ppm_alloc(isendfromsub,ldu,iopt,info)
       or_fail_dealloc("isendfromsub")
+
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
       or_fail_dealloc("isendtosub")
+
       CALL ppm_alloc(isendpatchid,ldu,iopt,info)
       or_fail_dealloc("isendpatchid")
+
       CALL ppm_alloc(isendblkstart,ldu,iopt,info)
       or_fail_dealloc("isendblkstart")
+
       CALL ppm_alloc(isendblksize,ldu,iopt,info)
       or_fail_dealloc("isendblksize")
+
       CALL ppm_alloc(ioffset,ldu,iopt,info)
       or_fail_dealloc("ioffset")
+
       CALL ppm_alloc(mesh_ghost_offset,ldu,iopt,info)
       or_fail_dealloc("mesh_ghost_offset")
-
 
       this%ghost_initialized = .TRUE.
 

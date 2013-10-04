@@ -105,7 +105,7 @@
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub 
+      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub
       !!! (i.e. (i,j)=(1,1) corresponds to istart)                             +
       !!! 4th: isub 1...nsublist (all subs on this processor).
       !!!
@@ -290,17 +290,17 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = target_topo%nsublist
       CALL ppm_alloc(sublist,ldu,iopt,info)
-        or_fail_alloc("sublist")
+      or_fail_alloc("sublist")
       ! We need to copy it into a temp list, since directly using
       ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
       ! not possible since the argument needs to be a POINTER.
-      sublist(1:target_topo%nsublist) =     &
-     &    target_topo%isublist(1:target_topo%nsublist)
+      sublist(1:ldu(1)) = target_topo%isublist(1:ldu(1))
       CALL ppm_util_invert_list(sublist,invsublist,info)
-        or_fail("ppm_util_invert_list")
+      or_fail("ppm_util_invert_list")
+
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(sublist,ldu,iopt,info)
-        or_fail_dealloc("sublist")
+      or_fail_dealloc("sublist")
 
       !-------------------------------------------------------------------------
       !  Determine the number of data points to be received
@@ -315,8 +315,8 @@
               !----------------------------------------------------------------
               !  Get the number of mesh points in this block
               !----------------------------------------------------------------
-              Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*         &
-                  &            ppm_mesh_irecvblksize(2,j))
+              Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*  &
+              &                ppm_mesh_irecvblksize(2,j))
           ENDDO
       ENDDO
 
@@ -326,7 +326,7 @@
       IF (Mdata .EQ. 0) THEN
           IF (ppm_debug .GT. 0) THEN
               CALL ppm_write(ppm_rank,caller,   &
-     &            'There is no data to be received',info)
+              & 'There is no data to be received',info)
           ENDIF
           GOTO 8888
       ENDIF
@@ -336,7 +336,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
           WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        ' / Mdata*bdim = ',Mdata*bdim
+          & ' / Mdata*bdim = ',Mdata*bdim
           CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
       ppm_nrecvbuffer = ppm_nrecvbuffer - Mdata*bdim
@@ -361,8 +361,8 @@
             !-------------------------------------------------------------------
             !  Get the number of mesh points in this block
             !-------------------------------------------------------------------
-            Mdata = Mdata + (ppm_mesh_isendblksize(1,j)*         &
-     &         ppm_mesh_isendblksize(2,j))
+            Mdata = Mdata + (ppm_mesh_isendblksize(1,j)* &
+            &                ppm_mesh_isendblksize(2,j))
          ENDDO
       ENDDO
       ppm_nsendbuffer = ppm_nsendbuffer - ppm_buffer_dim(ppm_buffer_set)*Mdata
@@ -434,12 +434,12 @@
                             !which include the ghost layers. There should be no
                             !need to re-allocate here.
                             IF ((ppm_map_type .EQ. ppm_param_map_ghost_get) &
-                                & .OR.   &
-                                &   (ppm_map_type .EQ. ppm_param_map_ghost_put) &
-                                & .OR.   &
-                                &    (rtype .EQ. ppm_param_pop_add)) THEN
+                            & .OR.   &
+                            &   (ppm_map_type .EQ. ppm_param_map_ghost_put) &
+                            & .OR.   &
+                            &    (rtype .EQ. ppm_param_pop_add)) THEN
                             !------------------------------------------------
-                            !  Preserve old fields if this is to receive ghosts 
+                            !  Preserve old fields if this is to receive ghosts
                             !  or to add contributions
                             !------------------------------------------------
                                 iopt = ppm_param_alloc_fit_preserve
@@ -483,7 +483,7 @@
                             mofs(1) = p%istart(1)-1
                             mofs(2) = p%istart(2)-1
                             !------------------------------------------------------
-                            !  Get boundaries of mesh block to be received 
+                            !  Get boundaries of mesh block to be received
                             !  in local sub  coordinates
                             !------------------------------------------------------
                             xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
