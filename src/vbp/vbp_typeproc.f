@@ -28,12 +28,12 @@ SUBROUTINE DTYPE(vbp_create)(Pc,Npart,info,name)
 
     !Call the parent function
     CALL Pc%DTYPE(ppm_t_particles)%create(Npart,info,name)
-        or_fail("failed to initialize non-vbp particle set")
+    or_fail("failed to initialize non-vbp particle set")
 
     !and update the few fields that are specific to VBP
     Pc%adaptive = .FALSE.
-    check_false(<#associated(Pc%rcp)#>,&
-      "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
+    check_false(<#ASSOCIATED(Pc%rcp)#>,&
+    "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
     Pc%rcp => NULL()
 
     end_subroutine()

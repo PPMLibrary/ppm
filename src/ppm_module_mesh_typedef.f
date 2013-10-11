@@ -89,9 +89,14 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
           PROCEDURE :: map_ghost_init        => equi_mesh_map_ghost_init
           PROCEDURE :: map_ghost_get         => equi_mesh_map_ghost_get
           PROCEDURE :: map_ghost_put         => equi_mesh_map_ghost_put
-          PROCEDURE :: map_ghost_push        => equi_mesh_map_ghost_push
-          PROCEDURE :: map_ghost_pop         => equi_mesh_map_ghost_pop
+          PROCEDURE :: map_ghost_push        => equi_mesh_map_push
+          PROCEDURE :: map_ghost_pop         => equi_mesh_map_pop
           PROCEDURE :: map_send              => equi_mesh_map_send
+
+          PROCEDURE :: map                   => equi_mesh_map_global
+          PROCEDURE :: map_push              => equi_mesh_map_push
+          PROCEDURE :: map_pop               => equi_mesh_map_pop
+
           PROCEDURE :: print_vtk             => equi_mesh_print_vtk
           PROCEDURE :: interp_to_part        => equi_mesh_m2p
       END TYPE
@@ -376,13 +381,13 @@ minclude ppm_get_field_template(4,d)
           alloc_pointer("p%ghostsize",'2*ppm_dim')
           alloc_pointer("p%bc",'2*ppm_dim')
 
-          p%meshID = mesh%ID
-          p%mesh   => mesh
-          p%isub   = isub
-          p%istart = istart
-          p%iend   = iend
-          p%start = pstart
-          p%end   = pend
+          p%meshID   = mesh%ID
+          p%mesh     => mesh
+          p%isub     = isub
+          p%istart   = istart
+          p%iend     = iend
+          p%start    = pstart
+          p%end      = pend
           p%istart_p = istart_p
           p%iend_p   = iend_p
           p%nnodes(1:ppm_dim) = 1 + iend(1:ppm_dim) - istart(1:ppm_dim)
@@ -395,8 +400,8 @@ minclude ppm_get_field_template(4,d)
           p%lo_a(2)     = 1 - ghostsize(3)
           p%hi_a(2)     = p%nnodes(2)   + ghostsize(4)
           IF (ppm_dim.EQ.3) THEN
-              p%lo_a(3) = 1 - ghostsize(5)
-              p%hi_a(3) = p%nnodes(3)   + ghostsize(6)
+             p%lo_a(3) = 1 - ghostsize(5)
+             p%hi_a(3) = p%nnodes(3)   + ghostsize(6)
           ENDIF
 
           DO i=1,ppm_dim
@@ -1128,7 +1133,6 @@ minclude ppm_get_field_template(4,d)
           end_subroutine()
       END SUBROUTINE equi_mesh_prop_zero
 
-
       SUBROUTINE equi_mesh_def_patch(this,patch,info,patchid,infinite,bcdef)
           !!! Add a patch to a mesh
           !!! The patch corners are given in terms of their absolute coordinates,
@@ -1161,21 +1165,27 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_topo), POINTER                   :: topo => NULL()
-          INTEGER                                     :: i,j,k,isub,jsub,id,pid
-          INTEGER                                     :: size2,size_tmp
-          INTEGER                                     :: nsubpatch,nsubpatchi
-          CLASS(ppm_t_subpatch_),  POINTER            :: p => NULL()
-          CLASS(ppm_t_A_subpatch_),POINTER            :: A_p => NULL()
-          INTEGER,              DIMENSION(ppm_dim)    :: istart,iend
-          INTEGER,              DIMENSION(ppm_dim)    :: istart_p,iend_p
-          INTEGER,              DIMENSION(ppm_dim)    :: istart_d,iend_d
-          INTEGER,              DIMENSION(2*ppm_dim)  :: ghostsize
-          INTEGER,              DIMENSION(2*ppm_dim)  :: bc
-          REAL(ppm_kind_double),DIMENSION(ppm_dim)    :: h,Offset
-          REAL(ppm_kind_double),DIMENSION(ppm_dim)    :: pstart,pend
-          LOGICAL                                     :: linfinite
-          TYPE(ppm_t_ptr_subpatch),DIMENSION(:),POINTER :: tmp_array => NULL()
+          TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
+          TYPE(ppm_t_topo),                       POINTER :: topo => NULL()
+
+          CLASS(ppm_t_subpatch_),                 POINTER :: p => NULL()
+          CLASS(ppm_t_A_subpatch_),               POINTER :: A_p => NULL()
+
+          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offset
+          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: pstart,pend
+
+          INTEGER                        :: i,j,k,isub,jsub,id,pid
+          INTEGER                        :: size2,size_tmp,iopt
+          INTEGER                        :: nsubpatch,nsubpatchi
+          INTEGER, DIMENSION(ppm_dim)    :: istart,iend
+          INTEGER, DIMENSION(ppm_dim)    :: istart_p,iend_p
+          INTEGER, DIMENSION(ppm_dim)    :: istart_d,iend_d
+          INTEGER, DIMENSION(2*ppm_dim)  :: ghostsize
+          INTEGER, DIMENSION(2*ppm_dim)  :: bc
+          INTEGER, DIMENSION(1)          :: ldu
+          INTEGER, DIMENSION(:), POINTER :: indsub => NULL()
+
+          LOGICAL :: linfinite
 
           start_subroutine("mesh_def_patch")
 
@@ -1183,7 +1193,7 @@ minclude ppm_get_field_template(4,d)
           !  Check arguments
           !-------------------------------------------------------------------------
           check_associated(<#this%subpatch#>,&
-              "Mesh not allocated. Call Mesh%create() first?")
+          & "Mesh not allocated. Call Mesh%create() first?")
 
           !-------------------------------------------------------------------------
           !  get mesh parameters
@@ -1192,28 +1202,28 @@ minclude ppm_get_field_template(4,d)
           Offset = this%Offset
           topo => ppm_topo(this%topoid)%t
 
-          check_false(<#associated(topo%min_subs)#>,&
-              "Mesh_def_patch is not yet implemented for single precision")
+          check_false(<#ASSOCIATED(topo%min_subs)#>,&
+          & "Mesh_def_patch is not yet implemented for single precision")
 
           !-------------------------------------------------------------------------
           ! Extent of the patch on the global mesh (before it is divided into
           ! subpatches)
           !-------------------------------------------------------------------------
           IF (PRESENT(infinite)) THEN
-              linfinite = infinite
+             linfinite = infinite
           ELSE
-              linfinite = .FALSE.
+             linfinite = .FALSE.
           ENDIF
 
           !Bounds for the mesh nodes that are inside the patch
           IF (linfinite) THEN
-              istart_p(1:ppm_dim) = -HUGE(1)/2
-              iend_p(1:ppm_dim)   =  HUGE(1)/2
+             istart_p(1:ppm_dim) = -HUGE(1)/2
+             iend_p(1:ppm_dim)   =  HUGE(1)/2
           ELSE
-              istart_p(1:ppm_dim) = 1 + &
-              & CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))
-              iend_p(1:ppm_dim)   = 1 + &
-              & FLOOR((patch(ppm_dim+1:2*ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
+             istart_p(1:ppm_dim) = 1 + &
+             & CEILING((   patch(1:ppm_dim)     - Offset(1:ppm_dim))/h(1:ppm_dim))
+             iend_p(1:ppm_dim)   = 1 + &
+             & FLOOR((patch(ppm_dim+1:2*ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
           ENDIF
 
           !Re-define the patch boundaries so that its corners fall on mesh nodes
@@ -1224,11 +1234,11 @@ minclude ppm_get_field_template(4,d)
 
           !Bounds for the mesh nodes that are inside the computational
           !domain
-          istart_d(1:ppm_dim) = 1 + &
-          &   CEILING(( topo%min_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim))
-          iend_d(1:ppm_dim)   = 1 + &
-          &   FLOOR((   topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/&
-          &         (h(1:ppm_dim)-EPSILON(h(1:ppm_dim))))
+          istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
+          &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
+          iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
+          &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
+          &                       -        EPSILON(h(1:ppm_dim))) )
 
           !stdout("istart_d = ",istart_d)
           !stdout("iend_d = ",iend_d)
@@ -1252,6 +1262,22 @@ minclude ppm_get_field_template(4,d)
 
              pid = 0
           ENDIF
+
+          !-------------------------------------------------------------------------
+          !  Build the indsub list to diffrentiate local sub indeices
+          !  from global ones
+          !-------------------------------------------------------------------------
+          iopt   = ppm_param_alloc_fit
+          ldu(1) = topo%nsubs
+          CALL ppm_alloc(indsub,ldu,iopt,info)
+          or_fail_alloc("indsub")
+
+          indsub=-1
+          DO i=1,topo%nsublist
+             isub=topo%isublist(i)
+             indsub(isub)=1
+          ENDDO
+
           !-------------------------------------------------------------------------
           !  intersect each subdomain with the patch and store the corresponding
           !  subpatch in the mesh data structure
@@ -1259,52 +1285,54 @@ minclude ppm_get_field_template(4,d)
           ! loop through all subdomains on this processor to allocate some book-
           ! keeping arrays.
           size_tmp=0
-          DO i = 1,topo%nsublist
-              isub = topo%isublist(i)
-              !----------------------------------------------------------------
-              ! check if the subdomain overlaps with the patch
-              ! if so, then there might be a subpatch created for that subdomain.
-              ! Grow the size of the array of pointers this%subpach_by_sub.
-              ! (simpler to do it this way if we dont know how many patches
-              ! are going to be added)
-              !----------------------------------------------------------------
-              IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
-              &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-                 ! yaser: subpach_by_sub should contain global index
-                 ! so I would use isub instead of i
-                 ASSOCIATE (sarray => this%subpatch_by_sub(isub))
+          !DO i = 1,topo%nsublist
+          DO isub=1,topo%nsubs
+             !isub = topo%isublist(i)
+             !----------------------------------------------------------------
+             ! check if the subdomain overlaps with the patch
+             ! if so, then there might be a subpatch created for that subdomain.
+             ! Grow the size of the array of pointers this%subpach_by_sub.
+             ! (simpler to do it this way if we dont know how many patches
+             ! are going to be added)
+             !----------------------------------------------------------------
+             IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
+             &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
+                ! yaser: subpach_by_sub should contain global index
+                ! so I would use isub instead of i
+                ASSOCIATE (sarray => this%subpatch_by_sub(isub))
                     IF (sarray%nsubpatch.GE.sarray%size) THEN
-                        size2 = MAX(2*sarray%size,5)
+                       size2 = MAX(2*sarray%size,5)
 
-                        IF (size_tmp.LT.size2) THEN
-                            dealloc_pointer(tmp_array)
-                            ALLOCATE(tmp_array(size2),STAT=info)
-                            or_fail_alloc("tmp_array")
-                        ENDIF
+                       IF (size_tmp.LT.size2) THEN
+                          dealloc_pointer(tmp_array)
+                          ALLOCATE(tmp_array(size2),STAT=info)
+                          or_fail_alloc("tmp_array")
+                       ENDIF
 
-                        DO j=1,sarray%nsubpatch
-                           tmp_array(j)%t => sarray%vec(j)%t
-                        ENDDO
+                       DO j=1,sarray%nsubpatch
+                          tmp_array(j)%t => sarray%vec(j)%t
+                       ENDDO
 
-                        dealloc_pointer(sarray%vec)
+                       dealloc_pointer(sarray%vec)
+                       ALLOCATE(sarray%vec(size2),STAT=info)
+                       or_fail_alloc("sarray%vec")
 
-                        ALLOCATE(sarray%vec(size2),STAT=info)
-                        or_fail_alloc("sarray%vec")
-
-                        DO j=1,sarray%nsubpatch
-                            sarray%vec(j)%t => tmp_array(j)%t
-                        ENDDO
-                        sarray%size = size2
+                       DO j=1,sarray%nsubpatch
+                          sarray%vec(j)%t => tmp_array(j)%t
+                       ENDDO
+                       sarray%size = size2
                     ENDIF
-                 END ASSOCIATE
-              ENDIF
+                END ASSOCIATE
+             ENDIF
           ENDDO
           dealloc_pointer(tmp_array)
 
           nsubpatch = 0
-          ! loop through all subdomains on this processor
-          sub: DO i = 1,topo%nsublist
-              isub = topo%isublist(i)
+!           ! loop through all subdomains on this processor
+!           sub: DO i = 1,topo%nsublist
+          ! loop through all subdomains on this topology
+          sub: DO isub=1,topo%nsubs
+              !isub = topo%isublist(i)
               !how many subpatches do we already have here
               ! yaser: subpach_by_sub should contain global index
               ! so I would use isub instead of i
@@ -1314,7 +1342,6 @@ minclude ppm_get_field_template(4,d)
               !----------------------------------------------------------------
               IF (ALL(patch(1:ppm_dim).LT.topo%max_subd(1:ppm_dim,isub)) .AND. &
               &   ALL(patch(ppm_dim+1:2*ppm_dim).GE.topo%min_subd(1:ppm_dim,isub))) THEN
-
                   !----------------------------------------------------------------
                   !Finds the mesh nodes which are contained in the overlap region
                   !----------------------------------------------------------------
@@ -1347,41 +1374,43 @@ minclude ppm_get_field_template(4,d)
                   ! Specify boundary conditions for the subpatch
                   !----------------------------------------------------------------
                   DO k=1,ppm_dim
-                      IF (istart(k) .EQ. istart_d(k) ) THEN
-                          bc(2*k-1) = topo%bcdef(2*k-1)
-                      ELSE
-                          IF (istart(k) .EQ. istart_p(k) ) THEN
-                              IF (PRESENT(bcdef)) THEN
-                                  bc(2*k-1) = bcdef(2*k-1)
-                              ELSE
-                                  bc(2*k-1) = ppm_param_bcdef_freespace
-                              ENDIF
-                          ELSE
-                              bc(2*k-1) = -1
-                          ENDIF
-                      ENDIF
-                      IF (iend(k) .EQ. iend_d(k) ) THEN
-                          bc(2*k) = topo%bcdef(2*k)
-                      ELSE
-                          IF (iend(k) .EQ. iend_p(k) ) THEN
-                              IF (PRESENT(bcdef)) THEN
-                                  bc(2*k) = bcdef(2*k)
-                              ELSE
-                                  bc(2*k) = ppm_param_bcdef_freespace
-                              ENDIF
-                          ELSE
-                              bc(2*k) = -1
-                          ENDIF
-                      ENDIF
-                      ! For periodic boundary conditions, subpatches that touch
-                      ! the East, North, or Top domain boundary are
-                      ! reduced by 1 mesh node so that real mesh nodes are not
-                      ! duplicated.
-                      IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
-                          iend(k) = iend(k) -1
-                      ENDIF
+                     IF (istart(k).EQ.istart_d(k) ) THEN
+                        bc(2*k-1) = topo%bcdef(2*k-1)
+                     ELSE
+                        IF (istart(k).EQ.istart_p(k) ) THEN
+                           IF (PRESENT(bcdef)) THEN
+                              bc(2*k-1) = bcdef(2*k-1)
+                           ELSE
+                              bc(2*k-1) = ppm_param_bcdef_freespace
+                           ENDIF
+                        ELSE
+                           bc(2*k-1) = -1
+                        ENDIF
+                     ENDIF
+                     IF (iend(k).EQ.iend_d(k)) THEN
+                        bc(2*k) = topo%bcdef(2*k)
+                     ELSE
+                        IF (iend(k).EQ.iend_p(k) ) THEN
+                           IF (PRESENT(bcdef)) THEN
+                              bc(2*k) = bcdef(2*k)
+                           ELSE
+                              bc(2*k) = ppm_param_bcdef_freespace
+                           ENDIF
+                        ELSE
+                           bc(2*k) = -1
+                        ENDIF
+                     ENDIF
+                     ! For periodic boundary conditions, subpatches that touch
+                     ! the East, North, or Top domain boundary are
+                     ! reduced by 1 mesh node so that real mesh nodes are not
+                     ! duplicated.
+                     IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
+                        iend(k) = iend(k) -1
+                     ENDIF
+                     IF (iend(k)+1.EQ.iend_d(k)) THEN
+                        bc(2*k) = topo%bcdef(2*k)
+                     ENDIF
                   ENDDO
-
                   !----------------------------------------------------------------
                   !Check that the subpatch contains at least one mesh nodes
                   !Otherwise, exit loop
@@ -1391,7 +1420,7 @@ minclude ppm_get_field_template(4,d)
                   !  no mesh nodes)
                   !----------------------------------------------------------------
                   IF (.NOT.ALL(istart(1:ppm_dim).LE.iend(1:ppm_dim))) THEN
-                      CYCLE sub
+                     CYCLE sub
                   ENDIF
 
                   !----------------------------------------------------------------
@@ -1412,16 +1441,13 @@ minclude ppm_get_field_template(4,d)
                   ghostsize(3) = MIN(istart(2)-istart_p(2),this%ghostsize(2))
                   ghostsize(4) = MIN(iend_p(2)-iend(2)    ,this%ghostsize(2))
                   IF (ppm_dim.EQ.3) THEN
-                      ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
-                      ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
+                     ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
+                     ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
                   ENDIF
 
                   CALL p%create(this,isub,istart,iend,pstart,pend,&
                   &    istart_p,iend_p,ghostsize,bc,info)
                   or_fail("could not create new subpatch")
-
-                  nsubpatch = nsubpatch+1
-                  A_p%subpatch(nsubpatch)%t => p
 
                   !----------------------------------------------------------------
                   !add a pointer to this subpatch
@@ -1432,11 +1458,20 @@ minclude ppm_get_field_template(4,d)
                   this%subpatch_by_sub(isub)%vec(nsubpatchi)%t => p
                   this%subpatch_by_sub(isub)%nsubpatch = nsubpatchi
 
-                  !----------------------------------------------------------------
-                  ! put the subpatch object in the collection of subpatches on this mesh
-                  !----------------------------------------------------------------
-                  CALL this%subpatch%push(p,info,id)
-                  or_fail("could not add new subpatch to mesh")
+                  SELECT CASE (indsub(isub))
+                  CASE (1)
+                     ! subdomains on this processor
+                     nsubpatch = nsubpatch+1
+                     A_p%subpatch(nsubpatch)%t => p
+
+                     !----------------------------------------------------------------
+                     ! put the subpatch object in the collection of subpatches on this mesh
+                     !----------------------------------------------------------------
+                     CALL this%subpatch%push(p,info)
+                     or_fail("could not add new subpatch to mesh")
+                  CASE(-1)
+                     p=>NULL()
+                  END SELECT
               ENDIF
           ENDDO sub
 
@@ -1451,6 +1486,10 @@ minclude ppm_get_field_template(4,d)
 
           !The ghost mesh nodes have not been computed
           this%ghost_initialized = .FALSE.
+
+          iopt = ppm_param_dealloc
+          CALL ppm_alloc(indsub,ldu,iopt,info)
+          or_fail_dealloc("indsub")
 
           end_subroutine()
       END SUBROUTINE equi_mesh_def_patch
@@ -1576,7 +1615,7 @@ minclude ppm_get_field_template(4,d)
       END FUNCTION
 
 
-      SUBROUTINE equi_mesh_map_ghost_push(this,field,info)
+      SUBROUTINE equi_mesh_map_push(this,field,info)
           !!! Push field data onto the mesh mappings buffers
 
           IMPLICIT NONE
@@ -1585,7 +1624,7 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
           CLASS(ppm_t_field_),    INTENT(IN   ) :: field
-          !!! this mesh is discretized on that field
+          !!! this field is discretized on that mesh
           INTEGER,                INTENT(OUT) :: info
 
           REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()
@@ -1594,34 +1633,35 @@ minclude ppm_get_field_template(4,d)
 
           INTEGER :: p_idx
 
-          start_subroutine("equi_mesh_map_ghost_push")
+          start_subroutine("equi_mesh_map_push")
 
           !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
 
-          IF (ppm_dim.EQ.2) THEN
+          SELECT CASE (ppm_dim)
+          CASE (2)
               IF (field%lda.EQ.1) THEN
-                  CALL ppm_map_field_push_2d_sca_d(this,wp2_dummy,p_idx,info)
+                  CALL mesh_map_push_2d_sca_d(this,wp2_dummy,p_idx,info)
                   or_fail("map_field_push_2d")
               ELSE
-                  CALL ppm_map_field_push_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+                  CALL mesh_map_push_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
                   or_fail("map_field_push_2d")
               ENDIF
-          ELSE
+          CASE DEFAULT
               IF (field%lda.EQ.1) THEN
-                  CALL ppm_map_field_push_3d_sca_d(this,wp3_dummy,p_idx,info)
+                  CALL mesh_map_push_3d_sca_d(this,wp3_dummy,p_idx,info)
                   or_fail("map_field_push_3d")
               ELSE
-                  CALL ppm_map_field_push_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+                  CALL mesh_map_push_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
                   or_fail("map_field_push_3d")
               ENDIF
-          ENDIF
+          END SELECT
 
           end_subroutine()
-      END SUBROUTINE equi_mesh_map_ghost_push
+      END SUBROUTINE equi_mesh_map_push
 
 
-      SUBROUTINE equi_mesh_map_ghost_pop(this,field,info)
+      SUBROUTINE equi_mesh_map_pop(this,field,info)
           !!! Push field data onto the mesh mappings buffers
 
           IMPLICIT NONE
@@ -1639,31 +1679,31 @@ minclude ppm_get_field_template(4,d)
 
           INTEGER :: p_idx
 
-          start_subroutine("equi_mesh_map_ghost_pop")
+          start_subroutine("equi_mesh_map_pop")
 
           !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
 
           IF (ppm_dim.EQ.2) THEN
               IF (field%lda.EQ.1) THEN
-                  CALL ppm_map_field_pop_2d_sca_d(this,wp2_dummy,p_idx,info)
+                  CALL mesh_map_pop_2d_sca_d(this,wp2_dummy,p_idx,info)
                   or_fail("map_field_pop_2d")
               ELSE
-                  CALL ppm_map_field_pop_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
+                  CALL mesh_map_pop_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
                   or_fail("map_field_pop_2d")
               ENDIF
           ELSE
               IF (field%lda.EQ.1) THEN
-                  CALL ppm_map_field_pop_3d_sca_d(this,wp3_dummy,p_idx,info)
+                  CALL mesh_map_pop_3d_sca_d(this,wp3_dummy,p_idx,info)
                   or_fail("map_field_pop_3d")
               ELSE
-                  CALL ppm_map_field_pop_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
+                  CALL mesh_map_pop_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
                   or_fail("map_field_pop_3d")
               ENDIF
           ENDIF
 
           end_subroutine()
-      END SUBROUTINE equi_mesh_map_ghost_pop
+      END SUBROUTINE equi_mesh_map_pop
 
       SUBROUTINE mesh_discr_data_create(this,field,info)
 
@@ -1717,16 +1757,16 @@ minclude ppm_get_field_template(4,d)
 
           CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
           CHARACTER(LEN=*),       INTENT(IN   ) :: filename
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,                INTENT(  OUT) :: info
 
           start_subroutine("equi_mesh_print_vtk")
 
           IF (ppm_dim.EQ.2) THEN
-              CALL ppm_vtk_fields_2d(filename,this,info)
-              or_fail("ppm_vtk_fields_2d")
+             CALL ppm_vtk_fields_2d(filename,this,info)
+             or_fail("ppm_vtk_fields_2d")
           ELSE
-              CALL ppm_vtk_fields_3d(filename,this,info)
-              or_fail("ppm_vtk_fields_3d")
+             CALL ppm_vtk_fields_3d(filename,this,info)
+             or_fail("ppm_vtk_fields_3d")
           ENDIF
 
           end_subroutine()
@@ -1737,6 +1777,7 @@ minclude ppm_get_field_template(4,d)
 #include "mesh/mesh_map_ghost_get.f"
 #include "mesh/mesh_map_ghost_put.f"
 #include "mesh/mesh_map_send.f"
+#include "mesh/mesh_map_global.f"
 
 #define __SFIELD 1
 #define __VFIELD 2

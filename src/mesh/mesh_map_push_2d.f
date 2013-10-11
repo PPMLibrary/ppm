@@ -1,30 +1,30 @@
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_field_push_2d_sca_s(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_s(this,fdata_dummy,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_field_push_2d_sca_d(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_d(this,fdata_dummy,p_idx,info,mask)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_push_2d_sca_sc(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_sc(this,fdata_dummy,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_push_2d_sca_dc(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_dc(this,fdata_dummy,p_idx,info,mask)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_field_push_2d_sca_i(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_i(this,fdata_dummy,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_field_push_2d_sca_l(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_sca_l(this,fdata_dummy,p_idx,info,mask)
 #endif
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_field_push_2d_vec_s(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_s(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_field_push_2d_vec_d(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_d(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_push_2d_vec_sc(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_sc(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_push_2d_vec_dc(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_dc(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_field_push_2d_vec_i(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_i(this,fdata_dummy,lda,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_field_push_2d_vec_l(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_2d_vec_l(this,fdata_dummy,lda,p_idx,info,mask)
       !!! This routine pushes field data onto the send buffer for 2D meshes.
       !!!
       !!! [NOTE]
@@ -107,7 +107,7 @@
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub 
+      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub
       !!! (i.e. (i,j)=(1,1) corresponds to istart)                             +
       !!! 4th: isub 1...nsublist (all subs on this processor).
       !!!
@@ -206,9 +206,10 @@
       iopt = ppm_param_alloc_grow_preserve
       ldu(1)  = ppm_buffer_set
       CALL ppm_alloc(ppm_buffer_dim,ldu,iopt,info)
-            or_fail_alloc("ppm_buffer_dim")
+      or_fail_alloc("ppm_buffer_dim")
+
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
-            or_fail_alloc("ppm_buffer")
+      or_fail_alloc("ppm_buffer")
 
       !-------------------------------------------------------------------------
       !  A complex number is treated as two reals. Cannot change lda
@@ -241,16 +242,16 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = topo%nsublist
       CALL ppm_alloc(sublist,ldu,iopt,info)
-            or_fail_alloc("sublist")
+      or_fail_alloc("sublist")
       ! We need to copy it into a temp list, since directly using
       ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
       ! not possible since the argument needs to be a POINTER.
-      sublist(1:topo%nsublist) =     &
-     &    topo%isublist(1:topo%nsublist)
+      sublist(1:ldu(1)) = topo%isublist(1:ldu(1))
       CALL ppm_util_invert_list(sublist,invsublist,info)
+
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(sublist,ldu,iopt,info)
-            or_fail_alloc("ppm_sublist")
+      or_fail_alloc("ppm_sublist")
 
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist()
@@ -259,14 +260,15 @@
       !-------------------------------------------------------------------------
       !  DOUBLE PRECISION BUFFER
       !-------------------------------------------------------------------------
-      IF (ppm_kind.EQ.ppm_kind_double) THEN
+      SELECT CASE (ppm_kind)
+      CASE (ppm_kind_double)
          !----------------------------------------------------------------------
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
          iopt   = ppm_param_alloc_grow_preserve
          ldu(1) = ppm_nsendbuffer + ldb*Ndata
          CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-            or_fail_alloc("ppm_sendbufferd")
+         or_fail_alloc("ppm_sendbufferd")
 
          DO i=1,ppm_nsendlist
             !-------------------------------------------------------------------
@@ -296,8 +298,8 @@
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
                !stdout("isub = ",isub," jsub = ",jsub," j = ",j)
-               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
-                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
+               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
+                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
@@ -363,7 +365,7 @@
                    END SELECT
                ENDDO patches
                IF (.NOT. found_patch) THEN
-           fail("could not find a patch on this sub with the right global id")
+                  fail("could not find a patch on this sub with the right global id")
                ENDIF
 
                !----------------------------------------------------------------
@@ -929,7 +931,7 @@
       !-------------------------------------------------------------------------
       !  SINGLE PRECISION BUFFER
       !-------------------------------------------------------------------------
-      ELSE
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  (Re)allocate memory for the buffer
          !----------------------------------------------------------------------
@@ -1545,7 +1547,7 @@
 #endif
             ENDDO       ! ppm_psendbuffer
          ENDDO          ! i=1,ppm_nsendlist
-      ENDIF             ! ppm_kind
+      END SELECT  ! ppm_kind
 
       !-------------------------------------------------------------------------
       !  Update the buffer data count
@@ -1557,7 +1559,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(invsublist,ldu,iopt,info)
-        or_fail_dealloc("INVSUBLIST")
+      or_fail_dealloc("INVSUBLIST")
 
       !-------------------------------------------------------------------------
       !  Return
@@ -1611,31 +1613,31 @@
       END SUBROUTINE check
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_field_push_2d_sca_s
+      END SUBROUTINE mesh_map_push_2d_sca_s
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_field_push_2d_sca_d
+      END SUBROUTINE mesh_map_push_2d_sca_d
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_push_2d_sca_sc
+      END SUBROUTINE mesh_map_push_2d_sca_sc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_push_2d_sca_dc
+      END SUBROUTINE mesh_map_push_2d_sca_dc
 #elif  __KIND == __INTEGER
-      END SUBROUTINE ppm_map_field_push_2d_sca_i
+      END SUBROUTINE mesh_map_push_2d_sca_i
 #elif  __KIND == __LOGICAL
-      END SUBROUTINE ppm_map_field_push_2d_sca_l
+      END SUBROUTINE mesh_map_push_2d_sca_l
 #endif
 
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_field_push_2d_vec_s
+      END SUBROUTINE mesh_map_push_2d_vec_s
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_field_push_2d_vec_d
+      END SUBROUTINE mesh_map_push_2d_vec_d
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_push_2d_vec_sc
+      END SUBROUTINE mesh_map_push_2d_vec_sc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_push_2d_vec_dc
+      END SUBROUTINE mesh_map_push_2d_vec_dc
 #elif  __KIND == __INTEGER
-      END SUBROUTINE ppm_map_field_push_2d_vec_i
+      END SUBROUTINE mesh_map_push_2d_vec_i
 #elif  __KIND == __LOGICAL
-      END SUBROUTINE ppm_map_field_push_2d_vec_l
+      END SUBROUTINE mesh_map_push_2d_vec_l
 #endif
 #endif

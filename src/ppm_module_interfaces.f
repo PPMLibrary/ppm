@@ -312,6 +312,8 @@ minclude ppm_create_collection(discr_info_,discr_info_,generate="abstract")
           PROCEDURE(field_get_pid_),           DEFERRED :: get_pid
           PROCEDURE(field_map_ghost_push_),    DEFERRED :: map_ghost_push
           PROCEDURE(field_map_ghost_pop_),     DEFERRED :: map_ghost_pop
+          PROCEDURE(field_map_push_),          DEFERRED :: map_push
+          PROCEDURE(field_map_pop_),           DEFERRED :: map_pop
           PROCEDURE(field_is_discretized_on_), DEFERRED :: is_discretized_on
           PROCEDURE(field_discretize_on_),     DEFERRED :: discretize_on
       END TYPE ppm_t_field_
@@ -643,15 +645,20 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           PROCEDURE(equi_mesh_def_patch_),      DEFERRED :: def_patch
           PROCEDURE(equi_mesh_def_uniform_),    DEFERRED :: def_uniform
           PROCEDURE(equi_mesh_new_subpatch_data_ptr_),&
-            &                                   DEFERRED :: new_subpatch_data_ptr
+          &                                     DEFERRED :: new_subpatch_data_ptr
           PROCEDURE(equi_mesh_list_of_fields_), DEFERRED :: list_of_fields
           PROCEDURE(equi_mesh_block_intersect_),DEFERRED :: block_intersect
           PROCEDURE(equi_mesh_map_ghost_init_), DEFERRED :: map_ghost_init
           PROCEDURE(equi_mesh_map_ghost_get_),  DEFERRED :: map_ghost_get
           PROCEDURE(equi_mesh_map_ghost_put_),  DEFERRED :: map_ghost_put
-          PROCEDURE(equi_mesh_map_ghost_push_), DEFERRED :: map_ghost_push
-          PROCEDURE(equi_mesh_map_ghost_pop_),  DEFERRED :: map_ghost_pop
+          PROCEDURE(equi_mesh_map_push_),       DEFERRED :: map_ghost_push
+          PROCEDURE(equi_mesh_map_pop_),        DEFERRED :: map_ghost_pop
           PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
+
+          PROCEDURE(equi_mesh_map_global_),     DEFERRED :: map
+          PROCEDURE(equi_mesh_map_push_),       DEFERRED :: map_push
+          PROCEDURE(equi_mesh_map_pop_),        DEFERRED :: map_pop
+
           PROCEDURE(equi_mesh_print_vtk_),      DEFERRED :: print_vtk
           PROCEDURE(equi_mesh_m2p_),            DEFERRED :: interp_to_part
       END TYPE ppm_t_equi_mesh_

@@ -30,12 +30,15 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)            :: ldu
-      INTEGER                          :: i,j,lb,ub
-      INTEGER                          :: iopt,ibuffer,pdim
-      INTEGER                          :: nsendlist,nrecvlist
-      LOGICAL                          :: valid
-      TYPE(ppm_t_topo), POINTER        :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+
+      INTEGER, DIMENSION(2) :: ldu
+      INTEGER               :: i,j,lb,ub
+      INTEGER               :: iopt,ibuffer,pdim
+      INTEGER               :: nsendlist,nrecvlist
+
+      LOGICAL               :: valid
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -151,8 +154,8 @@
          !----------------------------------------------------------------------
          !  Store the mesh block range for this processor interaction
          !----------------------------------------------------------------------
-         ppm_psendbuffer(ibuffer)=this%ghost_recvblk(ibuffer)
-         ppm_precvbuffer(ibuffer)=this%ghost_blk(ibuffer)
+         ppm_psendbuffer(ibuffer) = this%ghost_recvblk(ibuffer)
+         ppm_precvbuffer(ibuffer) = this%ghost_blk(ibuffer)
 
          !----------------------------------------------------------------------
          !  Store the definitions of the mesh blocks to be sent
@@ -160,10 +163,10 @@
          lb = ppm_psendbuffer(i)
          ub = ppm_psendbuffer(ibuffer)
          DO j=lb,ub-1
-             ppm_mesh_isendblkstart(1:pdim,j) = this%ghost_recvblkstart(1:pdim,j)
-             ppm_mesh_isendblksize(1:pdim,j) = this%ghost_recvblksize(1:pdim,j)
-             ppm_mesh_isendfromsub(j) = this%ghost_recvtosub(j)
-             ppm_mesh_isendpatchid(1:pdim,j) = this%ghost_recvpatchid(1:pdim,j)
+            ppm_mesh_isendblkstart(1:pdim,j) = this%ghost_recvblkstart(1:pdim,j)
+            ppm_mesh_isendblksize(1:pdim,j)  = this%ghost_recvblksize(1:pdim,j)
+            ppm_mesh_isendfromsub(j)         = this%ghost_recvtosub(j)
+            ppm_mesh_isendpatchid(1:pdim,j)  = this%ghost_recvpatchid(1:pdim,j)
          ENDDO
 
          !----------------------------------------------------------------------
@@ -172,10 +175,10 @@
          lb = ppm_precvbuffer(i)
          ub = ppm_precvbuffer(ibuffer)
          DO j=lb,ub-1
-             ppm_mesh_irecvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j)
-             ppm_mesh_irecvblksize(1:pdim,j) = this%ghost_blksize(1:pdim,j)
-             ppm_mesh_irecvtosub(j) = this%ghost_fromsub(j)
-             ppm_mesh_irecvpatchid(1:pdim,j) = this%ghost_patchid(1:pdim,j)
+            ppm_mesh_irecvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j)
+            ppm_mesh_irecvblksize(1:pdim,j)  = this%ghost_blksize(1:pdim,j)
+            ppm_mesh_irecvtosub(j)           = this%ghost_fromsub(j)
+            ppm_mesh_irecvpatchid(1:pdim,j)  = this%ghost_patchid(1:pdim,j)
          ENDDO
       ENDDO
 

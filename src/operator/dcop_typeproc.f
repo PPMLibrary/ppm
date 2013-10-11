@@ -279,8 +279,8 @@ SUBROUTINE DTYPE(dcop_compute)(this,Field_src,Field_to,info)
     SELECT TYPE(Field_to)
     CLASS IS (ppm_t_field_)
         IF (Field_to%lda.LE.0) THEN
-            check_false(<#associated(Field_to%discr_info)#>,&
-                "Destination field seems to be corrupted - Try Field%destroy()?")
+            check_false(<#ASSOCIATED(Field_to%discr_info)#>,&
+            "Destination field seems to be corrupted - Try Field%destroy()?")
             write(fname,'(A,A)') "Output_from_",TRIM(ADJUSTL(this%op_ptr%name))
             IF (vector_operator) THEN
                 CALL Field_to%create(this%op_ptr%nterms,info,name=fname)

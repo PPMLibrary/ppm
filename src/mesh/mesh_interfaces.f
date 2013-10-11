@@ -178,14 +178,13 @@ minclude ppm_get_field_interface_template(4,d)
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub_loc,isub,jsub,offset,&
-      &       nsendlist,isendfromsub,isendtosub,isendpatchid, &
-      &       isendblkstart,isendblksize,ioffset,info,lsymm)
+      SUBROUTINE equi_mesh_block_intersect_(this,to_mesh,isub,jsub,offset, &
+      &          nsendlist,isendfromsub,isendtosub,isendpatchid,           &
+      &          isendblkstart,isendblksize,ioffset,info,lsymm)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
           CLASS(ppm_t_equi_mesh_),           INTENT(IN   ) :: this
           CLASS(ppm_t_equi_mesh_),           INTENT(IN   ) :: to_mesh
-          INTEGER,                           INTENT(IN   ) :: isub_loc
           INTEGER,                           INTENT(IN   ) :: isub
           INTEGER,                           INTENT(IN   ) :: jsub
           INTEGER, DIMENSION(:),             INTENT(IN   ) :: offset
@@ -207,7 +206,7 @@ minclude ppm_get_field_interface_template(4,d)
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE equi_mesh_map_ghost_push_(this,field,info)
+      SUBROUTINE equi_mesh_map_push_(this,field,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
@@ -222,7 +221,7 @@ minclude ppm_get_field_interface_template(4,d)
           INTEGER,               INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE equi_mesh_map_ghost_pop_(this,field,info)
+      SUBROUTINE equi_mesh_map_pop_(this,field,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
@@ -262,4 +261,10 @@ minclude ppm_get_field_interface_template(4,d)
           INTEGER,                   INTENT(IN   ) :: kernel
           INTEGER,                   INTENT(  OUT) :: info
       END SUBROUTINE
-
+      SUBROUTINE equi_mesh_map_global_(this,target_mesh,info)
+          IMPORT ppm_t_equi_mesh_
+          IMPLICIT NONE
+          CLASS(ppm_t_equi_mesh_)                :: this
+          CLASS(ppm_t_equi_mesh_), INTENT(IN   ) :: target_mesh
+          INTEGER,                 INTENT(  OUT) :: info
+      END SUBROUTINE

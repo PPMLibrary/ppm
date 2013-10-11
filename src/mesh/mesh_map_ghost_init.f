@@ -26,9 +26,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data_mesh
-      USE ppm_module_write
-      !USE ppm_module_check_id
       USE ppm_module_util_commopt
       USE ppm_module_topo_typedef
       IMPLICIT NONE
@@ -47,18 +44,23 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(4)            :: ldu
-      INTEGER, DIMENSION(ppm_dim)      :: op
-      INTEGER, DIMENSION(ppm_dim,26)   :: ond
-      INTEGER                          :: i,j,sendrank,recvrank,idom,jdom,k
-      INTEGER                          :: iopt,iset,ibuffer,pdim,isize,nnd
-      INTEGER                          :: nsendlist,nsend,tag1,lb,ub,nrecv
-      CHARACTER(ppm_char)              :: mesg
-      LOGICAL                          :: lsouth,lnorth,least,lwest,ltop,lbottom
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+
+      INTEGER, DIMENSION(2)               :: ldu
+      INTEGER, DIMENSION(ppm_dim)         :: op
+      INTEGER, DIMENSION(ppm_dim,26)      :: ond
+      INTEGER                             :: i,j,sendrank,recvrank,isub,jsub,k
+      INTEGER                             :: iopt,iset,ibuffer,pdim,isize,nnd
+      INTEGER                             :: nsendlist,nsend,tag1,lb,ub,nrecv
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
 #endif
-      TYPE(ppm_t_topo), POINTER        :: topo => NULL()
+
+      CHARACTER(ppm_char) :: mesg
+
+      LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
+
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -126,213 +128,211 @@
       !-------------------------------------------------------------------------
       !  Pre-calculate shift offsets for periodic ghost images of subs
       !-------------------------------------------------------------------------
-      op(1:pdim)=this%Nm(1:pdim)-1
+      op=this%Nm-1
 
       !-------------------------------------------------------------------------
       !  Find intersecting mesh domains to be sent for the ghost get
       !-------------------------------------------------------------------------
       nsendlist = 0
       DO i=1,topo%nsublist
-          idom = topo%isublist(i)
-          ond  = 0
-          !---------------------------------------------------------------------
-          !  First, we check the neighbors of the subdomain
-          !---------------------------------------------------------------------
-          DO j=1,topo%nneighsubs(i)
-              jdom = topo%ineighsubs(j,i)
-              ! source and destination meshes and topologies are identical
-              CALL this%block_intersect(this,i,       &
-              &    idom,jdom,ond(1:pdim,1),nsendlist,isendfromsub,     &
-              &    isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
-              or_fail("block_intersect failed")
-          ENDDO
+         isub = topo%isublist(i)
+         ond  = 0
+         !---------------------------------------------------------------------
+         !  First, we check the neighbors of the subdomain
+         !---------------------------------------------------------------------
+         DO j=1,topo%nneighsubs(i)
+            jsub = topo%ineighsubs(j,i)
+            ! source and destination meshes and topologies are identical
+            CALL this%block_intersect(this,isub,jsub,ond(1:pdim,1), &
+            &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
+            &    isendblkstart,isendblksize,ioffset,info)
+            or_fail("block_intersect failed")
+         ENDDO
 
-          !---------------------------------------------------------------------
-          !  In periodic systems, the box needs to be shifted and overlaps
-          !  recomputed in order to get the periodic image neighbors.
-          !  Check if any face of this sub coincides with a periodic domain
-          !  boundary.
-          !---------------------------------------------------------------------
-          lwest  = .FALSE.
-          IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
-          &   (topo%subs_bc(1,idom) .NE. 0)) lwest = .TRUE.
-          least  = .FALSE.
-          IF ((topo%bcdef(2) .EQ. ppm_param_bcdef_periodic) .AND. &
-          &   (topo%subs_bc(2,idom) .NE. 0)) least = .TRUE.
-          lsouth = .FALSE.
-          IF ((topo%bcdef(3) .EQ. ppm_param_bcdef_periodic) .AND. &
-          &   (topo%subs_bc(3,idom) .NE. 0)) lsouth = .TRUE.
-          lnorth = .FALSE.
-          IF ((topo%bcdef(4) .EQ. ppm_param_bcdef_periodic) .AND. &
-          &   (topo%subs_bc(4,idom) .NE. 0)) lnorth = .TRUE.
-          IF (pdim .GT. 2) THEN
-              lbottom= .FALSE.
-              IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
-              &   (topo%subs_bc(5,idom) .NE. 0)) lbottom = .TRUE.
-              ltop   = .FALSE.
-              IF ((topo%bcdef(6) .EQ. ppm_param_bcdef_periodic) .AND. &
-              &   (topo%subs_bc(6,idom) .NE. 0)) ltop = .TRUE.
-          ENDIF
+         !---------------------------------------------------------------------
+         !  In periodic systems, the box needs to be shifted and overlaps
+         !  recomputed in order to get the periodic image neighbors.
+         !  Check if any face of this sub coincides with a periodic domain
+         !  boundary.
+         !---------------------------------------------------------------------
+         lwest  = .FALSE.
+         IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
+         &   (topo%subs_bc(1,isub) .NE. 0)) lwest = .TRUE.
+         least  = .FALSE.
+         IF ((topo%bcdef(2) .EQ. ppm_param_bcdef_periodic) .AND. &
+         &   (topo%subs_bc(2,isub) .NE. 0)) least = .TRUE.
+         lsouth = .FALSE.
+         IF ((topo%bcdef(3) .EQ. ppm_param_bcdef_periodic) .AND. &
+         &   (topo%subs_bc(3,isub) .NE. 0)) lsouth = .TRUE.
+         lnorth = .FALSE.
+         IF ((topo%bcdef(4) .EQ. ppm_param_bcdef_periodic) .AND. &
+         &   (topo%subs_bc(4,isub) .NE. 0)) lnorth = .TRUE.
+         IF (pdim .GT. 2) THEN
+            lbottom= .FALSE.
+            IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
+            &   (topo%subs_bc(5,isub) .NE. 0)) lbottom = .TRUE.
+            ltop   = .FALSE.
+            IF ((topo%bcdef(6) .EQ. ppm_param_bcdef_periodic) .AND. &
+            &   (topo%subs_bc(6,isub) .NE. 0)) ltop = .TRUE.
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Determine number of shifts and actual shift indices needed
-          !---------------------------------------------------------------------
-          nnd = 0
-          IF (lwest) THEN
-              nnd = nnd + 1
-              ond(1,nnd) = op(1)
-          ENDIF
-          IF (least) THEN
-              nnd = nnd + 1
-              ond(1,nnd) = -op(1)
-          ENDIF
-          IF (lsouth) THEN
-              nnd = nnd + 1
-              ond(2,nnd) = op(2)
-              IF (lwest) THEN
+         !---------------------------------------------------------------------
+         !  Determine number of shifts and actual shift indices needed
+         !---------------------------------------------------------------------
+         nnd = 0
+         IF (lwest) THEN
+            nnd = nnd + 1
+            ond(1,nnd) = op(1)
+         ENDIF
+         IF (least) THEN
+            nnd = nnd + 1
+            ond(1,nnd) = -op(1)
+         ENDIF
+         IF (lsouth) THEN
+            nnd = nnd + 1
+            ond(2,nnd) = op(2)
+            IF (lwest) THEN
+               nnd = nnd + 1
+               ond(1,nnd) = op(1)
+               ond(2,nnd) = op(2)
+            ENDIF
+            IF (least) THEN
+               nnd = nnd + 1
+               ond(1,nnd) = -op(1)
+               ond(2,nnd) = op(2)
+            ENDIF
+         ENDIF
+         IF (lnorth) THEN
+            nnd = nnd + 1
+            ond(2,nnd) = -op(2)
+            IF (lwest) THEN
+               nnd = nnd + 1
+               ond(1,nnd) = op(1)
+               ond(2,nnd) = -op(2)
+            ENDIF
+            IF (least) THEN
+               nnd = nnd + 1
+               ond(1,nnd) = -op(1)
+               ond(2,nnd) = -op(2)
+            ENDIF
+         ENDIF
+         IF (pdim .GT. 2) THEN
+            IF (lbottom) THEN
+               nnd = nnd + 1
+               ond(3,nnd) = op(3)
+               IF (lwest) THEN
                   nnd = nnd + 1
                   ond(1,nnd) = op(1)
-                  ond(2,nnd) = op(2)
-              ENDIF
-              IF (least) THEN
+                  ond(3,nnd) = op(3)
+               ENDIF
+               IF (least) THEN
                   nnd = nnd + 1
                   ond(1,nnd) = -op(1)
+                  ond(3,nnd) = op(3)
+               ENDIF
+               IF (lsouth) THEN
+                  nnd = nnd + 1
                   ond(2,nnd) = op(2)
-              ENDIF
-          ENDIF
-          IF (lnorth) THEN
-              nnd = nnd + 1
-              ond(2,nnd) = -op(2)
-              IF (lwest) THEN
-                  nnd = nnd + 1
-                  ond(1,nnd) = op(1)
-                  ond(2,nnd) = -op(2)
-              ENDIF
-              IF (least) THEN
-                  nnd = nnd + 1
-                  ond(1,nnd) = -op(1)
-                  ond(2,nnd) = -op(2)
-              ENDIF
-          ENDIF
-          IF (pdim .GT. 2) THEN
-              IF (lbottom) THEN
-                  nnd = nnd + 1
                   ond(3,nnd) = op(3)
                   IF (lwest) THEN
-                      nnd = nnd + 1
-                      ond(1,nnd) = op(1)
-                      ond(3,nnd) = op(3)
+                     nnd = nnd + 1
+                     ond(1,nnd) = op(1)
+                     ond(2,nnd) = op(2)
+                     ond(3,nnd) = op(3)
                   ENDIF
                   IF (least) THEN
-                      nnd = nnd + 1
-                      ond(1,nnd) = -op(1)
-                      ond(3,nnd) = op(3)
+                     nnd = nnd + 1
+                     ond(1,nnd) = -op(1)
+                     ond(2,nnd) = op(2)
+                     ond(3,nnd) = op(3)
                   ENDIF
-                  IF (lsouth) THEN
-                      nnd = nnd + 1
-                      ond(2,nnd) = op(2)
-                      ond(3,nnd) = op(3)
-                      IF (lwest) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = op(1)
-                          ond(2,nnd) = op(2)
-                          ond(3,nnd) = op(3)
-                      ENDIF
-                      IF (least) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = -op(1)
-                          ond(2,nnd) = op(2)
-                          ond(3,nnd) = op(3)
-                      ENDIF
-                  ENDIF
-                  IF (lnorth) THEN
-                      nnd = nnd + 1
-                      ond(2,nnd) = -op(2)
-                      ond(3,nnd) = op(3)
-                      IF (lwest) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = op(1)
-                          ond(2,nnd) = -op(2)
-                          ond(3,nnd) = op(3)
-                      ENDIF
-                      IF (least) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = -op(1)
-                          ond(2,nnd) = -op(2)
-                          ond(3,nnd) = op(3)
-                      ENDIF
-                  ENDIF
-              ENDIF
-              IF (ltop) THEN
+               ENDIF
+               IF (lnorth) THEN
                   nnd = nnd + 1
+                  ond(2,nnd) = -op(2)
+                  ond(3,nnd) = op(3)
+                  IF (lwest) THEN
+                     nnd = nnd + 1
+                     ond(1,nnd) = op(1)
+                     ond(2,nnd) = -op(2)
+                     ond(3,nnd) = op(3)
+                  ENDIF
+                  IF (least) THEN
+                     nnd = nnd + 1
+                     ond(1,nnd) = -op(1)
+                     ond(2,nnd) = -op(2)
+                     ond(3,nnd) = op(3)
+                  ENDIF
+               ENDIF
+            ENDIF
+            IF (ltop) THEN
+               nnd = nnd + 1
+               ond(3,nnd) = -op(3)
+               IF (lwest) THEN
+                  nnd = nnd + 1
+                  ond(1,nnd) = op(1)
+                  ond(3,nnd) = -op(3)
+               ENDIF
+               IF (least) THEN
+                  nnd = nnd + 1
+                  ond(1,nnd) = -op(1)
+                  ond(3,nnd) = -op(3)
+               ENDIF
+               IF (lsouth) THEN
+                  nnd = nnd + 1
+                  ond(2,nnd) = op(2)
                   ond(3,nnd) = -op(3)
                   IF (lwest) THEN
-                      nnd = nnd + 1
-                      ond(1,nnd) = op(1)
-                      ond(3,nnd) = -op(3)
+                     nnd = nnd + 1
+                     ond(1,nnd) = op(1)
+                     ond(2,nnd) = op(2)
+                     ond(3,nnd) = -op(3)
                   ENDIF
                   IF (least) THEN
-                      nnd = nnd + 1
-                      ond(1,nnd) = -op(1)
-                      ond(3,nnd) = -op(3)
+                     nnd = nnd + 1
+                     ond(1,nnd) = -op(1)
+                     ond(2,nnd) = op(2)
+                     ond(3,nnd) = -op(3)
                   ENDIF
-                  IF (lsouth) THEN
-                      nnd = nnd + 1
-                      ond(2,nnd) = op(2)
-                      ond(3,nnd) = -op(3)
-                      IF (lwest) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = op(1)
-                          ond(2,nnd) = op(2)
-                          ond(3,nnd) = -op(3)
-                      ENDIF
-                      IF (least) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = -op(1)
-                          ond(2,nnd) = op(2)
-                          ond(3,nnd) = -op(3)
-                      ENDIF
+               ENDIF
+               IF (lnorth) THEN
+                  nnd = nnd + 1
+                  ond(2,nnd) = -op(2)
+                  ond(3,nnd) = -op(3)
+                  IF (lwest) THEN
+                     nnd = nnd + 1
+                     ond(1,nnd) = op(1)
+                     ond(2,nnd) = -op(2)
+                     ond(3,nnd) = -op(3)
                   ENDIF
-                  IF (lnorth) THEN
-                      nnd = nnd + 1
-                      ond(2,nnd) = -op(2)
-                      ond(3,nnd) = -op(3)
-                      IF (lwest) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = op(1)
-                          ond(2,nnd) = -op(2)
-                          ond(3,nnd) = -op(3)
-                      ENDIF
-                      IF (least) THEN
-                          nnd = nnd + 1
-                          ond(1,nnd) = -op(1)
-                          ond(2,nnd) = -op(2)
-                          ond(3,nnd) = -op(3)
-                      ENDIF
+                  IF (least) THEN
+                     nnd = nnd + 1
+                     ond(1,nnd) = -op(1)
+                     ond(2,nnd) = -op(2)
+                     ond(3,nnd) = -op(3)
                   ENDIF
-              ENDIF
-          ENDIF
+               ENDIF
+            ENDIF
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Do the shifting and compute periodic ghost mesh blocks
-          !---------------------------------------------------------------------
-          DO k=1,nnd
-              ! first with the original (non-shifted) image of itself
-              jdom = idom
-              CALL this%block_intersect(this,i,       &
-              &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,     &
-              &  isendtosub,isendpatchid,isendblkstart,isendblksize,ioffset,info)
-              or_fail("block_intersect failed")
-              ! Then with all the neighbors
-              DO j=1,topo%nneighsubs(i)
-                  jdom = topo%ineighsubs(j,i)
-                  CALL this%block_intersect(this,i,   &
-                  &  idom,jdom,ond(1:pdim,k),nsendlist,isendfromsub,&
-                  &  isendtosub,isendpatchid,isendblkstart,isendblksize,&
-                  &  ioffset,info)
-                  or_fail("block_intersect failed")
-              ENDDO
-          ENDDO
+         !---------------------------------------------------------------------
+         !  Do the shifting and compute periodic ghost mesh blocks
+         !---------------------------------------------------------------------
+         DO k=1,nnd
+            ! first with the original (non-shifted) image of itself
+            CALL this%block_intersect(this,isub,isub,ond(1:pdim,k), &
+            &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
+            &    isendblkstart,isendblksize,ioffset,info)
+            or_fail("block_intersect failed")
+            ! Then with all the neighbors
+            DO j=1,topo%nneighsubs(i)
+               jsub = topo%ineighsubs(j,i)
+               CALL this%block_intersect(this,isub,jsub,ond(1:pdim,k), &
+               &    nsendlist,isendfromsub,isendtosub,isendpatchid,    &
+               &    isendblkstart,isendblksize,ioffset,info)
+               or_fail("block_intersect failed")
+            ENDDO
+         ENDDO
       ENDDO    ! i=1,ppm_nsublist
 
       !-------------------------------------------------------------------------
@@ -388,13 +388,13 @@
       !  loop over the neighboring processors according to the optimized
       !  communication sequence.
       !-------------------------------------------------------------------------
-      this%ghost_nsend = nsendlist
-      this%ghost_nrecv = 0
-      this%ghost_blk(1) = 1
+      this%ghost_nsend      = nsendlist
+      this%ghost_nrecv      = 0
+      this%ghost_blk(1)     = 1
       this%ghost_recvblk(1) = 1
-      iset               = 0
-      ibuffer            = 0
-      isize              = SIZE(this%ghost_fromsub,1)
+      iset                  = 0
+      ibuffer               = 0
+      isize                 = SIZE(this%ghost_fromsub,1)
 
       DO i=1,topo%ncommseq
          !----------------------------------------------------------------------
@@ -407,7 +407,8 @@
          !  Initialize mesh block pointers
          !----------------------------------------------------------------------
          ibuffer = i + 1
-         this%ghost_blk(ibuffer) = this%ghost_blk(i)
+
+         this%ghost_blk(ibuffer)     = this%ghost_blk(i)
          this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i)
 
          !----------------------------------------------------------------------
@@ -415,155 +416,152 @@
          !----------------------------------------------------------------------
          IF (sendrank .GE. 0) THEN
 
-             !------------------------------------------------------------------
-             !  Find all mesh blocks that are sent and store them.
-             !------------------------------------------------------------------
-             DO j=1,nsendlist
-                 IF (topo%sub2proc(isendtosub(j)) .EQ. sendrank) THEN
-                     this%ghost_blk(ibuffer) = this%ghost_blk(ibuffer)+1
-                     iset = this%ghost_blk(ibuffer) - 1
-                     ! store this for the topology as it can be reused
-                     this%ghost_fromsub(iset)= isendfromsub(j)
-                     this%ghost_tosub(iset)  = isendtosub(j)
-                     this%ghost_patchid(1:pdim,iset)  = isendpatchid(1:pdim,j)
-                     this%ghost_blkstart(1:pdim,iset) = isendblkstart(1:pdim,j)
-                     this%ghost_blksize(1:pdim,iset)  = isendblksize(1:pdim,j)
-                     ! also re-order the offsets as we need them for
-                     ! computing the receive lists further down !!
-                     mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
-                     IF (ppm_debug .GT. 1) THEN
-                         IF (ppm_dim .EQ. 2) THEN
-                             WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
-                             & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-                             & ' on sub ',isendfromsub(j),&
-                             & ' to sub ',isendtosub(j),' on proc ',sendrank
-                         ELSEIF (ppm_dim .EQ. 3) THEN
-                             WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
-                             & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-                             & ' on sub ',isendfromsub(j),&
-                             & ' to sub ',isendtosub(j),' on proc ',sendrank
-                         ENDIF
-                         CALL ppm_write(ppm_rank,caller,mesg,info)
+            !------------------------------------------------------------------
+            !  Find all mesh blocks that are sent and store them.
+            !------------------------------------------------------------------
+            DO j=1,nsendlist
+               IF (topo%sub2proc(isendtosub(j)) .EQ. sendrank) THEN
+                  this%ghost_blk(ibuffer) = this%ghost_blk(ibuffer)+1
+                  iset = this%ghost_blk(ibuffer) - 1
+                  ! store this for the topology as it can be reused
+                  this%ghost_fromsub(iset)= isendfromsub(j)
+                  this%ghost_tosub(iset)  = isendtosub(j)
+                  this%ghost_patchid(1:pdim,iset)  = isendpatchid(1:pdim,j)
+                  this%ghost_blkstart(1:pdim,iset) = isendblkstart(1:pdim,j)
+                  this%ghost_blksize(1:pdim,iset)  = isendblksize(1:pdim,j)
+                  ! also re-order the offsets as we need them for
+                  ! computing the receive lists further down !!
+                  mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
+                  IF (ppm_debug .GT. 1) THEN
+                     IF (ppm_dim .EQ. 2) THEN
+                        WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
+                        & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
+                        & ' on sub ',isendfromsub(j),&
+                        & ' to sub ',isendtosub(j),' on proc ',sendrank
+                     ELSEIF (ppm_dim .EQ. 3) THEN
+                        WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
+                        & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
+                        & ' on sub ',isendfromsub(j),&
+                        & ' to sub ',isendtosub(j),' on proc ',sendrank
                      ENDIF
-                 ENDIF
-             ENDDO
+                     CALL ppm_write(ppm_rank,caller,mesg,info)
+                  ENDIF
+               ENDIF
+            ENDDO
 
              !------------------------------------------------------------------
              !  Build receive lists for the on-processor part of the data
              !------------------------------------------------------------------
              IF (sendrank .EQ. ppm_rank) THEN
-                 ub = this%ghost_blk(2)
-                 this%ghost_nrecv = ub - 1
-                 this%ghost_recvblk(2) = ub
-                 DO j=1,ub-1
-                     this%ghost_recvtosub(j) = this%ghost_tosub(j)
-                     this%ghost_recvpatchid(1:pdim,j) = &
-                     &    this%ghost_patchid(1:pdim,j)
-                     this%ghost_recvblkstart(1:pdim,j) = &
-                     &    this%ghost_blkstart(1:pdim,j) + &
-                     &    mesh_ghost_offset(1:pdim,j)
-                     this%ghost_recvblksize(1:pdim,j) = &
-                     &    this%ghost_blksize(1:pdim,j)
-                 ENDDO
-
+                ub = this%ghost_blk(2)
+                this%ghost_nrecv = ub - 1
+                this%ghost_recvblk(2) = ub
+                DO j=1,ub-1
+                   this%ghost_recvtosub(j)           = this%ghost_tosub(j)
+                   this%ghost_recvpatchid(1:pdim,j)  = this%ghost_patchid(1:pdim,j)
+                   this%ghost_recvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j) &
+                   &                                 + mesh_ghost_offset(1:pdim,j)
+                   this%ghost_recvblksize(1:pdim,j)  = this%ghost_blksize(1:pdim,j)
+                ENDDO
 #ifdef __MPI
              ELSE
-                 !--------------------------------------------------------------
-                 !  Communicate the block indices
-                 !--------------------------------------------------------------
-                 lb = this%ghost_blk(i)
-                 ub = this%ghost_blk(ibuffer)
-                 ! How many blocks am I sending to that guy
-                 nsend = ub - lb
-                 tag1 = 100
-                 CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
-                 &    MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
-                 or_fail_MPI("MPI_SendRecv")
-                 ! How many blocks will I receive from the guy?
-                 this%ghost_nrecv = this%ghost_nrecv + nrecv
-                 this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
+                !--------------------------------------------------------------
+                !  Communicate the block indices
+                !--------------------------------------------------------------
+                lb = this%ghost_blk(i)
+                ub = this%ghost_blk(ibuffer)
+                ! How many blocks am I sending to that guy
+                nsend = ub - lb
+                tag1 = 100
+                CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
+                &    MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
+                or_fail_MPI("MPI_SendRecv")
+                ! How many blocks will I receive from the guy?
+                this%ghost_nrecv            = this%ghost_nrecv      + nrecv
+                this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
 
-                 !--------------------------------------------------------------
-                 !  Check if receive lists are large enough
-                 !--------------------------------------------------------------
-                 IF (this%ghost_nrecv .GT. isize) THEN
-                     !----------------------------------------------------------
-                     !  Grow receive lists if needed
-                     !----------------------------------------------------------
-                     isize = this%ghost_nrecv
-                     iopt = ppm_param_alloc_grow_preserve
-                     ldu(1) = isize
-                     CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
-                     or_fail_alloc("this%ghost_recvtosub")
-                     ldu(1) = pdim
-                     ldu(2) = isize
+                !--------------------------------------------------------------
+                !  Check if receive lists are large enough
+                !--------------------------------------------------------------
+                IF (this%ghost_nrecv .GT. isize) THEN
+                   !----------------------------------------------------------
+                   !  Grow receive lists if needed
+                   !----------------------------------------------------------
+                   isize = this%ghost_nrecv
+                   iopt = ppm_param_alloc_grow_preserve
+                   ldu(1) = isize
+                   CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
+                   or_fail_alloc("this%ghost_recvtosub")
 
-                     CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
-                     or_fail_alloc("this%ghost_recvblkstart")
+                   ldu(1) = pdim
+                   ldu(2) = isize
+                   CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
+                   or_fail_alloc("this%ghost_recvblkstart")
 
-                     CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
-                     or_fail_alloc("this%ghost_recvblksize")
+                   CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
+                   or_fail_alloc("this%ghost_recvblksize")
 
-                     CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
-                     or_fail_alloc("this%recvghost_patchid")
-                 ENDIF
+                   CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
+                   or_fail_alloc("this%recvghost_patchid")
+                ENDIF
 
-                 !--------------------------------------------------------------
-                 !  Allocate memory for block data send and recv buffers
-                 !--------------------------------------------------------------
-                 iopt   = ppm_param_alloc_grow
-                 ldu(1) = nsend*(3*pdim+1)
-                 CALL ppm_alloc(sendbuf,ldu,iopt,info)
-                 or_fail_alloc("sendbuf")
+                !--------------------------------------------------------------
+                !  Allocate memory for block data send and recv buffers
+                !--------------------------------------------------------------
+                iopt   = ppm_param_alloc_grow
+                ldu(1) = nsend*(3*pdim+1)
+                CALL ppm_alloc(sendbuf,ldu,iopt,info)
+                or_fail_alloc("sendbuf")
 
-                 ldu(1) = nrecv*(3*pdim+1)
-                 CALL ppm_alloc(recvbuf,ldu,iopt,info)
-                 or_fail_alloc("recvbuf")
+                ldu(1) = nrecv*(3*pdim+1)
+                CALL ppm_alloc(recvbuf,ldu,iopt,info)
+                or_fail_alloc("recvbuf")
 
-                 !--------------------------------------------------------------
-                 !  Pack and send all the ghost mesh block data
-                 !--------------------------------------------------------------
-                 ! Pack all the send data
-                 iset = 0
-                 DO j=lb,ub-1
-                     iset = iset + 1
-                     sendbuf(iset) = this%ghost_tosub(j)
-                     sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
-                     iset = iset + pdim
-                     sendbuf(iset+1:iset+pdim) =    &
-                     &    this%ghost_blkstart(1:pdim,j) +  &
-                     &    mesh_ghost_offset(1:pdim,j)
-                     iset = iset + pdim
-                     sendbuf(iset+1:iset+pdim) =    &
-                     &    this%ghost_blksize(1:pdim,j)
-                     iset = iset + pdim
-                 ENDDO
-                 ! Send it to the destination processor and get my stuff
-                 tag1 = 200
-                 CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
-                 &    recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
-                 &    recvrank,tag1,ppm_comm,commstat,info)
-                 or_fail_MPI("MPI_SendRecv")
-                 ! Unpack the received data
-                 lb = this%ghost_recvblk(i)
-                 ub = this%ghost_recvblk(ibuffer)
-                 iset = 0
-                 DO j=lb,ub-1
-                     iset = iset + 1
-                     this%ghost_recvtosub(j)   = recvbuf(iset)
-                     this%ghost_recvpatchid(1:pdim,j)  =   &
-                     &    recvbuf(iset+1:iset+pdim)
-                     iset = iset + pdim
-                     this%ghost_recvblkstart(1:pdim,j) =   &
-                     &    recvbuf(iset+1:iset+pdim)
-                     iset = iset + pdim
-                     this%ghost_recvblksize(1:pdim,j) =    &
-                     &    recvbuf(iset+1:iset+pdim)
-                     iset = iset + pdim
-                 ENDDO
+                !--------------------------------------------------------------
+                !  Pack and send all the ghost mesh block data
+                !--------------------------------------------------------------
+                ! Pack all the send data
+                iset = 0
+                DO j=lb,ub-1
+                   iset = iset + 1
+                   sendbuf(iset) = this%ghost_tosub(j)
+                   sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
+
+                   iset = iset + pdim
+                   sendbuf(iset+1:iset+pdim) = this%ghost_blkstart(1:pdim,j) &
+                   &                         + mesh_ghost_offset(1:pdim,j)
+
+                   iset = iset + pdim
+                   sendbuf(iset+1:iset+pdim) = this%ghost_blksize(1:pdim,j)
+
+                   iset = iset + pdim
+                ENDDO
+                ! Send it to the destination processor and get my stuff
+                tag1 = 200
+                CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
+                &    recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
+                &    recvrank,tag1,ppm_comm,commstat,info)
+                or_fail_MPI("MPI_SendRecv")
+                ! Unpack the received data
+                lb = this%ghost_recvblk(i)
+                ub = this%ghost_recvblk(ibuffer)
+                iset = 0
+                DO j=lb,ub-1
+                   iset = iset + 1
+                   this%ghost_recvtosub(j)           = recvbuf(iset)
+                   this%ghost_recvpatchid(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+
+                   iset = iset + pdim
+                   this%ghost_recvblkstart(1:pdim,j) = recvbuf(iset+1:iset+pdim)
+
+                   iset = iset + pdim
+                   this%ghost_recvblksize(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+
+                   iset = iset + pdim
+                ENDDO
 #endif
              ENDIF ! sendrank.EQ.ppm_rank
-          ENDIF    ! sendrank .GE. 0
+         ENDIF ! sendrank .GE. 0
       ENDDO
 
       !-------------------------------------------------------------------------

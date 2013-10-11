@@ -1,41 +1,41 @@
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_field_pop_3d_sca_s(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_s(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_field_pop_3d_sca_d(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_d(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_pop_3d_sca_sc(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_sc(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_pop_3d_sca_dc(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_dc(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_field_pop_3d_sca_i(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_i(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_field_pop_3d_sca_l(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_sca_l(this,fdata_dummy,&
      &                   p_idx,info,mask,poptype)
 #endif
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_field_pop_3d_vec_s(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_s(this,fdata_dummy,&
      &                   lda,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_field_pop_3d_vec_d(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_d(this,fdata_dummy,&
      &                   lda,p_idx,info,mask,poptype)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_pop_3d_vec_sc(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_sc(this,fdata_dummy,&
      &                   lda,p_idx,info,mask,poptype)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE ppm_map_field_pop_3d_vec_dc(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_dc(this,fdata_dummy,&
      &                   lda,p_idx,info,mask,poptype)
 #elif  __KIND == __INTEGER
-      SUBROUTINE ppm_map_field_pop_3d_vec_i(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_i(this,fdata_dummy,&
      &                   lda,p_idx,info,mask,poptype)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE ppm_map_field_pop_3d_vec_l(this,fdata_dummy,&
+      SUBROUTINE mesh_map_pop_3d_vec_l(this,fdata_dummy,&
      &                   lda,p_idx,info,mask,poptype)
 #endif
 #endif
@@ -105,7 +105,7 @@
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub 
+      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub
       !!! (i.e. (i,j)=(1,1) corresponds to istart)                             +
       !!! 4th: isub 1...nsublist (all subs on this processor).
       !!!
@@ -147,7 +147,7 @@
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo)     , POINTER  :: target_topo => NULL()
+      TYPE(ppm_t_topo), POINTER  :: target_topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -291,17 +291,17 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = target_topo%nsublist
       CALL ppm_alloc(sublist,ldu,iopt,info)
-        or_fail_alloc("sublist")
+      or_fail_alloc("sublist")
       ! We need to copy it into a temp list, since directly using
       ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
       ! not possible since the argument needs to be a POINTER.
-      sublist(1:target_topo%nsublist) =     &
-     &    target_topo%isublist(1:target_topo%nsublist)
+      sublist(1:ldu(1)) = target_topo%isublist(1:ldu(1))
       CALL ppm_util_invert_list(sublist,invsublist,info)
-        or_fail("ppm_util_invert_list")
+      or_fail("ppm_util_invert_list")
+
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(sublist,ldu,iopt,info)
-        or_fail_dealloc("sublist")
+      or_fail_dealloc("sublist")
 
       !-------------------------------------------------------------------------
       !  Determine the number of data points to be received
@@ -387,7 +387,8 @@
       !-------------------------------------------------------------------------
       !  DOUBLE PRECISION
       !-------------------------------------------------------------------------
-      IF (ppm_kind .EQ. ppm_kind_double) THEN
+      SELECT CASE (ppm_kind)
+      CASE (ppm_kind_double)
          DO i=1,ppm_nrecvlist
             !-------------------------------------------------------------------
             !  Access mesh blocks belonging to the i-th processor in the
@@ -415,9 +416,9 @@
                !or_fail("could not get_field_on_patch for this sub")
                !(lazy) search for the subpatch that has the right global id
                found_patch = .FALSE.
-               patches: DO ipatch=1,this%subpatch_by_sub(isub)%nsubpatch
+               patches: DO ipatch=1,this%subpatch_by_sub(jsub)%nsubpatch
                    fdata => NULL()
-                   SELECT TYPE(p => this%subpatch_by_sub(isub)%vec(ipatch)%t)
+                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                    TYPE IS (ppm_t_subpatch)
                        IF (ALL(p%istart_p.EQ.patchid)) THEN
                             found_patch = .TRUE.
@@ -437,7 +438,7 @@
                                 & .OR.   &
                                 &    (rtype .EQ. ppm_param_pop_add)) THEN
                             !------------------------------------------------
-                            !  Preserve old fields if this is to receive ghosts 
+                            !  Preserve old fields if this is to receive ghosts
                             !  or to add contributions
                             !------------------------------------------------
                                 iopt = ppm_param_alloc_fit_preserve
@@ -487,7 +488,7 @@
                             mofs(2) = p%istart(2)-1
                             mofs(3) = p%istart(3)-1
                             !------------------------------------------------------
-                            !  Get boundaries of mesh block to be received in 
+                            !  Get boundaries of mesh block to be received in
                             !  local sub coordinates
                             !------------------------------------------------------
                             xlo = ppm_mesh_irecvblkstart(1,j)-mofs(1)
@@ -554,8 +555,8 @@
                    stdout("patchid = ",patchid)
                    stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
                    stdout("h = ",'this%h(1:ppm_dim)')
-                   stdout("this%subpatch_by_sub(isub)%nsubpatch = ",&
-                               'this%subpatch_by_sub(isub)%nsubpatch')
+                   stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
+                          'this%subpatch_by_sub(jsub)%nsubpatch')
                    stdout("min_sub(jsub)=",'target_topo%min_subd(1:ppm_dim,jsub)')
                    stdout("max_sub(jsub)=",'target_topo%max_subd(1:ppm_dim,jsub)')
                    fail("could not find a patch on this sub with the right global id")
@@ -1884,7 +1885,7 @@
       !-------------------------------------------------------------------------
       !  SINGLE PRECISION
       !-------------------------------------------------------------------------
-      ELSE
+      CASE DEFAULT
          DO i=1,ppm_nrecvlist
             !-------------------------------------------------------------------
             !  Access mesh blocks belonging to the i-th processor in the
@@ -3267,7 +3268,7 @@
 #endif
             ENDDO             ! ppm_precvbuffer
          ENDDO                ! ppm_nrecvlist
-      ENDIF                   ! ppm_kind
+      END SELECT  ! ppm_kind
 
 
  8888 CONTINUE
@@ -3298,7 +3299,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(invsublist,ldu,iopt,info)
-        or_fail_dealloc("invsublist")
+      or_fail_dealloc("invsublist")
 
       !-------------------------------------------------------------------------
       !  Return
@@ -3364,31 +3365,31 @@
      END SUBROUTINE check_two
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_field_pop_3d_sca_s
+      END SUBROUTINE mesh_map_pop_3d_sca_s
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_field_pop_3d_sca_d
+      END SUBROUTINE mesh_map_pop_3d_sca_d
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_pop_3d_sca_sc
+      END SUBROUTINE mesh_map_pop_3d_sca_sc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_pop_3d_sca_dc
+      END SUBROUTINE mesh_map_pop_3d_sca_dc
 #elif  __KIND == __INTEGER
-      END SUBROUTINE ppm_map_field_pop_3d_sca_i
+      END SUBROUTINE mesh_map_pop_3d_sca_i
 #elif  __KIND == __LOGICAL
-      END SUBROUTINE ppm_map_field_pop_3d_sca_l
+      END SUBROUTINE mesh_map_pop_3d_sca_l
 #endif
 
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
-      END SUBROUTINE ppm_map_field_pop_3d_vec_s
+      END SUBROUTINE mesh_map_pop_3d_vec_s
 #elif  __KIND == __DOUBLE_PRECISION
-      END SUBROUTINE ppm_map_field_pop_3d_vec_d
+      END SUBROUTINE mesh_map_pop_3d_vec_d
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_pop_3d_vec_sc
+      END SUBROUTINE mesh_map_pop_3d_vec_sc
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      END SUBROUTINE ppm_map_field_pop_3d_vec_dc
+      END SUBROUTINE mesh_map_pop_3d_vec_dc
 #elif  __KIND == __INTEGER
-      END SUBROUTINE ppm_map_field_pop_3d_vec_i
+      END SUBROUTINE mesh_map_pop_3d_vec_i
 #elif  __KIND == __LOGICAL
-      END SUBROUTINE ppm_map_field_pop_3d_vec_l
+      END SUBROUTINE mesh_map_pop_3d_vec_l
 #endif
 #endif

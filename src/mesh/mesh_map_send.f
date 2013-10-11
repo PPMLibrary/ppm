@@ -36,7 +36,7 @@
       !-------------------------------------------------------------------------
       CLASS(ppm_t_equi_mesh)               :: this
       !!!
-      INTEGER              , INTENT(  OUT) :: info
+      INTEGER,               INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -59,7 +59,7 @@
         IF (ppm_debug .GT. 1) THEN
             info = ppm_error_notice
             CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'Buffer is empty: skipping send!',__LINE__,info)
+            & 'Buffer is empty: skipping send!',__LINE__,info)
             info = 0
         ENDIF
         GOTO 9999
@@ -72,22 +72,27 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(nsend,ldu,iopt,info)
-          or_fail_alloc("nsend")
+      or_fail_alloc("nsend")
+
       CALL ppm_alloc(psend,ldu,iopt,info)
-          or_fail_alloc("psend")
+      or_fail_alloc("psend")
+
       ldu(1) = ppm_nrecvlist
       CALL ppm_alloc(nrecv,ldu,iopt,info)
-          or_fail_alloc("nrecv")
+      or_fail_alloc("nrecv")
+
       CALL ppm_alloc(precv,ldu,iopt,info)
-          or_fail_alloc("precv")
+      or_fail_alloc("precv")
+
       ldu(1) = ppm_nrecvlist
       ldu(2) = ppm_buffer_set
       CALL ppm_alloc(pp,ldu,iopt,info)
-          or_fail_alloc("pp")
+      or_fail_alloc("pp")
+
       ldu(1) = ppm_nsendlist
       ldu(2) = ppm_buffer_set
       CALL ppm_alloc(qq,ldu,iopt,info)
-          or_fail_alloc("qq")
+      or_fail_alloc("qq")
 
       !-------------------------------------------------------------------------
       !  Count the size of the buffer that will not be send
@@ -102,7 +107,7 @@
              !  Get the number of mesh points in this block
              !------------------------------------------------------------------
              Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-     &                ppm_mesh_isendblksize(2,j))
+             &                ppm_mesh_isendblksize(2,j))
           ENDDO
       ELSE
           !---------------------------------------------------------------------
@@ -113,7 +118,7 @@
              !  Get the number of mesh points in this block
              !------------------------------------------------------------------
              Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-     &                ppm_mesh_isendblksize(2,j)*ppm_mesh_isendblksize(3,j))
+             &                ppm_mesh_isendblksize(2,j)*ppm_mesh_isendblksize(3,j))
           ENDDO
       ENDIF
       ibuffer = 0
@@ -148,12 +153,12 @@
           IF (ppm_dim .LT. 3) THEN
               DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
                   Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-     &                ppm_mesh_isendblksize(2,i))
+                  &                ppm_mesh_isendblksize(2,i))
               ENDDO
           ELSE
               DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
                   Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-     &                ppm_mesh_isendblksize(2,i)*ppm_mesh_isendblksize(3,i))
+                  &                ppm_mesh_isendblksize(2,i)*ppm_mesh_isendblksize(3,i))
               ENDDO
           ENDIF
 
@@ -196,12 +201,12 @@
           IF (ppm_dim .LT. 3) THEN
               DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
                   Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-     &                ppm_mesh_irecvblksize(2,i))
+                  &                ppm_mesh_irecvblksize(2,i))
               ENDDO
           ELSE
               DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
                   Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-     &                ppm_mesh_irecvblksize(2,i)*ppm_mesh_irecvblksize(3,i))
+                  &                ppm_mesh_irecvblksize(2,i)*ppm_mesh_irecvblksize(3,i))
               ENDDO
           ENDIF
 
@@ -247,7 +252,7 @@
       ELSE
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
       ENDIF
-          or_fail_alloc("global receive buffer PPM_RECVBUFFER")
+      or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the smaller send and receive buffer
@@ -264,7 +269,7 @@
           ELSE
              CALL ppm_alloc(recvs,ldu,iopt,info)
           ENDIF
-              or_fail_alloc("local receive buffer recv")
+          or_fail_alloc("local receive buffer recv")
       ENDIF
 
       IF (ppm_nsendlist .GT. 1) THEN
@@ -274,7 +279,7 @@
           ELSE
              CALL ppm_alloc(sends,ldu,iopt,info)
           ENDIF
-              or_fail_alloc("local send buffer send")
+          or_fail_alloc("local send buffer send")
       ENDIF
 
       !-------------------------------------------------------------------------

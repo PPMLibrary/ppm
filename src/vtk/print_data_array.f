@@ -4,26 +4,26 @@
 #ifndef VTK_TYPE
 #define VTK_TYPE "Float64"
 #endif
-           WRITE(iUnit,'(A)',advance='no') "        <DataArray"
+           WRITE(iUnit,'(A)',ADVANCE='NO') "        <DataArray"
 #ifdef VTK_TYPE
-           WRITE(iUnit,'(3A)',advance='no') " type='", VTK_TYPE, "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " type='", VTK_TYPE, "'"
 #endif
 #ifdef VTK_NAME
-           WRITE(iUnit,'(3A)',advance='no') " Name='", &
-                VTK_NAME(1:LEN_TRIM(VTK_NAME)), "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " Name='", &
+           & VTK_NAME(1:LEN_TRIM(VTK_NAME)), "'"
 #endif
 #ifdef VTK_NDIM
            WRITE(scratch, *) VTK_NDIM
            scratch = ADJUSTL(scratch)
-           WRITE(iUnit,'(3A)',advance='no') " NumberOfComponents='", &
-                scratch(1:LEN_TRIM(scratch)), "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " NumberOfComponents='", &
+           & scratch(1:LEN_TRIM(scratch)), "'"
 #endif
-           WRITE(iUnit,'(3A)',advance='no') " format='", VTK_FORMAT, "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " format='", VTK_FORMAT, "'"
 #ifdef VTK_OFFSET
            WRITE(scratch, *) VTK_OFFSET
            scratch = ADJUSTL(scratch)
-           WRITE(iUnit,'(3A)',advance='no') " offset='", &
-                scratch(1:LEN_TRIM(scratch)), "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " offset='", &
+           & scratch(1:LEN_TRIM(scratch)), "'"
 #endif
            WRITE(iUnit,'(A)') ">"
 #ifdef VTK_RANGE
@@ -31,9 +31,8 @@
 #define VTK_RANGE_START 1
 #endif
            DO i=VTK_RANGE_START,VTK_RANGE
-              WRITE(iUnit,'(I0)',advance='no') i
-              IF (i .LT. VTK_RANGE) &
-                   WRITE(iUnit,'(A)',advance='no') " "
+              WRITE(iUnit,'(I0)',ADVANCE='NO') i
+              IF (i .LT. VTK_RANGE) WRITE(iUnit,'(A)',ADVANCE='NO') " "
            END DO
 #else
 #ifdef VTK_MESH
@@ -74,14 +73,14 @@
 #endif
 #endif
                        scratch = ADJUSTL(scratch)
-                       WRITE(iUnit, '(A)', advance='no') &
+                       WRITE(iUnit, '(A)', ADVANCE='NO') &
                        scratch(1:LEN_TRIM(scratch))
 #if __DIM == __2D
-                       IF (i*j.LT.VTK_MESH_IUBOUND*VTK_MESH_JUBOUND) &
+                       IF (i*j.LT.(VTK_MESH_IUBOUND)*(VTK_MESH_JUBOUND)) &
 #elif __DIM == __3D
-                       IF (i*j*k.LT.VTK_MESH_IUBOUND*VTK_MESH_JUBOUND*VTK_MESH_KUBOUND) &
+                       IF (i*j*k.LT.(VTK_MESH_IUBOUND)*(VTK_MESH_JUBOUND)*(VTK_MESH_KUBOUND)) &
 #endif
-                       WRITE(iUnit, '(A)', advance='no') " "
+                       & WRITE(iUnit, '(A)', ADVANCE='NO') " "
                    END DO
                END DO
 #if __DIM == __3D
@@ -91,37 +90,32 @@
            DO i=LBOUND(VTK_SCALAR,1),UBOUND(VTK_SCALAR,1)
               WRITE(scratch, *) VTK_SCALAR(i)
               scratch = ADJUSTL(scratch)
-              WRITE(iUnit, '(A)', advance='no') &
-                   scratch(1:LEN_TRIM(scratch))
-              IF (i .LT. UBOUND(VTK_SCALAR,1)) &
-                   WRITE(iUnit, '(A)', advance='no') " "
+              WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
+              IF (i .LT. UBOUND(VTK_SCALAR,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
            END DO
 #elif defined VTK_INTEGER
            DO i=LBOUND(VTK_INTEGER,1),UBOUND(VTK_INTEGER,1)
               WRITE(scratch, *) REAL(VTK_INTEGER(i),8)
               scratch = ADJUSTL(scratch)
-              WRITE(iUnit, '(A)', advance='no') &
-                   scratch(1:LEN_TRIM(scratch))
-              IF (i .LT. UBOUND(VTK_INTEGER,1)) &
-                   WRITE(iUnit, '(A)', advance='no') " "
+              WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
+              IF (i .LT. UBOUND(VTK_INTEGER,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
            END DO
 #else
            DO j=LBOUND(VTK_VECTOR,2),UBOUND(VTK_VECTOR,2)
               DO i=LBOUND(VTK_VECTOR,1),UBOUND(VTK_VECTOR,1)
                  WRITE(scratch, *) VTK_VECTOR(i,j)
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(A)', advance='no') &
-                      scratch(1:LEN_TRIM(scratch))
+                 WRITE(iUnit, '(A)', ADVANCE='NO') scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(VTK_VECTOR,1) .OR. &
-                     j .LT. UBOUND(VTK_VECTOR,2)) &
-                      WRITE(iUnit, '(A)', advance='no') " "
+                 &   j .LT. UBOUND(VTK_VECTOR,2))     &
+                 &  WRITE(iUnit, '(A)', ADVANCE='NO') " "
               END DO
 #ifdef APPEND_ZEROS
               IF (nd .EQ. 2) THEN
                  IF (j .LT. UBOUND(VTK_VECTOR,2)) THEN
-                    WRITE(iUnit,'(A)',advance='no') "0 "
+                    WRITE(iUnit,'(A)',ADVANCE='NO') "0 "
                  ELSE
-                    WRITE(iUnit,'(A)',advance='no') " 0"
+                    WRITE(iUnit,'(A)',ADVANCE='NO') " 0"
                  END IF
               END IF
 #endif

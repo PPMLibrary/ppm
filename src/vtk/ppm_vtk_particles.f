@@ -40,8 +40,7 @@
            start_subroutine("ppm_vtk_particles")
 
            IF (PRESENT(step)) THEN
-              WRITE(fname,'(A,A,I0)') &
-                   filename(1:LEN_TRIM(filename)), '.', step
+              WRITE(fname,'(A,A,I0)') filename(1:LEN_TRIM(filename)), '.', step
            ELSE
               fname = filename
            END IF
@@ -62,8 +61,8 @@
 
 
            IF (nvlist .AND. ghosts) THEN
-               fail("printout of nvlist for ghosts not supported (yet)",&
-                   ppm_err_argument)
+              fail("printout of nvlist for ghosts not supported (yet)",&
+              & ppm_err_argument)
            ENDIF
 
            nb_wpi=0
@@ -72,85 +71,91 @@
            nb_wp_field=0
 
            IF (PRESENT(Fields)) THEN
-               el => Fields%begin()
-               DO WHILE (ASSOCIATED(el))
-                   SELECT TYPE(var => el)
-                   CLASS IS(ppm_t_field_)
-                       !hack, so that Pc%props%iter_id is now the id
-                       !of the discretization of field in Pc.
-                       CALL var%get_discr(Pc,discr_data,info)
-                           or_fail("could not get discr data for this field")
-                           check_associated(discr_data)
-                           SELECT TYPE(discr_data)
-                           CLASS IS (DTYPE(ppm_t_part_prop)_)
-                           prop => discr_data
-                           END SELECT
-                       SELECT CASE(var%data_type)
-                       CASE (ppm_type_int)
-                           CALL props_i%push(prop,info)
-                           or_fail("push integer property into print buffer list")
-                       CASE (ppm_type_real)
-                           IF (var%lda.EQ.1) THEN
-                               CALL props_s%push(prop,info)
-                               or_fail("push scalar property into print buffer list")
-                           ELSE
-                               CALL props_v%push(prop,info)
-                               or_fail("push vector property into print buffer list")
-                           ENDIF
-                       CASE DEFAULT
-                               fail("not a supported type for printout (yet)")
-                       END SELECT
-                   CLASS IS (DTYPE(ppm_t_part_prop)_)
-                   ! support for particle properties
-                       prop => var
-                       SELECT CASE(prop%data_type)
-                       CASE (ppm_type_int)
-                           CALL props_i%push(prop,info)
-                           or_fail("push integer property into print buffer list")
-                       CASE (ppm_type_real)
-                           IF (var%lda.EQ.1) THEN
-                               CALL props_s%push(prop,info)
-                               or_fail("push scalar property into print buffer list")
-                           ELSE
-                               CALL props_v%push(prop,info)
-                               or_fail("push vector property into print buffer list")
-                           ENDIF
-                       CASE DEFAULT
-                               fail("not a supported type for printout (yet)")
-                       END SELECT
-                   CLASS DEFAULT
-                       fail("elements of printout list should be of type ppm_t_field (for now)")
-                   END SELECT
-                   el => Fields%next()
-               ENDDO
-           ELSE
-               !printout all properties i that are mapped
-               prop => Pc%props%begin()
-               DO WHILE (ASSOCIATED(prop))
-                   IF (prop%flags(ppm_ppt_partial)) THEN
-                       SELECT CASE (prop%data_type)
-                       CASE (ppm_type_int)
-                           IF (prop%lda.EQ.1) THEN
-                               CALL props_i%push(prop,info)
-                               or_fail("push integer property into print buffer list")
-                           ENDIF
+              el => Fields%begin()
+              DO WHILE (ASSOCIATED(el))
+                 SELECT TYPE(var => el)
+                 CLASS IS(ppm_t_field_)
+                    !hack, so that Pc%props%iter_id is now the id
+                    !of the discretization of field in Pc.
+                    CALL var%get_discr(Pc,discr_data,info)
+                    or_fail("could not get discr data for this field")
 
-                       CASE (ppm_type_real)
-                           IF (prop%lda.EQ.1) THEN
-                               CALL props_s%push(prop,info)
-                               or_fail("push integer property into print buffer list")
-                           ELSE
-                               CALL props_v%push(prop,info)
-                               or_fail("push integer property into print buffer list")
-                           ENDIF
-                       CASE DEFAULT
-                           !not a supported type for printout (yet)
-                               fail("elements of printout list should be of type ppm_t_field (for now)")
-                       END SELECT
-                       prop => Pc%props%next()
-                   ENDIF
-               ENDDO
-           ENDIF
+                    check_associated(discr_data)
+
+                    SELECT TYPE(discr_data)
+                    CLASS IS (DTYPE(ppm_t_part_prop)_)
+                        prop => discr_data
+                    END SELECT
+
+                    SELECT CASE(var%data_type)
+                    CASE (ppm_type_int)
+                       CALL props_i%push(prop,info)
+                       or_fail("push integer property into print buffer list")
+                    CASE (ppm_type_real)
+                       IF (var%lda.EQ.1) THEN
+                          CALL props_s%push(prop,info)
+                          or_fail("push scalar property into print buffer list")
+                       ELSE
+                          CALL props_v%push(prop,info)
+                          or_fail("push vector property into print buffer list")
+                       ENDIF
+                    CASE DEFAULT
+                       fail("not a supported type for printout (yet)")
+                    END SELECT
+
+                 CLASS IS (DTYPE(ppm_t_part_prop)_)
+                 ! support for particle properties
+                    prop => var
+                    SELECT CASE(prop%data_type)
+                    CASE (ppm_type_int)
+                       CALL props_i%push(prop,info)
+                       or_fail("push integer property into print buffer list")
+                    CASE (ppm_type_real)
+                       IF (var%lda.EQ.1) THEN
+                          CALL props_s%push(prop,info)
+                          or_fail("push scalar property into print buffer list")
+                       ELSE
+                          CALL props_v%push(prop,info)
+                          or_fail("push vector property into print buffer list")
+                       ENDIF
+                    CASE DEFAULT
+                       fail("not a supported type for printout (yet)")
+                    END SELECT
+
+                 CLASS DEFAULT
+                    fail("elements of printout list should be of type ppm_t_field (for now)")
+
+                 END SELECT
+                 el => Fields%next()
+              ENDDO ! (ASSOCIATED(el))
+           ELSE
+              !printout all properties i that are mapped
+              prop => Pc%props%begin()
+              DO WHILE (ASSOCIATED(prop))
+                 IF (prop%flags(ppm_ppt_partial)) THEN
+                    SELECT CASE (prop%data_type)
+                    CASE (ppm_type_int)
+                       IF (prop%lda.EQ.1) THEN
+                          CALL props_i%push(prop,info)
+                          or_fail("push integer property into print buffer list")
+                       ENDIF
+
+                    CASE (ppm_type_real)
+                       IF (prop%lda.EQ.1) THEN
+                          CALL props_s%push(prop,info)
+                          or_fail("push integer property into print buffer list")
+                       ELSE
+                          CALL props_v%push(prop,info)
+                          or_fail("push integer property into print buffer list")
+                       ENDIF
+                    CASE DEFAULT
+                       !not a supported type for printout (yet)
+                       fail("elements of printout list should be of type ppm_t_field (for now)")
+                    END SELECT
+                    prop => Pc%props%next()
+                 ENDIF
+              ENDDO ! (ASSOCIATED(prop))
+           ENDIF ! (PRESENT(Fields))
 
            nb_wpi=props_i%nb
            nb_wps=props_s%nb
@@ -163,11 +168,11 @@
            IF (ppm_rank .EQ. 0) THEN
               WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.pvtp'
               OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
-                   IOSTAT=info, ACTION='WRITE')
+              & IOSTAT=info, ACTION='WRITE')
               IF (info .NE. 0) THEN
                  info = ppm_error_fatal
                  WRITE(errtxt,'(2A)') 'Failed to open file: ', &
-                      scratch(1:LEN_TRIM(scratch))
+                 & scratch(1:LEN_TRIM(scratch))
                  CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
                  GOTO 9999
               END IF
@@ -182,16 +187,14 @@
               prop => props_i%begin()
               DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                      prop%name (1:LEN_TRIM(prop%name)), &
-                      "' type='Float64' />"
+                  &  prop%name (1:LEN_TRIM(prop%name)), "' type='Float64' />"
                   prop => props_i%next()
               ENDDO
 
               prop => props_s%begin()
               DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                      prop%name (1:LEN_TRIM(prop%name)), &
-                      "' type='Float64' />"
+                  & prop%name (1:LEN_TRIM(prop%name)), "' type='Float64' />"
                   prop => props_s%next()
               ENDDO
 
@@ -200,7 +203,7 @@
                   DO l=1,prop%lda
                       WRITE(scratch,'(A,A,I0)') TRIM(prop%name), '_', l
                       WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                          scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
+                      &   scratch(1:LEN_TRIM(scratch)), "' type='Float64' />"
                   END DO
                   prop => props_v%next()
               ENDDO
@@ -208,8 +211,7 @@
               prop => props_vf%begin()
               DO WHILE (ASSOCIATED(prop))
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
-                   prop%name (1:LEN_TRIM(prop%name)), &
-                   "' type='Float64' />"
+                  & prop%name (1:LEN_TRIM(prop%name)), "' type='Float64' />"
                   prop => props_vf%next()
               ENDDO
               WRITE(iUnit,'(A)') "    </PPointData>"
@@ -218,9 +220,9 @@
               WRITE(iUnit,'(A)') "    </PPoints>"
               ! find the basename of the file
               DO i=0,ppm_nproc-1
-                 WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='",     &
-                      fname(INDEX(fname, '/', .true.)+1:LEN_TRIM(fname)), &
-                      ".", i, ".vtp' />"
+                 WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='",    &
+                 & fname(INDEX(fname, '/', .true.)+1:LEN_TRIM(fname)), &
+                 & ".", i, ".vtp' />"
               END DO
               ! close
 #include "vtk/print_end_header.f"
@@ -228,18 +230,16 @@
            END IF
            ! append rank to name
            WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
-                                       '.', ppm_rank, '.vtp'
+           & '.', ppm_rank, '.vtp'
 #else
            WRITE(scratch,'(A,A)') fname(1:LEN_TRIM(fname)), '.vtp'
 #endif
-
            ! open output file
-           OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
-                IOSTAT=info, ACTION='WRITE')
+           OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), IOSTAT=info, ACTION='WRITE')
            IF (info .NE. 0) THEN
               info = ppm_error_fatal
               WRITE(errtxt,'(2A)') 'Failed to open file: ', &
-                    scratch(1:LEN_TRIM(scratch))
+              & scratch(1:LEN_TRIM(scratch))
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
            END IF
@@ -321,7 +321,7 @@
               ! property values
               IF (nvlist) THEN
                  CALL Pc%get_nvlist(nvlist=wpi,info=info)
-                    or_fail("could not access neighbour list")
+                 or_fail("could not access neighbour list")
 #define VTK_NAME "nvlist"
 #define VTK_TYPE "Float64"
 #define VTK_INTEGER wpi

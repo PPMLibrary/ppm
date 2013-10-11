@@ -43,16 +43,19 @@ minclude ppm_create_collection(discr_info,discr_info,generate="extend")
 
       TYPE,EXTENDS(ppm_t_field_) :: ppm_t_field
       CONTAINS
-          PROCEDURE :: create => field_create
-          PROCEDURE :: destroy => field_destroy
-          PROCEDURE :: set_rel_discr => field_set_rel_discr
-          PROCEDURE :: map_ghost_push => field_map_ghost_push
-          PROCEDURE :: map_ghost_pop => field_map_ghost_pop
+          PROCEDURE :: create            => field_create
+          PROCEDURE :: destroy           => field_destroy
+          PROCEDURE :: set_rel_discr     => field_set_rel_discr
+          PROCEDURE :: map_ghost_push    => field_map_ghost_push
+          PROCEDURE :: map_ghost_pop     => field_map_ghost_pop
+
+          PROCEDURE :: map_push          => field_map_push
+          PROCEDURE :: map_pop           => field_map_pop
 
           PROCEDURE :: is_discretized_on => field_is_discretized_on
-          PROCEDURE :: discretize_on => field_discretize_on
-          PROCEDURE :: get_discr => field_get_discr
-          PROCEDURE :: get_pid => field_get_pid
+          PROCEDURE :: discretize_on     => field_discretize_on
+          PROCEDURE :: get_discr         => field_get_discr
+          PROCEDURE :: get_pid           => field_get_pid
       END TYPE ppm_t_field
 minclude ppm_create_collection(field,field,generate="extend")
 minclude ppm_create_collection(field,field,generate="extend",vec=true)
@@ -180,13 +183,13 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! patches. If no patches have been defined, it is assumed
           !!! that the user expects the field to be allocated on the whole domain.
           !!! A single patch is then defined, covering all the subdomains.
-          CLASS(ppm_t_field),TARGET          :: this
-          CLASS(ppm_t_discr_kind),TARGET     :: discr
+          CLASS(ppm_t_field),      TARGET        :: this
+          CLASS(ppm_t_discr_kind), TARGET        :: discr
           !!! mesh or Particle set onto which this field is to be discretized
-          INTEGER,               INTENT(OUT)  :: info
-          INTEGER, OPTIONAL                   :: datatype
+          INTEGER,                 INTENT(  OUT) :: info
+          INTEGER,                 OPTIONAL      :: datatype
           !!! By default, the type is assumed to be real, double-precision.
-          LOGICAL, OPTIONAL                   :: with_ghosts
+          LOGICAL,                 OPTIONAL      :: with_ghosts
           !!! By default, the data arrays are allocated with Mpart iif the ghost
           !!! particles are up-to-date. Otherwise, they are allocated with size Npart.
           !!! Setting with_ghosts to true or false forces the allocation to be done
@@ -351,6 +354,41 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           end_subroutine()
       END SUBROUTINE field_map_ghost_pop
 
+      SUBROUTINE field_map_push(this,mesh,info)
+          !!! Push field data into the buffers of a mesh for global mappings
+          !!! The field must of course be stored on this mesh
+          !!! (for now) we assume that mesh%map() has already been called
+          CLASS(ppm_t_field)                  :: this
+          CLASS(ppm_t_equi_mesh_)             :: mesh
+          !!! mesh that this field is discretized on
+          INTEGER,                INTENT(OUT) :: info
+
+          start_subroutine("field_map_push")
+
+
+          CALL mesh%map_push(this,info)
+          or_fail("mesh%map_push")
+
+          end_subroutine()
+      END SUBROUTINE field_map_push
+
+      SUBROUTINE field_map_pop(this,mesh,info)
+          !!! Pop field data from the buffers of a mesh for global mappings
+          !!! The field must of course be stored on this mesh
+          CLASS(ppm_t_field)                  :: this
+          CLASS(ppm_t_equi_mesh_)             :: mesh
+          !!! mesh that this field is discretized on
+          INTEGER,                INTENT(OUT) :: info
+
+          start_subroutine("field_map_pop")
+
+
+          CALL mesh%map_pop(this,info)
+          or_fail("mesh%map_pop")
+
+          end_subroutine()
+      END SUBROUTINE field_map_pop
+
       FUNCTION field_get_pid(this,discr_kind,tstep) RESULT(p_idx)
           !!! Returns a pointer to the discretization (mesh or particles)
           !!! on which the field is discretized.
@@ -396,12 +434,12 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! on which the field is discretized.
           !!! TODO: Optionally, can retrieve discretizations at different time points
           !!! (like n-1, n-2, etc...).
-          CLASS(ppm_t_field)                           :: this
-          CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
-          CLASS(ppm_t_discr_data),POINTER, INTENT(OUT) :: discr_data
+          CLASS(ppm_t_field)                               :: this
+          CLASS(ppm_t_discr_kind), TARGET,   INTENT(IN   ) :: discr_kind
+          CLASS(ppm_t_discr_data), POINTER,  INTENT(  OUT) :: discr_data
           !!! discretization
-          INTEGER,                         INTENT(OUT) :: info
-          INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+          INTEGER,                           INTENT(  OUT) :: info
+          INTEGER,                 OPTIONAL, INTENT(IN   ) :: tstep
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
           !!!     (tstep =  0, default) => step n
@@ -413,16 +451,15 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! The data management and book-keeping between the data of different
           !!! time steps are done by the time integrator.
           !!! TODO
-          CLASS(ppm_t_discr_info_),POINTER        :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
 
           start_subroutine("field_get_discr")
-
 
           dinfo => this%discr_info%begin()
           loop: DO WHILE(ASSOCIATED(dinfo))
               IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
-                  discr_data => dinfo%discr_data
-                  EXIT loop
+                 discr_data => dinfo%discr_data
+                 EXIT loop
               ENDIF
               dinfo => this%discr_info%next()
           ENDDO loop
