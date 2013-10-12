@@ -444,7 +444,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           ENDIF
 
           IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
-              fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
+             fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
           ENDIF
 
           this%vec(this%max_id)%t => element

@@ -36,7 +36,6 @@
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
-
       IMPLICIT NONE
 
       !-------------------------------------------------------------------------
@@ -76,7 +75,7 @@
       INTEGER               :: i,j,k,l,ipatch
       INTEGER               :: isub,ifield,icomp
       INTEGER, DIMENSION(6) :: whole_ext,extent
-      INTEGER, DIMENSION(3) :: istart,iend
+      INTEGER, DIMENSION(3) :: istart,iend,nc
 
       CHARACTER(LEN=ppm_char) :: scratch
       CHARACTER(LEN=ppm_char) :: fname,vname
@@ -160,11 +159,12 @@
          DO isub=1,topo%nsubs
             DO ipatch=1,Mesh%subpatch_by_sub(isub)%nsubpatch
                SELECT TYPE(p => Mesh%subpatch_by_sub(isub)%vec(ipatch)%t)
-               TYPE IS (ppm_t_subpatch)
+               CLASS IS (ppm_t_subpatch_)
                   WRITE(iUnit,'(A)', ADVANCE='NO')     "    <Piece"
                   WRITE(iUnit, '(A)', ADVANCE='NO') " Extent='"
                   DO i=1,ppm_dim
-                     IF (p%bc(2*i).EQ.ppm_param_bcdef_periodic) THEN
+                     IF (p%bc(2*i).EQ.ppm_param_bcdef_periodic.OR. &
+                     &   p%bc(2*i).EQ.-1) THEN
                         WRITE(scratch, '(I0,A,I0)') p%istart(i)-1,' ',&
                         & p%iend(i)
                      ELSE
@@ -208,17 +208,20 @@
 #define VTK_WHOLE_EXTENT whole_ext
 #define VTK_ORIGIN min_phys
 #define VTK_SPACING h
+#define VTK_PARALLEL
 #include "vtk/print_header.f"
+#undef  VTK_PARALLEL
          ELSE
             CYCLE
          ENDIF
          DO ipatch=1,Mesh%subpatch_by_sub(isub)%nsubpatch
             SELECT TYPE(p => Mesh%subpatch_by_sub(isub)%vec(ipatch)%t)
-            TYPE IS (ppm_t_subpatch)
+            CLASS IS (ppm_t_subpatch_)
                ! write header
                DO i=2,2*ppm_dim,2
                   extent(i-1) = p%istart(i/2)-1
-                  IF (p%bc(i).EQ.ppm_param_bcdef_periodic) THEN
+                  IF (p%bc(i).EQ.ppm_param_bcdef_periodic.OR. &
+                  &   p%bc(i).EQ.-1) THEN
                      extent(i) = p%iend(i/2)
                   ELSE
                      extent(i) = p%iend(i/2)-1
@@ -259,349 +262,81 @@
                   SELECT CASE (pdat%discr_data%data_type)
                   CASE (ppm_type_real)
                      IF (pdat%discr_data%lda.EQ.1) THEN !scalar
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
 #if   __DIM == __2D
                         fdata2 =>  pdat%data_2d_rd
 #elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
                         fdata3 =>  pdat%data_3d_rd
 #endif
+
+#define VTK_NAME pdat%discr_data%name
+#define VTK_TYPE "Float64"
 #if   __DIM == __2D
-                        IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &   p%bc(4).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
 #define VTK_MESH fdata2
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata2
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata2
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata2
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ENDIF
 #elif   __DIM == __3D
-                        IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &   p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                        &   p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
 #define VTK_MESH fdata3
 #define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                        ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                        &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ELSE
-#define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                        ENDIF
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
 #endif
+#undef VTK_MESH_COMPONENT
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
                      ELSE !vector field
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
 #if   __DIM == __2D
                         fdata3 =>  pdat%data_3d_rd
 #elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
                         fdata4 =>  pdat%data_4d_rd
 #endif
                         DO icomp=1,pdat%discr_data%lda
                            WRITE(vname,'(2A,I0)') &
                            & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
+#define VTK_NAME vname
+#define VTK_TYPE "Float64"
 #if   __DIM == __2D
-                           IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &   p%bc(4).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
 #define VTK_MESH fdata3
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata3
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ENDIF
 #elif   __DIM == __3D
-                           IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &   p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                           &   p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
 #define VTK_MESH fdata4
 #define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)+1
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).EQ.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).NE.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)+1
-#include "vtk/print_data_array.f"
-                           ELSE IF (p%bc(2).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(4).NE.ppm_param_bcdef_periodic.AND. &
-                           &        p%bc(6).EQ.ppm_param_bcdef_periodic) THEN
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)+1
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ELSE
-#define VTK_NAME vname
-#define VTK_TYPE "Float64"
-#define VTK_MESH fdata4
-#define VTK_MESH_KLBOUND 1
-#define VTK_MESH_KUBOUND p%iend(3)
-#undef VTK_MESH_COMPONENT
-#define VTK_MESH_COMPONENT icomp
-#define VTK_MESH_ILBOUND 1
-#define VTK_MESH_IUBOUND p%iend(1)
-#define VTK_MESH_JLBOUND 1
-#define VTK_MESH_JUBOUND p%iend(2)
-#include "vtk/print_data_array.f"
-                           ENDIF
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
 #endif
-
+#define VTK_MESH_COMPONENT icomp
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
                         ENDDO ! icomp=1,pdat%discr_data%lda
                      ENDIF ! (pdat%discr_data%lda.EQ.?)
                   END SELECT ! (pdat%discr_data%data_type)

@@ -1407,9 +1407,9 @@ minclude ppm_get_field_template(4,d)
                      IF (bc(2*k).EQ.ppm_param_bcdef_periodic) THEN
                         iend(k) = iend(k) -1
                      ENDIF
-                     IF (iend(k)+1.EQ.iend_d(k)) THEN
-                        bc(2*k) = topo%bcdef(2*k)
-                     ENDIF
+!                      IF (iend(k)+1.EQ.iend_d(k)) THEN
+!                         bc(2*k) = topo%bcdef(2*k)
+!                      ENDIF
                   ENDDO
                   !----------------------------------------------------------------
                   !Check that the subpatch contains at least one mesh nodes
@@ -1670,7 +1670,7 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
           CLASS(ppm_t_field_),    INTENT(INOUT) :: field
-          !!! this mesh is discretized on that field
+          !!! this field is discretized on that mesh
           INTEGER,                INTENT(  OUT) :: info
 
           REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()

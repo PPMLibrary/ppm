@@ -261,58 +261,58 @@
            IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0 .OR. nb_wpv .GT. 0) THEN
 
               ! print names
-              WRITE(iUnit,'(A)',advance='no') "      <PointData"
+              WRITE(iUnit,'(A)',ADVANCE='NO') "      <PointData"
               IF (nvlist .OR. nb_wpi .GT. 0) THEN
-                 WRITE(iUnit,'(A)',advance='no') " Integers='"
+                 WRITE(iUnit,'(A)',ADVANCE='NO') " Integers='"
               ENDIF
               IF (nvlist) THEN
-                 WRITE(iUnit,'(A)',advance='no') "nvlist"
-                 IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',advance='no') " "
+                 WRITE(iUnit,'(A)',ADVANCE='NO') "nvlist"
+                 IF (nb_wpi .GT. 0) WRITE(iUnit,'(A)',ADVANCE='NO') " "
               END IF
               IF (nb_wpi .GT. 0) THEN
                  prop => props_i%begin()
                  DO WHILE (ASSOCIATED(prop))
-                    WRITE(iUnit,'(A)',advance='no') &
+                    WRITE(iUnit,'(A)',ADVANCE='NO') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    !IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',advance='no') " "
-                     WRITE(iUnit,'(A)',advance='no') " "
+                    !IF (i .LT. nb_wpi) WRITE(iUnit,'(A)',ADVANCE='NO') " "
+                     WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_i%next()
                  ENDDO
               END IF
               IF (nb_wps .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0) &
-                      WRITE(iUnit,'(A)',advance='no') "'"
-                 WRITE(iUnit,'(A)',advance='no') " Scalars='"
+                      WRITE(iUnit,'(A)',ADVANCE='NO') "'"
+                 WRITE(iUnit,'(A)',ADVANCE='NO') " Scalars='"
                  prop => props_s%begin()
                  DO WHILE (ASSOCIATED(prop))
-                     WRITE(iUnit,'(A)',advance='no') &
+                     WRITE(iUnit,'(A)',ADVANCE='NO') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    ! IF (i .LT. nb_wps) WRITE(iUnit,'(A)',advance='no') " "
-                     WRITE(iUnit,'(A)',advance='no') " "
+                    ! IF (i .LT. nb_wps) WRITE(iUnit,'(A)',ADVANCE='NO') " "
+                     WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_s%next()
                  ENDDO
               END IF
               IF (nb_wpv .GT. 0) THEN
                  IF (nvlist .OR. nb_wpi .GT. 0 .OR. nb_wps .GT. 0) &
-                      WRITE(iUnit,'(A)',advance='no') "'"
-                 WRITE(iUnit,'(A)',advance='no') " Vectors='"
+                      WRITE(iUnit,'(A)',ADVANCE='NO') "'"
+                 WRITE(iUnit,'(A)',ADVANCE='NO') " Vectors='"
                  prop => props_v%begin()
                  DO WHILE (ASSOCIATED(prop))
-                     WRITE(iUnit,'(A)',advance='no') &
+                     WRITE(iUnit,'(A)',ADVANCE='NO') &
                          prop%name (1:LEN_TRIM(prop%name))
-                    ! IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',advance='no') " "
-                     WRITE(iUnit,'(A)',advance='no') " "
+                    ! IF (i .LT. nb_wpv) WRITE(iUnit,'(A)',ADVANCE='NO') " "
+                     WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_v%next()
                  ENDDO
                  IF (nb_wpv .GT. 0 .AND. nb_wp_field .GT. 0) &
-                      WRITE(iUnit,'(A)',advance='no') " "
+                      WRITE(iUnit,'(A)',ADVANCE='NO') " "
 
                  prop => props_vf%begin()
                  DO WHILE (ASSOCIATED(prop))
-                    WRITE(iUnit,'(A)',advance='no') &
+                    WRITE(iUnit,'(A)',ADVANCE='NO') &
                          prop%name (1:LEN_TRIM(prop%name))
-              !      IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',advance='no') " "
-                     WRITE(iUnit,'(A)',advance='no') " "
+              !      IF (i .LT. nb_wp_field) WRITE(iUnit,'(A)',ADVANCE='NO') " "
+                     WRITE(iUnit,'(A)',ADVANCE='NO') " "
                      prop => props_vf%next()
                  ENDDO
               END IF

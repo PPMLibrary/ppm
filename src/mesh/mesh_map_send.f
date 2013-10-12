@@ -99,16 +99,16 @@
       !-------------------------------------------------------------------------
       Ndata = 0
       IF (ppm_dim .LT. 3) THEN
-          !---------------------------------------------------------------------
-          !  access mesh blocks belonging to the 1st processor
-          !---------------------------------------------------------------------
-          DO j=ppm_psendbuffer(1),ppm_psendbuffer(2)-1
-             !------------------------------------------------------------------
-             !  Get the number of mesh points in this block
-             !------------------------------------------------------------------
-             Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-             &                ppm_mesh_isendblksize(2,j))
-          ENDDO
+         !---------------------------------------------------------------------
+         !  access mesh blocks belonging to the 1st processor
+         !---------------------------------------------------------------------
+         DO j=ppm_psendbuffer(1),ppm_psendbuffer(2)-1
+            !------------------------------------------------------------------
+            !  Get the number of mesh points in this block
+            !------------------------------------------------------------------
+            Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*  &
+            &                ppm_mesh_isendblksize(2,j))
+         ENDDO
       ELSE
           !---------------------------------------------------------------------
           !  access mesh blocks belonging to the 1st processor
@@ -117,8 +117,9 @@
              !------------------------------------------------------------------
              !  Get the number of mesh points in this block
              !------------------------------------------------------------------
-             Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-             &                ppm_mesh_isendblksize(2,j)*ppm_mesh_isendblksize(3,j))
+             Ndata = Ndata + (ppm_mesh_isendblksize(1,j)* &
+             &                ppm_mesh_isendblksize(2,j)* &
+             &                ppm_mesh_isendblksize(3,j))
           ENDDO
       ENDIF
       ibuffer = 0
@@ -151,15 +152,16 @@
           !  the sendlist
           !---------------------------------------------------------------------
           IF (ppm_dim .LT. 3) THEN
-              DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-                  &                ppm_mesh_isendblksize(2,i))
-              ENDDO
+             DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
+                Ndata = Ndata + (ppm_mesh_isendblksize(1,i)* &
+                &                ppm_mesh_isendblksize(2,i))
+             ENDDO
           ELSE
-              DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-                  &                ppm_mesh_isendblksize(2,i)*ppm_mesh_isendblksize(3,i))
-              ENDDO
+             DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
+                Ndata = Ndata + (ppm_mesh_isendblksize(1,i)* &
+                &                ppm_mesh_isendblksize(2,i)* &
+                &                ppm_mesh_isendblksize(3,i))
+             ENDDO
           ENDIF
 
           !---------------------------------------------------------------------
@@ -171,7 +173,7 @@
           !  Store the size of the data to be sent
           !---------------------------------------------------------------------
           DO j=1,ppm_buffer_set
-              nsend(k) = nsend(k) + (ppm_buffer_dim(j)*Ndata)
+             nsend(k) = nsend(k) + (ppm_buffer_dim(j)*Ndata)
           ENDDO
 
           !---------------------------------------------------------------------
@@ -179,8 +181,8 @@
           !---------------------------------------------------------------------
           msend = MAX(msend,nsend(k))
           IF (ppm_debug .GT. 1) THEN
-              WRITE(mesg,'(A,I9)') 'msend = ',msend
-              CALL ppm_write(ppm_rank,caller,mesg,info)
+             WRITE(mesg,'(A,I9)') 'msend = ',msend
+             CALL ppm_write(ppm_rank,caller,mesg,info)
           ENDIF
       ENDDO
 
@@ -190,56 +192,57 @@
       !  particles)
       !-------------------------------------------------------------------------
       DO k=2,ppm_nrecvlist
-          nrecv(k) = 0
-          precv(k) = 0
-          Ndata    = 0
+         nrecv(k) = 0
+         precv(k) = 0
+         Ndata    = 0
 
-          !---------------------------------------------------------------------
-          !  Number of mesh points to be received from the k-th processor in
-          !  the recvlist
-          !---------------------------------------------------------------------
-          IF (ppm_dim .LT. 3) THEN
-              DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-                  &                ppm_mesh_irecvblksize(2,i))
-              ENDDO
-          ELSE
-              DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-                  &                ppm_mesh_irecvblksize(2,i)*ppm_mesh_irecvblksize(3,i))
-              ENDDO
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Number of mesh points to be received from the k-th processor in
+         !  the recvlist
+         !---------------------------------------------------------------------
+         IF (ppm_dim .LT. 3) THEN
+            DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
+               Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)* &
+               &                ppm_mesh_irecvblksize(2,i))
+            ENDDO
+         ELSE
+            DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
+               Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)* &
+               &                ppm_mesh_irecvblksize(2,i)* &
+               &                ppm_mesh_irecvblksize(3,i))
+            ENDDO
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Store the number of mesh points in precv
-          !---------------------------------------------------------------------
-          precv(k) = Ndata
+         !---------------------------------------------------------------------
+         !  Store the number of mesh points in precv
+         !---------------------------------------------------------------------
+         precv(k) = Ndata
 
-          !---------------------------------------------------------------------
-          !  Store the size of the data to be received
-          !---------------------------------------------------------------------
-          DO j=1,ppm_buffer_set
-              nrecv(k) = nrecv(k) + (ppm_buffer_dim(j)*Ndata)
-          ENDDO
+         !---------------------------------------------------------------------
+         !  Store the size of the data to be received
+         !---------------------------------------------------------------------
+         DO j=1,ppm_buffer_set
+            nrecv(k) = nrecv(k) + (ppm_buffer_dim(j)*Ndata)
+         ENDDO
 
-          !---------------------------------------------------------------------
-          !  Find the maximum buffer length (for the allocate)
-          !---------------------------------------------------------------------
-          mrecv = MAX(mrecv,nrecv(k))
-          IF (ppm_debug .GT. 1) THEN
-              WRITE(mesg,'(A,I9)') 'mrecv = ',mrecv
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Find the maximum buffer length (for the allocate)
+         !---------------------------------------------------------------------
+         mrecv = MAX(mrecv,nrecv(k))
+         IF (ppm_debug .GT. 1) THEN
+            WRITE(mesg,'(A,I9)') 'mrecv = ',mrecv
+            CALL ppm_write(ppm_rank,caller,mesg,info)
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Increment the total receive buffer count
-          !---------------------------------------------------------------------
-          ppm_nrecvbuffer = ppm_nrecvbuffer + nrecv(k)
+         !---------------------------------------------------------------------
+         !  Increment the total receive buffer count
+         !---------------------------------------------------------------------
+         ppm_nrecvbuffer = ppm_nrecvbuffer + nrecv(k)
 
-          IF (ppm_debug .GT. 1) THEN
-              WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-          ENDIF
+         IF (ppm_debug .GT. 1) THEN
+            WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer
+            CALL ppm_write(ppm_rank,caller,mesg,info)
+         ENDIF
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -262,24 +265,24 @@
       ! (as initialized above) and the alloc would throw a FATAL. This was
       ! Bug ID 000012.
       IF (ppm_nrecvlist .GT. 1) THEN
-          iopt   = ppm_param_alloc_grow
-          ldu(1) = MAX(mrecv,1)
-          IF (ppm_kind.EQ.ppm_kind_double) THEN
-             CALL ppm_alloc(recvd,ldu,iopt,info)
-          ELSE
-             CALL ppm_alloc(recvs,ldu,iopt,info)
-          ENDIF
-          or_fail_alloc("local receive buffer recv")
+         iopt   = ppm_param_alloc_grow
+         ldu(1) = MAX(mrecv,1)
+         IF (ppm_kind.EQ.ppm_kind_double) THEN
+            CALL ppm_alloc(recvd,ldu,iopt,info)
+         ELSE
+            CALL ppm_alloc(recvs,ldu,iopt,info)
+         ENDIF
+         or_fail_alloc("local receive buffer recv")
       ENDIF
 
       IF (ppm_nsendlist .GT. 1) THEN
-          ldu(1) = MAX(msend,1)
-          IF (ppm_kind.EQ.ppm_kind_double) THEN
-             CALL ppm_alloc(sendd,ldu,iopt,info)
-          ELSE
-             CALL ppm_alloc(sends,ldu,iopt,info)
-          ENDIF
-          or_fail_alloc("local send buffer send")
+         ldu(1) = MAX(msend,1)
+         IF (ppm_kind.EQ.ppm_kind_double) THEN
+            CALL ppm_alloc(sendd,ldu,iopt,info)
+         ELSE
+            CALL ppm_alloc(sends,ldu,iopt,info)
+         ENDIF
+         or_fail_alloc("local send buffer send")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -293,8 +296,8 @@
       !  buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',ppm_buffer_set
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
       bdim = 0
       offs = 0
