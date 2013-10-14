@@ -217,7 +217,7 @@
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
       INTEGER                           :: nsubs
-      INTEGER, DIMENSION(:  ), POINTER  :: sub2proc => NULL()
+      INTEGER, DIMENSION(:  ),  POINTER :: sub2proc => NULL()
 
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_topo_mkfield'
       !-------------------------------------------------------------------------
@@ -266,7 +266,7 @@
       meshdx(1) = (max_phys(1)-min_phys(1))/REAL(Nm(1)-1,MK)
       meshdx(2) = (max_phys(2)-min_phys(2))/REAL(Nm(2)-1,MK)
       IF (ppm_dim .GT. 2) THEN
-          meshdx(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,MK)
+         meshdx(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,MK)
       ENDIF
 
       !-------------------------------------------------------------------------

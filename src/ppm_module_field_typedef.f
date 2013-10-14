@@ -46,16 +46,16 @@ minclude ppm_create_collection(discr_info,discr_info,generate="extend")
           PROCEDURE :: create            => field_create
           PROCEDURE :: destroy           => field_destroy
           PROCEDURE :: set_rel_discr     => field_set_rel_discr
+
           PROCEDURE :: map_ghost_push    => field_map_ghost_push
           PROCEDURE :: map_ghost_pop     => field_map_ghost_pop
-
           PROCEDURE :: map_push          => field_map_push
           PROCEDURE :: map_pop           => field_map_pop
 
           PROCEDURE :: is_discretized_on => field_is_discretized_on
           PROCEDURE :: discretize_on     => field_discretize_on
-          PROCEDURE :: get_discr         => field_get_discr
           PROCEDURE :: get_pid           => field_get_pid
+          PROCEDURE :: get_discr         => field_get_discr
       END TYPE ppm_t_field
 minclude ppm_create_collection(field,field,generate="extend")
 minclude ppm_create_collection(field,field,generate="extend",vec=true)
@@ -174,7 +174,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           end_subroutine()
       END SUBROUTINE discr_info_destroy
 
-
       SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
           !!! Allocate field on a mesh
           !!! If the field has a procedure for initialization (e.g. an
@@ -239,7 +238,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
               or_fail("discr%create_prop()")
 
               !Update the bookkeeping table to store the relationship between
-              ! the mesh and the field.
+              !the mesh and the field.
               CALL this%set_rel_discr(discr,mddata,info,p_idx)
               or_fail("failed to log the relationship between this field and that mesh")
 
@@ -277,7 +276,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           end_subroutine()
       END SUBROUTINE field_discretize_on
-
 
       SUBROUTINE field_set_rel_discr(this,discr,discr_data,info,p_idx)
           !!! Create bookkeeping data structure to log the relationship between
@@ -470,16 +468,16 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           end_subroutine()
       END SUBROUTINE field_get_discr
 
-      FUNCTION field_is_discretized_on(this,discr_kind,tstep) RESULT(res)
+      FUNCTION field_is_discretized_on(this,discr_kind,discr_info,tstep) RESULT(res)
           !!! Check if this field has been discretized on this
           !!! discretization kind (mesh or particles)
           !!! TODO: Optionally, check for discretizations at different time points
           !!! (like n-1, n-2, etc...).
-          CLASS(ppm_t_field)                           :: this
-          CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
+          CLASS(ppm_t_field)                                         :: this
+          CLASS(ppm_t_discr_kind),    TARGET,          INTENT(IN   ) :: discr_kind
           !!! discretization
-          LOGICAL                                      :: res
-          INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER, INTENT(  OUT) :: discr_info
+          INTEGER,                  OPTIONAL,          INTENT(IN   ) :: tstep
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
           !!!     (tstep =  0, default) => step n
@@ -491,18 +489,25 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! The data management and book-keeping between the data of different
           !!! time steps are done by the time integrator.
           !!! TODO
-          CLASS(ppm_t_discr_info_),POINTER             :: dinfo => NULL()
+          LOGICAL                                                    :: res
+
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
 
           start_function("field_is_discretized_on")
 
-
           dinfo => this%discr_info%begin()
           DO WHILE(ASSOCIATED(dinfo))
-              IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
-                  res = .TRUE.
-                  RETURN
-              ENDIF
-              dinfo => this%discr_info%next()
+             IF (ASSOCIATED(dinfo%discr_ptr,discr_kind)) THEN
+                res = .TRUE.
+                IF (PRESENT(discr_info)) THEN
+                   discr_info => dinfo
+
+                   check_associated(discr_info, &
+                   "Field seems to not be distretized on this set")
+                ENDIF
+                RETURN
+             ENDIF
+             dinfo => this%discr_info%next()
           ENDDO
 
           res = .FALSE.

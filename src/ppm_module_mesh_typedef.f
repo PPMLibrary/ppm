@@ -147,7 +147,6 @@ minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
       INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: invsublist => NULL()
       INTEGER,               DIMENSION(:),   PRIVATE, POINTER :: sublist    => NULL()
 
-
       !----------------------------------------------------------------------
       !  Type-bound procedures
       !----------------------------------------------------------------------
@@ -587,7 +586,6 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
           USE ppm_module_check_id
-
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -678,32 +676,32 @@ minclude ppm_get_field_template(4,d)
           or_fail_alloc('ghostsize')
 
           IF (.NOT.ASSOCIATED(this%subpatch)) THEN
-              ALLOCATE(ppm_c_subpatch::this%subpatch,STAT=info)
-              or_fail_alloc("could not allocate this%subpatch")
+             ALLOCATE(ppm_c_subpatch::this%subpatch,STAT=info)
+             or_fail_alloc("could not allocate this%subpatch")
           ELSE
-              fail("subpatch collection is already allocated. Call destroy() first?")
+             fail("subpatch collection is already allocated. Call destroy() first?")
           ENDIF
 
           IF (.NOT.ASSOCIATED(this%patch)) THEN
-              ALLOCATE(ppm_c_A_subpatch::this%patch,STAT=info)
-              or_fail_alloc("could not allocate this%patch")
+             ALLOCATE(ppm_c_A_subpatch::this%patch,STAT=info)
+             or_fail_alloc("could not allocate this%patch")
           ELSE
-              fail("patch collection is already allocated. Call destroy() first?")
+             fail("patch collection is already allocated. Call destroy() first?")
           ENDIF
 
           nsubs = topo%nsubs
           IF (.NOT.ASSOCIATED(this%subpatch_by_sub)) THEN
-              ALLOCATE(this%subpatch_by_sub(nsubs),STAT=info)
-              or_fail_alloc("could not allocate this%subpatch_by_sub")
+             ALLOCATE(this%subpatch_by_sub(nsubs),STAT=info)
+             or_fail_alloc("could not allocate this%subpatch_by_sub")
           ELSE
-              fail("subpatch_by_sub is already allocated. Call destroy() first?")
+             fail("subpatch_by_sub is already allocated. Call destroy() first?")
           ENDIF
 
           IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
-              ALLOCATE(this%field_ptr,STAT=info)
-              or_fail_alloc("could not allocate this%field_ptr")
+             ALLOCATE(this%field_ptr,STAT=info)
+             or_fail_alloc("could not allocate this%field_ptr")
           ELSE
-              fail("field_ptr is already allocated. Call destroy() first?")
+             fail("field_ptr is already allocated. Call destroy() first?")
           ENDIF
 
           !-------------------------------------------------------------------------
@@ -918,7 +916,6 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
           USE ppm_module_check_id
-
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Includes
@@ -927,17 +924,22 @@ minclude ppm_get_field_template(4,d)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh)                :: this
           !!! cartesian mesh object
           INTEGER,                INTENT(  OUT) :: info
           !!! Returns status, 0 upon success
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
+          TYPE(ppm_t_topo),         POINTER :: topo => NULL()
+
+          CLASS(ppm_t_main_abstr),  POINTER :: field => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+
           INTEGER , DIMENSION(3)    :: ldc
           INTEGER                   :: iopt,ld,ud,kk,i,j,isub
+
           LOGICAL                   :: valid
-          TYPE(ppm_t_topo), POINTER :: topo => NULL()
 
           start_subroutine("equi_mesh_destroy")
 
@@ -969,7 +971,19 @@ minclude ppm_get_field_template(4,d)
 
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
-          !TODO !!!
+          field => this%field_ptr%begin()
+          field_loop: DO WHILE (ASSOCIATED(field))
+
+             SELECT TYPE(field)
+             CLASS IS (ppm_t_field_)
+                IF (field%is_discretized_on(this,dinfo)) THEN
+                   CALL field%discr_info%remove(info,dinfo)
+                   or_fail("field%discr_info%remove")
+                ENDIF
+             END SELECT
+
+             field => this%field_ptr%next()
+          ENDDO field_loop
 
           destroy_collection_ptr(this%field_ptr)
 
@@ -1002,10 +1016,9 @@ minclude ppm_get_field_template(4,d)
 
 
           IF (.NOT.ASSOCIATED(this%mdata)) THEN
-              ALLOCATE(ppm_v_mesh_discr_data::this%mdata,STAT=info)
-              or_fail_alloc("mdata")
+             ALLOCATE(ppm_v_mesh_discr_data::this%mdata,STAT=info)
+             or_fail_alloc("mdata")
           ENDIF
-
 
           ALLOCATE(ppm_t_mesh_discr_data::discr_data,STAT=info)
           or_fail_alloc("discr_data")
@@ -1141,7 +1154,6 @@ minclude ppm_get_field_template(4,d)
           !  Modules
           !-------------------------------------------------------------------------
           USE ppm_module_topo_typedef
-
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
@@ -1285,9 +1297,8 @@ minclude ppm_get_field_template(4,d)
           ! loop through all subdomains on this processor to allocate some book-
           ! keeping arrays.
           size_tmp=0
-          !DO i = 1,topo%nsublist
+
           DO isub=1,topo%nsubs
-             !isub = topo%isublist(i)
              !----------------------------------------------------------------
              ! check if the subdomain overlaps with the patch
              ! if so, then there might be a subpatch created for that subdomain.
@@ -1424,12 +1435,6 @@ minclude ppm_get_field_template(4,d)
                   ENDIF
 
                   !----------------------------------------------------------------
-                  ! create a new subpatch object
-                  !----------------------------------------------------------------
-                  ALLOCATE(ppm_t_subpatch::p,STAT=info)
-                  or_fail_alloc("could not allocate ppm_t_subpatch pointer")
-
-                  !----------------------------------------------------------------
                   ! determine ghostlayer size for this subpatch
                   ! (there is a ghostlayer if and only if the border of the subpatch
                   ! does not coincide with a border of the patch itself - in that
@@ -1444,6 +1449,12 @@ minclude ppm_get_field_template(4,d)
                      ghostsize(5) = MIN(istart(3)-istart_p(3),this%ghostsize(3))
                      ghostsize(6) = MIN(iend_p(3)-iend(3)    ,this%ghostsize(3))
                   ENDIF
+
+                  !----------------------------------------------------------------
+                  ! create a new subpatch object
+                  !----------------------------------------------------------------
+                  ALLOCATE(ppm_t_subpatch::p,STAT=info)
+                  or_fail_alloc("could not allocate ppm_t_subpatch pointer")
 
                   CALL p%create(this,isub,istart,iend,pstart,pend,&
                   &    istart_p,iend_p,ghostsize,bc,info)

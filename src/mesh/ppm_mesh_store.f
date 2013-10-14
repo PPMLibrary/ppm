@@ -117,7 +117,7 @@
             fail('meshid is invalid',ppm_err_argument,exit_point=9999)
          ENDIF
 
-         SELECT CASE(ASSOCIATED(ppm_mesh%vec(meshid)%t))
+         SELECT CASE (ASSOCIATED(ppm_mesh%vec(meshid)%t))
          CASE (.FALSE.)
             ALLOCATE(ppm_t_equi_mesh::ppm_mesh%vec(meshid)%t, STAT=info)
             or_fail_alloc("ppm_mesh%vec(meshid)%t pointer")

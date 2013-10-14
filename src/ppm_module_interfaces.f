@@ -308,14 +308,16 @@ minclude ppm_create_collection(discr_info_,discr_info_,generate="abstract")
           PROCEDURE(field_create_),            DEFERRED :: create
           PROCEDURE(field_destroy_),           DEFERRED :: destroy
           PROCEDURE(field_set_rel_discr_),     DEFERRED :: set_rel_discr
-          PROCEDURE(field_get_discr_),         DEFERRED :: get_discr
-          PROCEDURE(field_get_pid_),           DEFERRED :: get_pid
+
           PROCEDURE(field_map_ghost_push_),    DEFERRED :: map_ghost_push
           PROCEDURE(field_map_ghost_pop_),     DEFERRED :: map_ghost_pop
           PROCEDURE(field_map_push_),          DEFERRED :: map_push
           PROCEDURE(field_map_pop_),           DEFERRED :: map_pop
+
           PROCEDURE(field_is_discretized_on_), DEFERRED :: is_discretized_on
           PROCEDURE(field_discretize_on_),     DEFERRED :: discretize_on
+          PROCEDURE(field_get_pid_),           DEFERRED :: get_pid
+          PROCEDURE(field_get_discr_),         DEFERRED :: get_discr
       END TYPE ppm_t_field_
 minclude ppm_create_collection(field_,field_,generate="abstract")
 minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_ptr=false)

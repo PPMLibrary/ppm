@@ -75,31 +75,31 @@
       !-------------------------------------------------------------------------
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:)   , POINTER         :: fdata_dummy
-      INTEGER , DIMENSION(:,:)   , POINTER         :: fdata
+      INTEGER , DIMENSION(:,:),    POINTER         :: fdata_dummy
+      INTEGER , DIMENSION(:,:),    POINTER         :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:)   , POINTER         :: fdata_dummy
-      LOGICAL , DIMENSION(:,:)   , POINTER         :: fdata
+      LOGICAL , DIMENSION(:,:),    POINTER         :: fdata_dummy
+      LOGICAL , DIMENSION(:,:),    POINTER         :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:), POINTER         :: fdata_dummy
       COMPLEX(MK), DIMENSION(:,:), POINTER         :: fdata
 #else
-      REAL(MK), DIMENSION(:,:)   , POINTER         :: fdata_dummy
-      REAL(MK), DIMENSION(:,:)   , POINTER         :: fdata
+      REAL(MK), DIMENSION(:,:),    POINTER         :: fdata_dummy
+      REAL(MK), DIMENSION(:,:),    POINTER         :: fdata
 #endif
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:)   , POINTER       :: fdata_dummy
-      INTEGER , DIMENSION(:,:,:)   , POINTER       :: fdata
+      INTEGER , DIMENSION(:,:,:),    POINTER       :: fdata_dummy
+      INTEGER , DIMENSION(:,:,:),    POINTER       :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:)   , POINTER       :: fdata_dummy
-      LOGICAL , DIMENSION(:,:,:)   , POINTER       :: fdata
+      LOGICAL , DIMENSION(:,:,:),    POINTER       :: fdata_dummy
+      LOGICAL , DIMENSION(:,:,:),    POINTER       :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:,:), POINTER       :: fdata_dummy
       COMPLEX(MK), DIMENSION(:,:,:), POINTER       :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:)   , POINTER       :: fdata_dummy
-      REAL(MK), DIMENSION(:,:,:)   , POINTER       :: fdata
+      REAL(MK), DIMENSION(:,:,:),    POINTER       :: fdata_dummy
+      REAL(MK), DIMENSION(:,:,:),    POINTER       :: fdata
 #endif
 #endif
       !!! Field data.
@@ -119,34 +119,38 @@
       !!!
       !!! 1st-2nd index: mesh (i,j)                                            +
       !!! 3rd: isub.
-      INTEGER                        , OPTIONAL      :: poptype
+      INTEGER,                         OPTIONAL      :: poptype
 #if   __DIM == __VFIELD
-      INTEGER                        , INTENT(IN   ) :: lda
+      INTEGER,                         INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
       !!! lda=1 for the case of scalar data
 #endif
-      INTEGER                        , INTENT(IN   ) :: p_idx
+      INTEGER,                         INTENT(IN   ) :: p_idx
       !!! The index where the data is stored on the subpatches
       CLASS(ppm_t_equi_mesh)                         :: this
       !!! Source mesh
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(2)   :: mofs,patchid
-      INTEGER, DIMENSION(4)   :: ldu,ldl
-      INTEGER                 :: i,j,k,ibuffer,Mdata,isub,bdim,jsub,edim
-      INTEGER                 :: ipatch
-      INTEGER                 :: iopt,totopo,xhi,yhi,xlo,ylo,imesh,jmesh
-      INTEGER                 :: btype,idom
-      LOGICAL                 :: found_patch
-      INTEGER                 :: rtype
-      CHARACTER(LEN=ppm_char) :: mesg
+      TYPE(ppm_t_topo), POINTER :: target_topo => NULL()
+
+      INTEGER, DIMENSION(2) :: mofs,patchid
+      INTEGER, DIMENSION(4) :: ldu,ldl
+      INTEGER               :: i,j,k,ibuffer,Mdata,isub,bdim,jsub,edim
+      INTEGER               :: ipatch
+      INTEGER               :: iopt,totopo,xhi,yhi,xlo,ylo,imesh,jmesh
+      INTEGER               :: btype,idom
+      INTEGER               :: rtype
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo), POINTER  :: target_topo => NULL()
+
+      CHARACTER(LEN=ppm_char) :: mesg
+
+      LOGICAL :: found_patch
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -3220,7 +3224,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(invsublist,ldu,iopt,info)
-        or_fail_dealloc("invsublist")
+      or_fail_dealloc("invsublist")
 
       !-------------------------------------------------------------------------
       !  Return

@@ -9,6 +9,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Constructor for subdomain data
           IMPORT ppm_t_subpatch_data_,ppm_t_mesh_discr_data_,ppm_t_subpatch_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data_)                          :: this
           CLASS(ppm_t_mesh_discr_data_), TARGET, INTENT(IN   ) :: discr_data
           CLASS(ppm_t_subpatch_),                INTENT(IN   ) :: sp
@@ -19,6 +22,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Destructor for subdomain data
           IMPORT ppm_t_subpatch_data_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_data_)               :: this
           INTEGER,                    INTENT(  OUT) :: info
       END SUBROUTINE
@@ -28,6 +34,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Constructor for subpatch
           IMPORT ppm_t_subpatch_,ppm_t_equi_mesh_,ppm_kind_double
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_)                            :: p
           CLASS(ppm_t_equi_mesh_), TARGET                   :: mesh
           INTEGER                                           :: isub
@@ -46,6 +55,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Destructor for subpatch
           IMPORT ppm_t_subpatch_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_)               :: p
           INTEGER,               INTENT(  OUT) :: info
       END SUBROUTINE
@@ -53,6 +65,9 @@ minclude ppm_get_field_interface_template(4,d)
       PURE FUNCTION subpatch_get_pos2d_(p,i,j) RESULT (pos)
           IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_),                   INTENT(IN   ) :: p
           INTEGER,                                  INTENT(IN   ) :: i
           INTEGER,                                  INTENT(IN   ) :: j
@@ -62,6 +77,9 @@ minclude ppm_get_field_interface_template(4,d)
       PURE FUNCTION subpatch_get_pos3d_(p,i,j,k) RESULT (pos)
           IMPORT ppm_t_subpatch_,ppm_kind_double,ppm_dim
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_subpatch_),                   INTENT(IN   ) :: p
           INTEGER,                                  INTENT(IN   ) :: i
           INTEGER,                                  INTENT(IN   ) :: j
@@ -73,6 +91,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Destructor for subdomain data data structure
           IMPORT ppm_t_A_subpatch_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_A_subpatch_)               :: this
           INTEGER                                :: vecsize
           INTEGER,                 INTENT(  OUT) :: info
@@ -90,6 +111,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_create_(this,topoid,Offset,info,Nm,h,ghostsize,name)
           IMPORT ppm_t_equi_mesh_,ppm_kind_double
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),                       INTENT(INOUT) :: this
           INTEGER,                                       INTENT(IN   ) :: topoid
           REAL(ppm_kind_double), DIMENSION(:),           INTENT(IN   ) :: Offset
@@ -104,13 +128,19 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_destroy_(this,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
-          CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
-          INTEGER,                 INTENT(  OUT) :: info
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh_)               :: this
+          INTEGER,                INTENT(  OUT) :: info
       END SUBROUTINE
 
       SUBROUTINE equi_mesh_create_prop_(this,field,discr_data,info,p_idx)
           IMPORT ppm_t_equi_mesh_,ppm_t_mesh_discr_data_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),                INTENT(INOUT) :: this
           CLASS(ppm_t_field_),                    INTENT(IN   ) :: field
           CLASS(ppm_t_mesh_discr_data_), POINTER, INTENT(  OUT) :: discr_data
@@ -121,6 +151,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_prop_zero_(this,Field,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           CLASS(ppm_t_field_),     INTENT(IN   ) :: Field
           INTEGER,                 INTENT(  OUT) :: info
@@ -130,6 +163,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Add a patch to a mesh
           IMPORT ppm_t_equi_mesh_,ppm_kind_double,ppm_dim
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),                     INTENT(INOUT) :: this
           REAL(ppm_kind_double), DIMENSION(:),         INTENT(INOUT) :: patch
           INTEGER,                                     INTENT(  OUT) :: info
@@ -142,6 +178,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! Add a uniform patch to a mesh
           IMPORT ppm_t_equi_mesh_,ppm_kind_double
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           INTEGER,                 INTENT(  OUT) :: info
           INTEGER, OPTIONAL,       INTENT(IN   ) :: patchid
@@ -151,6 +190,9 @@ minclude ppm_get_field_interface_template(4,d)
           !!! returns a pointer to a new subpatch_data object
           IMPORT ppm_t_equi_mesh_,ppm_t_subpatch_data_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),     INTENT(IN   ) :: this
           CLASS(ppm_t_subpatch_data_), POINTER       :: sp
           INTEGER,                     INTENT(  OUT) :: info
@@ -167,6 +209,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_ghost_get_(this,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
@@ -174,6 +219,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_ghost_put_(this,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
@@ -183,6 +231,9 @@ minclude ppm_get_field_interface_template(4,d)
       &          isendblkstart,isendblksize,ioffset,info,lsymm)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),           INTENT(IN   ) :: this
           CLASS(ppm_t_equi_mesh_),           INTENT(IN   ) :: to_mesh
           INTEGER,                           INTENT(IN   ) :: isub
@@ -202,6 +253,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_ghost_init_(this,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
@@ -209,6 +263,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_push_(this,field,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           CLASS(ppm_t_field_),     INTENT(IN   ) :: field
           INTEGER,                 INTENT(  OUT) :: info
@@ -217,6 +274,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_send_(this,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_)              :: this
           INTEGER,               INTENT(  OUT) :: info
       END SUBROUTINE
@@ -224,6 +284,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_map_pop_(this,field,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: this
           CLASS(ppm_t_field_),     INTENT(INOUT) :: field
           INTEGER,                 INTENT(  OUT) :: info
@@ -232,6 +295,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE mesh_discr_data_create_(this,field,info)
           IMPORT ppm_t_mesh_discr_data_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data_), INTENT(INOUT) :: this
           CLASS(ppm_t_field_), TARGET,   INTENT(IN   ) :: field
           INTEGER,                       INTENT(  OUT) :: info
@@ -240,6 +306,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE mesh_discr_data_destroy_(this,info)
           IMPORT ppm_t_mesh_discr_data_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_mesh_discr_data_), INTENT(INOUT) :: this
           INTEGER,                       INTENT(  OUT) :: info
       END SUBROUTINE
@@ -247,6 +316,9 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_print_vtk_(this,filename,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_), INTENT(INOUT) ::  this
           CHARACTER(LEN=*),        INTENT(IN   ) :: filename
           INTEGER,                 INTENT(  OUT) :: info
@@ -255,15 +327,22 @@ minclude ppm_get_field_interface_template(4,d)
       SUBROUTINE equi_mesh_m2p_(this,Part,Field,kernel,info)
           IMPORT ppm_t_equi_mesh_,ppm_t_particles_d_,ppm_t_field_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_),   INTENT(INOUT) :: this
           CLASS(ppm_t_particles_d_), INTENT(INOUT) :: Part
           CLASS(ppm_t_field_),       INTENT(INOUT) :: Field
           INTEGER,                   INTENT(IN   ) :: kernel
           INTEGER,                   INTENT(  OUT) :: info
       END SUBROUTINE
+
       SUBROUTINE equi_mesh_map_global_(this,target_mesh,info)
           IMPORT ppm_t_equi_mesh_
           IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_equi_mesh_)                :: this
           CLASS(ppm_t_equi_mesh_), INTENT(IN   ) :: target_mesh
           INTEGER,                 INTENT(  OUT) :: info

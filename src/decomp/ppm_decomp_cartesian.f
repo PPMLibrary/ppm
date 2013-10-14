@@ -142,40 +142,40 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Number of subdomains
       !-------------------------------------------------------------------------
       IF (PRESENT(ndom)) THEN
-          nsubs = ndom
+         nsubs = ndom
       ELSE
-          nsubs = ppm_nproc
+         nsubs = ppm_nproc
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Mesh spacing
       !-------------------------------------------------------------------------
       DO i=1,ppm_dim
-          Nc(i)       = Nm(i)-1
-          len_phys(i) = max_phys(i) - min_phys(i)
-          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
+         Nc(i)       = Nm(i)-1
+         len_phys(i) = max_phys(i) - min_phys(i)
+         dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the subs if not already done so by the user
       !-------------------------------------------------------------------------
       IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-          iopt = ppm_param_alloc_fit
-          ldu(1) = ppm_dim
-          ldu(2) = nsubs
-          CALL ppm_alloc(min_sub,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_decomp_cartesian',    &
-     &            'minima of subdomains MIN_SUB',__LINE__,info)
+         iopt = ppm_param_alloc_fit
+         ldu(1) = ppm_dim
+         ldu(2) = nsubs
+         CALL ppm_alloc(min_sub,ldu,iopt,info)
+         IF (info .NE. 0) THEN
+            info = ppm_error_fatal
+            CALL ppm_error(ppm_err_alloc,'ppm_decomp_cartesian',    &
+              &            'minima of subdomains MIN_SUB',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(max_sub,ldu,iopt,info)

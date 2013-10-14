@@ -29,6 +29,10 @@
       !CREATE
       SUBROUTINE field_create_(this,lda,info,dtype,name,init_func)
           IMPORT ppm_t_field_,ppm_kind_double
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                                               :: this
           INTEGER,                                            INTENT(IN   ) :: lda
           INTEGER,                                            INTENT(  OUT) :: info
@@ -39,12 +43,20 @@
       !DESTROY
       SUBROUTINE field_destroy_(this,info)
           IMPORT ppm_t_field_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)               :: this
           INTEGER,            INTENT(  OUT) :: info
       END SUBROUTINE
       !CREATE
       SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info,p_idx)
           IMPORT ppm_t_discr_info_,ppm_t_discr_kind,ppm_t_discr_data,ppm_mdata_lflags
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_discr_info_)                       :: this
           CLASS(ppm_t_discr_kind), TARGET, INTENT(IN   ) :: discr
           CLASS(ppm_t_discr_data), TARGET, INTENT(IN   ) :: discr_data
@@ -56,12 +68,20 @@
       !DESTROY
       SUBROUTINE discr_info_destroy_(this,info)
           IMPORT ppm_t_discr_info_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_discr_info_)               :: this
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
       !DISCRETIZE FIELD ON MESH OR PARTICLES
       SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts)
           IMPORT ppm_t_field_,ppm_t_discr_kind
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           !!! Allocate field on a mesh or on a particle set
           !!! If the field has a procedure for initialization (e.g. an
           !!! initial condition), then the field is also initialized.
@@ -74,6 +94,10 @@
       !ESTABLISH RELATIONSHIP BETWEEN FIELD AND DISCRETIZATION
       SUBROUTINE field_set_rel_discr_(this,discr,discr_data,info,p_idx)
           IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_data
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                  :: this
           CLASS(ppm_t_discr_kind)              :: discr
           CLASS(ppm_t_discr_data)              :: discr_data
@@ -90,6 +114,10 @@
       !POP FIELD DATA FROM A MESH GHOST MAPPING BUFFERS
       SUBROUTINE field_map_ghost_pop_(this,mesh,info)
           IMPORT ppm_t_field_,ppm_t_equi_mesh_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                   :: this
           CLASS(ppm_t_equi_mesh_)               :: mesh
           INTEGER,                INTENT(  OUT) :: info
@@ -97,6 +125,10 @@
       !PUSH FIELD DATA ON A MESH GLOBAL MAPPING BUFFERS
       SUBROUTINE field_map_push_(this,mesh,info)
           IMPORT ppm_t_field_,ppm_t_equi_mesh_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                   :: this
           CLASS(ppm_t_equi_mesh_)               :: mesh
           INTEGER,                INTENT(  OUT) :: info
@@ -104,6 +136,10 @@
       !POP FIELD DATA FROM A MESH GLOBAL MAPPING BUFFERS
       SUBROUTINE field_map_pop_(this,mesh,info)
           IMPORT ppm_t_field_,ppm_t_equi_mesh_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                   :: this
           CLASS(ppm_t_equi_mesh_)               :: mesh
           INTEGER,                INTENT(  OUT) :: info
@@ -111,16 +147,24 @@
 
       SUBROUTINE field_get_discr_(this,discr_kind,discr_data,info,tstep)
           IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_data
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                             :: this
           CLASS(ppm_t_discr_kind), TARGET,  INTENT(IN   ) :: discr_kind
           CLASS(ppm_t_discr_data), POINTER, INTENT(  OUT) :: discr_data
           !!! discretization
           INTEGER,                          INTENT(  OUT) :: info
-          INTEGER, OPTIONAL,                INTENT(IN   ) :: tstep
+          INTEGER,                OPTIONAL, INTENT(IN   ) :: tstep
       END SUBROUTINE
 
       FUNCTION field_get_pid_(this,discr_kind,tstep) RESULT(p_idx)
           IMPORT ppm_t_field_,ppm_t_discr_kind
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
           CLASS(ppm_t_field_)                            :: this
           CLASS(ppm_t_discr_kind), TARGET, INTENT(IN   ) :: discr_kind
           !!! discretization
@@ -128,11 +172,16 @@
           INTEGER                                        :: p_idx
       END FUNCTION
 
-      FUNCTION field_is_discretized_on_(this,discr_kind,tstep) RESULT(res)
-          IMPORT ppm_t_field_,ppm_t_discr_kind
-          CLASS(ppm_t_field_)                            :: this
-          CLASS(ppm_t_discr_kind), TARGET, INTENT(IN   ) :: discr_kind
+      FUNCTION field_is_discretized_on_(this,discr_kind,discr_info,tstep) RESULT(res)
+          IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_info_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_field_)                                        :: this
+          CLASS(ppm_t_discr_kind),  TARGET,            INTENT(IN   ) :: discr_kind
           !!! discretization
-          LOGICAL                                        :: res
-          INTEGER, OPTIONAL,               INTENT(IN   ) :: tstep
+          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER, INTENT(  OUT) :: discr_info
+          INTEGER,                  OPTIONAL,          INTENT(IN   ) :: tstep
+          LOGICAL                                                    :: res
       END FUNCTION
