@@ -33,6 +33,7 @@ real(mk),dimension(:  ),pointer :: h => NULL()
 type(ppm_t_topo),       pointer :: topo => NULL()
 
 type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
+class(ppm_t_equi_mesh_),pointer    :: mesh3
 integer                          :: ipatch,isub,jsub
 class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
@@ -120,6 +121,16 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Assert_Equal(info,0)
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
+
+        Allocate(ppm_t_equi_mesh::mesh3)
+
+        call Mesh3%create(topoid,offset,info,Nm=Nm)
+        Assert_Equal(info,0)
+        call ppm_mesh%push(mesh3,info)
+        Assert_Equal(info,0)
+        !call Mesh3%destroy(info)
+        !Assert_Equal(info,0)
+
 
         h = (max_phys-min_phys)/Nm
         call Mesh1%create(topoid,offset,info,h=h)

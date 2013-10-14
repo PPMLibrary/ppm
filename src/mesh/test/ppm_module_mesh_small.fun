@@ -60,10 +60,10 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -111,7 +111,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -142,7 +142,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk 
+        sca_ghostsize = 0.07_mk
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -183,14 +183,14 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
-        call Mesh1%def_patch(my_patch,info) 
+        call Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
-        call Field1%create(3,info,name='vecField') 
+        call Field1%create(3,info,name='vecField')
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField') 
+        call Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -353,7 +353,7 @@ pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
 end function
-    
+
 
 
 
