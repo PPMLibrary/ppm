@@ -193,22 +193,22 @@
       !  Check what kind of pop is needed (replace or add)
       !-------------------------------------------------------------------------
       IF (ppm_map_type .EQ. ppm_param_map_init) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,  &
-     &       'map_field_pop cannot be called after ghost_init',__LINE__,info)
-        CALL ppm_error(ppm_err_argument,caller,  &
-     &       'ghost_init must not be called directly by the user',__LINE__,info)
-        GOTO 9999
+         info = ppm_error_error
+         CALL ppm_error(ppm_err_argument,caller,  &
+         & 'mesh_map_pop cannot be called after ghost_init',__LINE__,info)
+         CALL ppm_error(ppm_err_argument,caller,  &
+         &  'mesh_map_ghost_init must not be called directly by the user',__LINE__,info)
+         GOTO 9999
       ELSE
-          IF (PRESENT(poptype)) THEN
-              rtype = poptype
-          ELSE
-              IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
-                rtype = ppm_param_pop_add
-              ELSE
-                rtype = ppm_param_pop_replace
-              ENDIF
-          ENDIF
+         IF (PRESENT(poptype)) THEN
+            rtype = poptype
+         ELSE
+            IF (ppm_map_type.EQ.ppm_param_map_ghost_put) THEN
+               rtype = ppm_param_pop_add
+            ELSE
+               rtype = ppm_param_pop_replace
+            ENDIF
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -227,7 +227,7 @@
       ENDIF
 #if   __DIM == __VFIELD
       IF (edim.NE.lda) THEN
-          fail("leading dimension LDA is in error",ppm_err_wrong_dim)
+         fail("leading dimension LDA is in error",ppm_err_wrong_dim)
       ENDIF
 #elif __DIM == __SFIELD
       IF (edim.NE.1) THEN
@@ -317,7 +317,7 @@
               !  Get the number of mesh points in this block
               !----------------------------------------------------------------
               Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*         &
-                  ppm_mesh_irecvblksize(2,j)* ppm_mesh_irecvblksize(3,j))
+              &       ppm_mesh_irecvblksize(2,j)* ppm_mesh_irecvblksize(3,j))
           ENDDO
       ENDDO
 
