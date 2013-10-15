@@ -21,9 +21,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh)                  :: this
+      CLASS(ppm_t_equi_mesh),   INTENT(IN   ) :: this
       !!! Source mesh
-      CLASS(ppm_t_equi_mesh_)                 :: to_mesh
+      CLASS(ppm_t_equi_mesh_),  INTENT(IN   ) :: to_mesh
       !!! Target mesh
       INTEGER,                  INTENT(IN   ) :: isub
       !!! Source sub (from which data will be sent) in global numbering

@@ -357,16 +357,6 @@
                            stdout("p%istart",'p%istart')
                            stdout("p%iend",'p%iend')
                         ENDIF
-                        IF (.not.(xlo.GE.p%lo_a(1)).or. &
-                           &.not.(xhi.LE.p%hi_a(1)).or. &
-                           &.not.(ylo.GE.p%lo_a(2)).or. &
-                           &.not.(yhi.LE.p%hi_a(2)).or. &
-                           &.not.(zlo.GE.p%lo_a(3)).or. &
-                           &.not.(zhi.LE.p%hi_a(3)))then
-                           write(*,'(a,i2,i4,a)')repeat('-',20),ppm_rank,ipatch,repeat('-',20)
-                          write(*,'(i2,6i10)')ppm_rank,xlo,ylo,zlo,xhi,yhi,zhi
-                           write(*,'(i2,6i10)')ppm_rank,p%lo_a(1:3),p%hi_a(1:3)
-                        endif
                         check_true(<#(xlo.GE.p%lo_a(1))#>)
                         check_true(<#(xhi.LE.p%hi_a(1))#>)
                         check_true(<#(ylo.GE.p%lo_a(2))#>)

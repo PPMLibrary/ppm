@@ -471,19 +471,46 @@ minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstr
           PROCEDURE(subpatch_get_pos2d_), DEFERRED  :: get_pos2d
           PROCEDURE(subpatch_get_pos3d_), DEFERRED  :: get_pos3d
           GENERIC :: get_pos => get_pos2d, get_pos3d
-          PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
-          PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
-          PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd
+
+          PROCEDURE(subpatch_get_field_2d_i_),  DEFERRED :: subpatch_get_field_2d_i
+          PROCEDURE(subpatch_get_field_3d_i_),  DEFERRED :: subpatch_get_field_3d_i
+          PROCEDURE(subpatch_get_field_4d_i_),  DEFERRED :: subpatch_get_field_4d_i
           PROCEDURE(subpatch_get_field_2d_rs_), DEFERRED :: subpatch_get_field_2d_rs
           PROCEDURE(subpatch_get_field_3d_rs_), DEFERRED :: subpatch_get_field_3d_rs
           PROCEDURE(subpatch_get_field_4d_rs_), DEFERRED :: subpatch_get_field_4d_rs
+          PROCEDURE(subpatch_get_field_2d_rd_), DEFERRED :: subpatch_get_field_2d_rd
+          PROCEDURE(subpatch_get_field_3d_rd_), DEFERRED :: subpatch_get_field_3d_rd
+          PROCEDURE(subpatch_get_field_4d_rd_), DEFERRED :: subpatch_get_field_4d_rd
+          PROCEDURE(subpatch_get_field_2d_cs_), DEFERRED :: subpatch_get_field_2d_cs
+          PROCEDURE(subpatch_get_field_3d_cs_), DEFERRED :: subpatch_get_field_3d_cs
+          PROCEDURE(subpatch_get_field_4d_cs_), DEFERRED :: subpatch_get_field_4d_cs
+          PROCEDURE(subpatch_get_field_2d_cd_), DEFERRED :: subpatch_get_field_2d_cd
+          PROCEDURE(subpatch_get_field_3d_cd_), DEFERRED :: subpatch_get_field_3d_cd
+          PROCEDURE(subpatch_get_field_4d_cd_), DEFERRED :: subpatch_get_field_4d_cd
+          PROCEDURE(subpatch_get_field_2d_l_),  DEFERRED :: subpatch_get_field_2d_l
+          PROCEDURE(subpatch_get_field_3d_l_),  DEFERRED :: subpatch_get_field_3d_l
+          PROCEDURE(subpatch_get_field_4d_l_),  DEFERRED :: subpatch_get_field_4d_l
+
           GENERIC :: get_field =>              &
+          &          subpatch_get_field_2d_i,  &
+          &          subpatch_get_field_3d_i,  &
+          &          subpatch_get_field_4d_i,  &
+          &          subpatch_get_field_2d_rs, &
+          &          subpatch_get_field_3d_rs, &
+          &          subpatch_get_field_4d_rs, &
           &          subpatch_get_field_2d_rd, &
           &          subpatch_get_field_3d_rd, &
           &          subpatch_get_field_4d_rd, &
-          &          subpatch_get_field_2d_rs, &
-          &          subpatch_get_field_3d_rs, &
-          &          subpatch_get_field_4d_rs
+          &          subpatch_get_field_2d_cs, &
+          &          subpatch_get_field_3d_cs, &
+          &          subpatch_get_field_4d_cs, &
+          &          subpatch_get_field_2d_cd, &
+          &          subpatch_get_field_3d_cd, &
+          &          subpatch_get_field_4d_cd, &
+          &          subpatch_get_field_2d_l,  &
+          &          subpatch_get_field_3d_l,  &
+          &          subpatch_get_field_4d_l
+
           !PROCEDURE  :: get => subpatch_get
       END TYPE ppm_t_subpatch_
 minclude ppm_create_collection(subpatch_,subpatch_,generate="abstract")

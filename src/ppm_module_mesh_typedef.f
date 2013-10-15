@@ -59,12 +59,24 @@ minclude ppm_create_collection(mesh_discr_data,mesh_discr_data,vec=true,generate
           PROCEDURE :: get_pos2d => subpatch_get_pos2d
           PROCEDURE :: get_pos3d => subpatch_get_pos3d
 
+          PROCEDURE :: subpatch_get_field_2d_i
+          PROCEDURE :: subpatch_get_field_3d_i
+          PROCEDURE :: subpatch_get_field_4d_i
           PROCEDURE :: subpatch_get_field_2d_rs
           PROCEDURE :: subpatch_get_field_3d_rs
           PROCEDURE :: subpatch_get_field_4d_rs
           PROCEDURE :: subpatch_get_field_2d_rd
           PROCEDURE :: subpatch_get_field_3d_rd
           PROCEDURE :: subpatch_get_field_4d_rd
+          PROCEDURE :: subpatch_get_field_2d_cs
+          PROCEDURE :: subpatch_get_field_3d_cs
+          PROCEDURE :: subpatch_get_field_4d_cs
+          PROCEDURE :: subpatch_get_field_2d_cd
+          PROCEDURE :: subpatch_get_field_3d_cd
+          PROCEDURE :: subpatch_get_field_4d_cd
+          PROCEDURE :: subpatch_get_field_2d_l
+          PROCEDURE :: subpatch_get_field_3d_l
+          PROCEDURE :: subpatch_get_field_4d_l
       END TYPE
 minclude ppm_create_collection(subpatch,subpatch,generate="extend")
 
@@ -162,12 +174,24 @@ minclude ppm_create_collection_procedures(A_subpatch,A_subpatch_)
 minclude ppm_create_collection_procedures(equi_mesh,equi_mesh_)
 
       ! home-made templating system for the get_field routines
-minclude ppm_get_field_template(2,s)
-minclude ppm_get_field_template(3,s)
-minclude ppm_get_field_template(4,s)
-minclude ppm_get_field_template(2,d)
-minclude ppm_get_field_template(3,d)
-minclude ppm_get_field_template(4,d)
+minclude ppm_get_field_template(2,i)
+minclude ppm_get_field_template(3,i)
+minclude ppm_get_field_template(4,i)
+minclude ppm_get_field_template(2,rs)
+minclude ppm_get_field_template(3,rs)
+minclude ppm_get_field_template(4,rs)
+minclude ppm_get_field_template(2,rd)
+minclude ppm_get_field_template(3,rd)
+minclude ppm_get_field_template(4,rd)
+minclude ppm_get_field_template(2,cs)
+minclude ppm_get_field_template(3,cs)
+minclude ppm_get_field_template(4,cs)
+minclude ppm_get_field_template(2,cd)
+minclude ppm_get_field_template(3,cd)
+minclude ppm_get_field_template(4,cd)
+minclude ppm_get_field_template(2,l)
+minclude ppm_get_field_template(3,l)
+minclude ppm_get_field_template(4,l)
 
       SUBROUTINE subpatch_data_create(this,discr_data,sp,info)
           !!! Constructor for subdomain_data data structure
@@ -721,9 +745,9 @@ minclude ppm_get_field_template(4,d)
           ELSE
               this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
               IF (ASSOCIATED(topo%max_physs)) THEN
-                 this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) - &
-                 &                   topo%min_physs(1:ppm_dim))/  &
-                 &                   REAL(Nm(1:ppm_dim)-1,ppm_kind_single)
+                 this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) &
+                 &                 - topo%min_physs(1:ppm_dim)) &
+                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_single)
                  !check for round-off problems and fix them if necessary
                  DO k=1,ppm_dim
                     DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
@@ -732,9 +756,9 @@ minclude ppm_get_field_template(4,d)
                  ENDDO
                  check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
               ELSE
-                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) - &
-                 &                   topo%min_physd(1:ppm_dim))/  &
-                 &                   REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
+                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
+                 &                 - topo%min_physd(1:ppm_dim)) &
+                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
                  !check for round-off problems and fix them if necessary
                  DO k=1,ppm_dim
                     DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
@@ -783,10 +807,10 @@ minclude ppm_get_field_template(4,d)
                 !WARNING: this is a hack to resolve a round-off issue when h is such
                 !that a node falls epsilon away from the subdomain boundary
 
-                !stdout("#isub = ",i," BEFORE CHOP")
-                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
-                !stdout("sub%bc = ",'topo%subs_bc(:,i)')
+!                 stdout("#isub = ",i," BEFORE CHOP")
+!                 stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+!                 stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+!                 stdout("sub%bc = ",'topo%subs_bc(:,i)')
 
                 !Decide what to do if a mesh node falls on a subdomain boundary
                 DO k=1,ppm_dim
@@ -810,9 +834,9 @@ minclude ppm_get_field_template(4,d)
                 !compatible with this mesh and its resolution h.
                 check_true(<#ALL((topo%max_subd(1:ppm_dim,i)-topo%min_subd(1:ppm_dim,i)).GT.(this%h(1:ppm_dim)*this%ghostsize(1:ppm_dim)+ppm_myepsd))#>,&
                 "Grid spacing h (times ghostsize) has to be stricly smaller than any subdomain.")
-                !stdout("#isub = ",i," AFTER CHOP")
-                !stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
-                !stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
+!                 stdout("#isub = ",i," AFTER CHOP")
+!                 stdout("sub%istart = ",'this%istart(1:ppm_dim,i)')
+!                 stdout("sub%iend = ",'this%iend(1:ppm_dim,i)')
              ENDDO
           ELSE
              DO i=1,nsubs
@@ -1183,8 +1207,8 @@ minclude ppm_get_field_template(4,d)
           CLASS(ppm_t_subpatch_),                 POINTER :: p => NULL()
           CLASS(ppm_t_A_subpatch_),               POINTER :: A_p => NULL()
 
-          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offset
-          REAL(ppm_kind_double), DIMENSION(ppm_dim) :: pstart,pend
+          REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: h,Offset
+          REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: pstart,pend,pmid
 
           INTEGER                        :: i,j,k,isub,jsub,id,pid
           INTEGER                        :: size2,size_tmp,iopt
@@ -1239,10 +1263,10 @@ minclude ppm_get_field_template(4,d)
           ENDIF
 
           !Re-define the patch boundaries so that its corners fall on mesh nodes
-          patch(1:ppm_dim)           = (istart_p(1:ppm_dim) - 1) * &
-          &                             h(1:ppm_dim) + Offset(1:ppm_dim)
-          patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim) - 1)   * &
-          &                             h(1:ppm_dim) + Offset(1:ppm_dim)
+          patch(1:ppm_dim)           = (istart_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          &                          + Offset(1:ppm_dim)
+          patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim)-1)*h(1:ppm_dim) &
+          &                          + Offset(1:ppm_dim)
 
           !Bounds for the mesh nodes that are inside the computational
           !domain
@@ -1251,11 +1275,6 @@ minclude ppm_get_field_template(4,d)
           iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
           &                       -        Offset(1:ppm_dim))/(h(1:ppm_dim) &
           &                       -        EPSILON(h(1:ppm_dim))) )
-
-          !stdout("istart_d = ",istart_d)
-          !stdout("iend_d = ",iend_d)
-          !stdout("topo%bcdef = ",'topo%bcdef')
-          !stdout("before roundoff: ",'(topo%max_physd(1:ppm_dim)- Offset(1:ppm_dim))/h(1:ppm_dim)')
 
           !-------------------------------------------------------------------------
           !  Allocate bookkeeping arrays (pointers between patches and subpatches)
@@ -1371,7 +1390,11 @@ minclude ppm_get_field_template(4,d)
                   !Coordinates on the grid
                   !----------------------------------------------------------------
                   istart(1:ppm_dim) = 1 + CEILING(pstart(1:ppm_dim)/h(1:ppm_dim))
-                  iend(1:ppm_dim)   = 1 + FLOOR(  pend  (1:ppm_dim)/h(1:ppm_dim))
+                  iend(1:ppm_dim) = 1 + FLOOR(pend(1:ppm_dim)/(h(1:ppm_dim)- &
+                  &                           EPSILON(h(1:ppm_dim))))
+                  !WARNING: this is a hack to resolve a round-off issue when
+                  !h is such that a node falls epsilon away from the subdomain
+                  !boundary
 
                   !----------------------------------------------------------------
                   !Intersect these coordinates with those of the subdomain
