@@ -111,6 +111,7 @@ test ghost_mappings_basics
         logical                             :: assoc
         class(ppm_t_subpatch_), POINTER :: sbpitr1 => NULL()
         INTEGER, DIMENSION(:,:,:),POINTER :: i_wp_3d => NULL()
+        real(mk),DIMENSION(:,:,:),POINTER :: r_wp_3d => NULL()
 
         start_subroutine("ghost_mappings_basics")
 
@@ -140,7 +141,7 @@ decomp=ppm_param_decomp_xy_slab
         Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField')
+        call Field2%create(1,info,name='scaField2')
         Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
@@ -276,7 +277,7 @@ topoid1=0
         !call Mesh2%print_vtk("Mesh2_result",info)
         !Assert_Equal(info,0)
 
-        call Field3%create(1,info,dtype=ppm_type_int,name='scaField')
+        call Field3%create(1,info,dtype=ppm_type_int,name='scaField3')
         Assert_Equal(info,0)
         call Field3%discretize_on(Mesh2,info)
         Assert_Equal(info,0)
@@ -286,21 +287,36 @@ topoid1=0
            call sbpitr1%get_field(Field3,i_wp_3d,info)
            Assert_Equal(info,0)
            i_wp_3d=10
+
+           call sbpitr1%get_field(Field2,r_wp_3d,info)
+           Assert_Equal(info,0)
+
+           r_wp_3d=-5._mk
+
            sbpitr1=>Mesh2%subpatch%next()
         ENDDO
 
-
         call Mesh2%map_ghost_get(info)
+        Assert_Equal(info,0)
+
+        call Field2%map_ghost_push(Mesh2,info)
         Assert_Equal(info,0)
         call Field3%map_ghost_push(Mesh2,info)
         Assert_Equal(info,0)
-        !call Mesh2%map_send(info)
-        !Assert_Equal(info,0)
-        !call Field3%map_ghost_pop(Mesh1,info)
-        !Assert_Equal(info,0)
-        !call MPI_BARRIER(comm,info)
+        call Mesh2%map_send(info)
+        Assert_Equal(info,0)
+        call Field3%map_ghost_pop(Mesh2,info)
+        Assert_Equal(info,0)
+        call Field2%map_ghost_pop(Mesh2,info)
+        Assert_Equal(info,0)
+        call MPI_BARRIER(comm,info)
+
+        call Mesh2%print_vtk("Mesh2_result",info)
+        Assert_Equal(info,0)
 
         call Field2%destroy(info)
+        Assert_Equal(info,0)
+        call Mesh2%destroy(info)
         Assert_Equal(info,0)
 
         call ppm_topo_dealloc(ppm_topo(topoid)%t,info)

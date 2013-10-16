@@ -117,8 +117,10 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !DESTROY
       SUBROUTINE field_destroy(this,info)
           !!! Destructor for subdomain data data structure
-          CLASS(ppm_t_field)                 :: this
-          INTEGER,               INTENT(OUT) :: info
+          CLASS(ppm_t_field)               :: this
+          INTEGER,           INTENT(  OUT) :: info
+
+          CLASS(ppm_t_discr_info_), POINTER :: tdi => NULL()
 
           start_subroutine("field_destroy")
 
@@ -129,7 +131,31 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
-          !TODO !!!
+          !TODO !! yaser I think this is all
+          tdi => this%discr_info%begin()
+          DO WHILE (ASSOCIATED(tdi))
+             SELECT TYPE (dp => tdi%discr_ptr)
+             CLASS IS (ppm_t_equi_mesh_)
+                IF (this%is_discretized_on(dp)) THEN
+                   CALL dp%field_ptr%remove(info,this)
+                   or_fail("Failed to destroy the bookkeeping field entries in Mesh")
+                ENDIF
+
+             CLASS IS (ppm_t_particles_d_)
+                IF (this%is_discretized_on(dp)) THEN
+                   CALL dp%field_ptr%remove(info,this)
+                   or_fail("Failed to destroy the bookkeeping field entries in Particle")
+                ENDIF
+
+             CLASS IS (ppm_t_particles_s_)
+                IF (this%is_discretized_on(dp)) THEN
+                   CALL dp%field_ptr%remove(info,this)
+                   or_fail("Failed to destroy the bookkeeping field entries in Particle")
+                ENDIF
+
+             END SELECT
+             tdi => this%discr_info%next()
+          ENDDO
 
           destroy_collection_ptr(this%discr_info)
 

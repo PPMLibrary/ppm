@@ -81,20 +81,24 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
     !!The square of the distance to nearest neighbours has to be stored
     !!for each particle, including ghost ones.
     !!---------------------------------------------------------------------!
-    IF(this%flags(ppm_ops_interp)) THEN
+    IF (this%flags(ppm_ops_interp)) THEN
         IF (.NOT.PRESENT(prop)) THEN
             SELECT TYPE(Part_src)
             CLASS IS (DTYPE(ppm_t_particles)_)
                 !Create a new property and make this%nn_sq point to it
                 CALL Part_src%create_prop(info,part_prop=this%nn_sq,&
                     dtype=ppm_type_real,name='nearest_neighb_squared')
-                    or_fail("could not create property for nn_sq")
+                or_fail("could not create property for nn_sq")
+
                 CALL Part_src%get(this%nn_sq,nn2,info)
-                    or_fail("could not get pointer to nn_sq")
+                or_fail("could not get pointer to nn_sq")
+
                 CALL Part_src%get_xp(xp,info,with_ghosts=.TRUE.)
-                    or_fail("could not get pointer to xp")
+                or_fail("could not get pointer to xp")
+
                 CALL Part_src%get_vlist(nvlist,vlist,info)
-                    or_fail("could not get pointer to Verlet lists")
+                or_fail("could not get pointer to Verlet lists")
+
                 DO ip=1,Part_src%Npart
                     nn2(ip) = HUGE(1._MK)
                     DO ineigh=1,nvlist(ip)
@@ -104,15 +108,17 @@ SUBROUTINE DTYPE(dcop_create)(this,Op,Part_src,Part_to,info,with_ghosts,&
                     ENDDO
                 ENDDO
                 CALL Part_src%set_xp(xp,info,read_only=.TRUE.)
+
             CLASS DEFAULT
                 fail("does not work for this type of discretisation")
+
             END SELECT
         ELSE
             SELECT TYPE(prop)
             CLASS IS (DTYPE(ppm_t_part_prop)_)
                 this%nn_sq => prop
             CLASS DEFAULT
-            fail("wrong type. Prop argument should be of class ppm_t_part_prop")
+                fail("wrong type. Prop argument should be of class ppm_t_part_prop")
             END SELECT
         ENDIF
 
@@ -136,7 +142,7 @@ SUBROUTINE DTYPE(dcop_destroy)(this,info)
         SELECT TYPE(Part_src => this%discr_src)
         CLASS IS (DTYPE(ppm_t_particles)_)
             CALL Part_src%props%remove(info,this%nn_sq)
-                or_fail("failed to remove property")
+            or_fail("failed to remove property")
             this%nn_sq => NULL()
         END SELECT
     ENDIF

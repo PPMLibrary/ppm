@@ -1,30 +1,30 @@
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE mesh_map_push_3d_sca_s(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_s(this,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE mesh_map_push_3d_sca_d(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_d(this,p_idx,info,mask)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE mesh_map_push_3d_sca_sc(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_sc(this,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE mesh_map_push_3d_sca_dc(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_dc(this,p_idx,info,mask)
 #elif  __KIND == __INTEGER
-      SUBROUTINE mesh_map_push_3d_sca_i(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_i(this,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE mesh_map_push_3d_sca_l(this,fdata_dummy,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_sca_l(this,p_idx,info,mask)
 #endif
 #elif  __DIM == __VFIELD
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE mesh_map_push_3d_vec_s(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_s(this,lda,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE mesh_map_push_3d_vec_d(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_d(this,lda,p_idx,info,mask)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-      SUBROUTINE mesh_map_push_3d_vec_sc(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_sc(this,lda,p_idx,info,mask)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-      SUBROUTINE mesh_map_push_3d_vec_dc(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_dc(this,lda,p_idx,info,mask)
 #elif  __KIND == __INTEGER
-      SUBROUTINE mesh_map_push_3d_vec_i(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_i(this,lda,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
-      SUBROUTINE mesh_map_push_3d_vec_l(this,fdata_dummy,lda,p_idx,info,mask)
+      SUBROUTINE mesh_map_push_3d_vec_l(this,lda,p_idx,info,mask)
 #endif
 #endif
       !!! This routine pushes field data onto the send buffer for 3D meshes.
@@ -75,34 +75,49 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
+      CLASS(ppm_t_equi_mesh)                             :: this
+      !!! Source mesh
+#if   __DIM == __VFIELD
+      INTEGER,                             INTENT(IN   ) :: lda
+      !!! The leading dimension of the fdata.
+      !!! lda=1 for the case of scalar data
+#endif
+      INTEGER,                             INTENT(IN   ) :: p_idx
+      !!! The index where the data is stored on the subpatches
+      INTEGER,                             INTENT(  OUT) :: info
+      !!! Returns status, 0 upon success
+      LOGICAL, DIMENSION(:,:,:), OPTIONAL, POINTER       :: mask
+      !!! Logical mask.
+      !!!
+      !!! Only the mesh nodes for which this is .TRUE. will be
+      !!! mapped. If not given, all points are mapped.
+      !!!
+      !!! 1st-2nd index: mesh (i,j)                                            +
+      !!! 3rd: isub.
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:),          POINTER :: fdata_dummy
-      INTEGER , DIMENSION(:,:,:),          POINTER :: fdata
+      INTEGER , DIMENSION(:,:,:),      POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:),          POINTER :: fdata_dummy
-      LOGICAL , DIMENSION(:,:,:),          POINTER :: fdata
+      LOGICAL , DIMENSION(:,:,:),      POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:),       POINTER :: fdata_dummy
-      COMPLEX(MK), DIMENSION(:,:,:),       POINTER :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:),   POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:),          POINTER :: fdata_dummy
-      REAL(MK), DIMENSION(:,:,:),          POINTER :: fdata
+      REAL(MK), DIMENSION(:,:,:),      POINTER :: fdata
 #endif
-
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
-      INTEGER , DIMENSION(:,:,:,:),        POINTER :: fdata
+      INTEGER , DIMENSION(:,:,:,:),    POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
-      LOGICAL , DIMENSION(:,:,:,:),        POINTER :: fdata
+      LOGICAL , DIMENSION(:,:,:,:),    POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:,:),     POINTER :: fdata_dummy
-      COMPLEX(MK), DIMENSION(:,:,:,:),     POINTER :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:,:),        POINTER :: fdata_dummy
-      REAL(MK), DIMENSION(:,:,:,:),        POINTER :: fdata
+      REAL(MK), DIMENSION(:,:,:,:),    POINTER :: fdata
 #endif
 #endif
       !!! Field data.
@@ -114,38 +129,19 @@
       !!!
       !!! For scalar fields, the first index is omitted (the others shift
       !!! accordingly).
-      LOGICAL, DIMENSION(:,:,:), OPTIONAL, POINTER :: mask
-      !!! Logical mask.
-      !!!
-      !!! Only the mesh nodes for which this is .TRUE. will be
-      !!! mapped. If not given, all points are mapped.
-      !!!
-      !!! 1st-2nd index: mesh (i,j)                                            +
-      !!! 3rd: isub.
-#if   __DIM == __VFIELD
-      INTEGER,                             INTENT(IN   ) :: lda
-      !!! The leading dimension of the fdata.
-      !!! lda=1 for the case of scalar data
-#endif
-      INTEGER,                             INTENT(IN   ) :: p_idx
-      !!! The index where the data is stored on the subpatches
-      CLASS(ppm_t_equi_mesh)                             :: this
-      !!! Source mesh
-      INTEGER,                             INTENT(  OUT) :: info
-      !!! Returns status, 0 upon success
-      !-------------------------------------------------------------------------
-      !  Local variables
-      !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)   :: ldu,mofs,patchid
-      INTEGER                 :: i,j,k,ibuffer,isub,imesh,jmesh,kmesh,jsub
-      INTEGER                 :: ipatch
-      INTEGER                 :: iopt,Ndata,xlo,xhi,ylo,yhi,zlo,zhi,ldb
-      LOGICAL                 :: ldo,found_patch
-      CHARACTER(LEN=ppm_char) :: mesg
+
+      INTEGER, DIMENSION(3) :: ldu,mofs,patchid
+      INTEGER               :: i,j,k,ibuffer,isub,imesh,jmesh,kmesh,jsub
+      INTEGER               :: ipatch
+      INTEGER               :: iopt,Ndata,xlo,xhi,ylo,yhi,zlo,zhi,ldb
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo),      POINTER :: topo => NULL()
+
+      CHARACTER(LEN=ppm_char) :: mesg
+
+      LOGICAL :: ldo,found_patch
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -235,24 +231,25 @@
 #elif __KIND == __LOGICAL
       ppm_buffer_type(ppm_buffer_set) = ppm_logical
 #endif
+      IF (ppm_debug.GT.2) THEN
+         !-------------------------------------------------------------------------
+         !  Build the inverse sub list to find local sub indeices based on
+         !  global ones (the global ones are communicated)
+         !-------------------------------------------------------------------------
+         iopt   = ppm_param_alloc_fit
+         ldu(1) = topo%nsublist
+         CALL ppm_alloc(sublist,ldu,iopt,info)
+         or_fail_alloc("sublist")
+         ! We need to copy it into a temp list, since directly using
+         ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
+         ! not possible since the argument needs to be a POINTER.
+         sublist(1:ldu(1)) = topo%isublist(1:ldu(1))
+         CALL ppm_util_invert_list(sublist,invsublist,info)
 
-      !-------------------------------------------------------------------------
-      !  Build the inverse sub list to find local sub indeices based on
-      !  global ones (the global ones are communicated)
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
-      ldu(1) = topo%nsublist
-      CALL ppm_alloc(sublist,ldu,iopt,info)
-      or_fail_alloc("sublist")
-      ! We need to copy it into a temp list, since directly using
-      ! ppm_isublist(:,ppm_field_topoid) as an argument to invert_list is
-      ! not possible since the argument needs to be a POINTER.
-      sublist(1:ldu(1)) = topo%isublist(1:ldu(1))
-      CALL ppm_util_invert_list(sublist,invsublist,info)
-
-      iopt   = ppm_param_dealloc
-      CALL ppm_alloc(sublist,ldu,iopt,info)
-      or_fail_alloc("ppm_sublist")
+         iopt   = ppm_param_dealloc
+         CALL ppm_alloc(sublist,ldu,iopt,info)
+         or_fail_alloc("ppm_sublist")
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist()
@@ -285,10 +282,12 @@
                !  Get the patch ID for this mesh block
                !----------------------------------------------------------------
                patchid(1:3) = ppm_mesh_isendpatchid(1:3,j)
-               !----------------------------------------------------------------
-               !  Translate to local sub ID for storing the data
-               !----------------------------------------------------------------
-               isub = invsublist(jsub)
+               IF (ppm_debug.GT.2) THEN
+                  !----------------------------------------------------------------
+                  !  Translate to local sub ID for storing the data
+                  !----------------------------------------------------------------
+                  isub = invsublist(jsub)
+               ENDIF
                !----------------------------------------------------------------
                !  Get pointer to the data for this sub, this field and this block
                ! TODO: room for improvement!...
@@ -302,15 +301,34 @@
                   SELECT TYPE(p => this%subpatch_by_sub(jsub)%vec(ipatch)%t)
                   TYPE IS (ppm_t_subpatch)
                      IF (ALL(p%istart_p.EQ.patchid)) THEN
-#if    __DIM == __SFIELD
-#if __KIND == __DOUBLE_PRECISION
                         found_patch = .TRUE.
+#if    __DIM == __SFIELD
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rs
+#elif __KIND == __DOUBLE_PRECISION
                         fdata => p%subpatch_data%vec(p_idx)%t%data_3d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_3d_l
 #endif
 #elif  __DIM == __VFIELD
-#if __KIND == __DOUBLE_PRECISION
-                        found_patch = .TRUE.
+#if   __KIND == __SINGLE_PRECISION
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_4d_rs
+#elif __KIND == __DOUBLE_PRECISION
                         fdata => p%subpatch_data%vec(p_idx)%t%data_4d_rd
+#elif __KIND == __SINGLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_4d_cs
+#elif __KIND == __DOUBLE_PRECISION_COMPLEX
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_4d_cd
+#elif __KIND == __INTEGER
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_4d_i
+#elif __KIND == __LOGICAL
+                        fdata => p%subpatch_data%vec(p_idx)%t%data_4d_l
 #endif
 #endif
                         !---------------------------------------------------
@@ -329,7 +347,7 @@
                         xhi = xlo+ppm_mesh_isendblksize(1,j)-1
                         yhi = ylo+ppm_mesh_isendblksize(2,j)-1
                         zhi = zlo+ppm_mesh_isendblksize(3,j)-1
-                        IF (ppm_debug .GT. 2) THEN
+                        IF (ppm_debug.GT.2) THEN
                            stdout("isub = ",isub," jsub = ",jsub)
                            WRITE(mesg,'(A,3I4)') 'start: ',             &
                            &  ppm_mesh_isendblkstart(1,j),&
@@ -974,10 +992,12 @@
                !  Get the sub ID for this mesh block
                !----------------------------------------------------------------
                jsub = ppm_mesh_isendfromsub(j)
-               !----------------------------------------------------------------
-               !  Translate to local sub ID for storing the data
-               !----------------------------------------------------------------
-               isub = invsublist(jsub)
+               IF (ppm_debug.GT.2) THEN
+                  !----------------------------------------------------------------
+                  !  Translate to local sub ID for storing the data
+                  !----------------------------------------------------------------
+                  isub = invsublist(jsub)
+               ENDIF
                !----------------------------------------------------------------
                !  Mesh offset for this sub
                !----------------------------------------------------------------
@@ -1331,7 +1351,7 @@
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
                         ENDIF
                         ibuffer = ibuffer + 1
-                        IF (fdata(2,imesh,jmesh,kmesh) THEN
+                        IF (fdata(2,imesh,jmesh,kmesh)) THEN
                            ppm_sendbuffers(ibuffer) = 1.0_ppm_kind_single
                         ELSE
                            ppm_sendbuffers(ibuffer) = 0.0_ppm_kind_single
@@ -1594,12 +1614,14 @@
       !-------------------------------------------------------------------------
       ppm_nsendbuffer = ibuffer
 
-      !-------------------------------------------------------------------------
-      !  Deallocate inverse sub list
-      !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
-      CALL ppm_alloc(invsublist,ldu,iopt,info)
-        or_fail_dealloc("invsublist")
+      IF (ppm_debug.GT.2) THEN
+         !-------------------------------------------------------------------------
+         !  Deallocate inverse sub list
+         !-------------------------------------------------------------------------
+         iopt   = ppm_param_dealloc
+         CALL ppm_alloc(invsublist,ldu,iopt,info)
+         or_fail_dealloc("invsublist")
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return

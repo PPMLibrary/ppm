@@ -45,6 +45,7 @@
       INCLUDE 'mpif.h'
 #endif
       INTEGER, PARAMETER :: MK = ppm_kind_double
+      INTEGER, PARAMETER :: MKS = ppm_kind_single
 
       !-------------------------------------------------------------------------
       !  Arguments
@@ -63,14 +64,26 @@
       CLASS(ppm_t_discr_data),     POINTER :: field => NULL()
 
 #if   __DIM  == __2D
-      REAL(MK), DIMENSION(:,:),     POINTER :: fdata2 => NULL()
-      REAL(MK), DIMENSION(:,:,:),   POINTER :: fdata3 => NULL()
+      REAL(MKS), DIMENSION(:,:),     POINTER :: fdata2_rs => NULL()
+      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs => NULL()
+
+      REAL(MK),  DIMENSION(:,:),     POINTER :: fdata2_rd => NULL()
+      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd => NULL()
+
+      INTEGER,   DIMENSION(:,:),     POINTER :: fdata2_i  => NULL()
+      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i  => NULL()
 #elif   __DIM  == __3D
-      REAL(MK), DIMENSION(:,:,:),   POINTER :: fdata3 => NULL()
-      REAL(MK), DIMENSION(:,:,:,:), POINTER :: fdata4 => NULL()
+      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs => NULL()
+      REAL(MKS), DIMENSION(:,:,:,:), POINTER :: fdata4_rs => NULL()
+
+      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd => NULL()
+      REAL(MK),  DIMENSION(:,:,:,:), POINTER :: fdata4_rd => NULL()
+
+      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i  => NULL()
+      INTEGER,   DIMENSION(:,:,:,:), POINTER :: fdata4_i  => NULL()
 #endif
-      REAL(MK), DIMENSION(3)                :: min_phys,max_phys
-      REAL(MK), DIMENSION(3)                :: h
+      REAL(MK), DIMENSION(3) :: min_phys,max_phys
+      REAL(MK), DIMENSION(3) :: h
 
       INTEGER               :: i,j,k,l,ipatch
       INTEGER               :: isub,ifield,icomp
@@ -141,6 +154,17 @@
          field => Mesh%mdata%begin()
          DO WHILE (ASSOCIATED(field))
             SELECT CASE (field%data_type)
+            CASE (ppm_type_real_single)
+               IF (field%lda.EQ.1) THEN
+                  WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                  & TRIM(ADJUSTL(field%name)),"' type='Float32' />"
+               ELSE
+                  DO icomp=1,field%lda
+                     WRITE(iUnit,'(3A,I0,A)') "      <PDataArray Name='", &
+                     & TRIM(ADJUSTL(field%name)),"_",icomp,"' type='Float32' />"
+                  ENDDO
+               ENDIF
+
             CASE (ppm_type_real)
                IF (field%lda.EQ.1) THEN
                   WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
@@ -151,6 +175,18 @@
                      & TRIM(ADJUSTL(field%name)),"_",icomp,"' type='Float64' />"
                   ENDDO
                ENDIF
+
+            CASE (ppm_type_int)
+               IF (field%lda.EQ.1) THEN
+                  WRITE(iUnit,'(3A)') "      <PDataArray Name='", &
+                  & TRIM(ADJUSTL(field%name)),"' type='Int32' />"
+               ELSE
+                  DO icomp=1,field%lda
+                     WRITE(iUnit,'(3A,I0,A)') "      <PDataArray Name='", &
+                     & TRIM(ADJUSTL(field%name)),"_",icomp,"' type='Int32' />"
+                  ENDDO
+               ENDIF
+
             END SELECT
             field => Mesh%mdata%next()
          ENDDO
@@ -234,20 +270,17 @@
 
                pdat => p%subpatch_data%begin()
                DO WHILE (ASSOCIATED(pdat))
-                  SELECT CASE (pdat%discr_data%data_type)
-                  CASE (ppm_type_real)
-                     IF (pdat%discr_data%lda.EQ.1) THEN
-                        WRITE(iUnit,'(A)',ADVANCE='NO') &
-                        & TRIM(ADJUSTL(pdat%discr_data%name))
+                  IF (pdat%discr_data%lda.EQ.1) THEN
+                     WRITE(iUnit,'(A)',ADVANCE='NO') &
+                     & TRIM(ADJUSTL(pdat%discr_data%name))
+                     WRITE(iUnit,'(A)',ADVANCE='NO') " "
+                  ELSE
+                     DO icomp=1,pdat%discr_data%lda
+                        WRITE(iUnit,'(2A,I0)',ADVANCE='NO') &
+                        & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
                         WRITE(iUnit,'(A)',ADVANCE='NO') " "
-                     ELSE
-                        DO icomp=1,pdat%discr_data%lda
-                           WRITE(iUnit,'(2A,I0)',ADVANCE='NO') &
-                           & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
-                           WRITE(iUnit,'(A)',ADVANCE='NO') " "
-                        ENDDO
-                     ENDIF
-                  END SELECT
+                     ENDDO
+                  ENDIF
                   pdat => p%subpatch_data%next()
                ENDDO
          !FIXME
@@ -260,7 +293,7 @@
                pdat => p%subpatch_data%begin()
                DO WHILE (ASSOCIATED(pdat))
                   SELECT CASE (pdat%discr_data%data_type)
-                  CASE (ppm_type_real)
+                  CASE (ppm_type_real_single)
                      IF (pdat%discr_data%lda.EQ.1) THEN !scalar
                         nc=0
                         SELECT CASE (p%bc(2))
@@ -273,22 +306,22 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata2 =>  pdat%data_2d_rd
+                        fdata2_rs =>  pdat%data_2d_rs
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata3 =>  pdat%data_3d_rd
+                        fdata3_rs =>  pdat%data_3d_rs
 #endif
 
 #define VTK_NAME pdat%discr_data%name
-#define VTK_TYPE "Float64"
+#define VTK_TYPE "Float32"
 #if   __DIM == __2D
-#define VTK_MESH fdata2
+#define VTK_MESH fdata2_rs
 #elif   __DIM == __3D
-#define VTK_MESH fdata3
+#define VTK_MESH fdata3_rs
 #define VTK_MESH_KLBOUND 1
 #define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
 #endif
@@ -310,24 +343,24 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata3 =>  pdat%data_3d_rd
+                        fdata3_rs =>  pdat%data_3d_rs
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata4 =>  pdat%data_4d_rd
+                        fdata4_rs =>  pdat%data_4d_rs
 #endif
                         DO icomp=1,pdat%discr_data%lda
                            WRITE(vname,'(2A,I0)') &
                            & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
 #define VTK_NAME vname
-#define VTK_TYPE "Float64"
+#define VTK_TYPE "Float32"
 #if   __DIM == __2D
-#define VTK_MESH fdata3
+#define VTK_MESH fdata3_rs
 #elif   __DIM == __3D
-#define VTK_MESH fdata4
+#define VTK_MESH fdata4_rs
 #define VTK_MESH_KLBOUND 1
 #define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
 #endif
@@ -339,6 +372,167 @@
 #include "vtk/print_data_array.f"
                         ENDDO ! icomp=1,pdat%discr_data%lda
                      ENDIF ! (pdat%discr_data%lda.EQ.?)
+
+                  CASE (ppm_type_real)
+                     IF (pdat%discr_data%lda.EQ.1) THEN !scalar
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
+#if   __DIM == __2D
+                        fdata2_rd =>  pdat%data_2d_rd
+#elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
+                        fdata3_rd =>  pdat%data_3d_rd
+#endif
+
+#define VTK_NAME pdat%discr_data%name
+#define VTK_TYPE "Float64"
+#if   __DIM == __2D
+#define VTK_MESH fdata2_rd
+#elif   __DIM == __3D
+#define VTK_MESH fdata3_rd
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
+#endif
+#undef VTK_MESH_COMPONENT
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
+                     ELSE !vector field
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
+#if   __DIM == __2D
+                        fdata3_rd =>  pdat%data_3d_rd
+#elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
+                        fdata4_rd =>  pdat%data_4d_rd
+#endif
+                        DO icomp=1,pdat%discr_data%lda
+                           WRITE(vname,'(2A,I0)') &
+                           & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
+#define VTK_NAME vname
+#define VTK_TYPE "Float64"
+#if   __DIM == __2D
+#define VTK_MESH fdata3_rd
+#elif   __DIM == __3D
+#define VTK_MESH fdata4_rd
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
+#endif
+#define VTK_MESH_COMPONENT icomp
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
+                        ENDDO ! icomp=1,pdat%discr_data%lda
+                     ENDIF ! (pdat%discr_data%lda.EQ.?)
+
+                  CASE (ppm_type_int)
+                     IF (pdat%discr_data%lda.EQ.1) THEN !scalar
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
+#if   __DIM == __2D
+                        fdata2_i =>  pdat%data_2d_i
+#elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
+                        fdata3_i =>  pdat%data_3d_i
+#endif
+
+#define VTK_NAME pdat%discr_data%name
+#define VTK_TYPE "Int32"
+#if   __DIM == __2D
+#define VTK_MESH fdata2_i
+#elif   __DIM == __3D
+#define VTK_MESH fdata3_i
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
+#endif
+#undef VTK_MESH_COMPONENT
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
+                     ELSE !vector field
+                        nc=0
+                        SELECT CASE (p%bc(2))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(1)=1
+                        END SELECT
+                        SELECT CASE (p%bc(4))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(2)=1
+                        END SELECT
+
+#if   __DIM == __2D
+                        fdata3_i =>  pdat%data_3d_i
+#elif   __DIM == __3D
+                        SELECT CASE (p%bc(6))
+                        CASE (ppm_param_bcdef_periodic,-1)
+                           nc(3)=1
+                        END SELECT
+
+                        fdata4_i =>  pdat%data_4d_i
+#endif
+                        DO icomp=1,pdat%discr_data%lda
+                           WRITE(vname,'(2A,I0)') &
+                           & TRIM(ADJUSTL(pdat%discr_data%name)),"_",icomp
+#define VTK_NAME vname
+#define VTK_TYPE "Int32"
+#if   __DIM == __2D
+#define VTK_MESH fdata3_i
+#elif   __DIM == __3D
+#define VTK_MESH fdata4_i
+#define VTK_MESH_KLBOUND 1
+#define VTK_MESH_KUBOUND p%nnodes(3)+nc(3)
+#endif
+#define VTK_MESH_COMPONENT icomp
+#define VTK_MESH_ILBOUND 1
+#define VTK_MESH_IUBOUND p%nnodes(1)+nc(1)
+#define VTK_MESH_JLBOUND 1
+#define VTK_MESH_JUBOUND p%nnodes(2)+nc(2)
+#include "vtk/print_data_array.f"
+                        ENDDO ! icomp=1,pdat%discr_data%lda
+                     ENDIF ! (pdat%discr_data%lda.EQ.?)
+
                   END SELECT ! (pdat%discr_data%data_type)
                   pdat => p%subpatch_data%next()
                ENDDO ! pdat

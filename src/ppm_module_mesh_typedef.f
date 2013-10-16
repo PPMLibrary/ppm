@@ -285,7 +285,6 @@ minclude ppm_get_field_template(4,l)
               CASE (ppm_type_real_single)
                   alloc_pointer_with_bounds4("this%data_4d_rs",lo,hi)
               CASE (ppm_type_real)
-                  !CALL ppm_alloc(this%data_4d_rd,ldc,iopt,info)
                   alloc_pointer_with_bounds4("this%data_4d_rd",lo,hi)
               CASE (ppm_type_comp_single)
                   alloc_pointer_with_bounds4("this%data_4d_cs",lo,hi)
@@ -1661,10 +1660,6 @@ minclude ppm_get_field_template(4,l)
           !!! this field is discretized on that mesh
           INTEGER,                INTENT(OUT) :: info
 
-          REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()
-          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: wp3_dummy => NULL()
-          REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: wp4_dummy => NULL()
-
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_push")
@@ -1675,20 +1670,70 @@ minclude ppm_get_field_template(4,l)
           SELECT CASE (ppm_dim)
           CASE (2)
               IF (field%lda.EQ.1) THEN
-                  CALL mesh_map_push_2d_sca_d(this,wp2_dummy,p_idx,info)
-                  or_fail("map_field_push_2d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_push_2d_sca_s(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_push_2d_sca_d(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_push_2d_sca_i(this,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 END SELECT
               ELSE
-                  CALL mesh_map_push_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
-                  or_fail("map_field_push_2d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_push_2d_vec_s(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_push_2d_vec_d(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_push_2d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_2d")
+
+                 END SELECT
               ENDIF
+
           CASE DEFAULT
               IF (field%lda.EQ.1) THEN
-                  CALL mesh_map_push_3d_sca_d(this,wp3_dummy,p_idx,info)
-                  or_fail("map_field_push_3d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_push_3d_sca_s(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_push_3d_sca_d(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_push_3d_sca_i(this,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 END SELECT
               ELSE
-                  CALL mesh_map_push_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
-                  or_fail("map_field_push_3d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_push_3d_vec_s(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_push_3d_vec_d(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_push_3d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_push_3d")
+
+                 END SELECT
               ENDIF
+
           END SELECT
 
           end_subroutine()
@@ -1707,10 +1752,6 @@ minclude ppm_get_field_template(4,l)
           !!! this field is discretized on that mesh
           INTEGER,                INTENT(  OUT) :: info
 
-          REAL(ppm_kind_double), DIMENSION(:,:),     POINTER :: wp2_dummy => NULL()
-          REAL(ppm_kind_double), DIMENSION(:,:,:),   POINTER :: wp3_dummy => NULL()
-          REAL(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: wp4_dummy => NULL()
-
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_pop")
@@ -1720,19 +1761,67 @@ minclude ppm_get_field_template(4,l)
 
           IF (ppm_dim.EQ.2) THEN
               IF (field%lda.EQ.1) THEN
-                  CALL mesh_map_pop_2d_sca_d(this,wp2_dummy,p_idx,info)
-                  or_fail("map_field_pop_2d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_pop_2d_sca_s(this,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_pop_2d_sca_d(this,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_pop_2d_sca_i(this,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 END SELECT
               ELSE
-                  CALL mesh_map_pop_2d_vec_d(this,wp3_dummy,field%lda,p_idx,info)
-                  or_fail("map_field_pop_2d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_2d")
+
+                 END SELECT
               ENDIF
           ELSE
               IF (field%lda.EQ.1) THEN
-                  CALL mesh_map_pop_3d_sca_d(this,wp3_dummy,p_idx,info)
-                  or_fail("map_field_pop_3d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_pop_3d_sca_s(this,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_pop_3d_sca_d(this,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_pop_3d_sca_i(this,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 END SELECT
               ELSE
-                  CALL mesh_map_pop_3d_vec_d(this,wp4_dummy,field%lda,p_idx,info)
-                  or_fail("map_field_pop_3d")
+                 SELECT CASE (field%data_type)
+                 CASE (ppm_type_real_single)
+                    CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 CASE (ppm_type_real)
+                    CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 CASE (ppm_type_int)
+                    CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info)
+                    or_fail("map_field_pop_3d")
+
+                 END SELECT
               ENDIF
           ENDIF
 
@@ -1815,7 +1904,23 @@ minclude ppm_get_field_template(4,l)
 
 #define __SFIELD 1
 #define __VFIELD 2
-#define __DOUBLE_PRECISION 17
+#define __SINGLE_PRECISION 17
+#define __DIM __VFIELD
+#define __KIND __SINGLE_PRECISION
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#undef __SINGLE_PRECISION
+#undef __KIND
+#define __DOUBLE_PRECISION 18
 #define __DIM __VFIELD
 #define __KIND __DOUBLE_PRECISION
 #include "mesh/mesh_map_push_2d.f"
@@ -1829,9 +1934,74 @@ minclude ppm_get_field_template(4,l)
 #include "mesh/mesh_map_push_3d.f"
 #include "mesh/mesh_map_pop_3d.f"
 #undef __DIM
+#undef __DOUBLE_PRECISION
+#undef __KIND
+#define __SINGLE_PRECISION_COMPLEX 19
+#define __DIM __VFIELD
+#define __KIND __SINGLE_PRECISION_COMPLEX
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#undef __SINGLE_PRECISION_COMPLEX
+#undef __KIND
+#define __DOUBLE_PRECISION_COMPLEX 20
+#define __DIM __VFIELD
+#define __KIND __DOUBLE_PRECISION_COMPLEX
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#undef __DOUBLE_PRECISION_COMPLEX
+#undef __KIND
+#define __INTEGER 21
+#define __DIM __VFIELD
+#define __KIND __INTEGER
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#undef __INTEGER
+#undef __KIND
+#define __LOGICAL 22
+#define __DIM __VFIELD
+#define __KIND __LOGICAL
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#define __DIM __SFIELD
+#include "mesh/mesh_map_push_2d.f"
+#include "mesh/mesh_map_pop_2d.f"
+#include "mesh/mesh_map_push_3d.f"
+#include "mesh/mesh_map_pop_3d.f"
+#undef __DIM
+#undef __LOGICAL
+#undef __KIND
 #undef __SFIELD
 #undef __VFIELD
-#undef __DOUBLE_PRECISION
 
 #include "mesh/mesh_interp_to_part.f"
 
