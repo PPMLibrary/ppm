@@ -25,7 +25,7 @@ integer, dimension(:  ),pointer :: ighostsize => NULL()
 real(mk)                        :: sca_ghostsize
 logical                         :: unifpatch
 
-integer                         :: i,j,k,sizex,sizey,sizez
+integer                         :: i,j,k
 integer                         :: nsublist
 integer, dimension(:  ),pointer :: isublist => NULL()
 integer, dimension(2*ndim)      :: bcdef
@@ -51,14 +51,12 @@ real(mk),dimension(ndim)         :: offset
         use ppm_module_init
 
         allocate(min_phys(ndim),max_phys(ndim),&
-        &        ighostsize(ndim),nm(ndim),h(ndim))
+            &         ighostsize(ndim),nm(ndim),h(ndim))
 
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
-
-        ighostsize(1:ndim) = (/10,10,5/)
-
-        bcdef(1:2*ndim) = ppm_param_bcdef_freespace !ppm_param_bcdef_periodic
+        ighostsize(1:ndim) = 2
+        bcdef(1:2*ndim) = ppm_param_bcdef_periodic
         tolexp = -12
 
 #ifdef __MPI
@@ -103,22 +101,23 @@ real(mk),dimension(ndim)         :: offset
     end teardown
 !----------------------------------------------
 
+
 test ghost_mappings_basics
 
-        type(ppm_t_field) :: Field1,Field2
+        type(ppm_t_field) :: Field1,Field2,Field3
         real(ppm_kind_double),dimension(ndim) :: pos
         integer                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
         logical                             :: assoc
+        class(ppm_t_subpatch_), POINTER :: sbpitr1 => NULL()
+        INTEGER, DIMENSION(:,:,:),POINTER :: i_wp_3d => NULL()
 
         start_subroutine("ghost_mappings_basics")
 
 decomp=ppm_param_decomp_xy_slab
-        call MPI_BARRIER(comm,info)
 
         offset = 0._mk
-        !Nm = (/166,104,10/)
-        Nm = (/1669,1044,99/)
+        Nm = (/100,80,10/)
 
         assig  = ppm_param_assign_internal
         topoid = 0
@@ -131,17 +130,16 @@ decomp=ppm_param_decomp_xy_slab
         call MPI_BARRIER(comm,info)
 
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
-        ghostsize=ighostsize,name='Mesh_1')
+        ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
 
         call Mesh1%def_uniform(info)
-        or_fail("def_uniform failed")
+        Assert_Equal(info,0)
 
         call Field1%create(2,info,name='vecField')
         Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
         Assert_Equal(info,0)
-
         call Field2%create(1,info,name='scaField')
         Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
@@ -171,7 +169,7 @@ decomp=ppm_param_decomp_xy_slab
         ! Check if the subpatch nodes are all exactly within the right subdomain
         topo => ppm_topo(Mesh1%topoid)%t
         ! loop through all subdomains on this processor
-           DO jsub = 1,topo%nsublist
+            DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
                 DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
                     SELECT TYPE(p => Mesh1%subpatch_by_sub(isub)%vec(ipatch)%t)
@@ -180,7 +178,7 @@ decomp=ppm_param_decomp_xy_slab
                         DO j=1,p%nnodes(2)
                         DO i=1,p%nnodes(1)
                             pos(1:ndim) = p%get_pos(i,j,k)
-                            Assert_True(ALL(pos(1:ndim).LE.topo%max_subd(1:ndim,isub)))
+                            Assert_True(ALL(pos(1:ndim).LT.topo%max_subd(1:ndim,isub)))
                             Assert_True(ALL(pos(1:ndim).GE.topo%min_subd(1:ndim,isub)))
                         ENDDO
                         ENDDO
@@ -188,7 +186,6 @@ decomp=ppm_param_decomp_xy_slab
                     END SELECT
                 ENDDO
             ENDDO
-
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
@@ -216,25 +213,20 @@ decomp=ppm_param_decomp_xy_slab
         Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
-
         call Mesh1%map_send(info)
         Assert_Equal(info,0)
-
         call Field2%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
         call MPI_BARRIER(comm,info)
 
-        !call Mesh1%print_vtk("result",info)
-        !or_fail("print_vtk failed")
-
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
         nb_errors = 0
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j,k)
-            for real
+            for all
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
                 IF (Field2_n .lt. 0._mk) then
                     nb_errors = nb_errors + 1
@@ -245,18 +237,20 @@ decomp=ppm_param_decomp_xy_slab
         end foreach
         Assert_Equal(nb_errors,0)
 
-
 decomp=ppm_param_decomp_cuboid
 topoid1=0
-        sca_ghostsize=4.*sca_ghostsize
+
+        sca_ghostsize = 4.*sca_ghostsize
+
         call ppm_mktopo(topoid1,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
 
         call MPI_BARRIER(comm,info)
+        Assert_Equal(info,0)
 
         call Mesh2%create(topoid1,offset,info,Nm=Nm,&
-        ghostsize=4*ighostsize,name='Mesh_2')
+        ghostsize=ighostsize,name='Mesh2')
         Assert_Equal(info,0)
 
         call Mesh2%def_uniform(info)
@@ -264,8 +258,6 @@ topoid1=0
 
         call Field2%discretize_on(Mesh2,info)
         Assert_Equal(info,0)
-
-
 
         call Mesh1%map(Mesh2,info)
         Assert_Equal(info,0)
@@ -276,43 +268,45 @@ topoid1=0
         call Field2%map_pop(Mesh2,info)
         Assert_Equal(info,0)
 
-        call MPI_BARRIER(comm,info)
-
         call Mesh1%destroy(info)
         Assert_Equal(info,0)
         call Field1%destroy(info)
         Assert_Equal(info,0)
 
-        !Do a ghost mapping
+        !call Mesh2%print_vtk("Mesh2_result",info)
+        !Assert_Equal(info,0)
+
+        call Field3%create(1,info,dtype=ppm_type_int,name='scaField')
+        Assert_Equal(info,0)
+        call Field3%discretize_on(Mesh2,info)
+        Assert_Equal(info,0)
+
+        sbpitr1=>Mesh2%subpatch%begin()
+        DO WHILE (ASSOCIATED(sbpitr1))
+           call sbpitr1%get_field(Field3,i_wp_3d,info)
+           Assert_Equal(info,0)
+           i_wp_3d=10
+           sbpitr1=>Mesh2%subpatch%next()
+        ENDDO
+
+
         call Mesh2%map_ghost_get(info)
         Assert_Equal(info,0)
-        call Field2%map_ghost_push(Mesh2,info)
+        call Field3%map_ghost_push(Mesh2,info)
         Assert_Equal(info,0)
-        call Mesh2%map_send(info)
-        Assert_Equal(info,0)
-        call Field2%map_ghost_pop(Mesh2,info)
-        Assert_Equal(info,0)
-
-        call MPI_BARRIER(comm,info)
-
-        !call Mesh2%print_vtk("mesh2_result",info)
-        !or_fail("print_vtk failed")
+        !call Mesh2%map_send(info)
+        !Assert_Equal(info,0)
+        !call Field3%map_ghost_pop(Mesh1,info)
+        !Assert_Equal(info,0)
+        !call MPI_BARRIER(comm,info)
 
         call Field2%destroy(info)
         Assert_Equal(info,0)
 
         call ppm_topo_dealloc(ppm_topo(topoid)%t,info)
         Assert_Equal(info,0)
-
-        call ppm_topo_dealloc(ppm_topo(topoid1)%t,info)
-        Assert_Equal(info,0)
-
         deallocate(ppm_topo(topoid)%t,STAT=info)
         Assert_Equal(info,0)
-
-        deallocate(ppm_topo(topoid1)%t,STAT=info)
-        Assert_Equal(info,0)
-
 
         call MPI_BARRIER(comm,info)
         if (ppm_debug.ge.1 .and. rank.eq.0) then
@@ -322,4 +316,6 @@ topoid1=0
 
         end_subroutine()
     end test
+
 end test_suite
+

@@ -122,29 +122,33 @@
       !!! 1st-2nd index: mesh (i,j)                                            +
       !!! 3rd: isub.
 #if   __DIM == __VFIELD
-      INTEGER                        , INTENT(IN   ) :: lda
+      INTEGER,                         INTENT(IN   ) :: lda
       !!! The leading dimension of the fdata.
       !!! lda=1 for the case of scalar data
 #endif
-      INTEGER                        , INTENT(IN   ) :: p_idx
+      INTEGER,                         INTENT(IN   ) :: p_idx
       !!! The index where the data is stored on the subpatches
       CLASS(ppm_t_equi_mesh)                         :: this
       !!! Source mesh
-      INTEGER                        , INTENT(  OUT) :: info
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(2)   :: ldu,mofs,patchid
-      INTEGER                 :: i,j,k,ibuffer,isub,imesh,jmesh,jsub
-      INTEGER                 :: ipatch
-      INTEGER                 :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
-      LOGICAL                 :: ldo,found_patch
-      CHARACTER(LEN=ppm_char) :: mesg
+      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+
+      INTEGER, DIMENSION(2) :: ldu,mofs,patchid
+      INTEGER               :: i,j,k,ibuffer,isub,imesh,jmesh,jsub
+      INTEGER               :: ipatch
+      INTEGER               :: iopt,Ndata,xlo,xhi,ylo,yhi,ldb
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo),      POINTER :: topo => NULL()
+
+      CHARACTER(LEN=ppm_char) :: mesg
+
+      LOGICAL :: ldo,found_patch
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -159,8 +163,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(this%topoid)%t
@@ -177,8 +181,8 @@
             !-------------------------------------------------------------------
             !  Get the number of mesh points in this block
             !-------------------------------------------------------------------
-            Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-     &                       ppm_mesh_isendblksize(2,j))
+            Ndata = Ndata + (ppm_mesh_isendblksize(1,j)* &
+            &                ppm_mesh_isendblksize(2,j))
          ENDDO
       ENDDO
 
