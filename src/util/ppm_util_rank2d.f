@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_util_rank2d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -66,7 +66,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Particle coordinates
@@ -93,7 +93,7 @@
       INTEGER                 , INTENT(INOUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       ! cell mesh spacing
       REAL(MK)                                :: rdx,rdy
@@ -116,19 +116,20 @@
       ! total number of cells in each direction (including ghost layers)
       INTEGER, DIMENSION(2)                   :: nmtot
       CHARACTER(LEN=ppm_char)                 :: msg
+      CHARACTER(LEN=ppm_char)                 :: caller = 'ppm_util_rank2d'
       ! dimensions for allocate
       INTEGER, DIMENSION(1)                   :: ldc
       INTEGER                                 :: iopt
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
       ! store the input info (substart will reset info to 0)
       info2 = info
-      CALL substart('ppm_util_rank2d',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -151,35 +152,18 @@
       iopt = ppm_param_alloc_fit
       ldc(1) = np
       CALL ppm_alloc(pbox,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_util_rank2d',     &
-     &        'box index of particles PBOX',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('box index of particles PBOX')
+
       ldc(1) = nbox
       CALL ppm_alloc(cbox,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_util_rank2d',     &
-     &        'work array CBOX',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('work array CBOX')
+
       CALL ppm_alloc(npbx,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_util_rank2d',     &
-     &        'number of particles per box NPBX',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('number of particles per box NPBX')
+
       ldc(1) = nbox + 1
       CALL ppm_alloc(lhbx,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_util_rank2d',     &
-     &        'first particle in each cell LHBX',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('first particle in each cell LHBX')
 
       !-------------------------------------------------------------------------
       !  Compute mesh spacing
@@ -230,11 +214,11 @@
          IF (icount .GT. 0) THEN
             WRITE(msg,'(I8,A)')icount,' particles'
             info = ppm_error_warning
-            CALL ppm_error(ppm_err_part_range,'ppm_util_rank2d',msg,  &
+            CALL ppm_error(ppm_err_part_range,caller,msg,  &
      &          __LINE__,info)
          ENDIF
       ENDIF
-     
+
       !-------------------------------------------------------------------------
       !  Find the location of the particles in the boxes. This vectorizes.
       !-------------------------------------------------------------------------
@@ -247,19 +231,19 @@
          !  wrong results with negative box indices!
          !----------------------------------------------------------------------
          !----------------------------------------------------------------------
-         !  The subtraction has to come before the multiplication due to 
+         !  The subtraction has to come before the multiplication due to
          !  Nummerical errors. (dach)
          !----------------------------------------------------------------------
          i = FLOOR((xp(1,ipart) - x0) * rdx) + ngl(1)
          j = FLOOR((xp(2,ipart) - y0) * rdy) + ngl(2)
 
          ! The calculated indices are only correct on the lower boundary.
-         ! On the upper boundary it may happen that particles inside the 
+         ! On the upper boundary it may happen that particles inside the
          ! physical subdomain get an index of a "ghost" cell
          ! We therefore have to test for that and correct this error...
-         
+
          ! if particle is outside the physical domain but index belongs to a
-         ! real cell -> move particle to ghost cell 
+         ! real cell -> move particle to ghost cell
          if (xp(1,ipart) .GE. xmax(1) .AND. i .LT. nm(1)+ngl(1)) THEN
             i = nm(1) + ngl(1)
             icorr = icorr + 1
@@ -268,7 +252,7 @@
             j = nm(2) + ngl(2)
             icorr = icorr + 1
          ENDIF
-         
+
          ! if particle is inside the physical domain but index belongs to a
          ! ghost cell -> move particle in real cell
          if (xp(1,ipart) .LT. xmax(1) .AND. i .GE. nm(1)+ngl(1)) THEN
@@ -279,7 +263,7 @@
             j = nm(2) + ngl(2) - 1
             icorr = icorr + 1
          ENDIF
-         
+
          ! ignore particles outside the mesh (numbering is from 0...nmtot(:)-1
          ! since we are using FLOOR !!!
          IF ((i .GE. 0 .AND. i .LT. nmtot(1)) .AND.  &
@@ -293,18 +277,18 @@
             info        = info + 1
          ENDIF
       ENDDO
-      
-      
+
+
       IF (icorr.GT.0) THEN
          WRITE(msg,'(I8,A)')icorr,' particle indices corrected'
          info = ppm_error_notice
-         CALL ppm_error(ppm_err_index_corr,'ppm_util_rank2d',msg,  &
+         CALL ppm_error(ppm_err_index_corr,caller,msg,  &
      &                  __LINE__,info)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate the index array of proper size which is number of
-      !  particles in the mesh region (does not need to be the full processor 
+      !  particles in the mesh region (does not need to be the full processor
       !  domain!)
       !-------------------------------------------------------------------------
       iopt = ppm_param_alloc_fit
@@ -312,7 +296,7 @@
       CALL ppm_alloc(lpdx,ldc,iopt,info)
       IF (info .NE. 0) THEN
          info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_util_rank2d',     &
+         CALL ppm_error(ppm_err_alloc,caller,     &
      &        'particle index list LPDX',__LINE__,info)
          GOTO 9999
       ENDIF
@@ -327,7 +311,7 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Initialize the particle box pointer and the local counter (this 
+      !  Initialize the particle box pointer and the local counter (this
       !  vectorizes)
       !-------------------------------------------------------------------------
       cbox(1) = 1
@@ -356,7 +340,7 @@
       IF (info2.EQ.1) THEN
          mean = REAL(icount,MK)/REAL(nbox,MK)
          WRITE(msg,'(A,F8.2)') 'Mean number of particles per cell: ',mean
-         CALL ppm_write(ppm_rank,'ppm_util_rank2d',msg,j)
+         CALL ppm_write(ppm_rank,caller,msg,j)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -377,9 +361,9 @@
          IF (i.NE.icount) THEN
             WRITE(msg,'(2(A,I10))') 'icount=',icount,' Sum(npbx)=',i
             info = ppm_error_error
-            CALL ppm_error(ppm_err_part_unass,'ppm_util_rank2d',msg,__LINE__,j)
+            CALL ppm_error(ppm_err_part_unass,caller,msg,__LINE__,j)
             GOTO 9999
-         ENDIF 
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -387,83 +371,73 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(npbx,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_util_rank2d',     &
-     &        'number of particles per box NPBX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('number of particles per box NPBX')
+
       CALL ppm_alloc(cbox,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_util_rank2d',     &
-     &        'work array CBOX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('work array CBOX')
+
       CALL ppm_alloc(pbox,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_util_rank2d',     &
-     &        'box index of particle PBOX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('box index of particle PBOX')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_util_rank2d',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (np .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'np must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (ngl(1) .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'ngl(1) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (ngl(2) .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'ngl(2) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (ngl(3) .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'ngl(3) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (ngl(4) .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'ngl(4) must be >= 0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (nm(1) .LE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'nm(1) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (nm(2) .LE. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'nm(2) must be >0',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (xmax(1) .LE. xmin(1)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'xmax(1) must be > xmin(1)',__LINE__,info)
             GOTO 8888
          ENDIF
          IF (xmax(2) .LE. xmin(2)) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_util_rank2d',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &           'xmax(2) must be > xmin(2)',__LINE__,info)
             GOTO 8888
          ENDIF

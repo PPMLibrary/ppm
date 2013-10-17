@@ -71,11 +71,11 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER  :: topo => NULL()
 
-      REAL(ppm_kind_double)      :: t0
+      REAL(ppm_kind_double) :: t0
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_mesh_define'
 
-      LOGICAL                    :: valid
+      LOGICAL :: valid
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -90,8 +90,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(topoid)%t

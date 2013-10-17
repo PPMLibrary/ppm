@@ -242,16 +242,16 @@
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
-         &       max_box,nbox,nchld,info)
+         &    max_box,nbox,nchld,info)
          IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-             &    'Bisection decomposition failed',__LINE__,info)
-             GOTO 9999
+            info = ppm_error_error
+            CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
+            &    'Bisection decomposition failed',__LINE__,info)
+            GOTO 9999
          ENDIF
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-         &       max_sub,nsubs,info)
+         &    max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       !-------------------------------------------------------------------------

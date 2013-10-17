@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_tree_cutpos.f
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -95,16 +95,16 @@
       !------------------------------------------------------------------------
       ! Local variables
       !------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)            :: len_box
-      REAL(MK), DIMENSION(ncut+1)             :: pc,pcsum
-      INTEGER , DIMENSION(2)                  :: ldc
-      REAL(MK)                                :: t0,dm,meshtotal,geomtotal
-      REAL(MK)                                :: pmass,mmass,gmass,tmass
-      REAL(MK)                                :: partpos,midpos
-      INTEGER                                 :: i,j,ip,cutdir,ncp1,iopt
+      REAL(MK), DIMENSION(ppm_dim) :: len_box
+      REAL(MK), DIMENSION(ncut+1)  :: pc,pcsum
+      REAL(MK)                     :: t0,dm,meshtotal,geomtotal
+      REAL(MK)                     :: pmass,mmass,gmass,tmass
+      REAL(MK)                     :: partpos,midpos
 
+      INTEGER , DIMENSION(2) :: ldc
+      INTEGER                :: i,j,ip,cutdir,ncp1,iopt
 #ifdef __MPI
-      INTEGER                                 :: MPTYPE
+      INTEGER                :: MPTYPE
 #endif
       !------------------------------------------------------------------------
       ! Externals
@@ -126,23 +126,23 @@
       ! If we have less than 1 direction to cut, we are done
       !------------------------------------------------------------------------
       IF (ncut .LT. 1) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,'ppm_tree_cutpos',   &
-                   'No cut directions present. Exiting. ',info)
-          ENDIF
-          GOTO 9999
+         IF (ppm_debug .GT. 0) THEN
+            CALL ppm_write(ppm_rank,'ppm_tree_cutpos',   &
+            & 'No cut directions present. Exiting. ',info)
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !------------------------------------------------------------------------
       ! Compute the extension of the box
       !------------------------------------------------------------------------
       IF (ppm_dim .GT. 2) THEN
-          len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
-          len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
-          len_box(3) = max_box(3,cutbox)-min_box(3,cutbox)
+         len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
+         len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
+         len_box(3) = max_box(3,cutbox)-min_box(3,cutbox)
       ELSE
-          len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
-          len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
+         len_box(1) = max_box(1,cutbox)-min_box(1,cutbox)
+         len_box(2) = max_box(2,cutbox)-min_box(2,cutbox)
       ENDIF
 
 #ifdef __MPI
@@ -150,7 +150,7 @@
       ! Determine MPI data type
       !------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-    MPTYPE = MPI_REAL
+      MPTYPE = MPI_REAL
 #elif __KIND == __DOUBLE_PRECISION
       MPTYPE = MPI_DOUBLE_PRECISION
 #endif
@@ -176,7 +176,7 @@
           ! replace this by something more clever in the future. Try counting
           ! in a way that avoids the division here
           pc(ncp1) = pc(ncp1)/REAL(ncut,MK)
-#else    
+#else
           DO j=tree_lhbx(1,cutbox),tree_lhbx(2,cutbox)
               ip = tree_lpdx(j)
               dm = 1.0_MK
@@ -187,8 +187,8 @@
               ENDDO
               pc(ncp1) = pc(ncp1) + dm
           ENDDO
-#endif   
-         
+#endif
+
 #ifdef __MPI
           !---------------------------------------------------------------------
           ! Allreduce of particles sums
@@ -211,13 +211,14 @@
       meshtotal = 0.0_MK
       IF (ppm_dim .EQ. 2) THEN
          IF (have_mesh .AND. weights(2) .NE. 0) THEN
-             meshtotal = REAL(Nm_box(1,cutbox),MK)*REAL(Nm_box(2,cutbox),MK) 
+            meshtotal = REAL(Nm_box(1,cutbox),MK)*REAL(Nm_box(2,cutbox),MK)
          ENDIF
          geomtotal = len_box(1)*len_box(2)
       ELSE
          IF (have_mesh .AND. weights(2) .NE. 0) THEN
-             meshtotal = REAL(Nm_box(1,cutbox),MK)*   &
-     &           REAL(Nm_box(2,cutbox),MK)*REAL(Nm_box(3,cutbox),MK)
+            meshtotal = REAL(Nm_box(1,cutbox),MK)* &
+            &           REAL(Nm_box(2,cutbox),MK)* &
+            &           REAL(Nm_box(3,cutbox),MK)
          ENDIF
          geomtotal = len_box(1)*len_box(2)*len_box(3)
       ENDIF
@@ -240,7 +241,7 @@
       ! The optimal cut position is in the weighted center of mass
       !------------------------------------------------------------------------
       DO i=1,ncut
-          cutdir = icut(i)         
+          cutdir = icut(i)
           IF (have_particles .AND. weights(1) .NE. 0.0_MK) THEN
              partpos = pc(i)/pc(ncp1)
           ELSE
@@ -254,13 +255,13 @@
           ! Enforce that minboxsize is respected.
           !--------------------------------------------------------------------
           IF (cpos(i)-min_box(cutdir,cutbox) .LT. minboxsize(cutdir)) THEN
-              cpos(i) = min_box(cutdir,cutbox)+minboxsize(cutdir)
+             cpos(i) = min_box(cutdir,cutbox)+minboxsize(cutdir)
           ENDIF
           IF (max_box(cutdir,cutbox)-cpos(i) .LT. minboxsize(cutdir)) THEN
-              cpos(i) = max_box(cutdir,cutbox)-minboxsize(cutdir)
+             cpos(i) = max_box(cutdir,cutbox)-minboxsize(cutdir)
           ENDIF
       ENDDO
-         
+
       !------------------------------------------------------------------------
       ! Return
       !------------------------------------------------------------------------
@@ -301,5 +302,5 @@
       END SUBROUTINE ppm_tree_cutpos_s
 #elif __KIND == __DOUBLE_PRECISION
       END SUBROUTINE ppm_tree_cutpos_d
-#endif 
+#endif
 
