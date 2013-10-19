@@ -28,13 +28,13 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_mkgeom_s(topoid,decomp,assig,min_phys,         &
-     &              max_phys,bcdef,ghostsize,cost,info,user_minsub,      &
-     &              user_maxsub,user_nsubs,user_sub2proc)
+      SUBROUTINE ppm_topo_mkgeom_s(topoid,decomp,assig,min_phys, &
+      &          max_phys,bcdef,ghostsize,cost,info,user_minsub, &
+      &          user_maxsub,user_nsubs,user_sub2proc)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_mkgeom_d(topoid,decomp,assig,min_phys,         &
-     &              max_phys,bcdef,ghostsize,cost,info,user_minsub,      &
-     &              user_maxsub,user_nsubs,user_sub2proc)
+      SUBROUTINE ppm_topo_mkgeom_d(topoid,decomp,assig,min_phys, &
+      &          max_phys,bcdef,ghostsize,cost,info,user_minsub, &
+      &          user_maxsub,user_nsubs,user_sub2proc)
 #endif
       !!! This routine is the topology creation routine for purely
       !!! geometry-based decompositions, i.e. without particles and without
@@ -159,27 +159,33 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,treetype,nbox,isub
-      INTEGER                           :: iopt
-      INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
-      INTEGER, DIMENSION(1  )           :: Nmdummy,ldc
-      INTEGER, DIMENSION(3,1)           :: nnodes
-      INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
-      INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      REAL(MK)                          :: t0,parea,sarea,larea,lmyeps
+      REAL(MK)                          :: t0,lmyeps
+      REAL(MK)                          :: parea,sarea,larea
       REAL(MK), DIMENSION(ppm_dim)      :: gsvec
       REAL(MK), DIMENSION(1,1)          :: xpdummy
-      LOGICAL , DIMENSION(ppm_dim)      :: fixed
       REAL(MK), DIMENSION(3,2)          :: weights
       REAL(MK), DIMENSION(:,:), POINTER :: min_box  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_box  => NULL()
-      CHARACTER(LEN=ppm_char)           :: mesg
-      INTEGER                           :: nsublist, nsubs
-      INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
-      INTEGER,  DIMENSION(:  ), POINTER :: sub2proc => NULL()
+
+      INTEGER                          :: i,treetype,nbox
+      INTEGER                          :: iopt,isub
+      INTEGER                          :: nsublist,nsubs
+      INTEGER, DIMENSION(1  )          :: Nmdummy,ldc
+      INTEGER, DIMENSION(3,1)          :: nnodes
+      INTEGER, DIMENSION(:,:), POINTER :: ineigh  => NULL()
+      INTEGER, DIMENSION(:  ), POINTER :: nneigh  => NULL()
+      INTEGER, DIMENSION(:  ), POINTER :: nchld   => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: subs_bc => NULL()
+      INTEGER, DIMENSION(  :), POINTER :: isublist => NULL()
+      INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
+
+      CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_mkgeom'
+
+      LOGICAL, DIMENSION(ppm_dim) :: fixed
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -187,7 +193,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_mkgeom',t0,info)
+      CALL substart(caller,t0,info)
 #if    __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif  __KIND == __DOUBLE_PRECISION
@@ -198,24 +204,24 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       ! If the user defined nsubs then use those
       IF (PRESENT(user_nsubs)) THEN
-          nsubs = user_nsubs
+         nsubs = user_nsubs
       ELSE
-          nsubs = 0
+         nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
-          min_sub => user_minsub
+         min_sub => user_minsub
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
-          max_sub => user_maxsub
+         max_sub => user_maxsub
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
-          sub2proc => user_sub2proc
+         sub2proc => user_sub2proc
       ENDIF
       !-------------------------------------------------------------------------
       !  Dummy arguments for non-existing particles and meshes
@@ -240,20 +246,15 @@
          fixed(1:ppm_dim) = .FALSE.
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
-         &    max_box,nbox,nchld,info)
-         IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-            &    'Bisection decomposition failed',__LINE__,info)
-            GOTO 9999
-         ENDIF
-         ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-         &    max_sub,nsubs,info)
-         IF (info .NE. 0) GOTO 9999
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
+         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
+         &   min_box, max_box,nbox,nchld,info)
+         or_fail('Bisection decomposition failed')
 
+         ! convert tree to subs
+         CALL ppm_topo_box2subs(min_box,max_box,nchld, &
+         &    nbox,min_sub,max_sub,nsubs,info)
+         IF (info .NE. 0) GOTO 9999
       !-------------------------------------------------------------------------
       !  Pencils
       !-------------------------------------------------------------------------
@@ -262,7 +263,7 @@
       &     ppm_param_decomp_zpencil)
          IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
              info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',  &
+             CALL ppm_error(ppm_err_argument,caller,  &
              &   'Cannot make z pencils in 2D!',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -284,18 +285,14 @@
          IF (decomp .EQ. ppm_param_decomp_zpencil) fixed(3) = .TRUE.
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
-         &       max_box,nbox,nchld,info)
-         IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-             &    'Pencil decomposition failed',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
+         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
+         &       min_box,max_box,nbox,nchld,info)
+         or_fail('Pencil decomposition failed')
+
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-         &       max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,nchld, &
+         &    nbox,min_sub,max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       !-------------------------------------------------------------------------
@@ -306,13 +303,13 @@
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
              info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',  &
+             CALL ppm_error(ppm_err_argument,caller,  &
              &   'Cannot make x-z slabs in 2D!',__LINE__,info)
              GOTO 9999
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
              info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',  &
+             CALL ppm_error(ppm_err_argument,caller,  &
              &           'Cannot make y-z slabs in 2D!',__LINE__,info)
              GOTO 9999
          ENDIF
@@ -342,15 +339,11 @@
          ENDIF
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
-         &    max_box,nbox,nchld,info)
-         IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',    &
-             &    'Slab decomposition failed',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
+         &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
+         &    min_box,max_box,nbox,nchld,info)
+         or_fail('Slab decomposition failed')
+
          ! convert tree to subs
          CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
          &    max_sub,nsubs,info)
@@ -376,18 +369,14 @@
          fixed(1:ppm_dim) = .FALSE.
          gsvec(1:ppm_dim) = ghostsize
          ! build tree
-         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,  &
-         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,min_box, &
-         &       max_box,nbox,nchld,info)
-         IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-             &   'Cuboid decomposition failed',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype,   &
+         &       ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights, &
+         &       min_box,max_box,nbox,nchld,info)
+         or_fail('Cuboid decomposition failed')
+
          ! convert tree to subs
-         CALL ppm_topo_box2subs(min_box,max_box,nchld,nbox,min_sub,   &
-         &    max_sub,nsubs,info)
+         CALL ppm_topo_box2subs(min_box,max_box,nchld, &
+         &    nbox,min_sub,max_sub,nsubs,info)
          IF (info .NE. 0) GOTO 9999
 
       !-------------------------------------------------------------------------
@@ -402,7 +391,7 @@
       CASE DEFAULT
          info = ppm_error_error
          WRITE(mesg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',   &
+         CALL ppm_error(ppm_err_argument,caller,   &
          &    mesg,__LINE__,info)
          GOTO 9999
       END SELECT
@@ -412,25 +401,15 @@
       !-------------------------------------------------------------------------
       CALL ppm_find_neigh(min_phys,max_phys,bcdef, &
       &    min_sub,max_sub,nsubs,nneigh,ineigh,gsvec,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-          &    'Finding neighbors failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail('Finding neighbors failed')
 
       !-------------------------------------------------------------------------
       !  Find the cost of each subdomain
       !-------------------------------------------------------------------------
       IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-          CALL ppm_topo_cost(xpdummy,0,min_sub,max_sub,nsubs,nnodes,  &
-          &    cost,info)
-          IF (info.NE.0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-             &   'Computing costs failed',__LINE__,info)
-             GOTO 9999
-          ENDIF
+          CALL ppm_topo_cost(xpdummy,0,min_sub,max_sub, &
+          &    nsubs,nnodes,cost,info)
+          or_fail('Computing costs failed')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -441,14 +420,10 @@
          !-------------------------------------------------------------------
          !  internal assignment routine
          !-------------------------------------------------------------------
-         CALL ppm_topo_subs2proc(cost,nneigh,ineigh,nsubs,sub2proc, &
-         &    isublist,nsublist,info)
-         IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-            &   'Assigning subs to processors failed',__LINE__,info)
-            GOTO 9999
-         ENDIF
+         CALL ppm_topo_subs2proc(cost,nneigh,ineigh, &
+         &    nsubs,sub2proc,isublist,nsublist,info)
+         or_fail('Assigning subs to processors failed')
+
       CASE (ppm_param_assign_nodal_cut,  &
       &     ppm_param_assign_nodal_comm, &
       &     ppm_param_assign_dual_cut,   &
@@ -456,15 +431,10 @@
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh,cost,nsubs,&
-         &       assig,sub2proc,isublist,nsublist,info)
-         IF (info.NE.0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-            &    'Assigning subs to processors using METIS failed',__LINE__,&
-            &    info)
-            GOTO 9999
-         ENDIF
+         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh, &
+         &    cost,nsubs,assig,sub2proc,isublist,nsublist,info)
+         or_fail('Assigning subs to processors using METIS failed')
+
       CASE (ppm_param_assign_user_defined)
          !-------------------------------------------------------------------
          !  user defined assignment
@@ -472,19 +442,15 @@
          iopt = ppm_param_alloc_fit
          ldc(1) = nsubs
          CALL ppm_alloc(isublist,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_topo_mkgeom',   &
-     &           'list of local subs ISUBLIST',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('list of local subs ISUBLIST')
+
          isublist = ppm_param_undefined
          nsublist = 0
          DO isub=1,nsubs
-             IF (sub2proc(isub) .EQ. ppm_rank) THEN
-                 nsublist = nsublist + 1
-                 isublist(nsublist) = isub
-             ENDIF
+            IF (sub2proc(isub) .EQ. ppm_rank) THEN
+               nsublist = nsublist + 1
+               isublist(nsublist) = isub
+            ENDIF
          ENDDO
       CASE DEFAULT
          !-------------------------------------------------------------------
@@ -492,7 +458,7 @@
          !-------------------------------------------------------------------
          info = ppm_error_error
          WRITE(mesg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',   &
+         CALL ppm_error(ppm_err_argument,caller,   &
      &       mesg,__LINE__,info)
          GOTO 9999
       END SELECT
@@ -501,29 +467,17 @@
       !  Find and define the boundary conditions on the subs on the local
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
-      NULLIFY(subs_bc)
-      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
-      &    nsubs,subs_bc,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkpart',  &
-         &    'finding and defining the BC of the subs failed ', &
-         &    __LINE__,info)
-         GOTO 9999
-      ENDIF
+      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef, &
+      &    min_sub,max_sub,nsubs,subs_bc,info)
+      or_fail('finding and defining the BC of the subs failed ')
 
       !-------------------------------------------------------------------------
       !  Store the topology internally
       !-------------------------------------------------------------------------
-      CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist,&
-     &                    nneigh,ineigh,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkgeom',  &
-     &        'Storing topology failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub, &
+      &    max_sub,subs_bc,sub2proc,nsubs,bcdef,ghostsize,  &
+      &    isublist,nsublist,nneigh,ineigh,info)
+      or_fail('Storing topology failed')
 
       !-------------------------------------------------------------------------
       !  Dump out disgnostic files
@@ -557,30 +511,78 @@
       !    CLOSE(10)
       !ENDIF
 
+      iopt = ppm_param_dealloc
+      IF (decomp.NE.ppm_param_decomp_user_defined) THEN
+         CALL ppm_alloc(nchld,ldc,iopt,info)
+         or_fail_dealloc('nchld')
+
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         or_fail_dealloc('min_box')
+
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         or_fail_dealloc('max_box')
+      END IF
+      IF (PRESENT(user_minsub)) THEN
+         IF (ASSOCIATED(min_sub,user_minsub)) THEN
+            NULLIFY(min_sub)
+         ELSE
+            CALL ppm_alloc(min_sub,ldc,iopt,info)
+            or_fail_dealloc("min_sub")
+         ENDIF
+      ENDIF
+      IF (PRESENT(user_maxsub)) THEN
+         IF (ASSOCIATED(max_sub,user_maxsub)) THEN
+            NULLIFY(max_sub)
+         ELSE
+            CALL ppm_alloc(max_sub,ldc,iopt,info)
+            or_fail_dealloc("max_sub")
+         ENDIF
+      ENDIF
+      IF (PRESENT(user_sub2proc)) THEN
+         IF (ASSOCIATED(sub2proc,user_sub2proc)) THEN
+            NULLIFY(sub2proc)
+         ELSE
+            CALL ppm_alloc(sub2proc,ldc,iopt,info)
+            or_fail_dealloc("sub2proc")
+         ENDIF
+      ENDIF
+
+      CALL ppm_alloc(ineigh,ldc,iopt,info)
+      or_fail_dealloc("ineigh")
+
+      CALL ppm_alloc(nneigh,ldc,iopt,info)
+      or_fail_dealloc("nneigh")
+
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      or_fail_dealloc("subs_bc")
+
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      or_fail_dealloc("isublist")
+
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_topo_mkgeom',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
              info = ppm_error_error
-             CALL ppm_error(ppm_err_ppm_noinit,'ppm_topo_mkgeom',  &
+             CALL ppm_error(ppm_err_ppm_noinit,caller,  &
      &           'Please call ppm_init first!',__LINE__,info)
              GOTO 8888
          ENDIF
          IF(ghostsize .LT. 0.0_MK) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+            CALL ppm_error(ppm_err_argument,caller, &
      &          'ghostsize must be >= 0.0',__LINE__, info)
             GOTO 8888
          ENDIF
          DO i=1,ppm_dim
             IF(max_phys(i).LE.min_phys(i)) THEN
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+               CALL ppm_error(ppm_err_argument,caller, &
      &             'max_phys must be > min_phys',__LINE__, info)
                GOTO 8888
             ENDIF
@@ -588,21 +590,21 @@
          IF (assig .EQ. ppm_param_assign_user_defined) THEN
             IF (decomp .NE. ppm_param_decomp_user_defined) THEN
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+               CALL ppm_error(ppm_err_argument,caller, &
      &             'decomp type is set to user_defined for this assignment',&
      &             __LINE__, info)
                GOTO 8888
             ENDIF
             IF(user_nsubs .LE. 0) THEN
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+               CALL ppm_error(ppm_err_argument,caller, &
      &             'no subs defined in user_defined assignment',&
      &             __LINE__, info)
                GOTO 8888
             ENDIF
             IF (.NOT.ASSOCIATED(sub2proc)) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+                CALL ppm_error(ppm_err_argument,caller, &
      &              'sub2proc must be allocated for user defined assignment',&
      &              __LINE__, info)
                 GOTO 8888
@@ -610,7 +612,7 @@
             DO i=1,user_nsubs
                 IF ((sub2proc(i).LT.0).OR.(sub2proc(i).GE.ppm_nproc)) THEN
                    info = ppm_error_error
-                   CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+                   CALL ppm_error(ppm_err_argument,caller, &
      &                 'invalid processor specified in sub2proc',&
      &                 __LINE__, info)
                    GOTO 8888
@@ -620,14 +622,14 @@
          IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
             IF ((.NOT.ASSOCIATED(min_sub)).OR.(.NOT.ASSOCIATED(max_sub))) THEN
                 info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+                CALL ppm_error(ppm_err_argument,caller, &
      &              'min_sub/max_sub must be allocated for user def. decomp',&
      &              __LINE__, info)
                 GOTO 8888
             ENDIF
             IF(user_nsubs .LE. 0) THEN
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom', &
+               CALL ppm_error(ppm_err_argument,caller, &
      &             'no subs defined in user_defined decomposition',&
      &             __LINE__, info)
                GOTO 8888
@@ -654,7 +656,7 @@
                !  Mismatch!
                !----------------------------------------------------------------
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_topo_mkgeom',   &
+               CALL ppm_error(ppm_err_argument,caller,   &
      &              'faulty subdomains defined',__LINE__,info)
                GOTO 8888
             ENDIF

@@ -28,15 +28,13 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_mkfield_s(topoid,meshid,xp,Npart,decomp,assig, &
-      &          min_phys,max_phys,bcdef,ighostsize,cost,                &
-      &          Nm,info,ndom,pcost,user_minsub,user_maxsub,             &
-      &          user_nsubs,user_sub2proc)
+      SUBROUTINE ppm_topo_mkfield_s(topoid,meshid,xp,Npart,decomp,assig,     &
+      &          min_phys,max_phys,bcdef,ighostsize,cost,Nm,info,ndom,pcost, &
+      &          user_minsub,user_maxsub,user_nsubs,user_sub2proc,Offset)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_mkfield_d(topoid,meshid,xp,Npart,decomp,assig, &
-      &          min_phys,max_phys,bcdef,ighostsize,cost,                &
-      &          Nm,info,ndom,pcost,user_minsub,user_maxsub,             &
-      &          user_nsubs,user_sub2proc)
+      SUBROUTINE ppm_topo_mkfield_d(topoid,meshid,xp,Npart,decomp,assig,     &
+      &          min_phys,max_phys,bcdef,ighostsize,cost,Nm,info,ndom,pcost, &
+      &          user_minsub,user_maxsub,user_nsubs,user_sub2proc,Offset)
 #endif
       !!! This routine is the topology creation routine for meshes.
       !!! In the user_defined case, the user must pass
@@ -61,7 +59,6 @@
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
-!      USE ppm_module_mesh_typedef
       USE ppm_module_substart
       USE ppm_module_substop
       USE ppm_module_error
@@ -70,7 +67,6 @@
       USE ppm_module_topo_store
       USE ppm_module_define_subs_bc
       USE ppm_module_mesh_on_subs
-!      USE ppm_module_mesh_alloc
       USE ppm_module_mesh_store
       USE ppm_module_topo_subs2proc
       USE ppm_module_topo_metis_s2p
@@ -191,36 +187,42 @@
       INTEGER,  DIMENSION(:),   OPTIONAL, POINTER       :: user_sub2proc
       !!! Subdomain to processor assignment. index: subID (global)
       !!!  parameter used if assignment is user defined.
-
+      REAL(MK), DIMENSION(:),   OPTIONAL, INTENT(IN   ) :: Offset
+      !!! Offset in each dimension
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                           :: i,k
-      INTEGER                           :: iopt,treetype,nbox
-      INTEGER                           :: isub,minbox
-      INTEGER, DIMENSION(1)             :: ldc
-      INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
-      INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
-      INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: istart  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: ndata   => NULL()
-      REAL(MK)                          :: t0,parea,sarea,larea,lmyeps,maxvar
-      REAL(MK), DIMENSION(ppm_dim)      :: gsvec,h
-      LOGICAL , DIMENSION(ppm_dim)      :: fixed
-      REAL(MK), DIMENSION(3,2)          :: weights
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
-      CHARACTER(LEN=ppm_char)           :: mesg
-      INTEGER                           :: nsublist
-      INTEGER , DIMENSION(  :), POINTER :: isublist => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: min_sub  => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_sub  => NULL()
-      INTEGER                           :: nsubs
-      INTEGER, DIMENSION(:  ),  POINTER :: sub2proc => NULL()
+      REAL(MK)                                  :: t0
+      REAL(MK)                                  :: parea,sarea,larea
+      REAL(MK)                                  :: lmyeps,maxvar
+      REAL(MK),              DIMENSION(ppm_dim) :: gsvec
+      REAL(ppm_kind_double), DIMENSION(ppm_dim) :: h,Offst
+      REAL(MK),              DIMENSION(3,2)          :: weights
+      REAL(MK),              DIMENSION(:,:), POINTER :: min_box => NULL()
+      REAL(MK),              DIMENSION(:,:), POINTER :: max_box => NULL()
+      REAL(MK),              DIMENSION(:,:), POINTER :: min_sub  => NULL()
+      REAL(MK),              DIMENSION(:,:), POINTER :: max_sub  => NULL()
 
+      INTEGER                          :: i,k
+      INTEGER                          :: iopt,treetype,nbox
+      INTEGER                          :: isub,minbox
+      INTEGER, DIMENSION(1)            :: ldc
+      INTEGER, DIMENSION(:,:), POINTER :: ineigh  => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: nneigh  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: subs_bc => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: nchld   => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: istart  => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: ndata   => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: isublist => NULL()
+      INTEGER, DIMENSION(:),   POINTER :: sub2proc => NULL()
+      INTEGER                          :: nsubs
+      INTEGER                          :: nsublist
+
+      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_topo_mkfield'
+
+      LOGICAL, DIMENSION(ppm_dim) :: fixed
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -242,8 +244,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       ! If the user defined nsubs then use those
@@ -253,13 +255,22 @@
           nsubs = 0
       ENDIF
       IF (PRESENT(user_minsub)) THEN
-          min_sub => user_minsub
+         min_sub => user_minsub
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
-          max_sub => user_maxsub
+         max_sub => user_maxsub
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
-          sub2proc => user_sub2proc
+         sub2proc => user_sub2proc
+      ENDIF
+      IF (PRESENT(Offset)) THEN
+#if    __KIND == __SINGLE_PRECISION
+         Offst(1:ppm_dim)=REAL(Offset(1:ppm_dim),ppm_kind_double)
+#elif  __KIND == __DOUBLE_PRECISION
+         Offst(1:ppm_dim)=Offset(1:ppm_dim)
+#endif
+      ELSE
+         Offst=0.0_ppm_kind_double
       ENDIF
       !-------------------------------------------------------------------------
       !  Compute grid spacing
@@ -545,21 +556,22 @@
       !-------------------------------------------------------------------------
       !  Define meshes on the subs
       !-------------------------------------------------------------------------
-      CALL ppm_mesh_on_subs(Nm,min_phys,max_phys,min_sub,max_sub,nsubs,&
-      &    istart,ndata,info)
+      CALL ppm_mesh_on_subs(Nm,min_phys,max_phys,min_sub, &
+      &    max_sub,nsubs,istart,ndata,info,Offset=Offst)
       or_fail('Defining meshes failed')
 
       !-------------------------------------------------------------------------
       !  Find the cost of each subdomain
       !-------------------------------------------------------------------------
       IF (decomp.NE.ppm_param_decomp_user_defined) THEN
-          IF (PRESENT(pcost)) THEN
-              CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,cost,  &
-              &    info,pcost)
-          ELSE
-              CALL ppm_topo_cost(xp,Npart,min_sub,max_sub,nsubs,ndata,cost,info)
-          ENDIF
-          or_fail('Computing costs failed')
+         IF (PRESENT(pcost)) THEN
+            CALL ppm_topo_cost(xp,Npart,min_sub,max_sub, &
+            &    nsubs,ndata,cost,info,pcost)
+         ELSE
+            CALL ppm_topo_cost(xp,Npart,min_sub,max_sub, &
+            &    nsubs,ndata,cost,info)
+         ENDIF
+         or_fail('Computing costs failed')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -570,8 +582,8 @@
          !-------------------------------------------------------------------
          !  internal assignment routine
          !-------------------------------------------------------------------
-         CALL ppm_topo_subs2proc(cost,nneigh,ineigh,nsubs,sub2proc, &
-         &    isublist,nsublist,info)
+         CALL ppm_topo_subs2proc(cost,nneigh,ineigh,nsubs, &
+         &    sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors failed')
 
       CASE (ppm_param_assign_nodal_cut,  &
@@ -581,8 +593,8 @@
          !-------------------------------------------------------------------
          !  use METIS library to do assignment
          !-------------------------------------------------------------------
-         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh,cost,nsubs,&
-         &    assig,sub2proc,isublist,nsublist,info)
+         CALL ppm_topo_metis_s2p(min_sub,max_sub,nneigh,ineigh, &
+         &    cost,nsubs,assig,sub2proc,isublist,nsublist,info)
          or_fail('Assigning subs to processors using METIS failed')
 
       CASE (ppm_param_assign_user_defined)
@@ -592,26 +604,18 @@
          iopt = ppm_param_alloc_fit
          ldc(1) = nsubs
          CALL ppm_alloc(isublist,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,caller,   &
-             &    'list of local subs ISUBLIST',__LINE__,info)
-                 GOTO 9999
-         ENDIF
+         or_fail_alloc('list of local subs ISUBLIST')
+
          CALL ppm_alloc(sub2proc,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,caller,   &
-             &    'sub to processor assignment list SUB2PROC',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('sub to processor assignment list SUB2PROC')
+
          isublist = ppm_param_undefined
          nsublist = 0
          DO isub=1,nsubs
-             IF (sub2proc(isub) .EQ. ppm_rank) THEN
-                 nsublist = nsublist + 1
-                 isublist(nsublist) = isub
-             ENDIF
+            IF (sub2proc(isub) .EQ. ppm_rank) THEN
+               nsublist = nsublist + 1
+               isublist(nsublist) = isub
+            ENDIF
          ENDDO
       CASE DEFAULT
          !-------------------------------------------------------------------
@@ -628,9 +632,8 @@
       !  Find and define the boundary conditions on the subs on the local
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
-      NULLIFY(subs_bc)
-      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
-      &    nsubs,subs_bc,info)
+      CALL ppm_define_subs_bc(min_phys,max_phys,bcdef, &
+      &    min_sub,max_sub,nsubs,subs_bc,info)
       or_fail('finding and defining the BC of the subs failed ')
 
       !-------------------------------------------------------------------------
@@ -643,55 +646,67 @@
       !-------------------------------------------------------------------------
       !  Store new mesh internally
       !-------------------------------------------------------------------------
-      CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info)
+      CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info, &
+      &    Offset=Offst,ghostsize=ighostsize)
       or_fail('Storing mesh definition failed')
-
-      !-------------------------------------------------------------------------
-      !  Dump out disgnostic files
-      !-------------------------------------------------------------------------
-!      IF (ppm_debug .GT. 0) THEN
-!          WRITE(mesg,'(A,I4.4)') 'part',ppm_rank
-!          OPEN(10,FILE=mesg)
-!          DO ul=1,nsublist
-!             i = isublist(ul)
-!
-!    ! x-y plan
-!            WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(2e12.4)') max_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(2e12.4)') max_sub(1,i),max_sub(2,i)
-!            WRITE(10,'(2e12.4)') min_sub(1,i),max_sub(2,i)
-!            WRITE(10,'(2e12.4)') min_sub(1,i),min_sub(2,i)
-!            WRITE(10,'(   a  )')
-!
-!    ! y-z plan
-!            IF (ppm_dim .GT. 2) THEN
-!              WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(2e12.4)') max_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(2e12.4)') max_sub(2,i),max_sub(3,i)
-!              WRITE(10,'(2e12.4)') min_sub(2,i),max_sub(3,i)
-!              WRITE(10,'(2e12.4)') min_sub(2,i),min_sub(3,i)
-!              WRITE(10,'(   a  )')
-!            ENDIF
-!          ENDDO
-!          CLOSE(10)
-!      ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(ineigh,ldc,iopt,info)
+      or_fail_dealloc("ineigh")
+
       CALL ppm_alloc(nneigh,ldc,iopt,info)
-      IF(decomp.NE.ppm_param_decomp_cartesian .AND.              &
+      or_fail_dealloc("nneigh")
+
+      CALL ppm_alloc(subs_bc,ldc,iopt,info)
+      or_fail_dealloc("subs_bc")
+
+      CALL ppm_alloc(istart,ldc,iopt,info)
+      or_fail_dealloc("istart")
+
+      CALL ppm_alloc(ndata,ldc,iopt,info)
+      or_fail_dealloc("ndata")
+
+      CALL ppm_alloc(isublist,ldc,iopt,info)
+      or_fail_dealloc("isublist")
+
+      IF (decomp.NE.ppm_param_decomp_cartesian .AND. &
       &   decomp.NE.ppm_param_decomp_user_defined) THEN
-         CALL ppm_alloc(min_box,ldc,iopt,info)
-         CALL ppm_alloc(max_box,ldc,iopt,info)
          CALL ppm_alloc(nchld,ldc,iopt,info)
+         or_fail_dealloc('nchld')
+
+         CALL ppm_alloc(min_box,ldc,iopt,info)
+         or_fail_dealloc('min_box')
+
+         CALL ppm_alloc(max_box,ldc,iopt,info)
+         or_fail_dealloc('max_box')
       END IF
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-          &    'deallocation failed',__LINE__,info)
+
+      IF (PRESENT(user_minsub)) THEN
+         IF (ASSOCIATED(min_sub,user_minsub)) THEN
+            NULLIFY(min_sub)
+         ELSE
+            CALL ppm_alloc(min_sub,ldc,iopt,info)
+            or_fail_dealloc("min_sub")
+         ENDIF
+      ENDIF
+      IF (PRESENT(user_maxsub)) THEN
+         IF (ASSOCIATED(max_sub,user_maxsub)) THEN
+            NULLIFY(max_sub)
+         ELSE
+            CALL ppm_alloc(max_sub,ldc,iopt,info)
+            or_fail_dealloc("max_sub")
+         ENDIF
+      ENDIF
+      IF (PRESENT(user_sub2proc)) THEN
+         IF (ASSOCIATED(sub2proc,user_sub2proc)) THEN
+            NULLIFY(sub2proc)
+         ELSE
+            CALL ppm_alloc(sub2proc,ldc,iopt,info)
+            or_fail_dealloc("sub2proc")
+         ENDIF
       ENDIF
 
  9999 CONTINUE

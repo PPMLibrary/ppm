@@ -29,15 +29,12 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_mesh_on_subs_s(Nm,min_phys,max_phys, &
-      &          min_sub,max_sub,nsubs,istart,ndata,info)
+      &          min_sub,max_sub,nsubs,istart,ndata,info,Offset)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_mesh_on_subs_d(Nm,min_phys,max_phys, &
-      &          min_sub,max_sub,nsubs,istart,ndata,info)
+      &          min_sub,max_sub,nsubs,istart,ndata,info,Offset)
 #endif
-      !!! This routine defines meshes on a given collection of subs. The
-      !!! subs must have been defined such that their extent is an integer
-      !!! multiple of the mesh spacing in all directions. If this is not
-      !!! the case this routine will fail.
+      !!! This routine defines meshes on a given collection of subs.
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -56,33 +53,43 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
+      INTEGER , DIMENSION(:  ),           INTENT(IN   ) :: Nm
       !!! The number of mesh points (not cells) in each direction of the
       !!! global comput. domain. (including those ON the boundaries)
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: min_phys
+      REAL(MK), DIMENSION(:  ),           INTENT(IN   ) :: min_phys
       !!! The minimum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:  ), INTENT(IN   ) :: max_phys
+      REAL(MK), DIMENSION(:  ),           INTENT(IN   ) :: max_phys
       !!! The maximum coordinate of the physical/computational domain
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: min_sub
+      REAL(MK), DIMENSION(:,:),           INTENT(IN   ) :: min_sub
       !!! Min. extent of the subdomains
-      REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: max_sub
+      REAL(MK), DIMENSION(:,:),           INTENT(IN   ) :: max_sub
       !!! Max. extent of the subdomains
-      INTEGER                 , INTENT(IN   ) :: nsubs
+      INTEGER,                            INTENT(IN   ) :: nsubs
       !!! Total number of subdomains
-      INTEGER , DIMENSION(:,:), POINTER       :: istart
+      INTEGER , DIMENSION(:,:),           POINTER       :: istart
       !!! Start indices (i,j,k) (first index) of mesh in sub isub
       !!! (second index) in global mesh.
-      INTEGER , DIMENSION(:,:), POINTER       :: ndata
+      INTEGER , DIMENSION(:,:),           POINTER       :: ndata
       !!! Number of grid points in x,y[,z] (first index) of mesh on sub
       !!! isub (second index).
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                            INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+#if   __KIND == __SINGLE_PRECISION
+      REAL(ppm_kind_double), DIMENSION(:  ), OPTIONAL, INTENT(IN   ) :: Offset
+      !!! Offset in each dimension
+#elif __KIND == __DOUBLE_PRECISION
+      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN   ) :: Offset
+      !!! Offset in each dimension
+#endif
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0,lmyeps
+      REAL(MK)                     :: t0
       REAL(MK), DIMENSION(ppm_dim) :: len_phys,dx,rat
+      REAL(MK), DIMENSION(ppm_dim) :: Offst
 
+      INTEGER, DIMENSION(ppm_dim) :: iend
+      !!! Upper-right coordinates on the sub mesh
       INTEGER, DIMENSION(ppm_dim) :: ldu,Nc
       INTEGER                     :: iopt,i,j,k
 
@@ -96,11 +103,6 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-#if   __KIND == __SINGLE_PRECISION
-      lmyeps = ppm_myepss
-#elif __KIND == __DOUBLE_PRECISION
-      lmyeps = ppm_myepsd
-#endif
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -108,6 +110,16 @@
       IF (ppm_debug .GT. 0) THEN
          CALL check
          IF (info .NE. 0) GOTO 9999
+      ENDIF
+
+      IF (PRESENT(Offset)) THEN
+#if   __KIND == __SINGLE_PRECISION
+         Offst(1:ppm_dim) = REAL(Offset(1:ppm_dim),MK)
+#elif __KIND == __DOUBLE_PRECISION
+         Offst(1:ppm_dim) = Offset(1:ppm_dim)
+#endif
+      ELSE
+         Offst = 0.0_MK
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -138,88 +150,22 @@
       or_fail_alloc('sub mesh sizes NDATA')
 
       !-------------------------------------------------------------------------
-      !  Check that the subs align with the mesh points and determine
-      !  number of mesh points. 2D and 3D case have separate loops for
-      !  vectorization.
+      !  Determine number of mesh points.
       !-------------------------------------------------------------------------
-      SELECT CASE (ppm_dim)
-      CASE (2)
-          DO i=1,nsubs
-             len_phys(1) = max_sub(1,i)-min_sub(1,i)
-             len_phys(2) = max_sub(2,i)-min_sub(2,i)
-             rat(1) = len_phys(1)/dx(1)
-             rat(2) = len_phys(2)/dx(2)
-             Nc(1)  = NINT(rat(1))
-             Nc(2)  = NINT(rat(2))
-             IF (ABS(rat(1)-REAL(Nc(1),MK)) .GT. lmyeps*rat(1)) THEN
-                WRITE(mesg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-                & len_phys(1),' mesh_spacing=',dx(1)
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_subs_incomp,caller,     &
-                &    mesg,__LINE__,info)
-                GOTO 9999
-             ENDIF
-             IF (ABS(rat(2)-REAL(Nc(2),MK)) .GT. lmyeps*rat(2)) THEN
-                  WRITE(mesg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-                  & len_phys(2),' mesh_spacing=',dx(2)
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_subs_incomp,caller,     &
-                  &    mesg,__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              ndata(1,i) = Nc(1) + 1
-              ndata(2,i) = Nc(2) + 1
-              !-----------------------------------------------------------------
-              !  Determine the start indices in the global mesh
-              !-----------------------------------------------------------------
-              istart(1,i) = NINT((min_sub(1,i)-min_phys(1))/dx(1)) + 1
-              istart(2,i) = NINT((min_sub(2,i)-min_phys(2))/dx(2)) + 1
-          ENDDO
-
-      CASE DEFAULT
-         DO i=1,nsubs
-            len_phys(1:3) = max_sub(1:3,i)-min_sub(1:3,i)
-            rat(1:3)      = len_phys(1:3)/dx(1:3)
-            Nc(1:3)       = NINT(rat(1:3))
-            IF (ABS(rat(1)-REAL(Nc(1),MK)) .GT. lmyeps*rat(1)) THEN
-               WRITE(mesg,'(2(A,F12.6))') 'in dimension 1: sub_length=',  &
-               & len_phys(1),' mesh_spacing=',dx(1)
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_subs_incomp,caller,     &
-               &    mesg,__LINE__,info)
-               GOTO 9999
-            ENDIF
-            IF (ABS(rat(2)-REAL(Nc(2),MK)) .GT. lmyeps*rat(2)) THEN
-               WRITE(mesg,'(2(A,F12.6))') 'in dimension 2: sub_length=',  &
-               & len_phys(2),' mesh_spacing=',dx(2)
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_subs_incomp,caller,     &
-               &    mesg,__LINE__,info)
-               GOTO 9999
-            ENDIF
-            IF (ABS(rat(3)-REAL(Nc(3),MK)) .GT. lmyeps*rat(3)) THEN
-               WRITE(mesg,'(2(A,F12.6))') 'in dimension 3: sub_length=',  &
-               & len_phys(3),' mesh_spacing=',dx(3)
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_subs_incomp,caller,     &
-               &    mesg,__LINE__,info)
-               GOTO 9999
-            ENDIF
-            ndata(1:3,i) = Nc(1:3) + 1
-            !-----------------------------------------------------------------
-            !  Determine the start indices in the global mesh
-            !-----------------------------------------------------------------
-            istart(1:3,i) = NINT((min_sub(1:3,i)-min_phys(1:3))/dx(1:3)) + 1
-         ENDDO
-
-      END SELECT
+      DO i=1,nsubs
+         istart(1:ppm_dim,i) = 1 + CEILING((min_sub(1:ppm_dim,i) - Offst(1:ppm_dim)) &
+         &                   /dx(1:ppm_dim))
+         iend(1:ppm_dim)     = 1 + FLOOR((  max_sub(1:ppm_dim,i) - Offst(1:ppm_dim)) &
+         &                   /(dx(1:ppm_dim)- EPSILON(dx(1:ppm_dim))))
+         ndata(1:ppm_dim,i)  =  1 + iend(1:ppm_dim) - istart(1:ppm_dim,i)
+      ENDDO
 
       !-------------------------------------------------------------------------
       !  Some diagnostics
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          WRITE(mesg,'(A,I5)') 'number of meshes on subs created: ',nsubs
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(A,I5)') 'number of meshes on subs created: ',nsubs
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
       IF (ppm_debug .GT. 1) THEN
           IF (ppm_dim .LT. 3) THEN

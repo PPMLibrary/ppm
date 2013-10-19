@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_mktree
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -84,7 +84,7 @@
       !!! is returned here, else the indicated toplogy is replaced.
       !!!
       !!! [CAUTION]
-      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the 
+      !!! *SEMANTICS CHANGED:* `topoid = 0` is *not anymore* reserved for the
       !!! ring topology (null decomposition). "Ring topologies" are non
       !!! geometric and need no setup. The user can perform ppm ring shift
       !!! operations without having to first define a topology.
@@ -140,7 +140,7 @@
       !!! 1st index: x,y,(z)                                                   +
       !!! 2nd: subID
       REAL(MK), DIMENSION(:,:), OPTIONAL, POINTER :: user_maxsub
-      !!! maximum of extension of subs. 
+      !!! maximum of extension of subs.
       !!! Used if decomp is user defined.
       !!!
       !!! 1st index: x,y,(z)                                                   +
@@ -149,7 +149,7 @@
       !!! Total number of subs on all processors.
       !!! Used when decomp is user defined
       INTEGER, DIMENSION(:  ),  OPTIONAL, POINTER :: user_sub2proc
-      !!! Subdomain to processor assignment. 
+      !!! Subdomain to processor assignment.
       !!! Used if assignment is user defined.
       !!!
       !!! index: subID (global)

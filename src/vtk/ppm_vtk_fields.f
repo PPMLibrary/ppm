@@ -44,16 +44,16 @@
 #ifdef __MPI
       INCLUDE 'mpif.h'
 #endif
-      INTEGER, PARAMETER :: MK = ppm_kind_double
+      INTEGER, PARAMETER :: MK  = ppm_kind_double
       INTEGER, PARAMETER :: MKS = ppm_kind_single
 
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh_),    INTENT(INOUT) :: Mesh
-      CHARACTER(LEN=*),           INTENT(IN   ) :: filename
-      INTEGER,                    INTENT(  OUT) :: info
-      INTEGER,          OPTIONAL, INTENT(IN   ) :: step
+      CLASS(ppm_t_equi_mesh_), INTENT(INOUT) :: Mesh
+      CHARACTER(LEN=*),        INTENT(IN   ) :: filename
+      INTEGER,                 INTENT(  OUT) :: info
+      INTEGER,       OPTIONAL, INTENT(IN   ) :: step
       !-------------------------------------------------------------------------
       !  Variables
       !-------------------------------------------------------------------------
@@ -86,12 +86,15 @@
       REAL(MK), DIMENSION(3) :: h
 
       INTEGER               :: i,j,k,l,ipatch
-      INTEGER               :: isub,ifield,icomp
+      INTEGER               :: isub,sub2proc
+      INTEGER               :: ifield,icomp
       INTEGER, DIMENSION(6) :: whole_ext,extent
       INTEGER, DIMENSION(3) :: istart,iend,nc
 
       CHARACTER(LEN=ppm_char) :: scratch
       CHARACTER(LEN=ppm_char) :: fname,vname
+
+      LOGICAL :: lopen,lexists
 
       start_subroutine("ppm_vtk_fields")
       !-------------------------------------------------------------------------
@@ -118,8 +121,8 @@
          min_phys(1:ppm_dim) = topo%min_physd(1:ppm_dim)
          max_phys(1:ppm_dim) = topo%max_physd(1:ppm_dim)
       ELSE
-         min_phys(1:ppm_dim) = topo%min_physs(1:ppm_dim)
-         max_phys(1:ppm_dim) = topo%max_physs(1:ppm_dim)
+         min_phys(1:ppm_dim) = REAL(topo%min_physs(1:ppm_dim),MK)
+         max_phys(1:ppm_dim) = REAL(topo%max_physs(1:ppm_dim),MK)
       ENDIF
 
       h(1:ppm_dim) = Mesh%h(1:ppm_dim)
@@ -214,9 +217,12 @@
                      WRITE(iUnit, '(A)', ADVANCE='NO') '0 0'
                   ENDIF
                   WRITE(iUnit, '(A)', ADVANCE='NO') "'"
+
+                  sub2proc=topo%sub2proc(isub)
+
                   WRITE(iUnit, '(A,A,A,I0,A)')" Source='",              &
                   & fname(INDEX(fname, '/', .TRUE.)+1:LEN_TRIM(fname)), &
-                  & ".", isub, ".vti' />"
+                  & ".", sub2proc, ".vti' />"
                END SELECT
             ENDDO ! ipatch
          ENDDO ! isub
@@ -228,9 +234,9 @@
       DO l=1,topo%nsublist
          isub=topo%isublist(l)
          IF (Mesh%subpatch_by_sub(isub)%nsubpatch.GT.0) THEN
+            sub2proc=topo%sub2proc(isub)
             WRITE(scratch,'(A,A,I0,A)') fname(1:LEN_TRIM(fname)), &
-            & '.', isub, '.vti'
-            ! open output file
+            & '.', sub2proc, '.vti'
             OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
             & IOSTAT=info, ACTION='WRITE')
             IF (info.NE.0) THEN
@@ -247,9 +253,14 @@
 #define VTK_PARALLEL
 #include "vtk/print_header.f"
 #undef  VTK_PARALLEL
+            EXIT
          ELSE
             CYCLE
          ENDIF
+      ENDDO
+
+      DO l=1,topo%nsublist
+         isub=topo%isublist(l)
          DO ipatch=1,Mesh%subpatch_by_sub(isub)%nsubpatch
             SELECT TYPE(p => Mesh%subpatch_by_sub(isub)%vec(ipatch)%t)
             CLASS IS (ppm_t_subpatch_)
@@ -537,14 +548,23 @@
                   pdat => p%subpatch_data%next()
                ENDDO ! pdat
                WRITE(iUnit,'(A)') "      </PointData>"
-
+#ifndef VTK_PARALLEL
+               WRITE(iUnit,'(A)')  "    </Piece>"
+#endif
             END SELECT ! (p => Mesh%subpatch_by_sub(isub)%vec(ipatch)%t)
          ENDDO ! ipatch
-         ! close
-#include "vtk/print_end_header.f"
-         ! close file
-         CLOSE(iUnit)
       ENDDO ! l=1,topo%nsublist
+
+      DO l=1,topo%nsublist
+         isub=topo%isublist(l)
+         IF (Mesh%subpatch_by_sub(isub)%nsubpatch.GT.0) THEN
+            ! close
+#include "vtk/print_end_header1.f"
+            ! close file
+            CLOSE(iUnit)
+            EXIT
+         ENDIF
+      ENDDO
 
       end_subroutine()
 

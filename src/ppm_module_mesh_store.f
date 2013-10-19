@@ -27,17 +27,20 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
+      !-------------------------------------------------------------------------
+      !  Define types
+      !-------------------------------------------------------------------------
+
       MODULE ppm_module_mesh_store
-      !!! This module contains the interface to `ppm_mesh_store`.
-      !!!
-      !!! [NOTE]
-      !!! The terminology distinguishes between meshes and fields
-      !!! (the data living on the meshes). Several fields can use the
-      !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
-      !!! fields are user-provided arrays.
+         !!! This module contains the interface to `ppm_mesh_store`.
+         !!!
+         !!! [NOTE]
+         !!! The terminology distinguishes between meshes and fields
+         !!! (the data living on the meshes). Several fields can use the
+         !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
+         !!! fields are user-provided arrays.
 
          IMPLICIT NONE
-
          !----------------------------------------------------------------------
          !  Define interface to ppm_mesh_store
          !----------------------------------------------------------------------
@@ -48,8 +51,7 @@
          !----------------------------------------------------------------------
          !  Include the source
          !----------------------------------------------------------------------
-         CONTAINS
-
+      CONTAINS
 !#include "mesh/ppm_mesh_alloc.f"
 #include "mesh/ppm_mesh_store.f"
 

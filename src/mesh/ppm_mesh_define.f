@@ -27,7 +27,7 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-      SUBROUTINE ppm_mesh_define(topoid,meshid,Nm,istart,ndata,info)
+      SUBROUTINE ppm_mesh_define(topoid,meshid,Nm,istart,ndata,info,Offset,ghostsize)
       !!! This routine defines a new mesh on an existing topology.
       !!! The routine checks that the subdomains of the topology are
       !!! compatible with the specified mesh (i.e. are integer multiples
@@ -44,6 +44,8 @@
       USE ppm_module_check_id
       IMPLICIT NONE
 
+      INTEGER, PARAMETER :: MK = ppm_kind_double
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -51,27 +53,34 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: topoid
+      INTEGER,                            INTENT(IN   ) :: topoid
       !!! Topology ID for which to create mesh
-      INTEGER                 , INTENT(INOUT) :: meshid
+      INTEGER,                            INTENT(INOUT) :: meshid
       !!! Mesh ID of the new mesh. If .LE. 0 on input,
       !!! the routine will create an automatic one and return it here.
-      INTEGER , DIMENSION(:  ), INTENT(IN   ) :: Nm
+      INTEGER,  DIMENSION(:  ),           INTENT(IN   ) :: Nm
       !!! Number of mesh POINTS in each dimension. Subs must be compatible
       !!! with this mesh, otherwise an error occurs.
-      INTEGER , DIMENSION(:,:), POINTER       :: istart
+      INTEGER,  DIMENSION(:,:),           POINTER       :: istart
       !!! Start indices of all subs meshes in global mesh
-      INTEGER , DIMENSION(:,:), POINTER       :: ndata
+      INTEGER,  DIMENSION(:,:),           POINTER       :: ndata
       !!! Number of mesh points in each direction on each sub mesh
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                            INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      REAL(MK), DIMENSION(:  ), OPTIONAL, INTENT(IN   ) :: Offset
+      !!! Offset in each dimension
+      INTEGER,  DIMENSION(:),   OPTIONAL, INTENT(IN   ) :: ghostsize
+      !!! size of the ghost layer, in number of mesh nodes for each dimension
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER  :: topo => NULL()
 
-      REAL(ppm_kind_double) :: t0
+      REAL(MK)                     :: t0
+      REAL(MK), DIMENSION(ppm_dim) :: Offst
+
+      INTEGER, DIMENSION(ppm_dim) :: ighostsize
 
       CHARACTER(LEN=ppm_char) :: caller='ppm_mesh_define'
 
@@ -96,17 +105,27 @@
 
       topo => ppm_topo(topoid)%t
 
+      IF (PRESENT(Offset)) THEN
+         Offst=Offset
+      ELSE
+         Offst=0.0_MK
+      ENDIF
+      IF (PRESENT(ghostsize)) THEN
+         ighostsize(1:ppm_dim)=ghostsize(1:ppm_dim)
+      ELSE
+         ighostsize=0
+      ENDIF
       !-------------------------------------------------------------------------
       !  Create new mesh
       !-------------------------------------------------------------------------
       SELECT CASE (topo%prec)
       CASE (ppm_kind_single)
          CALL ppm_mesh_on_subs(Nm,topo%min_physs,topo%max_physs,topo%min_subs, &
-         &    topo%max_subs,topo%nsubs,istart,ndata,info)
+         &    topo%max_subs,topo%nsubs,istart,ndata,info,Offset=Offst)
 
       CASE DEFAULT
          CALL ppm_mesh_on_subs(Nm,topo%min_physd,topo%max_physd,topo%min_subd, &
-         &    topo%max_subd,topo%nsubs,istart,ndata,info)
+         &    topo%max_subd,topo%nsubs,istart,ndata,info,Offset=Offst)
 
       END SELECT
       or_fail('Defining meshes failed')
@@ -114,7 +133,8 @@
       !-------------------------------------------------------------------------
       !  Store new mesh
       !-------------------------------------------------------------------------
-      CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info)
+      CALL ppm_mesh_store(topoid,meshid,ndata,istart,Nm,info,&
+      &    Offset=Offst,ghostsize=ighostsize)
       or_fail('Storing new mesh failed.')
 
       !-------------------------------------------------------------------------

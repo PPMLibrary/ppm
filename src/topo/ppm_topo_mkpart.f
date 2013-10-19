@@ -640,7 +640,7 @@
       !  processor (the routine will allocate the requried memory)
       !-------------------------------------------------------------------------
       CALL ppm_define_subs_bc(min_phys,max_phys,bcdef,min_sub,max_sub, &
-     &                        nsubs,subs_bc,info)
+      &    nsubs,subs_bc,info)
       IF (info.NE.0) THEN
          info = ppm_error_error
          CALL ppm_error(ppm_err_sub_failed,'ppm_topo_mkpart',  &
@@ -655,7 +655,7 @@
       !  Store the current topology
       !-------------------------------------------------------------------------
       CALL ppm_topo_store(topoid,min_phys,max_phys,min_sub,max_sub,subs_bc, &
-     &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist,    &
+     &                    sub2proc,nsubs,bcdef,ghostsize,isublist,nsublist, &
      &                    nneigh,ineigh,info)
       IF (info.NE.0) THEN
          info = ppm_error_error

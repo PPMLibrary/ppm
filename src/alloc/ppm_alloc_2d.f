@@ -330,7 +330,6 @@
       !-------------------------------------------------------------------------
       IF (lrealloc) THEN
          DEALLOCATE(adata,STAT=info)
-         !NULLIFY(adata)
          IF (info .NE. 0) THEN
              info = ppm_error_error
              CALL ppm_error(ppm_err_alloc,'ppm_alloc_2d',   &

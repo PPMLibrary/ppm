@@ -28,13 +28,13 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,min_sub,max_sub, &
-      &          subs_bc,sub2proc,nsubs,bcdef,ghostsize,                    &
-      &          isublist,nsublist,nneigh,ineigh,info)
+      SUBROUTINE ppm_topo_store_s(topoid,min_phys,max_phys,    &
+      &          min_sub,max_sub,subs_bc,sub2proc,nsubs,bcdef, &
+      &          ghostsize,isublist,nsublist,nneigh,ineigh,info)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,min_sub,max_sub, &
-      &          subs_bc,sub2proc,nsubs,bcdef,ghostsize,                    &
-      &          isublist,nsublist,nneigh,ineigh,info)
+      SUBROUTINE ppm_topo_store_d(topoid,min_phys,max_phys,    &
+      &          min_sub,max_sub,subs_bc,sub2proc,nsubs,bcdef, &
+      &          ghostsize,isublist,nsublist,nneigh,ineigh,info)
 #endif
       !!! This routine stores all relevant information about
       !!! the new topology (created by ppm_decomp routines) in
@@ -113,11 +113,13 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
 
-      REAL(MK)                  :: t0
+      REAL(MK) :: t0
 
-      INTEGER,  DIMENSION(3)    :: ldc, ldl
-      INTEGER                   :: i,j,k,kk,iopt,isize,iproc,isin
-      INTEGER                   :: maxneigh,minbound,nsubmax,nsublistmax
+      INTEGER, DIMENSION(3) :: ldc, ldl
+      INTEGER               :: i,j,k,kk
+      INTEGER               :: iopt,isize,iproc,isin
+      INTEGER               :: maxneigh,minbound
+      INTEGER               :: nsubmax,nsublistmax
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -186,7 +188,7 @@
       topo%nsubs = nsubs
 
       DO i=1,nsubs
-          topo%sub2proc(i) = sub2proc(i)
+         topo%sub2proc(i) = sub2proc(i)
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -304,22 +306,9 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  And now deallocate the local array: subs_bc WHY?
-      !-------------------------------------------------------------------------
-!      iopt = ppm_param_dealloc
-!      CALL ppm_alloc(subs_bc,ldc,iopt,info)
-!      IF (info .NE. 0) THEN
-!          info = ppm_error_fatal
-!          CALL ppm_error(ppm_err_dealloc,'ppm_topo_store',     &
-!     &        'BCs for subs on local processor failed',__LINE__,info)
-!          GOTO 9999
-!      ENDIF
-
-      !-------------------------------------------------------------------------
       !  store number of subdomains handled by
       !  the current processor
       !-------------------------------------------------------------------------
-
       topo%nsublist = nsublist
 
       IF (nsublist .LT. 1) THEN
@@ -328,9 +317,6 @@
       DO i=1,nsublist
          topo%isublist(i) = isublist(i)
       ENDDO
-
-
-
 
       !-------------------------------------------------------------------------
       !  Determine and store the neighbors of this processor
@@ -409,7 +395,7 @@
           ENDIF
           DO i=1,nsubs
               DO j=1,ppm_dim
-                  IF(max_sub(j,i) .LE. min_sub(j,i)) THEN
+                  IF (max_sub(j,i) .LE. min_sub(j,i)) THEN
                       info = ppm_error_error
                       CALL ppm_error(ppm_err_argument,'ppm_topo_store',  &
      &                    'min_sub must be < max_sub',__LINE__,info)

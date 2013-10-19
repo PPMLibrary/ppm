@@ -973,16 +973,22 @@ minclude ppm_get_field_template(4,l)
           iopt   = ppm_param_dealloc
           CALL ppm_alloc(this%Nm,ldc,iopt,info)
           or_fail_dealloc("Nm")
+
           CALL ppm_alloc(this%Offset,ldc,iopt,info)
           or_fail_dealloc("Offset")
+
           CALL ppm_alloc(this%h,ldc,iopt,info)
           or_fail_dealloc("h")
+
           CALL ppm_alloc(this%ghostsize,ldc,iopt,info)
           or_fail_dealloc("ghostsize")
+
           CALL ppm_alloc(this%nnodes,ldc,iopt,info)
           or_fail_dealloc("nnodes")
+
           CALL ppm_alloc(this%istart,ldc,iopt,info)
           or_fail_dealloc("istart")
+
           CALL ppm_alloc(this%iend,ldc,iopt,info)
           or_fail_dealloc("iend")
 

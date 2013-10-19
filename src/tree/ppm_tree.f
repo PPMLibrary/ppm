@@ -220,8 +220,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(ppm_dim)      :: mins,maxs,meshdx,meshdxinv
-
+      REAL(MK), DIMENSION(1:ppm_dim)    :: mins,maxs
+      REAL(MK), DIMENSION(1:ppm_dim)    :: meshdx,meshdxinv
       REAL(MK), DIMENSION(:  ), POINTER :: cpos  => NULL()
       REAL(MK), DIMENSION(:  ), POINTER :: costc => NULL()
 
@@ -251,7 +251,6 @@
 
       LOGICAL :: up,nofixed,simpleweights
       LOGICAL :: lcontinue
-
 
       !-------------------------------------------------------------------------
       !  Externals

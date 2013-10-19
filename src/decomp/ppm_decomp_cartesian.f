@@ -80,7 +80,7 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER , DIMENSION(:),   INTENT(IN   ) :: Nm
+      INTEGER,  DIMENSION(:),   INTENT(IN   ) :: Nm
       !!! Number of mesh points (not cells) in each direction of the
       !!! global comput. domain. (including those ON the boundaries)
       REAL(MK), DIMENSION(:),   INTENT(IN   ) :: min_phys
@@ -99,21 +99,22 @@
       !!! Minimum extend of the subs
       REAL(MK), DIMENSION(:,:), POINTER       :: max_sub
       !!! Maximum extend of the subs
-      INTEGER                 , INTENT(INOUT) :: nsubs
+      INTEGER,                  INTENT(INOUT) :: nsubs
       !!! Total number of subdomains
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,                  INTENT(  OUT) :: info
       !!! Retuns status, 0 upon success
-      INTEGER , OPTIONAL      , INTENT(IN   ) :: ndom
+      INTEGER,  OPTIONAL,       INTENT(IN   ) :: ndom
       !!! Number of subdomains to be created. If not specified,
       !!! the number of subdomains will be equal to the number of processors.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                     :: t0,minsv,lc,lx,ux,ly,uy,lz,uz
+      REAL(MK)                     :: t0,minsv,lc
+      REAL(MK)                     :: lx,ux,ly,uy,lz,uz
       REAL(MK), DIMENSION(ppm_dim) :: dx
       REAL(MK), DIMENSION(ppm_dim) :: len_phys
       ! physical extent of comput. domain
-      REAL(MK)                     :: gs
+      REAL(MK)                                  :: gs
 
       INTEGER, DIMENSION(:,:), POINTER :: Npx    => NULL()
       ! number of grid points in each sub. index: (1:ppm_dim,1:nsub)
