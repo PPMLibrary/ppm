@@ -53,16 +53,16 @@
       !-------------------------------------------------------------------------
       CHARACTER(LEN=*), INTENT(IN   ) :: caller
       !!! Character string with the name of the calling subroutine
-      REAL(MK)        , INTENT(  OUT) :: t0
+      REAL(MK),         INTENT(  OUT) :: t0
       !!! System/cpu time at start of subroutine. Only returned if
       !!! ppm_debug .GT. 0
-      INTEGER         , INTENT(  OUT) :: info
+      INTEGER,          INTENT(  OUT) :: info
       !!! Initialized info for the calling subroutine.
 
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                         :: info2
+      INTEGER :: info2
 
       !-------------------------------------------------------------------------
       !  Initialise
