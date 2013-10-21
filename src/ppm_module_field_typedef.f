@@ -361,18 +361,24 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           end_subroutine()
       END SUBROUTINE field_map_ghost_push
 
-      SUBROUTINE field_map_ghost_pop(this,mesh,info)
+      SUBROUTINE field_map_ghost_pop(this,mesh,info,poptype)
           !!! Pop field data from the buffers of a mesh for ghost mappings
           !!! The field must of course be stored on this mesh
-          CLASS(ppm_t_field)                  :: this
-          CLASS(ppm_t_equi_mesh_)             :: mesh
+          CLASS(ppm_t_field)                    :: this
+          CLASS(ppm_t_equi_mesh_)               :: mesh
           !!! mesh that this field is discretized on
-          INTEGER,                INTENT(OUT) :: info
+          INTEGER,                INTENT(  OUT) :: info
+          INTEGER,      OPTIONAL, INTENT(IN   ) :: poptype
 
           start_subroutine("field_map_ghost_pop")
 
 
-          CALL mesh%map_ghost_pop(this,info)
+          SELECT CASE (PRESENT(poptype))
+          CASE (.FALSE.)
+             CALL mesh%map_ghost_pop(this,info)
+          CASE (.TRUE.)
+             CALL mesh%map_ghost_pop(this,info,poptype)
+          END SELECT
           or_fail("mesh%map_ghost_pop")
 
           end_subroutine()

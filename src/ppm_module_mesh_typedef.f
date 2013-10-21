@@ -1746,7 +1746,7 @@ minclude ppm_get_field_template(4,l)
       END SUBROUTINE equi_mesh_map_push
 
 
-      SUBROUTINE equi_mesh_map_pop(this,field,info)
+      SUBROUTINE equi_mesh_map_pop(this,field,info,poptype)
           !!! Push field data onto the mesh mappings buffers
 
           IMPLICIT NONE
@@ -1757,79 +1757,149 @@ minclude ppm_get_field_template(4,l)
           CLASS(ppm_t_field_),    INTENT(INOUT) :: field
           !!! this field is discretized on that mesh
           INTEGER,                INTENT(  OUT) :: info
+          INTEGER,      OPTIONAL, INTENT(IN   ) :: poptype
 
           INTEGER :: p_idx
 
           start_subroutine("equi_mesh_map_pop")
 
-          !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
 
-          IF (ppm_dim.EQ.2) THEN
-              IF (field%lda.EQ.1) THEN
-                 SELECT CASE (field%data_type)
-                 CASE (ppm_type_real_single)
-                    CALL mesh_map_pop_2d_sca_s(this,p_idx,info)
-                    or_fail("map_field_pop_2d")
+          SELECT CASE (PRESENT(poptype))
+          CASE (.FALSE.)
+             IF (ppm_dim.EQ.2) THEN
+                 IF (field%lda.EQ.1) THEN
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_2d_sca_s(this,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 CASE (ppm_type_real)
-                    CALL mesh_map_pop_2d_sca_d(this,p_idx,info)
-                    or_fail("map_field_pop_2d")
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_2d_sca_d(this,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 CASE (ppm_type_int)
-                    CALL mesh_map_pop_2d_sca_i(this,p_idx,info)
-                    or_fail("map_field_pop_2d")
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_2d_sca_i(this,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 END SELECT
-              ELSE
-                 SELECT CASE (field%data_type)
-                 CASE (ppm_type_real_single)
-                    CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_2d")
+                    END SELECT
+                 ELSE
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 CASE (ppm_type_real)
-                    CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_2d")
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 CASE (ppm_type_int)
-                    CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_2d")
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_2d")
 
-                 END SELECT
-              ENDIF
-          ELSE
-              IF (field%lda.EQ.1) THEN
-                 SELECT CASE (field%data_type)
-                 CASE (ppm_type_real_single)
-                    CALL mesh_map_pop_3d_sca_s(this,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    END SELECT
+                 ENDIF
+             ELSE
+                 IF (field%lda.EQ.1) THEN
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_3d_sca_s(this,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 CASE (ppm_type_real)
-                    CALL mesh_map_pop_3d_sca_d(this,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_3d_sca_d(this,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 CASE (ppm_type_int)
-                    CALL mesh_map_pop_3d_sca_i(this,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_3d_sca_i(this,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 END SELECT
-              ELSE
-                 SELECT CASE (field%data_type)
-                 CASE (ppm_type_real_single)
-                    CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    END SELECT
+                 ELSE
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 CASE (ppm_type_real)
-                    CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 CASE (ppm_type_int)
-                    CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info)
-                    or_fail("map_field_pop_3d")
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info)
+                       or_fail("map_field_pop_3d")
 
-                 END SELECT
-              ENDIF
-          ENDIF
+                    END SELECT
+                 ENDIF
+             ENDIF
+
+          CASE (.TRUE.)
+             IF (ppm_dim.EQ.2) THEN
+                 IF (field%lda.EQ.1) THEN
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_2d_sca_s(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_2d_sca_d(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_2d_sca_i(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    END SELECT
+                 ELSE
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_2d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_2d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_2d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_2d")
+
+                    END SELECT
+                 ENDIF
+             ELSE
+                 IF (field%lda.EQ.1) THEN
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_3d_sca_s(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_3d_sca_d(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_3d_sca_i(this,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    END SELECT
+                 ELSE
+                    SELECT CASE (field%data_type)
+                    CASE (ppm_type_real_single)
+                       CALL mesh_map_pop_3d_vec_s(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    CASE (ppm_type_real)
+                       CALL mesh_map_pop_3d_vec_d(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    CASE (ppm_type_int)
+                       CALL mesh_map_pop_3d_vec_i(this,field%lda,p_idx,info,poptype=poptype)
+                       or_fail("map_field_pop_3d")
+
+                    END SELECT
+                 ENDIF
+             ENDIF
+          END SELECT
 
           end_subroutine()
       END SUBROUTINE equi_mesh_map_pop
