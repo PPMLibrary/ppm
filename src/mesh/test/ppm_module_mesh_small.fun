@@ -144,9 +144,8 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         topoid = 0
         sca_ghostsize = 0.07_mk
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
-            &               bcdef,sca_ghostsize,cost,info)
+        &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
-
 
         Nm = 35
         Nm(ndim) = 65
@@ -155,7 +154,10 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
             Assert_Equal(info,0)
 
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
+
+        call Part1%create_neighlist(Part1,info)
+        or_fail("failed to create neighbour list")
 
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
@@ -353,8 +355,5 @@ pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
 end function
-
-
-
 
 end test_suite

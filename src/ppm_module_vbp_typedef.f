@@ -10,11 +10,11 @@
       USE ppm_module_interfaces
       USE ppm_module_topo_typedef
       USE ppm_module_particles_typedef
-      
+
       IMPLICIT NONE
-      
+
       PRIVATE
-      
+
       !----------------------------------------------------------------------
       ! Global variables
       !----------------------------------------------------------------------
@@ -32,9 +32,9 @@
 
       INTEGER, PRIVATE, DIMENSION(3) :: ldc
       !!! Number of elements in all dimensions for allocation
-      
+
       PUBLIC :: ppm_t_vbp_s, ppm_t_vbp_d
-      
+
       CONTAINS
 
 #define DTYPE(a) a/**/_s

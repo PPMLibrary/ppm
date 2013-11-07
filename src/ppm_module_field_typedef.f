@@ -354,7 +354,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           start_subroutine("field_map_ghost_push")
 
-
           CALL mesh%map_ghost_push(this,info)
           or_fail("mesh%map_ghost_push")
 
@@ -371,7 +370,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           INTEGER,      OPTIONAL, INTENT(IN   ) :: poptype
 
           start_subroutine("field_map_ghost_pop")
-
 
           SELECT CASE (PRESENT(poptype))
           CASE (.FALSE.)
@@ -425,9 +423,9 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! TODO: Optionally, can retrieve discretizations at different time points
           !!! (like n-1, n-2, etc...).
           CLASS(ppm_t_field)                           :: this
-          CLASS(ppm_t_discr_kind),TARGET,  INTENT(IN ) :: discr_kind
+          CLASS(ppm_t_discr_kind), TARGET, INTENT(IN ) :: discr_kind
           !!! discretization
-          INTEGER,OPTIONAL,                INTENT(IN ) :: tstep
+          INTEGER,               OPTIONAL, INTENT(IN ) :: tstep
           !!! TODO
           !!! If the current time step is n, discretizations at previous times
           !!! can be accessed using the tstep argument
@@ -440,7 +438,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! The data management and book-keeping between the data of different
           !!! time steps are done by the time integrator.
           INTEGER                                      :: p_idx
-          CLASS(ppm_t_discr_info_),POINTER             :: dinfo => NULL()
+
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
 
           start_function("field_get_pid")
 

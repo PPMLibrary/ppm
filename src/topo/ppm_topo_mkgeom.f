@@ -529,6 +529,9 @@
             CALL ppm_alloc(min_sub,ldc,iopt,info)
             or_fail_dealloc("min_sub")
          ENDIF
+      ELSE
+         CALL ppm_alloc(min_sub,ldc,iopt,info)
+         or_fail_dealloc("min_sub")
       ENDIF
       IF (PRESENT(user_maxsub)) THEN
          IF (ASSOCIATED(max_sub,user_maxsub)) THEN
@@ -537,6 +540,9 @@
             CALL ppm_alloc(max_sub,ldc,iopt,info)
             or_fail_dealloc("max_sub")
          ENDIF
+      ELSE
+         CALL ppm_alloc(max_sub,ldc,iopt,info)
+         or_fail_dealloc("max_sub")
       ENDIF
       IF (PRESENT(user_sub2proc)) THEN
          IF (ASSOCIATED(sub2proc,user_sub2proc)) THEN
@@ -545,6 +551,9 @@
             CALL ppm_alloc(sub2proc,ldc,iopt,info)
             or_fail_dealloc("sub2proc")
          ENDIF
+      ELSE
+         CALL ppm_alloc(sub2proc,ldc,iopt,info)
+         or_fail_dealloc("sub2proc")
       ENDIF
 
       CALL ppm_alloc(ineigh,ldc,iopt,info)

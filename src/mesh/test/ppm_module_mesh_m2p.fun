@@ -52,10 +52,10 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -103,7 +103,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -130,7 +130,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk 
+        sca_ghostsize = 0.07_mk
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -153,7 +153,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.5_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
-        call Mesh1%def_patch(my_patch,info) 
+        call Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
         !----------------
@@ -184,20 +184,20 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
         ! dimensions because the interpolation routines are hard-coded for some
         ! and we want to test them all!
         !----------------
-        call VField1%create(2,info,name='vecField1') 
+        call VField1%create(2,info,name='vecField1')
         call VField1%discretize_on(Mesh1,info)
-        call VField2%create(3,info,name='vecField2') 
+        call VField2%create(3,info,name='vecField2')
         call VField2%discretize_on(Mesh1,info)
-        call VField3%create(4,info,name='vecField3') 
+        call VField3%create(4,info,name='vecField3')
         call VField3%discretize_on(Mesh1,info)
-        call VField4%create(5,info,name='vecField4') 
+        call VField4%create(5,info,name='vecField4')
         call VField4%discretize_on(Mesh1,info)
 
-        call SField1%create(1,info,name='scaField1') 
+        call SField1%create(1,info,name='scaField1')
         call SField1%discretize_on(Mesh1,info)
-        call SField2%create(1,info,name='scaField2') 
+        call SField2%create(1,info,name='scaField2')
         call SField2%discretize_on(Mesh1,info)
-        call SField3%create(1,info,name='scaField3') 
+        call SField3%create(1,info,name='scaField3')
         call SField3%discretize_on(Mesh1,info)
 
         !----------------
@@ -373,7 +373,7 @@ pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
 end function
-    
+
 
 
 

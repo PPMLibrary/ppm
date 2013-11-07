@@ -380,7 +380,7 @@
                             check_true(<#(yhi.LE.p%hi_a(2))#>)
                             check_associated(fdata)
 
-                            exit patches
+                            EXIT patches
                        ENDIF
                   END SELECT
                ENDDO patches

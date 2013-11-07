@@ -55,15 +55,15 @@ integer                                        :: nterms
 
         use ppm_module_init
         use ppm_module_mktopo
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         max_phys(ndim) = 1.4_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
 #ifdef __MPI
         comm = mpi_comm_world
         call mpi_comm_rank(comm,rank,info)
@@ -114,10 +114,10 @@ integer                                        :: nterms
 
 
     end setup
-        
+
 
     teardown
-        
+
     end teardown
 
     test ghost_mappings
@@ -142,6 +142,9 @@ integer                                        :: nterms
         Assert_Equal(info,0)
 
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
+        Assert_Equal(info,0)
+
+        CALL Part1%create_neighlist(Part1,info)
         Assert_Equal(info,0)
 
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
@@ -297,6 +300,6 @@ pure function f0_test(pos,ndim)
 
 end function f0_test
 
-    
+
 
 end test_suite

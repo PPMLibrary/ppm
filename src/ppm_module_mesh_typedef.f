@@ -553,10 +553,10 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_A_subpatch)            :: this
-          INTEGER                            :: vecsize
-          INTEGER,               INTENT(OUT) :: info
-          INTEGER,OPTIONAL,      INTENT(IN)  :: patchid
+          CLASS(ppm_t_A_subpatch)              :: this
+          INTEGER                              :: vecsize
+          INTEGER,               INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,      INTENT(   IN) :: patchid
 
           start_subroutine("subpatch_A_create")
 
@@ -570,9 +570,9 @@ minclude ppm_get_field_template(4,l)
 
           this%nsubpatch = 0
           IF (PRESENT(patchid)) THEN
-              this%patchid = patchid
+             this%patchid = patchid
           ELSE
-              this%patchid = 0
+             this%patchid = 0
           ENDIF
 
           end_subroutine()
@@ -594,8 +594,8 @@ minclude ppm_get_field_template(4,l)
           this%patchid = 0
           this%nsubpatch = 0
           IF (ASSOCIATED(this%subpatch)) THEN
-              DEALLOCATE(this%subpatch,STAT=info)
-              or_fail_dealloc("could not deallocate this%subpatch")
+             DEALLOCATE(this%subpatch,STAT=info)
+             or_fail_dealloc("could not deallocate this%subpatch")
           ENDIF
           NULLIFY(this%subpatch)
 
@@ -658,8 +658,8 @@ minclude ppm_get_field_template(4,l)
           !  Check arguments
           !-------------------------------------------------------------------------
           IF (ppm_debug .GT. 0) THEN
-              CALL check
-              IF (info .NE. 0) GOTO 9999
+             CALL check
+             IF (info .NE. 0) GOTO 9999
           ENDIF
 
           !This mesh is defined for a given topology
@@ -1000,19 +1000,21 @@ minclude ppm_get_field_template(4,l)
 
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
-          field => this%field_ptr%begin()
-          field_loop: DO WHILE (ASSOCIATED(field))
+          IF (ASSOCIATED(this%field_ptr)) THEN
+             field => this%field_ptr%begin()
+             field_loop: DO WHILE (ASSOCIATED(field))
 
-             SELECT TYPE(field)
-             CLASS IS (ppm_t_field_)
-                IF (field%is_discretized_on(this,dinfo)) THEN
-                   CALL field%discr_info%remove(info,dinfo)
-                   or_fail("field%discr_info%remove")
-                ENDIF
-             END SELECT
+                SELECT TYPE(field)
+                CLASS IS (ppm_t_field_)
+                   IF (field%is_discretized_on(this,dinfo)) THEN
+                      CALL field%discr_info%remove(info,dinfo)
+                      or_fail("field%discr_info%remove")
+                   ENDIF
+                END SELECT
 
-             field => this%field_ptr%next()
-          ENDDO field_loop
+                field => this%field_ptr%next()
+             ENDDO field_loop
+          ENDIF
 
           destroy_collection_ptr(this%field_ptr)
 
@@ -1611,41 +1613,35 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
 
-          INTEGER                         :: i,j
-          CLASS(ppm_t_main_abstr),POINTER :: f => NULL()
+          CLASS(ppm_t_main_abstr), POINTER :: f => NULL()
+
+          INTEGER :: i,j
 
           CHARACTER(LEN=ppm_char) :: caller = "equi_mesh_list_of_fields"
 
           info = 0
 
           IF (.NOT.ASSOCIATED(this%field_ptr)) THEN
-              fids => NULL()
-              RETURN
+             fids => NULL()
+             RETURN
           ENDIF
           IF (this%field_ptr%nb.LE.0) THEN
-              fids => NULL()
-              RETURN
+             fids => NULL()
+             RETURN
           ENDIF
 
           ALLOCATE(fids(this%field_ptr%nb),STAT=info)
           or_fail_alloc("fids")
 
-          !j=1
-          !DO i=this%field_ptr%min_id,this%field_ptr%max_id
-              !IF (ASSOCIATED(this%field_ptr%vec(i)%t)) THEN
-                  !fids(j) = this%field_ptr%vec(i)%t%fieldID
-                  !j=j+1
-              !ENDIF
-          !ENDDO
           j=1
           f => this%field_ptr%begin()
           DO WHILE(ASSOCIATED(f))
-              SELECT TYPE(f)
-              CLASS IS (ppm_t_field_)
-                  fids(j) = f%ID
-                  j=j+1
-              END SELECT
-              f => this%field_ptr%next()
+             SELECT TYPE(f)
+             CLASS IS (ppm_t_field_)
+                fids(j) = f%ID
+                j=j+1
+             END SELECT
+             f => this%field_ptr%next()
           ENDDO
 
           RETURN

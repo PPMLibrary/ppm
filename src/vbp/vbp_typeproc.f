@@ -6,23 +6,23 @@
           !  Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_vbp))                 :: Pc
+          CLASS(DTYPE(ppm_t_vbp))                   :: Pc
           !!! Data structure containing the particles
-          INTEGER,                 INTENT(IN   )  :: Npart
+          INTEGER,                    INTENT(IN   ) :: Npart
           !!! Number of particles
-          INTEGER,                 INTENT(  OUT)  :: info
+          INTEGER,                    INTENT(  OUT) :: info
           !!! Returns status, 0 upon success.
           !-------------------------------------------------------------------------
           !  Optional arguments
           !-------------------------------------------------------------------------
-          CHARACTER(LEN=*) , OPTIONAL             :: name
+          CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: name
           !!! give a name to this Particle set
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          LOGICAL :: lalloc,ldealloc
-
           INTEGER :: i
+
+          LOGICAL :: lalloc,ldealloc
 
           start_subroutine("vbp_create")
 
@@ -109,15 +109,20 @@
               ! variable) and use the right one.
               ALLOCATE(cutoff_v(1:Pc%Npart),STAT=info)
               or_fail_alloc("cutoff_v")
+
               cutoff_v = cutoff
+
               CALL Pc%set_varying_cutoff(cutoff_v,info,Nlist)
-                  or_fail("Failed to set constant cutoff radius")
+              or_fail("Failed to set constant cutoff radius")
+
               Pc%adaptive = .TRUE.
+
               DEALLOCATE(cutoff_v,STAT=info)
               or_fail_dealloc("cutoff_v")
           ELSE
               CALL Pc%DTYPE(ppm_t_particles)%set_cutoff(cutoff,info,Nlist)
               or_fail("Failed to set constant cutoff radius")
+
               Pc%adaptive = .FALSE.
           ENDIF
 
@@ -165,11 +170,13 @@
           !  Set new cutoff
           !-------------------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%rcp)) THEN
-              CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
-              or_fail("could not create property for varying cutoff radius rcp")
+             CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
+             or_fail("could not create property for varying cutoff radius rcp")
           ENDIF
+
           CALL Pc%get(Pc%rcp,rcp,info)
           or_fail("could not access varying cutoff radius rcp")
+
           DO ip=1,Pc%Npart
              rcp(ip) = cutoff(ip)
           ENDDO
@@ -177,15 +184,15 @@
           max_cutoff = MAXVAL(rcp(1:Pc%Npart))
 
           IF (PRESENT(NList)) THEN
-              check_true(<#Pc%neighs%has(NList)#>,&
-              "Neighbour list does not concern this particle set")
-              IF (max_cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
-              NList%cutoff = max_cutoff
+             check_true(<#Pc%neighs%has(NList)#>,&
+             "Neighbour list does not concern this particle set")
+             IF (max_cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
+             NList%cutoff = max_cutoff
           ELSE
-              nl => Pc%get_neighlist()
-              check_associated(nl,"Compute neighbour lists first")
-              IF (max_cutoff .LT. nl%cutoff) nl%uptodate = .FALSE.
-              nl%cutoff = max_cutoff
+             nl => Pc%get_neighlist()
+             check_associated(nl,"Compute neighbour lists first")
+             IF (max_cutoff .LT. nl%cutoff) nl%uptodate = .FALSE.
+             nl%cutoff = max_cutoff
           ENDIF
 
 
@@ -223,33 +230,35 @@
           ! Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_vbp))                                     :: this
-          CLASS(DTYPE(ppm_t_particles)_),TARGET, INTENT(IN)           :: Part_src
+          CLASS(DTYPE(ppm_t_vbp))                                          :: this
+          CLASS(DTYPE(ppm_t_particles)_), TARGET,            INTENT(IN   ) :: Part_src
           !!! Particle set to which the neighbours belong (can be the same as this)
-          INTEGER,                               INTENT(OUT)          :: info
-          CHARACTER(LEN=*) , OPTIONAL                                 :: name
+          INTEGER,                                           INTENT(  OUT) :: info
+          CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
-          REAL(MK), OPTIONAL                                          :: skin
-          REAL(MK), OPTIONAL                                          :: cutoff
-          LOGICAL, OPTIONAL                                           :: symmetry
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER,OPTIONAL,INTENT(OUT) :: Nlist
+          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: skin
+          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: cutoff
+          LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: symmetry
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER, OPTIONAL, INTENT(  OUT) :: Nlist
           !!! returns a pointer to the newly created verlet list
 
-          INTEGER                                :: vec_size,i
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nl=>NULL()
-          REAL(MK), DIMENSION(:),        POINTER :: rcp => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nl => NULL()
+
+          REAL(MK), DIMENSION(:), POINTER :: rcp => NULL()
+
+          INTEGER :: vec_size,i
 
           start_subroutine("vbp_neigh_create")
 
           ! Create the neighbour list
           ALLOCATE(DTYPE(ppm_t_neighlist)::Nl,STAT=info)
-              or_fail_alloc("Nl")
+          or_fail_alloc("Nl")
 
           IF (PRESENT(name)) THEN
-              Nl%name = name
+             Nl%name = name
           ELSE
-              WRITE(Nl%name,*) 'Nl',TRIM(ADJUSTL(this%name)),'_',&
-              & TRIM(ADJUSTL(Part_src%name))
+             WRITE(Nl%name,*) 'Nl',TRIM(ADJUSTL(this%name)),'_',&
+             & TRIM(ADJUSTL(Part_src%name))
           ENDIF
 
           check_associated(<#Part_src%xp#>,"Invalid particle set Part_src")
@@ -258,13 +267,14 @@
 
           ASSOCIATE (ghosts => this%flags(ppm_part_ghosts))
              IF (.NOT.ASSOCIATED(this%rcp)) THEN
-
-                CALL this%create_prop(info,part_prop=this%rcp,&
+                CALL this%create_prop(info,part_prop=this%rcp, &
                 &    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
                 or_fail("Creating property for rcp failed")
              ENDIF
 
-             CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts)
+             !yaser: I added read_only=.TRUE. otherwise
+             !discr_data%flags(ppm_ppt_ghosts) will be set to false
+             CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts,read_only=.TRUE.)
              or_fail("Cannot access this%rcp")
 
              IF (PRESENT(cutoff)) THEN
@@ -272,7 +282,10 @@
              ELSE
                 rcp = this%ghostlayer
              ENDIF
-             CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts)
+
+             !yaser: I added read_only=.TRUE. otherwise
+             !discr_data%flags(ppm_ppt_ghosts) will be set to false
+             CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts,read_only=.TRUE.)
           END ASSOCIATE
 
           Nl%cutoff = -1._MK
@@ -335,60 +348,62 @@
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_vbp)),TARGET                         :: this
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_vbp)),                  TARGET        :: this
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)      :: info
+          INTEGER,                                  INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Optional arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles)_),OPTIONAL,TARGET         :: P_xset
+          CLASS(DTYPE(ppm_t_particles)_), OPTIONAL, TARGET        :: P_xset
           !!! Particle set from which the neighbours are sought
-          CHARACTER(LEN=*) , OPTIONAL                            :: name
+          CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
-          REAL(MK), OPTIONAL                                     :: skin
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: skin
           !!! skin
-          LOGICAL, OPTIONAL                                      :: symmetry
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
           !!! if using symmetry
-          REAL(MK), OPTIONAL                                     :: cutoff
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: cutoff
           !!! cutoff radius
-          LOGICAL, OPTIONAL,                  INTENT(IN   )      :: lstore
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: lstore
           !!! store verlet lists
-          LOGICAL, OPTIONAL,                  INTENT(IN   )      :: incl_ghosts
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: incl_ghosts
           !!! if true, then verlet lists are computed for all particles, incl. ghosts.
           !!! Default is false.
-          INTEGER, OPTIONAL,                  INTENT(IN   )      :: knn
+          INTEGER,                        OPTIONAL, INTENT(IN   ) :: knn
           !!! if present, neighbour lists are constructed such that each particle
           !!! has at least knn neighbours.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: op_id,np_target,i
-          INTEGER                                   :: ip,ineigh
-          !!! index variable
-          LOGICAL                                   :: ensure_knn,lsymm
-          !!! uses a neighbour-finding algorithm that finds enough neighbours
-          REAL(MK),DIMENSION(2*ppm_dim):: ghostlayer
-          !!!
-          REAL(KIND(1.D0))                          :: t1,t2
-          TYPE(ppm_t_topo), POINTER                 :: topo => NULL()
-#ifdef __WITH_KDTREE
-          TYPE(DTYPE(kdtree2)),POINTER              :: tree => NULL()
-          TYPE(DTYPE(kdtree2_result)),ALLOCATABLE   :: results(:)
-#endif
-          INTEGER                                   :: topoid
-          INTEGER                                   :: nneighmin,nneighmax
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER   :: Nlist => NULL()
-          REAL(MK)                                  :: lskin
+          CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+          CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nlist => NULL()
 
-          REAL(MK),DIMENSION(:),POINTER             :: rcp  => NULL()
-          CLASS(ppm_t_operator_discr_),POINTER      :: op => NULL()
-          CLASS(DTYPE(ppm_t_particles)_), POINTER   :: Part_src => NULL()
-          LOGICAL                                   :: xset_neighlists
+          TYPE(ppm_t_topo),                          POINTER     :: topo => NULL()
+#ifdef __WITH_KDTREE
+          TYPE(DTYPE(kdtree2)),                      POINTER     :: tree => NULL()
+          TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE :: results
+#endif
+
+          REAL(MK),DIMENSION(:), POINTER :: rcp  => NULL()
+          REAL(MK),DIMENSION(2*ppm_dim)  :: ghostlayer
+          REAL(KIND(1.D0))               :: t1,t2
+          REAL(MK)                       :: lskin
+
+          INTEGER :: topoid
+          INTEGER :: nneighmin,nneighmax
+          INTEGER :: op_id,np_target,i
+          INTEGER :: ip,ineigh
+          !!! index variable
+
+          LOGICAL :: ensure_knn,lsymm
+          !!! uses a neighbour-finding algorithm that finds enough neighbours
+          LOGICAL :: xset_neighlists
 
           start_subroutine("vbp_comp_neighlist")
 
@@ -396,29 +411,30 @@
           !  Checks
           !-----------------------------------------------------------------
           check_associated(<#this%xp#>,&
-              "Particles structure had not been defined. Call allocate first")
+          "Particles structure had not been defined. Call allocate first")
 
           check_true(<#this%flags(ppm_part_partial)#>,&
-              "Particles not mapped. Do a partial/global mapping")
+          "Particles not mapped. Do a partial/global mapping")
 
           xset_neighlists = .FALSE.
           IF (PRESENT(P_xset)) THEN
-              Part_src => P_xset
-              check_associated(<#Part_src%xp#>,&
-              "Cross-Set particles have not been defined. Call allocate first")
-              check_true(<#Part_src%flags(ppm_part_partial)#>,&
-              "Particles not mapped. Do a partial/global mapping")
-              IF (.NOT.ASSOCIATED(Part_src,this)) THEN
-                 xset_neighlists = .TRUE.
-              ENDIF
-          ELSE
-              Part_src => this
-          ENDIF
+             Part_src => P_xset
 
+             check_associated(<#Part_src%xp#>,&
+             "Cross-Set particles have not been defined. Call allocate first")
+
+             check_true(<#Part_src%flags(ppm_part_partial)#>,&
+             "Particles not mapped. Do a partial/global mapping")
+
+             IF (.NOT.ASSOCIATED(Part_src,this)) THEN
+                xset_neighlists = .TRUE.
+             ENDIF
+          ELSE
+             Part_src => this
+          ENDIF
 
           check_true(<#Part_src%flags(ppm_part_ghosts)#>,&
           "Ghosts have not been updated. They are needed for neighlists")
-
 
           check_associated(<#this%neighs#>)
 
@@ -447,7 +463,7 @@
           check_associated(<#this%rcp#>,&
           "cutoff radii for adaptive particles have not been defined")
 
-          CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.true.)
+          CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.TRUE.)
           or_fail("could not access cutoff radii")
 
           IF (Nlist%isymm.EQ.1) THEN
@@ -505,6 +521,7 @@
 
                 tree => kdtree2_create(Part_src%xp(1:ppm_dim,1:Part_src%Mpart),&
                 & sort=.TRUE.,rearrange=.TRUE.)
+
                 ALLOCATE(results(knn+1),STAT=info)
                 r_fail_alloc("results")
 
@@ -523,7 +540,7 @@
                    !remove ip from the list
                    ineigh=0
                    DO i=1,knn+1
-                      IF (results(i)%idx.ne.ip) THEN
+                      IF (results(i)%idx.NE.ip) THEN
                          ineigh=ineigh+1
                          Nlist%vlist(ineigh,ip)=results(i)%idx
                       ENDIF
@@ -656,7 +673,6 @@
               ENDIF
 
               Nlist => NULL()
-
 
           ENDIF do_something
 

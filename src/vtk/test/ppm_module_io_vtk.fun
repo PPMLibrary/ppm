@@ -30,18 +30,19 @@ real(mk)                         :: eps
 
     init
 
+        use ppm_module_data
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         ghostlayer(2*ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostlayer(1:2*ndim) = max_rcp
         bcdef(1:ndim) = ppm_param_bcdef_periodic
-        
+
         eps = epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
 
@@ -76,17 +77,17 @@ real(mk)                         :: eps
             seed(i)=10+i*i*(rank+1)
         enddo
         call random_seed(put=seed)
-        
+
 
     end setup
-        
+
 
     teardown
-        
+
         deallocate(seed)
 
     end teardown
-    
+
     test vtkparticles
         use ppm_module_topo_typedef
         use ppm_module_interfaces
@@ -133,7 +134,7 @@ real(mk)                         :: eps
         call particles%initialize(npart,info,topoid=topoid, &
             distrib=ppm_param_part_init_cartesian)
             assert_equal(info,0)
-        
+
         !define a property on the particle set by discretizing a Field on it
         call Field1%discretize_on(particles,info)
             assert_equal(info,0)
@@ -155,6 +156,6 @@ real(mk)                         :: eps
         end_subroutine()
     end test
 
-    
+
 
 end test_suite

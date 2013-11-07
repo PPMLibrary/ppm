@@ -429,9 +429,10 @@
       END SUBROUTINE check
 
       PURE FUNCTION norm(vec)
-      DEFINE_MK()
-      REAL(MK) , DIMENSION(:),INTENT(IN) :: vec
-      REAL(MK)                           :: norm
+          IMPLICIT NONE
+          DEFINE_MK()
+          REAL(MK) , DIMENSION(:),INTENT(IN) :: vec
+          REAL(MK)                           :: norm
           norm = SQRT(SUM(ABS(vec)**2))
       END FUNCTION
 

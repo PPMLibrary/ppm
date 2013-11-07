@@ -24,7 +24,7 @@ integer                         :: np_global = 3000
 real(mk),parameter              :: cutoff = 0.15_mk
 real(mk),dimension(:,:),pointer :: xp=>NULL()
 real(mk),dimension(:  ),pointer :: min_phys,max_phys,len_phys
-integer                         :: i,j,k,ip,nterms 
+integer                         :: i,j,k,ip,nterms
 integer                         :: wp1_id=0, dwp1_id=0, wp2_id=0, op_id=0
 integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost
@@ -54,14 +54,14 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         use ppm_module_init
         use ppm_module_mktopo
         start_subroutine("init")
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
 #ifdef __MPI
         comm = mpi_comm_world
         call mpi_comm_rank(comm,rank,info)
@@ -106,7 +106,9 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         !initialize particles on a grid
         call Part1%initialize(np_global,info,topoid=topoid, &
-            distrib=ppm_param_part_init_cartesian)
+        distrib=ppm_param_part_init_cartesian)
+
+        CALL Part1%create_neighlist(Part1,info)
 
         call Part1%comp_global_index(info)
 
@@ -122,14 +124,19 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call VField2%discretize_on(Part1,info)
         call VField3%discretize_on(Part1,info)
 
-
         !Perturb the  particles positions
         call Part1%set_cutoff(3._mk * Part1%h_avg,info)
+
         allocate(wp_2r(ndim,Part1%Npart))
+
         call Part1%get(Part1%gi,gi,info,read_only=.true.)
+
         FORALL (ip=1:Part1%Npart) wp_2r(1:ndim,ip) = randn(1:ndim,gi(ip))
+
         wp_2r = 0.5_mk * (wp_2r - 0.5_mk) * Part1%h_avg
+
         call Part1%move(wp_2r,info)
+
         deallocate(wp_2r)
 
         call Part1%apply_bc(info)
@@ -161,7 +168,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call VFieldD%destroy(info)
         call VField2%destroy(info)
         call VField3%destroy(info)
-        call VField5%destroy(info)
+!        call VField5%destroy(info)
         call ppm_finalize(info)
 
         deallocate(min_phys,max_phys,len_phys)
@@ -173,10 +180,10 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
     setup
 
     end setup
-        
+
 
     teardown
-        
+
         if (allocated(degree)) deallocate(degree,coeffs,order)
 
     end teardown
@@ -186,7 +193,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         start_subroutine("test_laplacian")
         tol_error = 2e-2
 
-        call Part1%set_cutoff(3._mk * Part1%h_avg,info) 
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         call Part1%map_ghosts(info)
@@ -199,16 +206,16 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         allocate(degree(nterms*ndim),coeffs(nterms),order(nterms))
         if (ndim .eq. 2) then
                degree =  (/2,0,   0,2/)
-        else 
+        else
                degree =  (/2,0,0, 0,2,0, 0,0,2/)
         endif
         coeffs = 1.0_mk
 
         call Op%create(ndim,coeffs,degree,info,name="Laplacian")
         Assert_Equal(info,0)
-        
+
         call opts_op%create(ppm_param_op_dcpse,info,order=2,c=1.4D0)
-            or_fail("failed to initialize option object for operator")
+        or_fail("failed to initialize option object for operator")
 
 
         call Op%discretize_on(Part1,DCop,opts_op,info)
@@ -235,7 +242,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         tol_error = 1e-2
 
-        call Part1%set_cutoff(3._mk * Part1%h_avg,info) 
+        call Part1%set_cutoff(3._mk * Part1%h_avg,info)
         Assert_Equal(info,0)
 
         call Part1%map_ghosts(info)
@@ -249,17 +256,17 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         if (ndim .eq. 2) then
                degree =  (/1,0,   0,1/)
-        else 
+        else
                degree =  (/1,0,0, 0,1,0, 0,0,1/)
         endif
         coeffs = 1.0_mk
-        
+
         call Op%create(ndim,coeffs,degree,info,name="Gradient")
         Assert_Equal(info,0)
 
         call opts_op%create(ppm_param_op_dcpse,info,order=2,&
-            c=1.4D0,vector=.true.)
-            or_fail("failed to initialize option object for operator")
+        c=1.4D0,vector=.true.)
+        or_fail("failed to initialize option object for operator")
 
         call Op%discretize_on(Part1,DCop,opts_op,info)
         Assert_Equal(info,0)
@@ -292,7 +299,7 @@ pure function f0_test(pos,ndim)
 
 end function f0_test
 
-    
+
 !-------------------------------------------------------------
 ! derivatives of the test function
 !-------------------------------------------------------------
@@ -305,7 +312,7 @@ pure function df0_test(pos,order_deriv,ndim)
 
     select case (order_deriv(1))
     case (0)
-        df0_test =    sin (2._mk*pi * pos(1)) 
+        df0_test =    sin (2._mk*pi * pos(1))
     case (1)
         df0_test =    2._mk*pi*cos(2._mk*pi * pos(1))
     case (2)
@@ -320,7 +327,7 @@ pure function df0_test(pos,order_deriv,ndim)
 
     select case (order_deriv(2))
     case (0)
-        df0_test =   df0_test * cos (2._mk*pi * pos(2)) 
+        df0_test =   df0_test * cos (2._mk*pi * pos(2))
     case (1)
         df0_test =   df0_test * (-2._mk*pi)*sin(2._mk*pi * pos(2))
     case (2)
@@ -336,7 +343,7 @@ pure function df0_test(pos,order_deriv,ndim)
     if (ndim .eq. 3 ) then
         select case (order_deriv(3))
         case (0)
-            df0_test =   df0_test * sin (2._mk*pi * pos(3)) 
+            df0_test =   df0_test * sin (2._mk*pi * pos(3))
         case (1)
             df0_test =   df0_test * (2._mk*pi)*cos(2._mk*pi * pos(3))
         case (2)
@@ -352,7 +359,7 @@ pure function df0_test(pos,order_deriv,ndim)
 
 end function df0_test
 
-    
+
 !-------------------------------------------------------------
 ! Compute the infinity norm of the error
 !-------------------------------------------------------------

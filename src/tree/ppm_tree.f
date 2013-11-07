@@ -472,18 +472,18 @@
 
       boxlist(1) = 1
       IF (have_mesh) THEN
-          ldc(1) = ppm_dim
-          ldc(2) = nbpd
-          CALL ppm_alloc(Nmc,ldc,iopt,info)
-          or_fail_alloc('list of divisible boxes BOXLIST')
+         ldc(1) = ppm_dim
+         ldc(2) = nbpd
+         CALL ppm_alloc(Nmc,ldc,iopt,info)
+         or_fail_alloc('list of divisible boxes BOXLIST')
       ENDIF
       IF (have_particles) THEN
-          ldc(1) = 2**ncut
-          CALL ppm_alloc(cbox,ldc,iopt,info)
-          or_fail_alloc('temporary box pointers CBOX')
+         ldc(1) = 2**ncut
+         CALL ppm_alloc(cbox,ldc,iopt,info)
+         or_fail_alloc('temporary box pointers CBOX')
 
-          CALL ppm_alloc(npbx,ldc,iopt,info)
-          or_fail_alloc('number of particles per box NPBX')
+         CALL ppm_alloc(npbx,ldc,iopt,info)
+         or_fail_alloc('number of particles per box NPBX')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -559,11 +559,11 @@
       !  Compute cost of root box
       !-------------------------------------------------------------------------
       IF (PRESENT(pcost)) THEN
-          CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
-          &    1,lhbx_cut,tree_lpdx,boxcost,info,pcost)
+         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
+         &    1,lhbx_cut,tree_lpdx,boxcost,info,pcost)
       ELSE
-          CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
-          &    1,lhbx_cut,tree_lpdx,boxcost,info)
+         CALL ppm_tree_boxcost(Nm_box,weights(:,1),min_box,max_box,  &
+         &    1,lhbx_cut,tree_lpdx,boxcost,info)
       ENDIF
       IF (info .NE. ppm_param_success) GOTO 9999
 
@@ -572,10 +572,10 @@
       !  it to length 2
       !-------------------------------------------------------------------------
       IF (have_particles) THEN
-          iopt = ppm_param_alloc_grow
-          ldc(1) = 2**ncut + 1
-          CALL ppm_alloc(lhbx_cut,ldc,iopt,info)
-          or_fail_alloc('particle list header pointers LHBX_CUT')
+         iopt = ppm_param_alloc_grow
+         ldc(1) = 2**ncut + 1
+         CALL ppm_alloc(lhbx_cut,ldc,iopt,info)
+         or_fail_alloc('particle list header pointers LHBX_CUT')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -585,8 +585,8 @@
       &    nlevel,maxvariance,maxboxcost,mxlev,lcontinue,info)
       IF (info .NE. ppm_param_success) GOTO 9999
       IF ((.NOT.lcontinue) .AND. (ppm_debug .GT. 0)) THEN
-          CALL ppm_write(ppm_rank,caller,     &
-          &    'Nothing to be done. Exiting.',info)
+         CALL ppm_write(ppm_rank,caller,     &
+         &    'Nothing to be done. Exiting.',info)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -596,11 +596,11 @@
       &    boxcost,ndiv,info)
       IF (info .NE. 0) GOTO 9999
       IF (ndiv(1) .LT. ncut) THEN
-          lcontinue = .FALSE.
-          IF (ppm_debug .GT. 0) THEN
-             CALL ppm_write(ppm_rank,caller,     &
-             &    'Initial domain is not divisible. Done.',info)
-          ENDIF
+         lcontinue = .FALSE.
+         IF (ppm_debug .GT. 0) THEN
+            CALL ppm_write(ppm_rank,caller,     &
+            &    'Initial domain is not divisible. Done.',info)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------

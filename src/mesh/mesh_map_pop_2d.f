@@ -185,13 +185,13 @@
         GOTO 9999
       ELSE
           IF (PRESENT(poptype)) THEN
-              rtype = poptype
+             rtype = poptype
           ELSE
-              IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
+             IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
                 rtype = ppm_param_pop_add
-              ELSE
+             ELSE
                 rtype = ppm_param_pop_replace
-              ENDIF
+             ENDIF
           ENDIF
       ENDIF
 

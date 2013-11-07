@@ -56,14 +56,14 @@ integer                                        :: nterms
 
         use ppm_module_init
         use ppm_module_mktopo
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
 #ifdef __MPI
         comm = mpi_comm_world
         call mpi_comm_rank(comm,rank,info)
@@ -109,10 +109,10 @@ integer                                        :: nterms
 
 
     end setup
-        
+
 
     teardown
-        
+
     end teardown
 
     test initialize_random
@@ -216,11 +216,11 @@ integer                                        :: nterms
             call Part1%destroy_prop(Prop1,info)
             Assert_Equal(info,0)
             SELECT TYPE(Prop1)
-            CLASS IS(ppm_t_part_prop_d) 
+            CLASS IS(ppm_t_part_prop_d)
                 Assert_Equal(Part1%props%get_id(Prop1),-1)
             END SELECT
             SELECT TYPE(Prop2)
-            CLASS IS(ppm_t_part_prop_d) 
+            CLASS IS(ppm_t_part_prop_d)
                 Assert_True(Part1%props%get_id(Prop2).GT.0)
                 wp_id = Part1%props%get_id(Prop2)
                 Assert_Equal(Part1%props%vec(wp_id)%t%lda,1)
@@ -303,13 +303,12 @@ integer                                        :: nterms
         ! test neighbour lists
         type(ppm_t_particles_d)         :: Part1
 
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
         call Part1%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
 
         call Part1%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
+
         call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
@@ -317,6 +316,9 @@ integer                                        :: nterms
         Assert_Equal(info,0)
 
         Assert_True(Part1%has_neighlist())
+
+        call Part1%destroy(info)
+        Assert_Equal(info,0)
     end test
 
     test sop_type
@@ -326,7 +328,6 @@ integer                                        :: nterms
 
         call Part1_A%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
-
 
         call Part1_A%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
@@ -345,7 +346,6 @@ integer                                        :: nterms
         Assert_Equal(info,0)
         call Part1_A%get(Prop1,wp_1li,info,with_ghosts=.true.)
         Assert_Equal(info,0)
-
 
         call Part1_A%destroy_prop(Prop1,info)
         Assert_Equal(info,0)
@@ -416,9 +416,9 @@ integer                                        :: nterms
         ENDDO
         Assert_Equal_Within(err,0,tol)
 
+        call Part1_A%print_info(info)
+        Assert_Equal(info,0)
 
-        !call Part1_A%print_info(info)
-        !Assert_Equal(info,0)
         call Part1_A%destroy(info)
         Assert_Equal(info,0)
     end test
@@ -438,7 +438,5 @@ pure function f0_test(pos,ndim)
     return
 
 end function f0_test
-
-    
 
 end test_suite

@@ -26,8 +26,8 @@
       ! Global variables
       !----------------------------------------------------------------------
 
-      INTEGER                               :: ppm_particles_seedsize
-      INTEGER,  DIMENSION(:  ), POINTER     :: ppm_particles_seed => NULL()
+      INTEGER                        :: ppm_particles_seedsize
+      INTEGER, DIMENSION(:), POINTER :: ppm_particles_seed => NULL()
 
 #define  DTYPE(a) a/**/_s
 #define  CTYPE(a) a/**/_sc
@@ -41,12 +41,11 @@
 #define  _MK _ppm_kind_double
 #include "part/particles_typedef.f"
 
-      CHARACTER(LEN=ppm_char)         :: cbuf
-      INTEGER, PRIVATE, DIMENSION(3)  :: ldc
+      CHARACTER(LEN=ppm_char)        :: cbuf
+      INTEGER, PRIVATE, DIMENSION(3) :: ldc
       !!! Number of elements in all dimensions for allocation
 
       CONTAINS
-
 
 #include "part/ppm_particles_helpers.f"
 
@@ -77,7 +76,7 @@
 
 #define __DIM 2
 #define __TYPE INTEGER
-#define __MYTYPE __LONGINT
+#define __MYTYPE __INTEGER
 #define DATANAME data_2d_i
 #include "part/ppm_particles_get.f"
 #define __TYPE INTEGER(ppm_kind_int64)
@@ -103,7 +102,7 @@
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-#define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_single)
+# define DEFINE_MK() parameter(MK,<#INTEGER#>,ppm_kind_single)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"
@@ -166,7 +165,7 @@
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-#define DEFINE_MK() parameter(mk,<#integer#>,ppm_kind_double)
+# define DEFINE_MK() parameter(MK,<#INTEGER#>,ppm_kind_double)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"
