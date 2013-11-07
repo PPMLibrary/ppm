@@ -415,8 +415,12 @@
              !  Copy default values into variables
              !-------------------------------------------------------------------
              CALL apply_defaults(info)
-             or_fail('Applying defaults failed!',exit_point=100)
-
+             IF (info .NE. 0) THEN
+                info = ppm_error_fatal
+                CALL ppm_error(ppm_err_argument, caller, &
+                &    'Applying defaults failed!', __LINE__, info)
+                GOTO 100
+             END IF
              !-------------------------------------------------------------------
              !  Read in the command line
              !-------------------------------------------------------------------
