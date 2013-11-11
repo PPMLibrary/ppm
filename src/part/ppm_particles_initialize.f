@@ -42,8 +42,8 @@
           TYPE(ppm_t_topo), POINTER :: topo => NULL()
 
           REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys,len_phys
-          REAL(MK), DIMENSION(:,:), POINTER :: xp
-          REAL(MK), DIMENSION(:  ), POINTER :: randnb
+          REAL(MK), DIMENSION(:,:), POINTER :: xp     => NULL()
+          REAL(MK), DIMENSION(:  ), POINTER :: randnb => NULL()
           REAL(MK)                          :: y,z,h
           REAL(MK)                          :: shift
 
@@ -79,10 +79,10 @@
 
              END SELECT
           ELSE IF (PRESENT(minphys).AND.PRESENT(maxphys)) THEN
-              min_phys = minphys
-              max_phys = maxphys
+             min_phys = minphys
+             max_phys = maxphys
           ELSE
-              fail("optional arguments needed to define the domain boundaries")
+             fail("optional arguments needed to define the domain boundaries")
           ENDIF
 
           len_phys=max_phys-min_phys
@@ -107,9 +107,9 @@
           !last proc takes care of the additional rows (remainder)
           IF (ppm_rank.EQ.ppm_nproc-1) THEN
 #if   __DIM == 2
-              Npart = Npart + remaining_rows * nijk(1)
+             Npart = Npart + remaining_rows * nijk(1)
 #elif __DIM == 3
-              Npart = Npart + remaining_rows * nijk(1)*nijk(3)
+             Npart = Npart + remaining_rows * nijk(1)*nijk(3)
 #endif
           ENDIF
 
@@ -138,130 +138,58 @@
           SELECT CASE (distribution)
           CASE (ppm_param_part_init_cartesian)
 #if __DIM == 3
-              DO k = 1,nijk(3)
-                 h = len_phys(3)/REAL(nijk(3),MK)
-                 z = min_phys(3) + h*(k-1) + shift*h
+             DO k = 1,nijk(3)
+                h = len_phys(3)/REAL(nijk(3),MK)
+                z = min_phys(3) + h*(k-1) + shift*h
 #endif
-              DO j = 1,nijk(2)
-                 h = len_phys(2)/REAL(nijk_global(2),MK)
-                 y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2)) + shift*h
-                 DO i = 1,nijk(1)
-                    h = len_phys(1)/REAL(nijk(1),MK)
+             DO j = 1,nijk(2)
+                h = len_phys(2)/REAL(nijk_global(2),MK)
+                y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2)) + shift*h
+                DO i = 1,nijk(1)
+                   h = len_phys(1)/REAL(nijk(1),MK)
 
-                    ip = ip + 1
-                    xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
-                    xp(2,ip) = y
+                   ip = ip + 1
+                   xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
+                   xp(2,ip) = y
 #if __DIM == 3
-                    xp(3,ip) = z
+                   xp(3,ip) = z
 #endif
 
-                    ! impose periodic boundaries:
-                    IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                    IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                    IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                    IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
+                   ! impose periodic boundaries:
+                   IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
+                   IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
+                   IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
+                   IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
 #if __DIM == 3
-                    IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                    IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
+                   IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
+                   IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
 #endif
 
-                 ENDDO
-              ENDDO
+                ENDDO
+             ENDDO
 #if __DIM == 3
-              ENDDO
+             ENDDO
 #endif
 
-              IF(ppm_rank.EQ.(ppm_nproc-1)) THEN
+             IF (ppm_rank.EQ.(ppm_nproc-1)) THEN
 #if __DIM == 3
-              DO k = 1,nijk(3)
-                  h = len_phys(3)/REAL(nijk(3),MK)
-                  z = min_phys(3) + h*(k-1) + shift*h
+                DO k = 1,nijk(3)
+                   h = len_phys(3)/REAL(nijk(3),MK)
+                   z = min_phys(3) + h*(k-1) + shift*h
 #endif
-                  DO j = 1,remaining_rows
-                      h = len_phys(2)/REAL(nijk_global(2),MK)
-                      y = min_phys(2) + h*(j-1 + ppm_nproc*nijk(2)) + shift*h
-                      DO i = 1,nijk(1)
-                          h = len_phys(1)/REAL(nijk(1),MK)
-
-                          ip = ip + 1
-                          xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
-                          xp(2,ip) = y
-#if __DIM == 3
-                          xp(3,ip) = z
-#endif
-
-                          ! impose periodic boundaries:
-                          IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                          IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                          IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                          IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
-#if __DIM == 3
-                          IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                          IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
-#endif
-
-                      ENDDO
-                  ENDDO
-#if __DIM == 3
-              ENDDO
-#endif
-              ENDIF
-              Pc%flags(ppm_part_cartesian) = .TRUE.
-
-          CASE (ppm_param_part_init_random)
-              iopt = ppm_param_alloc_fit
-#ifdef same_random_sequence_nproc
-              ldc(1) = ppm_dim*Npart_global
-#else
-              ldc(1) = ppm_dim*Npart
-#endif
-              CALL ppm_alloc(randnb,ldc(1:1),iopt,info)
-                  or_fail_alloc("randnb")
-              IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
-                  CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
-                  ldc(1) = ppm_particles_seedsize
-                  CALL ppm_alloc(ppm_particles_seed,ldc(1:1),iopt,info)
-                      or_fail_alloc("ppm_particles_seed")
-                  DO i=1,ppm_particles_seedsize
-                      ppm_particles_seed(i)=i*i*i*i
-                  ENDDO
-                  CALL RANDOM_SEED(PUT=ppm_particles_seed)
-              ENDIF
-              CALL RANDOM_NUMBER(randnb)
-
-#if __DIM == 3
-              DO k = 1,nijk(3)
-                  h = len_phys(3)/REAL(nijk(3),MK)
-                  z = min_phys(3) + h*(k-1) + shift*h
-#endif
-              DO j = 1,nijk(2)
-                  h = len_phys(2)/REAL(nijk_global(2),MK)
-                  y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2))  + shift* h
-
-                  DO i = 1,nijk(1)
+                DO j = 1,remaining_rows
+                   h = len_phys(2)/REAL(nijk_global(2),MK)
+                   y = min_phys(2) + h*(j-1 + ppm_nproc*nijk(2)) + shift*h
+                   DO i = 1,nijk(1)
                       h = len_phys(1)/REAL(nijk(1),MK)
 
                       ip = ip + 1
-                      ! uniformly random in cells
-#ifdef same_random_sequence_nproc
-                      xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                          randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 1)*h
-                      xp(2,ip) = y                   + &
-                          randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip    )*h
+                      xp(1,ip) = min_phys(1) + h*(i-1) + shift*h
+                      xp(2,ip) = y
 #if __DIM == 3
-                      xp(3,ip) = z                   + &
-                          randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 2)*h
+                      xp(3,ip) = z
 #endif
-#else
-                      xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                          randnb(ppm_dim*ip - 1)*h
-                      xp(2,ip) = y                   + &
-                          randnb(ppm_dim*ip    )*h
-#if __DIM == 3
-                      xp(3,ip) = z                   + &
-                          randnb(ppm_dim*ip - 2)*h
-#endif
-#endif
+
                       ! impose periodic boundaries:
                       IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
                       IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
@@ -271,68 +199,146 @@
                       IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
                       IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
 #endif
-                  ENDDO
-              ENDDO
+
+                   ENDDO
+                ENDDO
 #if __DIM == 3
-              ENDDO
+                ENDDO
 #endif
-              IF(ppm_rank.EQ.(ppm_nproc-1)) THEN
+             ENDIF
+             Pc%flags(ppm_part_cartesian) = .TRUE.
+
+          CASE (ppm_param_part_init_random)
+             iopt = ppm_param_alloc_fit
+#ifdef same_random_sequence_nproc
+             ldc(1) = ppm_dim*Npart_global
+#else
+             ldc(1) = ppm_dim*Npart
+#endif
+             CALL ppm_alloc(randnb,ldc(1:1),iopt,info)
+             or_fail_alloc("randnb")
+
+             IF (.NOT.ASSOCIATED(ppm_particles_seed)) THEN
+                CALL RANDOM_SEED(SIZE=ppm_particles_seedsize)
+
+                ldc(1) = ppm_particles_seedsize
+                CALL ppm_alloc(ppm_particles_seed,ldc(1:1),iopt,info)
+                or_fail_alloc("ppm_particles_seed")
+
+                DO i=1,ppm_particles_seedsize
+                   ppm_particles_seed(i)=i*i*i*i
+                ENDDO
+
+                CALL RANDOM_SEED(PUT=ppm_particles_seed)
+             ENDIF
+             CALL RANDOM_NUMBER(randnb)
+
 #if __DIM == 3
-              DO k = 1,nijk(3)
-                  h = len_phys(3)/REAL(nijk(3),MK)
-                  z = min_phys(3) + h*(k-1) + shift*h
+             DO k = 1,nijk(3)
+                h = len_phys(3)/REAL(nijk(3),MK)
+                z = min_phys(3) + h*(k-1) + shift*h
 #endif
-                  DO j = 1,remaining_rows
+             DO j = 1,nijk(2)
+                h = len_phys(2)/REAL(nijk_global(2),MK)
+                y = min_phys(2) + h*(j-1 + ppm_rank*nijk(2))  + shift* h
+
+                DO i = 1,nijk(1)
+                   h = len_phys(1)/REAL(nijk(1),MK)
+
+                   ip = ip + 1
+                   ! uniformly random in cells
+#ifdef same_random_sequence_nproc
+                   xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
+                   randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 1)*h
+                   xp(2,ip) = y                   + &
+                   randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip    )*h
+#if __DIM == 3
+                   xp(3,ip) = z                   + &
+                   randnb(ppm_dim*ppm_rank*PRODUCT(nijk)+ppm_dim*ip - 2)*h
+#endif
+#else
+                   xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
+                   randnb(ppm_dim*ip - 1)*h
+                   xp(2,ip) = y                   + &
+                   randnb(ppm_dim*ip    )*h
+#if __DIM == 3
+                   xp(3,ip) = z                   + &
+                   randnb(ppm_dim*ip - 2)*h
+#endif
+#endif
+                   ! impose periodic boundaries:
+                   IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
+                   IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
+                   IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
+                   IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
+#if __DIM == 3
+                   IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
+                   IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
+#endif
+                ENDDO
+             ENDDO
+#if __DIM == 3
+             ENDDO
+#endif
+             IF (ppm_rank.EQ.(ppm_nproc-1)) THEN
+#if __DIM == 3
+                DO k = 1,nijk(3)
+                   h = len_phys(3)/REAL(nijk(3),MK)
+                   z = min_phys(3) + h*(k-1) + shift*h
+#endif
+                   DO j = 1,remaining_rows
                       h = len_phys(2)/REAL(nijk_global(2),MK)
                       y = min_phys(2) + h*(j-1 + ppm_nproc*nijk(2)) + shift*h
                       DO i = 1,nijk(1)
-                          h = len_phys(1)/REAL(nijk(1),MK)
+                         h = len_phys(1)/REAL(nijk(1),MK)
 
-                          ip = ip + 1
-                          ! uniformly random in cells
+                         ip = ip + 1
+                         ! uniformly random in cells
 #ifdef same_random_sequence_nproc
-                          xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                              randnb(ppm_dim*(ppm_nproc-1)*&
-                              PRODUCT(nijk)+ppm_dim*ip - 1)*h
-                          xp(2,ip) = y                   + &
-                              randnb(ppm_dim*(ppm_nproc-1)*&
-                              PRODUCT(nijk)+ppm_dim*ip    )*h
+                         xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
+                         randnb(ppm_dim*(ppm_nproc-1)*&
+                         PRODUCT(nijk)+ppm_dim*ip - 1)*h
+                         xp(2,ip) = y                   + &
+                         randnb(ppm_dim*(ppm_nproc-1)*&
+                         PRODUCT(nijk)+ppm_dim*ip    )*h
 #if __DIM == 3
-                          xp(3,ip) = z                   + &
-                              randnb(ppm_dim*(ppm_nproc-1)*&
-                              PRODUCT(nijk)+ppm_dim*ip - 2)*h
+                         xp(3,ip) = z                   + &
+                         randnb(ppm_dim*(ppm_nproc-1)*&
+                         PRODUCT(nijk)+ppm_dim*ip - 2)*h
 #endif
 #else
-                          xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
-                              randnb(ppm_dim*ip - 1)*h
-                          xp(2,ip) = y                   + &
-                              randnb(ppm_dim*ip    )*h
+                         xp(1,ip) = min_phys(1) + h*(i-1) + shift + &
+                         randnb(ppm_dim*ip - 1)*h
+                         xp(2,ip) = y                   + &
+                         randnb(ppm_dim*ip    )*h
 #if __DIM == 3
-                          xp(3,ip) = z                   + &
-                              randnb(ppm_dim*ip - 2)*h
+                         xp(3,ip) = z                   + &
+                         randnb(ppm_dim*ip - 2)*h
 #endif
 #endif
-                          ! impose periodic boundaries:
-                          IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
-                          IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
-                          IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
-                          IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
+                         ! impose periodic boundaries:
+                         IF (xp(1,ip) .GE. max_phys(1)) xp(1,ip) = xp(1,ip) - len_phys(1)
+                         IF (xp(2,ip) .GE. max_phys(2)) xp(2,ip) = xp(2,ip) - len_phys(2)
+                         IF (xp(1,ip) .LT. min_phys(1)) xp(1,ip) = xp(1,ip) + len_phys(1)
+                         IF (xp(2,ip) .LT. min_phys(2)) xp(2,ip) = xp(2,ip) + len_phys(2)
 #if __DIM == 3
-                          IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
-                          IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
+                         IF (xp(3,ip) .GE. max_phys(3)) xp(3,ip) = xp(3,ip) - len_phys(3)
+                         IF (xp(3,ip) .LT. min_phys(3)) xp(3,ip) = xp(3,ip) + len_phys(3)
 #endif
                       ENDDO
-                  ENDDO
+                   ENDDO
 #if __DIM == 3
-              ENDDO
+                ENDDO
 #endif
-              ENDIF
-              Pc%flags(ppm_part_cartesian) = .FALSE.
+             ENDIF
+             Pc%flags(ppm_part_cartesian) = .FALSE.
 
-              DEALLOCATE(randnb)
+             iopt=ppm_param_dealloc
+             CALL ppm_alloc(randnb,ldc,iopt,info)
+             or_fail_dealloc("Could not deallocate randnb")
 
           CASE DEFAULT
-              fail("Unknown distribution type (or not yet supported)")
+             fail("Unknown distribution type (or not yet supported)")
 
           END SELECT
 
