@@ -942,7 +942,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           IF (ASSOCIATED(Pc%xp)) THEN
              CALL Pc%destroy(info)
-             or_fail_dealloc("Pc%destroy")
+             or_fail("Pc%destroy")
           ENDIF
 
           !dumb way of creating a global ID for this particle
@@ -1025,6 +1025,60 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_create)
 
+#define __DIM 2
+#include "part/ppm_particles_initialize.f"
+#define __DIM 3
+#include "part/ppm_particles_initialize.f"
+
+      !!temporary hack to deal with both 2d and 3d
+      SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
+      &          distrib,topoid,minphys,maxphys,cutoff,name)
+          !-----------------------------------------------------------------------
+          ! Set initial particle positions
+          !-----------------------------------------------------------------------
+
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                         :: Pc
+          !!! Data structure containing the particles
+          INTEGER,                                INTENT(INOUT) :: Npart_global
+          !!! total number of particles that will be initialized
+          INTEGER,                                INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          !-------------------------------------------------------------------------
+          !  Optional arguments
+          !-------------------------------------------------------------------------
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
+          !!! type of initial distribution. One of
+          !!! ppm_param_part_init_cartesian (default)
+          !!! ppm_param_part_init_random
+          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
+          !!! topology id (used only to get the extent of the physical domain)
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
+          !!! extent of the physical domain. Only if topoid is not present.
+          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
+          !!! extent of the physical domain. Only if topoid is not present.
+          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
+          !!! cutoff of the particles
+          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
+          !!! name for this set of particles
+
+          start_subroutine("part_initialize")
+
+          SELECT CASE (ppm_dim)
+          CASE (2)
+             CALL DTYPE(particles_initialize2d)(Pc,Npart_global,info,&
+             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
+          CASE DEFAULT
+             CALL DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
+             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
+          END SELECT
+
+          end_subroutine()
+      END SUBROUTINE DTYPE(part_initialize)
+
 
       SUBROUTINE DTYPE(part_destroy)(Pc,info)
           !!! Deallocate a ppm_t_particles data type
@@ -1089,60 +1143,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           end_subroutine()
       END SUBROUTINE DTYPE(part_destroy)
-
-#define __DIM 2
-#include "part/ppm_particles_initialize.f"
-#define __DIM 3
-#include "part/ppm_particles_initialize.f"
-
-      !!temporary hack to deal with both 2d and 3d
-      SUBROUTINE DTYPE(part_initialize)(Pc,Npart_global,info,&
-      &          distrib,topoid,minphys,maxphys,cutoff,name)
-          !-----------------------------------------------------------------------
-          ! Set initial particle positions
-          !-----------------------------------------------------------------------
-
-          !-------------------------------------------------------------------------
-          !  Arguments
-          !-------------------------------------------------------------------------
-          DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                         :: Pc
-          !!! Data structure containing the particles
-          INTEGER,                                INTENT(INOUT) :: Npart_global
-          !!! total number of particles that will be initialized
-          INTEGER,                                INTENT(  OUT) :: info
-          !!! Return status, on success 0.
-          !-------------------------------------------------------------------------
-          !  Optional arguments
-          !-------------------------------------------------------------------------
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: distrib
-          !!! type of initial distribution. One of
-          !!! ppm_param_part_init_cartesian (default)
-          !!! ppm_param_part_init_random
-          INTEGER,                      OPTIONAL, INTENT(IN   ) :: topoid
-          !!! topology id (used only to get the extent of the physical domain)
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: minphys
-          !!! extent of the physical domain. Only if topoid is not present.
-          REAL(MK), DIMENSION(ppm_dim), OPTIONAL, INTENT(IN   ) :: maxphys
-          !!! extent of the physical domain. Only if topoid is not present.
-          REAL(MK),                     OPTIONAL, INTENT(IN   ) :: cutoff
-          !!! cutoff of the particles
-          CHARACTER(LEN=*),             OPTIONAL, INTENT(IN   ) :: name
-          !!! name for this set of particles
-
-          start_subroutine("part_initialize")
-
-          SELECT CASE (ppm_dim)
-          CASE (2)
-             CALL DTYPE(particles_initialize2d)(Pc,Npart_global,info,&
-             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
-          CASE DEFAULT
-             CALL DTYPE(particles_initialize3d)(Pc,Npart_global,info,&
-             &    distrib,topoid,minphys,maxphys,cutoff,name=name)
-          END SELECT
-
-          end_subroutine()
-      END SUBROUTINE DTYPE(part_initialize)
 
       SUBROUTINE DTYPE(part_print_info)(Pc,info,level,fileunit)
           !-----------------------------------------------------------------------

@@ -303,12 +303,13 @@ integer                                        :: nterms
         ! test neighbour lists
         type(ppm_t_particles_d)         :: Part1
 
+        call Part1%destroy(info)
+        Assert_Equal(info,0)
         call Part1%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
 
         call Part1%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
-
         call Part1%map_ghosts(info)
         Assert_Equal(info,0)
 
@@ -316,9 +317,6 @@ integer                                        :: nterms
         Assert_Equal(info,0)
 
         Assert_True(Part1%has_neighlist())
-
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
     end test
 
     test sop_type
@@ -328,6 +326,7 @@ integer                                        :: nterms
 
         call Part1_A%initialize(np_global,info,topoid=topoid)
         Assert_Equal(info,0)
+
 
         call Part1_A%map(info,global=.true.,topoid=topoid)
         Assert_Equal(info,0)
@@ -346,6 +345,7 @@ integer                                        :: nterms
         Assert_Equal(info,0)
         call Part1_A%get(Prop1,wp_1li,info,with_ghosts=.true.)
         Assert_Equal(info,0)
+
 
         call Part1_A%destroy_prop(Prop1,info)
         Assert_Equal(info,0)
@@ -416,9 +416,9 @@ integer                                        :: nterms
         ENDDO
         Assert_Equal_Within(err,0,tol)
 
-        call Part1_A%print_info(info)
-        Assert_Equal(info,0)
 
+        !call Part1_A%print_info(info)
+        !Assert_Equal(info,0)
         call Part1_A%destroy(info)
         Assert_Equal(info,0)
     end test
@@ -438,5 +438,7 @@ pure function f0_test(pos,ndim)
     return
 
 end function f0_test
+
+
 
 end test_suite

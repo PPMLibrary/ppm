@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_io_read_binary
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -63,7 +63,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                          , INTENT(IN   ) :: iUnit
       !!! Fortran I/O unit to be used
@@ -74,7 +74,7 @@
       !!!
       !!! * ppm_param_io_single
       !!! * ppm_param_io_double
-      !!! 
+      !!!
       !!! Integer and Logical cases are not influenced by this. No
       !!! conversions are done if any value other than the above is given.
 #if   __KIND == __SINGLE_PRECISION | __KIND == __DOUBLE_PRECISION
@@ -97,7 +97,7 @@
       !!! `.TRUE.` if a CHARACTER string is to be read and has to be
       !!! converted to an INTEGER array before returning it.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                         :: t0
       INTEGER                          :: ndata,iopt
@@ -109,9 +109,9 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
@@ -145,7 +145,7 @@
           IF (info .NE. 0) GOTO 800
       ENDIF
 #endif
-      
+
       !-------------------------------------------------------------------------
       !  Read actual data
       !-------------------------------------------------------------------------

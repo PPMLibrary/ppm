@@ -98,19 +98,19 @@
       !  Local variables
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-      REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work
+      REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __DOUBLE_PRECISION
-      REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: work
+      REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: work
+      COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: work
+      COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __INTEGER
-      INTEGER                 , DIMENSION(:), POINTER :: work
+      INTEGER                 , DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __LONGINT
-      INTEGER(ppm_kind_int64) , DIMENSION(:), POINTER :: work
+      INTEGER(ppm_kind_int64) , DIMENSION(:), POINTER :: work => NULL()
 #elif __KIND == __LOGICAL
-      LOGICAL                 , DIMENSION(:), POINTER :: work
+      LOGICAL                 , DIMENSION(:), POINTER :: work => NULL()
 #endif
       INTEGER               :: i,lda,ldb,ldc,ldd,ldl_new,ldu_new
       LOGICAL               :: lcopy,lalloc,lrealloc

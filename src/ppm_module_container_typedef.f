@@ -26,9 +26,6 @@
       ! ETH Zurich
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
-#define __SINGLE_PRECISION 1
-#define __DOUBLE_PRECISION 2
-
       MODULE ppm_module_container_typedef
       !!! Declares container data types
       !!!
@@ -37,51 +34,15 @@
       !!! directly by the PPM client developer, they are used internally in the
       !!! library.
 
-
-
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
-         USE ppm_module_alloc
-         USE ppm_module_data, ONLY: ppm_rank,ppm_dim,ppm_comm,ppm_char
-         USE ppm_module_error
-         USE ppm_module_write
-         USE ppm_module_substart
-         USE ppm_module_substop
-
          IMPLICIT NONE
 
          !----------------------------------------------------------------------
          ! Type declaration
          !----------------------------------------------------------------------
-         !List of integers, stored as an array
-
 #include "cont/container_typedef.inc"
 
-         TYPE, EXTENDS(ppm_t_container) :: idList
-             INTEGER, DIMENSION(:), POINTER :: vec => NULL()
-         END TYPE idList
-         !----------------------------------------------------------------------
-         ! Global variables
-         !----------------------------------------------------------------------
-         CHARACTER(LEN=ppm_char),PRIVATE :: cbuf
-         INTEGER, PRIVATE, DIMENSION(3)  :: ldc
-         !!! Number of elements in all dimensions for allocation
-
-
-!         !----------------------------------------------------------------------
-!         ! Type-bound procedures
-!         !----------------------------------------------------------------------
-!         CONTAINS
-!
-!
-!#define DTYPE(a) a/**/_s
-!#include "cont/container_typeproc.f"
-!
-!#define DTYPE(a) a/**/_d
-!#include "cont/container_typeproc.f"
-
-
-
-         END MODULE ppm_module_container_typedef
+      END MODULE ppm_module_container_typedef
 

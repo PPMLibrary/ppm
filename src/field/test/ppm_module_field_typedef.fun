@@ -43,9 +43,9 @@ use ppm_module_interfaces
     integer                         :: kernel
     integer                         :: seedsize
     integer,  dimension(:),allocatable :: seed
-    real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-    real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-    real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
+    real(mk),dimension(:,:),  pointer:: field2d_1=>NULL(),field2d_2=>NULL()
+    real(mk),dimension(:,:,:),pointer:: field3d_1=>NULL(),field3d_2=>NULL()
+    real(mk),dimension(:,:,:),pointer:: field4d_1=>NULL(),field4d_2=>NULL()
     integer, dimension(2)            :: maxndata
     integer, dimension(:  ), pointer :: isublist => NULL()
     integer                          :: nsublist

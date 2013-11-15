@@ -197,11 +197,11 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           CLASS(<%= element_type %>),    POINTER       :: iterator
 
           IF (this%nb.GT.0) THEN
-              this%iter_id = this%min_id
-              IF (this%iter_id.LE.this%max_id) THEN
-                  iterator => this%vec(this%min_id)%t
-                  RETURN
-              ENDIF
+             this%iter_id = this%min_id
+             IF (this%iter_id.LE.this%max_id) THEN
+                iterator => this%vec(this%min_id)%t
+                RETURN
+             ENDIF
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_begin
@@ -216,11 +216,11 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           CLASS(<%= element_type %>),    POINTER       :: iterator
 
           IF (this%nb.GT.0) THEN
-              this%iter_id = this%iter_id + 1
-              IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
-                  iterator => this%vec(this%iter_id)%t
-                  RETURN
-              ENDIF
+             this%iter_id = this%iter_id + 1
+             IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+                iterator => this%vec(this%iter_id)%t
+                RETURN
+             ENDIF
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_next
@@ -235,11 +235,11 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           CLASS(<%= element_type %>),    POINTER       :: iterator
 
           IF (this%nb.GT.0) THEN
-              this%iter_id = this%iter_id - 1
-              IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
-                  iterator => this%vec(this%iter_id)%t
-                  RETURN
-              ENDIF
+             this%iter_id = this%iter_id - 1
+             IF (this%iter_id.GE.this%min_id .AND. this%iter_id.LE.this%max_id) THEN
+                iterator => this%vec(this%iter_id)%t
+                RETURN
+             ENDIF
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_prev
@@ -254,11 +254,11 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           CLASS(<%= element_type %>),    POINTER       :: iterator
 
           IF (this%nb.GT.0) THEN
-              this%iter_id = this%max_id
-              IF (this%iter_id.GE.this%min_id) THEN
-                  iterator => this%vec(this%max_id)%t
-                  RETURN
-              ENDIF
+             this%iter_id = this%max_id
+             IF (this%iter_id.GE.this%min_id) THEN
+                iterator => this%vec(this%max_id)%t
+                RETURN
+             ENDIF
           ENDIF
           iterator => NULL()
       END FUNCTION <%= collection_type %>_last
@@ -276,19 +276,26 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>),    POINTER       :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p => NULL()
+
           start_subroutine("<%= "#{collection_type}" %>_destroy")
 
 %if !vector
           p => this%begin()
           DO WHILE(ASSOCIATED(p))
-              DEALLOCATE(P,STAT=info)
-              or_fail_dealloc("Could not deallocate collection element")
-              p => this%next()
+             !yaser I think this is necessary for complete destroyment
+             CALL p%destroy(info)
+             or_fail("p%destroy")
+
+             DEALLOCATE(P,STAT=info)
+             or_fail_dealloc("Could not deallocate collection element")
+
+             p => this%next()
           ENDDO
 %end
-          IF (ASSOCIATED(this%vec))  DEALLOCATE(this%vec,STAT=info)
+          IF (ASSOCIATED(this%vec)) DEALLOCATE(this%vec,STAT=info)
           or_fail_dealloc("Could not deallocate collection array")
+
           this%iter_id = 0
           this%min_id = 0
           this%max_id = 0
@@ -316,22 +323,21 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          INTEGER                                      :: info
 
           !-------------------------------------------------------------------------
           ! Check arguments
           !-------------------------------------------------------------------------
           IF (id.LE.0 .OR. id.LT.this%min_id .OR. id.GT.this%max_id) THEN
-              exists = .FALSE.
-              RETURN
+             exists = .FALSE.
+             RETURN
           ENDIF
           IF (.NOT.ASSOCIATED(this%vec)) THEN
-              exists = .FALSE.
-              RETURN
+             exists = .FALSE.
+             RETURN
           ENDIF
           IF (.NOT.ASSOCIATED(this%vec(id)%t)) THEN
-              exists = .FALSE.
-              RETURN
+             exists = .FALSE.
+             RETURN
           ENDIF
           exists = .TRUE.
 
@@ -358,15 +364,14 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          INTEGER                                           :: info
-          CLASS(<%= element_type %>), POINTER               :: p
+          CLASS(<%= element_type %>), POINTER :: p => NULL()
 
           has = .TRUE.
 
           p => this%begin()
           DO WHILE(ASSOCIATED(p))
-              IF (ASSOCIATED(p,element)) RETURN
-              p => this%next()
+             IF (ASSOCIATED(p,element)) RETURN
+             p => this%next()
           ENDDO
 
           has = .FALSE.
@@ -393,16 +398,15 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER               :: p
-          INTEGER                                           :: info
+          CLASS(<%= element_type %>), POINTER :: p => NULL()
 
           p => this%begin()
           DO WHILE(ASSOCIATED(p))
-              IF (ASSOCIATED(p,element)) THEN
-                  id = this%iter_id
-                  RETURN
-              ENDIF
-              p => this%next()
+             IF (ASSOCIATED(p,element)) THEN
+                id = this%iter_id
+                RETURN
+             ENDIF
+             p => this%next()
           ENDDO
 
           id = -1
@@ -427,8 +431,6 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp => NULL()
-          INTEGER                                   :: i
 
           start_subroutine("<%= "#{collection_type}" %>_push")
 
@@ -439,8 +441,8 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           IF (PRESENT(id)) id = this%max_id
 
           IF (this%max_id.GT.this%vec_size) THEN
-              CALL this%grow_size(info)
-              or_fail("could not grow <%= "#{collection_type}" %> to a larger size")
+             CALL this%grow_size(info)
+             or_fail("could not grow <%= "#{collection_type}" %> to a larger size")
           ENDIF
 
           IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
@@ -473,17 +475,17 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          INTEGER                            :: del_id
-          INTEGER                            :: iter_id_save
+          INTEGER :: del_id
+          INTEGER :: iter_id_save
 
           start_subroutine("<%= "#{collection_type}" %>_remove")
 
           iter_id_save = this%iter_id
 
           IF (PRESENT(element)) THEN
-              del_id = this%get_id(element)
+             del_id = this%get_id(element)
           ELSE
-              del_id = this%iter_id
+             del_id = this%iter_id
           ENDIF
 
 %if !vector
@@ -495,10 +497,10 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           !swap with the last non-empty element of the collection
           IF (this%max_id.GT.this%min_id) THEN
-              this%vec(del_id)%t => this%vec(this%max_id)%t
-              this%vec(this%max_id)%t => NULL()
+             this%vec(del_id)%t => this%vec(this%max_id)%t
+             this%vec(this%max_id)%t => NULL()
           ELSE
-              this%vec(del_id)%t => NULL()
+             this%vec(del_id)%t => NULL()
           ENDIF
 
           this%nb = this%nb - 1
@@ -525,40 +527,41 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp => NULL()
 
-          REAL(KIND(1.D0)) :: t0
-
           INTEGER :: i
 
           start_subroutine("<%= "#{collection_type}" %>_grow_size")
 
           IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
-              !if the array is empty, allocate with a reasonable size
-              this%vec_size = 10
-              ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
+             !if the array is empty, allocate with a reasonable size
+             this%vec_size = 10
+             ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
+             or_fail_alloc("could not allocate collection array")
           ELSE
-              !if the array is full, double its size
-              ! allocate a temporary array to store the current element
-              ALLOCATE(vec_temp(this%vec_size),STAT=info)
-              or_fail_alloc("could not allocate temporary array")
+             !if the array is full, double its size
+             ! allocate a temporary array to store the current element
+             ALLOCATE(vec_temp(this%vec_size),STAT=info)
+             or_fail_alloc("could not allocate temporary array")
 
-              ! copy the elements to the temporary array
-              DO i=1,this%vec_size
-                 vec_temp(i)%t => this%vec(i)%t
-              ENDDO
+             ! copy the elements to the temporary array
+             DO i=1,this%vec_size
+                vec_temp(i)%t => this%vec(i)%t
+             ENDDO
 
-              !reallocate the collection to a larger size
-              DEALLOCATE(this%vec,STAT=info)
-              or_fail_dealloc("could not deallocate collection array")
-              ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
-              or_fail_alloc("could not allocate collection array")
+             !reallocate the collection to a larger size
+             DEALLOCATE(this%vec,STAT=info)
+             or_fail_dealloc("could not deallocate collection array")
 
-              !copy the elements back from the temporary array to the collection
-              DO i=1,this%vec_size
-                 this%vec(i)%t => vec_temp(i)%t
-              ENDDO
-              this%vec_size = 2 * this%vec_size
-              DEALLOCATE(vec_temp,STAT=info)
-              or_fail_dealloc("could not deallocate temporary array")
+             ALLOCATE(<%= element_ptr_type %>::this%vec(2*this%vec_size),STAT=info)
+             or_fail_alloc("could not allocate collection array")
+
+             !copy the elements back from the temporary array to the collection
+             DO i=1,this%vec_size
+                this%vec(i)%t => vec_temp(i)%t
+             ENDDO
+             this%vec_size = 2 * this%vec_size
+
+             DEALLOCATE(vec_temp,STAT=info)
+             or_fail_dealloc("could not deallocate temporary array")
           ENDIF
 
           end_subroutine()
@@ -582,7 +585,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                      :: j
+          INTEGER :: j
 
           IF (i.LE.0) THEN
              element => NULL()
