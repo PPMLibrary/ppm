@@ -113,12 +113,6 @@
 #endif
           ENDIF
 
-          !Deallocate Particles if already allocated
-          IF (ASSOCIATED(Pc%xp)) THEN
-             CALL Pc%destroy(info)
-             or_fail("Failed to destroy particle set")
-          ENDIF
-
           CALL Pc%create(Npart,info,name=name)
           or_fail("Failed to create particle set")
 

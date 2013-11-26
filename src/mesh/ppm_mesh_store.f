@@ -132,7 +132,9 @@
          !-----------------------------------------------------------------------
          !  Push the created mesh and mesh identifier into the collection
          !-----------------------------------------------------------------------
-         CALL ppm_mesh%push(mesh,info,meshid)
+!          CALL ppm_mesh%push(mesh,info,meshid)
+         meshid=ppm_mesh%get_id(mesh)
+         mesh => NULL()
 
          ppm_mesh%vec(meshid)%t%ID=meshid
 

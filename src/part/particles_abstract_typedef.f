@@ -207,9 +207,11 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           !!! THIS IS NOT USED YET
 
           INTEGER                                        :: NewNpart
-          !!! New number of real particles on this processor (used only during partial
-          !!! or global mappings (this should be deleted when mappings are properly
-          !!! encapsulated in their own data structures).
+          !!! New number of real particles on this processor.
+          !!! (used only during partial or global mappings.)
+          !!! TODO !
+          !!! (this should be deleted when mappings are properly encapsulated
+          !!!  in their own data structures).
 
           ! Load balancing
           REAL(MK), DIMENSION(:),         POINTER        :: pcost=> NULL()

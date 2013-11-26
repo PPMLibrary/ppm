@@ -44,17 +44,17 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           CLASS(DTYPE(ppm_t_particles)_)                   :: this
           REAL(MK), DIMENSION(:,:), POINTER, INTENT(  OUT) :: xp
           INTEGER,                           INTENT(  OUT) :: info
-          LOGICAL, OPTIONAL                                :: with_ghosts
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
       END SUBROUTINE
 
       SUBROUTINE DTYPE(set_xp)_(this,xp,info,read_only,ghosts_ok)
           IMPORT DTYPE(ppm_t_particles)_, MK
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                  :: this
-          LOGICAL,OPTIONAL                                :: read_only
-          LOGICAL,OPTIONAL                                :: ghosts_ok
-          REAL(MK), DIMENSION(:,:), POINTER               :: xp
-          INTEGER,                           INTENT(OUT)  :: info
+          CLASS(DTYPE(ppm_t_particles)_)                   :: this
+          REAL(MK), DIMENSION(:,:), POINTER                :: xp
+          INTEGER,                           INTENT(  OUT) :: info
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: ghosts_ok
       END SUBROUTINE
 
       SUBROUTINE DTYPE(part_prop_create)_(this,info,field,part_prop,discr_data,&

@@ -115,7 +115,7 @@ integer                                        :: nterms
     end teardown
 
     test PSE_client
-        type(ppm_t_particles_d)         :: Part1
+        type(ppm_t_particles_d),TARGET  :: Part1
         type(ppm_t_field)               :: Field1
         type(ppm_t_field)               :: Field2
         type(ppm_t_operator)            :: Laplacian

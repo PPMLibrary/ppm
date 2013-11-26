@@ -120,7 +120,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
     test part_to_meshinterp
         type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
         type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
-        type(ppm_t_particles_d) :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
         real(ppm_kind_double),dimension(ndim) :: pos
         real(ppm_kind_double),dimension(ndim) :: cutoff
         real(ppm_kind_double)                 :: voln
@@ -250,37 +250,37 @@ TYPE(ppm_v_main_abstr)  :: LFields
         abstr_point => SField2
         CALL LFields%push(abstr_point,info)
         Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => SField1
         CALL LFields%push(abstr_point,info)
         Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField1
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField2
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField4
         CALL LFields%push(abstr_point,info)
         abstr_point => VField3
         CALL LFields%push(abstr_point,info)
         abstr_point => SField3
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info)
+        !Assert_Equal(info,0)
         !----------------
         ! Perform the p2m interpolation
         !----------------
 
-        CALL ppm_vtk_particles("output_before",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output_before",Part1,info)
+        !Assert_Equal(info,0)
 
         call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
@@ -298,8 +298,8 @@ TYPE(ppm_v_main_abstr)  :: LFields
         call Part1%interp_to_mesh(Mesh1,SField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
-        CALL ppm_vtk_particles("output_after",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output_after",Part1,info)
+        !Assert_Equal(info,0)
 
 
         tol = 1e-2

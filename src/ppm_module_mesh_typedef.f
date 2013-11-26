@@ -97,6 +97,7 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
           PROCEDURE :: def_uniform           => equi_mesh_def_uniform
           PROCEDURE :: new_subpatch_data_ptr => equi_mesh_new_subpatch_data_ptr
           PROCEDURE :: list_of_fields        => equi_mesh_list_of_fields
+
           PROCEDURE :: block_intersect       => equi_mesh_block_intersect
           PROCEDURE :: map_ghost_init        => equi_mesh_map_ghost_init
           PROCEDURE :: map_ghost_get         => equi_mesh_map_ghost_get
@@ -115,9 +116,18 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
 minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 
       !----------------------------------------------------------------------
+      ! DATA TYPE FOR COLLECTIVE STORAGE for the meshes
+      !----------------------------------------------------------------------
+      TYPE,EXTENDS(ppm_c_equi_mesh) :: ppm_vc_equi_mesh
+      CONTAINS
+          PROCEDURE :: vpush   => ppm_vc_equi_mesh_push
+          PROCEDURE :: vremove => ppm_vc_equi_mesh_remove
+      ENDTYPE
+
+      !----------------------------------------------------------------------
       ! DATA STORAGE for the meshes
       !----------------------------------------------------------------------
-      TYPE(ppm_c_equi_mesh) :: ppm_mesh
+      TYPE(ppm_vc_equi_mesh) :: ppm_mesh
 
       !------------------------------------------------
       ! TODO: stuff that should be moved somewhere else:
@@ -880,6 +890,9 @@ minclude ppm_get_field_template(4,l)
              ENDDO
           ENDIF
 
+          CALL ppm_mesh%vpush(this,info)
+          or_fail("Failed to push the new Mesh inside the Mesh collection")
+
           !-------------------------------------------------------------------------
           !  Return
           !-------------------------------------------------------------------------
@@ -1024,6 +1037,9 @@ minclude ppm_get_field_template(4,l)
           this%topoid = 0
           this%npatch = 0
           this%ghost_initialized = .FALSE.
+
+          CALL ppm_mesh%vremove(info,this)
+          or_fail("could not remove a detroyed object from a collection")
 
           end_subroutine()
       END SUBROUTINE equi_mesh_destroy
@@ -2076,5 +2092,89 @@ minclude ppm_get_field_template(4,l)
 #undef __VFIELD
 
 #include "mesh/mesh_interp_to_part.f"
+      !PUSH
+      SUBROUTINE ppm_vc_equi_mesh_push(this,element,info,id)
+          !!! add an element into the collection
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_vc_equi_mesh), INTENT(INOUT) :: this
+          CLASS(ppm_t_equi_mesh_), TARGET        :: element
+          INTEGER,                 INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,        INTENT(  OUT) :: id
+          !!! index of the element in the collection
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          start_subroutine("ppm_vc_equi_mesh_push")
+
+          !add the element at the end of the array
+          this%min_id = 1
+          this%max_id = this%max_id + 1
+          this%nb = this%nb + 1
+          IF (PRESENT(id)) id = this%max_id
+
+          IF (this%max_id.GT.this%vec_size) THEN
+             CALL this%grow_size(info)
+             or_fail("could not grow ppm_vc_equi_mesh to a larger size")
+          ENDIF
+
+          IF (ASSOCIATED(this%vec(this%max_id)%t)) THEN
+             fail("Pointer at position of new element is already associated. Something wrong in the Collection data structure")
+          ENDIF
+
+          this%vec(this%max_id)%t => element
+
+          check_associated_noscope(<#this%vec(this%max_id)%t#>,"Pushing element into collection failed unexpectedly")
+
+          end_subroutine()
+      END SUBROUTINE ppm_vc_equi_mesh_push
+      !REMOVE
+      SUBROUTINE ppm_vc_equi_mesh_remove(this,info,element)
+          !!! If element is present, remove it from the collection
+          !!! else, remove the current element (as defined by the iterator pointer)
+
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_vc_equi_mesh),         INTENT(INOUT) :: this
+          INTEGER,                         INTENT(  OUT) :: info
+          CLASS(ppm_t_equi_mesh_),OPTIONAL,INTENT(INOUT) :: element
+
+          !-------------------------------------------------------------------------
+          ! local variables
+          !-------------------------------------------------------------------------
+          INTEGER :: del_id
+          INTEGER :: iter_id_save
+
+          start_subroutine("ppm_vc_equi_mesh_remove")
+
+          iter_id_save = this%iter_id
+
+          IF (PRESENT(element)) THEN
+             del_id = this%get_id(element)
+             IF (del_id.LT.0) RETURN
+          ELSE
+             del_id = this%iter_id
+          ENDIF
+
+          !swap with the last non-empty element of the collection
+          IF (this%max_id.GT.this%min_id) THEN
+             this%vec(del_id)%t => this%vec(this%max_id)%t
+             this%vec(this%max_id)%t => NULL()
+          ELSE
+             this%vec(del_id)%t => NULL()
+          ENDIF
+
+          this%nb = this%nb - 1
+          this%max_id = this%max_id - 1
+          this%iter_id = iter_id_save - 1
+          IF (this%nb.EQ.0 .OR. this%max_id.EQ.0) this%min_id = 0
+
+          end_subroutine()
+      END SUBROUTINE ppm_vc_equi_mesh_remove
 
       END MODULE ppm_module_mesh_typedef

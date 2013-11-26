@@ -95,8 +95,7 @@
       INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pdata
 #elif __KIND == __LOGICAL
       LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pdata
-#elif __KIND == __SINGLE_PRECISION_COMPLEX | \
-      __KIND == __DOUBLE_PRECISION_COMPLEX
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ) :: pdata
 #else
       REAL(MK), DIMENSION(:,:), INTENT(IN   )    :: pdata

@@ -239,29 +239,30 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       !! Procedures for Particle Sets DS
       !!----------------------------------------------------------------
       SUBROUTINE DTYPE(get_xp)(this,xp,info,with_ghosts)
+          IMPLICIT NONE
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                 :: this
-          REAL(MK),DIMENSION(:,:),POINTER,INTENT(  OUT) :: xp
-          INTEGER,                        INTENT(  OUT) :: info
-          LOGICAL,OPTIONAL                              :: with_ghosts
+          CLASS(DTYPE(ppm_t_particles))                    :: this
+          REAL(MK), DIMENSION(:,:), POINTER, INTENT(  OUT) :: xp
+          INTEGER,                           INTENT(  OUT) :: info
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: with_ghosts
 
           start_subroutine("get_xp")
 
           check_associated(<#this%xp#>)
 
           IF (PRESENT(with_ghosts)) THEN
-              IF (with_ghosts) THEN
-                  IF (this%flags(ppm_part_ghosts)) THEN
-                      xp => this%xp(1:ppm_dim,1:this%Mpart)
-                  ELSE
-                      WRITE(cbuf,*) 'WARNING: tried to get xp with ghosts ', &
-                      & 'when ghosts are not up-to-date'
-                      CALL ppm_write(ppm_rank,'get_xp',cbuf,info)
+             IF (with_ghosts) THEN
+                IF (this%flags(ppm_part_ghosts)) THEN
+                   xp => this%xp(1:ppm_dim,1:this%Mpart)
+                ELSE
+                   WRITE(cbuf,*) 'WARNING: tried to get xp with ghosts ', &
+                   & 'when ghosts are not up-to-date'
+                   CALL ppm_write(ppm_rank,'get_xp',cbuf,info)
 
-                      xp => NULL()
-                  ENDIF
-                  RETURN
-              ENDIF
+                   xp => NULL()
+                ENDIF
+                RETURN
+             ENDIF
           ENDIF
 
           xp => this%xp(1:ppm_dim,1:this%Npart)
@@ -270,58 +271,63 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(get_xp)
 
       SUBROUTINE DTYPE(set_xp)(this,xp,info,read_only,ghosts_ok)
+          IMPLICIT NONE
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))    :: this
-          LOGICAL,OPTIONAL                 :: read_only
-          LOGICAL,OPTIONAL                 :: ghosts_ok
-          REAL(MK),DIMENSION(:,:),POINTER  :: xp
-          INTEGER,            INTENT(OUT)  :: info
+          CLASS(DTYPE(ppm_t_particles))                    :: this
+          REAL(MK), DIMENSION(:,:), POINTER                :: xp
+          INTEGER,                           INTENT(  OUT) :: info
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,                 OPTIONAL, INTENT(IN   ) :: ghosts_ok
 
-          INTEGER                          :: i
           CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl => NULL()
           CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
 
+          INTEGER :: i
+
           start_subroutine("set_xp")
 
           IF (PRESENT(ghosts_ok)) THEN
-              IF (ghosts_ok) THEN
-                  xp => NULL()
-                  RETURN
-              ENDIF
+             IF (ghosts_ok) THEN
+                xp => NULL()
+                RETURN
+             ENDIF
           ENDIF
 
           IF (PRESENT(read_only)) THEN
-              IF (read_only) THEN
-                  xp => NULL()
-                  RETURN
-              ENDIF
+             IF (read_only) THEN
+                xp => NULL()
+                RETURN
+             ENDIF
           ENDIF
 
           this%flags(ppm_part_areinside) = .FALSE.
-          this%flags(ppm_part_partial) = .FALSE.
-          this%flags(ppm_part_ghosts) = .FALSE.
+          this%flags(ppm_part_partial)   = .FALSE.
+          this%flags(ppm_part_ghosts)    = .FALSE.
           this%flags(ppm_part_cartesian) = .FALSE.
 
           prop => this%props%begin()
           DO WHILE (ASSOCIATED(prop))
-              prop%flags(ppm_ppt_ghosts) = .FALSE.
-              prop%flags(ppm_ppt_partial) = .FALSE.
-              prop => this%props%next()
+             prop%flags(ppm_ppt_ghosts)  = .FALSE.
+             prop%flags(ppm_ppt_partial) = .FALSE.
+
+             prop => this%props%next()
           ENDDO
 
           nl => this%neighs%begin()
           DO WHILE (ASSOCIATED(nl))
-              nl%uptodate = .FALSE.
-              nl => this%neighs%next()
+             nl%uptodate = .FALSE.
+
+             nl => this%neighs%next()
           ENDDO
 
           IF (ASSOCIATED(this%ops)) THEN
-              op => this%ops%begin()
-              DO WHILE (ASSOCIATED(op))
-                  op%flags(ppm_ops_iscomputed) = .FALSE.
-                  op => this%ops%next()
-              ENDDO
+             op => this%ops%begin()
+             DO WHILE (ASSOCIATED(op))
+                op%flags(ppm_ops_iscomputed) = .FALSE.
+
+                op => this%ops%next()
+             ENDDO
           ENDIF
 
           xp => NULL()
@@ -912,6 +918,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       SUBROUTINE DTYPE(part_create)(Pc,Npart,info,name)
           !!! create a set of particles
           !!! This allocates the particle positions.
+          IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
@@ -1021,6 +1028,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ELSE
              fail("stats structure is already allocated. Call destroy() first?")
           ENDIF
+
+          CALL DTYPE(ppm_part)%vpush(Pc,info)
+          or_fail("Failed to push the new Particle inside the Particle collection")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_create)
@@ -1137,6 +1147,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           !Deallocate pointers to fields
           destroy_collection_ptr(Pc%field_ptr)
+
+          CALL DTYPE(ppm_part)%vremove(info,Pc)
+          or_fail("could not remove a detroyed object from a collection")
 
           !-------------------------------------------------------------------------
           !  Finalize
@@ -2815,36 +2828,37 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_map_ghost_pop_pos)
 
       SUBROUTINE DTYPE(part_apply_bc)(Pc,info)
-
           !!!  Apply boundary conditions for particles positions
           !!!  Assumptions:
           !!! * Particles positions need to have been mapped onto the topology
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                         :: Pc
           DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))               :: Pc
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)     :: info
+          INTEGER,                      INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          REAL(MK), DIMENSION(:,:),POINTER                      :: xp => NULL()
-          !!! pointer to positions
-          TYPE(ppm_t_topo),POINTER                              :: topo => NULL()
+          CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
+
+          TYPE(ppm_t_topo), POINTER :: topo => NULL()
           !!! pointer to topology
-          REAL(MK), DIMENSION(ppm_dim)                          :: min_phys,max_phys
+
+          REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
+          !!! pointer to positions
+          REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys
           !!! computational domain corners
-          REAL(MK), DIMENSION(ppm_dim)                          :: len_phys
+          REAL(MK), DIMENSION(ppm_dim)      :: len_phys
           !!! length of the computational domain
-          INTEGER                                               :: di,ip
-          INTEGER                                               :: topoid
-          INTEGER                                               :: Npart,del_part
-          INTEGER,DIMENSION(:),POINTER                          :: list_del_parts
-          REAL(MK)                                              :: almostone
-          CLASS(DTYPE(ppm_t_part_prop)_),POINTER                :: prop => NULL()
+          REAL(MK)                          :: almostone
+
+          INTEGER, DIMENSION(:), POINTER :: list_del_parts => NULL()
+          INTEGER                        :: di,ip
+          INTEGER                        :: topoid
+          INTEGER                        :: Npart,del_part
 
           start_subroutine("particles_apply_bc")
 
@@ -2915,9 +2929,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                   ENDIF
               ENDDO
               CALL Pc%del_parts(list_del_parts,del_part,info)
-                  or_fail("Pc%del_parts: could not delete particles")
+              or_fail("Pc%del_parts: could not delete particles")
               DEALLOCATE(list_del_parts,STAT=info)
-                  or_fail_dealloc("list_del_parts")
+              or_fail_dealloc("list_del_parts")
           ENDIF
 
           ! Update states
@@ -2946,27 +2960,27 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_apply_bc)
 
       SUBROUTINE DTYPE(part_move)(Pc,disp,info)
-
           !!!  Move all particles according to some displacement field
           !!!  The size of disp must match the size of xp
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_particles))                         :: Pc
+          CLASS(DTYPE(ppm_t_particles))                    :: Pc
           !!! Data structure containing the particles
-          REAL(MK), DIMENSION(:,:), POINTER,  INTENT(IN   )     :: disp
+          REAL(MK), DIMENSION(:,:), POINTER, INTENT(IN   ) :: disp
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)     :: info
+          INTEGER,                           INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                                   :: ip
-          REAL(MK),DIMENSION(:,:),       POINTER    :: xp=>NULL()
-          CLASS(DTYPE(ppm_t_part_prop)_),POINTER    :: prop => NULL()
-          CLASS(ppm_t_operator_discr_),  POINTER    :: op => NULL()
+          CLASS(DTYPE(ppm_t_part_prop)_), POINTER :: prop => NULL()
+          CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
+
+          REAL(MK), DIMENSION(:,:), POINTER :: xp => NULL()
+
+          INTEGER :: ip
 
           start_subroutine("particle_move")
 
@@ -2988,16 +3002,16 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           prop => Pc%props%begin()
           DO WHILE (ASSOCIATED(prop))
-              prop%flags(ppm_ppt_ghosts) = .FALSE.
-              prop => Pc%props%next()
+             prop%flags(ppm_ppt_ghosts) = .FALSE.
+             prop => Pc%props%next()
           ENDDO
 
           IF (ASSOCIATED(Pc%ops)) THEN
-              op => Pc%ops%begin()
-              DO WHILE (ASSOCIATED(op))
-                  op%flags(ppm_ops_iscomputed) = .FALSE.
-                  op => Pc%ops%next()
-              ENDDO
+             op => Pc%ops%begin()
+             DO WHILE (ASSOCIATED(op))
+                op%flags(ppm_ops_iscomputed) = .FALSE.
+                op => Pc%ops%next()
+             ENDDO
           ENDIF
 
           Pc%flags(ppm_part_partial) = .FALSE.
@@ -3065,7 +3079,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           ELSE IF (cutoff .LT. Pc%ghostlayer) THEN
               !Else, we find the new maximum cutoff radius amongst
               !all existing neighbor lists on this Particle set
-              Pc%ghostlayer = 0._mk
+              Pc%ghostlayer = 0._MK
               nl => Pc%neighs%begin()
               DO WHILE (ASSOCIATED(nl))
                   IF (nl%cutoff .GT. Pc%ghostlayer) THEN
@@ -3099,7 +3113,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           INTEGER                        :: offset
           INTEGER                        :: i
-          INTEGER, DIMENSION(:), POINTER :: wp
+          INTEGER, DIMENSION(:), POINTER :: wp => NULL()
           !-------------------------------------------------------------------------
           !  Initialise
           !-------------------------------------------------------------------------
@@ -3187,7 +3201,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           ! Create the mapping
           CALL map%create(source_topoid,target_topoid,info)
-              or_fail("map%create")
+          or_fail("map%create")
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_create)
@@ -3321,37 +3335,37 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           SELECT CASE(lda)
           CASE (1)
               foreach p in particles(this) with sca_fields(w=Field) prec(DTYPE(prec))
-                  w_p = 0._mk
+                  w_p = 0._MK
               end foreach
           CASE (2)
               foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._mk
-                  w_p(2) = 0._mk
+                  w_p(1) = 0._MK
+                  w_p(2) = 0._MK
               end foreach
           CASE (3)
               foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._mk
-                  w_p(2) = 0._mk
-                  w_p(3) = 0._mk
+                  w_p(1) = 0._MK
+                  w_p(2) = 0._MK
+                  w_p(3) = 0._MK
               end foreach
           CASE (4)
               foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._mk
-                  w_p(2) = 0._mk
-                  w_p(3) = 0._mk
-                  w_p(4) = 0._mk
+                  w_p(1) = 0._MK
+                  w_p(2) = 0._MK
+                  w_p(3) = 0._MK
+                  w_p(4) = 0._MK
               end foreach
           CASE (5)
               foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1) = 0._mk
-                  w_p(2) = 0._mk
-                  w_p(3) = 0._mk
-                  w_p(4) = 0._mk
-                  w_p(5) = 0._mk
+                  w_p(1) = 0._MK
+                  w_p(2) = 0._MK
+                  w_p(3) = 0._MK
+                  w_p(4) = 0._MK
+                  w_p(5) = 0._MK
               end foreach
           CASE DEFAULT
               foreach p in particles(this) with vec_fields(w=Field) prec(DTYPE(prec))
-                  w_p(1:lda) = 0._mk
+                  w_p(1:lda) = 0._MK
               end foreach
           END SELECT
 

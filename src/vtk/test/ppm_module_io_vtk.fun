@@ -109,7 +109,7 @@ real(mk)                         :: eps
         integer ,dimension(:),pointer   :: ra => NULL()
         real(mk)                        :: cutoff = 0.001_mk
         real(mk)                        :: h
-        type(ppm_t_particles_d)         :: particles
+        type(ppm_t_particles_d),TARGET  :: particles
         type(ppm_t_field)               :: Field1
         class(ppm_t_discr_data),pointer :: Prop1 => NULL()
         integer                         :: i,j
@@ -150,8 +150,8 @@ real(mk)                         :: eps
         end foreach
 
         fname = 'test'
-        call ppm_vtk_particles(fname,particles,info)
-            assert_equal(info,0)
+        !call ppm_vtk_particles(fname,particles,info)
+        !assert_equal(info,0)
 
         end_subroutine()
     end test

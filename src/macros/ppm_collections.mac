@@ -484,6 +484,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           IF (PRESENT(element)) THEN
              del_id = this%get_id(element)
+             IF (del_id.LT.0) RETURN
           ELSE
              del_id = this%iter_id
           ENDIF

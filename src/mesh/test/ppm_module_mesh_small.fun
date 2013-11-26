@@ -121,7 +121,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
     test small_test
         type(ppm_t_field) :: Field1,Field2
-        type(ppm_t_particles_d) :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         real(ppm_kind_double),dimension(ndim) :: x0
 
@@ -181,7 +181,7 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
 
         if (ndim.eq.2) then
-            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+            my_patch(1:2*ndim) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif

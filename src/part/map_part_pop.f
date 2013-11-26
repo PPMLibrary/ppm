@@ -318,8 +318,7 @@
          SELECT CASE (edim)
          CASE (1)
             DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
 #else
                ibuffer = ibuffer + 1
@@ -704,8 +703,7 @@
          !  Scalar version
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
 #else
             ibuffer = ibuffer + 1
@@ -826,8 +824,7 @@
          !----------------------------------------------------------------------
          CASE (3)
             DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
 #else
                ibuffer = ibuffer + 1
@@ -896,8 +893,7 @@
          !----------------------------------------------------------------------
          CASE (4)
             DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
 #else
                ibuffer = ibuffer + 1
@@ -985,8 +981,7 @@
          !----------------------------------------------------------------------
          CASE (5)
             DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                ibuffer = ibuffer + 2
 #else
                ibuffer = ibuffer + 1
@@ -1094,8 +1089,7 @@
          CASE DEFAULT
             DO ipart=istart,newNpart
                DO k=1,edim
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                   ibuffer = ibuffer + 2
 #else
                   ibuffer = ibuffer + 1
@@ -1129,8 +1123,7 @@
          !  Scalar version
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
 #else
             ibuffer = ibuffer + 1
@@ -1168,8 +1161,7 @@
 #if    __DIM == 2
         DO ipart=istart,newNpart
             DO k=1,edim
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                 ibuffer = ibuffer + 2
 #else
                 ibuffer = ibuffer + 1
@@ -1202,8 +1194,7 @@
          !  Scalar version
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
 #else
             ibuffer = ibuffer + 1
@@ -1237,8 +1228,7 @@
 #if    __DIM == 2
         DO ipart=istart,newNpart
             DO k=1,edim
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
                 ibuffer = ibuffer + 2
 #else
                 ibuffer = ibuffer + 1
@@ -1271,8 +1261,7 @@
          !  Scalar version
          !----------------------------------------------------------------------
          DO ipart=istart,newNpart
-#if    __KIND == __SINGLE_PRECISION_COMPLEX | \
-       __KIND == __DOUBLE_PRECISION_COMPLEX
+#if    __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
             ibuffer = ibuffer + 2
 #else
             ibuffer = ibuffer + 1

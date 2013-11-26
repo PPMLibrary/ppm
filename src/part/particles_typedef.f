@@ -31,7 +31,7 @@ minclude ppm_create_collection(DTYPE(part_prop),DTYPE(part_prop),generate="exten
       END TYPE
 minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="extend")
 
-      TYPE,EXTENDS( DTYPE(particles_stats)_) :: DTYPE(particles_stats)
+      TYPE,EXTENDS(DTYPE(particles_stats)_) :: DTYPE(particles_stats)
       END TYPE
 
 

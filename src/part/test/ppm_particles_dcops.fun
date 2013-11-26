@@ -28,8 +28,8 @@ integer                         :: i,j,k,ip,nterms
 integer                         :: wp1_id=0, dwp1_id=0, wp2_id=0, op_id=0
 integer, dimension(6)           :: bcdef
 real(mk),dimension(:  ),pointer :: cost
-type(ppm_t_particles_d)         :: Part1
-type(ppm_t_sop_d)               :: Part1_a
+type(ppm_t_particles_d),TARGET  :: Part1
+type(ppm_t_sop_d),      TARGET  :: Part1_a
 type(ppm_t_field)               :: SField1,SField2,SField3,SField4
 type(ppm_t_field)               :: VFieldD,VField2,VField3,VField5
 integer                         :: seedsize
@@ -231,7 +231,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call DCop%compute(SField1,SField4,info)
         Assert_Equal(info,0)
 
-        call ppm_vtk_particles("output",Part1,info)
+        !call ppm_vtk_particles("output",Part1,info)
 
         Assert_True(inf_error(Part1,SField1,SField2,DCop).LT.tol_error)
         end_subroutine()
@@ -365,7 +365,7 @@ end function df0_test
 !-------------------------------------------------------------
 function inf_error(Part1,Field1,Field2,Op)
     use ppm_module_data
-    type(ppm_t_particles_d)          :: Part1
+    type(ppm_t_particles_d),TARGET   :: Part1
     type(ppm_t_field)                :: Field1,Field2
     class(ppm_t_operator_discr)       :: Op
     integer                          :: ip,nterms

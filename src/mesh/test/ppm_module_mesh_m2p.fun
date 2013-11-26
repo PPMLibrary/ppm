@@ -114,7 +114,7 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
     test mesh_to_part_interp
         type(ppm_t_field) :: VField1,VField2,VField3,VField4
         type(ppm_t_field) :: SField1,SField2,SField3
-        type(ppm_t_particles_d) :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         real(ppm_kind_double),dimension(ndim) :: x0
 

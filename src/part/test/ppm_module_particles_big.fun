@@ -117,7 +117,7 @@ integer                                        :: nterms
 
     test initialize_random
         ! test initialization of particles sampled unif. random
-        type(ppm_t_particles_d)               :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         call Part1%initialize(np_global,info,topoid=topoid,&
             distrib=ppm_param_part_init_random)
@@ -141,9 +141,9 @@ integer                                        :: nterms
 
     test initialize_cart
         ! test initialization of particles on a grid
-        type(ppm_t_particles_d)               :: Part1
-        class(ppm_t_discr_data),POINTER       :: Prop1=>NULL(),Prop2=>NULL()
-        type(ppm_t_field)                     :: Field1
+        type(ppm_t_particles_d),TARGET   :: Part1
+        class(ppm_t_discr_data),POINTER  :: Prop1=>NULL(),Prop2=>NULL()
+        type(ppm_t_field)                :: Field1
 
 
         call Part1%initialize(np_global,info,topoid=topoid)
@@ -301,7 +301,7 @@ integer                                        :: nterms
 
     test neighlists
         ! test neighbour lists
-        type(ppm_t_particles_d)         :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
 
         call Part1%destroy(info)
         Assert_Equal(info,0)
@@ -321,7 +321,7 @@ integer                                        :: nterms
 
     test sop_type
         ! test procedures for sop data structures
-        type(ppm_t_sop_d)                 :: Part1_A
+        type(ppm_t_sop_d),target          :: Part1_A
         class(ppm_t_discr_data),  pointer :: Prop1=>NULL(),Prop2=>NULL()
 
         call Part1_A%initialize(np_global,info,topoid=topoid)

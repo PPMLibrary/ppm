@@ -141,7 +141,7 @@ use ppm_module_interfaces
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc
-        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+        type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         integer,dimension(:),pointer :: ilist => NULL()
@@ -266,7 +266,7 @@ use ppm_module_interfaces
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc
-        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+        type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         !----------------
