@@ -76,8 +76,8 @@
           INTEGER,                 INTENT(  OUT) :: info
       END SUBROUTINE
       !DISCRETIZE FIELD ON MESH OR PARTICLES
-      SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts)
-          IMPORT ppm_t_field_,ppm_t_discr_kind
+      SUBROUTINE field_discretize_on_(this,discr,info,datatype,with_ghosts,discr_info)
+          IMPORT ppm_t_field_,ppm_t_discr_kind,ppm_t_discr_info_
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
@@ -85,11 +85,12 @@
           !!! Allocate field on a mesh or on a particle set
           !!! If the field has a procedure for initialization (e.g. an
           !!! initial condition), then the field is also initialized.
-          CLASS(ppm_t_field_),     TARGET        :: this
-          CLASS(ppm_t_discr_kind), TARGET        :: discr
-          INTEGER,                 INTENT(  OUT) :: info
-          INTEGER, OPTIONAL                      :: datatype
-          LOGICAL, OPTIONAL                      :: with_ghosts
+          CLASS(ppm_t_field_),                TARGET        :: this
+          CLASS(ppm_t_discr_kind),            TARGET        :: discr
+          INTEGER,                            INTENT(  OUT) :: info
+          INTEGER,                  OPTIONAL, INTENT(IN   ) :: datatype
+          LOGICAL,                  OPTIONAL, INTENT(IN   ) :: with_ghosts
+          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER       :: discr_info
       END SUBROUTINE
       !ESTABLISH RELATIONSHIP BETWEEN FIELD AND DISCRETIZATION
       SUBROUTINE field_set_rel_discr_(this,discr,discr_data,info,p_idx)

@@ -189,8 +189,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           CLASS(ppm_t_discr_info)               :: this
           INTEGER,                INTENT(  OUT) :: info
 
-          CLASS(ppm_t_discr_kind),     POINTER :: discr   => NULL()
-          CLASS(ppm_t_discr_data),     POINTER :: ddata  => NULL()
           CLASS(ppm_t_subpatch_data_), POINTER :: subpdat => NULL()
 
           start_subroutine("discr_info_destroy")
@@ -198,13 +196,10 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           ! yaser: I think this was a major bug!
           ! Without this all the allocated data still would be there
           ! even though you destroy them.
-          discr => this%discr_ptr
-          ddata => this%discr_data
-
-          SELECT TYPE (discr)
+          SELECT TYPE (discr => this%discr_ptr)
           CLASS IS (ppm_t_equi_mesh_)
 
-             SELECT TYPE (ddata)
+             SELECT TYPE (ddata => this%discr_data)
              CLASS IS (ppm_t_mesh_discr_data_)
                 subpdat => ddata%subpatch%begin()
                 DO WHILE (ASSOCIATED(subpdat))
@@ -223,10 +218,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           CLASS IS (ppm_t_particles_s_)
              IF (ASSOCIATED(discr%props)) THEN
-                CALL discr%destroy_prop(ddata,info)
-                or_fail("particle discr data destroy failed.")
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_discr_data)
+                   CALL discr%destroy_prop(ddata,info)
+                   or_fail("particle discr data destroy failed.")
+
+                END SELECT
              ELSE
-                SELECT TYPE (ddata)
+                SELECT TYPE (ddata => this%discr_data)
                 CLASS IS (ppm_t_part_prop_s_)
                    CALL ddata%destroy(info)
                    or_fail("discr data destroy failed.")
@@ -236,10 +235,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           CLASS IS (ppm_t_particles_d_)
              IF (ASSOCIATED(discr%props)) THEN
-                CALL discr%destroy_prop(ddata,info)
-                or_fail("particle discr data destroy failed.")
+                SELECT TYPE (ddata => this%discr_data)
+                CLASS IS (ppm_t_discr_data)
+                   CALL discr%destroy_prop(ddata,info)
+                   or_fail("particle discr data destroy failed.")
+
+                END SELECT
              ELSE
-                SELECT TYPE (ddata)
+                SELECT TYPE (ddata => this%discr_data)
                 CLASS IS (ppm_t_part_prop_d_)
                    CALL ddata%destroy(info)
                    or_fail("discr data destroy failed.")
@@ -258,7 +261,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           end_subroutine()
       END SUBROUTINE discr_info_destroy
 
-      SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts)
+      SUBROUTINE field_discretize_on(this,discr,info,datatype,with_ghosts,discr_info)
           !!! Allocate field on a mesh
           !!! If the field has a procedure for initialization (e.g. an
           !!! initial condition), then the field is also initialized.
@@ -266,19 +269,21 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! patches. If no patches have been defined, it is assumed
           !!! that the user expects the field to be allocated on the whole domain.
           !!! A single patch is then defined, covering all the subdomains.
-          CLASS(ppm_t_field),      TARGET        :: this
-          CLASS(ppm_t_discr_kind), TARGET        :: discr
+          CLASS(ppm_t_field),                 TARGET        :: this
+          CLASS(ppm_t_discr_kind),            TARGET        :: discr
           !!! mesh or Particle set onto which this field is to be discretized
-          INTEGER,                 INTENT(  OUT) :: info
-          INTEGER,                 OPTIONAL      :: datatype
+          INTEGER,                            INTENT(  OUT) :: info
+          INTEGER,                  OPTIONAL, INTENT(IN   ) :: datatype
           !!! By default, the type is assumed to be real, double-precision.
-          LOGICAL,                 OPTIONAL      :: with_ghosts
+          LOGICAL,                  OPTIONAL, INTENT(IN   ) :: with_ghosts
           !!! By default, the data arrays are allocated with Mpart iif the ghost
           !!! particles are up-to-date. Otherwise, they are allocated with size Npart.
           !!! Setting with_ghosts to true or false forces the allocation to be done
           !!! with size Mpart or Npart, respectively.
+          CLASS(ppm_t_discr_info_), OPTIONAL, POINTER       :: discr_info
+          !!! Pointer to the new data and bookkeeping information for the mesh
+          !!! or particle set on which this field has been discretized.
 
-          CLASS(ppm_t_discr_info_),   POINTER :: discr_info => NULL()
           CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
           CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
           INTEGER                             :: dtype,p_idx
@@ -327,6 +332,9 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
               or_fail("failed to log the relationship between this field and that mesh")
 
               !CALL discr%set_rel(this,info)
+              IF (PRESENT(discr_info)) THEN
+                 discr_info => this%discr_info%last()
+              ENDIF
 
               el => this
               CALL discr%field_ptr%push(el,info)
@@ -349,14 +357,18 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
               or_fail("failed to log the relationship between this field and that particle set")
               !CALL this%set_rel(discr,p_idx,info)
 
+              IF (PRESENT(discr_info)) THEN
+                 discr_info => this%discr_info%last()
+              ENDIF
+
               el => this
               CALL discr%field_ptr%push(el,info)
               or_fail("failed to log the relationship between this particle set and that field")
 
           CLASS DEFAULT
               fail("support for this discretization type is missing")
-          END SELECT
 
+          END SELECT
 
           end_subroutine()
       END SUBROUTINE field_discretize_on
