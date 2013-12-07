@@ -1,5 +1,5 @@
          SUBROUTINE DTYPE(ppm_vtk_particles)(filename, Pc, info, &
-              step, with_ghosts, with_nvlist, Fields)
+         &    step, with_ghosts, with_nvlist, Fields)
            !--------------------------------------------------------------------
            !  Arguments
            !--------------------------------------------------------------------
@@ -91,6 +91,7 @@
                     CASE (ppm_type_int)
                        CALL props_i%push(prop,info)
                        or_fail("push integer property into print buffer list")
+
                     CASE (ppm_type_real)
                        IF (var%lda.EQ.1) THEN
                           CALL props_s%push(prop,info)
@@ -99,8 +100,10 @@
                           CALL props_v%push(prop,info)
                           or_fail("push vector property into print buffer list")
                        ENDIF
+
                     CASE DEFAULT
                        fail("not a supported type for printout (yet)")
+
                     END SELECT
 
                  CLASS IS (DTYPE(ppm_t_part_prop)_)
@@ -110,6 +113,7 @@
                     CASE (ppm_type_int)
                        CALL props_i%push(prop,info)
                        or_fail("push integer property into print buffer list")
+
                     CASE (ppm_type_real)
                        IF (var%lda.EQ.1) THEN
                           CALL props_s%push(prop,info)
@@ -118,8 +122,10 @@
                           CALL props_v%push(prop,info)
                           or_fail("push vector property into print buffer list")
                        ENDIF
+
                     CASE DEFAULT
                        fail("not a supported type for printout (yet)")
+
                     END SELECT
 
                  CLASS DEFAULT
@@ -129,7 +135,7 @@
                  el => Fields%next()
               ENDDO ! (ASSOCIATED(el))
            ELSE
-              !printout all properties i that are mapped
+              !printout all properties that are mapped
               prop => Pc%props%begin()
               DO WHILE (ASSOCIATED(prop))
                  IF (prop%flags(ppm_ppt_partial)) THEN
@@ -144,13 +150,17 @@
                        IF (prop%lda.EQ.1) THEN
                           CALL props_s%push(prop,info)
                           or_fail("push integer property into print buffer list")
+
                        ELSE
                           CALL props_v%push(prop,info)
                           or_fail("push integer property into print buffer list")
+
                        ENDIF
+
                     CASE DEFAULT
                        !not a supported type for printout (yet)
                        fail("elements of printout list should be of type ppm_t_field (for now)")
+
                     END SELECT
                     prop => Pc%props%next()
                  ENDIF
@@ -161,7 +171,6 @@
            nb_wps=props_s%nb
            nb_wpv=props_v%nb
            nb_wp_field=props_vf%nb
-
 
 #ifdef __MPI
            ! write parallel file
@@ -221,7 +230,7 @@
               ! find the basename of the file
               DO i=0,ppm_nproc-1
                  WRITE(iUnit,'(A,A,A,I0,A)') "    <Piece Source='",    &
-                 & fname(INDEX(fname, '/', .true.)+1:LEN_TRIM(fname)), &
+                 & fname(INDEX(fname, '/', .TRUE.)+1:LEN_TRIM(fname)), &
                  & ".", i, ".vtp' />"
               END DO
               ! close
@@ -327,7 +336,7 @@
 #define VTK_INTEGER wpi
 #include "vtk/print_data_array.f"
                  wpi => null()
-              end if
+              ENDIF
 
               prop => props_i%begin()
               DO WHILE (ASSOCIATED(prop))
@@ -365,7 +374,7 @@
 #define VTK_SCALAR wp
 #include "vtk/print_data_array.f"
                       wp => NULL()
-                  END DO
+                  ENDDO
                   prop => props_v%next()
               ENDDO
 
@@ -384,12 +393,13 @@
               ENDDO
 
               WRITE(iUnit,'(A)') "      </PointData>"
-           END IF
+           ENDIF
 
            ! print point coordinates
            WRITE(iUnit,'(A)') "      <Points>"
            CALL Pc%get_xp(xp,info,with_ghosts=ghosts)
-                or_fail("get_xp")
+           or_fail("get_xp")
+
            nd = SIZE(xp,1)
 #define VTK_TYPE "Float64"
 #define VTK_NDIM "3"
@@ -397,7 +407,8 @@
 #define APPEND_ZEROS
 #include "vtk/print_data_array.f"
            CALL Pc%set_xp(xp,info,read_only=.TRUE.)
-                or_fail("set_xp")
+           or_fail("set_xp")
+
            WRITE(iUnit,'(A)') "      </Points>"
 
            ! create a vertex for every point

@@ -116,7 +116,7 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
 minclude ppm_create_collection(equi_mesh,equi_mesh,generate="extend")
 
       !----------------------------------------------------------------------
-      ! DATA TYPE FOR COLLECTIVE STORAGE for the meshes
+      ! DATA TYPE FOR COLLECTIVE STORAGE of meshs
       !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_c_equi_mesh) :: ppm_vc_equi_mesh
       CONTAINS
@@ -361,7 +361,7 @@ minclude ppm_get_field_template(4,l)
 
       !CREATE
       SUBROUTINE subpatch_create(p,mesh,isub,istart,iend,pstart,pend,&
-              istart_p,iend_p,ghostsize,bcdef,info)
+      &       istart_p,iend_p,ghostsize,bcdef,info)
           !!! Constructor for subpatch data structure
 
           IMPLICIT NONE
@@ -1005,12 +1005,6 @@ minclude ppm_get_field_template(4,l)
           CALL ppm_alloc(this%iend,ldc,iopt,info)
           or_fail_dealloc("iend")
 
-          destroy_collection_ptr(this%subpatch)
-          destroy_collection_ptr(this%patch)
-          destroy_collection_ptr(this%mdata)
-
-          dealloc_pointer("this%subpatch_by_sub")
-
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
           IF (ASSOCIATED(this%field_ptr)) THEN
@@ -1030,6 +1024,14 @@ minclude ppm_get_field_template(4,l)
           ENDIF
 
           destroy_collection_ptr(this%field_ptr)
+
+          destroy_collection_ptr(this%subpatch)
+
+          destroy_collection_ptr(this%patch)
+
+          destroy_collection_ptr(this%mdata)
+
+          dealloc_pointer("this%subpatch_by_sub")
 
           dealloc_pointers(this%ghost_fromsub,this%ghost_tosub,this%ghost_patchid,this%ghost_blkstart,this%ghost_blksize,this%ghost_blk,this%ghost_recvtosub,this%ghost_recvpatchid,this%ghost_recvblkstart,this%ghost_recvblksize,this%ghost_recvblk)
 

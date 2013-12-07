@@ -271,13 +271,16 @@ integer                                        :: nterms
             Assert_Equal_Within(F3_p(3), -13._mk,tol)
         end foreach
 
-        call Part1%destroy(info)
-        Assert_Equal(info,0)
+        !call Part1%destroy(info)
+        !Assert_Equal(info,0)
         call Field1%destroy(info)
         Assert_Equal(info,0)
         call Field2%destroy(info)
         Assert_Equal(info,0)
         call Field3%destroy(info)
+        Assert_Equal(info,0)
+
+        call Part1%destroy(info)
         Assert_Equal(info,0)
 
         end_subroutine()

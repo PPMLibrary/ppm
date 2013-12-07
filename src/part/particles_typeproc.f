@@ -1122,9 +1122,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !Deallocate neighbour lists
           destroy_collection_ptr(Pc%neighs)
 
-          !Deallocate properties
-          destroy_collection_ptr(Pc%props)
-
           !Deallocate operators
           destroy_collection_ptr(Pc%ops)
 
@@ -1147,6 +1144,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           !Deallocate pointers to fields
           destroy_collection_ptr(Pc%field_ptr)
+
+          !Deallocate properties
+          destroy_collection_ptr(Pc%props)
 
           CALL DTYPE(ppm_part)%vremove(info,Pc)
           or_fail("could not remove a detroyed object from a collection")
@@ -1283,7 +1283,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------
           Npart = Pc%Npart
 
-          del_part = 1
+          del_part = 0
 
           DO i=1,nb_del
              ip = list_del_parts(i)
@@ -1291,6 +1291,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              ! copying particles from the end of xp to the index that has
              ! to be removed
              Pc%xp(1:ppm_dim,ip) = Pc%xp(1:ppm_dim,Npart-i+1)
+
+             del_part = del_part + 1
 
              prop => Pc%props%begin()
              DO WHILE (ASSOCIATED(prop))
@@ -1338,8 +1340,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                    ENDIF
                    prop => Pc%props%next()
                 ENDIF
-             ENDDO
-          ENDDO
+             ENDDO !WHILE (ASSOCIATED(prop))
+          ENDDO !i=1,nb_del
           !New number of particles, after deleting some
           Pc%Npart = Npart - del_part
 
@@ -1463,41 +1465,53 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           lda = prop%lda
 
           IF (lda.GE.2) THEN
-              SELECT CASE (prop%data_type)
-              CASE (ppm_type_int)
-                  CALL ppm_map_part_pop(prop%data_2d_i,lda,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_longint)
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &  'Type not supported for mappings.',&
-                  &  __LINE__,info)
-                  GOTO 9999
-              CASE (ppm_type_real,ppm_type_real_single)
-                  CALL ppm_map_part_pop(prop%data_2d_r,lda,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_comp,ppm_type_comp_single)
-                  CALL ppm_map_part_pop(prop%data_2d_c,lda,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_logical)
-                  CALL ppm_map_part_pop(prop%data_2d_l,lda,Pc%Npart,Npart_new,info)
-              END SELECT
+
+             SELECT CASE (prop%data_type)
+             CASE (ppm_type_int)
+                CALL ppm_map_part_pop(prop%data_2d_i,lda,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_longint)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller,   &
+                &  'Type not supported for mappings.',&
+                &  __LINE__,info)
+                GOTO 9999
+
+             CASE (ppm_type_real,ppm_type_real_single)
+                CALL ppm_map_part_pop(prop%data_2d_r,lda,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_comp,ppm_type_comp_single)
+                CALL ppm_map_part_pop(prop%data_2d_c,lda,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_logical)
+                CALL ppm_map_part_pop(prop%data_2d_l,lda,Pc%Npart,Npart_new,info)
+
+             END SELECT
 
           ELSE
 
-              SELECT CASE (prop%data_type)
-              CASE (ppm_type_int)
-                  CALL ppm_map_part_pop(prop%data_1d_i,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_longint)
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,   &
-                  &  'Type not supported for mappings.',&
-                  &  __LINE__,info)
-                  GOTO 9999
-              CASE (ppm_type_real,ppm_type_real_single)
-                  CALL ppm_map_part_pop(prop%data_1d_r,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_comp,ppm_type_comp_single)
-                  CALL ppm_map_part_pop(prop%data_1d_c,Pc%Npart,Npart_new,info)
-              CASE (ppm_type_logical)
-                  CALL ppm_map_part_pop(prop%data_1d_l,Pc%Npart,Npart_new,info)
-              END SELECT
+             SELECT CASE (prop%data_type)
+             CASE (ppm_type_int)
+                CALL ppm_map_part_pop(prop%data_1d_i,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_longint)
+                info = ppm_error_error
+                CALL ppm_error(ppm_err_argument,caller, &
+                &  'Type not supported for mappings.',  &
+                &  __LINE__,info)
+                GOTO 9999
+
+             CASE (ppm_type_real,ppm_type_real_single)
+                CALL ppm_map_part_pop(prop%data_1d_r,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_comp,ppm_type_comp_single)
+                CALL ppm_map_part_pop(prop%data_1d_c,Pc%Npart,Npart_new,info)
+
+             CASE (ppm_type_logical)
+                CALL ppm_map_part_pop(prop%data_1d_l,Pc%Npart,Npart_new,info)
+
+             END SELECT
+
           ENDIF
 
           end_subroutine()

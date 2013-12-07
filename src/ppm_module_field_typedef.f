@@ -130,7 +130,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           this%data_type = 0
 
           !Destroy the bookkeeping entries in the fields that are
-          !discretized on this mesh
+          !discretized on this mesh or particle
           !TODO !! yaser I think this is all
           tdi => this%discr_info%begin()
           DO WHILE (ASSOCIATED(tdi))
@@ -164,16 +164,16 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !CREATE
       !CREATE
       SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
-          CLASS(ppm_t_discr_info)                   :: this
-          CLASS(ppm_t_discr_kind),TARGET,INTENT(IN) :: discr
-          CLASS(ppm_t_discr_data),TARGET,INTENT(IN) :: discr_data
-          INTEGER,                       INTENT(IN) :: lda
+          CLASS(ppm_t_discr_info)                      :: this
+          CLASS(ppm_t_discr_kind),TARGET,INTENT(IN   ) :: discr
+          CLASS(ppm_t_discr_data),TARGET,INTENT(IN   ) :: discr_data
+          INTEGER,                       INTENT(IN   ) :: lda
           !!! number of components
-          LOGICAL,DIMENSION(ppm_mdata_lflags)       :: flags
-          INTEGER,                       INTENT(OUT):: info
-          INTEGER,OPTIONAL,              INTENT(IN) :: p_idx
+          LOGICAL, DIMENSION(ppm_mdata_lflags)         :: flags
+          INTEGER,                       INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,              INTENT(IN   ) :: p_idx
 
-          start_subroutine("part_discr_info_create")
+          start_subroutine("discr_info_create")
 
           this%discrID = discr%ID
           this%discr_ptr  => discr
@@ -186,16 +186,74 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       END SUBROUTINE discr_info_create
       !DESTROY
       SUBROUTINE discr_info_destroy(this,info)
-          CLASS(ppm_t_discr_info)            :: this
-          INTEGER,               INTENT(OUT) :: info
+          CLASS(ppm_t_discr_info)               :: this
+          INTEGER,                INTENT(  OUT) :: info
 
-          start_subroutine("part_discr_info_destroy")
+          CLASS(ppm_t_discr_kind),     POINTER :: discr   => NULL()
+          CLASS(ppm_t_discr_data),     POINTER :: ddata  => NULL()
+          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat => NULL()
 
-          this%discrID = 0
-          this%discr_ptr => NULL()
+          start_subroutine("discr_info_destroy")
+
+          ! yaser: I think this was a major bug!
+          ! Without this all the allocated data still would be there
+          ! even though you destroy them.
+          discr => this%discr_ptr
+          ddata => this%discr_data
+
+          SELECT TYPE (discr)
+          CLASS IS (ppm_t_equi_mesh_)
+
+             SELECT TYPE (ddata)
+             CLASS IS (ppm_t_mesh_discr_data_)
+                subpdat => ddata%subpatch%begin()
+                DO WHILE (ASSOCIATED(subpdat))
+                   IF (ASSOCIATED(subpdat%discr_data)) THEN
+                      CALL subpdat%destroy(info)
+                      or_fail("subpdat%destroy")
+                   ENDIF
+
+                   subpdat => ddata%subpatch%next()
+                ENDDO
+
+                CALL ddata%destroy(info)
+                or_fail("mesh discr data destroy failed.")
+
+             END SELECT
+
+          CLASS IS (ppm_t_particles_s_)
+             IF (ASSOCIATED(discr%props)) THEN
+                CALL discr%destroy_prop(ddata,info)
+                or_fail("particle discr data destroy failed.")
+             ELSE
+                SELECT TYPE (ddata)
+                CLASS IS (ppm_t_part_prop_s_)
+                   CALL ddata%destroy(info)
+                   or_fail("discr data destroy failed.")
+
+                END SELECT
+             ENDIF
+
+          CLASS IS (ppm_t_particles_d_)
+             IF (ASSOCIATED(discr%props)) THEN
+                CALL discr%destroy_prop(ddata,info)
+                or_fail("particle discr data destroy failed.")
+             ELSE
+                SELECT TYPE (ddata)
+                CLASS IS (ppm_t_part_prop_d_)
+                   CALL ddata%destroy(info)
+                   or_fail("discr data destroy failed.")
+
+                END SELECT
+             ENDIF
+
+          END SELECT
+
+          this%discrID    = 0
+          this%discr_ptr  => NULL()
           this%discr_data => NULL()
-          this%lda = 0
-          this%flags = .FALSE.
+          this%lda        = 0
+          this%flags      = .FALSE.
 
           end_subroutine()
       END SUBROUTINE discr_info_destroy
@@ -286,7 +344,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
               or_fail("discr%create_prop")
 
               !Update the bookkeeping table to store the relationship between
-              ! the mesh and the field.
+              ! the particle and the field.
               CALL this%set_rel_discr(discr,pddata,info)
               or_fail("failed to log the relationship between this field and that particle set")
               !CALL this%set_rel(discr,p_idx,info)

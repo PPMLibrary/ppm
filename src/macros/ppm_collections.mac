@@ -586,16 +586,10 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER :: j
 
-          IF (i.LE.0) THEN
-             element => NULL()
-             RETURN
-          ENDIF
-
-          element => this%begin()
-          DO j=2,i
-             element => this%next()
+          IF (i.GE.this%min_id .AND. i.LE.this%max_id) THEN
+             element => this%vec(i)%t
+             this%iter_id=i
              DO WHILE (.NOT.ASSOCIATED(element))
                 IF (this%iter_id.GT.this%max_id) THEN
                    element => NULL()
@@ -603,6 +597,9 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
                 ENDIF
                 element => this%next()
              ENDDO
-          ENDDO
+          ELSE
+             element => NULL()
+          ENDIF
+          RETURN
       END FUNCTION <%= collection_type %>_at
 end macro

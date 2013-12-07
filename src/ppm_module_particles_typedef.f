@@ -42,7 +42,7 @@
 #include "part/particles_typedef.f"
 
       !----------------------------------------------------------------------
-      ! DATA TYPE FOR COLLECTIVE STORAGE for particles
+      ! DATA TYPE FOR COLLECTIVE STORAGE of particles
       !----------------------------------------------------------------------
       TYPE,EXTENDS(ppm_c_particles_s) :: ppm_vc_particles_s
       CONTAINS
@@ -54,14 +54,14 @@
           PROCEDURE :: vpush   => ppm_vc_particles_d_push
           PROCEDURE :: vremove => ppm_vc_particles_d_remove
       ENDTYPE
+      PRIVATE :: ppm_vc_particles_s,ppm_vc_particles_d
 
       !----------------------------------------------------------------------
-      ! DATA STORAGE for the particles
+      ! DATA STORAGE for particles
       !----------------------------------------------------------------------
       TYPE(ppm_vc_particles_s) :: ppm_part_s
       TYPE(ppm_vc_particles_d) :: ppm_part_d
 
-      CHARACTER(LEN=ppm_char)        :: cbuf
       INTEGER, PRIVATE, DIMENSION(3) :: ldc
       !!! Number of elements in all dimensions for allocation
 
