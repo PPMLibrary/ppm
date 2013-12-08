@@ -262,7 +262,7 @@ use ppm_module_interfaces
 !------------------------------------------------------------------------------
     test field_basics
         implicit none
-        real(mk),dimension(6)       :: my_patch
+        real(mk),dimension(4)       :: my_patch
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc
@@ -301,7 +301,7 @@ use ppm_module_interfaces
         Assert_Equal(info,0)
 
         mypatchid = 1
-        my_patch = (/0.5,0.1,5.1,10.0/)
+        my_patch(1:4) = (/0.5,0.1,5.1,10.0/)
 
         call Mesh1%def_patch(my_patch,info,mypatchid)
         Assert_Equal(info,0)

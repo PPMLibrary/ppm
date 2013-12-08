@@ -199,24 +199,29 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           SELECT TYPE (discr => this%discr_ptr)
           CLASS IS (ppm_t_equi_mesh_)
 
-             SELECT TYPE (ddata => this%discr_data)
-             CLASS IS (ppm_t_mesh_discr_data_)
-                IF (ASSOCIATED(ddata%subpatch)) THEN
-                   subpdat => ddata%subpatch%begin()
-                   DO WHILE (ASSOCIATED(subpdat))
-                      IF (ASSOCIATED(subpdat%discr_data)) THEN
+             !Ugly measure to make sure that we are destroying available data
+             !not the one that has been destroyed previously
+             !TODO find st nicer
+             IF (ASSOCIATED(discr%subpatch)) THEN
+                IF (ASSOCIATED(discr%subpatch%vec)) THEN
+
+                   SELECT TYPE (ddata => this%discr_data)
+                   CLASS IS (ppm_t_mesh_discr_data_)
+                      subpdat => ddata%subpatch%begin()
+                      DO WHILE (ASSOCIATED(subpdat))
                          CALL subpdat%destroy(info)
                          or_fail("subpdat%destroy")
-                      ENDIF
 
-                      subpdat => ddata%subpatch%next()
-                   ENDDO
+                         subpdat => ddata%subpatch%next()
+                      ENDDO
+
+                      CALL ddata%destroy(info)
+                      or_fail("mesh discr data destroy failed.")
+
+                   END SELECT
+
                 ENDIF
-
-                CALL ddata%destroy(info)
-                or_fail("mesh discr data destroy failed.")
-
-             END SELECT
+             ENDIF
 
           CLASS IS (ppm_t_particles_s_)
              IF (ASSOCIATED(discr%props)) THEN
