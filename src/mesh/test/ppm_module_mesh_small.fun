@@ -41,7 +41,7 @@ class(ppm_t_subpatch_),POINTER   :: p => NULL()
 class(ppm_t_subpatch_),POINTER   :: patch => NULL()
 
 integer                          :: mypatchid
-real(mk),dimension(2*ndim)       :: my_patch
+real(mk),dimension(6)       :: my_patch
 real(mk),dimension(ndim)         :: offset
 
 integer, dimension(:), pointer                 :: wp_1i => NULL()

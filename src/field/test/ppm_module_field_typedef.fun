@@ -262,7 +262,7 @@ use ppm_module_interfaces
 !------------------------------------------------------------------------------
     test field_basics
         implicit none
-        real(mk),dimension(2*ndim)       :: my_patch
+        real(mk),dimension(6)       :: my_patch
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc

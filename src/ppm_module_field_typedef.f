@@ -201,15 +201,17 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
              SELECT TYPE (ddata => this%discr_data)
              CLASS IS (ppm_t_mesh_discr_data_)
-                subpdat => ddata%subpatch%begin()
-                DO WHILE (ASSOCIATED(subpdat))
-                   IF (ASSOCIATED(subpdat%discr_data)) THEN
-                      CALL subpdat%destroy(info)
-                      or_fail("subpdat%destroy")
-                   ENDIF
+                IF (ASSOCIATED(ddata%subpatch)) THEN
+                   subpdat => ddata%subpatch%begin()
+                   DO WHILE (ASSOCIATED(subpdat))
+                      IF (ASSOCIATED(subpdat%discr_data)) THEN
+                         CALL subpdat%destroy(info)
+                         or_fail("subpdat%destroy")
+                      ENDIF
 
-                   subpdat => ddata%subpatch%next()
-                ENDDO
+                      subpdat => ddata%subpatch%next()
+                   ENDDO
+                ENDIF
 
                 CALL ddata%destroy(info)
                 or_fail("mesh discr data destroy failed.")
