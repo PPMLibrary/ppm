@@ -210,11 +210,11 @@
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** Koumoutsakos), MOSAIC group at (ETH Zurich,)     */_/___**"
+        &  "*** Koumoutsakos), MOSAIC group at MPI-CBG Dresden   */_/___**"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** MPI-CBG Dresden (group of Dr. Ivo F.Sbalzarini)  **/  ' \*"
+        &  "*** (group of Dr. Ivo F.Sbalzarini)                  **/  ' \*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
@@ -265,11 +265,11 @@
       CALL ppm_log(caller,mesg,info)
       CALL ppm_write(ppm_rank,caller,mesg,info)
       WRITE(mesg,'(A)') &
-      &    "*** Koumoutsakos), MOSAIC group at (ETH Zurich,)     */_/___**"
+      &    "*** Koumoutsakos), MOSAIC group at MPI-CBG Dresden   */_/___**"
       CALL ppm_log(caller,mesg,info)
       CALL ppm_write(ppm_rank,caller,mesg,info)
       WRITE(mesg,'(A)') &
-      &    "*** MPI-CBG Dresden (group of Dr. Ivo F.Sbalzarini)  **/  ' \*"
+      &    "*** (group of Dr. Ivo F.Sbalzarini)                  **/  ' \*"
       CALL ppm_log(caller,mesg,info)
       CALL ppm_write(ppm_rank,caller,mesg,info)
       WRITE(mesg,'(A)') &
