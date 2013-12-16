@@ -45,6 +45,8 @@
         USE ppm_module_substop
         USE ppm_module_mktopo
 
+        IMPLICIT NONE
+
         !-------------------------------------------------------------------------
         !  Declaration of parameters
         !-------------------------------------------------------------------------
@@ -59,7 +61,7 @@
             !!! particles belonging to different cells.
             !!!
             !!! in 2D this is a 6xn_cells array
-            !!! The column indeces of borders(:,k) contain indeces to the rank array 
+            !!! The column indeces of borders(:,k) contain indeces to the rank array
             !!! specifying which particles belong in which subcell of cell k
             !!! -----------
             !!! |2:3 |4:5 |
@@ -77,7 +79,7 @@
             INTEGER, DIMENSION(:),   POINTER :: rankByPos  => NULL()
             ! rank of particles
             INTEGER, DIMENSION(:),   POINTER :: rc_borders => NULL()
-    
+
             !-------------------------------------------------------------------------
             !  Declaration of variables
             !-------------------------------------------------------------------------
@@ -88,7 +90,7 @@
             INTEGER :: n_real_p         = 0
             INTEGER :: n_all_p          = 0
             LOGICAL :: grow_htable      = .TRUE.
-    
+
             TYPE(ppm_htable) :: lookup
 
         END TYPE

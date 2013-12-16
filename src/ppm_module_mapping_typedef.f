@@ -6,11 +6,11 @@
 #define __DOUBLE_PRECISION_COMPLEX 6
 
       MODULE ppm_module_mapping_typedef
-      !!! This module defines the mapping data type and provides 
+      !!! This module defines the mapping data type and provides
       !!!  the basic mapping routines for particles and meshes; namely
       !!!  the push, send and pop routine.
-         
-      
+
+
          !----------------------------------------------------------------------
          !  Modules
          !----------------------------------------------------------------------
@@ -24,6 +24,7 @@
          USE ppm_module_substop
 
          IMPLICIT NONE
+
          PRIVATE
 
          PUBLIC :: ppm_t_ptr_part_mapping_s,ppm_t_ptr_part_mapping_d

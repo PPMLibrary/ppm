@@ -49,10 +49,10 @@ real(mk),dimension(ndim)         :: offset
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -93,7 +93,7 @@ real(mk),dimension(ndim)         :: offset
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -112,7 +112,7 @@ real(mk),dimension(ndim)         :: offset
         integer                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
         logical                             :: assoc
- 
+
         start_subroutine("ghost_mappings_basics")
 
 
@@ -138,7 +138,7 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
 
         call MPI_BARRIER(comm,info)
-        
+
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
@@ -151,15 +151,15 @@ real(mk),dimension(ndim)         :: offset
                 my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,&
                     0.99_mk,0.7_mk,0.78_mk/)
             endif
-            call Mesh1%def_patch(my_patch,info) 
+            call Mesh1%def_patch(my_patch,info)
             Assert_Equal(info,0)
         ENDIF
 
-        call Field1%create(2,info,name='vecField') 
+        call Field1%create(2,info,name='vecField')
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField') 
+        call Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -191,8 +191,8 @@ real(mk),dimension(ndim)         :: offset
         IF (ndim.eq.2) THEN
             DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
-                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
-                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(isub)%vec(ipatch)%t)
                     TYPE IS (ppm_t_subpatch)
                         DO j=1,p%nnodes(2)
                         DO i=1,p%nnodes(1)
@@ -207,8 +207,8 @@ real(mk),dimension(ndim)         :: offset
         ELSE
             DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
-                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
-                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(isub)%vec(ipatch)%t)
                     TYPE IS (ppm_t_subpatch)
                         DO k=1,p%nnodes(3)
                         DO j=1,p%nnodes(2)
@@ -336,7 +336,7 @@ real(mk),dimension(ndim)         :: offset
         integer                             :: p_idx, nb_errors
         CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
         logical                             :: assoc
- 
+
         start_subroutine("ghost_mappings_bcdef")
 
         if (decomp.eq.ppm_param_decomp_xpencil .and. (sizey/nproc).LE.2) return
@@ -368,7 +368,7 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
 
         call MPI_BARRIER(comm,info)
-        
+
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
@@ -381,15 +381,15 @@ real(mk),dimension(ndim)         :: offset
                 my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
             endif
 
-            call Mesh1%def_patch(my_patch,info) 
+            call Mesh1%def_patch(my_patch,info)
             Assert_Equal(info,0)
         endif
 
-        call Field1%create(2,info,name='vecField') 
+        call Field1%create(2,info,name='vecField')
             Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
-        call Field2%create(1,info,name='scaField') 
+        call Field2%create(1,info,name='scaField')
             Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
             Assert_Equal(info,0)
@@ -458,8 +458,8 @@ real(mk),dimension(ndim)         :: offset
         IF (ndim.eq.2) THEN
             DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
-                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
-                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(isub)%vec(ipatch)%t)
                     TYPE IS (ppm_t_subpatch)
                         DO j=1,p%nnodes(2)
                         DO i=1,p%nnodes(1)
@@ -480,8 +480,8 @@ real(mk),dimension(ndim)         :: offset
         ELSE
             DO jsub = 1,topo%nsublist
                 isub = topo%isublist(jsub)
-                DO ipatch=1,Mesh1%subpatch_by_sub(jsub)%nsubpatch
-                    SELECT TYPE(p => Mesh1%subpatch_by_sub(jsub)%vec(ipatch)%t)
+                DO ipatch=1,Mesh1%subpatch_by_sub(isub)%nsubpatch
+                    SELECT TYPE(p => Mesh1%subpatch_by_sub(isub)%vec(ipatch)%t)
                     TYPE IS (ppm_t_subpatch)
                         DO k=1,p%nnodes(3)
                         DO j=1,p%nnodes(2)

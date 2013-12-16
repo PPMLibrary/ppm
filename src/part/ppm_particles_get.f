@@ -1,476 +1,498 @@
 #define WRAP(a) a
 
-
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(this,wp,info) 
-    !!!------------------------------------------------------------------------!
-    !!! Check whether a Data Structure exists and can be accessed at this id
-    !!!------------------------------------------------------------------------!
-
-    !-------------------------------------------------------------------------
-    !  Arguments
-    !-------------------------------------------------------------------------
-    CLASS(DTYPE(ppm_t_part_prop))                       :: this
-    !!! Data structure containing the particles
+#define __FUNCTYPE WRAP(DATANAME)
+      SUBROUTINE __FUNCNAME(this,wp,info)
+          !!!------------------------------------------------------------------------!
+          !!! Check whether a Data Structure exists and can be accessed
+          !!!------------------------------------------------------------------------!
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_part_prop))                                 :: this
+          !!! Data structure containing the particles
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER,        INTENT(IN   )   :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(IN   ) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER,      INTENT(IN   )   :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(IN   ) :: wp
 #endif
-    INTEGER,                            INTENT(   OUT)  :: info
-    !!! Return status, on success 0.
-    INTEGER, DIMENSION(:),POINTER :: nullv=>NULL()
-    
-    start_subroutine(__FUNCNAME)
-    !-------------------------------------------------------------------------
-    ! Check arguments
-    !-------------------------------------------------------------------------
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
 
+          start_subroutine(__FUNCNAME)
+          !-------------------------------------------------------------------------
+          ! Check arguments
+          !-------------------------------------------------------------------------
 #if   __DIM == 1
-    IF (this%lda.NE.1) THEN
+          IF (this%lda.NE.1) THEN
 #elif __DIM == 2
-    IF (this%lda.LT.2) THEN
+          IF (this%lda.LT.2) THEN
 #endif
-        fail ("Argument has wrong dimension for this property")
-    ENDIF
+             fail ("Argument has wrong dimension for this property")
+          ENDIF
 
-    IF (this%data_type.NE. &
+          info=-1
+
+          SELECT CASE (this%data_type)
 #if   __MYTYPE == __INTEGER
-        ppm_type_int&
+          CASE (ppm_type_int)
 #elif __MYTYPE == __LONGINT
-        ppm_type_longint& 
+          CASE (ppm_type_longint)
 #elif __MYTYPE == __REAL
-        ppm_type_real& 
+          CASE (ppm_type_real,ppm_type_real_single)
 #elif __MYTYPE == __COMPLEX
-        ppm_type_comp& 
+          CASE (ppm_type_comp,ppm_type_comp_single)
 #elif __MYTYPE == __LOGICAL
-        ppm_type_logical& 
-#else
-        ppm_type_none&
+          CASE (ppm_type_logical)
 #endif
-       &  ) THEN
+             IF (ASSOCIATED(this%__FUNCTYPE)) info=0
 
-       fail ("Argument has wrong dimension for this property")
-    ENDIF
+          CASE DEFAULT
+             fail ("Argument has wrong datatype for this property")
 
-    end_subroutine()
+          END SELECT
 
-END SUBROUTINE __FUNCNAME
+          end_subroutine()
+
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
+#undef __FUNCTYPE
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_prop)
-SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only,skip_checks)
-    CLASS(DTYPE(ppm_t_particles))   :: this
-    !CLASS(DTYPE(ppm_t_part_prop)_),POINTER  :: discr_data
-    CLASS(ppm_t_discr_data)          :: discr_data
+      SUBROUTINE __FUNCNAME(this,discr_data,wp,info,with_ghosts,read_only,skip_checks)
+
+          IMPLICIT NONE
+
+          CLASS(DTYPE(ppm_t_particles))                                 :: this
+          CLASS(ppm_t_discr_data),                        INTENT(INOUT) :: discr_data
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER     :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER   :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
-    INTEGER                         :: info
-    !!! Return status, on success 0.
-    LOGICAL,OPTIONAL                :: with_ghosts
-    !!! returns array between 1:Mpart (default is 1:Npart)
-    LOGICAL,OPTIONAL                :: read_only
-    !!! swear on your favourite book that you will not modify the data
-    !!! that you access. Default is false (which implies that the state
-    !!! variables will be modify with the assumption that the data
-    !!! accessed has been changed, e.g. so that a subsequent ghost update
-    !!! will also update this property)
-    LOGICAL,OPTIONAL                :: skip_checks
-    !!! Only for users with huge cojones
-    LOGICAL                         :: skip
-    INTEGER                         :: np
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: with_ghosts
+          !!! returns array between 1:Mpart (default is 1:Npart)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          !!! swear on your favourite book that you will not modify the data
+          !!! that you access. Default is false (which implies that the state
+          !!! variables will be modify with the assumption that the data
+          !!! accessed has been changed, e.g. so that a subsequent ghost update
+          !!! will also update this property)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: skip_checks
+          !!! Only for users with huge cojones
 
-    start_subroutine(__FUNCNAME)
-    
-    IF (PRESENT(skip_checks)) THEN
-      skip = skip_checks
-    ELSE
-      skip = .FALSE.
-    ENDIF
+          INTEGER :: np
 
-    wp => NULL()
+          LOGICAL :: skip
 
-    SELECT TYPE(discr_data)
-    CLASS IS (DTYPE(ppm_t_part_prop)_)
+          start_subroutine(__FUNCNAME)
 
-    IF (ppm_debug.GE.1) THEN
-        CALL discr_data%checktype(wp,info)
-        or_fail("Argument has the wrong type for this property")
-    ENDIF
+          IF (PRESENT(skip_checks)) THEN
+             skip = skip_checks
+          ELSE
+             skip = .FALSE.
+          ENDIF
 
-    np = this%Npart
-    IF (PRESENT(with_ghosts)) THEN
-        IF (with_ghosts) THEN
-            IF (skip.OR.discr_data%flags(ppm_ppt_ghosts)) THEN
-                np = this%Mpart
-            ELSE
-                WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
-                    & TRIM(ADJUSTL(discr_data%name)),&
-                    & ") with ghosts when ghosts are not up-to-date. ",&
-                    & "Returning NULL pointer"
-                CALL ppm_write(ppm_rank,caller,cbuf,info)
-                    fail("ghosts are not up-to-date")
-            ENDIF
-        ENDIF
-    ENDIF
+          wp => NULL()
 
-    IF (skip.OR.discr_data%flags(ppm_ppt_partial)) THEN
-        wp => &
+          SELECT TYPE(discr_data)
+          CLASS IS (DTYPE(ppm_t_part_prop)_)
+             IF (ppm_debug.GE.1) THEN
+                CALL discr_data%checktype(wp,info)
+                or_fail("Argument is not accessible for this property")
+             ENDIF
+
+             np = this%Npart
+             IF (PRESENT(with_ghosts)) THEN
+                IF (with_ghosts) THEN
+                   IF (skip.OR.discr_data%flags(ppm_ppt_ghosts)) THEN
+                      np = this%Mpart
+                   ELSE
+                      WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ", &
+                      & TRIM(ADJUSTL(discr_data%name)),                     &
+                      & ") with ghosts when ghosts are not up-to-date. ",   &
+                      & "Returning NULL pointer"
+
+                      CALL ppm_write(ppm_rank,caller,cbuf,info)
+                      fail("ghosts are not up-to-date")
+                   ENDIF
+                ENDIF
+             ENDIF
+
+             IF (skip.OR.discr_data%flags(ppm_ppt_partial)) THEN
+                wp =>  &
 #if   __DIM == 1
-            discr_data%WRAP(DATANAME)(1:np)
+                &  discr_data%WRAP(DATANAME)(1:np)
 #elif __DIM == 2
-            discr_data%WRAP(DATANAME)(:,1:np)
+                &  discr_data%WRAP(DATANAME)(:,1:np)
 #endif
-    ELSE
-        WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-            & TRIM(ADJUSTL(discr_data%name)),&
-            & ') when mapping is not up-to-date. ',&
-            & 'Returning NULL pointer', &
-            'Run with traceback option to debug'
-        CALL ppm_write(ppm_rank,cbuf,caller,info)
-            fail("unmapped particles")
-    ENDIF
+             ELSE
+                WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
+                & TRIM(ADJUSTL(discr_data%name)),                      &
+                & ') when mapping is not up-to-date. ',                &
+                & 'Returning NULL pointer',                            &
+                & 'Run with traceback option to debug'
 
-    !Assume that the ghost values are now incorrect, unless explicitely
-    !told otherwise
-    IF (PRESENT(read_only)) THEN
-        IF (.NOT.read_only) THEN
-            discr_data%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    ELSE
-        discr_data%flags(ppm_ppt_ghosts) = .FALSE.
-    ENDIF
+                CALL ppm_write(ppm_rank,cbuf,caller,info)
+                fail("unmapped particles")
+             ENDIF
 
-    END SELECT
+             !Assume that the ghost values are now incorrect, unless explicitely
+             !told otherwise
+             IF (PRESENT(read_only)) THEN
+                IF (.NOT.read_only) THEN
+                   discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+                ENDIF
+             ELSE
+                discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+             ENDIF
 
-    check_associated(wp,"Get_Prop returned a NULL pointer",ppm_err_sub_failed)
+          END SELECT
 
-    end_subroutine()
-END SUBROUTINE __FUNCNAME
+          check_associated(wp,"Get_Prop returned a NULL pointer",ppm_err_sub_failed)
+
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set_prop)
-SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
-    CLASS(DTYPE(ppm_t_particles))    :: this
-    CLASS(ppm_t_discr_data)          :: discr_data
-    INTEGER                          :: info
-    !!! Return status, on success 0.
-    LOGICAL,OPTIONAL                 :: read_only
-    LOGICAL,OPTIONAL                 :: ghosts_ok
+      SUBROUTINE __FUNCNAME(this,discr_data,wp,info,read_only,ghosts_ok)
+
+          IMPLICIT NONE
+
+          CLASS(DTYPE(ppm_t_particles))                                 :: this
+          CLASS(ppm_t_discr_data),                        INTENT(INOUT) :: discr_data
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER      :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER    :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: ghosts_ok
 
-    start_subroutine(__FUNCNAME)
+          start_subroutine(__FUNCNAME)
 
+          !If read_only was not explicitely set to true, then assume
+          !that ghosts are no longer up to date, unless ghosts_ok was
+          ! explicitely set to true
+          IF (PRESENT(ghosts_ok)) THEN
+             IF (.NOT.ghosts_ok) THEN
+                !Assume that the ghost values are now incorrect
+                discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+             ENDIF
+          ENDIF
 
-    !If read_only was not explicitely set to true, then assume
-    !that ghosts are no longer up to date, unless ghosts_ok was
-    ! explicitely set to true
-    IF (PRESENT(ghosts_ok)) THEN
-        IF (.NOT.ghosts_ok) THEN
-            !Assume that the ghost values are now incorrect
-            discr_data%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    ENDIF
+          IF (PRESENT(read_only)) THEN
+             IF (.NOT.read_only) THEN
+                !Assume that the ghost values are now incorrect
+                discr_data%flags(ppm_ppt_ghosts) = .FALSE.
+             ENDIF
+          ENDIF
 
-    IF (PRESENT(read_only)) THEN
-        IF (.NOT.read_only) THEN
-            !Assume that the ghost values are now incorrect
-            discr_data%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    ENDIF
+          wp => NULL()
 
-    wp => NULL()
-
-    end_subroutine()
-END SUBROUTINE __FUNCNAME
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get_field)
-SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only,skip_checks)
-    !!! Returns a pointer to the data array where that contains
-    !!! the discretized elements of Field on this particle set.
-    CLASS(DTYPE(ppm_t_particles))   :: this
-    CLASS(ppm_t_field_)             :: Field
+      SUBROUTINE __FUNCNAME(this,Field,wp,info,with_ghosts,read_only,skip_checks)
+          !!! Returns a pointer to the data array where that contains
+          !!! the discretized elements of Field on this particle set.
+          CLASS(DTYPE(ppm_t_particles))                                 :: this
+          CLASS(ppm_t_field_),                            INTENT(IN   ) :: Field
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER     :: wp
-    !!! data array 
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER   :: wp
-    !!! data array
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
-    INTEGER                         :: info
-    !!! Return status, on success 0.
-    LOGICAL,OPTIONAL                :: with_ghosts
-    !!! returns array between 1:Mpart (default is 1:Npart)
-    LOGICAL,OPTIONAL                :: read_only
-    !!! swear on your favourite book that you will not modify the data
-    !!! that you access. Default is false (which implies that the state
-    !!! variables will be modify with the assumption that the data
-    !!! accessed has been changed, e.g. so that a subsequent ghost update
-    !!! will also update this property)
-    LOGICAL,OPTIONAL                :: skip_checks
-    !!! Only for users with huge cojones
+          !!! data array
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: with_ghosts
+          !!! returns array between 1:Mpart (default is 1:Npart)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          !!! swear on your favourite book that you will not modify the data
+          !!! that you access. Default is false (which implies that the state
+          !!! variables will be modify with the assumption that the data
+          !!! accessed has been changed, e.g. so that a subsequent ghost update
+          !!! will also update this property)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: skip_checks
+          !!! Only for users with huge cojones
 
-    INTEGER                         :: np
-    CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
-    LOGICAL                         :: skip
+          CLASS(ppm_t_discr_data), POINTER :: discr_data => NULL()
 
-    start_subroutine(__FUNCNAME)
+          INTEGER :: np
 
-    IF (PRESENT(skip_checks)) THEN
-      skip = skip_checks
-    ELSE
-      skip = .FALSE.
-    ENDIF
+          LOGICAL :: skip
 
-    wp => NULL()
+          start_subroutine(__FUNCNAME)
 
-    CALL Field%get_discr(this,discr_data,info)
-        or_fail("could not get discr data for this field on that particle set")
+          IF (PRESENT(skip_checks)) THEN
+             skip = skip_checks
+          ELSE
+             skip = .FALSE.
+          ENDIF
 
-    SELECT TYPE(prop => discr_data)
-    CLASS IS (DTYPE(ppm_t_part_prop))
-        IF (ppm_debug.GE.1) THEN
-            CALL prop%checktype(wp,info)
-            or_fail("Argument has the wrong type for this property")
-        ENDIF
+          wp => NULL()
 
-        np = this%Npart
-        IF (PRESENT(with_ghosts)) THEN
-            IF (with_ghosts) THEN
-                IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
-                    np = this%Mpart
-                ELSE
-                    WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ",&
-                        & TRIM(ADJUSTL(prop%name)),&
-                        & ") with ghosts when ghosts are not up-to-date. ",&
-                        & "Returning NULL pointer"
-                    CALL ppm_write(ppm_rank,caller,cbuf,info)
-                    fail("ghosts are not up-to-date")
-                ENDIF
-            ENDIF
-        ENDIF
+          CALL Field%get_discr(this,discr_data,info)
+          or_fail("could not get discr data for this field on that particle set")
 
-        IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
-            wp => &
+          SELECT TYPE(prop => discr_data)
+          CLASS IS (DTYPE(ppm_t_part_prop))
+              IF (ppm_debug.GE.1) THEN
+                 CALL prop%checktype(wp,info)
+                 or_fail("Argument is not accessible for this property")
+              ENDIF
+
+              np = this%Npart
+              IF (PRESENT(with_ghosts)) THEN
+                 IF (with_ghosts) THEN
+                    IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
+                       np = this%Mpart
+                    ELSE
+                       WRITE(cbuf,*)"ERROR: tried to get DATANAME (name = ", &
+                       & TRIM(ADJUSTL(prop%name)),                           &
+                       & ") with ghosts when ghosts are not up-to-date. ",   &
+                       & "Returning NULL pointer"
+
+                       CALL ppm_write(ppm_rank,caller,cbuf,info)
+                       fail("ghosts are not up-to-date")
+                      ENDIF
+                  ENDIF
+              ENDIF
+
+              IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
+                 wp => &
 #if   __DIM == 1
-                prop%WRAP(DATANAME)(1:np)
+                 &  prop%WRAP(DATANAME)(1:np)
 #elif __DIM == 2
-                prop%WRAP(DATANAME)(:,1:np)
+                 &  prop%WRAP(DATANAME)(:,1:np)
 #endif
-        ELSE
-            WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ',&
-                & TRIM(ADJUSTL(prop%name)),&
-                & ') when mapping is not up-to-date. ',&
-                & 'Returning NULL pointer', &
-                'Run with traceback option to debug'
-            CALL ppm_write(ppm_rank,cbuf,caller,info)
-            fail("unmapped particles")
-        ENDIF
-        !Assume that the ghost values are now incorrect, unless explicitely
-        !told otherwise
-        IF (PRESENT(read_only)) THEN
-            IF (.NOT.read_only) THEN
-                prop%flags(ppm_ppt_ghosts) = .FALSE.
-            ENDIF
-        ELSE
-            prop%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    CLASS DEFAULT
-        fail("wrong type. Discretized data should be a ppm_t_part_prop")
-    END SELECT
+              ELSE
+                  WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
+                  & TRIM(ADJUSTL(prop%name)),                            &
+                  & ') when mapping is not up-to-date. ',                &
+                  & 'Returning NULL pointer',                            &
+                  & 'Run with traceback option to debug'
 
-    check_associated(wp,"Get_Field returned a NULL pointer",ppm_err_sub_failed)
+                  CALL ppm_write(ppm_rank,cbuf,caller,info)
+                  fail("unmapped particles")
+              ENDIF
+              !Assume that the ghost values are now incorrect, unless explicitely
+              !told otherwise
+              IF (PRESENT(read_only)) THEN
+                 IF (.NOT.read_only) THEN
+                    prop%flags(ppm_ppt_ghosts) = .FALSE.
+                 ENDIF
+              ELSE
+                 prop%flags(ppm_ppt_ghosts) = .FALSE.
+              ENDIF
 
-    end_subroutine()
-END SUBROUTINE __FUNCNAME
+          CLASS DEFAULT
+             fail("wrong type. Discretized data should be a ppm_t_part_prop")
+
+          END SELECT
+
+          check_associated(wp,"Get_Field returned a NULL pointer",ppm_err_sub_failed)
+
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set_field)
-SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
-    CLASS(DTYPE(ppm_t_particles))    :: this
-    CLASS(ppm_t_field_)              :: Field
-    INTEGER                          :: info
-    !!! Return status, on success 0.
-    LOGICAL,OPTIONAL                 :: read_only
-    LOGICAL,OPTIONAL                 :: ghosts_ok
+      SUBROUTINE __FUNCNAME(this,Field,wp,info,read_only,ghosts_ok)
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles))                                 :: this
+          CLASS(ppm_t_field_),                            INTENT(IN   ) :: Field
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER      :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER    :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
+          !!! data array
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: ghosts_ok
 
-    CLASS(ppm_t_discr_data),      POINTER :: discr_data => NULL()
+          CLASS(ppm_t_discr_data), POINTER :: discr_data => NULL()
 
-    start_subroutine(__FUNCNAME)
+          start_subroutine(__FUNCNAME)
 
-    CALL Field%get_discr(this,discr_data,info)
-        or_fail("could not get discr data for this field on that particle set")
+          CALL Field%get_discr(this,discr_data,info)
+          or_fail("could not get discr data for this field on that particle set")
 
-    SELECT TYPE(prop => discr_data)
-    CLASS IS (DTYPE(ppm_t_part_prop))
+          SELECT TYPE(prop => discr_data)
+          CLASS IS (DTYPE(ppm_t_part_prop))
+             !If read_only was not explicitely set to true, then assume
+             !that ghosts are no longer up to date, unless ghosts_ok was
+             ! explicitely set to true
+             IF (PRESENT(ghosts_ok)) THEN
+                IF (.NOT.ghosts_ok) THEN
+                   !Assume that the ghost values are now incorrect
+                   prop%flags(ppm_ppt_ghosts) = .FALSE.
+                ENDIF
+             ENDIF
 
-    !If read_only was not explicitely set to true, then assume
-    !that ghosts are no longer up to date, unless ghosts_ok was
-    ! explicitely set to true
-    IF (PRESENT(ghosts_ok)) THEN
-        IF (.NOT.ghosts_ok) THEN
-            !Assume that the ghost values are now incorrect
-            prop%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    ENDIF
+             IF (PRESENT(read_only)) THEN
+                IF (.NOT.read_only) THEN
+                   !Assume that the ghost values are now incorrect
+                   prop%flags(ppm_ppt_ghosts) = .FALSE.
+                ENDIF
+             ENDIF
 
-    IF (PRESENT(read_only)) THEN
-        IF (.NOT.read_only) THEN
-            !Assume that the ghost values are now incorrect
-            prop%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
-    ENDIF
-    END SELECT
+          END SELECT
 
-    wp => NULL()
+          wp => NULL()
 
-    end_subroutine()
-END SUBROUTINE __FUNCNAME
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_get)
 #define __CHECKTYPE DTYPE(WRAP(DATANAME)_check)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,with_ghosts,read_only,skip_checks)
-    CLASS(DTYPE(ppm_t_particles))   :: Pc
-    INTEGER                         :: ppt_id
+      SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,info,with_ghosts,read_only,skip_checks)
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles))                                 :: Pc
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER     :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER   :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
-    INTEGER                         :: info
-    !!! Return status, on success 0.
-    LOGICAL,OPTIONAL                :: with_ghosts
-    !!! returns array between 1:Mpart (default is 1:Npart)
-    LOGICAL,OPTIONAL                :: read_only
-    !!! swear on your favourite book that you will not modify the data
-    !!! that you access. Default is false (which implies that the state
-    !!! variables will be modify with the assumption that the data
-    !!! accessed has been changed, e.g. so that a subsequent ghost update
-    !!! will also update this property)
-    LOGICAL,OPTIONAL                :: skip_checks
-    !!! Only for users with huge cojones
-    LOGICAL   :: lghosts
-    LOGICAL                         :: skip
+          !!! data array
+          INTEGER,                                        INTENT(IN   ) :: ppt_id
+          INTEGER,                                        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: with_ghosts
+          !!! returns array between 1:Mpart (default is 1:Npart)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          !!! swear on your favourite book that you will not modify the data
+          !!! that you access. Default is false (which implies that the state
+          !!! variables will be modify with the assumption that the data
+          !!! accessed has been changed, e.g. so that a subsequent ghost update
+          !!! will also update this property)
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: skip_checks
+          !!! Only for users with huge cojones
 
-    start_subroutine(__FUNCNAME)
+          LOGICAL :: lghosts
+          LOGICAL :: skip
 
-    IF (PRESENT(skip_checks)) THEN
-      skip = skip_checks
-    ELSE
-      skip = .FALSE.
-    ENDIF
+          start_subroutine(__FUNCNAME)
 
+          IF (PRESENT(skip_checks)) THEN
+             skip = skip_checks
+          ELSE
+             skip = .FALSE.
+          ENDIF
 
-    wp => NULL()
-    lghosts = .FALSE.
-    IF (PRESENT(with_ghosts)) THEN
-        IF (with_ghosts) lghosts = .TRUE.
-    ENDIF
+          wp => NULL()
 
-    IF (ppt_id .LE. 0) THEN
-        stdout("ERROR: failed to get DATANAME for property with ppt_id = ",ppt_id)
-        fail("Cannot get property. Returning Null pointer")
-    ENDIF
+          lghosts = .FALSE.
+          IF (PRESENT(with_ghosts)) THEN
+             IF (with_ghosts) lghosts = .TRUE.
+          ENDIF
 
+          IF (ppt_id .LE. 0) THEN
+             stdout("ERROR: failed to get DATANAME for property with ppt_id = ",ppt_id)
+             fail("Cannot get property. Returning Null pointer")
+          ENDIF
 
-    IF (ppt_id .LE. Pc%props%max_id) THEN
-        ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)
-        IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
-            IF (lghosts) THEN
-                IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
-                    wp => &
+          IF (ppt_id .LE. Pc%props%max_id) THEN
+             ASSOCIATE (prop => Pc%props%vec(ppt_id)%t)
+                IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
+                   IF (lghosts) THEN
+                      IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
+                         wp => &
 #if   __DIM == 1
-                        prop%WRAP(DATANAME)(1:Pc%Mpart)
+                         &  prop%WRAP(DATANAME)(1:Pc%Mpart)
 #elif __DIM == 2
-                        prop%WRAP(DATANAME)(:,1:Pc%Mpart)
+                         &  prop%WRAP(DATANAME)(:,1:Pc%Mpart)
 #endif
+                      ELSE
+                         stdout("ERROR: tried to get DATANAME (name = ",     &
+                         & 'TRIM(ADJUSTL(prop%name))',                       &
+                         & ") with ghosts when ghosts are not up-to-date. ", &
+                         & "Returning NULL pointer")
+
+                         fail("Ghosts not up-to-date. Call map_ghosts()?")
+                      ENDIF
+                   ELSE
+                      wp => &
+#if   __DIM == 1
+                      &  prop%WRAP(DATANAME)(1:Pc%Npart)
+#elif __DIM == 2
+                      &  prop%WRAP(DATANAME)(:,1:Pc%Npart)
+#endif
+                   ENDIF
                 ELSE
-                    stdout("ERROR: tried to get DATANAME (name = ",&
-                        & 'TRIM(ADJUSTL(prop%name))',&
-                        & ") with ghosts when ghosts are not up-to-date. ",&
-                        & "Returning NULL pointer")
-                    fail("Ghosts not up-to-date. Call map_ghosts()?")
+                   stdout("ERROR: tried to get DATANAME (name = ", &
+                   & 'TRIM(ADJUSTL(Pc%props%vec(ppt_id)%t%name))', &
+                   & ") when mapping is not up-to-date. ",         &
+                   & "Returning NULL pointer")
+
+                   fail("unmapped particles")
                 ENDIF
-            ELSE
-                wp => &
-#if   __DIM == 1
-                    prop%WRAP(DATANAME)(1:Pc%Npart)
-#elif __DIM == 2
-                    prop%WRAP(DATANAME)(:,1:Pc%Npart)
-#endif
-            ENDIF
-        ELSE
-            stdout("ERROR: tried to get DATANAME (name = ",&
-                & 'TRIM(ADJUSTL(Pc%props%vec(ppt_id)%t%name))',&
-                & ") when mapping is not up-to-date. ",&
-                & "Returning NULL pointer")
-            fail("unmapped particles")
-        ENDIF
 
-        IF (PRESENT(read_only)) THEN
-            IF (.NOT.read_only) prop%flags(ppm_ppt_ghosts) = .FALSE.
-        ELSE
-            prop%flags(ppm_ppt_ghosts) = .FALSE.
-        ENDIF
+                IF (PRESENT(read_only)) THEN
+                   IF (.NOT.read_only) prop%flags(ppm_ppt_ghosts) = .FALSE.
+                ELSE
+                   prop%flags(ppm_ppt_ghosts) = .FALSE.
+                ENDIF
+             END ASSOCIATE
+          ELSE
+             fail("Invalid id for particle property, returning NULL pointer")
+          ENDIF
 
-        END ASSOCIATE
-    ELSE
-        fail("Invalid id for particle property, returning NULL pointer")
-    ENDIF
-
-    end_subroutine()
-END SUBROUTINE __FUNCNAME
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
-
 #define __FUNCNAME DTYPE(WRAP(DATANAME)_set)
-SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,read_only,ghosts_ok)
-    CLASS(DTYPE(ppm_t_particles))    :: Pc
-    INTEGER                          :: ppt_id
-    LOGICAL,OPTIONAL                 :: read_only
-    LOGICAL,OPTIONAL                 :: ghosts_ok
+      SUBROUTINE __FUNCNAME(Pc,wp,ppt_id,info,read_only,ghosts_ok)
+          CLASS(DTYPE(ppm_t_particles))                                 :: Pc
 #if   __DIM == 1
-    __TYPE,DIMENSION(:),POINTER      :: wp
+          __TYPE, DIMENSION(:  ), POINTER, INTENT(INOUT) :: wp
 #elif __DIM == 2
-    __TYPE,DIMENSION(:,:),POINTER    :: wp
+          __TYPE, DIMENSION(:,:), POINTER, INTENT(INOUT) :: wp
 #endif
+          !!! data array
+          INTEGER,                                        INTENT(IN   ) :: ppt_id
+          INTEGER,                                        INTENT(  OUT) :: info
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: read_only
+          LOGICAL,                              OPTIONAL, INTENT(IN   ) :: ghosts_ok
 
-    !If read_only was not explicitely set to true, then assume
-    !that ghosts are no longer up to date, unless ghosts_ok was
-    ! explicitely set to true
-    IF (PRESENT(ghosts_ok)) THEN
-        IF (ghosts_ok) THEN
-            wp => NULL()
-            RETURN
-        ENDIF
-    ENDIF
+          start_subroutine(__FUNCNAME)
 
-    IF (PRESENT(read_only)) THEN
-        IF (read_only) THEN
-            wp => NULL()
-            RETURN
-        ENDIF
-    ENDIF
+          !If read_only was not explicitely set to true, then assume
+          !that ghosts are no longer up to date, unless ghosts_ok was
+          ! explicitely set to true
+          IF (PRESENT(ghosts_ok)) THEN
+             IF (ghosts_ok) THEN
+                wp => NULL()
+                RETURN
+             ENDIF
+          ENDIF
 
-    !Assume that the ghost values are now incorrect
-    Pc%props%vec(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
-    wp => NULL()
+          IF (PRESENT(read_only)) THEN
+             IF (read_only) THEN
+                wp => NULL()
+                RETURN
+             ENDIF
+          ENDIF
 
-END SUBROUTINE __FUNCNAME
+          !Assume that the ghost values are now incorrect
+          Pc%props%vec(ppt_id)%t%flags(ppm_ppt_ghosts) = .FALSE.
+          wp => NULL()
+
+          end_subroutine()
+      END SUBROUTINE __FUNCNAME
 #undef __FUNCNAME
 
 #undef DATANAME

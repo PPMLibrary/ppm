@@ -43,15 +43,15 @@ use ppm_module_interfaces
     integer                         :: kernel
     integer                         :: seedsize
     integer,  dimension(:),allocatable :: seed
-        real(mk),dimension(:,:),pointer  :: field2d_1,field2d_2
-        real(mk),dimension(:,:,:),pointer:: field3d_1,field3d_2
-        real(mk),dimension(:,:,:),pointer:: field4d_1,field4d_2
-        integer, dimension(2)            :: maxndata
-        integer, dimension(:  ), pointer :: isublist => NULL()
-        integer                          :: nsublist
-        integer                          :: ipatch,mypatchid
-        type(ppm_t_topo),      POINTER   :: topo => NULL()
-        real(mk)                         :: sca_ghostsize
+    real(mk),dimension(:,:),  pointer:: field2d_1=>NULL(),field2d_2=>NULL()
+    real(mk),dimension(:,:,:),pointer:: field3d_1=>NULL(),field3d_2=>NULL()
+    real(mk),dimension(:,:,:),pointer:: field4d_1=>NULL(),field4d_2=>NULL()
+    integer, dimension(2)            :: maxndata
+    integer, dimension(:  ), pointer :: isublist => NULL()
+    integer                          :: nsublist
+    integer                          :: ipatch,mypatchid
+    type(ppm_t_topo),      POINTER   :: topo => NULL()
+    real(mk)                         :: sca_ghostsize
 
 
 !-------------------------- init testsuit -------------------------------------
@@ -87,7 +87,7 @@ use ppm_module_interfaces
         use ppm_module_finalize
 
         call ppm_finalize(info)
-        
+
         deallocate(min_phys,max_phys,ghostsize,nm)
 
     end finalize
@@ -96,14 +96,14 @@ use ppm_module_interfaces
 
 !------------------------------ test setup ------------------------------------
     setup
-        
+
         nullify(xp)
         nullify(wp)
         nullify(cost)
 
         np = 400*nproc
         mp = 0
-        
+
         call random_seed(size=seedsize)
         allocate(seed(seedsize))
         do i=1,seedsize
@@ -119,14 +119,14 @@ use ppm_module_interfaces
             ighostsize(i) = 2
             ghostsize(i) = 0.05_mk
         enddo
-        
+
     end setup
 !------------------------------------------------------------------------------
-        
+
 
 !--------------------------- test teardown ------------------------------------
     teardown
-        
+
         if (associated(xp)) deallocate(xp)
         if (associated(wp)) deallocate(wp)
         if (associated(cost)) deallocate(cost)
@@ -141,7 +141,7 @@ use ppm_module_interfaces
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc
-        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+        type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         integer,dimension(:),pointer :: ilist => NULL()
@@ -155,12 +155,12 @@ use ppm_module_interfaces
         allocate(nm(ndim),stat=info)
         nm(1:ndim) = 16*nproc
 
-        sca_ghostsize = 0.05_mk 
+        sca_ghostsize = 0.05_mk
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
-        
+
         !--------------------------
         !Define Fields
         !--------------------------
@@ -176,7 +176,7 @@ use ppm_module_interfaces
         call Mesh1%create(topoid,offset,info,Nm=Nm)
         Assert_Equal(info,0)
 
-        call Mesh1%def_uniform(info) 
+        call Mesh1%def_uniform(info)
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -234,8 +234,8 @@ use ppm_module_interfaces
 
 
         ilist => Mesh1%list_of_fields(info)
-        if(associated(ilist)) then
-            write(*,*) 'mesh1%list: ', ilist
+        if (associated(ilist)) then
+           write(*,*) 'mesh1%list: ', ilist
         endif
         ilist => Mesh2%list_of_fields(info)
         write(*,*) 'mesh2%list: ', associated(ilist)
@@ -244,7 +244,9 @@ use ppm_module_interfaces
         ! Remove a patch
         !--------------------
         !Mesh1%remove_patch(patch_ID = 2)
-        
+        call Mesh1%subpatch%destroy(info)
+        Assert_Equal(info,0)
+
         call Vort%destroy(info)
         Assert_equal(info,0)
         call Veloc%destroy(info)
@@ -260,11 +262,11 @@ use ppm_module_interfaces
 !------------------------------------------------------------------------------
     test field_basics
         implicit none
-        real(mk),dimension(2*ndim)       :: my_patch
+        real(mk),dimension(4)       :: my_patch
         real(mk),dimension(ndim)         :: offset
 
         type(ppm_t_field)                :: Vort,Veloc
-        type(ppm_t_equi_mesh)            :: Mesh1,Mesh2
+        type(ppm_t_equi_mesh),TARGET     :: Mesh1,Mesh2
         class(ppm_t_subpatch_),POINTER   :: p => NULL()
 
         !----------------
@@ -277,12 +279,12 @@ use ppm_module_interfaces
         allocate(nm(ndim),stat=info)
         nm(1:ndim) = 16*nproc
 
-        sca_ghostsize = 0.05_mk 
+        sca_ghostsize = 0.05_mk
 
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
-        
+
         !--------------------------
         !Define Fields
         !--------------------------
@@ -299,16 +301,9 @@ use ppm_module_interfaces
         Assert_Equal(info,0)
 
         mypatchid = 1
-        my_patch = (/0.5,0.1,5.1,10.0/)
+        my_patch(1:4) = (/0.5,0.1,5.1,10.0/)
 
-        !topo => ppm_topo(Mesh1%topoid)%t
-        !do isub = 1,topo%nsublist
-        !    write(*,*) 'On sub ',isub
-        !    write(*,*) '   ',topo%min_subd(1:ndim,isub)
-        !    write(*,*) '   ',topo%max_subd(1:ndim,isub)
-        !enddo   
-
-        call Mesh1%def_patch(my_patch,info,mypatchid) 
+        call Mesh1%def_patch(my_patch,info,mypatchid)
         Assert_Equal(info,0)
         Assert_True(associated(Mesh1%subpatch))
 
@@ -317,7 +312,6 @@ use ppm_module_interfaces
            Assert_True(associated(p%subpatch_data))
            p => Mesh1%subpatch%next()
         enddo
-
 
         !--------------------------
         !Create data arrays on the mesh for the vorticity and velocity fields
@@ -332,18 +326,17 @@ use ppm_module_interfaces
         ! Iterate through patches and initialize the data arrays
         !--------------------------
         p => Mesh1%subpatch%begin()
-
         do while (ASSOCIATED(p))
-            call p%get_field(Vort,field2d_1,info)
-            call p%get_field(Veloc,field3d_1,info)
+           call p%get_field(Vort,field2d_1,info)
+           call p%get_field(Veloc,field3d_1,info)
 
-            do i = 1,p%nnodes(1)
-                do j = 1,p%nnodes(2)
-                    field2d_1(i,j) = cos(i*h(1)+j)
-                    field3d_1(1:ndim,i,j) = 17.4
-                enddo
-            enddo
-            p => Mesh1%subpatch%next()
+           do i = 1,p%nnodes(1)
+              do j = 1,p%nnodes(2)
+                 field2d_1(i,j) = cos(i*h(1)+j)
+                 field3d_1(1:ndim,i,j) = 17.4
+              enddo
+           enddo
+           p => Mesh1%subpatch%next()
         enddo
 
         !Second version
@@ -363,7 +356,11 @@ use ppm_module_interfaces
         !--------------------
         ! Remove a patch
         !--------------------
-        !Mesh1%remove_patch(patch_ID = 2)
+        call Mesh1%subpatch%destroy(info)
+        Assert_Equal(info,0)
+
+        call Mesh1%destroy(info)
+        Assert_equal(info,0)
 
     end test
 

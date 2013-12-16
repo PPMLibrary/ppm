@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_color_edge
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -43,17 +43,17 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      INTEGER, intent(in) :: numV
-      INTEGER, dimension(:), intent(inout) :: edge_array
-      INTEGER, dimension(:), intent(inout) :: coloring
-      INTEGER,               intent(  out) :: info
+      INTEGER,               INTENT(IN   ) :: numV
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: edge_array
+      INTEGER, DIMENSION(:), INTENT(INOUT) :: coloring
+      INTEGER,               INTENT(  OUT) :: info
 
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
-      REAL(ppm_kind_double)                :: t0
-      INTEGER             :: i
-      INTEGER             :: idx
+      REAL(ppm_kind_double) :: t0
+      INTEGER               :: i
+      INTEGER               :: idx
 
       !-------------------------------------------------------------------------
       !  Initialise
@@ -128,7 +128,7 @@
           !---------------------------------------------------------------------
           SUBROUTINE order_vertices(input_array)
           IMPLICIT NONE
-          INTEGER, DIMENSION(:), INTENT(inout) :: input_array
+          INTEGER, DIMENSION(:), INTENT(INOUT) :: input_array
           INTEGER :: i
           INTEGER :: dummy
 
@@ -152,7 +152,7 @@
           IMPLICIT NONE
           INTEGER :: i
           INTEGER :: info
-          INTEGER, DIMENSION(:), INTENT(in) :: input_array
+          INTEGER, DIMENSION(:), INTENT(IN   ) :: input_array
 
           ALLOCATE(nelem(1:nvertices), STAT=alloc_error)
           IF(alloc_error .NE. 0) THEN
@@ -200,10 +200,10 @@
           USE ppm_module_data
           USE ppm_module_error
           IMPLICIT NONE
-          INTEGER                           :: i
-          INTEGER                           :: info
-          INTEGER                           :: pos
-          INTEGER, DIMENSION(:), INTENT(in) :: input_array
+          INTEGER                              :: i
+          INTEGER                              :: info
+          INTEGER                              :: pos
+          INTEGER, DIMENSION(:), INTENT(IN   ) :: input_array
 
           ALLOCATE(offset(1:nvertices), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
@@ -239,7 +239,7 @@
           INTEGER                           :: node1
           INTEGER                           :: node2
           INTEGER                           :: info
-          INTEGER, DIMENSION(:), INTENT(in) :: input_array
+          INTEGER, DIMENSION(:), INTENT(IN) :: input_array
 
           ALLOCATE(lists(1:nedges), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
@@ -287,7 +287,7 @@
           INTEGER :: v1
           INTEGER :: v2
           INTEGER :: info
-          INTEGER, DIMENSION(:), INTENT(in) :: input_array
+          INTEGER, DIMENSION(:), INTENT(IN) :: input_array
 
           DEALLOCATE(offset)
           ALLOCATE(offset(1:nedges), STAT = alloc_error)
@@ -304,7 +304,7 @@
               node1 = input_array(2*i-1)
               node2 = input_array(2*i)
 
-              size1 = size(edges_per_node(node1)%adj_edge)
+              size1 = SIZE(edges_per_node(node1)%adj_edge)
               DO j = 1, size1
                   idx = edges_per_node(node1)%adj_edge(j)
                   v1 = input_array(2*idx-1)
@@ -315,7 +315,7 @@
                   ENDIF
               ENDDO
 
-              size2 = size(edges_per_node(node2)%adj_edge)
+              size2 = SIZE(edges_per_node(node2)%adj_edge)
               DO j = 1, size2
                   idx = edges_per_node(node2)%adj_edge(j)
                   v1 = input_array(2*idx-1)
@@ -362,8 +362,8 @@
 
           max_degree = 0
           DO i = 1, nedges
-              IF(size(node(i)%list) .GT. max_degree) THEN
-                  max_degree = size(node(i)%list)
+              IF(SIZE(node(i)%list) .GT. max_degree) THEN
+                  max_degree = SIZE(node(i)%list)
               ENDIF
           ENDDO
           max_degree = max_degree + 1
@@ -375,7 +375,7 @@
           !---------------------------------------------------------------------
           SUBROUTINE create_adjacency_lists(input_array)
           IMPLICIT NONE
-          INTEGER, DIMENSION(:), INTENT(inout) :: input_array
+          INTEGER, DIMENSION(:), INTENT(INOUT) :: input_array
           INTEGER                              :: i
           CALL order_vertices(input_array)
           CALL allocate_processor_lists(input_array)
@@ -401,7 +401,8 @@
           USE ppm_module_data
           USE ppm_module_error
           IMPLICIT NONE
-          INTEGER                      :: info
+
+          INTEGER :: info
 
           ALLOCATE(node_sat(0:max_degree, 1:nedges), STAT=alloc_error)
           IF(alloc_error .NE. 0) then
@@ -429,10 +430,10 @@
           !---------------------------------------------------------------------
           SUBROUTINE swap_nodes(idx1, idx2)
           IMPLICIT NONE
-          INTEGER             :: temp
-          INTEGER             :: dsat_value
-          INTEGER, INTENT(in) :: idx1
-          INTEGER, INTENT(in) :: idx2
+          INTEGER                :: temp
+          INTEGER                :: dsat_value
+          INTEGER, INTENT(IN   ) :: idx1
+          INTEGER, INTENT(IN   ) :: idx2
 
           dsat_value = node(idx1)%dsat
           !swap elements
@@ -451,7 +452,7 @@
           !---------------------------------------------------------------------
           RECURSIVE SUBROUTINE max_heapify(idx)
           IMPLICIT NONE
-          INTEGER, INTENT(in) :: idx
+          INTEGER, INTENT(IN   ) :: idx
           INTEGER :: temp
           INTEGER :: loc_largest
           INTEGER :: dsat_value
@@ -490,7 +491,7 @@
           !---------------------------------------------------------------------
           SUBROUTINE insert_node(idx)
           IMPLICIT NONE
-          INTEGER, INTENT(in) :: idx
+          INTEGER, INTENT(IN) :: idx
           INTEGER             :: loc_parent
           INTEGER             :: parent_idx
           INTEGER             :: dsat_value
@@ -525,7 +526,7 @@
           !---------------------------------------------------------------------
           SUBROUTINE delete_node(idx)
           IMPLICIT NONE
-          INTEGER, INTENT(in) :: idx
+          INTEGER, INTENT(IN) :: idx
           INTEGER :: loc_heap
           INTEGER :: dsat_value
           INTEGER :: i
@@ -574,7 +575,7 @@
           INTEGER             :: i
           INTEGER             :: info
 
-          ncolor = max_degree                     ! # colors is max_degree
+          ncolor = max_degree                     ! colors is max_degree
           DO i=1, nedges
               node(i)%color = 0                   ! no color
               node(i)%iscolored = .FALSE.         ! noone is colored yet
@@ -602,7 +603,7 @@
           SUBROUTINE compute_dsat(idx)
           IMPLICIT NONE
           INTEGER :: i
-          INTEGER, INTENT(in) :: idx
+          INTEGER, INTENT(IN) :: idx
           INTEGER             :: neighbor
           INTEGER             :: dsat_new
 
@@ -616,7 +617,7 @@
           ELSE
               ! set used_colors elements to TRUE if that color was used
               ! in at least one of the neighbors.
-              DO i = 1, size(node(idx)%list)
+              DO i = 1, SIZE(node(idx)%list)
                   neighbor = node(idx)%list(i)
                   used_color(node(neighbor)%color) = .TRUE.
               ENDDO
@@ -648,12 +649,12 @@
           IMPLICIT NONE
           INTEGER             :: i
           INTEGER             :: j
-          INTEGER, INTENT(in) :: idx !index
+          INTEGER, INTENT(IN) :: idx !index
           INTEGER             :: neighbor
 
           ! delete the node as it was already colored
           CALL delete_node(idx)
-          DO i = 1, size(node(idx)%list)
+          DO i = 1, SIZE(node(idx)%list)
               neighbor = node(idx)%list(i) ! get index of neighbor
               CALL compute_dsat(neighbor)  ! compute neighbors dsat-values
           ENDDO
@@ -666,7 +667,7 @@
           SUBROUTINE color_edge(idx)
           IMPLICIT NONE
           INTEGER :: i
-          INTEGER, INTENT(in) :: idx
+          INTEGER, INTENT(IN) :: idx
           INTEGER :: color_idx
 
           ! initialize used_color array to FALSE
@@ -675,7 +676,7 @@
           ENDDO
 
           ! set used_color arrays elements to TRUE if that color was used
-          DO i = 1, size(node(idx)%list)
+          DO i = 1, SIZE(node(idx)%list)
               color_idx = node(idx)%list(i)
               used_color(node(color_idx)%color) = .TRUE.
           ENDDO

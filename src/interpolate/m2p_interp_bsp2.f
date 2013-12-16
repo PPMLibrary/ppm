@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   m2p_interp_bsp2
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -61,11 +61,11 @@
      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
      !!! increase performance the inner loops over the number of properties to
      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!! 
+     !!!
      !!! [NOTE]
      !!! This routine only performs the actual interpolation. It should not be
      !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to 
+     !!! routine should be used with the kernel argument set to
      !!! `ppm_param_rmsh_kernel_bsp2`.
 
 
@@ -210,7 +210,7 @@
 
       start_subroutine("m2p_interp_mp4")
 
-      dxi = 1.0_mk/Mesh%h
+      dxi = 1.0_MK/Mesh%h
 
       !  loop over subpatches
       p => Mesh%subpatch%begin()
@@ -243,16 +243,16 @@
                xp2 = x0(2)-REAL(ip20-1,mk)
 
                x10 = xp1
-               x11 = x10 - 1.0_mk
+               x11 = x10 - 1.0_MK
 
                x20 = xp2
-               x21 = x20 - 1.0_mk
+               x21 = x20 - 1.0_MK
 
-               a10 = 1.0_mk - x10
-               a20 = 1.0_mk - x20
+               a10 = 1.0_MK - x10
+               a20 = 1.0_MK - x20
 
-               a11 = 1.0_mk + x11
-               a21 = 1.0_mk + x21
+               a11 = 1.0_MK + x11
+               a21 = 1.0_MK + x21
 
                a10a20 = a10*a20
                a10a21 = a10*a21
@@ -293,16 +293,16 @@
                   xp2 = x0(2)-REAL(ip20-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
 
                   a10a20 = a10*a20
                   a10a21 = a10*a21
@@ -342,16 +342,16 @@
                   xp2 = x0(2)-REAL(ip20-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
 
                   a10a20 = a10*a20
                   a10a21 = a10*a21
@@ -400,16 +400,16 @@
                   xp2 = x0(2)-REAL(ip20-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
 
                   a10a20 = a10*a20
                   a10a21 = a10*a21
@@ -467,16 +467,16 @@
                   xp2 = x0(2)-REAL(ip20-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
 
                   a10a20 = a10*a20
                   a10a21 = a10*a21
@@ -523,21 +523,21 @@
                xp3 = x0(3)-REAL(ip30-1,mk)
 
                x10 = xp1
-               x11 = x10 - 1.0_mk
+               x11 = x10 - 1.0_MK
 
                x20 = xp2
-               x21 = x20 - 1.0_mk
+               x21 = x20 - 1.0_MK
 
                x30 = xp3
-               x31 = x30 - 1.0_mk
+               x31 = x30 - 1.0_MK
 
-               a10 = 1.0_mk - x10
-               a20 = 1.0_mk - x20
-               a30 = 1.0_mk - x30
+               a10 = 1.0_MK - x10
+               a20 = 1.0_MK - x20
+               a30 = 1.0_MK - x30
 
-               a11 = 1.0_mk + x11
-               a21 = 1.0_mk + x21
-               a31 = 1.0_mk + x31
+               a11 = 1.0_MK + x11
+               a21 = 1.0_MK + x21
+               a31 = 1.0_MK + x31
 
                a10a20a30 = a10*a20*a30
                a10a20a31 = a10*a20*a31
@@ -598,21 +598,21 @@
                   xp3 = x0(3)-REAL(ip30-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
                   x30 = xp3
-                  x31 = x30 - 1.0_mk
+                  x31 = x30 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
-                  a30 = 1.0_mk - x30
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
+                  a30 = 1.0_MK - x30
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
-                  a31 = 1.0_mk + x31
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
+                  a31 = 1.0_MK + x31
 
                   a10a20a30 = a10*a20*a30
                   a10a20a31 = a10*a20*a31
@@ -672,21 +672,21 @@
                   xp3 = x0(3)-REAL(ip30-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
                   x30 = xp3
-                  x31 = x30 - 1.0_mk
+                  x31 = x30 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
-                  a30 = 1.0_mk - x30
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
+                  a30 = 1.0_MK - x30
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
-                  a31 = 1.0_mk + x31
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
+                  a31 = 1.0_MK + x31
 
                   a10a20a30 = a10*a20*a30
                   a10a20a31 = a10*a20*a31
@@ -766,21 +766,21 @@
                   xp3 = x0(3)-REAL(ip30-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
                   x30 = xp3
-                  x31 = x30 - 1.0_mk
+                  x31 = x30 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
-                  a30 = 1.0_mk - x30
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
+                  a30 = 1.0_MK - x30
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
-                  a31 = 1.0_mk + x31
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
+                  a31 = 1.0_MK + x31
 
                   a10a20a30 = a10*a20*a30
                   a10a20a31 = a10*a20*a31
@@ -881,21 +881,21 @@
                   xp3 = x0(3)-REAL(ip30-1,mk)
 
                   x10 = xp1
-                  x11 = x10 - 1.0_mk
+                  x11 = x10 - 1.0_MK
 
                   x20 = xp2
-                  x21 = x20 - 1.0_mk
+                  x21 = x20 - 1.0_MK
 
                   x30 = xp3
-                  x31 = x30 - 1.0_mk
+                  x31 = x30 - 1.0_MK
 
-                  a10 = 1.0_mk - x10
-                  a20 = 1.0_mk - x20
-                  a30 = 1.0_mk - x30
+                  a10 = 1.0_MK - x10
+                  a20 = 1.0_MK - x20
+                  a30 = 1.0_MK - x30
 
-                  a11 = 1.0_mk + x11
-                  a21 = 1.0_mk + x21
-                  a31 = 1.0_mk + x31
+                  a11 = 1.0_MK + x11
+                  a21 = 1.0_MK + x21
+                  a31 = 1.0_MK + x31
 
                   a10a20a30 = a10*a20*a30
                   a10a20a31 = a10*a20*a31

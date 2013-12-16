@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :            ppm_module_rmsh_remesh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -39,6 +39,8 @@
       !!! support 2nd order B-spline and MP4 interpolation schemes.
         USE ppm_module_topo_typedef
         USE ppm_module_interfaces
+
+        IMPLICIT NONE
 
         !-----------------------------------------------------------------------
         !  Interface
@@ -70,7 +72,7 @@
 
       CONTAINS
 
-        
+
 #define __KIND  __SINGLE_PRECISION
 #define __DIME  __2D
 #define __MODE  __SCA
@@ -84,7 +86,7 @@
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA SINGLE
@@ -113,7 +115,7 @@
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
-        
+
 #define __DIME  __3D
 #define __MODE  __SCA
         ! 3D SCA DOUBLE
@@ -126,18 +128,18 @@
 #include "interpolate/m2p_interp_mp4.f"
 #undef  __MODE
 #undef  __DIME
-#undef  __KIND        
+#undef  __KIND
 
 
 
 
 
-#undef __SINGLE_PRECISION 
-#undef __DOUBLE_PRECISION 
-#undef __2D               
-#undef __3D               
-#undef __VEC              
-#undef __SCA              
-        
+#undef __SINGLE_PRECISION
+#undef __DOUBLE_PRECISION
+#undef __2D
+#undef __3D
+#undef __VEC
+#undef __SCA
+
       END MODULE ppm_module_interp_m2p
 

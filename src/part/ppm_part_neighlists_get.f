@@ -1,133 +1,133 @@
-FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
-    !!! Check whether there exists a neighbour list between 
-    !!! one particle set and another 
-    !!! (default is that the two sets are the same)
-    CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
-    !!! particle set
-    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
-    !!! particle set within which the neighbours are sought
-    LOGICAL                                        :: res
-    !!! Neighbour list
+      FUNCTION DTYPE(has_neighlist)(this,Part) RESULT(res)
+          !!! Check whether there exists a neighbour list between
+          !!! one particle set and another
+          !!! (default is that the two sets are the same)
+          CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
+          !!! particle set
+          CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
+          !!! particle set within which the neighbours are sought
+          LOGICAL                                        :: res
+          !!! Neighbour list
 
-    !Local variables
-    INTEGER                                        :: info
-    CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList => NULL()
+          !Local variables
+          INTEGER                                        :: info
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList => NULL()
 
-    res = .TRUE.
-    IF (PRESENT(Part)) THEN
-        NList => this%neighs%begin()
-        DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList%Part,Part)) RETURN
-            NList => this%neighs%next()
-        ENDDO
-    ELSE
-        NList => this%neighs%begin()
-        DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList%Part,this)) RETURN
-            NList => this%neighs%next()
-        ENDDO
-    ENDIF
-    res = .FALSE.
-    RETURN
+          res = .TRUE.
+          IF (PRESENT(Part)) THEN
+              NList => this%neighs%begin()
+              DO WHILE(ASSOCIATED(NList))
+                  IF (ASSOCIATED(NList%Part,Part)) RETURN
+                  NList => this%neighs%next()
+              ENDDO
+          ELSE
+              NList => this%neighs%begin()
+              DO WHILE(ASSOCIATED(NList))
+                  IF (ASSOCIATED(NList%Part,this)) RETURN
+                  NList => this%neighs%next()
+              ENDDO
+          ENDIF
+          res = .FALSE.
+          RETURN
 
-END FUNCTION DTYPE(has_neighlist)
+      END FUNCTION DTYPE(has_neighlist)
 
 
-FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
-    !!! Returns the neighbour list between one particle set 
-    !!! and another (default is of course that the two sets
-    !!! are the same)
-    CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
-    !!! particle set
-    CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
-    !!! particle set within which the neighbours are sought
-    !!! default is the same particle set as "this"
-    CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
-    !!! Neighbour list
+      FUNCTION DTYPE(get_neighlist)(this,Part) RESULT(NList)
+          !!! Returns the neighbour list between one particle set
+          !!! and another (default is of course that the two sets
+          !!! are the same)
+          CLASS(DTYPE(ppm_t_particles)),TARGET           :: this
+          !!! particle set
+          CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
+          !!! particle set within which the neighbours are sought
+          !!! default is the same particle set as "this"
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
+          !!! Neighbour list
 
-    !Local variables
-    INTEGER                                        :: info
+          !Local variables
+          INTEGER                                        :: info
 
-    IF (PRESENT(Part)) THEN
-        NList => this%neighs%begin()
-        DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList%Part,Part)) RETURN
-            NList => this%neighs%next()
-        ENDDO
-    ELSE
-        NList => this%neighs%begin()
-        DO WHILE(ASSOCIATED(NList))
-            IF (ASSOCIATED(NList%Part,this)) RETURN
-            NList => this%neighs%next()
-        ENDDO
-    ENDIF
+          IF (PRESENT(Part)) THEN
+              NList => this%neighs%begin()
+              DO WHILE(ASSOCIATED(NList))
+                  IF (ASSOCIATED(NList%Part,Part)) RETURN
+                  NList => this%neighs%next()
+              ENDDO
+          ELSE
+              NList => this%neighs%begin()
+              DO WHILE(ASSOCIATED(NList))
+                  IF (ASSOCIATED(NList%Part,this)) RETURN
+                  NList => this%neighs%next()
+              ENDDO
+          ENDIF
 
-    CALL ppm_error(ppm_err_argument,&
-        "Could not find neighbour list, returning null pointer",&
-        "get_neighlist",__LINE__,info)
+          CALL ppm_error(ppm_err_argument,&
+              "Could not find neighbour list, returning null pointer",&
+              "get_neighlist",__LINE__,info)
 
-    NList => NULL()
-END FUNCTION DTYPE(get_neighlist)
+          NList => NULL()
+      END FUNCTION DTYPE(get_neighlist)
 
-SUBROUTINE DTYPE(get_vlist)(this,nvlist,vlist,info,NList)
-    !!! returns pointers to the arrays nvlist and vlist
-    !!! that contain the Verlet lists for the neighbour list
-    !!! NList
-    CLASS(DTYPE(ppm_t_particles))                :: this
-    INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
-    !!! number of neighbours for each particle
-    INTEGER,DIMENSION(:,:),POINTER,INTENT( OUT)  :: vlist
-    !!! verlet list
-    INTEGER,            INTENT(INOUT)     :: info
-    !!! return status. On success, 0
-    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
-    !!! Neighbour list (if not the default one)
+      SUBROUTINE DTYPE(get_vlist)(this,nvlist,vlist,info,NList)
+          !!! returns pointers to the arrays nvlist and vlist
+          !!! that contain the Verlet lists for the neighbour list
+          !!! NList
+          CLASS(DTYPE(ppm_t_particles))                :: this
+          INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
+          !!! number of neighbours for each particle
+          INTEGER,DIMENSION(:,:),POINTER,INTENT( OUT)  :: vlist
+          !!! verlet list
+          INTEGER,            INTENT(INOUT)     :: info
+          !!! return status. On success, 0
+          CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
+          !!! Neighbour list (if not the default one)
 
-    CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
-    start_subroutine("get_vlist")
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
+          start_subroutine("get_vlist")
 
-    
-    IF (PRESENT(NList)) THEN
-        nl => NList
-    ELSE
-        nl => this%get_neighlist()
-    ENDIF
 
-    check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
-    check_true(nl%uptodate,"Neighbour lists need to be updated")
+          IF (PRESENT(NList)) THEN
+              nl => NList
+          ELSE
+              nl => this%get_neighlist()
+          ENDIF
 
-    nvlist => nl%nvlist
-    vlist  => nl%vlist
+          check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
+          check_true(nl%uptodate,"Neighbour lists need to be updated")
 
-    end_subroutine()
-END SUBROUTINE DTYPE(get_vlist)
+          nvlist => nl%nvlist
+          vlist  => nl%vlist
 
-SUBROUTINE DTYPE(get_nvlist)(this,nvlist,info,NList)
-    !!! returns pointers to the arrays nvlist
-    !!! that contain the Verlet lists for the neighbour list
-    !!! of ID nlid.
-    CLASS(DTYPE(ppm_t_particles))                :: this
-    INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
-    !!! number of neighbours for each particle
-    INTEGER,                       INTENT(INOUT) :: info
-    !!! return status. On success, 0
-    CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
-    !!! Neighbour list (if not the default one)
+          end_subroutine()
+      END SUBROUTINE DTYPE(get_vlist)
 
-    CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
-    start_subroutine("get_vlist")
+      SUBROUTINE DTYPE(get_nvlist)(this,nvlist,info,NList)
+          !!! returns pointers to the arrays nvlist
+          !!! that contain the Verlet lists for the neighbour list
+          !!! of ID nlid.
+          CLASS(DTYPE(ppm_t_particles))                :: this
+          INTEGER,DIMENSION(:),POINTER,  INTENT( OUT)  :: nvlist
+          !!! number of neighbours for each particle
+          INTEGER,                       INTENT(INOUT) :: info
+          !!! return status. On success, 0
+          CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
+          !!! Neighbour list (if not the default one)
 
-    
-    IF (PRESENT(NList)) THEN
-        nl => NList
-    ELSE
-        nl => this%get_neighlist()
-    ENDIF
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
+          start_subroutine("get_vlist")
 
-    check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
-    check_true(<#nl%uptodate#>,"Neighbour lists need to be updated") 
 
-    nvlist => nl%nvlist
+          IF (PRESENT(NList)) THEN
+              nl => NList
+          ELSE
+              nl => this%get_neighlist()
+          ENDIF
 
-    end_subroutine()
-END SUBROUTINE DTYPE(get_nvlist)
+          check_associated(nl,"Could not find neighbour list. Make sure they are already computed")
+          check_true(<#nl%uptodate#>,"Neighbour lists need to be updated")
+
+          nvlist => nl%nvlist
+
+          end_subroutine()
+      END SUBROUTINE DTYPE(get_nvlist)

@@ -43,7 +43,7 @@ class(ppm_t_subpatch_),POINTER   :: p => NULL()
 class(ppm_t_subpatch_),POINTER   :: patch => NULL()
 
 integer                          :: mypatchid
-real(mk),dimension(2*ndim)       :: my_patch
+real(mk),dimension(6)       :: my_patch
 real(mk),dimension(ndim)         :: offset
 
 real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
@@ -58,10 +58,10 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),&
             &         ighostsize(ndim),nm(ndim),h(ndim))
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         ighostsize(1:ndim) = 2
@@ -109,7 +109,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
     end setup
 !----------------------------------------------
-        
+
 
 !--------------- teardown ---------------------
     teardown
@@ -120,11 +120,11 @@ TYPE(ppm_v_main_abstr)  :: LFields
     test part_to_meshinterp
         type(ppm_t_field) ,TARGET :: VField1,VField2,VField3,VField4
         type(ppm_t_field) ,TARGET :: SField1,SField2,SField3,Vol
-        type(ppm_t_particles_d) :: Part1
+        type(ppm_t_particles_d),TARGET :: Part1
         real(ppm_kind_double),dimension(ndim) :: pos
         real(ppm_kind_double),dimension(ndim) :: cutoff
         real(ppm_kind_double)                 :: voln
-        integer :: np_global 
+        integer :: np_global
 
         start_subroutine("test_interp")
 
@@ -134,7 +134,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         decomp = ppm_param_decomp_cuboid
         assig  = ppm_param_assign_internal
         topoid = 0
-        sca_ghostsize = 0.07_mk 
+        sca_ghostsize = 0.07_mk
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
@@ -161,7 +161,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
         else
             my_patch(1:6) = (/0.15_mk,0.10_mk,0.25_mk,0.89_mk,0.7_mk,0.78_mk/)
         endif
-        call Mesh1%def_patch(my_patch,info) 
+        call Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
         !----------------
@@ -193,22 +193,22 @@ TYPE(ppm_v_main_abstr)  :: LFields
         ! dimensions because the interpolation routines are hard-coded for some
         ! and we want to test them all!
         !----------------
-        call VField1%create(2,info,name='vecField1') 
+        call VField1%create(2,info,name='vecField1')
         call VField1%discretize_on(Part1,info)
-        call VField2%create(3,info,name='vecField2') 
+        call VField2%create(3,info,name='vecField2')
         call VField2%discretize_on(Part1,info)
-        call VField3%create(4,info,name='vecField3') 
+        call VField3%create(4,info,name='vecField3')
         call VField3%discretize_on(Part1,info)
-        call VField4%create(5,info,name='vecField4') 
+        call VField4%create(5,info,name='vecField4')
         call VField4%discretize_on(Part1,info)
 
-        call SField1%create(1,info,name='scaField1') 
+        call SField1%create(1,info,name='scaField1')
         call SField1%discretize_on(Part1,info)
-        call SField2%create(1,info,name='scaField2') 
+        call SField2%create(1,info,name='scaField2')
         call SField2%discretize_on(Part1,info)
-        call SField3%create(1,info,name='scaField3') 
+        call SField3%create(1,info,name='scaField3')
         call SField3%discretize_on(Part1,info)
-        call Vol%create(1,info,name='Part_Volume') 
+        call Vol%create(1,info,name='Part_Volume')
         call Vol%discretize_on(Part1,info)
 
         !----------------
@@ -250,37 +250,37 @@ TYPE(ppm_v_main_abstr)  :: LFields
         abstr_point => SField2
         CALL LFields%push(abstr_point,info)
         Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => SField1
         CALL LFields%push(abstr_point,info)
         Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField1
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField2
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
         abstr_point => VField4
         CALL LFields%push(abstr_point,info)
         abstr_point => VField3
         CALL LFields%push(abstr_point,info)
         abstr_point => SField3
         CALL LFields%push(abstr_point,info)
-        CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
-        Assert_Equal(info,0)
-        CALL ppm_vtk_particles("output",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info,Fields=LFields)
+        !Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output",Part1,info)
+        !Assert_Equal(info,0)
         !----------------
         ! Perform the p2m interpolation
         !----------------
 
-        CALL ppm_vtk_particles("output_before",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output_before",Part1,info)
+        !Assert_Equal(info,0)
 
         call Part1%interp_to_mesh(Mesh1,VField1,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
@@ -298,8 +298,8 @@ TYPE(ppm_v_main_abstr)  :: LFields
         call Part1%interp_to_mesh(Mesh1,SField3,ppm_param_rmsh_kernel_mp4,info)
             Assert_Equal(info,0)
 
-        CALL ppm_vtk_particles("output_after",Part1,info)
-        Assert_Equal(info,0)
+        !CALL ppm_vtk_particles("output_after",Part1,info)
+        !Assert_Equal(info,0)
 
 
         tol = 1e-2
@@ -361,7 +361,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
                 pos(1:ndim) = sbpitr%get_pos(i,j)
                 Assert_Equal_Within(VField1_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField1_n(2)/voln,f_sq(pos(1:ndim),ndim),tol)
-                
+
                 Assert_Equal_Within(VField2_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField2_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField2_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
@@ -390,7 +390,7 @@ TYPE(ppm_v_main_abstr)  :: LFields
                 pos(1:ndim) = sbpitr%get_pos(i,j,k)
                 Assert_Equal_Within(VField1_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField1_n(2)/voln,f_sq(pos(1:ndim),ndim),tol)
-                
+
                 Assert_Equal_Within(VField2_n(1)/voln,f_cst(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField2_n(2)/voln,f_lin(pos(1:ndim),ndim),tol)
                 Assert_Equal_Within(VField2_n(3)/voln,f_sq(pos(1:ndim),ndim),tol)
@@ -472,7 +472,7 @@ pure function is_well_within(pos,patch,cutoff,ndim) RESULT(res)
     res = res .AND. ALL(pos(1:ndim).LE.(patch(ndim+1:2*ndim)-cutoff(1:ndim)))
 
 end function
-    
+
 
 
 

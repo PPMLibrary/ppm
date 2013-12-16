@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  map_part_push
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2010 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -70,12 +70,12 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       IMPLICIT NONE
       DEFINE_MK()
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       CLASS(DTYPE(ppm_t_particles))              :: Pc
       INTEGER,                  INTENT(IN   )    :: mapID
@@ -95,8 +95,7 @@
       INTEGER , DIMENSION(:,:), INTENT(IN   )    :: pdata
 #elif __KIND == __LOGICAL
       LOGICAL , DIMENSION(:,:), INTENT(IN   )    :: pdata
-#elif __KIND == __SINGLE_PRECISION_COMPLEX | \
-      __KIND == __DOUBLE_PRECISION_COMPLEX
+#elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
       COMPLEX(MK), DIMENSION(:,:), INTENT(IN   ) :: pdata
 #else
       REAL(MK), DIMENSION(:,:), INTENT(IN   )    :: pdata
@@ -114,27 +113,27 @@
       !!! If `TRUE` then pdata is assumed to contain the particle positions
       !!! (xp)
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3) :: ldu
-      INTEGER               :: i,j,k,ipart,ibuffer,icount
-      INTEGER               :: iopt,ldb,incr
-      REAL(MK)              :: t0
-      LOGICAL               :: lpushpp
+      INTEGER, DIMENSION(3)   :: ldu
+      INTEGER                 :: i,j,k,ipart,ibuffer,icount
+      INTEGER                 :: iopt,ldb,incr
+      REAL(MK)                :: t0
+      LOGICAL                 :: lpushpp
       CHARACTER(LEN=ppm_char) :: caller ='map_part_push'
 #if   __DIM == 1
-      INTEGER, PARAMETER    :: lda = 1
+      INTEGER, PARAMETER      :: lda = 1
 #endif
       TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
       REAL(MK),DIMENSION(:),POINTER :: ppm_sendbuffer => NULL()
       INTEGER, DIMENSION(:),POINTER :: ppm_buffer2part => NULL()
       REAL(MK),DIMENSION(:),POINTER :: ppm_ghost_offset => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
 
@@ -156,10 +155,10 @@
          lpushpp = pushpp
       ELSE
          lpushpp = .FALSE.
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
-      !  Increment the buffer set 
+      !  Increment the buffer set
       !-------------------------------------------------------------------------
       map%ppm_buffer_set = map%ppm_buffer_set + 1
 
@@ -191,7 +190,7 @@
       ldb = 2*lda
 #else
       ldb = lda
-#endif 
+#endif
 
       !-------------------------------------------------------------------------
       !  Store the dimension and type
@@ -208,14 +207,14 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  loop over the processors in the ppm_isendlist() 
+      !  loop over the processors in the ppm_isendlist()
       !-------------------------------------------------------------------------
       ibuffer = map%ppm_nsendbuffer
 
      !----------------------------------------------------------------------
-     !  (Re)allocate memory for the buffer 
+     !  (Re)allocate memory for the buffer
      !----------------------------------------------------------------------
-     incr = 0 
+     incr = 0
      DO i=1,map%ppm_nsendlist
         incr = incr + (map%ppm_psendbuffer(i+1)-map%ppm_psendbuffer(i))*ldb
      ENDDO
@@ -232,7 +231,7 @@
 
      DO i=1,map%ppm_nsendlist
         !-------------------------------------------------------------------
-        !  access the particles belonging to the i-th processor in the 
+        !  access the particles belonging to the i-th processor in the
         !  sendlist
         !-------------------------------------------------------------------
         !-------------------------------------------------------------------
@@ -242,10 +241,11 @@
         !-------------------------------------------------------------------
         !  Unrolled for lda=1
         !-------------------------------------------------------------------
-        IF (lda .EQ. 1) THEN
+        SELECT CASE (lda)
+        CASE (1)
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               ibuffer = ibuffer + 1
@@ -274,17 +274,17 @@
         !-------------------------------------------------------------------
         !  Unrolled for lda=2
         !-------------------------------------------------------------------
-        ELSEIF (lda .EQ. 2) THEN
+        CASE (2)
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               ibuffer = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
               ppm_sendbuffer(ibuffer) = REAL(pdata(1,ipart),MK)
               ibuffer = ibuffer + 1
-              ppm_sendbuffer(ibuffer) = REAL(pdata(2,ipart),MK) 
+              ppm_sendbuffer(ibuffer) = REAL(pdata(2,ipart),MK)
 #elif  __KIND == __DOUBLE_PRECISION
               ppm_sendbuffer(ibuffer) = pdata(1,ipart)
               ibuffer = ibuffer + 1
@@ -327,10 +327,10 @@
         !-------------------------------------------------------------------
         !  Unrolled for lda=3
         !-------------------------------------------------------------------
-        ELSEIF (lda .EQ. 3) THEN
+        CASE (3)
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               ibuffer = ibuffer + 1
@@ -371,9 +371,9 @@
               ibuffer = ibuffer + 1
               ppm_sendbuffer(ibuffer) = AIMAG(pdata(3,ipart))
 #elif  __KIND == __INTEGER
-              ppm_sendbuffer(ibuffer) = REAL(pdata(1,ipart),MK) 
+              ppm_sendbuffer(ibuffer) = REAL(pdata(1,ipart),MK)
               ibuffer = ibuffer + 1
-              ppm_sendbuffer(ibuffer) = REAL(pdata(2,ipart),MK) 
+              ppm_sendbuffer(ibuffer) = REAL(pdata(2,ipart),MK)
               ibuffer = ibuffer + 1
               ppm_sendbuffer(ibuffer) = REAL(pdata(3,ipart),MK)
 #elif  __KIND == __LOGICAL
@@ -399,10 +399,10 @@
         !-------------------------------------------------------------------
         !  Unrolled for lda=4
         !-------------------------------------------------------------------
-        ELSEIF (lda .EQ. 4) THEN
+        CASE (4)
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               ibuffer = ibuffer + 1
@@ -491,10 +491,10 @@
         !-------------------------------------------------------------------
         !  Unrolled for lda=5
         !-------------------------------------------------------------------
-        ELSEIF (lda .EQ. 5) THEN
+        CASE (5)
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               ibuffer = ibuffer + 1
@@ -603,10 +603,10 @@
         !-------------------------------------------------------------------
         !  Not unrolled for the rest. Vector length will be lda!!
         !-------------------------------------------------------------------
-        ELSE
+        CASE DEFAULT
            DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
               !-------------------------------------------------------------
-              !  Get the particle id 
+              !  Get the particle id
               !-------------------------------------------------------------
               ipart = ppm_buffer2part(j)
               DO k=1,lda
@@ -634,14 +634,14 @@
 #endif
               ENDDO
            ENDDO
-        ENDIF
+        END SELECT
 #elif  __DIM == 1
         !-------------------------------------------------------------------
         !  Scalar version
         !-------------------------------------------------------------------
         DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
            !----------------------------------------------------------------
-           !  Get the particle id 
+           !  Get the particle id
            !----------------------------------------------------------------
            ipart = ppm_buffer2part(j)
            ibuffer = ibuffer + 1
@@ -668,24 +668,24 @@
 #endif
         ENDDO
 #endif
-         ENDDO                ! i=1,map%ppm_nsendlist
+     ENDDO ! i=1,map%ppm_nsendlist
 
-      !-------------------------------------------------------------------------
-      !  If we are pushing particle positions (if lpushpp is true) we need to
-      !  add the offset to the particles; pushing the particles can only occur
-      !  for 2D arrays in single or double precions: xp is USUALLY stored as
-      !  xp(1:ppm_dim,1:Npart)
-      !-------------------------------------------------------------------------
-      IF (lpushpp) THEN
-         !----------------------------------------------------------------------
-         !  the particle positions are per construction (by a call to ghost_get) 
-         !  ALWAYS stored from ibuffer = 1 to nsendbuffer(2) - 1 and the 
-         !  ppm_ghost_offset is therefore also stored from 1 - nsendbuffer(2)-1
-         !  thus icount = 1 and ibuffer = map%ppm_nsendlist (which has not yet been
-         !  updated (see below)
-         !----------------------------------------------------------------------
-         icount  = 0 
-         ibuffer = map%ppm_nsendbuffer
+     !-------------------------------------------------------------------------
+     !  If we are pushing particle positions (if lpushpp is true) we need to
+     !  add the offset to the particles; pushing the particles can only occur
+     !  for 2D arrays in single or double precions: xp is USUALLY stored as
+     !  xp(1:ppm_dim,1:Npart)
+     !-------------------------------------------------------------------------
+     IF (lpushpp) THEN
+        !----------------------------------------------------------------------
+        !  the particle positions are per construction (by a call to ghost_get)
+        !  ALWAYS stored from ibuffer = 1 to nsendbuffer(2) - 1 and the
+        !  ppm_ghost_offset is therefore also stored from 1 - nsendbuffer(2)-1
+        !  thus icount = 1 and ibuffer = map%ppm_nsendlist (which has not yet been
+        !  updated (see below)
+        !----------------------------------------------------------------------
+        icount  = 0
+        ibuffer = map%ppm_nsendbuffer
         DO i=1,map%ppm_nsendlist
            IF (lda.EQ.2) THEN
               !-------------------------------------------------------------
@@ -698,12 +698,12 @@
                  ibuffer = ibuffer + 1
                  icount  = icount  + 1
                  ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) &
- &                                        + ppm_ghost_offset(icount) 
+                 &                       + ppm_ghost_offset(icount)
 
                  ibuffer = ibuffer + 1
                  icount  = icount  + 1
                  ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) &
- &                                        + ppm_ghost_offset(icount) 
+                 &                       + ppm_ghost_offset(icount)
               ENDDO
            ELSEIF (lda.EQ.3) THEN
               !-------------------------------------------------------------
@@ -711,22 +711,22 @@
               !-------------------------------------------------------------
               DO j=map%ppm_psendbuffer(i),map%ppm_psendbuffer(i+1)-1
                  !----------------------------------------------------------
-                 !  Get the particle id 
+                 !  Get the particle id
                  !----------------------------------------------------------
                  ibuffer = ibuffer + 1
                  icount  = icount  + 1
                  ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) &
- &                                        + ppm_ghost_offset(icount) 
+                 &                       + ppm_ghost_offset(icount)
 
                  ibuffer = ibuffer + 1
                  icount  = icount  + 1
-                 ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) & 
- &                                        + ppm_ghost_offset(icount) 
+                 ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) &
+                 &                       + ppm_ghost_offset(icount)
 
                  ibuffer = ibuffer + 1
                  icount  = icount  + 1
-                 ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) & 
- &                                        + ppm_ghost_offset(icount) 
+                 ppm_sendbuffer(ibuffer) = ppm_sendbuffer(ibuffer) &
+                 &                       + ppm_ghost_offset(icount)
               ENDDO
            ENDIF ! end of lda = 3
         ENDDO ! enddo of nsendlist
@@ -738,7 +738,7 @@
       map%ppm_nsendbuffer = ibuffer
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop(caller,t0,info)
@@ -750,7 +750,7 @@
               CALL ppm_error(ppm_err_wrong_dim,caller,    &
                   &   'Invalid mapID: mapping does not exist.',__LINE__,info)
               GOTO 8888
-          ENDIF 
+          ENDIF
 #if   __DIM == 2
           IF (lda .LT. 1) THEN
               info = ppm_error_error

@@ -1,23 +1,23 @@
-!----------------------------------------------------------------------
-!  Generic mapping data type
-!----------------------------------------------------------------------
-TYPE,EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_mapping)
-END TYPE
+      !----------------------------------------------------------------------
+      !  Generic mapping data type
+      !----------------------------------------------------------------------
+      TYPE,EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_mapping)
+      END TYPE
 
-TYPE,EXTENDS(DTYPE(ppm_t_part_mapping)_) :: DTYPE(ppm_t_part_mapping)
-    CONTAINS
-    PROCEDURE     :: create => DTYPE(map_create)
-    PROCEDURE     :: destroy => DTYPE(map_destroy)
-END TYPE 
-!----------------------------------------------------------------------
-! Container for particle mappings
-!----------------------------------------------------------------------
+      TYPE,EXTENDS(DTYPE(ppm_t_part_mapping)_) :: DTYPE(ppm_t_part_mapping)
+      CONTAINS
+          PROCEDURE     :: create => DTYPE(map_create)
+          PROCEDURE     :: destroy => DTYPE(map_destroy)
+      END TYPE
+      !----------------------------------------------------------------------
+      ! Container for particle mappings
+      !----------------------------------------------------------------------
 minclude ppm_create_collection(DTYPE(part_mapping),DTYPE(part_mapping),generate="extend")
 
 
-TYPE,EXTENDS(DTYPE(ppm_t_mesh_mapping)_) :: DTYPE(ppm_t_mesh_mapping)
+      TYPE,EXTENDS(DTYPE(ppm_t_mesh_mapping)_) :: DTYPE(ppm_t_mesh_mapping)
 
-    !             
+    !
     !             PROCEDURE       :: mesh_send
     !             GENERIC, PUBLIC ::  mesh_pop => &
     !                    DTYPE(ppm_map_mesh_pop_1d),&
@@ -37,7 +37,7 @@ TYPE,EXTENDS(DTYPE(ppm_t_mesh_mapping)_) :: DTYPE(ppm_t_mesh_mapping)
     !                    DTYPE(ppm_map_mesh_push_2dc),&
     !                    ppm_map_mesh_push_2di,&
     !                    ppm_map_mesh_push_2dl
-END TYPE
+      END TYPE
 #undef   MK
 #undef   _MK
 #undef   DTYPE

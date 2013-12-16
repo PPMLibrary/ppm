@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                 ppm_module_io_vtk
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -37,9 +37,9 @@
       MODULE ppm_module_io_vtk
          USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
                                          ppm_kind_single, ppm_kind_double,&
-                                         ppm_error_error
+                                         ppm_error_error, ppm_rank, &
+                                         ppm_nproc, ppm_comm
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
-         USE ppm_module_data,      ONLY: ppm_rank, ppm_nproc, ppm_comm
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_interfaces
@@ -54,7 +54,7 @@
          !----------------------------------------------------------------------
 
 #ifdef __MPI
-  INCLUDE 'mpif.h'
+         INCLUDE 'mpif.h'
 #endif
          !----------------------------------------------------------------------
          !  New Interface
@@ -63,12 +63,6 @@
              MODULE PROCEDURE ppm_vtk_particles_s
              MODULE PROCEDURE ppm_vtk_particles_d
           END INTERFACE
-
-!          INTERFACE ppm_vtk_fields
-!             MODULE PROCEDURE ppm_vtk_fields_2d
-!             MODULE PROCEDURE ppm_vtk_fields_3d
-!          END INTERFACE
-
 
          !----------------------------------------------------------------------
          !  Variables
@@ -82,7 +76,7 @@
          CHARACTER(LEN=ppm_char) :: vtk_section
          INTEGER                 :: current_section
 
-       CONTAINS
+      CONTAINS
 
          !----------------------------------------------------------------------
          !  New Interface
@@ -114,10 +108,10 @@
          !  Ugly interface
          !----------------------------------------------------------------------
 
-         SUBROUTINE ppm_vtk_init(filename, vtype, info,             &
-                                 version, byte_order, whole_extent, &
-                                 origin, spacing, extent,           &
-                                 npoints, nverts, nlines, nstrips, npolys)
+         SUBROUTINE ppm_vtk_init(filename, vtype, info, &
+         &          version, byte_order, whole_extent,  &
+         &          origin, spacing, extent, npoints,   &
+         &          nverts, nlines, nstrips, npolys)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: filename
            CHARACTER(LEN=*),                              INTENT(IN   ) :: vtype
@@ -157,93 +151,92 @@
            IF (info .NE. 0) THEN
               info = ppm_error_fatal
               WRITE(errtxt,'(2A)') 'Failed to open file: ', &
-                    filename(1:LEN_TRIM(filename))
+              & filename(1:LEN_TRIM(filename))
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
            END IF
            WRITE(iUnit,'(A)')  "<?xml version='1.0' ?>"
            WRITE(iUnit,'(7A)') "<VTKFile type='", vtype, &
-                               "' version='",     iversion(1:LEN_TRIM(iversion)),  &
-                               "' byte_order='",  ibyte_order(1:LEN_TRIM(ibyte_order)), "'>"
-           WRITE(iUnit,'(2A)',advance='no') "  <", vtype
+           &                   "' version='",     iversion(1:LEN_TRIM(iversion)),  &
+           &                   "' byte_order='",  ibyte_order(1:LEN_TRIM(ibyte_order)), "'>"
+           WRITE(iUnit,'(2A)',ADVANCE='NO') "  <", vtype
            IF (PRESENT(whole_extent)) THEN
-              WRITE(iUnit, '(A)', advance='no') " WholeExtent='"
+              WRITE(iUnit, '(A)', ADVANCE='NO') " WholeExtent='"
               DO i=LBOUND(whole_extent,1),UBOUND(whole_extent,1)
                  WRITE(scratch, *) whole_extent(i)
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(A)', advance='no') &
+                 WRITE(iUnit, '(A)', ADVANCE='NO') &
                       scratch(1:LEN_TRIM(scratch))
-                 IF (i .LT. UBOUND(whole_extent,1)) &
-                      WRITE(iUnit, '(A)', advance='no') " "
+                 IF (i .LT. UBOUND(whole_extent,1)) WRITE(iUnit, '(A)', ADVANCE='NO') " "
               END DO
-              WRITE(iUnit, '(A)', advance='no') "'"
+              WRITE(iUnit, '(A)', ADVANCE='NO') "'"
            END IF
            IF (PRESENT(origin)) THEN
-              WRITE(iUnit, '(A)', advance='no') " Origin='"
+              WRITE(iUnit, '(A)', ADVANCE='NO') " Origin='"
               DO i=LBOUND(origin,1),UBOUND(origin,1)
                  WRITE(scratch, *) origin(i)
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(A)', advance='no') &
+                 WRITE(iUnit, '(A)', ADVANCE='NO') &
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(origin,1)) &
-                      WRITE(iUnit, '(A)', advance='no') " "
+                      WRITE(iUnit, '(A)', ADVANCE='NO') " "
               END DO
-              WRITE(iUnit, '(A)', advance='no') "'"
+              WRITE(iUnit, '(A)', ADVANCE='NO') "'"
            END IF
            IF (PRESENT(spacing)) THEN
-              WRITE(iUnit, '(A)', advance='no') " Spacing='"
+              WRITE(iUnit, '(A)', ADVANCE='NO') " Spacing='"
               DO i=LBOUND(spacing,1),UBOUND(spacing,1)
                  WRITE(scratch, *) spacing(i)
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(A)', advance='no') &
+                 WRITE(iUnit, '(A)', ADVANCE='NO') &
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(spacing,1)) &
-                      WRITE(iUnit, '(A)', advance='no') " "
+                      WRITE(iUnit, '(A)', ADVANCE='NO') " "
               END DO
-              WRITE(iUnit, '(A)', advance='no') "'"
+              WRITE(iUnit, '(A)', ADVANCE='NO') "'"
            END IF
            WRITE(iUnit,'(A)') ">"
-           WRITE(iUnit,'(A)', advance='no')     "    <Piece"
+           WRITE(iUnit,'(A)', ADVANCE='NO')     "    <Piece"
            IF (PRESENT(extent)) THEN
-              WRITE(iUnit, '(A)', advance='no') " Extent='"
+              WRITE(iUnit, '(A)', ADVANCE='NO') " Extent='"
               DO i=LBOUND(extent,1),UBOUND(extent,1)
                  WRITE(scratch, *) extent(i)
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(A)', advance='no') &
+                 WRITE(iUnit, '(A)', ADVANCE='NO') &
                       scratch(1:LEN_TRIM(scratch))
                  IF (i .LT. UBOUND(extent,1)) &
-                      WRITE(iUnit, '(A)', advance='no') " "
+                      WRITE(iUnit, '(A)', ADVANCE='NO') " "
               END DO
-              WRITE(iUnit, '(A)', advance='no') "'"
+              WRITE(iUnit, '(A)', ADVANCE='NO') "'"
            ELSE
               IF (PRESENT(npoints)) THEN
                  WRITE(scratch, *) npoints
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(3A)', advance='no') " NumberOfPoints='", &
+                 WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfPoints='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
               END IF
               IF (PRESENT(nverts)) THEN
                  WRITE(scratch, *) nverts
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(3A)', advance='no') " NumberOfVerts='", &
+                 WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfVerts='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
               ENd IF
               IF (PRESENT(nlines)) THEN
                  WRITE(scratch, *) nlines
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(3A)', advance='no') " NumberOfLines='", &
+                 WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfLines='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
               END IF
               IF (PRESENT(nstrips)) THEN
                  WRITE(scratch, *) nstrips
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(3A)', advance='no') " NumberOfStrips='", &
+                 WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfStrips='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
               END IF
               IF (PRESENT(npolys)) THEN
                  WRITE(scratch, *) npolys
                  scratch = ADJUSTL(scratch)
-                 WRITE(iUnit, '(3A)', advance='no') " NumberOfPolys='", &
+                 WRITE(iUnit, '(3A)', ADVANCE='NO') " NumberOfPolys='", &
                       scratch(1:LEN_TRIM(scratch)), "'"
               END IF
            END IF
@@ -260,16 +253,16 @@
            END IF
            vtk_section = ADJUSTL(name)
            current_section = current_section + 1
-           WRITE(iUnit,'(2A)', advance='no') "      <", &
+           WRITE(iUnit,'(2A)', ADVANCE='NO') "      <", &
                 vtk_section(1:LEN_TRIM(vtk_section))
            IF (PRESENT(attr)) THEN
-              WRITE(iUnit,'(2A)', advance='no') " ", attr(1:LEN_TRIM(attr))
+              WRITE(iUnit,'(2A)', ADVANCE='NO') " ", attr(1:LEN_TRIM(attr))
            END IF
            WRITE (iUnit, '(A)') '>'
          END SUBROUTINE ppm_vtk_section
 
-         SUBROUTINE ppm_vtk_data(name, data, info, &
-                                 format, vtype, ncomponents, offset)
+         SUBROUTINE ppm_vtk_data(name, data, info, format, &
+         &          vtype, ncomponents, offset)
            ! args
            CHARACTER(LEN=*),                              INTENT(IN   ) :: name
            REAL(ppm_kind_single), DIMENSION(:),           INTENT(IN   ) :: data
@@ -294,32 +287,32 @@
               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
               GOTO 9999
            END IF
-           WRITE(iUnit,'(A)',advance='no') "        <DataArray"
+           WRITE(iUnit,'(A)',ADVANCE='NO') "        <DataArray"
            IF (PRESENT(vtype)) THEN
-              WRITE(iUnit,'(3A)',advance='no') " type='", vtype(1:LEN_TRIM(vtype)), "'"
+              WRITE(iUnit,'(3A)',ADVANCE='NO') " type='", vtype(1:LEN_TRIM(vtype)), "'"
            END IF
-           WRITE(iUnit,'(3A)',advance='no') " Name='", name(1:LEN_TRIM(name)), "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " Name='", name(1:LEN_TRIM(name)), "'"
            IF (PRESENT(ncomponents)) THEN
               WRITE(scratch, *) ncomponents
               scratch = ADJUSTL(scratch)
-              WRITE(iUnit,'(3A)',advance='no') " NumberOfComponents='", &
+              WRITE(iUnit,'(3A)',ADVANCE='NO') " NumberOfComponents='", &
                    scratch(1:LEN_TRIM(scratch)), "'"
            END IF
-           WRITE(iUnit,'(3A)',advance='no') " format='", iformat(1:LEN_TRIM(iformat)), "'"
+           WRITE(iUnit,'(3A)',ADVANCE='NO') " format='", iformat(1:LEN_TRIM(iformat)), "'"
            IF (PRESENT(offset)) THEN
               WRITE(scratch, *) offset
               scratch = ADJUSTL(scratch)
-              WRITE(iUnit,'(3A)',advance='no') " offset='", &
+              WRITE(iUnit,'(3A)',ADVANCE='NO') " offset='", &
                    scratch(1:LEN_TRIM(scratch)), "'"
            END IF
            WRITE(iUnit,'(A)') ">"
            DO i=LBOUND(data,1),UBOUND(data,1)
               WRITE(scratch, *) data(i)
               scratch = ADJUSTL(scratch)
-              WRITE(iUnit, '(A)', advance='no') &
+              WRITE(iUnit, '(A)', ADVANCE='NO') &
                    scratch(1:LEN_TRIM(scratch))
               IF (i .LT. UBOUND(data,1)) &
-                   WRITE(iUnit, '(A)', advance='no') " "
+                   WRITE(iUnit, '(A)', ADVANCE='NO') " "
            END DO
            WRITE(iUnit,'(/A)') "        </DataArray>"
 9999       CONTINUE

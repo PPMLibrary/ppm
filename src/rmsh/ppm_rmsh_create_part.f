@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_rmsh_create_part
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -119,9 +119,9 @@
       USE ppm_module_alloc
       USE ppm_module_substart
       USE ppm_module_substop
-      USE ppm_module_data_rmsh
-      USE ppm_module_data_mesh
       USE ppm_module_data
+      USE ppm_module_data_mesh
+      USE ppm_module_data_rmsh
       USE ppm_module_check_id
 
       IMPLICIT NONE
@@ -186,8 +186,8 @@
 #elif __DIME == __3D
       REAL(MK) , DIMENSION(:,:,:,:  ) , POINTER, OPTIONAL :: field_wp
 #endif
-      !!! A slave field for which to create particles as well where field_up 
-      !!! is within cutoff. 
+      !!! A slave field for which to create particles as well where field_up
+      !!! is within cutoff.
 #elif __MODE2 == __VEC
       INTEGER                         , INTENT(in)     :: lda2
       !!! Has to be present if field_wp is and if it is a vector field.
@@ -337,12 +337,12 @@
       ELSE
          reset = .FALSE.
       END IF
-      
+
       !-------------------------------------------------------------------------
       !  check whether to reset the positions
       !-------------------------------------------------------------------------
       with_vol = PRESENT(vp)
-      
+
       !-------------------------------------------------------------------------
       !  Check whether we have slave fields
       !-------------------------------------------------------------------------
@@ -515,7 +515,7 @@
             GOTO 9999
          END IF
       END IF
-      
+
       !-------------------------------------------------------------------------
       !  grow the vp array if necessary
       !-------------------------------------------------------------------------
@@ -531,7 +531,7 @@
             GOTO 9999
          END IF
       END IF
-      
+
       inp = 0
       !-------------------------------------------------------------------------
       !  loop over subs again and create particles
@@ -584,13 +584,13 @@
          startz = 1
          nnz = 1
 #endif
-         
+
 #if   __DIME == __3D
          ilowbc = 0
          IF(topo%subs_bc(1,isubl).EQ.1&
               &.AND.((topo%bcdef(1).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(1).NE.ppm_param_bcdef_freespace))) THEN
-            ilowbc = 1 
+            ilowbc = 1
          END IF
          ihighbc = ndata(1,isubl)+1
          IF(topo%subs_bc(2,isubl).EQ.1&
@@ -602,7 +602,7 @@
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.((topo%bcdef(3).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(3).NE.ppm_param_bcdef_freespace))) THEN
-            jlowbc = 1 
+            jlowbc = 1
          END IF
          jhighbc = ndata(2,isubl)+1
          IF(topo%subs_bc(4,isubl).EQ.1&
@@ -614,7 +614,7 @@
          IF(topo%subs_bc(5,isubl).EQ.1&
               &.AND.((topo%bcdef(5).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(5).NE.ppm_param_bcdef_freespace))) THEN
-            klowbc = 1 
+            klowbc = 1
          END IF
          khighbc = ndata(3,isubl)+1
          IF(topo%subs_bc(6,isubl).EQ.1&
@@ -687,7 +687,7 @@
          IF(topo%subs_bc(1,isubl).EQ.1&
               &.AND.((topo%bcdef(1).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(1).NE.ppm_param_bcdef_freespace))) THEN
-            ilowbc = 1 
+            ilowbc = 1
          END IF
          ihighbc = ndata(1,isubl)+1
          IF(topo%subs_bc(2,isubl).EQ.1&
@@ -699,7 +699,7 @@
          IF(topo%subs_bc(3,isubl).EQ.1&
               &.AND.((topo%bcdef(3).NE.ppm_param_bcdef_periodic)&
               &  .AND.(topo%bcdef(3).NE.ppm_param_bcdef_freespace))) THEN
-            jlowbc = 1 
+            jlowbc = 1
          END IF
          jhighbc = ndata(2,isubl)+1
          IF(topo%subs_bc(4,isubl).EQ.1&

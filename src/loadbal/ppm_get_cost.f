@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_get_cost
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -82,7 +82,7 @@
       !!! If `ppm_param_topo_undefined` all particle positions on the processor
       !!! are considered to compute the cost
       INTEGER                 , INTENT(IN   ) :: meshid
-      !!! mesh ID for which to compute the cost. 
+      !!! mesh ID for which to compute the cost.
       !!! If -1 is passed, only particles are considered and the mesh is
       !!! ignored.                                                             +
       !!! If there are no particles and mesh_id is -1, the costs are

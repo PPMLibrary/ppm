@@ -4,16 +4,16 @@
       !  Purpose      : Define global and user-accessible parameters
       !
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -33,13 +33,13 @@
       !-------------------------------------------------------------------------
       !  Define the precision
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_kind_double     = KIND(1.0D0)
-      INTEGER, PARAMETER :: ppm_kind_single     = KIND(1.0E0)
+      INTEGER, PARAMETER :: ppm_kind_double     = KIND(1.0D0) !SELECTED_REAL_KIND(P=15, R=307)
+      INTEGER, PARAMETER :: ppm_kind_single     = KIND(1.0E0) !SELECTED_REAL_KIND(P= 6, R= 37)
       INTEGER, PARAMETER :: ppm_integer         = 13
       INTEGER, PARAMETER :: ppm_logical         = 17
       INTEGER, PARAMETER :: ppm_char            = 256
-      INTEGER, PARAMETER :: ppm_kind_int32      = 4
-      INTEGER, PARAMETER :: ppm_kind_int64      = 8
+      INTEGER, PARAMETER :: ppm_kind_int32      = 4 !SELECTED_INT_KIND(6)
+      INTEGER, PARAMETER :: ppm_kind_int64      = 8 !SELECTED_INT_KIND(12)
       !-------------------------------------------------------------------------
       !  Define the supported types
       !-------------------------------------------------------------------------
@@ -76,13 +76,13 @@
       !-------------------------------------------------------------------------
       !  Define data receive options (map_pop)
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_pop_replace         = 1 
+      INTEGER, PARAMETER :: ppm_param_pop_replace         = 1
       INTEGER, PARAMETER :: ppm_param_pop_add             = 2
 
       !-------------------------------------------------------------------------
       !  Define ppm-internal PP interaction kernels
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_kernel_laplace2d_p2 =  1 
+      INTEGER, PARAMETER :: ppm_param_kernel_laplace2d_p2 =  1
       INTEGER, PARAMETER :: ppm_param_kernel_laplace3d_p2 =  2
       INTEGER, PARAMETER :: ppm_param_kernel_sph2d_p2     =  3
       INTEGER, PARAMETER :: ppm_param_kernel_dx_sph2d_p2  =  4
@@ -99,7 +99,7 @@
       !-------------------------------------------------------------------------
       !  Define decision heuristics for dynamic load balancing
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_loadbal_sar         = 1 
+      INTEGER, PARAMETER :: ppm_param_loadbal_sar         = 1
 
       !-------------------------------------------------------------------------
       !  Define statistics update methods
@@ -140,7 +140,7 @@
       INTEGER, PARAMETER :: ppm_param_assign_dual_cut     = 4
       INTEGER, PARAMETER :: ppm_param_assign_dual_comm    = 5
       INTEGER, PARAMETER :: ppm_param_assign_user_defined = 6
-      
+
       !-------------------------------------------------------------------------
       !  Define particle-mesh schemes
       !-------------------------------------------------------------------------
@@ -231,4 +231,4 @@
       INTEGER, PARAMETER :: ppm_param_op_fd       = 1
       INTEGER, PARAMETER :: ppm_param_op_pse      = 2
       INTEGER, PARAMETER :: ppm_param_op_dcpse    = 3
-      
+

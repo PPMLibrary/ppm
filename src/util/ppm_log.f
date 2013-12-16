@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_log
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -64,7 +64,7 @@
       !-------------------------------------------------------------------------
       CALL DATE_AND_TIME(values=tval)
       WRITE(msg,'(I4.4,A,5(I2.2,A),A)') tval(1),'-',tval(2),'-',tval(3),   &
-     &               ' ',tval(5),':',tval(6),':',tval(7),' --- ',trim(mesg)
+     &               ' ',tval(5),':',tval(6),':',tval(7),' --- ',TRIM(mesg)
 
       !-------------------------------------------------------------------------
       !  Write the log

@@ -1,16 +1,16 @@
       !------------------------------------------------------------------------!
       !     Subroutine   :                 ppm_particles_from_mesh
       !------------------------------------------------------------------------!
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,7 +36,7 @@
       !!! interpolate to the mesh (calling for example
       !!! this%interp_to_mesh_all()), then do some finite-differences on the mesh,
       !!! then re-create the particles from the mesh.
-      !!! 
+      !!!
       !------------------------------------------------------------------------!
       !  INCLUDES
       !------------------------------------------------------------------------!
@@ -88,7 +88,7 @@
         CALL check
         IF (info .NE. 0) GOTO 9999
       ENDIF
-      IF (    (PRESENT(cutoff_val) .AND. .NOT.PRESENT(cutoff_field)) & 
+      IF (    (PRESENT(cutoff_val) .AND. .NOT.PRESENT(cutoff_field)) &
           .OR.(PRESENT(cutoff_field) .AND. .NOT.PRESENT(cutoff_val)) ) THEN
           fail("Incompatible optional arguments: must provide cutoff_val AND cutoff_field, or neither")
       ENDIF
@@ -103,7 +103,7 @@
       !  Remesh the positions
       !-------------------------------------------------------------------------
       CALL this%get_xp(xp,info)
-        or_fail("Get_xp failed")
+      or_fail("Get_xp failed")
 
 
       !-------------------------------------------------------------------------
@@ -151,12 +151,12 @@
       ldc(1) = ppm_dim
       ldc(2) = nb_part
       CALL ppm_alloc(this%xp,ldc,ppm_param_alloc_grow,info)
-          or_fail_alloc("xp")
+      or_fail_alloc("xp")
 
       this%Npart = nb_part
       ! get xp again to have the new boundaries in the pointer
       CALL this%get_xp(xp,info)
-        or_fail("Get_xp failed")
+      or_fail("Get_xp failed")
 
       !Reallocate property arrays if needed
       prop => this%props%begin()
@@ -165,7 +165,7 @@
           or_fail("reallocating property array failed")
           prop => this%props%next()
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Copy the new particle positions
       !-------------------------------------------------------------------------
@@ -236,11 +236,11 @@
           SELECT TYPE(field=>abstr)
           CLASS IS (ppm_t_field_)
           IF (field%lda.EQ.1) THEN
-          CALL this%get_field(field,wp_s,info)
-              or_fail("interp_to_mesh")
+             CALL this%get_field(field,wp_s,info)
+             or_fail("interp_to_mesh")
           ELSE
-          CALL this%get_field(field,wp_v,info)
-              or_fail("interp_to_mesh")
+             CALL this%get_field(field,wp_v,info)
+             or_fail("interp_to_mesh")
           ENDIF
 
           ip = 0
@@ -361,7 +361,7 @@
 
       !Updating internal state variables
       CALL this%set_xp(xp,info,read_only=.true.)
-        or_fail("Set_xp failed")
+      or_fail("Set_xp failed")
 
       end_subroutine()
       RETURN

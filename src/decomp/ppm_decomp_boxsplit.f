@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_decomp_boxsplit_[s,d]
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -29,16 +29,16 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_bsplit_s(xp,ppb,npbx,kbox,nbox, &
-     &                                 min_box,max_box,info)
+      &          min_box,max_box,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_bsplit_d(xp,ppb,npbx,kbox,nbox, &
-     &                                 min_box,max_box,info)
+      &          min_box,max_box,info)
 #endif
       !!! This routine splits a (parent) box in its 4 or 8 children for
       !!! 2D and 3D problems. The particles contained within
       !!! the parent box are sorted into the respective child boxes.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -59,7 +59,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: kbox
       !!! ID of the parent box
@@ -79,7 +79,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                        :: t0
       REAL(MK), DIMENSION(ppm_dim)    :: cen_box
@@ -88,11 +88,11 @@
       INTEGER                         :: idx,jdx,k,iopt
       INTEGER , DIMENSION(1)          :: lda ! dummy for ppm_alloc
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_decomp_boxsplit',t0,info)
 
@@ -118,7 +118,7 @@
       idx = ppb(kbox)
 
       !-------------------------------------------------------------------------
-      !  Sort the particle in two dimensions 
+      !  Sort the particle in two dimensions
       !-------------------------------------------------------------------------
       IF (ppm_dim.EQ.2) THEN
          !----------------------------------------------------------------------
@@ -181,7 +181,7 @@
          ppb(nbox+1)  = ppb(kbox)
          npbx(nbox+1) = npbx_temp(1)
          DO k=2,8
-            ppb(k+nbox)  = ppb(k-1+nbox) + npbx_temp(k-1) 
+            ppb(k+nbox)  = ppb(k-1+nbox) + npbx_temp(k-1)
             npbx(nbox+k) = npbx_temp(k)
          ENDDO
 
@@ -248,7 +248,7 @@
          !  Update the box count
          !----------------------------------------------------------------------
          nbox = nbox + 8
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Deallocate local arrays
@@ -263,7 +263,7 @@
           GOTO 9999
       ENDIF
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_decomp_boxsplit',t0,info)

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_mesh_alloc_equi
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -43,11 +43,13 @@
       USE ppm_module_error
       IMPLICIT NONE
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , DIMENSION(:  ), INTENT(IN   ) :: lda
+      TYPE(ppm_t_equi_mesh), DIMENSION(:), POINTER       :: equi_mesh
+      !!! Array of TYPE(ppm_t_equi_mesh) which is to be (re)allocated.
+      INTEGER,               DIMENSION(:), INTENT(IN   ) :: lda
       !!! New size of mesh definition array
-      INTEGER                                 , INTENT(IN   ) :: iopt
+      INTEGER,                             INTENT(IN   ) :: iopt
       !!! Alloc action. One of:
       !!!
       !!! * ppm_param_alloc_fit_preserve
@@ -55,24 +57,25 @@
       !!! * ppm_param_alloc_grow_preserve
       !!! * ppm_param_alloc_grow
       !!! * ppm_param_dealloc
-      TYPE(ppm_t_equi_mesh)   , DIMENSION(:  ), POINTER :: equi_mesh
-      !!! Array of TYPE(ppm_t_equi_mesh) which is to be (re)allocated.
-      INTEGER                                 , INTENT(  OUT) :: info
+      INTEGER,                             INTENT(  OUT) :: info
       !!! Returns status, 0 upon success.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER            :: i
-      INTEGER, DIMENSION(2) :: ldc
+      TYPE(ppm_t_equi_mesh), DIMENSION(:), POINTER :: work_mesh => NULL()
+
       REAL(ppm_kind_double) :: t0
-      TYPE(ppm_t_equi_mesh)   , DIMENSION(:  ), POINTER :: work_mesh => NULL()
-      LOGICAL            :: lcopy,lalloc,lrealloc,ldealloc
+
+      INTEGER               :: i
+      INTEGER, DIMENSION(2) :: ldc
+
+      LOGICAL :: lcopy,lalloc,lrealloc,ldealloc
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_mesh_alloc_equi',t0,info)
 
@@ -91,7 +94,8 @@
       lalloc   = .FALSE.
       lrealloc = .FALSE.
       ldealloc = .FALSE.
-      IF (iopt .EQ. ppm_param_alloc_fit_preserve) THEN
+      SELECT CASE (iopt)
+      CASE (ppm_param_alloc_fit_preserve)
           !---------------------------------------------------------------------
           !  Fit memory and preserve the present contents
           !---------------------------------------------------------------------
@@ -105,7 +109,7 @@
           ELSE
               lalloc = .TRUE.
           ENDIF
-      ELSEIF (iopt .EQ. ppm_param_alloc_fit) THEN
+      CASE (ppm_param_alloc_fit)
           !---------------------------------------------------------------------
           !  Fit memory and discard the present contents
           !---------------------------------------------------------------------
@@ -119,7 +123,7 @@
           ELSE
               lalloc = .TRUE.
           ENDIF
-      ELSEIF (iopt .EQ. ppm_param_alloc_grow_preserve) THEN
+      CASE (ppm_param_alloc_grow_preserve)
           !---------------------------------------------------------------------
           !  Fit memory and preserve the present contents
           !---------------------------------------------------------------------
@@ -133,7 +137,7 @@
           ELSE
               lalloc = .TRUE.
           ENDIF
-      ELSEIF (iopt .EQ. ppm_param_alloc_grow) THEN
+      CASE (ppm_param_alloc_grow)
           !---------------------------------------------------------------------
           !  Fit memory and discard the present contents
           !---------------------------------------------------------------------
@@ -147,7 +151,7 @@
           ELSE
               lalloc = .TRUE.
           ENDIF
-      ELSEIF (iopt .EQ. ppm_param_dealloc) THEN
+      CASE (ppm_param_dealloc)
           !---------------------------------------------------------------------
           !  Deallocate
           !---------------------------------------------------------------------
@@ -156,8 +160,8 @@
               lrealloc = .TRUE.
               ldealloc = .TRUE.
           ENDIF
-      ENDIF
-              
+      END SELECT
+
       !-------------------------------------------------------------------------
       !  Perform the actual alloc action
       !-------------------------------------------------------------------------
@@ -262,7 +266,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_mesh_alloc_equi',t0,info)

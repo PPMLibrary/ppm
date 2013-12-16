@@ -26,19 +26,20 @@ logical                         :: ok
 
     init
 
+        use ppm_module_data
         use ppm_module_init
         use ppm_module_topo_typedef
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
         tol = epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
-        
+
         nullify(xp)
 
 #ifdef __MPI
@@ -65,14 +66,14 @@ logical                         :: ok
 
 
     setup
-        
+
         allocate(xp(ndim,np),stat=info)
 
     end setup
-        
+
 
     teardown
-        
+
         deallocate(xp,stat=info)
 
     end teardown

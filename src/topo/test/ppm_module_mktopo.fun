@@ -40,20 +40,21 @@ real(mk)                         :: t0,t1,t2,t3
 
     init
 
+        use ppm_module_data
         use ppm_module_topo_typedef
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         ghostsize(ndim),ghostlayer(2*ndim),&
             &         nm(ndim),h(ndim),p_h(ndim),stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         ghostsize(1:ndim) = 2
         ghostlayer(1:2*ndim) = cutoff
         bcdef(1:6) = ppm_param_bcdef_periodic
-        
+
         nullify(xp,rcp,wp)
 
 #ifdef __MPI
@@ -93,10 +94,10 @@ real(mk)                         :: t0,t1,t2,t3
         allocate(xp(ndim,np),rcp(np),wp(pdim,np),stat=info)
 
     end setup
-        
+
 
     teardown
-        
+
         deallocate(xp,rcp,wp,stat=info)
         deallocate(seed,randnb)
 
@@ -105,6 +106,7 @@ real(mk)                         :: t0,t1,t2,t3
     test cuboid
         ! test cuboid decomposition
 
+        use ppm_module_data
         use ppm_module_topo_typedef
         use ppm_module_mktopo
 

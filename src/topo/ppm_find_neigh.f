@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_find_neigh
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -42,13 +42,13 @@
       !!!
       !!! NOTE: No sub is listed as a neighbor of itself.
       !!!
-      !!! NOTE: [SR, 02.12.2011] 
+      !!! NOTE: [SR, 02.12.2011]
       !!!     This routine has been modified to account for ghostlayer sizes
       !!!     so that a subdomain that overlaps the ghost layer of another
       !!!     subdomain is considered as a neighbor even if it does not
       !!!     touch the subdomain itself (this is what happens when 2 subs
       !!!     that are touching at a corner are slightly shifted, leading
-      !!!     to some particle interactions being missed...). 
+      !!!     to some particle interactions being missed...).
       !!!
       !!! [NOTE]
       !!! ======================================================================
@@ -72,7 +72,7 @@
 
 #endif
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -95,7 +95,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
       !!! Min. extent of the physical domain
@@ -119,7 +119,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: bsize,len_sub
       REAL(MK), DIMENSION(:,:), POINTER       :: ctrs => NULL()
@@ -141,18 +141,18 @@
       REAL(MK)                                :: t0
       LOGICAL                                 :: isin,pbdrx,pbdry,pbdrz
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_find_neigh',t0,info)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for subdomain IDs
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit 
+      iopt = ppm_param_alloc_fit
       ldc(1) = nsubs
       CALL ppm_alloc(subid,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
@@ -161,7 +161,7 @@
      &        'Sub IDs SUBID',__LINE__,info)
           GOTO 9999
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Initialize the ID
       !-------------------------------------------------------------------------
@@ -173,19 +173,19 @@
       !  Add ghost domains for the periodic system
       !-------------------------------------------------------------------------
       CALL ppm_copy_image_subs(min_phys,max_phys,bcdef, &
-     &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
+      &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
       IF (info.NE.ppm_param_success) GOTO 9999
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the neighbours of the subdomains
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldc(1) = nsubsplus 
+      ldc(1) = nsubsplus
       CALL ppm_alloc(nneigh,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'Number of neighbors NNEIGH',__LINE__,info)
+          &    'Number of neighbors NNEIGH',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -205,7 +205,7 @@
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'List of neighbors INEIGH',__LINE__,info)
+          &    'List of neighbors INEIGH',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -246,9 +246,9 @@
               ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
               ctrs(2,i)  = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
               ctrs(3,i)  = 0.5_MK*(min_sub(3,i) + max_sub(3,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i) 
-              len_sub(2) = max_sub(2,i) - min_sub(2,i) 
-              len_sub(3) = max_sub(3,i) - min_sub(3,i) 
+              len_sub(1) = max_sub(1,i) - min_sub(1,i)
+              len_sub(2) = max_sub(2,i) - min_sub(2,i)
+              len_sub(3) = max_sub(3,i) - min_sub(3,i)
               IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
               IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
               IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
@@ -258,8 +258,8 @@
           DO i=1,nsubsplus
               ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
               ctrs(2,i) = 0.5_MK*(min_sub(2,i) + max_sub(2,i))
-              len_sub(1) = max_sub(1,i) - min_sub(1,i) 
-              len_sub(2) = max_sub(2,i) - min_sub(2,i) 
+              len_sub(1) = max_sub(1,i) - min_sub(1,i)
+              len_sub(2) = max_sub(2,i) - min_sub(2,i)
               IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
               IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
           ENDDO
@@ -269,7 +269,7 @@
       !  Determine number of cells
       !-------------------------------------------------------------------------
       DO i=1,ppm_dim
-          ! number of cells based on a cellsize = cutoff 
+          ! number of cells based on a cellsize = cutoff
           Nm(i) = INT((max_phys(i) - min_phys(i))/bsize(i))
           ! make at least one box
           IF (Nm(i) .LT. 1) Nm(i) = 1
@@ -356,7 +356,7 @@
                       pbdrx = .FALSE.
                   ENDIF
                   ! index of the center box
-                  cbox = i + 1 + n1*j 
+                  cbox = i + 1 + n1*j
                   ! loop over all box-box interactions
                   DO iinter=1,nnp
                       ! determine box indices for this interaction
@@ -369,7 +369,7 @@
                       iend   = lhbx(ibox+1)-1
                       IF (iend .LT. istart) CYCLE
                       !---------------------------------------------------------
-                      !  Within the box itself use symmetry and avoid 
+                      !  Within the box itself use symmetry and avoid
                       !  adding the particle itself to its own list
                       !---------------------------------------------------------
                       IF (ibox .EQ. jbox) THEN
@@ -389,7 +389,7 @@
                       !  For the other boxes check all particles
                       !---------------------------------------------------------
                       ELSE
-                          ! get pointers to first and last particle 
+                          ! get pointers to first and last particle
                           jstart = lhbx(jbox)
                           jend   = lhbx(jbox+1)-1
                           ! skip this iinter if other box is empty
@@ -463,7 +463,7 @@
                           iend   = lhbx(ibox+1)-1
                           IF (iend .LT. istart) CYCLE
                           !-----------------------------------------------------
-                          !  Within the box itself use symmetry and avoid 
+                          !  Within the box itself use symmetry and avoid
                           !  adding the particle itself to its own list
                           !-----------------------------------------------------
                           IF (ibox .EQ. jbox) THEN
@@ -483,7 +483,7 @@
                           !  For the other boxes check all particles
                           !-----------------------------------------------------
                           ELSE
-                              ! get pointers to first and last particle 
+                              ! get pointers to first and last particle
                               jstart = lhbx(jbox)
                               jend   = lhbx(jbox+1)-1
                               ! skip this iinter if other box is empty
@@ -518,35 +518,35 @@
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'Sub center points CTRS',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(lpdx,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'cell list pointers LPDX',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(lhbx,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'cell list headers LHBX',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(inp,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'cell-cell interactaion index INP',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
       CALL ppm_alloc(jnp,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'cell-cell interaction index JNP',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
  8888 iopt = ppm_param_dealloc
       CALL ppm_alloc(subid,ldc,iopt,info)
       IF (info.NE.ppm_param_success) THEN
@@ -554,10 +554,10 @@
           CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
      &        'Sub IDs SUBID',__LINE__,info)
           GOTO 9999
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_find_neigh',t0,info)

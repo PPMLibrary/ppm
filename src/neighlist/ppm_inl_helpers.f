@@ -28,63 +28,64 @@
      !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE getSubdomainParticles_s(xp, Np, Mp, cutoff, lsymm,             &
-     & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
+      SUBROUTINE getSubdomainParticles_s(xp, Np, Mp, cutoff, lsymm, &
+      & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE getSubdomainParticles_d(xp, Np, Mp, cutoff, lsymm,             &
-     & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
+      SUBROUTINE getSubdomainParticles_d(xp, Np, Mp, cutoff, lsymm, &
+      & actual_subdomain, ghost_extend, xp_sub, cutoff_sub, Np_sub, Mp_sub, p_id)
 #endif
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          REAL(MK), INTENT(IN), DIMENSION(:,:)       :: xp
-          !!! Particle coordinates array. 
+          REAL(MK), DIMENSION(:,:),                INTENT(IN   ) :: xp
+          !!! Particle coordinates array.
           !!! i.e., `xp(1, i)` is the x-coor of particle i.
-          INTEGER , INTENT(IN)                       :: Np
+          INTEGER ,                                INTENT(IN   ) :: Np
           !!! Number of real particles
-          INTEGER , INTENT(IN)                       :: Mp
+          INTEGER ,                                INTENT(IN   ) :: Mp
           !!! Number of all particles including ghost particles
-          REAL(MK), INTENT(IN), DIMENSION(:)         :: cutoff
+          REAL(MK), DIMENSION(:),                  INTENT(IN   ) :: cutoff
           !!! Particles cutoff radii
-          LOGICAL,  INTENT(IN)                       :: lsymm
+          LOGICAL,                                 INTENT(IN   ) :: lsymm
           !!! If lsymm = TRUE, verlet lists are symmetric and we have ghost
           !!! layers only in (+) directions in all axes. Else, we have ghost
           !!! layers in all directions.
-          REAL(MK),             DIMENSION(2*ppm_dim) :: actual_subdomain
+          REAL(MK), DIMENSION(2*ppm_dim),          INTENT(IN   ) :: actual_subdomain
           ! Physical extent of actual domain without ghost layers.
-          REAL(MK), INTENT(IN), DIMENSION(ppm_dim)   :: ghost_extend
+          REAL(MK), DIMENSION(ppm_dim),            INTENT(IN   ) :: ghost_extend
           !!! Extra area/volume over the actual domain introduced by
           !!! ghost layers.
-          REAL(MK), POINTER   , DIMENSION(:,:)       :: xp_sub
+          REAL(MK), DIMENSION(:,:),       POINTER, INTENT(  OUT) :: xp_sub
           !!! Particle coordinates array. F.e., xp(1, i) is the x-coor of particle i.
-          REAL(MK), POINTER   , DIMENSION(:)         :: cutoff_sub
+          REAL(MK), DIMENSION(:),         POINTER, INTENT(  OUT) :: cutoff_sub
           !!! Particles cutoff radii
-          INTEGER , INTENT(OUT)                      :: Np_sub
+          INTEGER,                                 INTENT(  OUT) :: Np_sub
           !!! Number of real particles of subdomain
-          INTEGER , INTENT(OUT)                      :: Mp_sub
+          INTEGER,                                 INTENT(  OUT) :: Mp_sub
           !!! Number of all particles including ghost particles of subdomain
-          INTEGER , POINTER   , DIMENSION(:)        :: p_id
-      !-------------------------------------------------------------------------
-      !  Local variables, arrays and counters
-      !-------------------------------------------------------------------------
-          REAL(MK), DIMENSION(2*ppm_dim)             :: whole_subdomain
+          INTEGER,  DIMENSION(:),         POINTER, INTENT(  OUT) :: p_id
+
+          !---------------------------------------------------------------------
+          !  Local variables, arrays and counters
+          !---------------------------------------------------------------------
+          REAL(MK), DIMENSION(2*ppm_dim) :: whole_subdomain
           !!! Physical extent of whole domain including ghost layers.
-          INTEGER                                    :: i
+          INTEGER                        :: i
 
-      !---------------------------------------------------------------------
-      !  Variables and parameters for ppm_alloc
-      !---------------------------------------------------------------------
-          INTEGER               :: iopt
-          INTEGER, DIMENSION(2) :: lda
-          INTEGER               :: info
+          !---------------------------------------------------------------------
+          !  Variables and parameters for ppm_alloc
+          !---------------------------------------------------------------------
+          INTEGER                        :: iopt
+          INTEGER, DIMENSION(2)          :: lda
+          INTEGER                        :: info
 
-          IF(lsymm .EQV. .TRUE.)  THEN
+          IF (lsymm)  THEN
               DO i = 1, ppm_dim
                   whole_subdomain(2*i-1) = actual_subdomain(2*i-1)
                   whole_subdomain(2*i)   = actual_subdomain(2*i) + ghost_extend(i)
@@ -116,7 +117,7 @@
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
           lda(1) = Mp_sub
@@ -124,32 +125,26 @@
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
           CALL ppm_alloc(p_id, lda, iopt, info)
           IF (info.NE.0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_create_verlet_list',     &
-     &                       'own_plist',__LINE__,info)
+              &                       'own_plist',__LINE__,info)
           END IF
 
+          Mp_sub = Np_sub
           Np_sub = 0
           DO i = 1, Mp
-              IF(inDomain(xp(:, i), actual_subdomain))  THEN   !REAL
+              IF (inDomain(xp(:, i), actual_subdomain)) THEN   !REAL
                    Np_sub = Np_sub + 1
                    p_id(Np_sub) = i
                    xp_sub(:, Np_sub) = xp(:, i)
                    cutoff_sub(Np_sub) = cutoff(i)
-              END IF
-          END DO
-
-          Mp_sub = Np_sub
-          DO i = 1, Mp
-              IF(inDomain(xp(:, i), actual_subdomain))  THEN   !REAL
-
               ELSE
-                  IF(inDomain(xp(:, i), whole_subdomain))  THEN !GHOST
+                  IF (inDomain(xp(:, i), whole_subdomain)) THEN !GHOST
                       Mp_sub = Mp_sub + 1
                       p_id(Mp_sub) = i
                       xp_sub(:, Mp_sub) = xp(:, i)
@@ -218,9 +213,9 @@
       !!! and the skin, then RETURNs TRUE if so. Works for nD.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !---------------------------------------------------------------------
       !  Arguments
@@ -252,7 +247,7 @@
           isNeigh = .FALSE.
 
           ! Return FALSE if they are the same particle
-          IF(p_idx .EQ. p_neigh)    RETURN
+          IF (p_idx .EQ. p_neigh) RETURN
 
           ! Initialize euclidian distance to 0
           total_dist = 0
@@ -262,10 +257,10 @@
           DO i = 3, ppm_dim
               total_dist = total_dist + (xp(i, p_idx) - xp(i, p_neigh))**2
           END DO
-          total_dist = sqrt(total_dist)
+          total_dist = SQRT(total_dist)
 
           ! Pick smallest cutoff radius and add skin on it
-          rcutoff = MIN(cutoff(p_idx), cutoff(p_neigh)) + skin
+          rcutoff = MIN(cutoff(p_idx),cutoff(p_neigh)) + skin
 
           ! Return TRUE if they are neighbors
           IF(total_dist .LE. rcutoff)  isNeigh = .TRUE.
@@ -287,9 +282,9 @@
       !!! and the skin, then RETURNs TRUE if so. Works for nD.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !---------------------------------------------------------------------
       !  Arguments
@@ -333,10 +328,10 @@
           DO i = 3, ppm_dim
               total_dist = total_dist + (red(i, red_idx) - blue(i, blue_idx))**2
           END DO
-          total_dist = sqrt(total_dist)
+          total_dist = SQRT(total_dist)
 
           ! Pick smallest cutoff radius and add skin on it
-          rcutoff = MIN(rcred(red_idx), rcblue(blue_idx)) + skin
+          rcutoff = MIN(rcred(red_idx),rcblue(blue_idx)) + skin
 
           ! Return TRUE if they are neighbors
           IF(total_dist .LE. rcutoff)  isNeigh = .TRUE.
@@ -358,9 +353,9 @@
       !!! of one of them.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !---------------------------------------------------------------------
       !  Arguments
@@ -397,27 +392,27 @@
           !  next axis, bits are shifted to LEFT and new bit is added, 0 if
           !  inside actual domain or 1 otherwise.
           !---------------------------------------------------------------------
-          IF(xp(1, p_idx)   .GT. actual_domain(2))  region1 = 1
-          IF(xp(1, p_neigh) .GT. actual_domain(2))  region2 = 1
+          IF (xp(1, p_idx)   .GT. actual_domain(2)) region1 = 1
+          IF (xp(1, p_neigh) .GT. actual_domain(2)) region2 = 1
           region1 = ISHFT(region1, 1)
           region2 = ISHFT(region2, 1)
-          IF(xp(2, p_idx)   .GT. actual_domain(4))  region1 = IOR(region1, 1)
-          IF(xp(2, p_neigh) .GT. actual_domain(4))  region2 = IOR(region2, 1)
+          IF (xp(2, p_idx)   .GT. actual_domain(4)) region1 = IOR(region1, 1)
+          IF (xp(2, p_neigh) .GT. actual_domain(4)) region2 = IOR(region2, 1)
 
           !---------------------------------------------------------------------
           !  If ppm_dim = 3, then we also compute region1 and region2 for z-axis.
           !---------------------------------------------------------------------
-          IF(ppm_dim .EQ. 3)    THEN
+          IF (ppm_dim .EQ. 3)    THEN
               region1 = ISHFT(region1, 1)
               region2 = ISHFT(region2, 1)
-              IF(xp(3, p_idx)   .GT. actual_domain(6))  region1 = IOR(region1, 1)
-              IF(xp(3, p_neigh) .GT. actual_domain(6))  region2 = IOR(region2, 1)
+              IF (xp(3, p_idx)   .GT. actual_domain(6)) region1 = IOR(region1, 1)
+              IF (xp(3, p_neigh) .GT. actual_domain(6)) region2 = IOR(region2, 1)
           END IF
 
           !---------------------------------------------------------------------
           !  Set return value to TRUE if they are cross-neighbors.
           !---------------------------------------------------------------------
-          IF(IAND(region1, region2) .EQ. 0)   isCrossNeigh = .TRUE.
+          IF (IAND(region1, region2) .EQ. 0) isCrossNeigh = .TRUE.
 #if   __KIND == __SINGLE_PRECISION
       END FUNCTION cross_neighbor_s
 #elif __KIND == __DOUBLE_PRECISION
@@ -448,8 +443,8 @@
           !  If the empty_list array is full, grow the empty_list array while
           !  preserving its contents.
           !---------------------------------------------------------------------
-          IF(empty_pos .EQ. size(empty_list)) THEN
-              lda(1) = 2*size(empty_list)
+          IF (empty_pos .EQ. SIZE(empty_list)) THEN
+              lda(1) = 2*SIZE(empty_list)
               iopt   = ppm_param_alloc_grow_preserve
               CALL ppm_alloc(empty_list, lda, iopt, info)
           END IF
@@ -487,7 +482,7 @@
           !---------------------------------------------------------------------
           inside = .FALSE.
           DO pos = empty_pos,1,-1
-              IF(empty_list(pos) .EQ. c_idx)   THEN
+              IF (empty_list(pos) .EQ. c_idx)   THEN
                   inside = .TRUE.
                   RETURN
               END IF
@@ -506,26 +501,27 @@
       !!! particle, respectively.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER,  INTENT(IN)                 :: p_idx
-          REAL(MK), DIMENSION(2*ppm_dim)       :: domain
-          REAL(MK), DIMENSION(:)               :: p_coor
-          INTEGER,  INTENT(INOUT)              :: p_depth
-          REAL(MK), INTENT(IN), DIMENSION(:,:) :: xp
-          REAL(MK), INTENT(IN), DIMENSION(:)   :: cutoff
-          REAL(MK), INTENT(IN)                 :: skin
+          INTEGER,                        INTENT(IN   ) :: p_idx
+          REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: domain
+          REAL(MK), DIMENSION(  ppm_dim), INTENT(  OUT) :: p_coor
+          INTEGER,                        INTENT(  OUT) :: p_depth
+          REAL(MK), DIMENSION(:,:),       INTENT(IN   ) :: xp
+          REAL(MK), DIMENSION(:),         INTENT(IN   ) :: cutoff
+          REAL(MK),                       INTENT(IN   ) :: skin
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          REAL(MK)                             :: minSideLength
-          INTEGER                              :: i
+          REAL(MK) :: minSideLength
+
+          INTEGER  :: i
 
           ! Get maximum side length of the domain
           minSideLength = getMinimumSideLength(domain)
@@ -533,8 +529,8 @@
           ! Initialize p_depth to 0 and keep on incrementing until we reach the
           ! correct depth.
           p_depth = 0
-          DO WHILE(minSideLength .GT. (cutoff(p_idx) + skin))
-              minSideLength = minSideLength/2
+          DO WHILE (minSideLength .GT. (cutoff(p_idx) + skin))
+              minSideLength = minSideLength/2._MK
               p_depth = p_depth + 1
           END DO
 
@@ -564,29 +560,29 @@
       !!! number of particles in this cell.
           IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_single
+          INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
-          INTEGER, PARAMETER :: mk = ppm_kind_double
+          INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-          INTEGER(ppm_kind_int64),  INTENT(IN)                   :: cell_idx
-          REAL(MK),  DIMENSION(:,:),INTENT(IN)                   :: xp
+          INTEGER(ppm_kind_int64),  INTENT(IN   ) :: cell_idx
+          REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
           !!! this is basically a dummy argument to force fortran to generate
           !!! two versions of this routine
-          TYPE(ppm_clist),          INTENT(IN)                   :: clist
-          INTEGER,   DIMENSION(:),  INTENT(INOUT)                :: list
-          INTEGER,                  INTENT(INOUT)                :: nlist
+          TYPE(ppm_clist),          INTENT(IN   ) :: clist
+          INTEGER,  DIMENSION(:),   INTENT(INOUT) :: list
+          INTEGER,                  INTENT(INOUT) :: nlist
 
       !-------------------------------------------------------------------------
       !  Local variables and counters
       !-------------------------------------------------------------------------
-          INTEGER(ppm_kind_int64)                      :: parentIdx
-          INTEGER                                      :: left_end
-          INTEGER                                      :: right_end
-          INTEGER                                      :: border_idx
-          INTEGER                                      :: i
+          INTEGER(ppm_kind_int64) :: parentIdx
+          INTEGER                 :: left_end
+          INTEGER                 :: right_end
+          INTEGER                 :: border_idx
+          INTEGER                 :: i
 
           ! Get index of parent of this cell
           parentIdx  = parent(cell_idx)
@@ -599,16 +595,16 @@
 
           ! If this cell is not found in hash table, then put the cell index in
           ! empty list and return.
-          IF(border_idx .EQ. htable_null)  THEN
+          IF (border_idx .EQ. htable_null)  THEN
               CALL putInEmptyList(cell_idx)
               RETURN
           END IF
 
           ! For 2D case
-          IF(ppm_dim .EQ. 2)    THEN
+          IF (ppm_dim .EQ. 2)    THEN
               ! If the cell does not contain any particles that are in deeper
               ! levels in its region ...
-              IF(clist%borders(6, border_idx) .EQ. 1)  THEN
+              IF (clist%borders(6, border_idx) .EQ. 1)  THEN
                   ! Put it in empty list
                   CALL putInEmptyList(cell_idx)
               END IF
@@ -625,7 +621,7 @@
                    right_end = 5
               END IF
           ! For 3D case
-          ELSEIF(ppm_dim .EQ. 3)   THEN
+          ELSEIF (ppm_dim .EQ. 3)   THEN
               ! If the cell does not contain any particles that are in deeper
               ! levels in its region ...
               IF(clist%borders(10, border_idx) .EQ. 1)  THEN
@@ -648,7 +644,7 @@
 
           ! From first column to last, get all particles and put them in the list
           DO i = (clist%borders(left_end, border_idx) + 1), &
- &                clist%borders(right_end, border_idx)
+          &       clist%borders(right_end, border_idx)
               nlist = nlist + 1
               list(nlist) = clist%rank(i)
           END DO

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_copy
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -36,7 +36,7 @@
       !!! This routine is not tested
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -50,27 +50,30 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo)        , INTENT(IN   ) :: intopo
+      TYPE(ppm_t_topo), INTENT(IN   ) :: intopo
       !!! Input topology
-      TYPE(ppm_t_topo)        , INTENT(  OUT) :: outtopo
+      TYPE(ppm_t_topo), INTENT(  OUT) :: outtopo
       !!! Output topology. Will contain the same data as intopo upon return.
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER,          INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)  :: t0
+
       INTEGER                :: nsubs,nsublist,maxneigh,prec,i,j,iopt
-      LOGICAL                :: valid
       INTEGER, DIMENSION(1)  :: ldc
+
+      LOGICAL                :: valid
+
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_topo_copy',t0,info)
 
@@ -88,7 +91,7 @@
       nsubs    = intopo%nsubs
       nsublist = intopo%nsublist
       maxneigh = SIZE(intopo%ineighsubs,1)
-      prec     = intopo%prec 
+      prec     = intopo%prec
 
       !-------------------------------------------------------------------------
       !  Allocate result topology
@@ -111,7 +114,7 @@
       outtopo%nneighproc  = intopo%nneighproc
       outtopo%isoptimized = intopo%isoptimized
       outtopo%ncommseq    = intopo%ncommseq
-      
+
       !-------------------------------------------------------------------------
       !  Copy the boundary conditions
       !-------------------------------------------------------------------------
@@ -119,92 +122,108 @@
           outtopo%bcdef(i) = intopo%bcdef(i)
       ENDDO
 
-      !-------------------------------------------------------------------------
-      !  Copy the domain
-      !-------------------------------------------------------------------------
-      IF (prec .EQ. ppm_kind_single) THEN
-          IF (ppm_dim .EQ. 2) THEN
-              outtopo%min_physs(1) = intopo%min_physs(1)
-              outtopo%min_physs(2) = intopo%min_physs(2)
-              outtopo%max_physs(1) = intopo%max_physs(1)
-              outtopo%max_physs(2) = intopo%max_physs(2)
-          ELSE
-              outtopo%min_physs(1) = intopo%min_physs(1)
-              outtopo%min_physs(2) = intopo%min_physs(2)
-              outtopo%min_physs(3) = intopo%min_physs(3)
-              outtopo%max_physs(1) = intopo%max_physs(1)
-              outtopo%max_physs(2) = intopo%max_physs(2)
-              outtopo%max_physs(3) = intopo%max_physs(3)
-          ENDIF
-      ELSE
-          IF (ppm_dim .EQ. 2) THEN
-              outtopo%min_physd(1) = intopo%min_physd(1)
-              outtopo%min_physd(2) = intopo%min_physd(2)
-              outtopo%max_physd(1) = intopo%max_physd(1)
-              outtopo%max_physd(2) = intopo%max_physd(2)
-          ELSE
-              outtopo%min_physd(1) = intopo%min_physd(1)
-              outtopo%min_physd(2) = intopo%min_physd(2)
-              outtopo%min_physd(3) = intopo%min_physd(3)
-              outtopo%max_physd(1) = intopo%max_physd(1)
-              outtopo%max_physd(2) = intopo%max_physd(2)
-              outtopo%max_physd(3) = intopo%max_physd(3)
-          ENDIF
-      ENDIF
+      SELECT CASE (prec)
+      CASE (ppm_kind_single)
+          SELECT CASE (ppm_dim)
+          CASE (2)
+             !------------------------------------------------------------------
+             !  Copy the domain
+             !------------------------------------------------------------------
+             outtopo%min_physs(1) = intopo%min_physs(1)
+             outtopo%min_physs(2) = intopo%min_physs(2)
+             outtopo%max_physs(1) = intopo%max_physs(1)
+             outtopo%max_physs(2) = intopo%max_physs(2)
+             !------------------------------------------------------------------
+             !  Copy the subdomains
+             !------------------------------------------------------------------
+             DO i=1,nsubs
+                outtopo%min_subs(1,i) = intopo%min_subs(1,i)
+                outtopo%min_subs(2,i) = intopo%min_subs(2,i)
+                outtopo%max_subs(1,i) = intopo%max_subs(1,i)
+                outtopo%max_subs(2,i) = intopo%max_subs(2,i)
+             ENDDO
 
-      !-------------------------------------------------------------------------
-      !  Copy the subdomains
-      !-------------------------------------------------------------------------
-      IF (prec .EQ. ppm_kind_single) THEN
-          IF (ppm_dim .EQ. 2) THEN
-              DO i=1,nsubs
-                  outtopo%min_subs(1,i) = intopo%min_subs(1,i)
-                  outtopo%min_subs(2,i) = intopo%min_subs(2,i)
-                  outtopo%max_subs(1,i) = intopo%max_subs(1,i)
-                  outtopo%max_subs(2,i) = intopo%max_subs(2,i)
-              ENDDO
-          ELSE
-              DO i=1,nsubs
-                  outtopo%min_subs(1,i) = intopo%min_subs(1,i)
-                  outtopo%min_subs(2,i) = intopo%min_subs(2,i)
-                  outtopo%min_subs(3,i) = intopo%min_subs(3,i)
-                  outtopo%max_subs(1,i) = intopo%max_subs(1,i)
-                  outtopo%max_subs(2,i) = intopo%max_subs(2,i)
-                  outtopo%max_subs(3,i) = intopo%max_subs(3,i)
-              ENDDO
-          ENDIF
-      ELSE
-          IF (ppm_dim .EQ. 2) THEN
-              DO i=1,nsubs
-                  outtopo%min_subd(1,i) = intopo%min_subd(1,i)
-                  outtopo%min_subd(2,i) = intopo%min_subd(2,i)
-                  outtopo%max_subd(1,i) = intopo%max_subd(1,i)
-                  outtopo%max_subd(2,i) = intopo%max_subd(2,i)
-              ENDDO
-          ELSE
-              DO i=1,nsubs
-                  outtopo%min_subd(1,i) = intopo%min_subd(1,i)
-                  outtopo%min_subd(2,i) = intopo%min_subd(2,i)
-                  outtopo%min_subd(3,i) = intopo%min_subd(3,i)
-                  outtopo%max_subd(1,i) = intopo%max_subd(1,i)
-                  outtopo%max_subd(2,i) = intopo%max_subd(2,i)
-                  outtopo%max_subd(3,i) = intopo%max_subd(3,i)
-              ENDDO
-          ENDIF
-      ENDIF
+          CASE DEFAULT
+             !------------------------------------------------------------------
+             !  Copy the domain
+             !------------------------------------------------------------------
+             outtopo%min_physs(1) = intopo%min_physs(1)
+             outtopo%min_physs(2) = intopo%min_physs(2)
+             outtopo%min_physs(3) = intopo%min_physs(3)
+             outtopo%max_physs(1) = intopo%max_physs(1)
+             outtopo%max_physs(2) = intopo%max_physs(2)
+             outtopo%max_physs(3) = intopo%max_physs(3)
+             !------------------------------------------------------------------
+             !  Copy the subdomains
+             !------------------------------------------------------------------
+             DO i=1,nsubs
+                outtopo%min_subs(1,i) = intopo%min_subs(1,i)
+                outtopo%min_subs(2,i) = intopo%min_subs(2,i)
+                outtopo%min_subs(3,i) = intopo%min_subs(3,i)
+                outtopo%max_subs(1,i) = intopo%max_subs(1,i)
+                outtopo%max_subs(2,i) = intopo%max_subs(2,i)
+                outtopo%max_subs(3,i) = intopo%max_subs(3,i)
+             ENDDO
 
-      !-------------------------------------------------------------------------
-      !  Copy the sub costs
-      !-------------------------------------------------------------------------
-      IF (prec .EQ. ppm_kind_single) THEN
+          END SELECT
+          !---------------------------------------------------------------------
+          !  Copy the sub costs
+          !---------------------------------------------------------------------
           DO i=1,nsubs
-              outtopo%sub_costs(i) = intopo%sub_costs(i)
+             outtopo%sub_costs(i) = intopo%sub_costs(i)
           ENDDO
-      ELSE
+
+      CASE DEFAULT
+          SELECT CASE (ppm_dim)
+          CASE (2)
+             !------------------------------------------------------------------
+             !  Copy the domain
+             !------------------------------------------------------------------
+             outtopo%min_physd(1) = intopo%min_physd(1)
+             outtopo%min_physd(2) = intopo%min_physd(2)
+             outtopo%max_physd(1) = intopo%max_physd(1)
+             outtopo%max_physd(2) = intopo%max_physd(2)
+             !------------------------------------------------------------------
+             !  Copy the subdomains
+             !------------------------------------------------------------------
+             DO i=1,nsubs
+                outtopo%min_subd(1,i) = intopo%min_subd(1,i)
+                outtopo%min_subd(2,i) = intopo%min_subd(2,i)
+                outtopo%max_subd(1,i) = intopo%max_subd(1,i)
+                outtopo%max_subd(2,i) = intopo%max_subd(2,i)
+             ENDDO
+
+          CASE DEFAULT
+             !------------------------------------------------------------------
+             !  Copy the domain
+             !------------------------------------------------------------------
+             outtopo%min_physd(1) = intopo%min_physd(1)
+             outtopo%min_physd(2) = intopo%min_physd(2)
+             outtopo%min_physd(3) = intopo%min_physd(3)
+             outtopo%max_physd(1) = intopo%max_physd(1)
+             outtopo%max_physd(2) = intopo%max_physd(2)
+             outtopo%max_physd(3) = intopo%max_physd(3)
+             !------------------------------------------------------------------
+             !  Copy the subdomains
+             !------------------------------------------------------------------
+             DO i=1,nsubs
+                outtopo%min_subd(1,i) = intopo%min_subd(1,i)
+                outtopo%min_subd(2,i) = intopo%min_subd(2,i)
+                outtopo%min_subd(3,i) = intopo%min_subd(3,i)
+                outtopo%max_subd(1,i) = intopo%max_subd(1,i)
+                outtopo%max_subd(2,i) = intopo%max_subd(2,i)
+                outtopo%max_subd(3,i) = intopo%max_subd(3,i)
+             ENDDO
+
+          END SELECT
+          !---------------------------------------------------------------------
+          !  Copy the sub costs
+          !---------------------------------------------------------------------
           DO i=1,nsubs
               outtopo%sub_costd(i) = intopo%sub_costd(i)
           ENDDO
-      ENDIF
+
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Copy the sub to proc assignment
@@ -289,14 +308,14 @@
           ENDDO
       ENDIF
 
-      
+
       !-------------------------------------------------------------------------
       !  Set outtopo to defined
       !-------------------------------------------------------------------------
       outtopo%isdefined = .TRUE.
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_topo_copy',t0,info)

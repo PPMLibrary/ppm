@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :              ppm_decomp_pruned_cell
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -42,7 +42,7 @@
       !!! problems with roundoff errors!
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -62,7 +62,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Position of the particles
@@ -86,7 +86,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: dmx
       INTEGER , DIMENSION(ppm_dim) :: Nm
@@ -96,14 +96,15 @@
       REAL(MK):: rdx,rdy,rdz,x0,y0,z0,rmean_npbx
       REAL(MK):: t0
       CHARACTER(ppm_char) :: mesg
+      CHARACTER(ppm_char) :: caller = 'ppm_decomp_pruned_cell'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_decomp_pruned_cell',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -120,6 +121,14 @@
       DO k=1,ppm_dim
          Nm(k)  = INT((max_phys(k) - min_phys(k))/ghostsize)
          dmx(k) = (max_phys(k) - min_phys(k))/REAL(Nm(k),MK)
+
+         !check for round-off problems and fix them if necessary
+         DO WHILE (min_phys(k)+(Nm(k)-1)*dmx(k).LT.max_phys(k))
+            dmx(k)=dmx(k)+EPSILON(dmx(k))
+         ENDDO
+
+         check_true(<#(min_phys(k)+(Nm(k)-1)*dmx(k).GE.max_phys(k))#>,"round-off problem")
+
          Mm     = Mm*Nm(k)
       ENDDO
 
@@ -131,7 +140,7 @@
       CALL ppm_alloc(npbx,ldc,iopt,info)
       IF (info.NE.0) THEN
          info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
+         CALL ppm_error(ppm_err_alloc,caller,     &
      &                  'allocation of npbx failed',__LINE__,info)
          GOTO 9999
       ENDIF
@@ -148,12 +157,7 @@
       !  In parallel we need memory for the global count
       !-------------------------------------------------------------------------
       CALL ppm_alloc(npbxg,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &                  'allocation of npbxg failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of npbxg failed')
 
       !-------------------------------------------------------------------------
       !  Initialize the array
@@ -161,11 +165,10 @@
       DO k=1,Mm
          npbxg(k) = 0
       ENDDO
- 
 #endif
 
       !-------------------------------------------------------------------------
-      !  Count the (local) number of particles in the boxes 
+      !  Count the (local) number of particles in the boxes
       !  (this will and cannot vectorize; of course you can sort them e.g.,
       !  using a cell lists, but then the cell list does not vectorize)
       !-------------------------------------------------------------------------
@@ -178,7 +181,7 @@
          DO ipart=1,Npart
             idx  = FLOOR(xp(1,ipart)*rdx - x0)
             jdx  = FLOOR(xp(2,ipart)*rdy - y0)
-            ibox = idx + 1 + jdx*n1 
+            ibox = idx + 1 + jdx*n1
             npbx(ibox) = npbx(ibox) + 1
          ENDDO
       ELSEIF (ppm_dim.EQ.3) THEN
@@ -197,7 +200,7 @@
             ibox = idx + 1 + jdx*n1 + kdx*n2
             npbx(ibox) = npbx(ibox) + 1
          ENDDO
-      ENDIF 
+      ENDIF
 
 #ifdef __MPI
       !-------------------------------------------------------------------------
@@ -208,28 +211,19 @@
       DO k=1,Mm
          npbx(k) = npbxg(k)
       ENDDO
-#endif 
+#endif
 
       !-------------------------------------------------------------------------
-      !  Allocate memory for the min_sub and max_sub 
+      !  Allocate memory for the min_sub and max_sub
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldc(1) = ppm_dim
       ldc(2) = Mm
       CALL ppm_alloc(min_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &                  'allocation of min_sub failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of min_sub failed')
+
       CALL ppm_alloc(max_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &                  'allocation of max_sub failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of max_sub failed')
 
       !-------------------------------------------------------------------------
       !  loop over the boxes and collect non-empty ones
@@ -251,7 +245,7 @@
                   min_sub(2,nsubs) = min_phys(2) + REAL(j-1,MK)*dmx(2)
                   max_sub(1,nsubs) = min_phys(1) + REAL(i  ,MK)*dmx(1)
                   max_sub(2,nsubs) = min_phys(2) + REAL(j  ,MK)*dmx(2)
-               ENDIF 
+               ENDIF
             ENDDO
          ENDDO
       ELSEIF (ppm_dim.EQ.3) THEN
@@ -270,11 +264,11 @@
                      max_sub(1,nsubs) = min_phys(1) + REAL(i  ,MK)*dmx(1)
                      max_sub(2,nsubs) = min_phys(2) + REAL(j  ,MK)*dmx(2)
                      max_sub(3,nsubs) = min_phys(3) + REAL(k  ,MK)*dmx(3)
-                  ENDIF 
+                  ENDIF
                ENDDO
             ENDDO
          ENDDO
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Let us shrink the memory to fix exactly the nsubs found
@@ -283,59 +277,41 @@
       ldc(1) = ppm_dim
       ldc(2) = nsubs
       CALL ppm_alloc(min_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &                  'allocation of min_sub failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of min_sub failed')
+
       CALL ppm_alloc(max_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &                  'allocation of max_sub failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of max_sub failed')
 
       !-------------------------------------------------------------------------
       !  Free the work space again
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(npbx ,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &       'deallocation of npbx failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocation of npbx failed')
+
 #ifdef __MPI
       CALL ppm_alloc(npbxg,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_decomp_pruned_cell',     &
-     &       'deallocation of npbxg failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_dealloc('deallocation of npbxg failed')
 #endif
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_decomp_pruned_cell',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (ghostsize.LE.0.0_MK) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_decomp_pruned_cell',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'the fifth argument must be > 0',__LINE__,info)
             GOTO 8888
         ENDIF
         DO k=1,ppm_dim
             IF (max_phys(k).LE. min_phys(k)) THEN
                info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,'ppm_decomp_pruned_cell',  &
+               CALL ppm_error(ppm_err_argument,caller,  &
      &                       'min_phys must be < max_phys',__LINE__,info)
                GOTO 8888
             ENDIF

@@ -1,15 +1,15 @@
       !  Subroutine   :                   ppm_util_sort2d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -62,7 +62,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates, sorted upon output
@@ -70,7 +70,7 @@
       !!! Minimum extent of cell mesh
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: xmax
       !!! Minimum extent of cell mesh
-      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm     
+      INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm
       !!! Number of cells in each direction
       INTEGER , DIMENSION(:)  , POINTER       :: npbx
       !!! Number of particles in each box
@@ -81,7 +81,7 @@
       !!!
       !!! return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), POINTER      :: work => NULL()
       ! timer
@@ -102,9 +102,9 @@
       ! local info level
       INTEGER                                :: info2
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
@@ -123,7 +123,7 @@
       !-------------------------------------------------------------------------
       !  Total number of cells
       !-------------------------------------------------------------------------
-      nbox = Nm(1)*Nm(2)  
+      nbox = Nm(1)*Nm(2)
 
       !-------------------------------------------------------------------------
       !  Allocate memory
@@ -192,7 +192,7 @@
       IF (info .NE. 0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_util_sort2d',     &
-     &        'particle index list LPDX',__LINE__,info) 
+     &        'particle index list LPDX',__LINE__,info)
       ENDIF
       CALL ppm_alloc(lhbx,lda,iopt,info)
       IF (info .NE. 0) THEN

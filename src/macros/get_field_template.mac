@@ -1,66 +1,137 @@
-include macro ppm_get_field_template(ndim_arg,prec)
+include macro ppm_get_field_template(ndim_arg,el_type)
 % ndim = ndim_arg.to_s.to_i
-SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>(this,Field,wp,info)
-    !!! Points wp to the data array for the discretization of Field
-    !!! on this subpatch.
-    !!! The type/dimension of wp have to match that of the discretized field,
-    !!! otherwise a RUNTIME error is thrown.
-% if prec.to_s == "s"
+      SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>(this,Field,wp,info)
+          !!! Points wp to the data array for the discretization of Field
+          !!! on this subpatch.
+          !!! The type/dimension of wp have to match that of the discretized field,
+          !!! otherwise a RUNTIME error is thrown.
+          !!! Returns a pointer to the data array for a given field on this subpatch
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_subpatch)                                       :: this
+          CLASS(ppm_t_field_)                                         :: Field
+% if el_type.to_s == "rs"
 %   kind = "ppm_kind_single"
-% else
+% elsif el_type.to_s == "rd"
+%   kind = "ppm_kind_double"
+% elsif el_type.to_s == "cs"
+%   kind = "ppm_kind_single"
+% elsif el_type.to_s == "cd"
 %   kind = "ppm_kind_double"
 % end
-    !!! Returns a pointer to the data array for a given field on this subpatch
-    CLASS(ppm_t_subpatch)                :: this
-    CLASS(ppm_t_field_)                  :: Field
+
 % if ndim == 2
-    REAL(<%= kind %>),DIMENSION(:,:    ),POINTER :: wp
-% elsif ndim == 3
-    REAL(<%= kind %>),DIMENSION(:,:,:  ),POINTER :: wp
-% elsif ndim == 4
-    REAL(<%= kind %>),DIMENSION(:,:,:,:),POINTER :: wp
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>),    DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,                  DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,                  DIMENSION(:,:    ), POINTER       :: wp
 % end
-    INTEGER,                 INTENT(OUT) :: info
-    INTEGER                              :: p_idx
+% elsif ndim == 3
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>),    DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,                  DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,                  DIMENSION(:,:,:  ), POINTER       :: wp
+% end
+% elsif ndim == 4
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>),    DIMENSION(:,:,:,:), POINTER       :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:,:,:), POINTER       :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,                  DIMENSION(:,:,:,:), POINTER       :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,                  DIMENSION(:,:,:,:), POINTER       :: wp
+% end
+% end
+          INTEGER,                                      INTENT(  OUT) :: info
 
-start_subroutine("subpatch_get_field_<%= "#{ndim}" %>d")
+          INTEGER :: p_idx
 
-check_true("Field%lda+ppm_dim.GT.<%= "#{ndim}" %>","wrong dimensions for pointer arg wp")
+          start_subroutine("subpatch_get_field_<%= "#{ndim}" %>d")
 
-check_associated("this%mesh")
-    p_idx = Field%get_pid(this%mesh)
+          check_true("Field%lda+ppm_dim.GT.<%= "#{ndim}" %>","wrong dimensions for pointer arg wp")
 
-check_true("p_idx.GT.0","Field is not discretized on Mesh cannot get pointer to data")
+          check_associated("this%mesh")
+          p_idx = Field%get_pid(this%mesh)
 
-check_associated("this%subpatch_data")
-check_associated("this%subpatch_data%vec(p_idx)%t")
+          check_true("p_idx.GT.0","Field is not discretized on Mesh cannot get pointer to data")
 
-    wp => this%subpatch_data%vec(p_idx)%t%data_<%= ndim %>d_r<%= prec%>
+          check_associated("this%subpatch_data")
+          check_associated("this%subpatch_data%vec(p_idx)%t")
 
-check_associated("wp","Failed to get pointer to data array")
+          wp => this%subpatch_data%vec(p_idx)%t%data_<%= ndim %>d_<%= el_type%>
 
-end_subroutine()
-END SUBROUTINE
+          check_associated("wp","Failed to get pointer to data array")
+
+          end_subroutine()
+      END SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>
 end macro
 
-include macro ppm_get_field_interface_template(ndim_arg,prec)
+include macro ppm_get_field_interface_template(ndim_arg,el_type)
 % ndim = ndim_arg.to_s.to_i
-SUBROUTINE subpatch_get_field_<%= ndim %>d_r<%= prec%>_(this,Field,wp,info)
-% if prec.to_s == "s"
+      SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>_(this,Field,wp,info)
+      IMPORT ppm_t_subpatch_,ppm_t_field_
+% if el_type.to_s == "rs"
 %   kind = "ppm_kind_single"
-% else
+      IMPORT <%= kind %>
+% elsif el_type.to_s == "rd"
 %   kind = "ppm_kind_double"
+      IMPORT <%= kind %>
+% elsif el_type.to_s == "cs"
+%   kind = "ppm_kind_single"
+      IMPORT <%= kind %>
+% elsif el_type.to_s == "cd"
+%   kind = "ppm_kind_double"
+      IMPORT <%= kind %>
 % end
-    IMPORT ppm_t_subpatch_,ppm_t_field_,<%= kind %>
-    CLASS(ppm_t_subpatch_)               :: this
-    CLASS(ppm_t_field_)                  :: Field
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_subpatch_)                               :: this
+          CLASS(ppm_t_field_)                                  :: Field
 % if ndim == 2
-    REAL(<%= kind %>),DIMENSION(:,:    ),POINTER :: wp
-% elsif ndim == 3
-    REAL(<%= kind %>),DIMENSION(:,:,:  ),POINTER :: wp
-% elsif ndim == 4
-    REAL(<%= kind %>),DIMENSION(:,:,:,:),POINTER :: wp
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>), DIMENSION(:,:    ), POINTER   :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:    ), POINTER    :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,           DIMENSION(:,:    ), POINTER       :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,           DIMENSION(:,:    ), POINTER       :: wp
 % end
-    INTEGER,                 INTENT(OUT) :: info
-END SUBROUTINE
+% elsif ndim == 3
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>), DIMENSION(:,:,:  ), POINTER   :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:,:  ), POINTER    :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,           DIMENSION(:,:,:  ), POINTER       :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,           DIMENSION(:,:,:  ), POINTER       :: wp
+% end
+% elsif ndim == 4
+% if el_type.to_s == "rs" || el_type.to_s == "rd"
+          REAL(<%= kind %>), DIMENSION(:,:,:,:), POINTER   :: wp
+% elsif el_type.to_s == "cs" || el_type.to_s == "cd"
+          COMPLEX(<%= kind %>), DIMENSION(:,:,:,:), POINTER   :: wp
+% elsif el_type.to_s == "i"
+          INTEGER,           DIMENSION(:,:,:,:), POINTER      :: wp
+% elsif el_type.to_s == "l"
+          LOGICAL,           DIMENSION(:,:,:,:), POINTER      :: wp
+% end
+% end
+          INTEGER,                               INTENT(  OUT) :: info
+      END SUBROUTINE subpatch_get_field_<%= ndim %>d_<%= el_type%>_
+
 end macro

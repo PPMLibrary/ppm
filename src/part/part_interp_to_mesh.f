@@ -1,16 +1,16 @@
       !------------------------------------------------------------------------!
       !     Subroutine   :                 ppm_interp_p2m
       !------------------------------------------------------------------------!
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,7 +30,7 @@
 
       SUBROUTINE DTYPE(part_p2m)(this,Mesh,Field,kernel,info,p2m_bcdef)
       !!! This subroutine carries out particle to mesh interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
@@ -147,13 +147,12 @@
      !-------------------------------------------------------------------------!
      !  Initialize the particle list
      !-------------------------------------------------------------------------!
-      nlist1     = 0
       store_info = 0
 
       DO ipart=1,this%Npart
-        nlist1         = nlist1 + 1
-        ilist1(nlist1) = ipart
+        ilist1(ipart) = ipart
       ENDDO
+      nlist1 = this%Npart
 
      !-------------------------------------------------------------------------!
      !  Loop over the subpatches in each subdomain
@@ -175,27 +174,27 @@
             !-------------------------------------------------------------------!
             !  If the particle is inside the current subdomain, assign it
             !-------------------------------------------------------------------!
-            IF(ppm_dim.EQ.3) THEN
+            IF (ppm_dim.EQ.3) THEN
                 !-------------------------------------------------------------
                 !  The particle is in the region of influence of the subpatch
                 !  (its closure reduced by a ghostlayer)
                 !-------------------------------------------------------------
-                IF(  xp(1,ipart).GE.p%start_ext(1) .AND. &
-    &                     xp(2,ipart).GE.p%start_ext(2) .AND. &
-    &                     xp(3,ipart).GE.p%start_ext(3) .AND. &
-    &                     xp(1,ipart).LT.p%end_ext(1)   .AND. &
-    &                     xp(2,ipart).LT.p%end_ext(2)   .AND. &
-    &                     xp(3,ipart).LT.p%end_ext(3)           ) THEN
+                IF ( xp(1,ipart).GE.p%start_ext(1) .AND. &
+                &    xp(2,ipart).GE.p%start_ext(2) .AND. &
+                &    xp(3,ipart).GE.p%start_ext(3) .AND. &
+                &    xp(1,ipart).LT.p%end_ext(1)   .AND. &
+                &    xp(2,ipart).LT.p%end_ext(2)   .AND. &
+                &    xp(3,ipart).LT.p%end_ext(3) ) THEN
 
-                         IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
-    &                           (p%bc(2).GE.0   .AND.    &
-    &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
-    &                          (xp(2,ipart).LT.p%end(2) .OR.  &
-    &                           (p%bc(4).GE.0   .AND.    &
-    &                           p%bc(4).NE. ppm_param_bcdef_periodic)).AND.&
-    &                          (xp(3,ipart).LT.p%end(3) .OR.  &
-    &                           (p%bc(6).GE.0   .AND.    &
-    &                           p%bc(6).NE. ppm_param_bcdef_periodic))   ) THEN
+                    IF ( (xp(1,ipart).LT.p%end(1)               .OR.  &
+                    &    (p%bc(2).GE.0                          .AND. &
+                    &     p%bc(2).NE. ppm_param_bcdef_periodic)).AND. &
+                    &    (xp(2,ipart).LT.p%end(2)               .OR.  &
+                    &    (p%bc(4).GE.0                          .AND. &
+                    &     p%bc(4).NE. ppm_param_bcdef_periodic)).AND. &
+                    &    (xp(3,ipart).LT.p%end(3)               .OR.  &
+                    &    (p%bc(6).GE.0                          .AND. &
+                    &     p%bc(6).NE. ppm_param_bcdef_periodic)) ) THEN
 
                         npart = npart + 1
                         store_info(ipatch) = npart
@@ -282,11 +281,10 @@
      !-------------------------------------------------------------------------!
      !  Initialize the particle list
      !-------------------------------------------------------------------------!
-     nlist1     = 0
      DO ipart=1,this%Npart
-        nlist1         = nlist1 + 1
-        ilist1(nlist1) = ipart
+        ilist1(ipart) = ipart
      ENDDO
+     nlist1 = this%Npart
 
      !----------------------------------------------------------------------
      !  Loop over the subpatches (since the first domains are most likely
@@ -475,16 +473,16 @@
      !  Now map the ghosts in order to get consistent values at the border of
      !  the subdomains.
      !-------------------------------------------------------------------------!
-     call Mesh%map_ghost_put(info)
+     CALL Mesh%map_ghost_put(info)
      or_fail("map_ghost_put")
 
-     call Field%map_ghost_push(Mesh,info)
+     CALL Field%map_ghost_push(Mesh,info)
      or_fail("map_ghost_push")
 
-     call Mesh%map_send(info)
+     CALL Mesh%map_send(info)
      or_fail("map_send")
 
-     call Field%map_ghost_pop(Mesh,info)
+     CALL Field%map_ghost_pop(Mesh,info)
      or_fail("map_ghost_pop")
 
 

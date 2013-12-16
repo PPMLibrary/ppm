@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                    ppm_topo_alloc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -46,23 +46,23 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: nsubs
-      !!! Total number of subs on all procs
-      INTEGER                 , INTENT(IN   ) :: nsublist
-      !!! Local number of subs on this proc
-      INTEGER                 , INTENT(IN   ) :: maxneigh
-      !!! Maximum number of neighbours of any sub on this processor
-      INTEGER                 , INTENT(IN   ) :: prec
-      !!! Precision for storage. One of:
-      !!!
-      !!! * ppm_kind_single
-      !!! * ppm_kind_double
-      INTEGER                 , INTENT(INOUT) :: topoid
+      INTEGER, INTENT(INOUT) :: topoid
       !!! Topology id structure to be (re)allocated
       !!!
       !!! if topoid == 0 then a new topology should be allocated, else the
       !!! topology with id == topoid is reallocated
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER, INTENT(IN   ) :: nsubs
+      !!! Total number of subs on all procs
+      INTEGER, INTENT(IN   ) :: nsublist
+      !!! Local number of subs on this proc
+      INTEGER, INTENT(IN   ) :: maxneigh
+      !!! Maximum number of neighbours of any sub on this processor
+      INTEGER, INTENT(IN   ) :: prec
+      !!! Precision for storage. One of:
+      !!!
+      !!! * ppm_kind_single
+      !!! * ppm_kind_double
+      INTEGER, INTENT(  OUT) :: info
       !!! Return status, on success 0.
 
 
@@ -81,7 +81,7 @@
       !!! local variable holding the index in the ppm_topo array with the
       !!! topology that should be (re)allocated
       TYPE(ppm_t_topo), POINTER :: topo => NULL()
-      TYPE(ppm_ptr_t_topo), DIMENSION(:), POINTER :: temptopo => NULL()
+      TYPE(ppm_t_ptr_topo), DIMENSION(:), POINTER :: temptopo => NULL()
       INTEGER                   :: i
       REAL(ppm_kind_double)     :: t0
 
@@ -109,7 +109,7 @@
             IF (info .NE. 0) THEN
                 info = ppm_error_fatal
                 CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',   &
-     &               'Could not allocate ppm_topo',__LINE__,info)
+                &    'Could not allocate ppm_topo',__LINE__,info)
                 GOTO 9999
             ENDIF
             ! make sure all pointers are nullified
@@ -123,7 +123,7 @@
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                  CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',   &
-     &                'Could not allocate temptopo',__LINE__,info)
+                 &    'Could not allocate temptopo',__LINE__,info)
                  GOTO 9999
             ENDIF
             DO i=1,SIZE(temptopo)
@@ -133,13 +133,13 @@
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
-     &               'Could not deallocate ppm_topo',__LINE__,info)
+                &   'Could not deallocate ppm_topo',__LINE__,info)
             ENDIF
             ALLOCATE(ppm_topo(2*SIZE(temptopo)),STAT=info)
             IF (info .NE. 0) THEN
                 info = ppm_error_error
                 CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',   &
-     &               'Could not reallocate ppm_topo',__LINE__,info)
+                &   'Could not reallocate ppm_topo',__LINE__,info)
             ENDIF
             DO i=1,SIZE(temptopo)
                 ppm_topo(i) = temptopo(i)
@@ -185,7 +185,7 @@
       IF (info .NE. 0) THEN
           info = ppm_error_error
           CALL ppm_error(ppm_err_dealloc,'ppm_topo_alloc',   &
- &            'Could not allocate ppm_topo elements',__LINE__,info)
+          &    'Could not allocate ppm_topo elements',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -198,45 +198,47 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldc(1) = ppm_dim
-      IF (prec .EQ. ppm_kind_single) THEN
+      SELECT CASE (prec)
+      CASE (ppm_kind_single)
           CALL ppm_alloc(topo%min_physs,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'min extent of domain TOPO%MIN_PHYSS',__LINE__,info)
+              &    'min extent of domain TOPO%MIN_PHYSS',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(topo%max_physs,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'max extent of domain TOPO%MAX_PHYSS',__LINE__,info)
+              &    'max extent of domain TOPO%MAX_PHYSS',__LINE__,info)
               GOTO 9999
           ENDIF
           IF (ASSOCIATED(topo%min_physd)) DEALLOCATE(topo%min_physd,STAT=info)
           NULLIFY(topo%min_physd)
           IF (ASSOCIATED(topo%max_physd)) DEALLOCATE(topo%max_physd,STAT=info)
           NULLIFY(topo%max_physd)
-      ELSE
+
+      CASE DEFAULT
           CALL ppm_alloc(topo%min_physd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'min extent of domain TOPO%MIN_PHYSD',__LINE__,info)
+              &    'min extent of domain TOPO%MIN_PHYSD',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(topo%max_physd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'max extent of domain TOPO%MAX_PHYSD',__LINE__,info)
+              &    'max extent of domain TOPO%MAX_PHYSD',__LINE__,info)
               GOTO 9999
           ENDIF
           IF (ASSOCIATED(topo%min_physs)) DEALLOCATE(topo%min_physs,STAT=info)
           NULLIFY(topo%min_physs)
           IF (ASSOCIATED(topo%max_physs)) DEALLOCATE(topo%max_physs,STAT=info)
           NULLIFY(topo%max_physs)
-      ENDIF
+      END SELECT
       !-------------------------------------------------------------------------
       !  The MAX of naublist and 1 is needed to avoid allocation failures
       !  if a processor has 0 subs, same goes for nsubs
@@ -250,45 +252,47 @@
       iopt   = ppm_param_alloc_fit
       ldc(1) = ppm_dim
       ldc(2) = nsubs
-      IF (prec .EQ. ppm_kind_single) THEN
+      SELECT CASE (prec)
+      CASE (ppm_kind_single)
           CALL ppm_alloc(topo%min_subs,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'min extent of subs TOPO%MIN_SUBS',__LINE__,info)
+              &   'min extent of subs TOPO%MIN_SUBS',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(topo%max_subs,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'max extent of subs TOPO%MAX_SUBS',__LINE__,info)
+              &   'max extent of subs TOPO%MAX_SUBS',__LINE__,info)
               GOTO 9999
           ENDIF
           IF (ASSOCIATED(topo%min_subd)) DEALLOCATE(topo%min_subd,STAT=info)
           NULLIFY(topo%min_subd)
           IF (ASSOCIATED(topo%max_subd)) DEALLOCATE(topo%max_subd,STAT=info)
           NULLIFY(topo%max_subd)
-      ELSE
+
+      CASE DEFAULT
           CALL ppm_alloc(topo%min_subd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'min extent of subs TOPO%MIN_SUBD',__LINE__,info)
+              &    'min extent of subs TOPO%MIN_SUBD',__LINE__,info)
               GOTO 9999
           ENDIF
           CALL ppm_alloc(topo%max_subd,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &            'max extent of subs TOPO%MAX_SUBD',__LINE__,info)
+              &    'max extent of subs TOPO%MAX_SUBD',__LINE__,info)
               GOTO 9999
           ENDIF
           IF (ASSOCIATED(topo%min_subs)) DEALLOCATE(topo%min_subs,STAT=info)
           NULLIFY(topo%min_subs)
           IF (ASSOCIATED(topo%max_subs)) DEALLOCATE(topo%max_subs,STAT=info)
           NULLIFY(topo%max_subs)
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the sub-to-proc mapping
@@ -298,7 +302,7 @@
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'global subs to proc map TOPO%SUB2PROC',__LINE__,info)
+          &    'global subs to proc map TOPO%SUB2PROC',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -310,7 +314,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'local sub list TOPO%ISUBLIST',__LINE__,info)
+          &    'local sub list TOPO%ISUBLIST',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -323,7 +327,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'boundary conditions TOPO%BCDEF',__LINE__,info)
+          &    'boundary conditions TOPO%BCDEF',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -332,19 +336,21 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsubs
-      IF (prec .EQ. ppm_kind_single) THEN
-          NULLIFY(topo%sub_costd)
+      SELECT CASE (prec)
+      CASE (ppm_kind_single)
           CALL ppm_alloc(topo%sub_costs,ldc,iopt,info)
           IF (ASSOCIATED(topo%sub_costd)) DEALLOCATE(topo%sub_costd,STAT=info)
-      ELSE
-          NULLIFY(topo%sub_costs)
+          NULLIFY(topo%sub_costd)
+
+      CASE DEFAULT
           CALL ppm_alloc(topo%sub_costd,ldc,iopt,info)
           IF (ASSOCIATED(topo%sub_costs)) DEALLOCATE(topo%sub_costs,STAT=info)
-      ENDIF
+          NULLIFY(topo%sub_costs)
+      END SELECT
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'subdomain costs TOPO%SUB_COST',__LINE__,info)
+          &    'subdomain costs TOPO%SUB_COST',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -358,7 +364,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'number of neighbors of local subs TOPO%NNEIGHSUBS',__LINE__,info)
+          &    'number of neighbors of local subs TOPO%NNEIGHSUBS',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -372,7 +378,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'neighbors of local subs TOPO%INEIGHSUBS',__LINE__,info)
+          &    'neighbors of local subs TOPO%INEIGHSUBS',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -386,7 +392,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'BCs for subs on local processor TOPO%SUBS_BC',__LINE__,info)
+          &    'BCs for subs on local processor TOPO%SUBS_BC',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -399,7 +405,7 @@
       IF (info .NE. ppm_param_success) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_topo_alloc',     &
-     &        'list of neighbor processors TOPO%INEIGHPROC',__LINE__,info)
+          &    'list of neighbor processors TOPO%INEIGHPROC',__LINE__,info)
           GOTO 9999
       ENDIF
 
@@ -410,14 +416,6 @@
       IF (ASSOCIATED(topo%icommseq)) DEALLOCATE(topo%icommseq,STAT=info)
       NULLIFY(topo%icommseq)
       topo%isoptimized = .FALSE.
-
-!      !-------------------------------------------------------------------------
-!      !  By default there are no meshes defined on a topology
-!      !-------------------------------------------------------------------------
-!      topo%max_meshid = 0
-!      iopt = ppm_param_dealloc
-!      CALL ppm_mesh_alloc_equi(topo%mesh,ldc,iopt,info)
-!      NULLIFY(topo%mesh)
 
       !-------------------------------------------------------------------------
       !  Mark this topology as not defined

@@ -1,4 +1,4 @@
-     !--*- f90 -*-------------------------------------------------------------- 
+     !--*- f90 -*--------------------------------------------------------------
      !  Module   :                  ppm_module_inl_xset_vlist
      !-------------------------------------------------------------------------
      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
@@ -46,16 +46,18 @@
         USE ppm_module_substart
         USE ppm_module_substop
 
+        IMPLICIT NONE
+
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER,       DIMENSION(:),   POINTER :: own_red => NULL()
-        INTEGER,       DIMENSION(:),   POINTER :: neigh_red => NULL()
-        INTEGER,       DIMENSION(:),   POINTER :: own_blue => NULL()
-        INTEGER,       DIMENSION(:),   POINTER :: neigh_blue => NULL()
-        INTEGER(ppm_kind_int64), DIMENSION(:), POINTER :: empty_list => NULL()
-        INTEGER,       DIMENSION(:,:), POINTER :: ncells => NULL()
-        LOGICAL,       DIMENSION(:) ,  POINTER :: used => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: own_red => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: neigh_red => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: own_blue => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: neigh_blue => NULL()
+        INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: empty_list => NULL()
+        INTEGER,                 DIMENSION(:,:), POINTER :: ncells => NULL()
+        LOGICAL,                 DIMENSION(:) ,  POINTER :: used => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables
@@ -99,7 +101,7 @@
             MODULE PROCEDURE get_xset_neigh_s
             MODULE PROCEDURE get_xset_neigh_d
         END INTERFACE
-        
+
         INTERFACE getParticleCoorDepth
             MODULE PROCEDURE getParticleCoorDepth_s
             MODULE PROCEDURE getParticleCoorDepth_d
@@ -114,12 +116,12 @@
             MODULE PROCEDURE getSubdomainParticles_s
             MODULE PROCEDURE getSubdomainParticles_d
         END INTERFACE
-        
+
         INTERFACE inDomain
             MODULE PROCEDURE inDomain_s
             MODULE PROCEDURE inDomain_d
         END INTERFACE
-        
+
         INTERFACE is_xset_Neighbor
             MODULE PROCEDURE is_xset_Neighbor_s
             MODULE PROCEDURE is_xset_Neighbor_d
