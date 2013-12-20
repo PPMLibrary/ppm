@@ -7,7 +7,7 @@
              ELSE
                 info = ppm_error_fatal
                 CALL ppm_error(ppm_err_argument, caller, &
-                     'Error applying default functions!', __LINE__, info)
+                &    'Error applying default functions!', __LINE__, info)
                 GOTO 9999
              END IF
           END IF

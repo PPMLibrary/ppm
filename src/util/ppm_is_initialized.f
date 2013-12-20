@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_is_initialized
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,29 +30,31 @@
       SUBROUTINE ppm_is_initialized(initd,info)
       !!! Returns global initialization status of ppm
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
-      USE ppm_module_data, ONLY: ppm_kind_double, ppm_initialized
+      USE ppm_module_data, ONLY: ppm_kind_double, ppm_initialized,ppm_char
       USE ppm_module_substart
       USE ppm_module_substop
       IMPLICIT NONE
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
-      LOGICAL         , INTENT(  OUT) :: initd
+      LOGICAL, INTENT(  OUT) :: initd
       !!! `TRUE` if ppm is initialized (i.e. `ppm_init` has been called,
       !!! but not yet ppm_finalize). Otherwise `FALSE`
-      INTEGER         , INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)           :: t0
-      
+      REAL(ppm_kind_double) :: t0
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_is_initialized'
+
       !-------------------------------------------------------------------------
-      !  Initialize 
+      !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_is_initialized',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Read global status
@@ -60,9 +62,9 @@
       initd = ppm_initialized
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_is_initialized',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_is_initialized
