@@ -103,8 +103,8 @@
         USE ppm_module_data
         USE ppm_module_substart
         USE ppm_module_substop
+        USE ppm_module_write
         USE ppm_module_error
-
         IMPLICIT NONE
 
         !------------------------------------------------------------------------
@@ -303,15 +303,15 @@
         !------------------------------------------------------------------------
         !  Constants
         !------------------------------------------------------------------------
-        LOGICAL, PARAMETER :: enabling_flag   = .true.
-      !!! Value for type option of logical args. Presence of flag sets
-      !!! variable to +.TRUE.+
-        LOGICAL, PARAMETER :: disabling_flag  = .false.
-      !!! Value for type option of logical args. Presence of flag sets
-      !!! variable to +.FALSE.+
+        LOGICAL, PARAMETER :: enabling_flag   = .TRUE.
+        !!! Value for type option of logical args. Presence of flag sets
+        !!! variable to +.TRUE.+
+        LOGICAL, PARAMETER :: disabling_flag  = .FALSE.
+        !!! Value for type option of logical args. Presence of flag sets
+        !!! variable to +.FALSE.+
         INTEGER, PARAMETER :: exit_gracefully = 42
-      !!! Value of the +info+ argument of +parse_args+ that signals that
-      !!! the program should exit without error.
+        !!! Value of the +info+ argument of +parse_args+ that signals that
+        !!! the program should exit without error.
         !------------------------------------------------------------------------
         !  Variables
         !------------------------------------------------------------------------
@@ -376,6 +376,9 @@
         !  Master procedure
         !------------------------------------------------------------------------
         SUBROUTINE parse_args(info)
+
+          IMPLICIT NONE
+
           !----------------------------------------------------------------------
           !  Arguments
           !----------------------------------------------------------------------
@@ -389,8 +392,8 @@
           INTEGER :: i
           INTEGER :: rank = 0
 
-          CHARACTER(LEN=ppm_char), PARAMETER :: caller='parse_args'
-          CHARACTER(LEN=ppm_char)            :: value
+          CHARACTER(LEN=*), PARAMETER :: caller='parse_args'
+          CHARACTER(LEN=ppm_char)     :: value
 
           LOGICAL :: ok
           LOGICAL :: printing_ctrl = .FALSE.
@@ -415,23 +418,14 @@
              !  Copy default values into variables
              !-------------------------------------------------------------------
              CALL apply_defaults(info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_argument, caller, &
-                &    'Applying defaults failed!', __LINE__, info)
-                GOTO 100
-             END IF
+             or_fail('Applying defaults failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+
              !-------------------------------------------------------------------
              !  Read in the command line
              !-------------------------------------------------------------------
              IF (.NOT. in_test) THEN
                 CALL read_cmd_args(info)
-                IF (info .NE. 0) THEN
-                   info = ppm_error_fatal
-                   CALL ppm_error(ppm_err_alloc, caller, &
-                        'Reading command line args failed!', __LINE__, info)
-                   GOTO 100
-                END IF
+                or_fail_alloc('Reading command line args failed!',exit_point=100,ppm_error=ppm_error_fatal)
              END IF
              !-------------------------------------------------------------------
              !  Parse help flag
@@ -458,58 +452,34 @@
              !  Parse rest of the command line
              !-------------------------------------------------------------------
              CALL parse_cmd_line(info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_argument, caller, &
-                &    'Parsing command line args failed!', __LINE__, info)
-                GOTO 100
-             END IF
+             or_fail('Parsing command line args failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
+
              !-------------------------------------------------------------------
              !  Parse Control file
              !-------------------------------------------------------------------
              IF (ctrl_enabled) THEN
                 CALL find_arg(1, ok, ctrl_file_name)
                 CALL parse_ctrl_file(info)
-                IF (info .NE. 0) THEN
-                   info = ppm_error_fatal
-                   CALL ppm_error(ppm_err_argument, caller, &
-                        'Parsing control file failed!', __LINE__, info)
-                   GOTO 100
-                END IF
+                or_fail('Parsing control file failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
              END IF
 #ifdef __F2003
              !-------------------------------------------------------------------
              !  Call default funcs
              !-------------------------------------------------------------------
              CALL call_default_funcs(info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_argument, caller, &
-                &    'Calling default functions failed!', __LINE__, info)
-                GOTO 100
-             END IF
+             or_fail('Calling default functions failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #endif
              !-------------------------------------------------------------------
              !  Check minmax
              !-------------------------------------------------------------------
              CALL check_minmax(info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_argument, caller, &
-                &    'Min/max check failed!', __LINE__, info)
-                GOTO 100
-             END IF
+             or_fail('Min/max check failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #ifdef __F2003
              !-------------------------------------------------------------------
              !  Run validators
              !-------------------------------------------------------------------
              CALL call_validator_funcs(info)
-             IF (info .NE. 0) THEN
-                info = ppm_error_fatal
-                CALL ppm_error(ppm_err_argument, caller, &
-                &    'Calling validator functions failed!', __LINE__, info)
-                GOTO 100
-             END IF
+             or_fail('Calling validator functions failed!',ppm_err_argument,exit_point=100,ppm_error=ppm_error_fatal)
 #endif
              !-------------------------------------------------------------------
              !  Print Control file
@@ -614,6 +584,9 @@
         !  Cleanup
         !------------------------------------------------------------------------
         SUBROUTINE deallocate_memory(all)
+
+          IMPLICIT NONE
+
           LOGICAL, INTENT(IN   ) :: all
 
           IF (all) THEN
@@ -644,10 +617,14 @@
           IF (ASSOCIATED(group_size))          DEALLOCATE(group_size)
           IF (ASSOCIATED(group_has_ctrl))      DEALLOCATE(group_has_ctrl)
           IF (ASSOCIATED(group_has_arg))       DEALLOCATE(group_has_arg)
+
         END SUBROUTINE deallocate_memory
 
         SUBROUTINE reset
-      !!! Debugging and testing routine. Resets all module variables.
+        !!! Debugging and testing routine. Resets all module variables.
+
+          IMPLICIT NONE
+
           CALL deallocate_memory(.TRUE.)
           ! scalar
           INTEGER_args_i        = 0
@@ -675,7 +652,9 @@
           ctrl_enabled          = .TRUE.
           ctrl_file_name        = 'Ctrl'
           in_test               = .FALSE.
+
         END SUBROUTINE reset
+
         !-------------------------------------------------------------------------
         !  Apply defaults
         !-------------------------------------------------------------------------
@@ -689,7 +668,7 @@
 
           INTEGER :: i
 
-          CHARACTER(LEN=ppm_char) :: caller='apply_defaults'
+          CHARACTER(LEN=*), PARAMETER :: caller='apply_defaults'
 
           !-------------------------------------------------------------------------
           !  Initialise
@@ -739,6 +718,9 @@
         !  Read in command line args
         !------------------------------------------------------------------------
         SUBROUTINE read_cmd_args(info)
+
+          IMPLICIT NONE
+
           INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: i, start, nargc
@@ -746,59 +728,68 @@
           CHARACTER(LEN=ppm_char) :: cbuf
 #ifdef __MPI
 #ifdef __SUPER_UX
-             nargc = iargc()
-             start = 0
+          nargc = iargc()
+          start = 0
 #elif defined __SunOS
-             nargc = iargc() - 6
-             start = 0
+          nargc = iargc() - 6
+          start = 0
 #elif defined __HP_UX
-             nargc = iargc() + 1
-             start = 1
+          nargc = iargc() + 1
+          start = 1
 #elif defined __IRIX64
-             nargc = iargc() - 4
-             start = 1
+          nargc = iargc() - 4
+          start = 1
 #elif defined __Linux
-             nargc = COMMAND_ARGUMENT_COUNT()
-             start = 0
+          nargc = COMMAND_ARGUMENT_COUNT()
+          start = 0
 #elif defined __MacOS
-             nargc = iargc() - 4
-             start = 0
+          nargc = iargc() - 4
+          start = 0
 #else
-             nargc = COMMAND_ARGUMENT_COUNT()
-             start = 0
+          nargc = COMMAND_ARGUMENT_COUNT()
+          start = 0
 #endif
 #else
-             nargc = COMMAND_ARGUMENT_COUNT()
-             start = 0
+          nargc = COMMAND_ARGUMENT_COUNT()
+          start = 0
 #endif
-             cmd_args_i = nargc-start
-             ! allocate storage
-             IF (ASSOCIATED(cmd_args))      DEALLOCATE(cmd_args)
-             IF (ASSOCIATED(cmd_args_len))  DEALLOCATE(cmd_args_len)
-             IF (ASSOCIATED(cmd_args_used)) DEALLOCATE(cmd_args_used)
-             ALLOCATE(cmd_args(1:cmd_args_i),      STAT=info)
-             ALLOCATE(cmd_args_len(1:cmd_args_i),  STAT=info)
-             ALLOCATE(cmd_args_used(1:cmd_args_i), STAT=info)
-             IF (info .NE. 0) RETURN
-             cmd_args_used = .FALSE.
-             ! read in all args
-             DO i=1,cmd_args_i
-                CALL GET_COMMAND_ARGUMENT(start+i, cbuf)
-                cmd_args_len(i) = LEN_TRIM(cbuf)
-                cmd_args(i)     = cbuf(1:cmd_args_len(i))
-             END DO
+          cmd_args_i = nargc-start
+          ! allocate storage
+          IF (ASSOCIATED(cmd_args))      DEALLOCATE(cmd_args)
+          IF (ASSOCIATED(cmd_args_len))  DEALLOCATE(cmd_args_len)
+          IF (ASSOCIATED(cmd_args_used)) DEALLOCATE(cmd_args_used)
+
+          ALLOCATE(cmd_args(1:cmd_args_i),      STAT=info)
+          ALLOCATE(cmd_args_len(1:cmd_args_i),  STAT=info)
+          ALLOCATE(cmd_args_used(1:cmd_args_i), STAT=info)
+          IF (info .NE. 0) RETURN
+
+          cmd_args_used = .FALSE.
+          ! read in all args
+          DO i=1,cmd_args_i
+             CALL GET_COMMAND_ARGUMENT(start+i, cbuf)
+             cmd_args_len(i) = LEN_TRIM(cbuf)
+             cmd_args(i)     = cbuf(1:cmd_args_len(i))
+          END DO
+
         END SUBROUTINE read_cmd_args
         !-------------------------------------------------------------------------
         !  Parse command line
         !-------------------------------------------------------------------------
         SUBROUTINE parse_cmd_line(info)
-          INTEGER, INTENT(  OUT)      :: info
-          CHARACTER(LEN=*), PARAMETER :: caller = 'parse_cmd_line'
-          CHARACTER(LEN=ppm_char)     :: cvar
-          INTEGER                     :: i, ios
-          LOGICAL                     :: ok
-          LOGICAL                     :: err = .FALSE.
-          CHARACTER(LEN=256)          :: value
+
+          IMPLICIT NONE
+
+          INTEGER, INTENT(  OUT) :: info
+
+          INTEGER :: i, ios
+
+          CHARACTER(LEN=*),       PARAMETER :: caller = 'parse_cmd_line'
+          CHARACTER(LEN=ppm_char)           :: cvar
+          CHARACTER(LEN=256)                :: value
+
+          LOGICAL :: ok
+          LOGICAL :: err = .FALSE.
           ! scalar
 #define DTYPE INTEGER
 #include "ctrl/parse_arg.f"
@@ -835,23 +826,27 @@
 #define DTYPE DCOMPLEX_array
 #include "ctrl/parse_arg.f"
       9999 CONTINUE
+
         END SUBROUTINE parse_cmd_line
         !------------------------------------------------------------------------
         !  Parse Control file
         !------------------------------------------------------------------------
         SUBROUTINE parse_ctrl_file(info)
-          INTEGER, INTENT(  OUT) :: info
 
-          CHARACTER(LEN=*), PARAMETER :: caller='parse_ctrl_file'
-          CHARACTER(LEN=ppm_char)     :: cbuf, cvalue, carg, cvar
-          CHARACTER(LEN=ppm_char)     :: current_var
-          CHARACTER(LEN=10000)        :: errmsg
+          IMPLICIT NONE
+
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: ilenctrl
           INTEGER :: iUnit, istat, ios
           INTEGER :: iline
           INTEGER :: ilen
           INTEGER :: i,j,idx
+
+          CHARACTER(LEN=*), PARAMETER :: caller='parse_ctrl_file'
+          CHARACTER(LEN=ppm_char)     :: cbuf, cvalue, carg, cvar
+          CHARACTER(LEN=ppm_char)     :: current_var
+          CHARACTER(LEN=10000)        :: errmsg
 
           LOGICAL :: lExist
 
@@ -862,15 +857,15 @@
           IF (ilenctrl .LT. 1) THEN
              info = ppm_error_fatal
              CALL ppm_error(ppm_err_argument, caller, &
-                  'No ctrl file given', __LINE__, info)
+             &    'No ctrl file given', __LINE__, info)
              GOTO 9999
           END IF
+
           INQUIRE(FILE=ctrl_file_name, EXIST=lExist)
           IF (.NOT. lExist) THEN
-             info = ppm_error_fatal
              WRITE(cvar,'(2A)') 'No such file: ', ctrl_file_name(1:ilenctrl)
-             CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
-             GOTO 9999
+
+             fail(cvar,ppm_error=ppm_error_fatal)
           END IF
           !-------------------------------------------------------------
           !  Open the file
@@ -878,10 +873,9 @@
           iUnit = 19
           OPEN(iUnit, FILE=ctrl_file_name, IOSTAT=ios, ACTION='READ')
           IF (ios .NE. 0) THEN
-             info = ppm_error_fatal
              WRITE(cvar,'(2A)') 'Failed to open file: ', ctrl_file_name(1:ilenctrl)
-             CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
-             GOTO 9999
+
+             fail(cvar,ppm_error=ppm_error_fatal)
           END IF
           !-------------------------------------------------------------
           !  Scan file
@@ -920,10 +914,9 @@
                 !  Exit if missing
                 !-------------------------------------------------------
                 IF (idx .LT. 0) THEN
-                   info = ppm_error_fatal
                    WRITE(cvar,'(A,I5)') 'Incorrect line: ', iline
-                   CALL ppm_error(ppm_err_argument, caller, cvar, __LINE__, info)
-                   GOTO 9999
+
+                   fail(cvar,ppm_error=ppm_error_fatal)
                 ENDIF
                 !-------------------------------------------------------
                 !  Get argument and value
@@ -976,20 +969,19 @@
           END DO var_loop
           GOTO 9999
       300 CONTINUE
-          info = ppm_error_fatal
-          WRITE(errmsg,'(5A,I5,2A)') 'Error reading variable: ',     &
-                       current_var(1:LEN_TRIM(current_var)),         &
-                       ' from string: ', cvalue(1:LEN_TRIM(cvalue)), &
-                       ' on line: ', iline,                          &
-                       ' of file: ', ctrl_file_name(1:ilenctrl)
-          CALL ppm_error(ppm_err_argument, caller, errmsg, __LINE__, info)
-          GOTO 9999
+          WRITE(errmsg,'(5A,I5,2A)') 'Error reading variable: ', &
+          & current_var(1:LEN_TRIM(current_var)),                &
+          & ' from string: ', cvalue(1:LEN_TRIM(cvalue)),        &
+          & ' on line: ', iline,                                 &
+          & ' of file: ', ctrl_file_name(1:ilenctrl)
+
+          fail(errmsg,ppm_error=ppm_error_fatal)
       200 CONTINUE
-          info = ppm_error_fatal
-          WRITE(errmsg,'(A,I5,2A)') 'Error reading line: ', iline,     &
-               &                  ' of file: ', ctrl_file_name(1:ilenctrl)
-          CALL ppm_error(ppm_err_argument, caller, errmsg, __LINE__, info)
-          GOTO 9999
+
+          WRITE(errmsg,'(A,I5,2A)') 'Error reading line: ', iline, &
+          & ' of file: ', ctrl_file_name(1:ilenctrl)
+
+          fail(errmsg,ppm_error=ppm_error_fatal)
       100 CONTINUE
           !----------------------------------------------------------------------
           !  Close file
@@ -1003,9 +995,15 @@
         !  Call default funcs
         !------------------------------------------------------------------------
         SUBROUTINE call_default_funcs(info)
-          INTEGER, INTENT(  OUT)      :: info
+
+          IMPLICIT NONE
+
+          INTEGER, INTENT(  OUT) :: info
+
+          INTEGER :: i
+
           CHARACTER(LEN=*), PARAMETER :: caller = 'call_default_funcs'
-          INTEGER                     :: i
+
 #define DTYPE INTEGER
 #include "ctrl/default_func.f"
 #define DTYPE LONGINT
@@ -1040,13 +1038,17 @@
 #define DTYPE DCOMPLEX_array
 #include "ctrl/default_func.f"
       9999 CONTINUE
+
         END SUBROUTINE call_default_funcs
 #endif
         !------------------------------------------------------------------------
         !  Check min max
         !------------------------------------------------------------------------
         SUBROUTINE check_minmax(info)
-          INTEGER, INTENT(  OUT)      :: info
+
+          IMPLICIT NONE
+
+          INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: i
 
@@ -1084,6 +1086,9 @@
         !  Call validator functions
         !------------------------------------------------------------------------
         SUBROUTINE call_validator_funcs(info)
+
+          IMPLICIT NONE
+
           INTEGER, INTENT(  OUT) :: info
 
           INTEGER :: i
@@ -1131,19 +1136,28 @@
         !  Special args
         !------------------------------------------------------------------------
         SUBROUTINE disable_help
-      !!! Turns of help flag parsing.
+        !!! Turns of help flag parsing.
+          IMPLICIT NONE
+
           help_enabled = .FALSE.
         END SUBROUTINE disable_help
 
         SUBROUTINE disable_ctrl
-      !!! Turns of control file parsing.
+        !!! Turns of control file parsing.
+
+          IMPLICIT NONE
+
           ctrl_enabled = .FALSE.
         END SUBROUTINE disable_ctrl
 
         SUBROUTINE set_ctrl_name(name)
-      !!! Sets the control file name.
-          CHARACTER(LEN=*), INTENT(IN   )  :: name
-      !!! Name of the control file.
+        !!! Sets the control file name.
+
+          IMPLICIT NONE
+
+          CHARACTER(LEN=*), INTENT(IN   ) :: name
+          !!! Name of the control file.
+
           ctrl_file_name = name
         END SUBROUTINE set_ctrl_name
         !------------------------------------------------------------------------
@@ -1153,14 +1167,20 @@
         !!! Debugging and testing procedure. First call replaces the actual
         !!! command arguments with the supplied values. Can be called many
         !!! times to incrementally build the fake argument list.
-          CHARACTER(LEN=*), INTENT(IN   )           :: arg
+
+          IMPLICIT NONE
+
+          CHARACTER(LEN=*),           INTENT(IN   ) :: arg
           !!! Argument string to be appended to the list.
-          CHARACTER(LEN=*), INTENT(IN   ), OPTIONAL :: value
+          CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: value
           !!! Optional value to append.
+
+          INTEGER, POINTER, DIMENSION(:) :: temp_l => NULL()
+          INTEGER                        :: inc
+          INTEGER                        :: l
+
           CHARACTER(LEN=256), POINTER, DIMENSION(:) :: temp_a => NULL()
-          INTEGER,            POINTER, DIMENSION(:) :: temp_l => NULL()
-          INTEGER                                   :: inc
-          INTEGER                                   :: l
+
           in_test = .TRUE.
           inc = 1
           IF (PRESENT(value)) inc=2
@@ -1200,22 +1220,25 @@
         !  Look-up flags
         !-------------------------------------------------------------------------
         SUBROUTINE find_flag(flag, success, value, err)
-          !!! Returns the value supplied with the flag _flag_.
-          CHARACTER(LEN=*), INTENT(IN   )           :: flag
+        !!! Returns the value supplied with the flag _flag_.
+
+          IMPLICIT NONE
+
+          CHARACTER(LEN=*),           INTENT(IN   ) :: flag
           !!! Flag string (eg. _'-f'_ or _'--flag'_).
-          LOGICAL,          INTENT(  OUT)           :: success
+          LOGICAL,                    INTENT(  OUT) :: success
           !!! True on success. False if there is no such flag or the value is
           !!! not supplied.
-          CHARACTER(LEN=*), INTENT(  OUT), OPTIONAL :: value
+          CHARACTER(LEN=*), OPTIONAL, INTENT(  OUT) :: value
           !!! The value of supplied for the flag (character string).
-          LOGICAL,          INTENT(  OUT), OPTIONAL :: err
+          LOGICAL,          OPTIONAL, INTENT(  OUT) :: err
           !!! Returns .TRUE. if the flag was supplied without a value.
 
           INTEGER :: i
           INTEGER :: info
 
-          CHARACTER(LEN=ppm_char) :: caller = 'find_flag'
-          CHARACTER(LEN=ppm_char) :: cvar
+          CHARACTER(LEN=*), PARAMETER :: caller = 'find_flag'
+          CHARACTER(LEN=ppm_char)     :: cvar
 
           success = .FALSE.
           IF (PRESENT(err)) err = .FALSE.
@@ -1229,8 +1252,8 @@
                    IF (i+1 .GT. cmd_args_i) THEN
                       success = .FALSE.
                       IF (PRESENT(err)) err = .TRUE.
-                      info    = ppm_error_warning
                       WRITE (cvar,*) "Flag ", flag, " requires an argument."
+                      info = ppm_error_warning
                       CALL ppm_error(ppm_err_argument, caller, cvar,__LINE__, info)
                    ELSE
                       value = cmd_args(i+1)
@@ -1246,22 +1269,30 @@
         !  Get arg count
         !------------------------------------------------------------------------
         INTEGER FUNCTION arg_count()
-      !!! Returns the number of positional arguments found.
+        !!! Returns the number of positional arguments found.
+
+          IMPLICIT NONE
+
           arg_count = cmd_i
         END FUNCTION arg_count
         !------------------------------------------------------------------------
         !  Look-up args (after all flags have been read!!!)
         !------------------------------------------------------------------------
         SUBROUTINE find_arg(position, success, value)
-      !!! Returns a positional argument at _position_.
+        !!! Returns a positional argument at _position_.
+
+          IMPLICIT NONE
+
           INTEGER,          INTENT(IN   )  :: position
-      !!! Index of the positional argument, 1 based.
+          !!! Index of the positional argument, 1 based.
           LOGICAL,          INTENT(  OUT)  :: success
-      !!! True on success. False if there is no positional arg with the
-      !!! supplied index.
+          !!! True on success. False if there is no positional arg with the
+          !!! supplied index.
           CHARACTER(LEN=*), INTENT(INOUT)  :: value
-      !!! The value of the positional argument (character string).
-          INTEGER                          :: i, j
+          !!! The value of the positional argument (character string).
+
+          INTEGER :: i, j
+
           j = 0
           success = .FALSE.
           DO i=1,cmd_args_i
@@ -1279,14 +1310,21 @@
         !  Argument groups
         !------------------------------------------------------------------------
         SUBROUTINE arg_group(name)
-      !!! Defines an argument group.
-          CHARACTER(LEN=*), INTENT(IN   )            :: name
-      !!! Group name
-          CHARACTER(LEN=256), POINTER, DIMENSION(:)  :: temp_g
-          INTEGER,            POINTER, DIMENSION(:)  :: temp_s
-          INTEGER,            POINTER, DIMENSION(:)  :: temp_m
-          LOGICAL,            POINTER, DIMENSION(:)  :: temp_c
-          LOGICAL,            POINTER, DIMENSION(:)  :: temp_a
+        !!! Defines an argument group.
+
+          IMPLICIT NONE
+
+          CHARACTER(LEN=*), INTENT(IN   ) :: name
+          !!! Group name
+
+          INTEGER, DIMENSION(:), POINTER :: temp_s => NULL()
+          INTEGER, DIMENSION(:), POINTER :: temp_m => NULL()
+
+          CHARACTER(LEN=256), DIMENSION(:), POINTER :: temp_g => NULL()
+
+          LOGICAL, DIMENSION(:), POINTER :: temp_c => NULL()
+          LOGICAL, DIMENSION(:), POINTER :: temp_a => NULL()
+
           groups_i = groups_i + 1
           IF (.NOT. ASSOCIATED(groups)) THEN
              ALLOCATE(groups(0:di))
@@ -1319,33 +1357,42 @@
           groups(groups_i)         = name
           group_size(groups_i)     = 0
           group_max_len(groups_i)  = 0
-          group_has_ctrl(groups_i) = .false.
-          group_has_arg(groups_i)  = .false.
+          group_has_ctrl(groups_i) = .FALSE.
+          group_has_arg(groups_i)  = .FALSE.
           IF (groups_i .EQ. 0 .AND. (help_enabled .OR. ctrl_enabled)) THEN
-             group_has_arg(0) = .true.
+             group_has_arg(0) = .TRUE.
           END IF
         END SUBROUTINE arg_group
         !------------------------------------------------------------------------
         !  Help string break
         !------------------------------------------------------------------------
-        SUBROUTINE break_help(ht, w, prefix, unit, skip_first_line)
+        SUBROUTINE break_help(ht, w, prefix, cbuft, caller, skip_first_line)
+
+          IMPLICIT NONE
           ! args
           CHARACTER(LEN=*),  INTENT(IN   ) :: ht
           INTEGER,           INTENT(IN   ) :: w
           CHARACTER(LEN=*),  INTENT(IN   ) :: prefix
-          INTEGER,           INTENT(IN   ) :: unit
+          CHARACTER(LEN=*),  INTENT(INOUT) :: cbuft
+          CHARACTER(LEN=*),  INTENT(IN   ) :: caller
           LOGICAL, OPTIONAL, INTENT(IN   ) :: skip_first_line
+
           ! vars
           INTEGER :: start
           INTEGER :: break
           INTEGER :: next
           INTEGER :: end
           INTEGER :: skip
+          INTEGER :: lng,info
+
+          CHARACTER(LEN=ppm_char) :: cbuf1=""
+
           LOGICAL :: fl
-          IF (.NOT. PRESENT(skip_first_line)) THEN
-             fl = .TRUE.
-          ELSE
+
+          IF (PRESENT(skip_first_line)) THEN
              fl = skip_first_line
+          ELSE
+             fl = .TRUE.
           END IF
           start = 1
           break = 1
@@ -1375,11 +1422,14 @@
              ! print line
       1234   IF (fl) THEN
                 fl = .FALSE.
+                WRITE(cbuf1,'(3A)') cbuft,ht(start:break),''
              ELSE
-                WRITE(unit,'(A)',advance='no') prefix
+                WRITE(cbuf1,'(4A)') cbuft,prefix,ht(start:break),''
              END IF
-             WRITE (unit,'(A)') ht(start:break)
-             ! itterate
+             cbuf1=ADJUSTL(cbuf1)
+             stdout(cbuf1)
+             cbuft=''
+             ! iterate
              start = break + skip
              break = next
           END DO
@@ -1388,30 +1438,37 @@
         !  Print command line help
         !------------------------------------------------------------------------
         SUBROUTINE print_help
-      !!! Prints usage information to the standard output.
-          INTEGER  :: i, j, k, l
-          CHARACTER(LEN=ppm_char) :: scratch
+        !!! Prints usage information to the standard output.
+
+          IMPLICIT NONE
+
+          INTEGER :: i, j, k, l, info
+
+          CHARACTER(LEN=*), PARAMETER :: caller="print_help"
+          CHARACTER(LEN=ppm_char)     :: scratch,cbuf1
+
           IF (ctrl_enabled) THEN
-             WRITE (*,'(A)') "Usage: progname {ctrl-file} [options] [args]"
+             stdout("Usage: progname {ctrl-file} [options] [args]")
           ELSE
-             WRITE (*,'(A)') "Usage: progname [options] [args]"
+             stdout("Usage: progname [options] [args]")
           END IF
           DO k=0,groups_i
              IF (.NOT. group_has_arg(k)) CYCLE
-             WRITE (*,'(/A)') groups(k)
+             stdout("")
+             WRITE(cbuf,'(A)')groups(k)
+             stdout(cbuf)
+
              IF (k .EQ. 0) THEN
                 IF (help_enabled) THEN
-                   WRITE (*,'(A,/A,/A)') &
-      '  help                          Print this help message and exit.',&
-      '                  short flag :  -h',&
-      '                   long flag :  --help'
-                   WRITE (*,*) ""
+                   stdout("  help                          Print this help message and exit.")
+                   stdout("                  short flag :  -h")
+                   stdout("                   long flag :  --help")
+                   stdout("")
                 END IF
                 IF (ctrl_enabled) THEN
-                   WRITE (*,'(A,/A)') &
-      '  control file                  Print sample control file and exit.',&
-      '                   long flag :  --print-ctrl'
-                   WRITE (*,*) ""
+                   stdout("  control file                  Print sample control file and exit.")
+                   stdout("                   long flag :  --print-ctrl")
+                   stdout("")
                 END IF
              END IF
              group_loop: DO i=1,group_size(k)
@@ -1470,24 +1527,32 @@
         !  Print sample control file
         !------------------------------------------------------------------------
         SUBROUTINE print_ctrl
-      !!! Prints a sample control file to standard output.
-          INTEGER  :: i, j, k, l
-          CHARACTER(LEN=ppm_char) :: scratch
-          LOGICAL                 :: in_line
+        !!! Prints a sample control file to standard output.
+
+          IMPLICIT NONE
+
+          INTEGER :: i, j, k, l, lng, info
+
+          CHARACTER(LEN=*), PARAMETER :: caller="print_ctrl"
+          CHARACTER(LEN=ppm_char) :: scratch,cbuf1
+
+          LOGICAL :: in_line
+
           IF (groups_i .EQ. -1) THEN
-             WRITE (*,*) "No args have been defined..."
+             stdout("No args have been defined...")
              RETURN
           END IF
-          WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
-          WRITE (*,'(A)') "#  Sample control file for ppm_client"
-          WRITE (*,'(A)') "#"
-          WRITE (*,'(A)') "#  Edit the settings below"
-          WRITE (*,'(A)') "#"
-          WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
+          stdout("#-------------------------------------------------------------------------------")
+          stdout("#  Sample control file for ppm_client")
+          stdout("#")
+          stdout("#  Edit the settings below")
+          stdout("#")
+          stdout("#-------------------------------------------------------------------------------")
           DO k=0,groups_i
              IF (.NOT. group_has_ctrl(k)) CYCLE
-             WRITE (*,'(/A)') "#-------------------------------------------------------------------------------"
-             WRITE (*,'(2A)') "#  ", groups(k)(1:LEN_TRIM(groups(k)))
+             stdout("")
+             stdout("#-------------------------------------------------------------------------------")
+             stdout("#  ", 'groups(k)(1:LEN_TRIM(groups(k)))')
 
              comment_loop: DO i=1,group_size(k)
                 ! scalar
@@ -1540,7 +1605,7 @@
 #undef ARRAY
              END DO comment_loop
 
-             WRITE (*,'(A)') "#-------------------------------------------------------------------------------"
+             stdout("#-------------------------------------------------------------------------------")
 
              var_loop: DO i=1,group_size(k)
                 ! scalar
@@ -1622,15 +1687,26 @@
       !     END DO
       !   END SUBROUTINE dump_defines
         SUBROUTINE dump_args
-      !!! Debugging procedure. Prints all supplied command line args.
-          INTEGER :: i
-          WRITE (*,'(//A/)') 'DUMPING COMMAND ARGS'
+        !!! Debugging procedure. Prints all supplied command line args.
+
+          IMPLICIT NONE
+
+          INTEGER :: i,info
+
+          CHARACTER(LEN=*), PARAMETER :: caller="dump_args"
+
+          stdout("")
+          stdout("")
+          stdout("DUMPING COMMAND ARGS")
+          stdout("")
           DO i=1,cmd_args_i
-             WRITE (*,*) 'arg : ', cmd_args(i)(1:cmd_args_len(i))
+             WRITE (cbuf,*) 'arg : ', cmd_args(i)(1:cmd_args_len(i))
+             stdout(cbuf)
+
              IF (cmd_args_used(i)) THEN
-                WRITE (*,*) 'used'
+                stdout("used")
              ELSE
-                WRITE (*,*) 'not used'
+                stdout("not used")
              END IF
           END DO
         END SUBROUTINE dump_args

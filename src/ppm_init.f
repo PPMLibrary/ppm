@@ -178,55 +178,55 @@
       ELSE
         IF (ppm_rank .EQ. 0) THEN
            WRITE(mesg,'(A)') &
-        &  "**************************************************************"
+           &  "**************************************************************"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "***       Parallel Particle Mesh Library (PPM)       *********"
+           &  "***       Parallel Particle Mesh Library (PPM)       *********"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "***          version:  1.2.2  /  October 2012        ****___**"
+           &  "***          version:  1.2.2  /  October 2012        ****___**"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A,i12,A)') &
-        &  '***       Execution on  / ',ppm_nproc,'    node(s)    ***/ _ \*'
+           &  '***       Execution on  / ',ppm_nproc,'    node(s)    ***/ _ \*'
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A,i12,A)') &
-        &  "***                                                  **/ .__/*"
+           &  "***                                                  **/ .__/*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** Contributors                                     */_/___**"
+           &  "*** Contributors                                     */_/___**"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** ------------                                     ***/ _ \*"
+           &  "*** ------------                                     ***/ _ \*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** CSE-lab at ETH Zurich (group of Professor Petros **/ .__/*"
+           &  "*** CSE-lab at ETH Zurich (group of Professor Petros **/ .__/*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** Koumoutsakos), MOSAIC group at MPI-CBG Dresden   */_/___**"
+           &  "*** Koumoutsakos), MOSAIC group at MPI-CBG Dresden   */_/___**"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** (group of Dr. Ivo F.Sbalzarini)                  **/  ' \*"
+           &  "*** (group of Dr. Ivo F.Sbalzarini)                  **/  ' \*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** and Center for Fluid Dynamics at DTU (group of   */_/_/_/*"
+           &  "*** and Center for Fluid Dynamics at DTU (group of   */_/_/_/*"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "*** Professor Jens Walther).                         *********"
+           &  "*** Professor Jens Walther).                         *********"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
            WRITE(mesg,'(A)') &
-        &  "**************************************************************"
+           &  "**************************************************************"
            CALL ppm_log(caller,mesg,info)
            CALL ppm_write(ppm_rank,caller,mesg,info)
         ENDIF

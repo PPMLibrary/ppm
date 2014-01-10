@@ -39,17 +39,18 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CHARACTER(LEN=*)        , INTENT(IN   ) :: caller
+      CHARACTER(LEN=*), INTENT(IN   ) :: caller
       !!! Name of calling subroutine
-      CHARACTER(LEN=*)        , INTENT(IN   ) :: mesg
+      CHARACTER(LEN=*), INTENT(IN   ) :: mesg
       !!! Log message
-      INTEGER                 , INTENT(INOUT) :: info
+      INTEGER,          INTENT(INOUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(8)                   :: tval
-      CHARACTER(LEN=ppm_char)                 :: msg
+      INTEGER, DIMENSION(8) :: tval
+
+      CHARACTER(LEN=ppm_char) :: msg
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -64,13 +65,13 @@
       !-------------------------------------------------------------------------
       CALL DATE_AND_TIME(values=tval)
       WRITE(msg,'(I4.4,A,5(I2.2,A),A)') tval(1),'-',tval(2),'-',tval(3),   &
-     &               ' ',tval(5),':',tval(6),':',tval(7),' --- ',TRIM(mesg)
+      & ' ',tval(5),':',tval(6),':',tval(7),' --- ',TRIM(mesg)
 
       !-------------------------------------------------------------------------
       !  Write the log
       !-------------------------------------------------------------------------
       IF (ppm_logfile .GT. 0) THEN
-          CALL ppm_write(ppm_rank,caller,msg,info,ppm_logfile)
+         CALL ppm_write(ppm_rank,caller,msg,info,ppm_logfile)
       ENDIF
 
       !-------------------------------------------------------------------------
