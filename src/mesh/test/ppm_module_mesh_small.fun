@@ -219,14 +219,18 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
 
         if (ppm_debug.GT.0) then
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
                 isub = topo%isublist(i)
                 stdout("coordinates subs Min =  ",'topo%min_subd(1:ndim,isub)')
                 stdout("coordinates subs Max =  ",'topo%max_subd(1:ndim,isub)')
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
@@ -245,7 +249,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
         endif
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
@@ -275,7 +281,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         call Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
 
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
 
         call Mesh1%map_send(info)
             Assert_Equal(info,0)
@@ -301,7 +309,9 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         end foreach
         Assert_Equal(nb_errors,0)
 
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)

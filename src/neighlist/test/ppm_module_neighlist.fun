@@ -277,7 +277,7 @@ real(mk)                         :: eps
         allocate(w(npart))
         w(:) = rank+1
 #ifdef __MPI
-        call mpi_barrier(comm,info)
+        call MPI_BARRIER(comm,info)
 #endif
         !----------------
         ! make topology
