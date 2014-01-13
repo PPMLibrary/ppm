@@ -118,7 +118,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
 
         if (ppm_debug.gt.0) then
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             topo => ppm_topo(topoid)%t
             stdout("NB subdomains GLOBAL =  ",topo%nsubs)
             stdout("NB subdomains LOCAL  =  ",topo%nsublist)
@@ -132,7 +134,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 stdout("list of neighs        :  ",'topo%ineighsubs(j,i)')
                 enddo
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
         endif
 
         Nm = 125
@@ -222,14 +226,18 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         ENDDO
 
         if (ppm_debug.GT.0) then
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
                 isub = topo%isublist(i)
                 stdout("coordinates subs Min =  ",'topo%min_subd(1:2,isub)')
                 stdout("coordinates subs Max =  ",'topo%max_subd(1:2,isub)')
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
@@ -250,7 +258,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
         endif
 
         !Fill in the allocated field arrays (incl. ghost nodes) with some data
@@ -279,9 +289,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
             Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh1%map_send(info)
             Assert_Equal(info,0)
 
@@ -314,9 +324,9 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
                 Assert_Equal_Within(Field2_n    ,1._mk,1e-5)
         end foreach
         Assert_Equal(nb_errors,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
         call Field1%destroy(info)

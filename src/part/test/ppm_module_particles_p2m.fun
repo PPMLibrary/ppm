@@ -413,9 +413,9 @@ TYPE(ppm_v_main_abstr)  :: LFields
 
         ENDIF
 
-
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
-
+#endif
 
         call Mesh1%destroy(info)
         call SField1%destroy(info)

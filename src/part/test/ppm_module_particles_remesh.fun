@@ -318,9 +318,9 @@ integer :: np_global
                 Assert_Equal_Within(V4_p(4), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
                 Assert_Equal_Within(V4_p(5), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
         end foreach
-
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
-
+#endif
         end_subroutine()
         !check that we are leaving the test without error
         Assert_Equal(info,0)
@@ -392,7 +392,9 @@ integer :: np_global
                 Assert_Equal_Within(V4_p(5), f_sq(x_p(1:ndim),ndim) * Vol_p,tol)
         end foreach
 
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
+#endif
 
         end_subroutine()
         !check that we are leaving the test without error

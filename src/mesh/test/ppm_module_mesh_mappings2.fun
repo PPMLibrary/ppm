@@ -125,7 +125,7 @@ real(mk),dimension(ndim)         :: offset
         call MPI_BARRIER(comm,info)
 
         offset = 0._mk
-        Nm = (/8,8,8/)
+        Nm = (/80,80,80/)
 
         assig  = ppm_param_assign_internal
         topoid = 0
