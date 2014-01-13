@@ -122,8 +122,9 @@ real(mk),dimension(ndim)         :: offset
         if (ppm_debug.ge.1 .and. rank.eq.0) then
            stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
         endif
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         offset = 0._mk
         Nm = (/80,80,80/)
 
@@ -134,9 +135,9 @@ real(mk),dimension(ndim)         :: offset
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
         &               bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
         &    ghostsize=ighostsize,name='Test_Mesh_1')
         Assert_Equal(info,0)
@@ -228,8 +229,9 @@ real(mk),dimension(ndim)         :: offset
         Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
         Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
@@ -257,8 +259,9 @@ real(mk),dimension(ndim)         :: offset
         CALL ppm_mktopo(topoid2,decomp,assig,min_phys,max_phys,&
         &    bcdef,sca_ghostsize,cost,info)
         Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh2%create(topoid2,offset,info,Nm=Nm,&
         &    ghostsize=ighostsize,name='Test_Mesh_2')
         Assert_Equal(info,0)
@@ -302,9 +305,9 @@ real(mk),dimension(ndim)         :: offset
 
         call Field2%map_ghost_pop(Mesh2,info)
         Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
 !        CALL Mesh2%print_vtk("Mesh2",info)
 !        Assert_Equal(info,0)
 
@@ -320,13 +323,15 @@ real(mk),dimension(ndim)         :: offset
         Assert_Equal(info,0)
         deallocate(ppm_topo(topoid)%t,STAT=info)
         Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
         endif
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         end_subroutine()
     end test
 
