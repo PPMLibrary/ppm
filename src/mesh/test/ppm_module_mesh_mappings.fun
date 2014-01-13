@@ -123,8 +123,9 @@ real(mk),dimension(ndim)         :: offset
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("STARTING test with decomp = ",decomp,topoid,sizex,sizey)
         endif
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         offset = 0._mk
         Nm(ndim) = 65
         Nm(1:2) = (/sizex,sizey/)
@@ -136,9 +137,9 @@ real(mk),dimension(ndim)         :: offset
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
             Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
@@ -277,8 +278,9 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
@@ -319,13 +321,15 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
         deallocate(ppm_topo(topoid)%t,STAT=info)
             Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
         endif
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         end_subroutine()
     end test
 
@@ -366,9 +370,9 @@ real(mk),dimension(ndim)         :: offset
         call ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,    &
             &               bcdef,sca_ghostsize,cost,info)
             Assert_Equal(info,0)
-
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
             ghostsize=ighostsize,name='Test_Mesh_1')
             Assert_Equal(info,0)
@@ -396,7 +400,9 @@ real(mk),dimension(ndim)         :: offset
 
         if (ppm_debug.GE.1) then
             topo => ppm_topo(Mesh1%topoid)%t
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
                 isub = topo%isublist(i)
@@ -408,7 +414,9 @@ real(mk),dimension(ndim)         :: offset
                 stdout("mesh coords subs Max =  ",'Mesh1%iend(1:ndim,isub)')
                 stdout("********************************")
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
@@ -428,7 +436,9 @@ real(mk),dimension(ndim)         :: offset
                 stdout("--------------------------------")
                 p => Mesh1%subpatch%next()
             enddo
+#ifdef __MPI
             call MPI_BARRIER(comm,info)
+#endif
         endif
 
 
@@ -551,17 +561,22 @@ real(mk),dimension(ndim)         :: offset
             Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
 
         call Mesh1%map_send(info)
             Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         call Field2%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
@@ -593,7 +608,10 @@ real(mk),dimension(ndim)         :: offset
         end foreach
         ENDIF
         Assert_Equal(nb_errors,0)
+
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
 
         call Mesh1%destroy(info)
             Assert_Equal(info,0)
@@ -607,12 +625,15 @@ real(mk),dimension(ndim)         :: offset
         deallocate(ppm_topo(topoid)%t,STAT=info)
             Assert_Equal(info,0)
 
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
+#endif
         if (ppm_debug.ge.1 .and. rank.eq.0) then
             stdout("FINISHED test with decomp = ",decomp,topoid)
         endif
+#ifdef __MPI
         call MPI_BARRIER(comm,info)
-
+#endif
         end_subroutine()
     end test
 
