@@ -38,23 +38,24 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER          , INTENT(IN   ) :: rank
+      INTEGER,           INTENT(IN   ) :: rank
       !!! MPI rank of the calling processor
-      CHARACTER(LEN=*) , INTENT(IN   ) :: caller
+      CHARACTER(LEN=*),  INTENT(IN   ) :: caller
       !!! Character string describing the name of the calling subroutine
-      CHARACTER(LEN=*) , INTENT(IN   ) :: cbuf
+      CHARACTER(LEN=*),  INTENT(IN   ) :: cbuf
       !!! Character string containing the message to be printed
-      INTEGER          , INTENT(  OUT) :: info
+      INTEGER,           INTENT(  OUT) :: info
       !!! Returns 0 on success
-      INTEGER          , OPTIONAL      :: iUnit
+      INTEGER, OPTIONAL, INTENT(IN   ) :: iUnit
       !!! UNIT to print to (OPTIONAL). Defaults to stdout if not specified.
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      INTEGER :: iu
+      INTEGER :: ios
+      INTEGER :: icaller,ibuf
+
       CHARACTER(LEN=ppm_char) :: cformat
-      INTEGER                 :: iu
-      INTEGER                 :: ios
-      INTEGER                 :: icaller,ibuf
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -65,7 +66,7 @@
       ! print to stdout by default
       iu = ppm_stdout
       IF (PRESENT(iUnit)) THEN
-          IF (iUnit .GT. 0) iu = iUnit
+         IF (iUnit .GT. 0) iu = iUnit
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -94,21 +95,16 @@
       !-------------------------------------------------------------------------
       IF (rank.LT.0) THEN
          IF (iu .GE. 0) THEN
-             WRITE(iu,cformat,IOSTAT=ios)                               &
-     &          '(',                                                    &
-     &          caller(1:icaller),                                      &
-     &          ') : ',                                                 &
-     &          cbuf(1:ibuf)
+            WRITE(iu,cformat,IOSTAT=ios) &
+            & '(', caller(1:icaller), ') : ', cbuf(1:ibuf)
          ENDIF
       ELSE
          IF (iu .GE. 0) THEN
-             WRITE(iu,cformat,IOSTAT=ios)                               &
-     &          '[',rank,'] (',                                         &
-     &          caller(1:icaller),                                      &
-     &          ') : ',                                                 &
-     &          cbuf(1:ibuf)
+            WRITE(iu,cformat,IOSTAT=ios) &
+            & '[',rank,'] (', caller(1:icaller), ') : ', cbuf(1:ibuf)
          ENDIF
       ENDIF
+
       info = ios
 
       !-------------------------------------------------------------------------

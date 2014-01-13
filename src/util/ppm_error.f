@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                     ppm_error
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -85,65 +85,81 @@
       !  Assemble error message
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (info .EQ. ppm_error_fatal) THEN
-              ! fatal error
-              WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <FATAL> at line ', &
-         &            line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_error) THEN
-              ! error
-              WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <ERROR> at line ', &
-         &            line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_warning) THEN
-              ! warning
-              WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <WARNING> at line ',&
-         &            line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_notice) THEN
-              ! notice
-              WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <NOTICE> at line ',&
-         &            line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSE
-              ! unknown
-              WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <UNKNOWN> at line ',&
-         &            line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ENDIF
+         SELECT CASE (info)
+         CASE (ppm_error_fatal)
+            ! fatal error
+            WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <FATAL> at line ', &
+            &    line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_error)
+            ! error
+            WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <ERROR> at line ', &
+            &     line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_warning)
+            ! warning
+            WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <WARNING> at line ',&
+            &     line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_notice)
+            ! notice
+            WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <NOTICE> at line ',&
+            &     line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE DEFAULT
+            ! unknown
+            WRITE(msg,'(I4.4,A,I5.5,4A)') errno,' <UNKNOWN> at line ',&
+            &     line,'. ',TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         END SELECT
       ELSE
-          IF (info .EQ. ppm_error_fatal) THEN
-              ! fatal error
-              WRITE(msg,'(I4.4,4A)') errno,' <FATAL> ',                &
-         &            TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_error) THEN
-              ! error
-              WRITE(msg,'(I4.4,4A)') errno,' <ERROR> ',                &
-         &            TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_warning) THEN
-              ! warning
-              WRITE(msg,'(I4.4,4A)') errno,' <WARNING> ',              &
-         &            TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSEIF (info .EQ. ppm_error_notice) THEN
-              ! notice
-              WRITE(msg,'(I4.4,4A)') errno,' <NOTICE> ',               &
-         &            TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ELSE
-              ! unknown
-              WRITE(msg,'(I4.4,4A)') errno,' <UNKNOWN> ',              &
-         &            TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
-          ENDIF
+         SELECT CASE (info)
+         CASE (ppm_error_fatal)
+            ! fatal error
+            WRITE(msg,'(I4.4,4A)') errno,' <FATAL> ',                &
+            &     TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_error)
+            ! error
+            WRITE(msg,'(I4.4,4A)') errno,' <ERROR> ',                &
+            &     TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_warning)
+            ! warning
+            WRITE(msg,'(I4.4,4A)') errno,' <WARNING> ',              &
+            &     TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE (ppm_error_notice)
+            ! notice
+            WRITE(msg,'(I4.4,4A)') errno,' <NOTICE> ',               &
+            &     TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         CASE DEFAULT
+            ! unknown
+            WRITE(msg,'(I4.4,4A)') errno,' <UNKNOWN> ',              &
+            &     TRIM(ppm_err_mesg(errno)), ': ',TRIM(mesg)
+
+         END SELECT
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Write the error to stderr if debug level is high enough
       !-------------------------------------------------------------------------
-      IF (info .EQ. ppm_error_notice) THEN
-          IF (ppm_debug .GT. 1) THEN
-              CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
-          ENDIF
-      ELSEIF (info .EQ. ppm_error_warning) THEN
-          IF (ppm_debug .GT. 0) THEN
-              CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
-          ENDIF
-      ELSE
-          CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
-      ENDIF
+      SELECT CASE (info)
+      CASE (ppm_error_notice)
+         IF (ppm_debug .GT. 1) THEN
+            CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
+         ENDIF
+
+      CASE (ppm_error_warning)
+         IF (ppm_debug .GT. 0) THEN
+            CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
+         ENDIF
+
+      CASE DEFAULT
+         CALL ppm_write(ppm_rank,caller,msg,info2,ppm_stderr)
+
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Always write the error to log file
@@ -156,9 +172,9 @@
       !-------------------------------------------------------------------------
       IF (info .EQ. ppm_error_fatal) THEN
 #ifdef __MPI
-          CALL MPI_Abort(ppm_comm,1,info2)
+         CALL MPI_Abort(ppm_comm,1,info2)
 #endif
-          STOP
+         STOP
       ENDIF
 
       !-------------------------------------------------------------------------

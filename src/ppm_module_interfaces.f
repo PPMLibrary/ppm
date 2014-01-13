@@ -34,17 +34,17 @@
       !----------------------------------------------------------------------
       !PPM internal parameters used only to access entries in the
       !mesh data structures.
-      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_ghosts    = 1
-      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_reqput    = 2
-      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_cartesian = 3
-      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_lflags    = 3
+      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_ghosts            = 1
+      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_reqput            = 2
+      INTEGER, PARAMETER, PUBLIC :: ppm_mdata_cartesian         = 3
+      INTEGER, PARAMETER, PUBLIC :: ppm_param_length_mdataflags = 3
 
       !PPM internal parameters used only to access entries in the
       !mesh data structures.
-      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_ghosts           = 1
-      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_reqput           = 2
-      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_cartesian        = 3
-      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_length_partflags = 3
+      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_ghosts            = 1
+      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_reqput            = 2
+      INTEGER, PARAMETER, PUBLIC :: ppm_mesh_cartesian         = 3
+      INTEGER, PARAMETER, PUBLIC :: ppm_param_length_meshflags = 3
 
       !PPM internal parameters used only to access entries in the
       !particle's property data structure.
@@ -250,15 +250,15 @@ minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
           !!! Contains pointers to the data and bookkeeping information
           !!! for a mesh on which fieldID has been discretized.
 
-          INTEGER                              :: discrID    = 0
+          INTEGER                                         :: discrID    = 0
           !!! id of the discretization kind on which fieldID is discretized
-          CLASS(ppm_t_discr_kind), POINTER     :: discr_ptr  => NULL()
+          CLASS(ppm_t_discr_kind), POINTER                :: discr_ptr  => NULL()
           !!! pointer to the mesh
-          CLASS(ppm_t_discr_data), POINTER     :: discr_data => NULL()
+          CLASS(ppm_t_discr_data), POINTER                :: discr_data => NULL()
           !!! pointer to the data
-          INTEGER                              :: lda        = 0
+          INTEGER                                         :: lda        = 0
           !!! number of components (1 for scalar fields)
-          INTEGER                              :: p_idx      = 0
+          INTEGER                                         :: p_idx      = 0
           !!! For meshes:
           !!!     Storage index for the subpatch_data object which contains the data where
           !!! fieldID has been discretized on this mesh.
@@ -268,7 +268,7 @@ minclude ppm_create_collection(operator_discr,operator_discr,generate="extend")
           !!!  corresponding to fieldID within this list)
           !!! For particle sets:
           !!!     not used
-          LOGICAL, DIMENSION(ppm_mdata_lflags) :: flags = .FALSE.
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags) :: flags = .FALSE.
           !!! Booleans used to track the state of this discretization.
 
       CONTAINS

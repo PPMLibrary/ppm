@@ -52,7 +52,7 @@
       END SUBROUTINE
       !CREATE
       SUBROUTINE discr_info_create_(this,discr,discr_data,lda,flags,info,p_idx)
-          IMPORT ppm_t_discr_info_,ppm_t_discr_kind,ppm_t_discr_data,ppm_mdata_lflags
+          IMPORT ppm_t_discr_info_,ppm_t_discr_kind,ppm_t_discr_data,ppm_param_length_mdataflags
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
@@ -61,7 +61,7 @@
           CLASS(ppm_t_discr_kind), TARGET, INTENT(IN   ) :: discr
           CLASS(ppm_t_discr_data), TARGET, INTENT(IN   ) :: discr_data
           INTEGER,                         INTENT(IN   ) :: lda
-          LOGICAL, DIMENSION(ppm_mdata_lflags)           :: flags
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags):: flags
           INTEGER,                         INTENT(  OUT) :: info
           INTEGER, OPTIONAL,               INTENT(IN   ) :: p_idx
       END SUBROUTINE

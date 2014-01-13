@@ -164,14 +164,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       !CREATE
       !CREATE
       SUBROUTINE discr_info_create(this,discr,discr_data,lda,flags,info,p_idx)
-          CLASS(ppm_t_discr_info)                      :: this
-          CLASS(ppm_t_discr_kind),TARGET,INTENT(IN   ) :: discr
-          CLASS(ppm_t_discr_data),TARGET,INTENT(IN   ) :: discr_data
-          INTEGER,                       INTENT(IN   ) :: lda
+          CLASS(ppm_t_discr_info)                         :: this
+          CLASS(ppm_t_discr_kind), TARGET,  INTENT(IN   ) :: discr
+          CLASS(ppm_t_discr_data), TARGET,  INTENT(IN   ) :: discr_data
+          INTEGER,                          INTENT(IN   ) :: lda
           !!! number of components
-          LOGICAL, DIMENSION(ppm_mdata_lflags)         :: flags
-          INTEGER,                       INTENT(  OUT) :: info
-          INTEGER,OPTIONAL,              INTENT(IN   ) :: p_idx
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags) :: flags
+          INTEGER,                          INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,                 INTENT(IN   ) :: p_idx
 
           start_subroutine("discr_info_create")
 
@@ -383,18 +383,18 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
       SUBROUTINE field_set_rel_discr(this,discr,discr_data,info,p_idx)
           !!! Create bookkeeping data structure to log the relationship between
           !!! the field and a particle set
-          CLASS(ppm_t_field)                  :: this
-          CLASS(ppm_t_discr_kind)             :: discr
+          CLASS(ppm_t_field)                             :: this
+          CLASS(ppm_t_discr_kind)                        :: discr
           !!! mesh, or particle set, that this field is discretized on
-          CLASS(ppm_t_discr_data)             :: discr_data
+          CLASS(ppm_t_discr_data)                        :: discr_data
           !!! data (or mesh or on particle set) for this discretization
 
-          INTEGER,                INTENT(OUT) :: info
-          INTEGER,OPTIONAL,       INTENT(IN)  :: p_idx
+          INTEGER,                         INTENT(  OUT) :: info
+          INTEGER,OPTIONAL,                INTENT(IN   ) :: p_idx
           !!! storage index in the collection of discretization
 
-          CLASS(ppm_t_discr_info_),POINTER    :: dinfo => NULL()
-          LOGICAL,DIMENSION(ppm_mdata_lflags) :: flags
+          CLASS(ppm_t_discr_info_),            POINTER    :: dinfo => NULL()
+          LOGICAL, DIMENSION(ppm_param_length_mdataflags) :: flags
 
           start_subroutine("field_set_rel_discr")
 
@@ -410,8 +410,8 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           or_fail("could not create new discr_info object")
 
           IF (.NOT.ASSOCIATED(this%discr_info)) THEN
-              ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
-              or_fail_alloc("could not allocate discr_info collection")
+             ALLOCATE(ppm_c_discr_info::this%discr_info,STAT=info)
+             or_fail_alloc("could not allocate discr_info collection")
           ENDIF
 
           CALL this%discr_info%push(dinfo,info)
