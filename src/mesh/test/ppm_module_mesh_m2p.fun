@@ -316,9 +316,9 @@ real(mk), dimension(:,:), pointer              :: wp_2r => NULL()
 
             endif
         end foreach
-
+#ifdef __MPI
         CALL MPI_BARRIER(comm,info)
-
+#endif
 
         call Mesh1%destroy(info)
         call SField1%destroy(info)
