@@ -81,7 +81,8 @@ module Funit
     tbCancelled  = module_names.map{|mn| mn+"_fun."} + ["TestRunner."]
     tbCancelled  = tbCancelled.map{|tbc| [tbc+"f",tbc+"o",tbc+"MOD",tbc+"mod"]}.flatten
     tbCancelled += Dir["**/__*_fun*"]
-#   tbCancelled += Dir["**/TestRunner"]
+    tbCancelled += Dir["**/TestRunner"]
+    tbCancelled += Dir["**/test_runner*"]
     tbCancelled += Dir["**/__TestRunner.f"]
     tbCancelled += Dir["**/makeTestRunner"]
     tbCancelled = (tbCancelled+tbCancelled.map{|tbc| tbc.downcase}).uniq
