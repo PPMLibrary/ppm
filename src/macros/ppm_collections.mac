@@ -276,7 +276,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           start_subroutine("<%= "#{collection_type}" %>_destroy")
 
@@ -364,7 +364,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           has = .TRUE.
 
@@ -398,7 +398,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           p => this%begin()
           DO WHILE(ASSOCIATED(p))
@@ -526,7 +526,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp => NULL()
+          TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp
 
           INTEGER :: i
 
@@ -563,6 +563,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
              DEALLOCATE(vec_temp,STAT=info)
              or_fail_dealloc("could not deallocate temporary array")
+             NULLIFY(vec_temp)
           ENDIF
 
           end_subroutine()
