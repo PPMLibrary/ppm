@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_part_global
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -87,15 +87,15 @@
       !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)          :: ldu
-      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
+!       INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER                        :: i,j,k,idom,ipart,nlist1,nlist2
       INTEGER                        :: sendrank,recvrank
       INTEGER                        :: iopt,iset,ibuffer
       CHARACTER(ppm_char)            :: mesg
       REAL(MK)                       :: t0
       LOGICAL                        :: valid
-      TYPE(ppm_t_topo), POINTER      :: topo        => NULL()
-      TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
+      TYPE(ppm_t_topo), POINTER      :: topo
+!       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -126,13 +126,13 @@
       !-------------------------------------------------------------------------
       IF (target_topoid .NE. ppm_param_topo_undefined) THEN
         topo => ppm_topo(target_topoid)%t
-  
-  
+
+
         !-----------------------------------------------------------------------
         !  Save the map type for the subsequent calls (not used yet)
         !-----------------------------------------------------------------------
         ppm_map_type = ppm_param_map_global
-  
+
         !------------------------------------------------------------------------
         !  Alloc memory for particle lists
         !-----------------------------------------------------------------------
@@ -152,7 +152,7 @@
      &           'particle list 2 ILIST2',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         !-----------------------------------------------------------------------
         !  Allocate memory for the pointer to the buffer; for the global map we
         !  need entries for each processor, thus ldu(1) = ppm_nproc
@@ -166,7 +166,7 @@
      &           'particle send buffer PPM_PSENDBUFFER',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         iopt   = ppm_param_alloc_fit
         ldu(1) = Npart
         CALL ppm_alloc(part2proc,ldu,iopt,info)
@@ -184,7 +184,7 @@
      &           'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         !-----------------------------------------------------------------------
         !  Initialize the particle list
         !-----------------------------------------------------------------------
@@ -193,7 +193,7 @@
            nlist1         = nlist1 + 1
            ilist1(nlist1) = ipart
         ENDDO
-  
+
         !-----------------------------------------------------------------------
         !  Then of these exclude the particles that on the current processor
         !-----------------------------------------------------------------------
@@ -204,7 +204,7 @@
   !        DO idom=1,ppm_nsubs(target_topoid)
            DO idom=topo%nsubs,1,-1
               sendrank = topo%sub2proc(idom)
-  
+
             !-------------------------------------------------------------------
             !  Loop over the remaining particles not yet assigned to a processor
             !-------------------------------------------------------------------
@@ -260,9 +260,9 @@
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
                   ENDIF
-  
+
               ENDDO
-  
+
               !-----------------------------------------------------------------
               !  Copy the lists (well, only if nlist2 changed - decreased)
               !-----------------------------------------------------------------
@@ -272,13 +272,13 @@
                     ilist1(i) = ilist2(i)
                  ENDDO
               ENDIF
-  
+
               !-----------------------------------------------------------------
               !  Exit if the list is empty
               !-----------------------------------------------------------------
               IF (nlist1.EQ.0) EXIT
            ENDDO
-  
+
         ELSE
            !--------------------------------------------------------------------
            !  Loop over the subdomains (since the first domains are most likely
@@ -347,9 +347,9 @@
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
                   ENDIF
-  
+
               ENDDO
-  
+
               !-----------------------------------------------------------------
               !  Copy the lists (well, only if nlist2 changed - decreased)
               !-----------------------------------------------------------------
@@ -359,14 +359,14 @@
                     ilist1(i) = ilist2(i)
                  ENDDO
               ENDIF
-  
+
               !-----------------------------------------------------------------
               !  Exit if the list is empty
               !-----------------------------------------------------------------
               IF (nlist1.EQ.0) EXIT
            ENDDO
         ENDIF
-  
+
         !-----------------------------------------------------------------------
         !  Here we could check that we sold all the particles, but if we use
         !  Dirichlet BCs we might just want to loose the particles outside of the
@@ -398,7 +398,7 @@
         !  Store the number of buffer entries (this is the first)
         !-----------------------------------------------------------------------
         ppm_buffer_set = 1
-  
+
         !-----------------------------------------------------------------------
         !  Allocate memory for the field registers that holds the dimension and
         !  type of the data
@@ -419,14 +419,14 @@
      &           'buffer types PPM_BUFFER_TYPE',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         ppm_buffer_dim(ppm_buffer_set)  = ppm_dim
 #if    __KIND == __SINGLE_PRECISION
         ppm_buffer_type(ppm_buffer_set) = ppm_kind_single
 #else
         ppm_buffer_type(ppm_buffer_set) = ppm_kind_double
 #endif
-  
+
         !-----------------------------------------------------------------------
         !  (Re)allocate memory for the buffer (need not save the contents of the
         !  buffer since this is a global map).
@@ -444,7 +444,7 @@
      &           'global send buffer PPM_SENDBUFFER',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         !-----------------------------------------------------------------------
         !  Allocate memory for the sendlist
         !-----------------------------------------------------------------------
@@ -465,7 +465,7 @@
      &           'receive list PPM_IRECVLIST',__LINE__,info)
             GOTO 9999
         ENDIF
-  
+
         !-----------------------------------------------------------------------
         !  Initialize the particle lists
         !-----------------------------------------------------------------------
@@ -473,7 +473,7 @@
         DO ipart=1,Npart
            ilist1(ipart) = ipart
         ENDDO
-  
+
         !-----------------------------------------------------------------------
         !  loop over all processors, starting with the processor itself
         !-----------------------------------------------------------------------
@@ -484,7 +484,7 @@
         ppm_nrecvlist      = 0
         iset               = 0
         ibuffer            = 0
-  
+
 
         DO i=1,ppm_nproc
            !--------------------------------------------------------------------
@@ -494,24 +494,24 @@
            IF (sendrank.GT.ppm_nproc-1) sendrank = sendrank - ppm_nproc
            recvrank = recvrank - 1
            IF (recvrank.LT.          0) recvrank = recvrank + ppm_nproc
-  
+
            !--------------------------------------------------------------------
            !  Store the processor to which we will send to
            !--------------------------------------------------------------------
            ppm_nsendlist                = ppm_nsendlist + 1
            ppm_isendlist(ppm_nsendlist) = sendrank
-  
+
            !--------------------------------------------------------------------
            !  Store the processor to which we will recv from
            !--------------------------------------------------------------------
            ppm_nrecvlist                = ppm_nrecvlist + 1
            ppm_irecvlist(ppm_nrecvlist) = recvrank
-  
+
            !--------------------------------------------------------------------
            !  Initialize the buffer count
            !--------------------------------------------------------------------
            nlist2 = 0
-  
+
            IF (ppm_dim .EQ. 2) THEN
               DO j=1,nlist1
                  ipart = ilist1(j)
@@ -520,12 +520,12 @@
                     !  increment the buffer counter
                     !-----------------------------------------------------------
                     iset = iset + 1
-  
+
                     !-----------------------------------------------------------
                     !  Store the id of the particle
                     !-----------------------------------------------------------
                     ppm_buffer2part(iset) = ipart
-  
+
                     !-----------------------------------------------------------
                     !  Store the particle
                     !-----------------------------------------------------------
@@ -571,12 +571,12 @@
                     !  increment the buffer counter
                     !-----------------------------------------------------------
                     iset = iset + 1
-  
+
                     !-----------------------------------------------------------
                     !  Store the id of the particle
                     !-----------------------------------------------------------
                     ppm_buffer2part(iset) = ipart
-  
+
                     !-----------------------------------------------------------
                     !  Store the particle
                     !-----------------------------------------------------------
@@ -625,12 +625,12 @@
                  ENDIF
               ENDDO
            ENDIF
-  
+
            !--------------------------------------------------------------------
            !  Update the buffer pointer
            !--------------------------------------------------------------------
            ppm_psendbuffer(i+1) = iset + 1
-  
+
            !--------------------------------------------------------------------
            !  Swap the lists
            !--------------------------------------------------------------------
@@ -648,15 +648,15 @@
         !
         !  should take care of this
         !-----------------------------------------------------------------------
-        ! PC: killed this for unbounded domains where the particles can leave the 
+        ! PC: killed this for unbounded domains where the particles can leave the
         ! the domain
         ! ppm_psendbuffer(ppm_nproc+1) = npart + 1
-  
+
         !-----------------------------------------------------------------------
         !  Store the current size of the buffer
         !-----------------------------------------------------------------------
         ppm_nsendbuffer = ibuffer
-  
+
         !-----------------------------------------------------------------------
         !  Deallocate the memory for the lists
         !-----------------------------------------------------------------------

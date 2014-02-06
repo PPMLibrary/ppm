@@ -83,8 +83,8 @@
       INTEGER, DIMENSION(:,:), POINTER :: ist => NULL()
       CHARACTER(LEN=ppm_char)          :: mesg
       LOGICAL                          :: valid
-      TYPE(ppm_t_equi_mesh), POINTER   :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER   :: topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER   :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -94,8 +94,6 @@
       !-------------------------------------------------------------------------
       CALL substart('ppm_mesh_derive',t0,info)
 
-
-
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
@@ -104,9 +102,10 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
       topo => ppm_topo(topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(template_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
       !-------------------------------------------------------------------------
       !  Allocate memory for existing mesh data

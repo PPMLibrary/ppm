@@ -124,10 +124,10 @@
 #if   __DIM == 1
       INTEGER, PARAMETER      :: lda = 1
 #endif
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_sendbuffer => NULL()
-      INTEGER, DIMENSION(:),POINTER :: ppm_buffer2part => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_ghost_offset => NULL()
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+      REAL(MK),DIMENSION(:),POINTER :: ppm_sendbuffer
+      INTEGER, DIMENSION(:),POINTER :: ppm_buffer2part
+      REAL(MK),DIMENSION(:),POINTER :: ppm_ghost_offset
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

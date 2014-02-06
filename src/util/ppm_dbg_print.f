@@ -140,7 +140,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       !------------------------------------------------------------------------
 
 #ifdef __MPI
-      IF (ppm_rank.eq.0) THEN
+      IF (ppm_rank.EQ.0) THEN
 #endif
       CALL ppm_topo_get(topoid,topo,info)
       OPEN(iunit,file=sfname)

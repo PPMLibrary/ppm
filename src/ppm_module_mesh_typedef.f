@@ -649,7 +649,7 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_topo), POINTER :: topo => NULL()
+          TYPE(ppm_t_topo), POINTER :: topo
 
           REAL(ppm_kind_double), DIMENSION(ppm_dim) :: len_phys,rat
 
@@ -967,9 +967,9 @@ minclude ppm_get_field_template(4,l)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_topo),         POINTER :: topo => NULL()
+!           TYPE(ppm_t_topo),         POINTER :: topo => NULL()
 
-          CLASS(ppm_t_main_abstr),  POINTER :: field => NULL()
+          CLASS(ppm_t_main_abstr),  POINTER :: field
           CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
 
           INTEGER , DIMENSION(3)    :: ldc
@@ -1058,8 +1058,8 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                                INTENT(  OUT) :: info
           INTEGER,OPTIONAL,                       INTENT(  OUT) :: p_idx
 
-          CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
-          CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
+          CLASS(ppm_t_subpatch_),     POINTER :: p
+          CLASS(ppm_t_subpatch_data_),POINTER :: subpdat
 
           start_subroutine("equi_mesh_create_prop")
 
@@ -1227,7 +1227,7 @@ minclude ppm_get_field_template(4,l)
           !  Local variables
           !-------------------------------------------------------------------------
           TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
-          TYPE(ppm_t_topo),                       POINTER :: topo => NULL()
+          TYPE(ppm_t_topo),                       POINTER :: topo
 
           CLASS(ppm_t_subpatch_),                 POINTER :: p => NULL()
           CLASS(ppm_t_A_subpatch_),               POINTER :: A_p => NULL()
@@ -1631,7 +1631,7 @@ minclude ppm_get_field_template(4,l)
           INTEGER,                INTENT(  OUT) :: info
           INTEGER, DIMENSION(:),  POINTER       :: fids
 
-          CLASS(ppm_t_main_abstr), POINTER :: f => NULL()
+          CLASS(ppm_t_main_abstr), POINTER :: f
 
           INTEGER :: i,j
 

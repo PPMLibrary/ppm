@@ -10,8 +10,8 @@
           !!! Neighbour list
 
           !Local variables
-          INTEGER                                        :: info
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList => NULL()
+          INTEGER                                 :: info
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: NList
 
           res = .TRUE.
           IF (PRESENT(Part)) THEN
@@ -42,7 +42,7 @@
           CLASS(ppm_t_discr_kind),OPTIONAL,TARGET        :: Part
           !!! particle set within which the neighbours are sought
           !!! default is the same particle set as "this"
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER         :: NList
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER         :: NList
           !!! Neighbour list
 
           !Local variables
@@ -83,7 +83,7 @@
           CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
           !!! Neighbour list (if not the default one)
 
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl
           start_subroutine("get_vlist")
 
 
@@ -114,7 +114,7 @@
           CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,TARGET :: NList
           !!! Neighbour list (if not the default one)
 
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER  :: nl
           start_subroutine("get_vlist")
 
 

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_map_field_push_3d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -133,7 +133,7 @@
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-4th index: mesh (i,j,k) relative to istart-1 of the sub 
+      !!! 2nd-4th index: mesh (i,j,k) relative to istart-1 of the sub
       !!! (i.e. (i,j,k)=(1,1,1) corresponds to istart)                             +
       !!! 5th: isub 1...nsublist (all subs on this processor).
       !!!
@@ -170,8 +170,8 @@
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_equi_mesh), POINTER :: mesh => NULL()
-      TYPE(ppm_t_topo),      POINTER :: topo => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER :: mesh
+      TYPE(ppm_t_topo),      POINTER :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -180,8 +180,6 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_field_push_3d',t0,info)
-
-
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -192,9 +190,10 @@
       ENDIF
 
       topo => ppm_topo(topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          mesh => t
+         mesh => t
       END SELECT
 
       !-------------------------------------------------------------------------

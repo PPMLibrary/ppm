@@ -85,7 +85,7 @@
       INTEGER                                  :: dim,iopt,max_partnumber
       LOGICAL                                  :: internal_weights
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
+      CLASS(ppm_t_subpatch_),POINTER           :: p
       CLASS(ppm_t_discr_data),POINTER         :: prop => NULL()
 
       REAL(MK) , DIMENSION(:      ) , POINTER  :: up_1d => NULL()

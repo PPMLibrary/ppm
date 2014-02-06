@@ -111,97 +111,100 @@
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      REAL(MK),  DIMENSION(ppm_dim)          :: dxi
-      REAL(MK)                               :: x1,x2,x3
-      INTEGER                                :: i,j,k,ii,jj,kk
-      INTEGER                                :: ip,ip1,ip2,ip3
-      INTEGER, DIMENSION(6)                  :: bcdef
-      INTEGER                                :: iq,nsubpatch,ipatch
+      REAL(MK),  DIMENSION(ppm_dim) :: dxi
+      REAL(MK)                      :: x1,x2,x3
+
+      INTEGER :: i,j,k,ii,jj,kk
+      INTEGER :: ip,ip1,ip2,ip3
+      INTEGER :: iq,ipatch
+
       ! aliases
-      REAL(mk)                               :: tim1s, tim1e
-      REAL(mk)                               :: xp1,xp2,xp3
-      REAL(mk)                               :: wx1,wx2,wx3
-      INTEGER                                :: ldn
-      REAL(mk), DIMENSION(ppm_dim)           :: x0
-      CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
+      CLASS(ppm_t_subpatch_), POINTER :: p
+
+      REAL(MK), DIMENSION(ppm_dim) :: x0
+      REAL(MK)                     :: xp1,xp2,xp3
+      REAL(MK)                     :: wx1,wx2,wx3
+
+      INTEGER :: ldn
+
       !-------------------------------------------------------------------------
       !  Variables for unrolled versions
       !-------------------------------------------------------------------------
 
 
 #if   __DIME == __2D
-      REAL(mk) :: a10a20
-      REAL(mk) :: a10a21
-      REAL(mk) :: a11a20
-      REAL(mk) :: a11a21
+      REAL(MK) :: a10a20
+      REAL(MK) :: a10a21
+      REAL(MK) :: a11a20
+      REAL(MK) :: a11a21
 #elif __DIME == __3D
-      REAL(mk) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
-      REAL(mk) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
+      REAL(MK) :: x10,x11,x12,x13,x20,x21,x22,x23,x30,x31,x32,x33
+      REAL(MK) :: a10,a11,a12,a13,a20,a21,a22,a23,a30,a31,a32,a33
       INTEGER  :: ip10,ip11,ip12,ip13,ip20,ip21,ip22,ip23,ip30,ip31,ip32,ip33
-      REAL(mk) :: a10a20a30
-      REAL(mk) :: a10a20a31
-      REAL(mk) :: a10a20a32
-      REAL(mk) :: a10a20a33
-      REAL(mk) :: a10a21a30
-      REAL(mk) :: a10a21a31
-      REAL(mk) :: a10a21a32
-      REAL(mk) :: a10a21a33
-      REAL(mk) :: a10a22a30
-      REAL(mk) :: a10a22a31
-      REAL(mk) :: a10a22a32
-      REAL(mk) :: a10a22a33
-      REAL(mk) :: a10a23a30
-      REAL(mk) :: a10a23a31
-      REAL(mk) :: a10a23a32
-      REAL(mk) :: a10a23a33
-      REAL(mk) :: a11a20a30
-      REAL(mk) :: a11a20a31
-      REAL(mk) :: a11a20a32
-      REAL(mk) :: a11a20a33
-      REAL(mk) :: a11a21a30
-      REAL(mk) :: a11a21a31
-      REAL(mk) :: a11a21a32
-      REAL(mk) :: a11a21a33
-      REAL(mk) :: a11a22a30
-      REAL(mk) :: a11a22a31
-      REAL(mk) :: a11a22a32
-      REAL(mk) :: a11a22a33
-      REAL(mk) :: a11a23a30
-      REAL(mk) :: a11a23a31
-      REAL(mk) :: a11a23a32
-      REAL(mk) :: a11a23a33
-      REAL(mk) :: a12a20a30
-      REAL(mk) :: a12a20a31
-      REAL(mk) :: a12a20a32
-      REAL(mk) :: a12a20a33
-      REAL(mk) :: a12a21a30
-      REAL(mk) :: a12a21a31
-      REAL(mk) :: a12a21a32
-      REAL(mk) :: a12a21a33
-      REAL(mk) :: a12a22a30
-      REAL(mk) :: a12a22a31
-      REAL(mk) :: a12a22a32
-      REAL(mk) :: a12a22a33
-      REAL(mk) :: a12a23a30
-      REAL(mk) :: a12a23a31
-      REAL(mk) :: a12a23a32
-      REAL(mk) :: a12a23a33
-      REAL(mk) :: a13a20a30
-      REAL(mk) :: a13a20a31
-      REAL(mk) :: a13a20a32
-      REAL(mk) :: a13a20a33
-      REAL(mk) :: a13a21a30
-      REAL(mk) :: a13a21a31
-      REAL(mk) :: a13a21a32
-      REAL(mk) :: a13a21a33
-      REAL(mk) :: a13a22a30
-      REAL(mk) :: a13a22a31
-      REAL(mk) :: a13a22a32
-      REAL(mk) :: a13a22a33
-      REAL(mk) :: a13a23a30
-      REAL(mk) :: a13a23a31
-      REAL(mk) :: a13a23a32
-      REAL(mk) :: a13a23a33
+      REAL(MK) :: a10a20a30
+      REAL(MK) :: a10a20a31
+      REAL(MK) :: a10a20a32
+      REAL(MK) :: a10a20a33
+      REAL(MK) :: a10a21a30
+      REAL(MK) :: a10a21a31
+      REAL(MK) :: a10a21a32
+      REAL(MK) :: a10a21a33
+      REAL(MK) :: a10a22a30
+      REAL(MK) :: a10a22a31
+      REAL(MK) :: a10a22a32
+      REAL(MK) :: a10a22a33
+      REAL(MK) :: a10a23a30
+      REAL(MK) :: a10a23a31
+      REAL(MK) :: a10a23a32
+      REAL(MK) :: a10a23a33
+      REAL(MK) :: a11a20a30
+      REAL(MK) :: a11a20a31
+      REAL(MK) :: a11a20a32
+      REAL(MK) :: a11a20a33
+      REAL(MK) :: a11a21a30
+      REAL(MK) :: a11a21a31
+      REAL(MK) :: a11a21a32
+      REAL(MK) :: a11a21a33
+      REAL(MK) :: a11a22a30
+      REAL(MK) :: a11a22a31
+      REAL(MK) :: a11a22a32
+      REAL(MK) :: a11a22a33
+      REAL(MK) :: a11a23a30
+      REAL(MK) :: a11a23a31
+      REAL(MK) :: a11a23a32
+      REAL(MK) :: a11a23a33
+      REAL(MK) :: a12a20a30
+      REAL(MK) :: a12a20a31
+      REAL(MK) :: a12a20a32
+      REAL(MK) :: a12a20a33
+      REAL(MK) :: a12a21a30
+      REAL(MK) :: a12a21a31
+      REAL(MK) :: a12a21a32
+      REAL(MK) :: a12a21a33
+      REAL(MK) :: a12a22a30
+      REAL(MK) :: a12a22a31
+      REAL(MK) :: a12a22a32
+      REAL(MK) :: a12a22a33
+      REAL(MK) :: a12a23a30
+      REAL(MK) :: a12a23a31
+      REAL(MK) :: a12a23a32
+      REAL(MK) :: a12a23a33
+      REAL(MK) :: a13a20a30
+      REAL(MK) :: a13a20a31
+      REAL(MK) :: a13a20a32
+      REAL(MK) :: a13a20a33
+      REAL(MK) :: a13a21a30
+      REAL(MK) :: a13a21a31
+      REAL(MK) :: a13a21a32
+      REAL(MK) :: a13a21a33
+      REAL(MK) :: a13a22a30
+      REAL(MK) :: a13a22a31
+      REAL(MK) :: a13a22a32
+      REAL(MK) :: a13a22a33
+      REAL(MK) :: a13a23a30
+      REAL(MK) :: a13a23a31
+      REAL(MK) :: a13a23a32
+      REAL(MK) :: a13a23a33
 #endif
 
       start_subroutine("m2p_interp_mp4")
@@ -235,7 +238,7 @@
                xp2 = x0(2)-FLOOR(x0(2))
 
                DO jj = -1,2
-                  x2 = ABS(xp2 - REAL(jj,mk))
+                  x2 = ABS(xp2 - REAL(jj,MK))
                   IF(x2.LT.1.0_MK) THEN
                      wx2 = 1.0_MK - x2**2*(2.5_MK-1.5_MK*x2)
                   ELSE
@@ -244,7 +247,7 @@
                   END IF
 
                   DO ii    = - 1,2
-                     x1 = ABS(xp1 - REAL(ii,mk))
+                     x1 = ABS(xp1 - REAL(ii,MK))
                      IF(x1.LT.1.0_MK) THEN
                         wx1 =  1.0_MK - x1**2*(2.5_MK - &
      &                              1.5_MK*x1)
@@ -270,7 +273,7 @@
                xp2 = x0(2)-FLOOR(x0(2))
 
                DO jj = -1,2
-                  x2 = ABS(xp2 - REAL(jj,mk))
+                  x2 = ABS(xp2 - REAL(jj,MK))
                   IF(x2.LT.1.0_MK) THEN
                      wx2 = 1.0_MK - x2**2*(2.5_MK-1.5_MK*x2)
                   ELSE
@@ -279,7 +282,7 @@
                   END IF
 
                   DO ii    = - 1,2
-                     x1 = ABS(xp1 - REAL(ii,mk))
+                     x1 = ABS(xp1 - REAL(ii,MK))
                      IF(x1.LT.1.0_MK) THEN
                         wx1 =  1.0_MK - x1**2*(2.5_MK - &
      &                              1.5_MK*x1)
@@ -326,9 +329,9 @@
                ip23 = ip21 + 2
                ip33 = ip31 + 2
 
-               xp1 = x0(1)-REAL(ip10,mk)
-               xp2 = x0(2)-REAL(ip20,mk)
-               xp3 = x0(3)-REAL(ip30,mk)
+               xp1 = x0(1)-REAL(ip10,MK)
+               xp2 = x0(2)-REAL(ip20,MK)
+               xp3 = x0(3)-REAL(ip30,MK)
 
                x10 = xp1 + 1.0_MK
                x11 = x10 - 1.0_MK
@@ -587,9 +590,9 @@
                   ip23 = ip21 + 2
                   ip33 = ip31 + 2
 
-                  xp1 = x0(1)-REAL(ip10,mk)
-                  xp2 = x0(2)-REAL(ip20,mk)
-                  xp3 = x0(3)-REAL(ip30,mk)
+                  xp1 = x0(1)-REAL(ip10,MK)
+                  xp2 = x0(2)-REAL(ip20,MK)
+                  xp3 = x0(3)-REAL(ip30,MK)
 
                   x10 = xp1 + 1.0_MK
                   x11 = x10 - 1.0_MK
@@ -847,9 +850,9 @@
                   ip23 = ip21 + 2
                   ip33 = ip31 + 2
 
-                  xp1 = x0(1)-REAL(ip10,mk)
-                  xp2 = x0(2)-REAL(ip20,mk)
-                  xp3 = x0(3)-REAL(ip30,mk)
+                  xp1 = x0(1)-REAL(ip10,MK)
+                  xp2 = x0(2)-REAL(ip20,MK)
+                  xp3 = x0(3)-REAL(ip30,MK)
 
                   x10 = xp1 + 1.0_MK
                   x11 = x10 - 1.0_MK
@@ -1237,9 +1240,9 @@
                   ip23 = ip21 + 2
                   ip33 = ip31 + 2
 
-                  xp1 = x0(1)-REAL(ip10,mk)
-                  xp2 = x0(2)-REAL(ip20,mk)
-                  xp3 = x0(3)-REAL(ip30,mk)
+                  xp1 = x0(1)-REAL(ip10,MK)
+                  xp2 = x0(2)-REAL(ip20,MK)
+                  xp3 = x0(3)-REAL(ip30,MK)
 
                   x10 = xp1 + 1.0_MK
                   x11 = x10 - 1.0_MK
@@ -1756,9 +1759,9 @@
                   ip23 = ip21 + 2
                   ip33 = ip31 + 2
 
-                  xp1 = x0(1)-REAL(ip10,mk)
-                  xp2 = x0(2)-REAL(ip20,mk)
-                  xp3 = x0(3)-REAL(ip30,mk)
+                  xp1 = x0(1)-REAL(ip10,MK)
+                  xp2 = x0(2)-REAL(ip20,MK)
+                  xp3 = x0(3)-REAL(ip30,MK)
 
                   x10 = xp1 + 1.0_MK
                   x11 = x10 - 1.0_MK

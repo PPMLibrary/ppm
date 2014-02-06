@@ -303,13 +303,13 @@
       INTEGER                          :: iopt,ndata,ishift,idata
       LOGICAL                          :: lchar
 #if   __KIND == __SINGLE_PRECISION | __KIND == __DOUBLE_PRECISION
-      REAL(MK)   , DIMENSION(:), POINTER :: abuf => NULL()
+      REAL(MK)   , DIMENSION(:), POINTER :: abuf
 #elif __KIND == __SINGLE_PRECISION_COMPLEX| __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:), POINTER :: abuf => NULL()
+      COMPLEX(MK), DIMENSION(:), POINTER :: abuf
 #elif __KIND == __INTEGER | __KIND == __CHARACTER
-      INTEGER    , DIMENSION(:), POINTER :: abuf => NULL()
+      INTEGER    , DIMENSION(:), POINTER :: abuf
 #elif __KIND == __LOGICAL
-      LOGICAL    , DIMENSION(:), POINTER :: abuf => NULL()
+      LOGICAL    , DIMENSION(:), POINTER :: abuf
 #endif
       !-------------------------------------------------------------------------
       !  Externals

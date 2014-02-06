@@ -161,7 +161,7 @@
           !----------------------------------------------------------------------
           !  Local variables
           !----------------------------------------------------------------------
-          TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER :: temp => NULL()
+          TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER :: temp
           TYPE(WRAP(DTYPE)_arg)                        :: def
           INTEGER                                      :: len
           !----------------------------------------------------------------------

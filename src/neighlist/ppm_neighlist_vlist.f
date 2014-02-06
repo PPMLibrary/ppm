@@ -127,8 +127,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_clist), DIMENSION(:),POINTER :: cl => NULL()
-      TYPE(ppm_t_topo),               POINTER :: topo => NULL()
+      TYPE(ppm_t_clist), DIMENSION(:),POINTER :: cl
+      TYPE(ppm_t_topo),               POINTER :: topo
 
       ! timer
       REAL(MK)               :: t0

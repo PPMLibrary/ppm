@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_map_part_partial
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,13 +44,13 @@
       !!! [NOTE]
       !!! The first part of the buffer contains the on processor data.
 
-#endif 
+#endif
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -68,7 +68,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates
@@ -81,11 +81,11 @@
       LOGICAL, OPTIONAL       , INTENT(IN   ) :: ignore
       !!! Ignore unassigned particles. Default is false
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
 
       INTEGER, DIMENSION(3)          :: ldu
-      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
+      INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER                        :: i,j,k,idom,ipart,nlist1,nlist2
       INTEGER                        :: sendrank,recvrank
       INTEGER                        :: nneighsubs, jdom
@@ -95,13 +95,13 @@
       REAL(MK)                       :: t0
       LOGICAL                        :: valid
       LOGICAL                        :: ignoreunassigned
-      TYPE(ppm_t_topo)    , POINTER  :: topo => NULL()
+      TYPE(ppm_t_topo)    , POINTER  :: topo
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_partial',t0,info)
 
@@ -165,7 +165,7 @@
       END IF
 
       !-------------------------------------------------------------------------
-      !  Save the map type for the subsequent calls 
+      !  Save the map type for the subsequent calls
       !-------------------------------------------------------------------------
       ppm_map_type = ppm_param_map_partial
 
@@ -235,7 +235,7 @@
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the pointer to the buffer; for the partial map we
-      !  need entries for each communication round. Thus ldu(1) = 
+      !  need entries for each communication round. Thus ldu(1) =
       !  ncommseq(topoid) + 1
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
@@ -275,7 +275,7 @@
       nlist1 = Npart
       DO ipart=1,Npart
          ilist1(ipart)    = ipart
-         part2proc(ipart) = -1 
+         part2proc(ipart) = -1
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -371,7 +371,7 @@
             idom = ineighsubs(jdom)
             sendrank   = topo%sub2proc(idom)
             !-------------------------------------------------------------------
-            !  Loop over the remaining particles 
+            !  Loop over the remaining particles
             !-------------------------------------------------------------------
             nlist2 = 0
             DO i=1,nlist1
@@ -439,14 +439,14 @@
                DO i=1,nlist1
                   ilist1(i) = ilist2(i)
                ENDDO
-            ENDIF 
+            ENDIF
 
             !-------------------------------------------------------------------
             !  Exit if the list is empty
             !-------------------------------------------------------------------
             IF (nlist1.EQ.0) EXIT
          ENDDO
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Check if we sold all the particles. If not some of them have move
@@ -458,8 +458,8 @@
             CALL ppm_error(ppm_err_part_unass,'ppm_map_part_partial', &
      &          'Please call ppm_map_part_global',__LINE__,info)
             GOTO 9999
-         ENDIF 
-      ENDIF 
+         ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Store the number of buffer entries (this is the first)
@@ -491,7 +491,7 @@
       ppm_buffer_type(ppm_buffer_set) = ppm_kind_single
 #else
       ppm_buffer_type(ppm_buffer_set) = ppm_kind_double
-#endif 
+#endif
 
       !-------------------------------------------------------------------------
       !  (Re)allocate memory for the buffer
@@ -502,7 +502,7 @@
          CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
       ELSE
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-      ENDIF 
+      ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_map_part_partial',     &
@@ -532,7 +532,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Initialize the particle lists 
+      !  Initialize the particle lists
       !-------------------------------------------------------------------------
       nlist1 = Npart
       DO ipart=1,Npart
@@ -558,20 +558,20 @@
          !----------------------------------------------------------------------
          !  Store the processor to which we will send to
          !----------------------------------------------------------------------
-         ppm_nsendlist                = ppm_nsendlist + 1 
+         ppm_nsendlist                = ppm_nsendlist + 1
          ppm_isendlist(ppm_nsendlist) = sendrank
 
          !----------------------------------------------------------------------
          !  Store the processor to which we will recv from
          !----------------------------------------------------------------------
-         ppm_nrecvlist                = ppm_nrecvlist + 1 
+         ppm_nrecvlist                = ppm_nrecvlist + 1
          ppm_irecvlist(ppm_nrecvlist) = recvrank
- 
+
          !----------------------------------------------------------------------
          !  Only assign particles if there is any communication for this
          !  processor in this round
          !----------------------------------------------------------------------
-         IF (sendrank .GE. 0) THEN 
+         IF (sendrank .GE. 0) THEN
 
              !------------------------------------------------------------------
              !  Initialize the buffer count
@@ -580,12 +580,12 @@
              IF (ppm_dim .EQ. 2) THEN
                 DO j=1,nlist1
                    ipart = ilist1(j)
-                   IF (part2proc(ipart).EQ.sendrank) THEN  
+                   IF (part2proc(ipart).EQ.sendrank) THEN
                       !---------------------------------------------------------
                       !  increment the buffer counter
                       !---------------------------------------------------------
                       iset = iset + 1
-     
+
                       !---------------------------------------------------------
                       !  Store the id of the particle
                       !---------------------------------------------------------
@@ -631,7 +631,7 @@
              ELSE
                 DO j=1,nlist1
                    ipart = ilist1(j)
-                   IF (part2proc(ipart).EQ.sendrank) THEN  
+                   IF (part2proc(ipart).EQ.sendrank) THEN
                       !---------------------------------------------------------
                       !  increment the buffer counter
                       !---------------------------------------------------------
@@ -747,7 +747,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_part_partial',t0,info)

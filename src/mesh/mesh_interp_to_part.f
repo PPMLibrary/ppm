@@ -85,15 +85,14 @@
       ! aliases
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
-      TYPE(ppm_t_topo)     , POINTER         :: topo => NULL()
-      CLASS(ppm_t_subpatch_),POINTER         :: p    => NULL()
+      TYPE(ppm_t_topo)     , POINTER         :: topo
+      CLASS(ppm_t_subpatch_),POINTER         :: p
 
-      REAL(MK) , DIMENSION(:      ) , POINTER        :: up_1d => NULL()
-      REAL(MK) , DIMENSION(:,:    ) , POINTER        :: up_2d => NULL()
-      REAL(MK) , DIMENSION(:,:    ) , POINTER        :: dummy_2d => NULL()
-      REAL(MK) , DIMENSION(:,:,:  ) , POINTER        :: dummy_3d => NULL()
-      REAL(MK) , DIMENSION(:,:,:,:) , POINTER        :: dummy_4d => NULL()
-
+      REAL(MK) , DIMENSION(:      ) , POINTER :: up_1d => NULL()
+      REAL(MK) , DIMENSION(:,:    ) , POINTER :: up_2d => NULL()
+      REAL(MK) , DIMENSION(:,:    ) , POINTER :: dummy_2d => NULL()
+      REAL(MK) , DIMENSION(:,:,:  ) , POINTER :: dummy_3d => NULL()
+      REAL(MK) , DIMENSION(:,:,:,:) , POINTER :: dummy_4d => NULL()
 
       start_subroutine("m2p")
 
@@ -122,7 +121,7 @@
       IF(Np.EQ.0) GOTO 9999
 
       check_associated(<#this%subpatch#>,&
-          "Mesh not allocated. Call Mesh%create() first?")
+      "Mesh not allocated. Call Mesh%create() first?")
 
       topo => ppm_topo(this%topoid)%t
 

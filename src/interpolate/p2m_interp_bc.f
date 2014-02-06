@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   p2m_interp_bc
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -56,7 +56,7 @@
 #endif
 #endif
 #endif
-     !!! Apply boundary conditions in Particle to mesh interpolation 
+     !!! Apply boundary conditions in Particle to mesh interpolation
      !!!
       USE ppm_module_error
       USE ppm_module_alloc
@@ -104,15 +104,13 @@
       !------------------------------------------------------------------------!
       !  Local variables
       !------------------------------------------------------------------------!
-      INTEGER                                :: i,j,k,l
-      INTEGER                                :: xlo,ylo,zlo,xhi,yhi,zhi
-      INTEGER, DIMENSION(6)                  :: bcdef
-      ! aliases
-      CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
+      INTEGER :: i,j,k,l
+      INTEGER :: xlo,ylo,zlo,xhi,yhi,zhi
 
+      ! aliases
+      CLASS(ppm_t_subpatch_), POINTER :: p
 
       start_subroutine("p2m_interp_bc")
-
 
       !  loop over subpatches
       p => Mesh%subpatch%begin()
@@ -148,7 +146,7 @@
             IF (p%bc(2).GE.0) THEN
                xlo = p%nnodes(1) - p%ghostsize(2)
                ylo = 1
-               xhi = p%nnodes(1) 
+               xhi = p%nnodes(1)
                yhi = p%nnodes(2)
                SELECT CASE(p2m_bcdef(2))
                CASE(ppm_param_bcdef_symmetry)
@@ -192,7 +190,7 @@
             IF (p%bc(4).GE.0) THEN
                xlo = 1
                ylo = p%nnodes(2) - p%ghostsize(4)
-               xhi = p%nnodes(1) 
+               xhi = p%nnodes(1)
                yhi = p%nnodes(2)
                SELECT CASE(p2m_bcdef(4))
                CASE(ppm_param_bcdef_symmetry)
@@ -241,7 +239,7 @@
             IF (p%bc(2).GE.0) THEN
                   xlo = p%nnodes(1) - p%ghostsize(2)
                   ylo = 1
-                  xhi = p%nnodes(1) 
+                  xhi = p%nnodes(1)
                   yhi = p%nnodes(2)
                   SELECT CASE(p2m_bcdef(2))
                   CASE(ppm_param_bcdef_symmetry)
@@ -351,7 +349,7 @@
                xlo = p%nnodes(1) - p%ghostsize(2)
                ylo = 1
                zlo = 1
-               xhi = p%nnodes(1) 
+               xhi = p%nnodes(1)
                yhi = p%nnodes(2)
                zhi = p%nnodes(3)
                SELECT CASE(p2m_bcdef(2))
@@ -407,7 +405,7 @@
                xlo = 1
                ylo = p%nnodes(2) - p%ghostsize(4)
                zlo = 1
-               xhi = p%nnodes(1) 
+               xhi = p%nnodes(1)
                yhi = p%nnodes(2)
                zhi = p%nnodes(3)
                SELECT CASE(p2m_bcdef(4))
@@ -463,7 +461,7 @@
                xlo = 1
                ylo = 1
                zlo = p%nnodes(3) - p%ghostsize(6)
-               xhi = p%nnodes(1) 
+               xhi = p%nnodes(1)
                yhi = p%nnodes(2)
                zhi = p%nnodes(3)
                SELECT CASE(p2m_bcdef(6))
@@ -524,7 +522,7 @@
                   xlo = p%nnodes(1) - p%ghostsize(2)
                   ylo = 1
                   zlo = 1
-                  xhi = p%nnodes(1) 
+                  xhi = p%nnodes(1)
                   yhi = p%nnodes(2)
                   zhi = p%nnodes(3)
                   SELECT CASE(p2m_bcdef(2))
@@ -588,7 +586,7 @@
                   xlo = 1
                   ylo = p%nnodes(2) - p%ghostsize(4)
                   zlo = 1
-                  xhi = p%nnodes(1) 
+                  xhi = p%nnodes(1)
                   yhi = p%nnodes(2)
                   zhi = p%nnodes(3)
                   SELECT CASE(p2m_bcdef(4))
@@ -652,7 +650,7 @@
                   xlo = 1
                   ylo = 1
                   zlo = p%nnodes(3) - p%ghostsize(6)
-                  xhi = p%nnodes(1) 
+                  xhi = p%nnodes(1)
                   yhi = p%nnodes(2)
                   zhi = p%nnodes(3)
                   SELECT CASE(p2m_bcdef(6))
@@ -681,7 +679,7 @@
                   END SELECT
             END IF
 #endif
-#endif 
+#endif
 
           p => Mesh%subpatch%next()
         ENDDO subpatch       ! loop over subpatches

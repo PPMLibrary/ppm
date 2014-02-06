@@ -90,10 +90,10 @@
       INTEGER                                  :: ip,ndim
       INTEGER                                  :: nb_part
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
-      CLASS(ppm_t_main_abstr),POINTER          :: abstr=> NULL()
-      CLASS(ppm_t_field_),   POINTER           :: field=> NULL()
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
+      CLASS(ppm_t_subpatch_),POINTER           :: p
+      CLASS(ppm_t_main_abstr),POINTER          :: abstr
+      CLASS(ppm_t_field_),   POINTER           :: field
+      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop
 
       start_subroutine("ppm_remesh")
 
@@ -275,33 +275,33 @@
         DO WHILE (ASSOCIATED(abstr))
           SELECT TYPE(field=>abstr)
           CLASS IS (ppm_t_field_)
-          IF (field%lda.EQ.1) THEN
-          CALL this%get_field(field,wp_s,info)
-          or_fail("interp_to_mesh")
-          ELSE
-          CALL this%get_field(field,wp_v,info)
-          or_fail("interp_to_mesh")
-          ENDIF
+             IF (field%lda.EQ.1) THEN
+                CALL this%get_field(field,wp_s,info)
+                or_fail("interp_to_mesh")
+             ELSE
+                CALL this%get_field(field,wp_v,info)
+                or_fail("interp_to_mesh")
+             ENDIF
 
-          ip = 0
-          IF (field%lda.EQ.1) THEN
-              !Scalar field
-              IF (.NOT. PRESENT(cutoff_val)) THEN
-                  IF (ndim.EQ.2) THEN
+             ip = 0
+             IF (field%lda.EQ.1) THEN
+                !Scalar field
+                IF (.NOT. PRESENT(cutoff_val)) THEN
+                   IF (ndim.EQ.2) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j)
                           for real
                               ip = ip + 1
                               wp_s(ip) = V_n
                       end foreach
-                  ELSE IF (ndim.EQ.3) THEN
+                   ELSE IF (ndim.EQ.3) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) indices(i,j,k)
                           for real
                               ip = ip + 1
                               wp_s(ip) = V_n
                       end foreach
-                  ENDIF
-              ELSE
-                  IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
+                   ENDIF
+                ELSE
+                   IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
@@ -310,7 +310,7 @@
                                     wp_s(ip) = V_n
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
+                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field,cutoff_field) indices(i,j,k)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
@@ -319,7 +319,7 @@
                                     wp_s(ip) = V_n
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
+                   ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .ge. cutoff_val(1) .and. &
@@ -328,7 +328,7 @@
                                     wp_s(ip) = V_n
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
+                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(V=field) vec_fields(cutoff_field) indices(i,j,k)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .ge. cutoff_val(1) .and. &
@@ -337,25 +337,25 @@
                                     wp_s(ip) = V_n
                                 endif
                           end foreach
-                  ENDIF
-              ENDIF
-          ELSE !Vector field
-              IF (.NOT. PRESENT(cutoff_val)) THEN
-                  IF (ndim.EQ.2) THEN
+                   ENDIF
+                ENDIF
+             ELSE !Vector field
+                IF (.NOT. PRESENT(cutoff_val)) THEN
+                   IF (ndim.EQ.2) THEN
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field) indices(i,j)
                           for real
                               ip = ip + 1
                               wp_v(1:field%lda,ip) = V_n(1:field%lda)
                       end foreach
-                  ELSE IF (ndim.EQ.3) THEN
+                   ELSE IF (ndim.EQ.3) THEN
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field) indices(i,j,k)
                           for real
                               ip = ip + 1
                               wp_v(1:field%lda,ip) = V_n(1:field%lda)
                       end foreach
-                  ENDIF
-              ELSE
-                  IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
+                   ENDIF
+                ELSE
+                   IF (ndim.EQ.2 .and. cutoff_field%lda.eq.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) vec_fields(V=field) indices(i,j)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
@@ -364,7 +364,7 @@
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
+                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.eq.1) THEN
                       foreach n in equi_mesh(Mesh) with sca_fields(cutoff_field) vec_fields(V=field) indices(i,j,k)
                           for real
                                 if (cutoff_field_n .ge. cutoff_val(1) .and. &
@@ -373,7 +373,7 @@
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
+                   ELSE IF (ndim.EQ.2 .and. cutoff_field%lda.gt.1) THEN
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field, cutoff_field) indices(i,j)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j)) .ge. cutoff_val(1) .and. &
@@ -382,7 +382,7 @@
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 endif
                           end foreach
-                  ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
+                   ELSE IF (ndim.EQ.3 .and. cutoff_field%lda.gt.1) THEN
                       foreach n in equi_mesh(Mesh) with vec_fields(V=field, cutoff_field) indices(i,j,k)
                           for real
                                 if (norm(cutoff_field_n(1:cutoff_field%lda,i,j,k)) .ge. cutoff_val(1) .and. &
@@ -391,11 +391,11 @@
                                     wp_v(1:field%lda,ip) = V_n(1:field%lda)
                                 endif
                           end foreach
-                  ENDIF
-              ENDIF
-            ENDIF !vector field
-            END SELECT
-            abstr => this%field_ptr%next()
+                   ENDIF
+                ENDIF
+             ENDIF !vector field
+          END SELECT
+          abstr => this%field_ptr%next()
         ENDDO
       ENDIF
 

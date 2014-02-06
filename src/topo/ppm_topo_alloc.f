@@ -80,7 +80,7 @@
       INTEGER                   :: topo_idx
       !!! local variable holding the index in the ppm_topo array with the
       !!! topology that should be (re)allocated
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       TYPE(ppm_t_ptr_topo), DIMENSION(:), POINTER :: temptopo => NULL()
       INTEGER                   :: i
       REAL(ppm_kind_double)     :: t0

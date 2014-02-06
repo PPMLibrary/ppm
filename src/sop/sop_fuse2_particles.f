@@ -69,15 +69,15 @@
           REAL(MK)                               :: dist,lev
           INTEGER                                :: del_part
           REAL(MK)                               :: threshold
-          REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: rcp => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: D => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde => NULL()
+          REAL(MK),     DIMENSION(:,:),POINTER   :: xp
+          REAL(MK),     DIMENSION(:),  POINTER   :: rcp
+          REAL(MK),     DIMENSION(:),  POINTER   :: D
+          REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde
           INTEGER                                :: Npart, close_neigh
-          INTEGER,      DIMENSION(:),  POINTER   :: nvlist => NULL()
-          INTEGER,      DIMENSION(:,:),POINTER   :: vlist => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: level => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: wp => NULL()
+          INTEGER,      DIMENSION(:),  POINTER   :: nvlist
+          INTEGER,      DIMENSION(:,:),POINTER   :: vlist
+          REAL(MK),     DIMENSION(:),  POINTER   :: level
+          REAL(MK),     DIMENSION(:),  POINTER   :: wp
 
           INTEGER,DIMENSION(:),POINTER           :: fuse_part
           INTEGER,DIMENSION(:),POINTER           :: nb_neigh

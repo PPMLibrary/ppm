@@ -76,7 +76,6 @@
 
          PRIVATE :: rbuf_s,rbuf_d,rbuf_sc,rbuf_dc,rbuf_i,rbuf_l
 
-
 #ifdef __MPI
          REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: abuffer_s => NULL()
          REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: abuffer_d => NULL()
@@ -84,6 +83,7 @@
          COMPLEX(ppm_kind_double), DIMENSION(:), POINTER :: abuffer_dc => NULL()
          INTEGER                 , DIMENSION(:), POINTER :: abuffer_i => NULL()
          LOGICAL                 , DIMENSION(:), POINTER :: abuffer_l => NULL()
+
          REAL(ppm_kind_single)   , DIMENSION(:), POINTER :: bbuffer_s => NULL()
          REAL(ppm_kind_double)   , DIMENSION(:), POINTER :: bbuffer_d => NULL()
          COMPLEX(ppm_kind_single), DIMENSION(:), POINTER :: bbuffer_sc => NULL()
@@ -96,7 +96,6 @@
          PRIVATE :: bbuffer_s,bbuffer_d,bbuffer_sc,bbuffer_dc
          PRIVATE :: bbuffer_i,bbuffer_l
 #endif
-
 
          !----------------------------------------------------------------------
          !  Define interface to ppm_io

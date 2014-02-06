@@ -102,19 +102,19 @@
       !  Local variables
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-      REAL(ppm_kind_single)   , DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      REAL(ppm_kind_single)   , DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __DOUBLE_PRECISION
-      REAL(ppm_kind_double)   , DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      REAL(ppm_kind_double)   , DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __SINGLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_single), DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      COMPLEX(ppm_kind_single), DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __INTEGER
-      INTEGER                 , DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      INTEGER                 , DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __LONGINT
-      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      INTEGER(ppm_kind_int64) , DIMENSION(:,:,:,:,:), POINTER :: work
 #elif __KIND == __LOGICAL
-      LOGICAL                 , DIMENSION(:,:,:,:,:), POINTER :: work => NULL()
+      LOGICAL                 , DIMENSION(:,:,:,:,:), POINTER :: work
 #endif
       INTEGER, DIMENSION(5) :: lda,ldb,ldc,ldd,ldl_new,ldu_new
       INTEGER               :: i,j,k,l,m

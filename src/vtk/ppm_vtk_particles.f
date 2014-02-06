@@ -35,7 +35,7 @@
 
            CLASS(DTYPE(ppm_t_part_prop)_),POINTER :: prop => NULL()
            CLASS(ppm_t_discr_data),       POINTER :: discr_data => NULL()
-           CLASS(ppm_t_main_abstr),       POINTER :: el => NULL()
+           CLASS(ppm_t_main_abstr),       POINTER :: el
 
            start_subroutine("ppm_vtk_particles")
 

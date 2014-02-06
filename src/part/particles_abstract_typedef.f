@@ -48,16 +48,16 @@
           !yaser: problem solved, now you can call it
           !this%checktype(wp,info) and it works perfectly
           GENERIC :: checktype => &
-              DTYPE(data_1d_i_check),&
-              DTYPE(data_2d_i_check),&
-              DTYPE(data_1d_li_check),&
-              DTYPE(data_2d_li_check),&
-              DTYPE(data_1d_r_check),&
-              DTYPE(data_2d_r_check),&
-              DTYPE(data_1d_c_check),&
-              DTYPE(data_2d_c_check),&
-              DTYPE(data_1d_l_check),&
-              DTYPE(data_2d_l_check)
+          DTYPE(data_1d_i_check), &
+          DTYPE(data_2d_i_check), &
+          DTYPE(data_1d_li_check),&
+          DTYPE(data_2d_li_check),&
+          DTYPE(data_1d_r_check), &
+          DTYPE(data_2d_r_check), &
+          DTYPE(data_1d_c_check), &
+          DTYPE(data_2d_c_check), &
+          DTYPE(data_1d_l_check), &
+          DTYPE(data_2d_l_check)
 
       END TYPE DTYPE(ppm_t_part_prop)_
 minclude ppm_create_collection(DTYPE(part_prop)_,DTYPE(part_prop)_,generate="abstract")
@@ -257,7 +257,7 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
 
           PROCEDURE(DTYPE(part_neigh_create)_),      DEFERRED :: create_neighlist
           PROCEDURE(DTYPE(part_set_cutoff)_),        DEFERRED :: set_cutoff
-          PROCEDURE(DTYPE(part_neigh_destroy)_),     DEFERRED:: destroy_neighlist
+          PROCEDURE(DTYPE(part_neigh_destroy)_),     DEFERRED :: destroy_neighlist
           PROCEDURE(DTYPE(part_neighlist)_),         DEFERRED :: comp_neighlist
           PROCEDURE(DTYPE(get_nvlist)_),             DEFERRED :: get_nvlist
           PROCEDURE(DTYPE(get_vlist)_),              DEFERRED :: get_vlist

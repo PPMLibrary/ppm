@@ -131,8 +131,10 @@
       CHARACTER(ppm_char)   :: mesg
       CHARACTER(ppm_char)   :: caller = 'map_part_pop'
       REAL(MK)              :: t0
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_recvbuffer => NULL()
+
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+
+      REAL(MK), DIMENSION(:), POINTER :: ppm_recvbuffer
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

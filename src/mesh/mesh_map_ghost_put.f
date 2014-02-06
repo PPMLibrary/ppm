@@ -30,7 +30,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
 
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: i,j,lb,ub

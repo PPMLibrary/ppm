@@ -110,7 +110,7 @@
       REAL(MK)                          :: comm_cost
       INTEGER, DIMENSION(ppm_dim)       :: ldl,ldu
       INTEGER, DIMENSION(3,1), TARGET   :: ndummy
-      INTEGER, DIMENSION(:,:), POINTER  :: nnodes => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: nnodes
       INTEGER                           :: i,j,k,proc
       INTEGER                           :: iopt,minproc,maxproc
       LOGICAL                           :: valid
@@ -119,7 +119,7 @@
       REAL(MK), DIMENSION(:), POINTER   :: sendcost => NULL()
       REAL(MK), DIMENSION(:), POINTER   :: proccost => NULL()
 #endif
-      TYPE(ppm_t_topo)      , POINTER   :: topo     => NULL()
+      TYPE(ppm_t_topo)      , POINTER   :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

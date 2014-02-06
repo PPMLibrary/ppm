@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_globalstored
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -62,7 +62,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
@@ -78,7 +78,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
-      !!! Topology ID of source 
+      !!! Topology ID of source
       !!!
       !!! CAUTION: used to be target
       INTEGER                 , INTENT(IN   ) :: target_topoid
@@ -90,7 +90,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3)            :: ldu
       INTEGER                          :: i,j,idom
@@ -98,10 +98,10 @@
       CHARACTER(ppm_char)              :: mesg
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -125,12 +125,12 @@
 
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          mesh => t
+         mesh => t
       END SELECT
 
       SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          target_mesh => t
+         target_mesh => t
       END SELECT
 
 
@@ -164,7 +164,7 @@
       !  Point the global mesh sendlists to the precomputed ones
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
-      
+
       ldu(1) = 1
       IF (ASSOCIATED(ppm_mesh_isendfromsub)) THEN
          CALL ppm_alloc(ppm_mesh_isendfromsub,ldu,iopt,info)
@@ -176,7 +176,7 @@
          ENDIF
       END IF
       ppm_mesh_isendfromsub => mesh%mapping%isendfromsub
-      
+
       ldu(2) = 1
       IF (ASSOCIATED(ppm_mesh_isendblkstart)) THEN
          CALL ppm_alloc(ppm_mesh_isendblkstart,ldu,iopt,info)
@@ -188,7 +188,7 @@
          ENDIF
       END IF
       ppm_mesh_isendblkstart => mesh%mapping%isendblkstart
-      
+
       IF (ASSOCIATED(ppm_mesh_isendblksize)) THEN
          CALL ppm_alloc(ppm_mesh_isendblksize,ldu,iopt,info)
          IF (info .NE. 0) THEN
@@ -199,13 +199,13 @@
          ENDIF
       END IF
       ppm_mesh_isendblksize => mesh%mapping%isendblksize
-      
-      
+
+
       !-------------------------------------------------------------------------
       !  Point the global mesh recvlists to the precomputed ones
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
-      
+
       ldu(1) = 1
       IF (ASSOCIATED(ppm_mesh_irecvtosub)) THEN
          CALL ppm_alloc(ppm_mesh_irecvtosub,ldu,iopt,info)
@@ -217,7 +217,7 @@
          ENDIF
       END IF
       ppm_mesh_irecvtosub => mesh%mapping%irecvtosub
-      
+
       ldu(2) = 1
       IF (ASSOCIATED(ppm_mesh_irecvblkstart)) THEN
          CALL ppm_alloc(ppm_mesh_irecvblkstart,ldu,iopt,info)
@@ -229,7 +229,7 @@
          ENDIF
       END IF
       ppm_mesh_irecvblkstart => mesh%mapping%irecvblkstart
-      
+
       IF (ASSOCIATED(ppm_mesh_irecvblksize)) THEN
          CALL ppm_alloc(ppm_mesh_irecvblksize,ldu,iopt,info)
          IF (info .NE. 0) THEN
@@ -256,7 +256,7 @@
          ENDIF
       END IF
       ppm_isendlist => mesh%mapping%isendlist
-      
+
       IF (ASSOCIATED(ppm_irecvlist)) THEN
          CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
          IF (info .NE. 0) THEN
@@ -267,7 +267,7 @@
          ENDIF
       END IF
       ppm_irecvlist => mesh%mapping%irecvlist
-      
+
       IF (ASSOCIATED(ppm_psendbuffer)) THEN
          CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
          IF (info .NE. 0) THEN
@@ -278,7 +278,7 @@
          ENDIF
       END IF
       ppm_psendbuffer => mesh%mapping%psendbuffer
-      
+
       IF (ASSOCIATED(ppm_precvbuffer)) THEN
          CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
          IF (info .NE. 0) THEN
@@ -289,15 +289,15 @@
          ENDIF
       END IF
       ppm_precvbuffer => mesh%mapping%precvbuffer
-      
+
       ppm_nsendlist = mesh%mapping%nsendlist
       ppm_nrecvlist = mesh%mapping%nrecvlist
-      
+
       !-------------------------------------------------------------------------
       !  Reset the number of buffer entries
       !-------------------------------------------------------------------------
       ppm_buffer_set = 0
-      
+
       !-------------------------------------------------------------------------
       !  Reset the sizes of buffer
       !-------------------------------------------------------------------------
@@ -306,7 +306,7 @@
 
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_field_globalstored',t0,info)

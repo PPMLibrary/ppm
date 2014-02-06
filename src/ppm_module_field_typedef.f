@@ -120,7 +120,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           CLASS(ppm_t_field)               :: this
           INTEGER,           INTENT(  OUT) :: info
 
-          CLASS(ppm_t_discr_info_), POINTER :: tdi => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: tdi
 
           start_subroutine("field_destroy")
 
@@ -189,7 +189,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           CLASS(ppm_t_discr_info)               :: this
           INTEGER,                INTENT(  OUT) :: info
 
-          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat => NULL()
+          CLASS(ppm_t_subpatch_data_), POINTER :: subpdat
 
           start_subroutine("discr_info_destroy")
 
@@ -291,14 +291,14 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! Pointer to the new data and bookkeeping information for the mesh
           !!! or particle set on which this field has been discretized.
 
-          CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
-          CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
+!           CLASS(ppm_t_subpatch_),     POINTER :: p => NULL()
+!           CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
           INTEGER                             :: dtype,p_idx
           LOGICAL                             :: lghosts
           CLASS(ppm_t_mesh_discr_data_),POINTER :: mddata => NULL()
           !CLASS(ppm_t_part_prop_d_),    POINTER :: pddata => NULL()
           CLASS(ppm_t_discr_data),    POINTER :: pddata => NULL()
-          CLASS(ppm_t_main_abstr),      POINTER :: el => NULL()
+          CLASS(ppm_t_main_abstr),      POINTER :: el
 
           start_subroutine("field_discretize_on")
 
@@ -516,7 +516,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! time steps are done by the time integrator.
           INTEGER                                      :: p_idx
 
-          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           start_function("field_get_pid")
 
@@ -557,7 +557,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! The data management and book-keeping between the data of different
           !!! time steps are done by the time integrator.
           !!! TODO
-          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           start_subroutine("field_get_discr")
 
@@ -599,7 +599,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           !!! TODO
           LOGICAL                                                    :: res
 
-          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           start_function("field_is_discretized_on")
 

@@ -59,14 +59,14 @@
           END INTERFACE
 
           ! local variables
-          REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: rcp => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: D => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: wp => NULL()
-          REAL(MK),     DIMENSION(:),  POINTER   :: level => NULL()
+          REAL(MK),     DIMENSION(:,:),POINTER   :: xp
+          REAL(MK),     DIMENSION(:),  POINTER   :: rcp
+          REAL(MK),     DIMENSION(:),  POINTER   :: D
+          REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde
+          REAL(MK),     DIMENSION(:),  POINTER   :: wp
+          REAL(MK),     DIMENSION(:),  POINTER   :: level
           INTEGER                                :: Npart
-          INTEGER,      DIMENSION(:),  POINTER   :: nvlist => NULL()
+          INTEGER,      DIMENSION(:),  POINTER   :: nvlist
           INTEGER                                :: ip,iq,ineigh,i,di
           CHARACTER(LEN=256)                     :: cbuf
           CHARACTER(LEN=256)                     :: caller='sop_spawn_particles'
@@ -84,7 +84,7 @@
           !!! number of new particles that are generated locally
           INTEGER,DIMENSION(:),POINTER           :: fuse_part
           INTEGER,DIMENSION(:),POINTER           :: nb_neigh
-          REAL(MK),DIMENSION(ppm_dim,Particles%Npart+1:Particles%Mpart)  :: xp_g
+          REAL(MK), DIMENSION(ppm_dim,Particles%Npart+1:Particles%Mpart) :: xp_g
           REAL(MK)                               :: dist
           REAL(MK),DIMENSION(3,12)               :: default_stencil
 
@@ -395,13 +395,13 @@
           INTEGER,                              INTENT(  OUT)   :: info
           !local variables
 
-          REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
-          INTEGER,DIMENSION(:),    POINTER                      :: nvlist=>NULL()
-          INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
-          INTEGER                                               :: ip,iq,ineigh
-          LOGICAL,DIMENSION(4)                                  :: needs_neigh_l
-          REAL(MK),DIMENSION(:), POINTER                        :: D=>NULL()
-          !REAL(MK),DIMENSION(:), POINTER                        :: Dtilde=>NULL()
+          REAL(MK),DIMENSION(:,:), POINTER :: xp
+          INTEGER,DIMENSION(:),    POINTER :: nvlist
+          INTEGER,DIMENSION(:,:),  POINTER :: vlist
+          INTEGER                          :: ip,iq,ineigh
+          LOGICAL,DIMENSION(4)             :: needs_neigh_l
+          REAL(MK),DIMENSION(:), POINTER   :: D
+          !REAL(MK),DIMENSION(:), POINTER  :: Dtilde
 
           info = 0
           nvlist => Particles%nvlist
@@ -471,12 +471,12 @@
           TYPE(DTYPE(ppm_t_particles)), POINTER,INTENT(INOUT)   :: Particles
           !local variables
 
-          REAL(MK),DIMENSION(:,:), POINTER                      :: xp=>NULL()
-          INTEGER,DIMENSION(:,:),  POINTER                      :: vlist=>NULL()
-          INTEGER                                               :: ip,iq,ineigh
-          INTEGER                                               :: info
-          CHARACTER(LEN=ppm_char)                               :: cbuf
-          CHARACTER(LEN=ppm_char)              :: caller = 'ppm_check_duplicates'
+          REAL(MK),DIMENSION(:,:), POINTER :: xp
+          INTEGER,DIMENSION(:,:),  POINTER :: vlist
+          INTEGER                          :: ip,iq,ineigh
+          INTEGER                          :: info
+          CHARACTER(LEN=ppm_char)          :: cbuf
+          CHARACTER(LEN=ppm_char)          :: caller = 'ppm_check_duplicates'
 
 
           info = 0
@@ -512,7 +512,6 @@
 
       SUBROUTINE DTYPE(check_nn)(Particles,opts,info)
 
-
           IMPLICIT NONE
 
           DEFINE_MK()
@@ -522,20 +521,20 @@
           INTEGER,                              INTENT(  OUT)   :: info
           !local variables
 
-          REAL(MK),DIMENSION(:,:), POINTER      :: xp=>NULL()
-          INTEGER,DIMENSION(:),    POINTER      :: nvlist=>NULL()
-          INTEGER,DIMENSION(:,:),  POINTER      :: vlist=>NULL()
+          REAL(MK),DIMENSION(:,:), POINTER      :: xp
+          INTEGER,DIMENSION(:),    POINTER      :: nvlist
+          INTEGER,DIMENSION(:,:),  POINTER      :: vlist
           INTEGER                               :: ip,iq,ineigh
-          REAL(MK),DIMENSION(:), POINTER        :: D=>NULL()
-          REAL(MK),DIMENSION(:), POINTER        :: Dtilde=>NULL()
+          REAL(MK),DIMENSION(:), POINTER        :: D
+          REAL(MK),DIMENSION(:), POINTER        :: Dtilde
           REAL(MK)                              :: rr
           REAL(MK)                              :: nn,max_nn,avg_nn
           INTEGER                               :: close_neigh
           INTEGER                               :: very_close_neigh
           CHARACTER(LEN=ppm_char)               :: cbuf
           CHARACTER(LEN=ppm_char)               :: caller = 'sop_check_nn'
-          INTEGER,DIMENSION(:),POINTER          :: fuse_part => NULL()
-          INTEGER,DIMENSION(:),POINTER          :: nb_neigh => NULL()
+          INTEGER,DIMENSION(:),POINTER          :: fuse_part
+          INTEGER,DIMENSION(:),POINTER          :: nb_neigh
           INTEGER                               :: nb_close_theo, nb_fuse_neigh
 
           info = 0

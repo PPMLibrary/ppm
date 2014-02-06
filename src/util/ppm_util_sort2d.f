@@ -72,7 +72,7 @@
       !!! Minimum extent of cell mesh
       INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm
       !!! Number of cells in each direction
-      INTEGER , DIMENSION(:)  , POINTER       :: npbx
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
       !!! Number of particles in each box
       INTEGER                 , INTENT(IN   ) :: Np
       !!! Number of particles
@@ -83,7 +83,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), POINTER      :: work => NULL()
+      REAL(MK), DIMENSION(:,:), ALLOCATABLE :: work
       ! timer
       REAL(MK)                               :: t0
       !  counters
@@ -101,6 +101,8 @@
       INTEGER, DIMENSION(4)                  :: Ngl
       ! local info level
       INTEGER                                :: info2
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_sort2d'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -110,14 +112,14 @@
       !-------------------------------------------------------------------------
       ! save input info (substart will reset info to 0)
       info2 = info
-      CALL substart('ppm_util_sort2d',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -128,24 +130,8 @@
       !-------------------------------------------------------------------------
       !  Allocate memory
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      lda(1) = 2
-      lda(2) = Np
-      CALL ppm_alloc(work,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_util_sort2d',     &
-     &        'work array WORK',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      lda(1) = nbox
-      CALL ppm_alloc(npbx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_util_sort2d',     &
-     &        'number of particles per box NPBX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      ALLOCATE(work(ppm_dim,Np), STAT=info)
+      or_fail_alloc('work array WORK')
 
       !-------------------------------------------------------------------------
       !  Call ppm_util_rank2d to get the particle index arrays
@@ -157,10 +143,7 @@
 
       ! check if all particles have been ranked
       IF (info2 .GT. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_part_lost,'ppm_util_sort2d',     &
-     &        'Not all particles have been ranked',__LINE__,info)
-          GOTO 9999
+         fail('Not all particles have been ranked',ppm_error=ppm_error_error)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -189,59 +172,37 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(lpdx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort2d',     &
-     &        'particle index list LPDX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle index list LPDX')
+
       CALL ppm_alloc(lhbx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort2d',     &
-     &        'box header pointers LHBX',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(work,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort2d',     &
-     &        'work array WORK',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('box header pointers LHBX')
+
+      DEALLOCATE(work, STAT=info)
+      or_fail_dealloc('work array WORK')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_util_sort2d',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (Np .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort2d',  &
-     &            'Np must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (Nm(1) .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort2d',  &
-     &            'Nm(1) must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (Nm(2) .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort2d',  &
-     &            'Nm(2) must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          DO i=1,ppm_dim
-              IF (xmax(i) .LE. xmin(i)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_util_sort2d',  &
-     &                'xmin must be < xmax',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-          ENDDO
- 8888     CONTINUE
+        IF (Np .LT. 0) THEN
+           fail('Np must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        IF (Nm(1) .LE. 0) THEN
+           fail('Nm(1) must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        IF (Nm(2) .LE. 0) THEN
+           fail('Nm(2) must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        DO i=1,ppm_dim
+           IF (xmax(i) .LE. xmin(i)) THEN
+              fail('xmin must be < xmax',exit_point=8888,ppm_error=ppm_error_error)
+           ENDIF
+        ENDDO
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_sort2d_s

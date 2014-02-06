@@ -84,7 +84,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER  :: target_topo => NULL()
+      TYPE(ppm_t_topo), POINTER  :: target_topo
 
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER

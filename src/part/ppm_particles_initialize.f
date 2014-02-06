@@ -39,10 +39,10 @@
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(ppm_t_topo), POINTER :: topo => NULL()
+          TYPE(ppm_t_topo), POINTER :: topo
 
           REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys,len_phys
-          REAL(MK), DIMENSION(:,:), POINTER :: xp     => NULL()
+          REAL(MK), DIMENSION(:,:), POINTER :: xp
           REAL(MK), DIMENSION(:  ), POINTER :: randnb => NULL()
           REAL(MK)                          :: y,z,h
           REAL(MK)                          :: shift
@@ -68,6 +68,7 @@
           ENDIF
           IF (PRESENT(topoid)) THEN
              topo => ppm_topo(topoid)%t
+
              SELECT CASE (MK)
              CASE (ppm_kind_single)
                 min_phys = topo%min_physs

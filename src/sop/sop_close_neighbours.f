@@ -11,19 +11,19 @@
           INTEGER,                              INTENT(  OUT)   :: info
           !local variables
 
-          REAL(MK),DIMENSION(:,:), POINTER      :: xp=>NULL()
-          INTEGER,DIMENSION(:),    POINTER      :: nvlist=>NULL()
-          INTEGER,DIMENSION(:,:),  POINTER      :: vlist=>NULL()
+          REAL(MK),DIMENSION(:,:), POINTER      :: xp
+          INTEGER,DIMENSION(:),    POINTER      :: nvlist
+          INTEGER,DIMENSION(:,:),  POINTER      :: vlist
           INTEGER                               :: ip,iq,ineigh
-          REAL(MK),DIMENSION(:), POINTER        :: D=>NULL()
-          REAL(MK),DIMENSION(:), POINTER        :: Dtilde=>NULL()
+          REAL(MK),DIMENSION(:), POINTER        :: D
+          REAL(MK),DIMENSION(:), POINTER        :: Dtilde
           REAL(MK)                              :: rr
           REAL(MK)                              :: nn,max_nn,avg_nn
           INTEGER                               :: close_neigh
           INTEGER                               :: very_close_neigh
           CHARACTER(LEN=ppm_char)               :: cbuf
           CHARACTER(LEN=ppm_char)               :: caller = 'sop_close_neighbours'
-          INTEGER,DIMENSION(:),POINTER          :: nb_neigh => NULL()
+          INTEGER,DIMENSION(:),POINTER          :: nb_neigh
           INTEGER                               :: nb_close_theo, nb_fuse_neigh
 
           info = 0

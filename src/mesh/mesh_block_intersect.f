@@ -60,8 +60,6 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_subpatch),  POINTER :: p => NULL()
-
       INTEGER, DIMENSION(2)       :: ldu
       INTEGER, DIMENSION(ppm_dim) :: iblockstart,nblocksize
       INTEGER                     :: iblockstopk,k,iopt,pdim,isize,ipatch

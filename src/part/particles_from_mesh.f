@@ -71,10 +71,10 @@
       INTEGER                                  :: ip,ndim
       INTEGER                                  :: nb_part
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
-      CLASS(ppm_t_main_abstr),POINTER          :: abstr=> NULL()
-      CLASS(ppm_t_field_),   POINTER           :: field=> NULL()
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
+      CLASS(ppm_t_subpatch_),POINTER           :: p
+      CLASS(ppm_t_main_abstr),POINTER          :: abstr
+      CLASS(ppm_t_field_),   POINTER           :: field
+      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop
 
       start_subroutine("ppm_remesh")
 

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_map_part_get_sub
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -85,15 +85,15 @@
       INTEGER                             :: ipart,sendrank,recvrank
       INTEGER                             :: iopt,iset,ibuffer
       INTEGER                             :: tag1,tag2
-      INTEGER, DIMENSION(:), POINTER      :: bcdef   => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER   :: max_sub => NULL()
+      INTEGER, DIMENSION(:), POINTER      :: bcdef
+      REAL(MK), DIMENSION(:,:), POINTER   :: min_sub
+      REAL(MK), DIMENSION(:,:), POINTER   :: max_sub
       REAL(MK)                            :: t0
       LOGICAL                             :: valid
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
-      TYPE(ppm_t_topo)      , POINTER     :: topo => NULL()
+      TYPE(ppm_t_topo)      , POINTER     :: topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -102,16 +102,19 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_get_sub',t0,info)
-      bcdef => topo%bcdef(:)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
+
       topo => ppm_topo(topoid)%t
+
+      bcdef => topo%bcdef
+
       !-------------------------------------------------------------------------
       !  Now if we have only one processor skip the rest
       !-------------------------------------------------------------------------
@@ -128,11 +131,11 @@
       !  Checking precision and pointing tree data to correct variables
       !-------------------------------------------------------------------------
 #if   __KIND == __SINGLE_PRECISION
-      min_sub      => topo%min_subs
-      max_sub      => topo%max_subs
+      min_sub => topo%min_subs
+      max_sub => topo%max_subs
 #else
-      min_sub      => topo%min_subd
-      max_sub      => topo%max_subd
+      min_sub => topo%min_subd
+      max_sub => topo%max_subd
 #endif
 
       !-------------------------------------------------------------------------

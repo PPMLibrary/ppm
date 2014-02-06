@@ -70,11 +70,15 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                       :: t0
+      TYPE(ppm_t_topo), POINTER :: topo
+
+      REAL(MK) :: t0
+
+      INTEGER, DIMENSION(:), POINTER :: bcdef
       INTEGER                        :: ipart,idom,j,ison
-      LOGICAL                        :: valid
-      INTEGER, DIMENSION(:), POINTER :: bcdef => NULL()
-      TYPE(ppm_t_topo)     , POINTER :: topo  => NULL()
+
+      LOGICAL :: valid
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

@@ -71,7 +71,7 @@
           REAL(MK)                               :: dist,lev
           INTEGER                                :: del_part
           REAL(MK)                               :: threshold
-          REAL(MK),     DIMENSION(:,:),POINTER   :: xp => NULL()
+          REAL(MK),     DIMENSION(:,:),POINTER   :: xp
           REAL(MK),     DIMENSION(:),  POINTER   :: rcp => NULL()
           REAL(MK),     DIMENSION(:),  POINTER   :: D => NULL()
           REAL(MK),     DIMENSION(:),  POINTER   :: Dtilde => NULL()
