@@ -337,7 +337,7 @@
 
           END SELECT
 
-          xp=>NULL()
+          xp => NULL()
 
           ! (global) average interparticle spacing
           Pc%h_avg = (PRODUCT(len_phys)/REAL(Npart_global))**(1./REAL(ppm_dim))

@@ -113,12 +113,12 @@
         PUBLIC :: arg, arg_group, parse_args, disable_help, disable_ctrl, &
              &    set_ctrl_name,                                          &
 #ifdef __F2003
-             &    integer_func, longint_func, single_func, double_func,   &
-             &    logical_func, string_func, complex_func, dcomplex_func, &
-             &    integer_array_func, longint_array_func,                 &
-             &    single_array_func, double_array_func,                   &
-             &    logical_array_func, string_array_func,                  &
-             &    complex_array_func, dcomplex_array_func,                &
+             &    INTEGER_func, LONGINT_func, SINGLE_func, DOUBLE_func,   &
+             &    LOGICAL_func, STRING_func, COMPLEX_func, DCOMPLEX_func, &
+             &    INTEGER_ARRAY_func, LONGINT_ARRAY_func,                 &
+             &    SINGLE_ARRAY_func, DOUBLE_ARRAY_func,                   &
+             &    LOGICAL_ARRAY_func, STRING_ARRAY_func,                  &
+             &    COMPLEX_ARRAY_func, DCOMPLEX_ARRAY_func,                &
 #endif
              &    reset, add_cmd, ctrl_file_name, break_help,             &
              &    find_arg, find_flag, arg_count,                         &
@@ -1175,11 +1175,11 @@
           CHARACTER(LEN=*), OPTIONAL, INTENT(IN   ) :: value
           !!! Optional value to append.
 
-          INTEGER, POINTER, DIMENSION(:) :: temp_l => NULL()
+          INTEGER, DIMENSION(:), POINTER :: temp_l
           INTEGER                        :: inc
           INTEGER                        :: l
 
-          CHARACTER(LEN=256), POINTER, DIMENSION(:) :: temp_a => NULL()
+          CHARACTER(LEN=256), DIMENSION(:), POINTER :: temp_a
 
           in_test = .TRUE.
           inc = 1
@@ -1317,13 +1317,13 @@
           CHARACTER(LEN=*), INTENT(IN   ) :: name
           !!! Group name
 
-          INTEGER, DIMENSION(:), POINTER :: temp_s => NULL()
-          INTEGER, DIMENSION(:), POINTER :: temp_m => NULL()
+          INTEGER, DIMENSION(:), POINTER :: temp_s
+          INTEGER, DIMENSION(:), POINTER :: temp_m
 
-          CHARACTER(LEN=256), DIMENSION(:), POINTER :: temp_g => NULL()
+          CHARACTER(LEN=256), DIMENSION(:), POINTER :: temp_g
 
-          LOGICAL, DIMENSION(:), POINTER :: temp_c => NULL()
-          LOGICAL, DIMENSION(:), POINTER :: temp_a => NULL()
+          LOGICAL, DIMENSION(:), POINTER :: temp_c
+          LOGICAL, DIMENSION(:), POINTER :: temp_a
 
           groups_i = groups_i + 1
           IF (.NOT. ASSOCIATED(groups)) THEN

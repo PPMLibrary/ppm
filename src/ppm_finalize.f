@@ -56,9 +56,13 @@
       INTEGER, DIMENSION(1) :: lda
       INTEGER               :: iopt
       INTEGER               :: istat
+
       REAL(ppm_kind_double) :: t0
+
       LOGICAL               :: isopen
+
       CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: caller='ppm_finalize'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -66,19 +70,16 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_finalize',t0,info)
+      CALL substart(caller,t0,info)
       lda(1) = 0
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_finalize',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         IF (.NOT. ppm_initialized) THEN
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -112,22 +113,10 @@
       istat = istat + info
 
       IF (istat .NE. 0) THEN
-          WRITE(mesg,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',mesg,__LINE__,info)
-          GOTO 9999
+         WRITE(mesg,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
+         fail(mesg,ppm_err_dealloc)
       ENDIF
 
-!      !-------------------------------------------------------------------------
-!      !  Deallocate mesh structures (from ppm_module_mesh)
-!      !-------------------------------------------------------------------------
-!      CALL ppm_mesh_finalize(info)
-!      IF (info.NE.0) THEN
-!          info = ppm_error_error
-!          CALL ppm_error(ppm_err_dealloc,'ppm_finalize',  &
-!     &        'Mesh deallocation failed',__LINE__,info)
-!          GOTO 9999
-!      ENDIF
       !-------------------------------------------------------------------------
       !  Set the global status
       !-------------------------------------------------------------------------
@@ -136,84 +125,84 @@
       IF (ppm_rank .EQ. 0) THEN
          WRITE(mesg,'(A)') &
       &  "***********************************************************"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***         Parallel Particle Mesh Library (PPM)        ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***                                                     ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  Thank you for using the PPM library in your work.  ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  Please, acknowledge our efforts by including the   ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  following reference when publishing data obtained  ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  using PPM library:                                 ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***                                                     ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  I. F. Sbalzarini, J. Walther, M. Bergdorf,         ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  S. E. Hieber, E. M. Kotsalis, P. Koumoutsakos,     ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***  `J. Comput. Phys.`, 215, pp. 566-588, (2006)       ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***                                                     ***"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
          WRITE(mesg,'(A)') &
       &  "***********************************************************"
-         CALL ppm_log('ppm_finalize',mesg,info)
-         CALL ppm_write(ppm_rank,'ppm_finalize',mesg,info)
+         CALL ppm_log(caller,mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_finalize',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Close output units if needed
       !-------------------------------------------------------------------------
       IF (ppm_stdout .GE. 0) THEN
-          ! do not close it if it is a system standard unit
-          IF (ppm_stdout .NE. 6) THEN
-              INQUIRE(ppm_stdout,opened=isopen)
-              IF (isopen) CLOSE(ppm_stdout)
-          ENDIF
+         ! do not close it if it is a system standard unit
+         IF (ppm_stdout .NE. 6) THEN
+            INQUIRE(ppm_stdout,OPENED=isopen)
+            IF (isopen) CLOSE(ppm_stdout)
+         ENDIF
       ENDIF
       IF (ppm_stderr .GE. 0) THEN
-          ! do not close it if it is a system standard unit
-          IF (ppm_stderr .NE. 0) THEN
-              INQUIRE(ppm_stderr,opened=isopen)
-              IF (isopen) CLOSE(ppm_stderr)
-          ENDIF
+         ! do not close it if it is a system standard unit
+         IF (ppm_stderr .NE. 0) THEN
+            INQUIRE(ppm_stderr,OPENED=isopen)
+            IF (isopen) CLOSE(ppm_stderr)
+         ENDIF
       ENDIF
       IF (ppm_logfile .GE. 0) THEN
-          INQUIRE(ppm_logfile,opened=isopen)
-          IF (isopen) CLOSE(ppm_logfile)
+         INQUIRE(ppm_logfile,OPENED=isopen)
+         IF (isopen) CLOSE(ppm_logfile)
       ENDIF
 
       RETURN

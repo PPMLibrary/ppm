@@ -275,10 +275,10 @@
       !-------------------------------------------------------------------------
       !  Compute grid spacing
       !-------------------------------------------------------------------------
-      h(1) = (max_phys(1)-min_phys(1))/REAL(Nm(1)-1,MK)
-      h(2) = (max_phys(2)-min_phys(2))/REAL(Nm(2)-1,MK)
+      h(1) = (max_phys(1)-min_phys(1))/REAL(Nm(1)-1,ppm_kind_double)
+      h(2) = (max_phys(2)-min_phys(2))/REAL(Nm(2)-1,ppm_kind_double)
       IF (ppm_dim .GT. 2) THEN
-         h(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,MK)
+         h(3) = (max_phys(3)-min_phys(3))/REAL(Nm(3)-1,ppm_kind_double)
       ENDIF
 
       !check for round-off problems and fix them if necessary
@@ -422,16 +422,10 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &    'Cannot make x-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make x-z slabs in 2D!')
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &    'Cannot make y-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make y-z slabs in 2D!')
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
@@ -539,11 +533,9 @@
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         info = ppm_error_error
          WRITE(mesg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         CALL ppm_error(ppm_err_argument,caller,         &
-         &    mesg,__LINE__,info)
-         GOTO 9999
+         fail(mesg)
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -621,11 +613,9 @@
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         info = ppm_error_error
          WRITE(mesg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    mesg,__LINE__,info)
-         GOTO 9999
+         fail(mesg)
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -717,156 +707,107 @@
          CALL ppm_alloc(sub2proc,ldc,iopt,info)
          or_fail_dealloc("sub2proc")
       ENDIF
+
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
+
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_ppm_noinit,caller,  &
-     &           'Please call ppm_init first!',__LINE__,info)
-             GOTO 8888
-         ENDIF
-         DO i=1,ppm_dim
-            IF(max_phys(i).LE.min_phys(i)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'max_phys must be > min_phys',__LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF(Nm(i) .LT. 2) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'Nm must be > 1 in all dimensions',__LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF(ighostsize(i) .LT. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'ighostsize must be >= 0',__LINE__, info)
-               GOTO 8888
-            ENDIF
-         ENDDO
-         IF (Npart .GT. 0 .AND. ASSOCIATED(xp)) THEN
-            IF(SIZE(xp,2) .LT. Npart) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'not enough particles contained in xp',&
-     &             __LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF(SIZE(xp,1) .LT. ppm_dim) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'leading dimension of xp too small',&
-     &             __LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF (PRESENT(pcost)) THEN
-                IF(SIZE(pcost,1) .LT. Npart) THEN
-                   info = ppm_error_error
-                   CALL ppm_error(ppm_err_argument,caller, &
-     &                 'pcost does not contain costs for all particles',&
-     &                 __LINE__, info)
-                   GOTO 8888
-                ENDIF
-            ENDIF
-         ENDIF
-         IF (assig .EQ. ppm_param_assign_user_defined) THEN
-            IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'decomp type is set to user_defined for this assignment',&
-     &             __LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF(user_nsubs .LE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'no subs defined in user_defined assignment',&
-     &             __LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF (.NOT.ASSOCIATED(user_sub2proc)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller, &
-     &              'sub2proc must be allocated for user defined assignment',&
-     &              __LINE__, info)
-                GOTO 8888
-            ENDIF
-            DO i=1,user_nsubs
-                IF ((user_sub2proc(i).LT.0).OR.(user_sub2proc(i).GE. &
-     &               ppm_nproc)) THEN
-                   info = ppm_error_error
-                   CALL ppm_error(ppm_err_argument,caller, &
-     &                 'invalid processor specified in sub2proc',&
-     &                 __LINE__, info)
-                   GOTO 8888
-                ENDIF
-            ENDDO
-         ENDIF
-         IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
-            IF(user_nsubs .LE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'no subs defined in user_defined decomposition',&
-     &             __LINE__, info)
-               GOTO 8888
-            ENDIF
-            IF ((.NOT.ASSOCIATED(user_minsub)).OR. &
-     &          (.NOT.ASSOCIATED(user_maxsub))) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller, &
-     &              'min_sub/max_sub must be allocated for user def. decomp',&
-     &              __LINE__, info)
-                GOTO 8888
-            ENDIF
-            !-------------------------------------------------------------------
-            !  Check that the user-defined subs add up to the whole
-            !  computational domain.
-            !  ONE COULD DO MORE TESTS HERE.
-            !-------------------------------------------------------------------
-            parea = (max_phys(1)-min_phys(1))*(max_phys(2)-min_phys(2))
-            IF(ppm_dim.EQ.3) THEN
-               parea = parea*(max_phys(3)-min_phys(3))
-            ENDIF
-            sarea = 0.0_MK
-            DO i=1,user_nsubs
-               larea = (user_maxsub(1,i)-user_minsub(1,i))* &
-     &                 (user_maxsub(2,i)-user_minsub(2,i))
-               IF(ppm_dim.EQ.3) THEN
-                  larea = larea * (user_maxsub(3,i)-user_minsub(3,i))
-               END IF
-               sarea = sarea + larea
-            ENDDO
-            IF(ABS(sarea-parea)/parea.GE.lmyeps) THEN
-               !----------------------------------------------------------------
-               !  Mismatch!
-               !----------------------------------------------------------------
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,   &
-     &              'faulty subdomains defined',__LINE__,info)
-               GOTO 8888
-            ENDIF
-         ENDIF
- 8888    CONTINUE
+           fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+        ENDIF
+        DO i=1,ppm_dim
+           IF (max_phys(i).LE.min_phys(i)) THEN
+              fail('max_phys must be > min_phys',exit_point=8888)
+           ENDIF
+           IF (Nm(i) .LT. 2) THEN
+              fail('Nm must be > 1 in all dimensions',exit_point=8888)
+           ENDIF
+           IF (ighostsize(i) .LT. 0) THEN
+              fail('ighostsize must be >= 0',exit_point=8888)
+           ENDIF
+        ENDDO
+        IF (Npart .GT. 0 .AND. ASSOCIATED(xp)) THEN
+           IF (SIZE(xp,2) .LT. Npart) THEN
+              fail('not enough particles contained in xp',exit_point=8888)
+           ENDIF
+           IF (SIZE(xp,1) .LT. ppm_dim) THEN
+              fail('leading dimension of xp too small',exit_point=8888)
+           ENDIF
+           IF (PRESENT(pcost)) THEN
+              IF (SIZE(pcost,1) .LT. Npart) THEN
+                 fail('pcost does not contain costs for all particles',exit_point=8888)
+              ENDIF
+           ENDIF
+        ENDIF
+        IF (assig .EQ. ppm_param_assign_user_defined) THEN
+           IF (decomp .NE. ppm_param_decomp_user_defined) THEN
+              fail('decomp type is set to user_defined for this assignment',exit_point=8888)
+           ENDIF
+           IF (user_nsubs .LE. 0) THEN
+              fail('no subs defined in user_defined assignment',exit_point=8888)
+           ENDIF
+           IF (.NOT.ASSOCIATED(user_sub2proc)) THEN
+              fail('sub2proc must be allocated for user defined assignment',exit_point=8888)
+           ENDIF
+           DO i=1,user_nsubs
+              IF ((user_sub2proc(i).LT.0).OR.(user_sub2proc(i).GE.ppm_nproc)) THEN
+                 fail('invalid processor specified in sub2proc',exit_point=8888)
+              ENDIF
+           ENDDO
+        ENDIF
+        IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
+           IF (user_nsubs .LE. 0) THEN
+              fail('no subs defined in user_defined decomposition',exit_point=8888)
+           ENDIF
+           IF ((.NOT.ASSOCIATED(user_minsub)).OR. &
+           &   (.NOT.ASSOCIATED(user_maxsub))) THEN
+               fail('min_sub/max_sub must be allocated for user def. decomp',exit_point=8888)
+           ENDIF
+           !-------------------------------------------------------------------
+           !  Check that the user-defined subs add up to the whole
+           !  computational domain.
+           !  ONE COULD DO MORE TESTS HERE.
+           !-------------------------------------------------------------------
+           parea = (max_phys(1)-min_phys(1))*(max_phys(2)-min_phys(2))
+           IF (ppm_dim.EQ.3) THEN
+              parea = parea*(max_phys(3)-min_phys(3))
+           ENDIF
+           sarea = 0.0_MK
+           DO i=1,user_nsubs
+              larea = (user_maxsub(1,i)-user_minsub(1,i))* &
+              &       (user_maxsub(2,i)-user_minsub(2,i))
+              IF (ppm_dim.EQ.3) THEN
+                 larea = larea * (user_maxsub(3,i)-user_minsub(3,i))
+              END IF
+              sarea = sarea + larea
+           ENDDO
+           IF (ABS(sarea-parea)/parea.GE.lmyeps) THEN
+              !----------------------------------------------------------------
+              !  Mismatch!
+              !----------------------------------------------------------------
+              fail('faulty subdomains defined',exit_point=8888)
+           ENDIF
+        ENDIF
 
-         !----------------------------------------------------------------------
-         ! Check bcdef
-         !----------------------------------------------------------------------
-         !  [TODO]!!!
-         !  must check for compatibility of boundary conditions
-         !  and boundary condtions array must have one more
-         !  dimension, as its possible that you dont want to
-         !  have the same boundary conditions on every side
-         !  of the subdomain
-         !  Will be accounted for as soon as the structure of
-         !  the field type is better defined
-         !----------------------------------------------------------------------
+      8888 CONTINUE
+
+        !----------------------------------------------------------------------
+        ! Check bcdef
+        !----------------------------------------------------------------------
+        !  [TODO]!!!
+        !  must check for compatibility of boundary conditions
+        !  and boundary condtions array must have one more
+        !  dimension, as its possible that you dont want to
+        !  have the same boundary conditions on every side
+        !  of the subdomain
+        !  Will be accounted for as soon as the structure of
+        !  the field type is better defined
+        !----------------------------------------------------------------------
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_mkfield_s

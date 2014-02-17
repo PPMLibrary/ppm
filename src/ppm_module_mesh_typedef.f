@@ -392,7 +392,7 @@ minclude ppm_get_field_template(4,l)
           INTEGER,               INTENT(OUT) :: info
           !!! return status. On success 0
 
-          INTEGER                            :: iopt,i
+          INTEGER :: iopt,i
 
           start_subroutine("subpatch_create")
 
@@ -428,12 +428,12 @@ minclude ppm_get_field_template(4,l)
 
           !Define allocated size of the subpatch
           p%lo_a(1)     = 1 - ghostsize(1)
-          p%hi_a(1)     = p%nnodes(1)   + ghostsize(2)
+          p%hi_a(1)     = p%nnodes(1) + ghostsize(2)
           p%lo_a(2)     = 1 - ghostsize(3)
-          p%hi_a(2)     = p%nnodes(2)   + ghostsize(4)
+          p%hi_a(2)     = p%nnodes(2) + ghostsize(4)
           IF (ppm_dim.EQ.3) THEN
              p%lo_a(3) = 1 - ghostsize(5)
-             p%hi_a(3) = p%nnodes(3)   + ghostsize(6)
+             p%hi_a(3) = p%nnodes(3) + ghostsize(6)
           ENDIF
 
           DO i=1,ppm_dim
@@ -686,15 +686,10 @@ minclude ppm_get_field_template(4,l)
 
           topo => ppm_topo(topoid)%t
 
-          !check_equal(a,b,"this is an error message")
-
-          !check_equal(SIZE(Nm,1),ppm_dim,"invalid size for Nm")
-
           !-------------------------------------------------------------------------
           !  (Re)allocate memory for the internal mesh list and Arrays at meshid
           !-------------------------------------------------------------------------
           iopt   = ppm_param_alloc_fit
-
           ldc(1) = ppm_dim
           CALL ppm_alloc(this%Nm,ldc,iopt,info)
           or_fail_alloc('Nm')
@@ -743,51 +738,51 @@ minclude ppm_get_field_template(4,l)
           this%Offset(1:ppm_dim) = Offset(1:ppm_dim)
 
           IF (PRESENT(h)) THEN
-              this%h(1:ppm_dim) = h(1:ppm_dim)
-              IF (ASSOCIATED(topo%max_physs)) THEN
-                 this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
-                 &                    topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
-              ELSE
-                 this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
-                 &                    topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
-              ENDIF
+             this%h(1:ppm_dim) = h(1:ppm_dim)
+             IF (ASSOCIATED(topo%max_physs)) THEN
+                this%Nm(1:ppm_dim) = FLOOR((topo%max_physs(1:ppm_dim) - &
+                &                    topo%min_physs(1:ppm_dim))/(h(1:ppm_dim))) + 1
+             ELSE
+                this%Nm(1:ppm_dim) = FLOOR((topo%max_physd(1:ppm_dim) - &
+                &                    topo%min_physd(1:ppm_dim))/(h(1:ppm_dim))) + 1
+             ENDIF
           ELSE
-              this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
-              IF (ASSOCIATED(topo%max_physs)) THEN
-                 this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) &
-                 &                 - topo%min_physs(1:ppm_dim)) &
-                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_single)
-                 !check for round-off problems and fix them if necessary
-                 DO k=1,ppm_dim
-                    DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
-                       this%h(k)=this%h(k)+EPSILON(this%h(k))
-                    ENDDO
-                 ENDDO
-                 check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
-              ELSE
-                 this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
-                 &                 - topo%min_physd(1:ppm_dim)) &
-                 &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
-                 !check for round-off problems and fix them if necessary
-                 DO k=1,ppm_dim
-                    DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
-                       this%h(k)=this%h(k)+EPSILON(this%h(k))
-                    ENDDO
-                 ENDDO
-                 check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
-              ENDIF
+             this%Nm(1:ppm_dim) = Nm(1:ppm_dim)
+             IF (ASSOCIATED(topo%max_physs)) THEN
+                this%h(1:ppm_dim) = (topo%max_physs(1:ppm_dim) &
+                &                 - topo%min_physs(1:ppm_dim)) &
+                &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
+                !check for round-off problems and fix them if necessary
+                DO k=1,ppm_dim
+                   DO WHILE (topo%min_physs(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physs(k))
+                      this%h(k)=this%h(k)+EPSILON(this%h(k))
+                   ENDDO
+                ENDDO
+                check_true(<#ALL(topo%min_physs(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physs(1:ppm_dim))#>,"round-off problem in mesh creation")
+             ELSE
+                this%h(1:ppm_dim) = (topo%max_physd(1:ppm_dim) &
+                &                 - topo%min_physd(1:ppm_dim)) &
+                &                 / REAL(Nm(1:ppm_dim)-1,ppm_kind_double)
+                !check for round-off problems and fix them if necessary
+                DO k=1,ppm_dim
+                   DO WHILE (topo%min_physd(k)+(this%Nm(k)-1)*this%h(k).LT.topo%max_physd(k))
+                      this%h(k)=this%h(k)+EPSILON(this%h(k))
+                   ENDDO
+                ENDDO
+                check_true(<#ALL(topo%min_physd(1:ppm_dim)+(Nm(1:ppm_dim)-1)*this%h(1:ppm_dim).GE.topo%max_physd(1:ppm_dim))#>,"round-off problem in mesh creation")
+             ENDIF
           ENDIF
 
           IF (PRESENT(ghostsize)) THEN
-              this%ghostsize(1:ppm_dim) = ghostsize(1:ppm_dim)
+             this%ghostsize(1:ppm_dim) = ghostsize(1:ppm_dim)
           ELSE
-              this%ghostsize(1:ppm_dim) = 0
+             this%ghostsize(1:ppm_dim) = 0
           ENDIF
 
           IF (PRESENT(name)) THEN
-              this%name = TRIM(ADJUSTL(name))
+             this%name = TRIM(ADJUSTL(name))
           ELSE
-              this%name = "default_mesh_name"
+             this%name = "default_mesh_name"
           ENDIF
 
           !-------------------------------------------------------------------------
@@ -899,49 +894,43 @@ minclude ppm_get_field_template(4,l)
           end_subroutine()
           RETURN
 
-          CONTAINS
+      CONTAINS
           SUBROUTINE check
               CALL ppm_check_topoid(topoid,valid,info)
               IF (.NOT. valid) THEN
-                  fail("topoid not valid",ppm_err_argument,info,8888)
+                 fail("topoid not valid",exit_point=8888)
               ENDIF
               IF (ppm_topo(topoid)%t%nsubs .LE. 0) THEN
-                  fail("nsubs mush be >0",ppm_err_argument,info,8888)
+                 fail("nsubs mush be >0",exit_point=8888)
               ENDIF
               IF (SIZE(Offset,1) .NE. ppm_dim) THEN
-                  fail("invalid size for Offset. Should be ppm_dim",&
-                      ppm_err_argument,info,8888)
+                 fail("invalid size for Offset. Should be ppm_dim",exit_point=8888)
               ENDIF
 
               IF (PRESENT(Nm)) THEN
-                  IF (PRESENT(h)) THEN
-                      fail("cannot specify both Nm and h. Choose only one.",&
-                          ppm_err_argument,info,8888)
-                  ENDIF
-                  !TODO: check that the domain is finite
-                  IF (SIZE(Nm,1) .NE. ppm_dim) THEN
-                      fail("invalid size for Nm. Should be ppm_dim",&
-                          ppm_err_argument,info,8888)
-                  ENDIF
-                  DO i=1,ppm_dim
-                      IF (Nm(i) .LT. 2) THEN
-                          fail("Nm must be >1 in all space dimensions",&
-                              ppm_err_argument,info,8888)
-                      ENDIF
-                  ENDDO
-
+                 IF (PRESENT(h)) THEN
+                    fail("cannot specify both Nm and h. Choose only one.",exit_point=8888)
+                 ENDIF
+                 !TODO: check that the domain is finite
+                 IF (SIZE(Nm,1) .NE. ppm_dim) THEN
+                    fail("invalid size for Nm. Should be ppm_dim",exit_point=8888)
+                 ENDIF
+                 DO i=1,ppm_dim
+                    IF (Nm(i) .LT. 2) THEN
+                       fail("Nm must be >1 in all space dimensions",exit_point=8888)
+                    ENDIF
+                 ENDDO
               ENDIF
               IF (PRESENT(h)) THEN
-                  IF (SIZE(h,1) .NE. ppm_dim) THEN
-                      fail("invalid size for h. Should be ppm_dim",&
-                          ppm_err_argument,info,8888)
-                  ENDIF
-                  IF (ANY (h .LE. ppm_myepsd)) THEN
-                      fail("h must be >0 in all space dimensions",&
-                          ppm_err_argument,info,8888)
-                  ENDIF
+                 IF (SIZE(h,1) .NE. ppm_dim) THEN
+                    fail("invalid size for h. Should be ppm_dim",exit_point=8888)
+                 ENDIF
+                 IF (ANY (h .LE. ppm_myepsd)) THEN
+                    fail("h must be >0 in all space dimensions",exit_point=8888)
+                 ENDIF
+
               ENDIF
-              8888     CONTINUE
+          8888 CONTINUE
           END SUBROUTINE check
       END SUBROUTINE equi_mesh_create
 
@@ -1229,22 +1218,21 @@ minclude ppm_get_field_template(4,l)
           TYPE(ppm_t_ptr_subpatch), DIMENSION(:), POINTER :: tmp_array => NULL()
           TYPE(ppm_t_topo),                       POINTER :: topo
 
-          CLASS(ppm_t_subpatch_),                 POINTER :: p => NULL()
-          CLASS(ppm_t_A_subpatch_),               POINTER :: A_p => NULL()
+          CLASS(ppm_t_subpatch_),                 POINTER :: p
+          CLASS(ppm_t_A_subpatch_),               POINTER :: A_p
 
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: h,Offset
           REAL(ppm_kind_double), DIMENSION(1:ppm_dim) :: pstart,pend,pmid
 
-          INTEGER                        :: i,j,k,isub,jsub,id,pid
-          INTEGER                        :: size2,size_tmp,iopt
-          INTEGER                        :: nsubpatch,nsubpatchi
-          INTEGER, DIMENSION(ppm_dim)    :: istart,iend
-          INTEGER, DIMENSION(ppm_dim)    :: istart_p,iend_p
-          INTEGER, DIMENSION(ppm_dim)    :: istart_d,iend_d
-          INTEGER, DIMENSION(2*ppm_dim)  :: ghostsize
-          INTEGER, DIMENSION(2*ppm_dim)  :: bc
-          INTEGER, DIMENSION(1)          :: ldu
-          INTEGER, DIMENSION(:), POINTER :: indsub => NULL()
+          INTEGER                            :: i,j,k,isub,jsub,id,pid
+          INTEGER                            :: size2,size_tmp
+          INTEGER                            :: nsubpatch,nsubpatchi
+          INTEGER, DIMENSION(ppm_dim)        :: istart,iend
+          INTEGER, DIMENSION(ppm_dim)        :: istart_p,iend_p
+          INTEGER, DIMENSION(ppm_dim)        :: istart_d,iend_d
+          INTEGER, DIMENSION(2*ppm_dim)      :: ghostsize
+          INTEGER, DIMENSION(2*ppm_dim)      :: bc
+          INTEGER, DIMENSION(:), ALLOCATABLE :: indsub
 
           LOGICAL :: linfinite
 
@@ -1293,8 +1281,7 @@ minclude ppm_get_field_template(4,l)
           patch(ppm_dim+1:2*ppm_dim) = (iend_p(1:ppm_dim)-1)*h(1:ppm_dim) &
           &                          + Offset(1:ppm_dim)
 
-          !Bounds for the mesh nodes that are inside the computational
-          !domain
+          !Bounds for the mesh nodes that are inside the computational domain
           istart_d(1:ppm_dim) = 1 + CEILING( (topo%min_physd(1:ppm_dim)     &
           &                       -          Offset(1:ppm_dim))/h(1:ppm_dim) )
           iend_d(1:ppm_dim)   = 1 + FLOOR( (topo%max_physd(1:ppm_dim)       &
@@ -1323,9 +1310,7 @@ minclude ppm_get_field_template(4,l)
           !  Build the indsub list to diffrentiate local sub indeices
           !  from global ones
           !-------------------------------------------------------------------------
-          iopt   = ppm_param_alloc_fit
-          ldu(1) = topo%nsubs
-          CALL ppm_alloc(indsub,ldu,iopt,info)
+          ALLOCATE(indsub(topo%nsubs),STAT=info)
           or_fail_alloc("indsub")
 
           indsub=-1
@@ -1528,8 +1513,10 @@ minclude ppm_get_field_template(4,l)
                      !----------------------------------------------------------------
                      CALL this%subpatch%push(p,info)
                      or_fail("could not add new subpatch to mesh")
+
                   CASE(-1)
-                     p=>NULL()
+                     p => NULL()
+
                   END SELECT
               ENDIF
           ENDDO sub
@@ -1546,8 +1533,7 @@ minclude ppm_get_field_template(4,l)
           !The ghost mesh nodes have not been computed
           this%ghost_initialized = .FALSE.
 
-          iopt = ppm_param_dealloc
-          CALL ppm_alloc(indsub,ldu,iopt,info)
+          DEALLOCATE(indsub,STAT=info)
           or_fail_dealloc("indsub")
 
           end_subroutine()

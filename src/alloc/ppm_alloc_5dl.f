@@ -119,7 +119,10 @@
       INTEGER, DIMENSION(5) :: lda,ldb,ldc,ldd,ldl_new,ldu_new
       INTEGER               :: i,j,k,l,m
       LOGICAL               :: lcopy,lalloc,lrealloc
+#ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
+#endif
+      CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_5dl'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -128,7 +131,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
-      CALL substart('ppm_alloc_5dl',t0,info)
+      CALL substart(caller,t0,info)
 #else
       info = 0
 #endif
@@ -137,7 +140,7 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-         CALL ppm_alloc_argcheck('ppm_alloc_5dl',iopt,ldl,5,info,ldu)
+         CALL ppm_alloc_argcheck(caller,iopt,ldl,5,info,ldu)
          IF (info .NE. 0) GOTO 9999
       ENDIF
 
@@ -251,6 +254,7 @@
             ldu_new(4) = ldu(4)
             ldu_new(5) = ldu(5)
          ENDIF
+
       CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
@@ -330,6 +334,7 @@
             ldu_new(4) = ldu(4)
             ldu_new(5) = ldu(5)
          ENDIF
+
       CASE (ppm_param_alloc_grow_preserve)
          !----------------------------------------------------------------------
          !  grow memory and preserve the present contents
@@ -415,6 +420,7 @@
             ldu_new(4) = ldu(4)
             ldu_new(5) = ldu(5)
          ENDIF
+
       CASE (ppm_param_alloc_grow)
          !----------------------------------------------------------------------
          !  grow memory but skip the present contents
@@ -495,6 +501,7 @@
             ldu_new(4) = ldu(4)
             ldu_new(5) = ldu(5)
          ENDIF
+
       CASE (ppm_param_dealloc)
          !----------------------------------------------------------------------
          !  deallocate
@@ -502,37 +509,27 @@
          IF(ASSOCIATED(adata)) THEN
             DEALLOCATE(adata,STAT=info)
             NULLIFY(adata)
-            IF (info .NE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_5dl',   &
-     &           'DATA',__LINE__,info)
-            ENDIF
+            or_fail_dealloc('DATA')
          ENDIF
+
       CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_5dl',                      &
-     &                  'unknown iopt',__LINE__,info)
-         GOTO 9999
+         fail('unknown iopt')
+
       END SELECT
 
       !-------------------------------------------------------------------------
       !  Allocate new memory
       !-------------------------------------------------------------------------
       IF (lalloc) THEN
-         ALLOCATE(work(ldl_new(1):ldu_new(1),                                  &
-     &                 ldl_new(2):ldu_new(2),                                  &
-     &                 ldl_new(3):ldu_new(3),                                  &
-     &                 ldl_new(4):ldu_new(4),                                  &
-     &                 ldl_new(5):ldu_new(5)),STAT=info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_5dl',   &
-     &           'WORK',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         ALLOCATE(work(ldl_new(1):ldu_new(1), &
+         &        ldl_new(2):ldu_new(2),      &
+         &        ldl_new(3):ldu_new(3),      &
+         &        ldl_new(4):ldu_new(4),      &
+         &        ldl_new(5):ldu_new(5)),STAT=info)
+         or_fail_alloc('WORK',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -561,12 +558,7 @@
       !-------------------------------------------------------------------------
       IF (lrealloc) THEN
          DEALLOCATE(adata,STAT=info)
-         !NULLIFY(adata)
-         IF (info .NE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_dealloc,'ppm_alloc_5dl',   &
-     &           'DATA',__LINE__,info)
-         ENDIF
+         or_fail_dealloc('DATA',exit_point=no)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -579,9 +571,9 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
 #ifdef __DEBUG
-      CALL substop('ppm_alloc_5dl',t0,info)
+      CALL substop(caller,t0,info)
 #endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION

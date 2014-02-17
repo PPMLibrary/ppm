@@ -112,9 +112,13 @@
 #elif __KIND == __LOGICAL
       LOGICAL                 , DIMENSION(:), POINTER :: work
 #endif
-      INTEGER               :: i,ldb,ldc
-      LOGICAL               :: lcopy,lalloc,lrealloc
+      INTEGER :: i,ldb,ldc
+      LOGICAL :: lcopy,lalloc,lrealloc
+
+#ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
+#endif
+      CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_1d'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -123,7 +127,7 @@
       !  Initialise
       !-------------------------------------------------------------------------
 #ifdef __DEBUG
-      CALL substart('ppm_alloc_1d',t0,info)
+      CALL substart(caller,t0,info)
 #else
       info = 0
 #endif
@@ -132,10 +136,9 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-         CALL ppm_alloc_argcheck('ppm_alloc_1d',iopt,lda,1,info)
+         CALL ppm_alloc_argcheck(caller,iopt,lda,1,info)
          IF (info .NE. 0) GOTO 9999
       ENDIF
-
 
       !-------------------------------------------------------------------------
       !  Point to proper work array
@@ -177,6 +180,7 @@
          ELSE
             lalloc = .TRUE.
          ENDIF
+
       CASE (ppm_param_alloc_fit)
          !----------------------------------------------------------------------
          !  fit memory but skip the present contents
@@ -190,6 +194,7 @@
          ELSE
             lalloc   = .TRUE.
          ENDIF
+
       CASE (ppm_param_alloc_grow_preserve)
          !----------------------------------------------------------------------
          !  grow memory and preserve the present contents
@@ -204,6 +209,7 @@
          ELSE
             lalloc = .TRUE.
          ENDIF
+
       CASE (ppm_param_alloc_grow)
          !----------------------------------------------------------------------
          !  grow memory but skip the present contents
@@ -217,6 +223,7 @@
          ELSE
             lalloc = .TRUE.
          ENDIF
+
       CASE (ppm_param_dealloc)
          !----------------------------------------------------------------------
          !  deallocate
@@ -224,20 +231,15 @@
          IF (ASSOCIATED(adata)) THEN
             DEALLOCATE(adata,STAT=info)
             NULLIFY(adata)
-            IF (info .NE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_1d',   &
-     &             'DATA',__LINE__,info)
-            ENDIF
+            or_fail_dealloc('DATA')
          ENDIF
+
       CASE DEFAULT
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_1d',                       &
-     &                  'unknown iopt',__LINE__,info)
-         GOTO 9999
+         fail('unknown iopt')
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -245,12 +247,7 @@
       !-------------------------------------------------------------------------
       IF (lalloc) THEN
          ALLOCATE(work(lda(1)),STAT=info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_1d',   &
-     &           'WORK',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('WORK',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -268,12 +265,7 @@
       !-------------------------------------------------------------------------
       IF (lrealloc) THEN
          DEALLOCATE(adata,STAT=info)
-         !NULLIFY(adata)
-         IF (info .NE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_dealloc,'ppm_alloc_1d',   &
-     &           'DATA',__LINE__,info)
-         ENDIF
+         or_fail_dealloc('DATA',exit_point=no)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -286,9 +278,9 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
 #ifdef __DEBUG
-      CALL substop('ppm_alloc_1d',t0,info)
+      CALL substop(caller,t0,info)
 #endif
       RETURN
 #if   __KIND == __SINGLE_PRECISION

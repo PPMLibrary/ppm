@@ -77,7 +77,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh_), POINTER :: mesh => NULL()
+      CLASS(ppm_t_equi_mesh_), POINTER :: mesh
 
       REAL(MK)                        :: t0
       REAL(MK),  DIMENSION(1:ppm_dim) :: Offst
