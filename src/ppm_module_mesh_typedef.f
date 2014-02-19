@@ -1,4 +1,4 @@
-!minclude ppm_header(ppm_module_mesh_typedef)
+! minclude ppm_header(ppm_module_mesh_typedef)
 
       MODULE ppm_module_mesh_typedef
       !!! Declares mesh data types
@@ -18,7 +18,6 @@
       USE ppm_module_error
       USE ppm_module_util_functions
       USE ppm_module_interfaces
-
       IMPLICIT NONE
 
       !----------------------------------------------------------------------

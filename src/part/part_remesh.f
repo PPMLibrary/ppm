@@ -433,7 +433,8 @@
           DEFINE_MK()
           REAL(MK) , DIMENSION(:),INTENT(IN) :: vec
           REAL(MK)                           :: norm
-          norm = SQRT(SUM(ABS(vec)**2))
+!           norm = SQRT(SUM(ABS(vec)**2))
+          norm = NORM2(vec)
       END FUNCTION
 
       END SUBROUTINE DTYPE(part_remesh)
