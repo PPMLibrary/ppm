@@ -435,7 +435,6 @@ minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstr
           !!! - top   : 6
           !!!
           !!! index 1: the index of the 4 or 6 faces in 2 and 3 D
-          !!! index 2: the global sub id
           !!!
           !!! states:
           !!!

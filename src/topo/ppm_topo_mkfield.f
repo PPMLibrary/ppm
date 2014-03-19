@@ -219,7 +219,7 @@
       INTEGER                          :: nsubs
       INTEGER                          :: nsublist
 
-      CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller = 'ppm_topo_mkfield'
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
@@ -311,10 +311,10 @@
          !  recursive bisection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build a binary tree
-         treetype           = ppm_param_tree_bin
+         treetype = ppm_param_tree_bin
          IF (Npart .GT. 0) THEN
              weights(1,1:2) = 0.5_MK    ! particles have 50% weight
-             weights(2,1:2) = 0.5_MK
+             weights(2,1:2) = 0.5_MK    ! mesh has 50% weight
          ELSE
              weights(1,1:2) = 0.0_MK    ! only mesh has weight
              weights(2,1:2) = 1.0_MK
@@ -351,10 +351,7 @@
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
          IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &   'Cannot make z pencils in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make z pencils in 2D!')
          ENDIF
          IF (Npart.LT.1) THEN
              !------------------------------------------------------------------
@@ -378,7 +375,7 @@
              IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_bin
              IF (Npart .GT. 0) THEN
                  weights(1,1:2) = 0.5_MK    ! particles have 50% weight
-                 weights(2,1:2) = 0.5_MK
+                 weights(2,1:2) = 0.5_MK    ! mesh has 50% weight
              ELSE
                  weights(1,1:2) = 0.0_MK    ! only mesh has weight
                  weights(2,1:2) = 1.0_MK
@@ -491,7 +488,7 @@
          IF (ppm_dim .EQ. 2) treetype = ppm_param_tree_quad
          IF (Npart .GT. 0) THEN
              weights(1,1:2) = 0.5_MK    ! particles have 50% weight
-             weights(2,1:2) = 0.5_MK
+             weights(2,1:2) = 0.5_MK    ! mesh has 50% weight
          ELSE
              weights(1,1:2) = 0.0_MK    ! only mesh has weight
              weights(2,1:2) = 1.0_MK
@@ -533,8 +530,8 @@
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         WRITE(mesg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         fail(mesg)
+         WRITE(msg,'(A,I5)') 'Unknown decomposition type: ',decomp
+         fail(msg)
 
       END SELECT
 
@@ -609,12 +606,13 @@
                isublist(nsublist) = isub
             ENDIF
          ENDDO
+
       CASE DEFAULT
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         WRITE(mesg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         fail(mesg)
+         WRITE(msg,'(A,I5)') 'Unknown assignment scheme: ',assig
+         fail(msg)
 
       END SELECT
 

@@ -202,6 +202,9 @@
                   WRITE(iUnit,'(A)', ADVANCE='NO')     "    <Piece"
                   WRITE(iUnit, '(A)', ADVANCE='NO') " Extent='"
                   DO i=1,ppm_dim
+                     !TODO
+                     !check the boundary condition
+                     !it has been implemented in a wrong way
                      IF (p%bc(2*i).EQ.ppm_param_bcdef_periodic.OR. &
                      &   p%bc(2*i).EQ.-1) THEN
                         WRITE(scratch, '(I0,A,I0)') p%istart(i)-1,' ',&

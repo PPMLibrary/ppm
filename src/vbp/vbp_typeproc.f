@@ -94,7 +94,7 @@
           ! local variables
           !-------------------------------------------------------------------------
 !           CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
-          REAL(MK)   :: max_cutoff
+          REAL(MK) :: max_cutoff
 !           REAL(MK),DIMENSION(:),POINTER       :: rcp => NULL()
           REAL(MK), DIMENSION(:), ALLOCATABLE :: cutoff_v
 
@@ -147,7 +147,7 @@
           !-------------------------------------------------------------------------
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                  :: Pc
-          REAL(MK),DIMENSION(:),    INTENT(IN   )  :: cutoff
+          REAL(MK), DIMENSION(:),   INTENT(IN   )  :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
           INTEGER,                  INTENT(   OUT) :: info
           !!! return status. On success, 0
@@ -161,7 +161,7 @@
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
 
-          REAL(MK),DIMENSION(:), POINTER :: rcp => NULL()
+          REAL(MK),DIMENSION(:), POINTER :: rcp
           REAL(MK)                       :: max_cutoff
 
           INTEGER :: ip
@@ -175,6 +175,8 @@
              CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
              or_fail("could not create property for varying cutoff radius rcp")
           ENDIF
+
+          NULLIFY(rcp)
 
           CALL Pc%get(Pc%rcp,rcp,info)
           or_fail("could not access varying cutoff radius rcp")
@@ -246,7 +248,7 @@
 
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
 
-          REAL(MK), DIMENSION(:), POINTER :: rcp => NULL()
+          REAL(MK), DIMENSION(:), POINTER :: rcp
 
           INTEGER :: vec_size,i
 
@@ -273,6 +275,8 @@
                 &    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
                 or_fail("Creating property for rcp failed")
              ENDIF
+
+             NULLIFY(rcp)
 
              !yaser: I added read_only=.TRUE. otherwise
              !discr_data%flags(ppm_ppt_ghosts) will be set to false

@@ -38,10 +38,10 @@
 #elif __TYPE == __DECOMP
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_tree_alloc_ds(iopt,nbox,nbpd,min_box,max_box,    &
-     &    boxcost,nchld,blevel,info)
+      &    boxcost,nchld,blevel,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_tree_alloc_dd(iopt,nbox,nbpd,min_box,max_box,    &
-     &    boxcost,nchld,blevel,info)
+      &    boxcost,nchld,blevel,info)
 #endif
 #endif
       !!! This routine (re)allocates the tree data structures.
@@ -104,8 +104,11 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0
-      INTEGER, DIMENSION(2)                   :: ldc
+      REAL(MK) :: t0
+
+      INTEGER, DIMENSION(2) :: ldc
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_tree_alloc'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -113,14 +116,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_tree_alloc',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -130,124 +133,70 @@
           ldc(1) = 2
           ldc(2) = nbox
           CALL ppm_alloc(tree_lhbx,ldc,iopt,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &            'pointer to headers TREE_LHBX',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc('pointer to headers TREE_LHBX',ppm_error=ppm_error_fatal)
       ENDIF
-      ldc(1)   = ppm_dim
-      ldc(2)   = nbox
+
+      ldc(1) = ppm_dim
+      ldc(2) = nbox
       CALL ppm_alloc(min_box,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'lower box boundaries MIN_BOX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('lower box boundaries MIN_BOX',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(max_box,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'upper box boundaries MAX_BOX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('upper box boundaries MAX_BOX',ppm_error=ppm_error_fatal)
+
       IF (have_mesh) THEN
-          CALL ppm_alloc(Nm_box,ldc,iopt,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &            'box grid size NM_BOX',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         CALL ppm_alloc(Nm_box,ldc,iopt,info)
+         or_fail_alloc('box grid size NM_BOX',ppm_error=ppm_error_fatal)
       ENDIF
+
       ldc(1) = nbox
       CALL ppm_alloc(ndiv,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'number of divisible directions NDIV',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('number of divisible directions NDIV',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(blevel,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'tree levels of boxes BLEVEL',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('tree levels of boxes BLEVEL',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(boxcost,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'box costs BOXCOST',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('box costs BOXCOST',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(nchld,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'number of children NCHLD',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('number of children NCHLD',ppm_error=ppm_error_fatal)
+
 #if   __TYPE == __TREE
       ldc(1) = nbpd
       ldc(2) = nbox
       CALL ppm_alloc(child,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'list of children CHILD',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('list of children CHILD',ppm_error=ppm_error_fatal)
+
       ldc(1) = nbox
       CALL ppm_alloc(parent,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'parent pointer PARENT',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('parent pointer PARENT',ppm_error=ppm_error_fatal)
+
       ldc(1) = nlevel
       CALL ppm_alloc(nbpl,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_tree_alloc',          &
-     &        'number of boxes per level NBPL',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('number of boxes per level NBPL',ppm_error=ppm_error_fatal)
 #endif
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_tree_alloc',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (nbox .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_alloc',     &
-     &          'Number of boxes must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail('Number of boxes must be >= 0',exit_point=8888)
          ENDIF
          IF (nbpd .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_alloc',     &
-     &          'Number of boxes per step must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail('Number of boxes per step must be >= 0',exit_point=8888)
          ENDIF
 #if   __TYPE == __TREE
          IF (nlevel .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_tree_alloc',     &
-     &          'Number of levels must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail('Number of levels must be >= 0',exit_point=8888)
          ENDIF
 #endif
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __TYPE == __TREE
 #if   __KIND == __SINGLE_PRECISION

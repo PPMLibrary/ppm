@@ -46,54 +46,70 @@
 
       FUNCTION color_print(text,color)
           !!! Return a string that will appear in color if printed out to the terminal
-          CHARACTER(LEN=ppm_char)   :: color_print
-          CHARACTER(LEN=*)          :: text
-          CHARACTER(LEN=10)         :: mycolor
-          INTEGER                   :: color
+
+          IMPLICIT NONE
+
+          CHARACTER(LEN=*), INTENT(IN   ) :: text
+
+          INTEGER,          INTENT(IN   ) :: color
+
+          CHARACTER(LEN=ppm_char)         :: color_print
+
+          CHARACTER(LEN=10) :: mycolor
 
           write(mycolor,'(A,I0,A)') '[',color,'m'
-          color_print = achar(27)//TRIM(mycolor)//TRIM(ADJUSTL(text))//achar(27)//'[0m'
+          color_print = ACHAR(27)//TRIM(mycolor)//TRIM(ADJUSTL(text))//ACHAR(27)//'[0m'
           RETURN
 
       END FUNCTION
 
+      INTEGER FUNCTION factorial_m(multi_ind,ndim)
+          IMPLICIT NONE
 
-      FUNCTION factorial_m(multi_ind,ndim)
-          INTEGER                 :: factorial_m,i,ndim
-          INTEGER,DIMENSION(ndim) :: multi_ind
+          INTEGER,                  INTENT(IN   ) :: ndim
+          INTEGER, DIMENSION(ndim), INTENT(IN   ) :: multi_ind
+
+          INTEGER :: i
 
           factorial_m = 1
           DO i=1,ndim
-              factorial_m = factorial_m * factorial(multi_ind(i))
+             factorial_m = factorial_m * factorial(multi_ind(i))
           ENDDO
+          RETURN
       END FUNCTION factorial_m
 
-      FUNCTION factorial(n)
-          INTEGER    :: n,i
-          INTEGER    :: factorial
+      INTEGER FUNCTION factorial(n)
+          IMPLICIT NONE
+
+          INTEGER, INTENT(IN   ) :: n
+
+          INTEGER :: i
+
           factorial = 1
           DO i=1,n
-              factorial = i*factorial
+             factorial = i*factorial
           ENDDO
           RETURN
       END FUNCTION factorial
 
-      FUNCTION binomial(n,k)
-          INTEGER    :: n,k
-          INTEGER    :: binomial
-          real*8     :: i_r,n_l_k_r,k_r
-          real*8     :: acc
-          n_l_k_r = REAL(n - k)
-          k_r = REAL(k)
-          acc = 1.0
-          i_r = 1.0
-          DO WHILE(i_r <= k_r)
-              acc = acc*(n_l_k_r + i_r)/i_r
-              i_r = i_r + 1.0
+      INTEGER FUNCTION binomial(n,k)
+          IMPLICIT NONE
+
+          INTEGER, INTENT(IN   ) :: n,k
+
+          REAL(ppm_kind_double) :: i_r,n_l_k_r,k_r
+          REAL(ppm_kind_double) :: acc
+
+          n_l_k_r = REAL(n - k,ppm_kind_double)
+          k_r = REAL(k,ppm_kind_double)
+          acc = 1.0_ppm_kind_double
+          i_r = 1.0_ppm_kind_double
+          DO WHILE(i_r .LE. k_r)
+             acc = acc*(n_l_k_r + i_r)/i_r
+             i_r = i_r + 1.0_ppm_kind_double
           ENDDO
           binomial = NINT(acc)
           RETURN
       END FUNCTION binomial
-
 
       END MODULE ppm_module_util_functions

@@ -638,23 +638,17 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         DO i=1,ppm_dim
           IF (Nm(i) .LT. 2) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,  &
-            &    'Nm must be >1 in all space dimensions',__LINE__,info)
-            GOTO 8888
+             fail('Nm must be >1 in all space dimensions',exit_point=8888)
           ENDIF
           IF (max_phys(i) .LE. min_phys(i)) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,  &
-            &   'max_phys must be > min_phys',__LINE__,info)
-            GOTO 8888
+             fail('max_phys must be > min_phys',exit_point=8888)
           ENDIF
         ENDDO
         IF ((decomp .NE. ppm_param_decomp_xpencil) .AND.   &
@@ -662,37 +656,22 @@
         &   (decomp .NE. ppm_param_decomp_zpencil) .AND.   &
         &   (decomp .NE. ppm_param_decomp_cuboid)  .AND.   &
         &   (decomp .NE. ppm_param_decomp_user_defined)) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,caller,  &
-           &    'Invalid decomposition type specified',__LINE__,info)
-           GOTO 8888
+            fail('Invalid decomposition type specified',exit_point=8888)
         ENDIF
         IF ((decomp .EQ. ppm_param_decomp_zpencil) .AND.   &
         &   (ppm_dim .LT. 3)) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,caller,  &
-           &    'zpencil decomposition is only possible for 3D problems', &
-           &    __LINE__,info)
-           GOTO 8888
+           fail('zpencil decomposition is only possible for 3D problems',exit_point=8888)
         ENDIF
         IF ((decomp .EQ. ppm_param_decomp_user_defined) .AND.   &
         &   (nsubs .LE. 0)) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,caller,  &
-           &    'at least one subdom. must be specified for &
-           &user-defined decomposition',&
-           &      __LINE__,info)
-           GOTO 8888
+           fail('at least one subdom. must be specified for user-defined decomposition',exit_point=8888)
         ENDIF
         IF (PRESENT(ndom)) THEN
            IF (ndom .LT. ppm_nproc) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-              &    'number of subs must be >= nproc',__LINE__,info)
-              GOTO 8888
+              fail('number of subs must be >= nproc',exit_point=8888)
            ENDIF
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_cart_s
