@@ -31,8 +31,7 @@
           !-------------------------------------------------------------------------
           INTEGER                         :: ip,iq,ineigh,i,prop_id,eta_id
           REAL(KIND(1.d0))                :: t0
-          CHARACTER(LEN=256)              :: filename,cbuf
-          CHARACTER(LEN=256)              :: caller = 'sop_interpolate'
+
 
           REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old
           REAL(MK),     DIMENSION(:),   POINTER      :: wp_old
@@ -58,13 +57,15 @@
           REAL(MK),DIMENSION(2*ppm_dim)              :: ghostlayer
           INTEGER                                    :: memory_used
 
-
+          CHARACTER(LEN=ppm_char) :: filename
+          CHARACTER(LEN=ppm_char) :: caller = 'sop_interpolate'
           !!-------------------------------------------------------------------------!
           !! Initialise
           !!-------------------------------------------------------------------------!
-          info = 0
 #if debug_verbosity > 0
           CALL substart(caller,t0,info)
+#else
+          info = 0
 #endif
           !not necessary, unless this routine is called externally
           Particles%Particles_cross => Particles_old
@@ -80,43 +81,29 @@
           !---------------------------------------------------------------------!
 
           CALL particles_neighlists_xset(Particles,Particles_old,&
-              Particles%active_topoid,info)!,knn=opts%nneigh_critical)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_sub_failed,caller,&
-                  'particles_neighlists_xset failed.',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          &    Particles%active_topoid,info)!,knn=opts%nneigh_critical)
+          or_fail('particles_neighlists_xset failed.')
 
           !!---------------------------------------------------------------------!
           !! Compute interpolation kernels
           !!---------------------------------------------------------------------!
           IF (opts%order_approx .GE. 0) THEN
-              ALLOCATE(order(1),degree(ppm_dim))
+              ALLOCATE(order(1),degree(ppm_dim),STAT=info)
+              or_fail_alloc("order & degree")
               order = opts%order_approx
               degree = 0 !zeroth-order derivative => interpolation
               eta_id = 0
               CALL particles_dcop_define(Particles,eta_id,(/1._MK/),degree,&
-                  order,1,info,name="interp",interp=.TRUE.)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_define failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              DEALLOCATE(order,degree)
+              &    order,1,info,name="interp",interp=.TRUE.)
+              or_fail('particles_dcop_define failed')
+
+              DEALLOCATE(order,degree,STAT=info)
+              or_fail_dealloc("order & degree")
+
               CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_compute failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
+              or_fail('particles_dcop_compute failed')
           ELSE
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,'invalid interpolation order',&
-                  &  __LINE__,info)
-              GOTO 9999
+              fail('invalid interpolation order')
           ENDIF
 
           !---------------------------------------------------------------------!
@@ -135,67 +122,42 @@
                   IF (.NOT.Particles_old%wps(i)%map_parts) CYCLE
                   prop_id = i
                   CALL particles_allocate_wps(Particles,prop_id,info,&
-                      name=Particles_old%wps(i)%name)
-                  IF (info .NE. 0) THEN
-                      info = ppm_error_error
-                      CALL ppm_error(ppm_err_alloc,caller,&
-                          'particles_allocate_wps failed',__LINE__,info)
-                      GOTO 9999
-                  ENDIF
+                  &    name=Particles_old%wps(i)%name)
+                  or_fail_alloc('particles_allocate_wps failed')
 
                   CALL particles_dcop_apply(Particles,i,prop_id,eta_id,info)
-                  IF (info .NE. 0) THEN
-                      info = ppm_error_error
-                      CALL ppm_error(ppm_err_sub_failed,caller,&
-                          'particles_dcop_apply failed',__LINE__,info)
-                      GOTO 9999
-                  ENDIF
-
+                  or_fail('particles_dcop_apply failed')
               ENDIF
           ENDDO
 
 
           IF (opts%level_set) THEN
               CALL particles_dcop_apply(Particles,Particles_old%level_id,&
-                  Particles%level_id,eta_id,info)
-              IF (info .NE. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_apply failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
+              &   Particles%level_id,eta_id,info)
+              or_fail('particles_dcop_apply failed')
 
               !MAJOR FIXME!!!
               ! do something better to compute the gradients of level
               CALL particles_dcop_free(Particles,eta_id,info)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_free failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              ALLOCATE(order(ppm_dim),degree(ppm_dim**2))
+              or_fail('particles_dcop_free failed')
+
+              ALLOCATE(order(ppm_dim),degree(ppm_dim**2),STAT=info)
+              or_fail_alloc("order & degree")
               order = 2
               !define Laplacian operator
               degree = 0
               FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=2 !Laplacian
               coeffs = 1._MK
               CALL particles_dcop_define(Particles,eta_id,coeffs,degree,&
-                  order,ppm_dim,info,name="interp",interp=.TRUE.)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_define failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-              DEALLOCATE(order,degree)
+              &    order,ppm_dim,info,name="interp",interp=.TRUE.)
+              or_fail('particles_dcop_define failed')
+
+              DEALLOCATE(order,degree,STAT=info)
+              or_fail_dealloc("order & degree")
+
               CALL particles_dcop_compute(Particles,eta_id,info,c=opts%c)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_sub_failed,caller,&
-                      'particles_dcop_compute failed',__LINE__,info)
-                  GOTO 9999
-              ENDIF
+              or_fail('particles_dcop_compute failed')
+
               level          => Get_wps(Particles,Particles%level_id)
               level_grad     => Get_wpv(Particles,Particles%level_grad_id)
               level_old      => Get_wps(Particles_old,Particles_old%level_id)
@@ -239,12 +201,7 @@
           ! Free DC operator
           !-------------------------------------------------------------------------!
           CALL particles_dcop_free(Particles,eta_id,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_sub_failed,caller,'particles_dcop_free failed',&
-                  &  __LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail('particles_dcop_free failed')
 
           !!-------------------------------------------------------------------------!
           !! Finalize
@@ -253,6 +210,6 @@
           CALL substop(caller,t0,info)
 #endif
 
-      9999  CONTINUE ! jump here upon error
+      9999 CONTINUE ! jump here upon error
 
       END SUBROUTINE DTYPE(sop_interpolate)

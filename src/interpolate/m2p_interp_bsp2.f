@@ -308,14 +308,10 @@
                   a11a20 = a11*a20
                   a11a21 = a11*a21
 
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21)
+                  up(1,iq) = up(1,iq) + a10a20*field_up(1,ip10,ip20)
+                  up(1,iq) = up(1,iq) + a10a21*field_up(1,ip10,ip21)
+                  up(1,iq) = up(1,iq) + a11a20*field_up(1,ip11,ip20)
+                  up(1,iq) = up(1,iq) + a11a21*field_up(1,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 2-vectors
@@ -357,23 +353,15 @@
                   a11a20 = a11*a20
                   a11a21 = a11*a21
 
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21)
+                  up(1,iq) = up(1,iq) + a10a20*field_up(1,ip10,ip20)
+                  up(1,iq) = up(1,iq) + a10a21*field_up(1,ip10,ip21)
+                  up(1,iq) = up(1,iq) + a11a20*field_up(1,ip11,ip20)
+                  up(1,iq) = up(1,iq) + a11a21*field_up(1,ip11,ip21)
 
-                  up(2,iq) = up(2,iq) + &
-     &                        a10a20*field_up(2,ip10,ip20)
-                  up(2,iq) = up(2,iq) + &
-     &                        a10a21*field_up(2,ip10,ip21)
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a20*field_up(2,ip11,ip20)
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a21*field_up(2,ip11,ip21)
+                  up(2,iq) = up(2,iq) + a10a20*field_up(2,ip10,ip20)
+                  up(2,iq) = up(2,iq) + a10a21*field_up(2,ip10,ip21)
+                  up(2,iq) = up(2,iq) + a11a20*field_up(2,ip11,ip20)
+                  up(2,iq) = up(2,iq) + a11a21*field_up(2,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  Unrolled version for 3-vectors
@@ -415,32 +403,20 @@
                   a11a20 = a11*a20
                   a11a21 = a11*a21
 
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a20*field_up(1,ip10,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a10a21*field_up(1,ip10,ip21)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a20*field_up(1,ip11,ip20)
-                  up(1,iq) = up(1,iq) + &
-     &                        a11a21*field_up(1,ip11,ip21)
+                  up(1,iq) = up(1,iq) + a10a20*field_up(1,ip10,ip20)
+                  up(1,iq) = up(1,iq) + a10a21*field_up(1,ip10,ip21)
+                  up(1,iq) = up(1,iq) + a11a20*field_up(1,ip11,ip20)
+                  up(1,iq) = up(1,iq) + a11a21*field_up(1,ip11,ip21)
 
-                  up(2,iq) = up(2,iq) + &
-     &                        a10a20*field_up(2,ip10,ip20)
-                  up(2,iq) = up(2,iq) + &
-     &                        a10a21*field_up(2,ip10,ip21)
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a20*field_up(2,ip11,ip20)
-                  up(2,iq) = up(2,iq) + &
-     &                        a11a21*field_up(2,ip11,ip21)
+                  up(2,iq) = up(2,iq) + a10a20*field_up(2,ip10,ip20)
+                  up(2,iq) = up(2,iq) + a10a21*field_up(2,ip10,ip21)
+                  up(2,iq) = up(2,iq) + a11a20*field_up(2,ip11,ip20)
+                  up(2,iq) = up(2,iq) + a11a21*field_up(2,ip11,ip21)
 
-                  up(3,iq) = up(3,iq) + &
-     &                        a10a20*field_up(3,ip10,ip20)
-                  up(3,iq) = up(3,iq) + &
-     &                        a10a21*field_up(3,ip10,ip21)
-                  up(3,iq) = up(3,iq) + &
-     &                        a11a20*field_up(3,ip11,ip20)
-                  up(3,iq) = up(3,iq) + &
-     &                        a11a21*field_up(3,ip11,ip21)
+                  up(3,iq) = up(3,iq) + a10a20*field_up(3,ip10,ip20)
+                  up(3,iq) = up(3,iq) + a10a21*field_up(3,ip10,ip21)
+                  up(3,iq) = up(3,iq) + a11a20*field_up(3,ip11,ip20)
+                  up(3,iq) = up(3,iq) + a11a21*field_up(3,ip11,ip21)
                END DO ! end loop over particles in the current subdomain
                !----------------------------------------------------------------
                !  All other lda are not unrolled. This will vectorize over lda!
@@ -482,14 +458,10 @@
                   a11a20 = a11*a20
                   a11a21 = a11*a21
                   DO ldn=1,lda
-                     up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a20*field_up(ldn,ip10,ip20)
-                     up(ldn,iq) = up(ldn,iq) + &
-     &                           a10a21*field_up(ldn,ip10,ip21)
-                     up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a20*field_up(ldn,ip11,ip20)
-                     up(ldn,iq) = up(ldn,iq) + &
-     &                           a11a21*field_up(ldn,ip11,ip21)
+                     up(ldn,iq) = up(ldn,iq) + a10a20*field_up(ldn,ip10,ip20)
+                     up(ldn,iq) = up(ldn,iq) + a10a21*field_up(ldn,ip10,ip21)
+                     up(ldn,iq) = up(ldn,iq) + a11a20*field_up(ldn,ip11,ip20)
+                     up(ldn,iq) = up(ldn,iq) + a11a21*field_up(ldn,ip11,ip21)
                   END DO   ! ldn
                END DO ! end loop over particles in the current subdomain
             END IF

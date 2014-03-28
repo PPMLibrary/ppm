@@ -199,17 +199,17 @@
               len  = len - 1
           END DO
 
-          IF    (len .EQ. 3)    THEN
+          IF (len .EQ. 3) THEN
               h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
               len = len - 1
           END IF
 
-          IF(len .EQ. 2)    THEN
+          IF (len .EQ. 2) THEN
               h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
               len = len - 1
           END IF
 
-          IF(len .EQ. 1)    THEN
+          IF (len .EQ. 1) THEN
               h = IEOR(h, IBITS(data, 0, 8))
               h = h*m
           END IF
@@ -284,7 +284,7 @@
       INTEGER :: spot
 
 #ifdef __DEBUG
-      REAL(ppm_kind_double)                 :: t0
+      REAL(ppm_kind_double) :: t0
       CALL substart('hash_insert',t0,info)
 #endif
 

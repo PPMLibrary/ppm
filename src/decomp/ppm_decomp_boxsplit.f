@@ -266,7 +266,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
@@ -274,7 +274,7 @@
         IF (kbox.LT.1.OR.kbox.GT.nbox) THEN
            fail('kbox must satisfy: 0 < kbox <= nbox',exit_point=8888,ppm_error=ppm_error_error)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_bsplit_s

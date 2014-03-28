@@ -37,7 +37,7 @@
       INTEGER               :: iopt,ibuffer,pdim
       INTEGER               :: nsendlist,nrecvlist
 
-      LOGICAL               :: valid
+      LOGICAL :: valid
 
       !-------------------------------------------------------------------------
       !  Externals

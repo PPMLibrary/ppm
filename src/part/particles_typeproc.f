@@ -1703,15 +1703,17 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !!!   (otherwise -> "unassigned particle error")
 
           USE ppm_module_map
+          IMPLICIT NONE
+
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
-
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
           DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles))                          :: Pc
+
           !!! Data structure containing the particles
           INTEGER,                            INTENT(  OUT)      :: info
           !!! Return status, on success 0.
@@ -1725,10 +1727,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          INTEGER                   :: ltopoid
+          REAL(KIND(1.D0)) :: t1,t2
+
+          INTEGER :: ltopoid
           !!! index variable
-          REAL(KIND(1.D0))          :: t1,t2
-          LOGICAL                   :: partial
+
+          LOGICAL :: partial
 
           start_subroutine("part_map_positions")
 
@@ -1736,25 +1740,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           IF (.NOT.ASSOCIATED(Pc%xp)) THEN
-              fail("Pc structure had not been defined. Call allocate first")
+             fail("Pc structure had not been defined. Call allocate first")
           ENDIF
           IF (.NOT.Pc%flags(ppm_part_areinside)) THEN
-              fail("some Pc may be outside the domain. Apply BC first")
+             fail("some Pc may be outside the domain. Apply BC first")
           ENDIF
 
           IF (PRESENT(global)) THEN
-              IF (.NOT.PRESENT(topoid)) THEN
-                  fail("need the topoid parameter for global mapping")
-              ENDIF
-              IF (global) partial = .FALSE.
+             IF (.NOT.PRESENT(topoid)) THEN
+                fail("need the topoid parameter for global mapping")
+             ENDIF
+             partial = MERGE(.FALSE.,.TRUE.,global)
           ELSE
-              partial = .TRUE.
+             partial = .TRUE.
           ENDIF
 
           IF (partial) THEN
-              ltopoid = Pc%active_topoid
+             ltopoid = Pc%active_topoid
           ELSE
-              ltopoid = topoid
+             ltopoid = topoid
           ENDIF
 
           !-----------------------------------------------------------------------
@@ -1764,15 +1768,17 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
               !Particles have already been mapped onto this topology
               !nothing to do
           ELSE
-              IF (partial) THEN
-                  CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info)
-                  or_fail("ppm_map_part_partial")
-                  Pc%stats%nb_part_map = Pc%stats%nb_part_map + 1
-              ELSE
-                  CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info)
-                  or_fail("ppm_map_part_global")
-                  Pc%stats%nb_global_map = Pc%stats%nb_global_map + 1
-              ENDIF
+             IF (partial) THEN
+                CALL ppm_map_part_partial(ltopoid,Pc%xp,Pc%Npart,info)
+                or_fail("ppm_map_part_partial")
+
+                Pc%stats%nb_part_map = Pc%stats%nb_part_map + 1
+             ELSE
+                CALL ppm_map_part_global(ltopoid,Pc%xp,Pc%Npart,info)
+                or_fail("ppm_map_part_global")
+
+                Pc%stats%nb_global_map = Pc%stats%nb_global_map + 1
+             ENDIF
           ENDIF
 
           Pc%active_topoid = ltopoid

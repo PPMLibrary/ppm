@@ -611,7 +611,7 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
                    discr_info => dinfo
 
                    check_associated(discr_info, &
-                   "Field seems to not be distretized on this set")
+                   & "Field seems to not be distretized on this set")
                 ENDIF
                 RETURN
              ENDIF

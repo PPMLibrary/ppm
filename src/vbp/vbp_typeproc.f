@@ -55,6 +55,7 @@
 
           !re-initialize the few fields that are specific to VBP
           Pc%adaptive = .FALSE.
+          !yaser
           Pc%rcp => NULL()
 
           !Call the parent function

@@ -136,8 +136,8 @@
       !--------------------------------------------------------------------------
       INTEGER,  DIMENSION(:,:)     , POINTER :: istart
       INTEGER,  DIMENSION(:,:)     , POINTER :: ndata
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1 => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2 => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2
       REAL(mk), DIMENSION(:)       , POINTER :: min_phys
       REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
@@ -249,7 +249,7 @@
       REAL(mk) :: a13a23a32
       REAL(mk) :: a13a23a33
 
-
+      CHARACTER(LEN=ppm_char) :: caller='ppm_interp_p2m_renorm'
       !--------------------------------------------------------------------------
       !  Initialise
       !--------------------------------------------------------------------------
@@ -260,7 +260,7 @@
       !--------------------------------------------------------------------------
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
-      CALL substart('ppm_interp_p2m_renorm',t0,info)
+      CALL substart(caller,t0,info)
 
       dim = ppm_dim
       internal_weights = .FALSE.
@@ -269,12 +269,9 @@
       !  Check arguments
       !--------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       END IF
-
-
-
 
       topo => ppm_topo(topoid)%t
       !-------------------------------------------------------------------------
@@ -282,7 +279,7 @@
       !-------------------------------------------------------------------------
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
       !-------------------------------------------------------------------------
       !  Get istart
@@ -306,32 +303,19 @@
       !  The awesome ppm_alloc will (re)allocate them, so we dont need an init
       !  or a finalize routine.
       !--------------------------------------------------------------------------
+      NULLIFY(ilist1,ilist2)
       iopt   = ppm_param_alloc_fit
       ldu(1) = Np
       CALL ppm_alloc(ilist1,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_alloc,'ppm_interp_p2m_renorm_3d',     &
-             &        'particle list 1 ILIST1',__LINE__,info)
-        GOTO 9999
-      ENDIF
+      or_fail_alloc('particle list 1 ILIST1',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ilist2,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-        info = ppm_error_fatal
-        CALL ppm_error(ppm_err_alloc,'ppm_interp_p2m_renorm_3d',     &
-             &        'particle list 2 ILIST2',__LINE__,info)
-        GOTO 9999
-      ENDIF
+      or_fail_alloc('particle list 2 ILIST2',ppm_error=ppm_error_fatal)
 
       iopt   = ppm_param_alloc_fit
       ldu(1) = nsubs
       CALL ppm_alloc(store_info,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_interp_p2m_renorm_3d',     &
-              &        'store_info allocation : problem',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('store_info allocation : problem',ppm_error=ppm_error_fatal)
 
       !--------------------------------------------------------------------------
       !  Mesh spacing
@@ -349,8 +333,8 @@
          len_phys(i) = max_phys(i) - min_phys(i)
          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
       ENDDO
-      dxi     = 1.0_mk/dx
-      epsilon = 0.000001_mk
+      dxi     = 1.0_MK/dx
+      epsilon = 0.000001_MK
 
       !--------------------------------------------------------------------------
       !  Initialize the particle list
@@ -466,10 +450,7 @@
       !  Check that we sold all the particles
       !--------------------------------------------------------------------------
       IF (nlist2.GT.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_part_unass,'ppm_interp_p2m_renorm',  &
-              &       'MAJOR PROBLEM',__LINE__,info)
-         GOTO 9999
+         fail('MAJOR PROBLEM',ppm_err_part_unass,ppm_error=ppm_error_fatal)
       ENDIF
 
       !--------------------------------------------------------------------------
@@ -487,12 +468,7 @@
       ldu(2) = max_partnumber
 
       CALL ppm_alloc(list_sub,ldu,iopt,info)
-      IF(info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_interp_p2m_renorm_3d',     &
-              &        'problem in internal allocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_alloc('problem in internal allocation',ppm_error=ppm_error_fatal)
 
       list_sub=0
 
@@ -599,10 +575,7 @@
       !  Check that we sold all the particles
       !--------------------------------------------------------------------------
       IF (nlist2.GT.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_part_unass,'ppm_interp_p2m_renorm_3d',  &
-              &       'MAJOR PROBLEM',__LINE__,info)
-         GOTO 9999
+         fail('MAJOR PROBLEM',ppm_err_part_unass,ppm_error=ppm_error_fatal)
       ENDIF
 
       !--------------------------------------------------------------------------
@@ -615,7 +588,7 @@
          END IF
       END DO
 
-9998 CONTINUE
+      9998 CONTINUE
 #if __DIME == __3D
       !--------------------------------------------------------------------------
       !  --- 3D ---
@@ -623,9 +596,9 @@
       !  loop over subs
       ndata => p_mesh%nnodes
       ALLOCATE(field_reno((1-ghostsize(1)):(ndata(1,1)+ghostsize(1)),&
-     &                    (1-ghostsize(2)):(ndata(2,1)+ghostsize(2)),&
-     &                    (1-ghostsize(3)):(ndata(3,1)+ghostsize(3)),&
-     &                    topo%nsublist))
+      &                   (1-ghostsize(2)):(ndata(2,1)+ghostsize(2)),&
+      &                   (1-ghostsize(3)):(ndata(3,1)+ghostsize(3)),&
+      &                   topo%nsublist))
 
       DO isub = 1,topo%nsublist
          isubl = topo%isublist(isub)
@@ -994,390 +967,390 @@
 
 
 #ifdef __NOMICROINSTRUCTIONS
-field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
-&a10a20a30*up(1,iq)
-field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
-&a10a20a30*up(2,iq)
-field_up(3,ip10,ip20,ip30,isub)=field_up(3,ip10,ip20,ip30,isub)+&
-&a10a20a30*up(3,iq)
-field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
-&a11a20a30*up(1,iq)
-field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
-&a11a20a30*up(2,iq)
-field_up(3,ip11,ip20,ip30,isub)=field_up(3,ip11,ip20,ip30,isub)+&
-&a11a20a30*up(3,iq)
-field_up(1,ip12,ip20,ip30,isub)=field_up(1,ip12,ip20,ip30,isub)+&
-&a12a20a30*up(1,iq)
-field_up(2,ip12,ip20,ip30,isub)=field_up(2,ip12,ip20,ip30,isub)+&
-&a12a20a30*up(2,iq)
-field_up(3,ip12,ip20,ip30,isub)=field_up(3,ip12,ip20,ip30,isub)+&
-&a12a20a30*up(3,iq)
-field_up(1,ip13,ip20,ip30,isub)=field_up(1,ip13,ip20,ip30,isub)+&
-&a13a20a30*up(1,iq)
-field_up(2,ip13,ip20,ip30,isub)=field_up(2,ip13,ip20,ip30,isub)+&
-&a13a20a30*up(2,iq)
-field_up(3,ip13,ip20,ip30,isub)=field_up(3,ip13,ip20,ip30,isub)+&
-&a13a20a30*up(3,iq)
-field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
-&a10a21a30*up(1,iq)
-field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
-&a10a21a30*up(2,iq)
-field_up(3,ip10,ip21,ip30,isub)=field_up(3,ip10,ip21,ip30,isub)+&
-&a10a21a30*up(3,iq)
-field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
-&a11a21a30*up(1,iq)
-field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
-&a11a21a30*up(2,iq)
-field_up(3,ip11,ip21,ip30,isub)=field_up(3,ip11,ip21,ip30,isub)+&
-&a11a21a30*up(3,iq)
-field_up(1,ip12,ip21,ip30,isub)=field_up(1,ip12,ip21,ip30,isub)+&
-&a12a21a30*up(1,iq)
-field_up(2,ip12,ip21,ip30,isub)=field_up(2,ip12,ip21,ip30,isub)+&
-&a12a21a30*up(2,iq)
-field_up(3,ip12,ip21,ip30,isub)=field_up(3,ip12,ip21,ip30,isub)+&
-&a12a21a30*up(3,iq)
-field_up(1,ip13,ip21,ip30,isub)=field_up(1,ip13,ip21,ip30,isub)+&
-&a13a21a30*up(1,iq)
-field_up(2,ip13,ip21,ip30,isub)=field_up(2,ip13,ip21,ip30,isub)+&
-&a13a21a30*up(2,iq)
-field_up(3,ip13,ip21,ip30,isub)=field_up(3,ip13,ip21,ip30,isub)+&
-&a13a21a30*up(3,iq)
-field_up(1,ip10,ip22,ip30,isub)=field_up(1,ip10,ip22,ip30,isub)+&
-&a10a22a30*up(1,iq)
-field_up(2,ip10,ip22,ip30,isub)=field_up(2,ip10,ip22,ip30,isub)+&
-&a10a22a30*up(2,iq)
-field_up(3,ip10,ip22,ip30,isub)=field_up(3,ip10,ip22,ip30,isub)+&
-&a10a22a30*up(3,iq)
-field_up(1,ip11,ip22,ip30,isub)=field_up(1,ip11,ip22,ip30,isub)+&
-&a11a22a30*up(1,iq)
-field_up(2,ip11,ip22,ip30,isub)=field_up(2,ip11,ip22,ip30,isub)+&
-&a11a22a30*up(2,iq)
-field_up(3,ip11,ip22,ip30,isub)=field_up(3,ip11,ip22,ip30,isub)+&
-&a11a22a30*up(3,iq)
-field_up(1,ip12,ip22,ip30,isub)=field_up(1,ip12,ip22,ip30,isub)+&
-&a12a22a30*up(1,iq)
-field_up(2,ip12,ip22,ip30,isub)=field_up(2,ip12,ip22,ip30,isub)+&
-&a12a22a30*up(2,iq)
-field_up(3,ip12,ip22,ip30,isub)=field_up(3,ip12,ip22,ip30,isub)+&
-&a12a22a30*up(3,iq)
-field_up(1,ip13,ip22,ip30,isub)=field_up(1,ip13,ip22,ip30,isub)+&
-&a13a22a30*up(1,iq)
-field_up(2,ip13,ip22,ip30,isub)=field_up(2,ip13,ip22,ip30,isub)+&
-&a13a22a30*up(2,iq)
-field_up(3,ip13,ip22,ip30,isub)=field_up(3,ip13,ip22,ip30,isub)+&
-&a13a22a30*up(3,iq)
-field_up(1,ip10,ip23,ip30,isub)=field_up(1,ip10,ip23,ip30,isub)+&
-&a10a23a30*up(1,iq)
-field_up(2,ip10,ip23,ip30,isub)=field_up(2,ip10,ip23,ip30,isub)+&
-&a10a23a30*up(2,iq)
-field_up(3,ip10,ip23,ip30,isub)=field_up(3,ip10,ip23,ip30,isub)+&
-&a10a23a30*up(3,iq)
-field_up(1,ip11,ip23,ip30,isub)=field_up(1,ip11,ip23,ip30,isub)+&
-&a11a23a30*up(1,iq)
-field_up(2,ip11,ip23,ip30,isub)=field_up(2,ip11,ip23,ip30,isub)+&
-&a11a23a30*up(2,iq)
-field_up(3,ip11,ip23,ip30,isub)=field_up(3,ip11,ip23,ip30,isub)+&
-&a11a23a30*up(3,iq)
-field_up(1,ip12,ip23,ip30,isub)=field_up(1,ip12,ip23,ip30,isub)+&
-&a12a23a30*up(1,iq)
-field_up(2,ip12,ip23,ip30,isub)=field_up(2,ip12,ip23,ip30,isub)+&
-&a12a23a30*up(2,iq)
-field_up(3,ip12,ip23,ip30,isub)=field_up(3,ip12,ip23,ip30,isub)+&
-&a12a23a30*up(3,iq)
-field_up(1,ip13,ip23,ip30,isub)=field_up(1,ip13,ip23,ip30,isub)+&
-&a13a23a30*up(1,iq)
-field_up(2,ip13,ip23,ip30,isub)=field_up(2,ip13,ip23,ip30,isub)+&
-&a13a23a30*up(2,iq)
-field_up(3,ip13,ip23,ip30,isub)=field_up(3,ip13,ip23,ip30,isub)+&
-&a13a23a30*up(3,iq)
-field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
-&a10a20a31*up(1,iq)
-field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
-&a10a20a31*up(2,iq)
-field_up(3,ip10,ip20,ip31,isub)=field_up(3,ip10,ip20,ip31,isub)+&
-&a10a20a31*up(3,iq)
-field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
-&a11a20a31*up(1,iq)
-field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
-&a11a20a31*up(2,iq)
-field_up(3,ip11,ip20,ip31,isub)=field_up(3,ip11,ip20,ip31,isub)+&
-&a11a20a31*up(3,iq)
-field_up(1,ip12,ip20,ip31,isub)=field_up(1,ip12,ip20,ip31,isub)+&
-&a12a20a31*up(1,iq)
-field_up(2,ip12,ip20,ip31,isub)=field_up(2,ip12,ip20,ip31,isub)+&
-&a12a20a31*up(2,iq)
-field_up(3,ip12,ip20,ip31,isub)=field_up(3,ip12,ip20,ip31,isub)+&
-&a12a20a31*up(3,iq)
-field_up(1,ip13,ip20,ip31,isub)=field_up(1,ip13,ip20,ip31,isub)+&
-&a13a20a31*up(1,iq)
-field_up(2,ip13,ip20,ip31,isub)=field_up(2,ip13,ip20,ip31,isub)+&
-&a13a20a31*up(2,iq)
-field_up(3,ip13,ip20,ip31,isub)=field_up(3,ip13,ip20,ip31,isub)+&
-&a13a20a31*up(3,iq)
-field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
-&a10a21a31*up(1,iq)
-field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
-&a10a21a31*up(2,iq)
-field_up(3,ip10,ip21,ip31,isub)=field_up(3,ip10,ip21,ip31,isub)+&
-&a10a21a31*up(3,iq)
-field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
-&a11a21a31*up(1,iq)
-field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
-&a11a21a31*up(2,iq)
-field_up(3,ip11,ip21,ip31,isub)=field_up(3,ip11,ip21,ip31,isub)+&
-&a11a21a31*up(3,iq)
-field_up(1,ip12,ip21,ip31,isub)=field_up(1,ip12,ip21,ip31,isub)+&
-&a12a21a31*up(1,iq)
-field_up(2,ip12,ip21,ip31,isub)=field_up(2,ip12,ip21,ip31,isub)+&
-&a12a21a31*up(2,iq)
-field_up(3,ip12,ip21,ip31,isub)=field_up(3,ip12,ip21,ip31,isub)+&
-&a12a21a31*up(3,iq)
-field_up(1,ip13,ip21,ip31,isub)=field_up(1,ip13,ip21,ip31,isub)+&
-&a13a21a31*up(1,iq)
-field_up(2,ip13,ip21,ip31,isub)=field_up(2,ip13,ip21,ip31,isub)+&
-&a13a21a31*up(2,iq)
-field_up(3,ip13,ip21,ip31,isub)=field_up(3,ip13,ip21,ip31,isub)+&
-&a13a21a31*up(3,iq)
-field_up(1,ip10,ip22,ip31,isub)=field_up(1,ip10,ip22,ip31,isub)+&
-&a10a22a31*up(1,iq)
-field_up(2,ip10,ip22,ip31,isub)=field_up(2,ip10,ip22,ip31,isub)+&
-&a10a22a31*up(2,iq)
-field_up(3,ip10,ip22,ip31,isub)=field_up(3,ip10,ip22,ip31,isub)+&
-&a10a22a31*up(3,iq)
-field_up(1,ip11,ip22,ip31,isub)=field_up(1,ip11,ip22,ip31,isub)+&
-&a11a22a31*up(1,iq)
-field_up(2,ip11,ip22,ip31,isub)=field_up(2,ip11,ip22,ip31,isub)+&
-&a11a22a31*up(2,iq)
-field_up(3,ip11,ip22,ip31,isub)=field_up(3,ip11,ip22,ip31,isub)+&
-&a11a22a31*up(3,iq)
-field_up(1,ip12,ip22,ip31,isub)=field_up(1,ip12,ip22,ip31,isub)+&
-&a12a22a31*up(1,iq)
-field_up(2,ip12,ip22,ip31,isub)=field_up(2,ip12,ip22,ip31,isub)+&
-&a12a22a31*up(2,iq)
-field_up(3,ip12,ip22,ip31,isub)=field_up(3,ip12,ip22,ip31,isub)+&
-&a12a22a31*up(3,iq)
-field_up(1,ip13,ip22,ip31,isub)=field_up(1,ip13,ip22,ip31,isub)+&
-&a13a22a31*up(1,iq)
-field_up(2,ip13,ip22,ip31,isub)=field_up(2,ip13,ip22,ip31,isub)+&
-&a13a22a31*up(2,iq)
-field_up(3,ip13,ip22,ip31,isub)=field_up(3,ip13,ip22,ip31,isub)+&
-&a13a22a31*up(3,iq)
-field_up(1,ip10,ip23,ip31,isub)=field_up(1,ip10,ip23,ip31,isub)+&
-&a10a23a31*up(1,iq)
-field_up(2,ip10,ip23,ip31,isub)=field_up(2,ip10,ip23,ip31,isub)+&
-&a10a23a31*up(2,iq)
-field_up(3,ip10,ip23,ip31,isub)=field_up(3,ip10,ip23,ip31,isub)+&
-&a10a23a31*up(3,iq)
-field_up(1,ip11,ip23,ip31,isub)=field_up(1,ip11,ip23,ip31,isub)+&
-&a11a23a31*up(1,iq)
-field_up(2,ip11,ip23,ip31,isub)=field_up(2,ip11,ip23,ip31,isub)+&
-&a11a23a31*up(2,iq)
-field_up(3,ip11,ip23,ip31,isub)=field_up(3,ip11,ip23,ip31,isub)+&
-&a11a23a31*up(3,iq)
-field_up(1,ip12,ip23,ip31,isub)=field_up(1,ip12,ip23,ip31,isub)+&
-&a12a23a31*up(1,iq)
-field_up(2,ip12,ip23,ip31,isub)=field_up(2,ip12,ip23,ip31,isub)+&
-&a12a23a31*up(2,iq)
-field_up(3,ip12,ip23,ip31,isub)=field_up(3,ip12,ip23,ip31,isub)+&
-&a12a23a31*up(3,iq)
-field_up(1,ip13,ip23,ip31,isub)=field_up(1,ip13,ip23,ip31,isub)+&
-&a13a23a31*up(1,iq)
-field_up(2,ip13,ip23,ip31,isub)=field_up(2,ip13,ip23,ip31,isub)+&
-&a13a23a31*up(2,iq)
-field_up(3,ip13,ip23,ip31,isub)=field_up(3,ip13,ip23,ip31,isub)+&
-&a13a23a31*up(3,iq)
-field_up(1,ip10,ip20,ip32,isub)=field_up(1,ip10,ip20,ip32,isub)+&
-&a10a20a32*up(1,iq)
-field_up(2,ip10,ip20,ip32,isub)=field_up(2,ip10,ip20,ip32,isub)+&
-&a10a20a32*up(2,iq)
-field_up(3,ip10,ip20,ip32,isub)=field_up(3,ip10,ip20,ip32,isub)+&
-&a10a20a32*up(3,iq)
-field_up(1,ip11,ip20,ip32,isub)=field_up(1,ip11,ip20,ip32,isub)+&
-&a11a20a32*up(1,iq)
-field_up(2,ip11,ip20,ip32,isub)=field_up(2,ip11,ip20,ip32,isub)+&
-&a11a20a32*up(2,iq)
-field_up(3,ip11,ip20,ip32,isub)=field_up(3,ip11,ip20,ip32,isub)+&
-&a11a20a32*up(3,iq)
-field_up(1,ip12,ip20,ip32,isub)=field_up(1,ip12,ip20,ip32,isub)+&
-&a12a20a32*up(1,iq)
-field_up(2,ip12,ip20,ip32,isub)=field_up(2,ip12,ip20,ip32,isub)+&
-&a12a20a32*up(2,iq)
-field_up(3,ip12,ip20,ip32,isub)=field_up(3,ip12,ip20,ip32,isub)+&
-&a12a20a32*up(3,iq)
-field_up(1,ip13,ip20,ip32,isub)=field_up(1,ip13,ip20,ip32,isub)+&
-&a13a20a32*up(1,iq)
-field_up(2,ip13,ip20,ip32,isub)=field_up(2,ip13,ip20,ip32,isub)+&
-&a13a20a32*up(2,iq)
-field_up(3,ip13,ip20,ip32,isub)=field_up(3,ip13,ip20,ip32,isub)+&
-&a13a20a32*up(3,iq)
-field_up(1,ip10,ip21,ip32,isub)=field_up(1,ip10,ip21,ip32,isub)+&
-&a10a21a32*up(1,iq)
-field_up(2,ip10,ip21,ip32,isub)=field_up(2,ip10,ip21,ip32,isub)+&
-&a10a21a32*up(2,iq)
-field_up(3,ip10,ip21,ip32,isub)=field_up(3,ip10,ip21,ip32,isub)+&
-&a10a21a32*up(3,iq)
-field_up(1,ip11,ip21,ip32,isub)=field_up(1,ip11,ip21,ip32,isub)+&
-&a11a21a32*up(1,iq)
-field_up(2,ip11,ip21,ip32,isub)=field_up(2,ip11,ip21,ip32,isub)+&
-&a11a21a32*up(2,iq)
-field_up(3,ip11,ip21,ip32,isub)=field_up(3,ip11,ip21,ip32,isub)+&
-&a11a21a32*up(3,iq)
-field_up(1,ip12,ip21,ip32,isub)=field_up(1,ip12,ip21,ip32,isub)+&
-&a12a21a32*up(1,iq)
-field_up(2,ip12,ip21,ip32,isub)=field_up(2,ip12,ip21,ip32,isub)+&
-&a12a21a32*up(2,iq)
-field_up(3,ip12,ip21,ip32,isub)=field_up(3,ip12,ip21,ip32,isub)+&
-&a12a21a32*up(3,iq)
-field_up(1,ip13,ip21,ip32,isub)=field_up(1,ip13,ip21,ip32,isub)+&
-&a13a21a32*up(1,iq)
-field_up(2,ip13,ip21,ip32,isub)=field_up(2,ip13,ip21,ip32,isub)+&
-&a13a21a32*up(2,iq)
-field_up(3,ip13,ip21,ip32,isub)=field_up(3,ip13,ip21,ip32,isub)+&
-&a13a21a32*up(3,iq)
-field_up(1,ip10,ip22,ip32,isub)=field_up(1,ip10,ip22,ip32,isub)+&
-&a10a22a32*up(1,iq)
-field_up(2,ip10,ip22,ip32,isub)=field_up(2,ip10,ip22,ip32,isub)+&
-&a10a22a32*up(2,iq)
-field_up(3,ip10,ip22,ip32,isub)=field_up(3,ip10,ip22,ip32,isub)+&
-&a10a22a32*up(3,iq)
-field_up(1,ip11,ip22,ip32,isub)=field_up(1,ip11,ip22,ip32,isub)+&
-&a11a22a32*up(1,iq)
-field_up(2,ip11,ip22,ip32,isub)=field_up(2,ip11,ip22,ip32,isub)+&
-&a11a22a32*up(2,iq)
-field_up(3,ip11,ip22,ip32,isub)=field_up(3,ip11,ip22,ip32,isub)+&
-&a11a22a32*up(3,iq)
-field_up(1,ip12,ip22,ip32,isub)=field_up(1,ip12,ip22,ip32,isub)+&
-&a12a22a32*up(1,iq)
-field_up(2,ip12,ip22,ip32,isub)=field_up(2,ip12,ip22,ip32,isub)+&
-&a12a22a32*up(2,iq)
-field_up(3,ip12,ip22,ip32,isub)=field_up(3,ip12,ip22,ip32,isub)+&
-&a12a22a32*up(3,iq)
-field_up(1,ip13,ip22,ip32,isub)=field_up(1,ip13,ip22,ip32,isub)+&
-&a13a22a32*up(1,iq)
-field_up(2,ip13,ip22,ip32,isub)=field_up(2,ip13,ip22,ip32,isub)+&
-&a13a22a32*up(2,iq)
-field_up(3,ip13,ip22,ip32,isub)=field_up(3,ip13,ip22,ip32,isub)+&
-&a13a22a32*up(3,iq)
-field_up(1,ip10,ip23,ip32,isub)=field_up(1,ip10,ip23,ip32,isub)+&
-&a10a23a32*up(1,iq)
-field_up(2,ip10,ip23,ip32,isub)=field_up(2,ip10,ip23,ip32,isub)+&
-&a10a23a32*up(2,iq)
-field_up(3,ip10,ip23,ip32,isub)=field_up(3,ip10,ip23,ip32,isub)+&
-&a10a23a32*up(3,iq)
-field_up(1,ip11,ip23,ip32,isub)=field_up(1,ip11,ip23,ip32,isub)+&
-&a11a23a32*up(1,iq)
-field_up(2,ip11,ip23,ip32,isub)=field_up(2,ip11,ip23,ip32,isub)+&
-&a11a23a32*up(2,iq)
-field_up(3,ip11,ip23,ip32,isub)=field_up(3,ip11,ip23,ip32,isub)+&
-&a11a23a32*up(3,iq)
-field_up(1,ip12,ip23,ip32,isub)=field_up(1,ip12,ip23,ip32,isub)+&
-&a12a23a32*up(1,iq)
-field_up(2,ip12,ip23,ip32,isub)=field_up(2,ip12,ip23,ip32,isub)+&
-&a12a23a32*up(2,iq)
-field_up(3,ip12,ip23,ip32,isub)=field_up(3,ip12,ip23,ip32,isub)+&
-&a12a23a32*up(3,iq)
-field_up(1,ip13,ip23,ip32,isub)=field_up(1,ip13,ip23,ip32,isub)+&
-&a13a23a32*up(1,iq)
-field_up(2,ip13,ip23,ip32,isub)=field_up(2,ip13,ip23,ip32,isub)+&
-&a13a23a32*up(2,iq)
-field_up(3,ip13,ip23,ip32,isub)=field_up(3,ip13,ip23,ip32,isub)+&
-&a13a23a32*up(3,iq)
-field_up(1,ip10,ip20,ip33,isub)=field_up(1,ip10,ip20,ip33,isub)+&
-&a10a20a33*up(1,iq)
-field_up(2,ip10,ip20,ip33,isub)=field_up(2,ip10,ip20,ip33,isub)+&
-&a10a20a33*up(2,iq)
-field_up(3,ip10,ip20,ip33,isub)=field_up(3,ip10,ip20,ip33,isub)+&
-&a10a20a33*up(3,iq)
-field_up(1,ip11,ip20,ip33,isub)=field_up(1,ip11,ip20,ip33,isub)+&
-&a11a20a33*up(1,iq)
-field_up(2,ip11,ip20,ip33,isub)=field_up(2,ip11,ip20,ip33,isub)+&
-&a11a20a33*up(2,iq)
-field_up(3,ip11,ip20,ip33,isub)=field_up(3,ip11,ip20,ip33,isub)+&
-&a11a20a33*up(3,iq)
-field_up(1,ip12,ip20,ip33,isub)=field_up(1,ip12,ip20,ip33,isub)+&
-&a12a20a33*up(1,iq)
-field_up(2,ip12,ip20,ip33,isub)=field_up(2,ip12,ip20,ip33,isub)+&
-&a12a20a33*up(2,iq)
-field_up(3,ip12,ip20,ip33,isub)=field_up(3,ip12,ip20,ip33,isub)+&
-&a12a20a33*up(3,iq)
-field_up(1,ip13,ip20,ip33,isub)=field_up(1,ip13,ip20,ip33,isub)+&
-&a13a20a33*up(1,iq)
-field_up(2,ip13,ip20,ip33,isub)=field_up(2,ip13,ip20,ip33,isub)+&
-&a13a20a33*up(2,iq)
-field_up(3,ip13,ip20,ip33,isub)=field_up(3,ip13,ip20,ip33,isub)+&
-&a13a20a33*up(3,iq)
-field_up(1,ip10,ip21,ip33,isub)=field_up(1,ip10,ip21,ip33,isub)+&
-&a10a21a33*up(1,iq)
-field_up(2,ip10,ip21,ip33,isub)=field_up(2,ip10,ip21,ip33,isub)+&
-&a10a21a33*up(2,iq)
-field_up(3,ip10,ip21,ip33,isub)=field_up(3,ip10,ip21,ip33,isub)+&
-&a10a21a33*up(3,iq)
-field_up(1,ip11,ip21,ip33,isub)=field_up(1,ip11,ip21,ip33,isub)+&
-&a11a21a33*up(1,iq)
-field_up(2,ip11,ip21,ip33,isub)=field_up(2,ip11,ip21,ip33,isub)+&
-&a11a21a33*up(2,iq)
-field_up(3,ip11,ip21,ip33,isub)=field_up(3,ip11,ip21,ip33,isub)+&
-&a11a21a33*up(3,iq)
-field_up(1,ip12,ip21,ip33,isub)=field_up(1,ip12,ip21,ip33,isub)+&
-&a12a21a33*up(1,iq)
-field_up(2,ip12,ip21,ip33,isub)=field_up(2,ip12,ip21,ip33,isub)+&
-&a12a21a33*up(2,iq)
-field_up(3,ip12,ip21,ip33,isub)=field_up(3,ip12,ip21,ip33,isub)+&
-&a12a21a33*up(3,iq)
-field_up(1,ip13,ip21,ip33,isub)=field_up(1,ip13,ip21,ip33,isub)+&
-&a13a21a33*up(1,iq)
-field_up(2,ip13,ip21,ip33,isub)=field_up(2,ip13,ip21,ip33,isub)+&
-&a13a21a33*up(2,iq)
-field_up(3,ip13,ip21,ip33,isub)=field_up(3,ip13,ip21,ip33,isub)+&
-&a13a21a33*up(3,iq)
-field_up(1,ip10,ip22,ip33,isub)=field_up(1,ip10,ip22,ip33,isub)+&
-&a10a22a33*up(1,iq)
-field_up(2,ip10,ip22,ip33,isub)=field_up(2,ip10,ip22,ip33,isub)+&
-&a10a22a33*up(2,iq)
-field_up(3,ip10,ip22,ip33,isub)=field_up(3,ip10,ip22,ip33,isub)+&
-&a10a22a33*up(3,iq)
-field_up(1,ip11,ip22,ip33,isub)=field_up(1,ip11,ip22,ip33,isub)+&
-&a11a22a33*up(1,iq)
-field_up(2,ip11,ip22,ip33,isub)=field_up(2,ip11,ip22,ip33,isub)+&
-&a11a22a33*up(2,iq)
-field_up(3,ip11,ip22,ip33,isub)=field_up(3,ip11,ip22,ip33,isub)+&
-&a11a22a33*up(3,iq)
-field_up(1,ip12,ip22,ip33,isub)=field_up(1,ip12,ip22,ip33,isub)+&
-&a12a22a33*up(1,iq)
-field_up(2,ip12,ip22,ip33,isub)=field_up(2,ip12,ip22,ip33,isub)+&
-&a12a22a33*up(2,iq)
-field_up(3,ip12,ip22,ip33,isub)=field_up(3,ip12,ip22,ip33,isub)+&
-&a12a22a33*up(3,iq)
-field_up(1,ip13,ip22,ip33,isub)=field_up(1,ip13,ip22,ip33,isub)+&
-&a13a22a33*up(1,iq)
-field_up(2,ip13,ip22,ip33,isub)=field_up(2,ip13,ip22,ip33,isub)+&
-&a13a22a33*up(2,iq)
-field_up(3,ip13,ip22,ip33,isub)=field_up(3,ip13,ip22,ip33,isub)+&
-&a13a22a33*up(3,iq)
-field_up(1,ip10,ip23,ip33,isub)=field_up(1,ip10,ip23,ip33,isub)+&
-&a10a23a33*up(1,iq)
-field_up(2,ip10,ip23,ip33,isub)=field_up(2,ip10,ip23,ip33,isub)+&
-&a10a23a33*up(2,iq)
-field_up(3,ip10,ip23,ip33,isub)=field_up(3,ip10,ip23,ip33,isub)+&
-&a10a23a33*up(3,iq)
-field_up(1,ip11,ip23,ip33,isub)=field_up(1,ip11,ip23,ip33,isub)+&
-&a11a23a33*up(1,iq)
-field_up(2,ip11,ip23,ip33,isub)=field_up(2,ip11,ip23,ip33,isub)+&
-&a11a23a33*up(2,iq)
-field_up(3,ip11,ip23,ip33,isub)=field_up(3,ip11,ip23,ip33,isub)+&
-&a11a23a33*up(3,iq)
-field_up(1,ip12,ip23,ip33,isub)=field_up(1,ip12,ip23,ip33,isub)+&
-&a12a23a33*up(1,iq)
-field_up(2,ip12,ip23,ip33,isub)=field_up(2,ip12,ip23,ip33,isub)+&
-&a12a23a33*up(2,iq)
-field_up(3,ip12,ip23,ip33,isub)=field_up(3,ip12,ip23,ip33,isub)+&
-&a12a23a33*up(3,iq)
-field_up(1,ip13,ip23,ip33,isub)=field_up(1,ip13,ip23,ip33,isub)+&
-&a13a23a33*up(1,iq)
-field_up(2,ip13,ip23,ip33,isub)=field_up(2,ip13,ip23,ip33,isub)+&
-&a13a23a33*up(2,iq)
-field_up(3,ip13,ip23,ip33,isub)=field_up(3,ip13,ip23,ip33,isub)+&
-&a13a23a33*up(3,iq)
+               field_up(1,ip10,ip20,ip30,isub)=field_up(1,ip10,ip20,ip30,isub)+&
+               &a10a20a30*up(1,iq)
+               field_up(2,ip10,ip20,ip30,isub)=field_up(2,ip10,ip20,ip30,isub)+&
+               &a10a20a30*up(2,iq)
+               field_up(3,ip10,ip20,ip30,isub)=field_up(3,ip10,ip20,ip30,isub)+&
+               &a10a20a30*up(3,iq)
+               field_up(1,ip11,ip20,ip30,isub)=field_up(1,ip11,ip20,ip30,isub)+&
+               &a11a20a30*up(1,iq)
+               field_up(2,ip11,ip20,ip30,isub)=field_up(2,ip11,ip20,ip30,isub)+&
+               &a11a20a30*up(2,iq)
+               field_up(3,ip11,ip20,ip30,isub)=field_up(3,ip11,ip20,ip30,isub)+&
+               &a11a20a30*up(3,iq)
+               field_up(1,ip12,ip20,ip30,isub)=field_up(1,ip12,ip20,ip30,isub)+&
+               &a12a20a30*up(1,iq)
+               field_up(2,ip12,ip20,ip30,isub)=field_up(2,ip12,ip20,ip30,isub)+&
+               &a12a20a30*up(2,iq)
+               field_up(3,ip12,ip20,ip30,isub)=field_up(3,ip12,ip20,ip30,isub)+&
+               &a12a20a30*up(3,iq)
+               field_up(1,ip13,ip20,ip30,isub)=field_up(1,ip13,ip20,ip30,isub)+&
+               &a13a20a30*up(1,iq)
+               field_up(2,ip13,ip20,ip30,isub)=field_up(2,ip13,ip20,ip30,isub)+&
+               &a13a20a30*up(2,iq)
+               field_up(3,ip13,ip20,ip30,isub)=field_up(3,ip13,ip20,ip30,isub)+&
+               &a13a20a30*up(3,iq)
+               field_up(1,ip10,ip21,ip30,isub)=field_up(1,ip10,ip21,ip30,isub)+&
+               &a10a21a30*up(1,iq)
+               field_up(2,ip10,ip21,ip30,isub)=field_up(2,ip10,ip21,ip30,isub)+&
+               &a10a21a30*up(2,iq)
+               field_up(3,ip10,ip21,ip30,isub)=field_up(3,ip10,ip21,ip30,isub)+&
+               &a10a21a30*up(3,iq)
+               field_up(1,ip11,ip21,ip30,isub)=field_up(1,ip11,ip21,ip30,isub)+&
+               &a11a21a30*up(1,iq)
+               field_up(2,ip11,ip21,ip30,isub)=field_up(2,ip11,ip21,ip30,isub)+&
+               &a11a21a30*up(2,iq)
+               field_up(3,ip11,ip21,ip30,isub)=field_up(3,ip11,ip21,ip30,isub)+&
+               &a11a21a30*up(3,iq)
+               field_up(1,ip12,ip21,ip30,isub)=field_up(1,ip12,ip21,ip30,isub)+&
+               &a12a21a30*up(1,iq)
+               field_up(2,ip12,ip21,ip30,isub)=field_up(2,ip12,ip21,ip30,isub)+&
+               &a12a21a30*up(2,iq)
+               field_up(3,ip12,ip21,ip30,isub)=field_up(3,ip12,ip21,ip30,isub)+&
+               &a12a21a30*up(3,iq)
+               field_up(1,ip13,ip21,ip30,isub)=field_up(1,ip13,ip21,ip30,isub)+&
+               &a13a21a30*up(1,iq)
+               field_up(2,ip13,ip21,ip30,isub)=field_up(2,ip13,ip21,ip30,isub)+&
+               &a13a21a30*up(2,iq)
+               field_up(3,ip13,ip21,ip30,isub)=field_up(3,ip13,ip21,ip30,isub)+&
+               &a13a21a30*up(3,iq)
+               field_up(1,ip10,ip22,ip30,isub)=field_up(1,ip10,ip22,ip30,isub)+&
+               &a10a22a30*up(1,iq)
+               field_up(2,ip10,ip22,ip30,isub)=field_up(2,ip10,ip22,ip30,isub)+&
+               &a10a22a30*up(2,iq)
+               field_up(3,ip10,ip22,ip30,isub)=field_up(3,ip10,ip22,ip30,isub)+&
+               &a10a22a30*up(3,iq)
+               field_up(1,ip11,ip22,ip30,isub)=field_up(1,ip11,ip22,ip30,isub)+&
+               &a11a22a30*up(1,iq)
+               field_up(2,ip11,ip22,ip30,isub)=field_up(2,ip11,ip22,ip30,isub)+&
+               &a11a22a30*up(2,iq)
+               field_up(3,ip11,ip22,ip30,isub)=field_up(3,ip11,ip22,ip30,isub)+&
+               &a11a22a30*up(3,iq)
+               field_up(1,ip12,ip22,ip30,isub)=field_up(1,ip12,ip22,ip30,isub)+&
+               &a12a22a30*up(1,iq)
+               field_up(2,ip12,ip22,ip30,isub)=field_up(2,ip12,ip22,ip30,isub)+&
+               &a12a22a30*up(2,iq)
+               field_up(3,ip12,ip22,ip30,isub)=field_up(3,ip12,ip22,ip30,isub)+&
+               &a12a22a30*up(3,iq)
+               field_up(1,ip13,ip22,ip30,isub)=field_up(1,ip13,ip22,ip30,isub)+&
+               &a13a22a30*up(1,iq)
+               field_up(2,ip13,ip22,ip30,isub)=field_up(2,ip13,ip22,ip30,isub)+&
+               &a13a22a30*up(2,iq)
+               field_up(3,ip13,ip22,ip30,isub)=field_up(3,ip13,ip22,ip30,isub)+&
+               &a13a22a30*up(3,iq)
+               field_up(1,ip10,ip23,ip30,isub)=field_up(1,ip10,ip23,ip30,isub)+&
+               &a10a23a30*up(1,iq)
+               field_up(2,ip10,ip23,ip30,isub)=field_up(2,ip10,ip23,ip30,isub)+&
+               &a10a23a30*up(2,iq)
+               field_up(3,ip10,ip23,ip30,isub)=field_up(3,ip10,ip23,ip30,isub)+&
+               &a10a23a30*up(3,iq)
+               field_up(1,ip11,ip23,ip30,isub)=field_up(1,ip11,ip23,ip30,isub)+&
+               &a11a23a30*up(1,iq)
+               field_up(2,ip11,ip23,ip30,isub)=field_up(2,ip11,ip23,ip30,isub)+&
+               &a11a23a30*up(2,iq)
+               field_up(3,ip11,ip23,ip30,isub)=field_up(3,ip11,ip23,ip30,isub)+&
+               &a11a23a30*up(3,iq)
+               field_up(1,ip12,ip23,ip30,isub)=field_up(1,ip12,ip23,ip30,isub)+&
+               &a12a23a30*up(1,iq)
+               field_up(2,ip12,ip23,ip30,isub)=field_up(2,ip12,ip23,ip30,isub)+&
+               &a12a23a30*up(2,iq)
+               field_up(3,ip12,ip23,ip30,isub)=field_up(3,ip12,ip23,ip30,isub)+&
+               &a12a23a30*up(3,iq)
+               field_up(1,ip13,ip23,ip30,isub)=field_up(1,ip13,ip23,ip30,isub)+&
+               &a13a23a30*up(1,iq)
+               field_up(2,ip13,ip23,ip30,isub)=field_up(2,ip13,ip23,ip30,isub)+&
+               &a13a23a30*up(2,iq)
+               field_up(3,ip13,ip23,ip30,isub)=field_up(3,ip13,ip23,ip30,isub)+&
+               &a13a23a30*up(3,iq)
+               field_up(1,ip10,ip20,ip31,isub)=field_up(1,ip10,ip20,ip31,isub)+&
+               &a10a20a31*up(1,iq)
+               field_up(2,ip10,ip20,ip31,isub)=field_up(2,ip10,ip20,ip31,isub)+&
+               &a10a20a31*up(2,iq)
+               field_up(3,ip10,ip20,ip31,isub)=field_up(3,ip10,ip20,ip31,isub)+&
+               &a10a20a31*up(3,iq)
+               field_up(1,ip11,ip20,ip31,isub)=field_up(1,ip11,ip20,ip31,isub)+&
+               &a11a20a31*up(1,iq)
+               field_up(2,ip11,ip20,ip31,isub)=field_up(2,ip11,ip20,ip31,isub)+&
+               &a11a20a31*up(2,iq)
+               field_up(3,ip11,ip20,ip31,isub)=field_up(3,ip11,ip20,ip31,isub)+&
+               &a11a20a31*up(3,iq)
+               field_up(1,ip12,ip20,ip31,isub)=field_up(1,ip12,ip20,ip31,isub)+&
+               &a12a20a31*up(1,iq)
+               field_up(2,ip12,ip20,ip31,isub)=field_up(2,ip12,ip20,ip31,isub)+&
+               &a12a20a31*up(2,iq)
+               field_up(3,ip12,ip20,ip31,isub)=field_up(3,ip12,ip20,ip31,isub)+&
+               &a12a20a31*up(3,iq)
+               field_up(1,ip13,ip20,ip31,isub)=field_up(1,ip13,ip20,ip31,isub)+&
+               &a13a20a31*up(1,iq)
+               field_up(2,ip13,ip20,ip31,isub)=field_up(2,ip13,ip20,ip31,isub)+&
+               &a13a20a31*up(2,iq)
+               field_up(3,ip13,ip20,ip31,isub)=field_up(3,ip13,ip20,ip31,isub)+&
+               &a13a20a31*up(3,iq)
+               field_up(1,ip10,ip21,ip31,isub)=field_up(1,ip10,ip21,ip31,isub)+&
+               &a10a21a31*up(1,iq)
+               field_up(2,ip10,ip21,ip31,isub)=field_up(2,ip10,ip21,ip31,isub)+&
+               &a10a21a31*up(2,iq)
+               field_up(3,ip10,ip21,ip31,isub)=field_up(3,ip10,ip21,ip31,isub)+&
+               &a10a21a31*up(3,iq)
+               field_up(1,ip11,ip21,ip31,isub)=field_up(1,ip11,ip21,ip31,isub)+&
+               &a11a21a31*up(1,iq)
+               field_up(2,ip11,ip21,ip31,isub)=field_up(2,ip11,ip21,ip31,isub)+&
+               &a11a21a31*up(2,iq)
+               field_up(3,ip11,ip21,ip31,isub)=field_up(3,ip11,ip21,ip31,isub)+&
+               &a11a21a31*up(3,iq)
+               field_up(1,ip12,ip21,ip31,isub)=field_up(1,ip12,ip21,ip31,isub)+&
+               &a12a21a31*up(1,iq)
+               field_up(2,ip12,ip21,ip31,isub)=field_up(2,ip12,ip21,ip31,isub)+&
+               &a12a21a31*up(2,iq)
+               field_up(3,ip12,ip21,ip31,isub)=field_up(3,ip12,ip21,ip31,isub)+&
+               &a12a21a31*up(3,iq)
+               field_up(1,ip13,ip21,ip31,isub)=field_up(1,ip13,ip21,ip31,isub)+&
+               &a13a21a31*up(1,iq)
+               field_up(2,ip13,ip21,ip31,isub)=field_up(2,ip13,ip21,ip31,isub)+&
+               &a13a21a31*up(2,iq)
+               field_up(3,ip13,ip21,ip31,isub)=field_up(3,ip13,ip21,ip31,isub)+&
+               &a13a21a31*up(3,iq)
+               field_up(1,ip10,ip22,ip31,isub)=field_up(1,ip10,ip22,ip31,isub)+&
+               &a10a22a31*up(1,iq)
+               field_up(2,ip10,ip22,ip31,isub)=field_up(2,ip10,ip22,ip31,isub)+&
+               &a10a22a31*up(2,iq)
+               field_up(3,ip10,ip22,ip31,isub)=field_up(3,ip10,ip22,ip31,isub)+&
+               &a10a22a31*up(3,iq)
+               field_up(1,ip11,ip22,ip31,isub)=field_up(1,ip11,ip22,ip31,isub)+&
+               &a11a22a31*up(1,iq)
+               field_up(2,ip11,ip22,ip31,isub)=field_up(2,ip11,ip22,ip31,isub)+&
+               &a11a22a31*up(2,iq)
+               field_up(3,ip11,ip22,ip31,isub)=field_up(3,ip11,ip22,ip31,isub)+&
+               &a11a22a31*up(3,iq)
+               field_up(1,ip12,ip22,ip31,isub)=field_up(1,ip12,ip22,ip31,isub)+&
+               &a12a22a31*up(1,iq)
+               field_up(2,ip12,ip22,ip31,isub)=field_up(2,ip12,ip22,ip31,isub)+&
+               &a12a22a31*up(2,iq)
+               field_up(3,ip12,ip22,ip31,isub)=field_up(3,ip12,ip22,ip31,isub)+&
+               &a12a22a31*up(3,iq)
+               field_up(1,ip13,ip22,ip31,isub)=field_up(1,ip13,ip22,ip31,isub)+&
+               &a13a22a31*up(1,iq)
+               field_up(2,ip13,ip22,ip31,isub)=field_up(2,ip13,ip22,ip31,isub)+&
+               &a13a22a31*up(2,iq)
+               field_up(3,ip13,ip22,ip31,isub)=field_up(3,ip13,ip22,ip31,isub)+&
+               &a13a22a31*up(3,iq)
+               field_up(1,ip10,ip23,ip31,isub)=field_up(1,ip10,ip23,ip31,isub)+&
+               &a10a23a31*up(1,iq)
+               field_up(2,ip10,ip23,ip31,isub)=field_up(2,ip10,ip23,ip31,isub)+&
+               &a10a23a31*up(2,iq)
+               field_up(3,ip10,ip23,ip31,isub)=field_up(3,ip10,ip23,ip31,isub)+&
+               &a10a23a31*up(3,iq)
+               field_up(1,ip11,ip23,ip31,isub)=field_up(1,ip11,ip23,ip31,isub)+&
+               &a11a23a31*up(1,iq)
+               field_up(2,ip11,ip23,ip31,isub)=field_up(2,ip11,ip23,ip31,isub)+&
+               &a11a23a31*up(2,iq)
+               field_up(3,ip11,ip23,ip31,isub)=field_up(3,ip11,ip23,ip31,isub)+&
+               &a11a23a31*up(3,iq)
+               field_up(1,ip12,ip23,ip31,isub)=field_up(1,ip12,ip23,ip31,isub)+&
+               &a12a23a31*up(1,iq)
+               field_up(2,ip12,ip23,ip31,isub)=field_up(2,ip12,ip23,ip31,isub)+&
+               &a12a23a31*up(2,iq)
+               field_up(3,ip12,ip23,ip31,isub)=field_up(3,ip12,ip23,ip31,isub)+&
+               &a12a23a31*up(3,iq)
+               field_up(1,ip13,ip23,ip31,isub)=field_up(1,ip13,ip23,ip31,isub)+&
+               &a13a23a31*up(1,iq)
+               field_up(2,ip13,ip23,ip31,isub)=field_up(2,ip13,ip23,ip31,isub)+&
+               &a13a23a31*up(2,iq)
+               field_up(3,ip13,ip23,ip31,isub)=field_up(3,ip13,ip23,ip31,isub)+&
+               &a13a23a31*up(3,iq)
+               field_up(1,ip10,ip20,ip32,isub)=field_up(1,ip10,ip20,ip32,isub)+&
+               &a10a20a32*up(1,iq)
+               field_up(2,ip10,ip20,ip32,isub)=field_up(2,ip10,ip20,ip32,isub)+&
+               &a10a20a32*up(2,iq)
+               field_up(3,ip10,ip20,ip32,isub)=field_up(3,ip10,ip20,ip32,isub)+&
+               &a10a20a32*up(3,iq)
+               field_up(1,ip11,ip20,ip32,isub)=field_up(1,ip11,ip20,ip32,isub)+&
+               &a11a20a32*up(1,iq)
+               field_up(2,ip11,ip20,ip32,isub)=field_up(2,ip11,ip20,ip32,isub)+&
+               &a11a20a32*up(2,iq)
+               field_up(3,ip11,ip20,ip32,isub)=field_up(3,ip11,ip20,ip32,isub)+&
+               &a11a20a32*up(3,iq)
+               field_up(1,ip12,ip20,ip32,isub)=field_up(1,ip12,ip20,ip32,isub)+&
+               &a12a20a32*up(1,iq)
+               field_up(2,ip12,ip20,ip32,isub)=field_up(2,ip12,ip20,ip32,isub)+&
+               &a12a20a32*up(2,iq)
+               field_up(3,ip12,ip20,ip32,isub)=field_up(3,ip12,ip20,ip32,isub)+&
+               &a12a20a32*up(3,iq)
+               field_up(1,ip13,ip20,ip32,isub)=field_up(1,ip13,ip20,ip32,isub)+&
+               &a13a20a32*up(1,iq)
+               field_up(2,ip13,ip20,ip32,isub)=field_up(2,ip13,ip20,ip32,isub)+&
+               &a13a20a32*up(2,iq)
+               field_up(3,ip13,ip20,ip32,isub)=field_up(3,ip13,ip20,ip32,isub)+&
+               &a13a20a32*up(3,iq)
+               field_up(1,ip10,ip21,ip32,isub)=field_up(1,ip10,ip21,ip32,isub)+&
+               &a10a21a32*up(1,iq)
+               field_up(2,ip10,ip21,ip32,isub)=field_up(2,ip10,ip21,ip32,isub)+&
+               &a10a21a32*up(2,iq)
+               field_up(3,ip10,ip21,ip32,isub)=field_up(3,ip10,ip21,ip32,isub)+&
+               &a10a21a32*up(3,iq)
+               field_up(1,ip11,ip21,ip32,isub)=field_up(1,ip11,ip21,ip32,isub)+&
+               &a11a21a32*up(1,iq)
+               field_up(2,ip11,ip21,ip32,isub)=field_up(2,ip11,ip21,ip32,isub)+&
+               &a11a21a32*up(2,iq)
+               field_up(3,ip11,ip21,ip32,isub)=field_up(3,ip11,ip21,ip32,isub)+&
+               &a11a21a32*up(3,iq)
+               field_up(1,ip12,ip21,ip32,isub)=field_up(1,ip12,ip21,ip32,isub)+&
+               &a12a21a32*up(1,iq)
+               field_up(2,ip12,ip21,ip32,isub)=field_up(2,ip12,ip21,ip32,isub)+&
+               &a12a21a32*up(2,iq)
+               field_up(3,ip12,ip21,ip32,isub)=field_up(3,ip12,ip21,ip32,isub)+&
+               &a12a21a32*up(3,iq)
+               field_up(1,ip13,ip21,ip32,isub)=field_up(1,ip13,ip21,ip32,isub)+&
+               &a13a21a32*up(1,iq)
+               field_up(2,ip13,ip21,ip32,isub)=field_up(2,ip13,ip21,ip32,isub)+&
+               &a13a21a32*up(2,iq)
+               field_up(3,ip13,ip21,ip32,isub)=field_up(3,ip13,ip21,ip32,isub)+&
+               &a13a21a32*up(3,iq)
+               field_up(1,ip10,ip22,ip32,isub)=field_up(1,ip10,ip22,ip32,isub)+&
+               &a10a22a32*up(1,iq)
+               field_up(2,ip10,ip22,ip32,isub)=field_up(2,ip10,ip22,ip32,isub)+&
+               &a10a22a32*up(2,iq)
+               field_up(3,ip10,ip22,ip32,isub)=field_up(3,ip10,ip22,ip32,isub)+&
+               &a10a22a32*up(3,iq)
+               field_up(1,ip11,ip22,ip32,isub)=field_up(1,ip11,ip22,ip32,isub)+&
+               &a11a22a32*up(1,iq)
+               field_up(2,ip11,ip22,ip32,isub)=field_up(2,ip11,ip22,ip32,isub)+&
+               &a11a22a32*up(2,iq)
+               field_up(3,ip11,ip22,ip32,isub)=field_up(3,ip11,ip22,ip32,isub)+&
+               &a11a22a32*up(3,iq)
+               field_up(1,ip12,ip22,ip32,isub)=field_up(1,ip12,ip22,ip32,isub)+&
+               &a12a22a32*up(1,iq)
+               field_up(2,ip12,ip22,ip32,isub)=field_up(2,ip12,ip22,ip32,isub)+&
+               &a12a22a32*up(2,iq)
+               field_up(3,ip12,ip22,ip32,isub)=field_up(3,ip12,ip22,ip32,isub)+&
+               &a12a22a32*up(3,iq)
+               field_up(1,ip13,ip22,ip32,isub)=field_up(1,ip13,ip22,ip32,isub)+&
+               &a13a22a32*up(1,iq)
+               field_up(2,ip13,ip22,ip32,isub)=field_up(2,ip13,ip22,ip32,isub)+&
+               &a13a22a32*up(2,iq)
+               field_up(3,ip13,ip22,ip32,isub)=field_up(3,ip13,ip22,ip32,isub)+&
+               &a13a22a32*up(3,iq)
+               field_up(1,ip10,ip23,ip32,isub)=field_up(1,ip10,ip23,ip32,isub)+&
+               &a10a23a32*up(1,iq)
+               field_up(2,ip10,ip23,ip32,isub)=field_up(2,ip10,ip23,ip32,isub)+&
+               &a10a23a32*up(2,iq)
+               field_up(3,ip10,ip23,ip32,isub)=field_up(3,ip10,ip23,ip32,isub)+&
+               &a10a23a32*up(3,iq)
+               field_up(1,ip11,ip23,ip32,isub)=field_up(1,ip11,ip23,ip32,isub)+&
+               &a11a23a32*up(1,iq)
+               field_up(2,ip11,ip23,ip32,isub)=field_up(2,ip11,ip23,ip32,isub)+&
+               &a11a23a32*up(2,iq)
+               field_up(3,ip11,ip23,ip32,isub)=field_up(3,ip11,ip23,ip32,isub)+&
+               &a11a23a32*up(3,iq)
+               field_up(1,ip12,ip23,ip32,isub)=field_up(1,ip12,ip23,ip32,isub)+&
+               &a12a23a32*up(1,iq)
+               field_up(2,ip12,ip23,ip32,isub)=field_up(2,ip12,ip23,ip32,isub)+&
+               &a12a23a32*up(2,iq)
+               field_up(3,ip12,ip23,ip32,isub)=field_up(3,ip12,ip23,ip32,isub)+&
+               &a12a23a32*up(3,iq)
+               field_up(1,ip13,ip23,ip32,isub)=field_up(1,ip13,ip23,ip32,isub)+&
+               &a13a23a32*up(1,iq)
+               field_up(2,ip13,ip23,ip32,isub)=field_up(2,ip13,ip23,ip32,isub)+&
+               &a13a23a32*up(2,iq)
+               field_up(3,ip13,ip23,ip32,isub)=field_up(3,ip13,ip23,ip32,isub)+&
+               &a13a23a32*up(3,iq)
+               field_up(1,ip10,ip20,ip33,isub)=field_up(1,ip10,ip20,ip33,isub)+&
+               &a10a20a33*up(1,iq)
+               field_up(2,ip10,ip20,ip33,isub)=field_up(2,ip10,ip20,ip33,isub)+&
+               &a10a20a33*up(2,iq)
+               field_up(3,ip10,ip20,ip33,isub)=field_up(3,ip10,ip20,ip33,isub)+&
+               &a10a20a33*up(3,iq)
+               field_up(1,ip11,ip20,ip33,isub)=field_up(1,ip11,ip20,ip33,isub)+&
+               &a11a20a33*up(1,iq)
+               field_up(2,ip11,ip20,ip33,isub)=field_up(2,ip11,ip20,ip33,isub)+&
+               &a11a20a33*up(2,iq)
+               field_up(3,ip11,ip20,ip33,isub)=field_up(3,ip11,ip20,ip33,isub)+&
+               &a11a20a33*up(3,iq)
+               field_up(1,ip12,ip20,ip33,isub)=field_up(1,ip12,ip20,ip33,isub)+&
+               &a12a20a33*up(1,iq)
+               field_up(2,ip12,ip20,ip33,isub)=field_up(2,ip12,ip20,ip33,isub)+&
+               &a12a20a33*up(2,iq)
+               field_up(3,ip12,ip20,ip33,isub)=field_up(3,ip12,ip20,ip33,isub)+&
+               &a12a20a33*up(3,iq)
+               field_up(1,ip13,ip20,ip33,isub)=field_up(1,ip13,ip20,ip33,isub)+&
+               &a13a20a33*up(1,iq)
+               field_up(2,ip13,ip20,ip33,isub)=field_up(2,ip13,ip20,ip33,isub)+&
+               &a13a20a33*up(2,iq)
+               field_up(3,ip13,ip20,ip33,isub)=field_up(3,ip13,ip20,ip33,isub)+&
+               &a13a20a33*up(3,iq)
+               field_up(1,ip10,ip21,ip33,isub)=field_up(1,ip10,ip21,ip33,isub)+&
+               &a10a21a33*up(1,iq)
+               field_up(2,ip10,ip21,ip33,isub)=field_up(2,ip10,ip21,ip33,isub)+&
+               &a10a21a33*up(2,iq)
+               field_up(3,ip10,ip21,ip33,isub)=field_up(3,ip10,ip21,ip33,isub)+&
+               &a10a21a33*up(3,iq)
+               field_up(1,ip11,ip21,ip33,isub)=field_up(1,ip11,ip21,ip33,isub)+&
+               &a11a21a33*up(1,iq)
+               field_up(2,ip11,ip21,ip33,isub)=field_up(2,ip11,ip21,ip33,isub)+&
+               &a11a21a33*up(2,iq)
+               field_up(3,ip11,ip21,ip33,isub)=field_up(3,ip11,ip21,ip33,isub)+&
+               &a11a21a33*up(3,iq)
+               field_up(1,ip12,ip21,ip33,isub)=field_up(1,ip12,ip21,ip33,isub)+&
+               &a12a21a33*up(1,iq)
+               field_up(2,ip12,ip21,ip33,isub)=field_up(2,ip12,ip21,ip33,isub)+&
+               &a12a21a33*up(2,iq)
+               field_up(3,ip12,ip21,ip33,isub)=field_up(3,ip12,ip21,ip33,isub)+&
+               &a12a21a33*up(3,iq)
+               field_up(1,ip13,ip21,ip33,isub)=field_up(1,ip13,ip21,ip33,isub)+&
+               &a13a21a33*up(1,iq)
+               field_up(2,ip13,ip21,ip33,isub)=field_up(2,ip13,ip21,ip33,isub)+&
+               &a13a21a33*up(2,iq)
+               field_up(3,ip13,ip21,ip33,isub)=field_up(3,ip13,ip21,ip33,isub)+&
+               &a13a21a33*up(3,iq)
+               field_up(1,ip10,ip22,ip33,isub)=field_up(1,ip10,ip22,ip33,isub)+&
+               &a10a22a33*up(1,iq)
+               field_up(2,ip10,ip22,ip33,isub)=field_up(2,ip10,ip22,ip33,isub)+&
+               &a10a22a33*up(2,iq)
+               field_up(3,ip10,ip22,ip33,isub)=field_up(3,ip10,ip22,ip33,isub)+&
+               &a10a22a33*up(3,iq)
+               field_up(1,ip11,ip22,ip33,isub)=field_up(1,ip11,ip22,ip33,isub)+&
+               &a11a22a33*up(1,iq)
+               field_up(2,ip11,ip22,ip33,isub)=field_up(2,ip11,ip22,ip33,isub)+&
+               &a11a22a33*up(2,iq)
+               field_up(3,ip11,ip22,ip33,isub)=field_up(3,ip11,ip22,ip33,isub)+&
+               &a11a22a33*up(3,iq)
+               field_up(1,ip12,ip22,ip33,isub)=field_up(1,ip12,ip22,ip33,isub)+&
+               &a12a22a33*up(1,iq)
+               field_up(2,ip12,ip22,ip33,isub)=field_up(2,ip12,ip22,ip33,isub)+&
+               &a12a22a33*up(2,iq)
+               field_up(3,ip12,ip22,ip33,isub)=field_up(3,ip12,ip22,ip33,isub)+&
+               &a12a22a33*up(3,iq)
+               field_up(1,ip13,ip22,ip33,isub)=field_up(1,ip13,ip22,ip33,isub)+&
+               &a13a22a33*up(1,iq)
+               field_up(2,ip13,ip22,ip33,isub)=field_up(2,ip13,ip22,ip33,isub)+&
+               &a13a22a33*up(2,iq)
+               field_up(3,ip13,ip22,ip33,isub)=field_up(3,ip13,ip22,ip33,isub)+&
+               &a13a22a33*up(3,iq)
+               field_up(1,ip10,ip23,ip33,isub)=field_up(1,ip10,ip23,ip33,isub)+&
+               &a10a23a33*up(1,iq)
+               field_up(2,ip10,ip23,ip33,isub)=field_up(2,ip10,ip23,ip33,isub)+&
+               &a10a23a33*up(2,iq)
+               field_up(3,ip10,ip23,ip33,isub)=field_up(3,ip10,ip23,ip33,isub)+&
+               &a10a23a33*up(3,iq)
+               field_up(1,ip11,ip23,ip33,isub)=field_up(1,ip11,ip23,ip33,isub)+&
+               &a11a23a33*up(1,iq)
+               field_up(2,ip11,ip23,ip33,isub)=field_up(2,ip11,ip23,ip33,isub)+&
+               &a11a23a33*up(2,iq)
+               field_up(3,ip11,ip23,ip33,isub)=field_up(3,ip11,ip23,ip33,isub)+&
+               &a11a23a33*up(3,iq)
+               field_up(1,ip12,ip23,ip33,isub)=field_up(1,ip12,ip23,ip33,isub)+&
+               &a12a23a33*up(1,iq)
+               field_up(2,ip12,ip23,ip33,isub)=field_up(2,ip12,ip23,ip33,isub)+&
+               &a12a23a33*up(2,iq)
+               field_up(3,ip12,ip23,ip33,isub)=field_up(3,ip12,ip23,ip33,isub)+&
+               &a12a23a33*up(3,iq)
+               field_up(1,ip13,ip23,ip33,isub)=field_up(1,ip13,ip23,ip33,isub)+&
+               &a13a23a33*up(1,iq)
+               field_up(2,ip13,ip23,ip33,isub)=field_up(2,ip13,ip23,ip33,isub)+&
+               &a13a23a33*up(2,iq)
+               field_up(3,ip13,ip23,ip33,isub)=field_up(3,ip13,ip23,ip33,isub)+&
+               &a13a23a33*up(3,iq)
 #else
 field_up(1:3,ip10,ip20,ip30,isub)=field_up(1:3,ip10,ip20,ip30,isub)+&
 &a10a20a30*up(1:3,iq)
@@ -3451,7 +3424,7 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
          END DO              ! loop over subs
       CASE DEFAULT
          info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',    &
+         CALL ppm_error(ppm_err_argument,caller,    &
      &       'Only Mp4 and Bsp2 are available. Use ppm_rmsh_remesh for other kernels.', &
      &       __LINE__,info)
       END SELECT         ! kernel type
@@ -3538,11 +3511,11 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                END DO
             END DO
          END DO          ! loop over subs
+
       CASE DEFAULT
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',    &
-     &       'Only Mp4 is available. Use ppm_rmsh_remesh for other kernels.', &
-     &       __LINE__,info)
+         fail('Only Mp4 is available. Use ppm_rmsh_remesh for other kernels.',&
+         & ppm_err_argument)
+
       END SELECT
 #endif
 
@@ -3642,13 +3615,13 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
                      ! TODO: What if the unity samples to something finite
                      ! but negative, this could happen in some cases...
                      !IF(field_reno(i,j,k,isub).GT.0.0_mk) THEN
-                     IF(ABS(field_reno(i,j,k,isub)).GT.0.0_mk) THEN
-                         field_up(1,i,j,k,isub) = field_up(1,i,j,k,isub) / &
-                             & field_reno(i,j,k,isub)
-                         field_up(2,i,j,k,isub) = field_up(2,i,j,k,isub) / &
-                             & field_reno(i,j,k,isub)
-                         field_up(3,i,j,k,isub) = field_up(3,i,j,k,isub) / &
-                             & field_reno(i,j,k,isub)
+                     IF (ABS(field_reno(i,j,k,isub)).GT.0.0_mk) THEN
+                        field_up(1,i,j,k,isub) = field_up(1,i,j,k,isub) / &
+                        &                        field_reno(i,j,k,isub)
+                        field_up(2,i,j,k,isub) = field_up(2,i,j,k,isub) / &
+                        &                        field_reno(i,j,k,isub)
+                        field_up(3,i,j,k,isub) = field_up(3,i,j,k,isub) / &
+                        &                        field_reno(i,j,k,isub)
                      END IF
                      END DO
                  END DO
@@ -3666,105 +3639,64 @@ field_up(ip13,ip23,ip33,isub)=field_up(ip13,ip23,ip33,isub)+&
       iopt = ppm_param_dealloc
       ldu(1) = 0
       CALL ppm_alloc(ilist1,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-              & 'ppm_interp_p2m_renorm', &
-              & 'pb in ilist1 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist1 deallocation')
+
       CALL ppm_alloc(ilist2,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-              & 'ppm_interp_p2m_renorm',  &
-              & 'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist2 deallocation')
+
       CALL ppm_alloc(store_info,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-              & 'ppm_interp_p2m_renorm',  &
-              & 'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist2 deallocation')
+
       CALL ppm_alloc(list_sub,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-              & 'ppm_interp_p2m_renorm',  &
-              & 'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist2 deallocation')
 
       !--------------------------------------------------------------------------
       !  Return
       !--------------------------------------------------------------------------
-9999 CONTINUE
-      CALL substop('ppm_interp_p2m_renorm',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_ppm_noinit,'ppm_interp_p2m_renorm',  &
-     &               'Please call ppm_init first!',__LINE__,info)
-            GOTO 8888
+           fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
         ENDIF
         IF (Np .GT. 0) THEN
            IF (SIZE(xp,2) .LT. Np) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                     'not enough particles contained in xp',__LINE__,info)
-            GOTO 8888
+              fail('not enough particles contained in xp',exit_point=8888)
            ENDIF
            IF (SIZE(xp,1) .LT.dim) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                     'leading dimension of xp insufficient',__LINE__,info)
-            GOTO 8888
+              fail('leading dimension of xp insufficient',exit_point=8888)
            ENDIF
         ENDIF
         IF (Np .LE. 0) THEN
            IF (Np .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                     'particles must be specified',__LINE__,info)
-            GOTO 8888
+              fail('particles must be specified',exit_point=8888)
            END IF
            GOTO 8888
         END IF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                     'wrong kernel definition',__LINE__,info)
-           GOTO 8888
+           fail('wrong kernel definition',exit_point=8888)
         END IF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
-        IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
-     &               .OR.(kernel_support.EQ.6))) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                     'wrong kernel support',__LINE__,info)
-           GOTO 8888
+        IF (.NOT.((kernel_support.EQ.2) &
+        &   .OR.(kernel_support.EQ.4)   &
+        &   .OR.(kernel_support.EQ.6))) THEN
+           fail('wrong kernel support',exit_point=8888)
         END IF
         CALL ppm_check_topoid(topoid,lok,info)
         IF (.NOT.lok) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
-     &                 'topo_id is invalid!',__LINE__,info)
-           GOTO 8888
+           fail('topo_id is invalid!',exit_point=8888)
         ENDIF
     !    CALL ppm_check_meshid(topoid,meshid,lok,info)
     !    IF (.NOT.lok) THEN
     !       info = ppm_error_error
-    !       CALL ppm_error(ppm_err_argument,'ppm_interp_p2m_renorm',  &
+    !       CALL ppm_error(ppm_err_argument,caller,  &
     ! &                 'mesh_id is invalid!',__LINE__,info)
     !       GOTO 8888
     !    ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 
 #if   __DIME == __2D

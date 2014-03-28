@@ -958,7 +958,7 @@ minclude ppm_get_field_template(4,l)
 !           TYPE(ppm_t_topo),         POINTER :: topo => NULL()
 
           CLASS(ppm_t_main_abstr),  POINTER :: field
-          CLASS(ppm_t_discr_info_), POINTER :: dinfo => NULL()
+          CLASS(ppm_t_discr_info_), POINTER :: dinfo
 
           INTEGER , DIMENSION(3)    :: ldc
           INTEGER                   :: iopt,ld,ud,kk,i,j,isub
@@ -996,6 +996,7 @@ minclude ppm_get_field_template(4,l)
           !Destroy the bookkeeping entries in the fields that are
           !discretized on this mesh
           IF (ASSOCIATED(this%field_ptr)) THEN
+             NULLIFY(dinfo)
              field => this%field_ptr%begin()
              field_loop: DO WHILE (ASSOCIATED(field))
 
