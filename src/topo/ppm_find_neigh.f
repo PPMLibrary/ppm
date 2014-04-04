@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_find_neigh_s(min_phys,max_phys,bcdef, &
-     &           min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
+      &          min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_find_neigh_d(min_phys,max_phys,bcdef, &
-     &           min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
+      &          min_sub,max_sub,nsubs,nneigh,ineigh,ghostsize,info)
       !!! This routine find the neighbours of a sub domain.
       !!! It does that by comparing the coordinates of the
       !!! bounding box of the sub domains using an N-square
@@ -122,7 +122,7 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim)            :: bsize,len_sub
-      REAL(MK), DIMENSION(:,:), POINTER       :: ctrs => NULL()
+      REAL(MK), DIMENSION(:,:), ALLOCATABLE :: ctrs
       REAL(MK)                                :: mx1,mx2,mx3
       REAL(MK)                                :: mn1,mn2,mn3
       INTEGER , DIMENSION(:  ), POINTER       :: subid => NULL()
@@ -140,6 +140,8 @@
       INTEGER                                 :: imx,jmx,kmx
       REAL(MK)                                :: t0
       LOGICAL                                 :: isin,pbdrx,pbdry,pbdrz
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_find_neigh'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -147,7 +149,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_find_neigh',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for subdomain IDs
@@ -155,12 +157,7 @@
       iopt = ppm_param_alloc_fit
       ldc(1) = nsubs
       CALL ppm_alloc(subid,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'Sub IDs SUBID',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('Sub IDs SUBID',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize the ID
@@ -173,7 +170,7 @@
       !  Add ghost domains for the periodic system
       !-------------------------------------------------------------------------
       CALL ppm_copy_image_subs(min_phys,max_phys,bcdef, &
-      &   min_sub,max_sub,nsubs,subid,nsubsplus,info)
+      &    min_sub,max_sub,nsubs,subid,nsubsplus,info)
       IF (info.NE.ppm_param_success) GOTO 9999
 
       !-------------------------------------------------------------------------
@@ -182,12 +179,7 @@
       iopt   = ppm_param_alloc_grow
       ldc(1) = nsubsplus
       CALL ppm_alloc(nneigh,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-          &    'Number of neighbors NNEIGH',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('Number of neighbors NNEIGH',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize the number of neighbours to zero
@@ -202,20 +194,15 @@
       ldc(1) = 26 ! guessing
       ldc(2) = nsubsplus
       CALL ppm_alloc(ineigh,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-          &    'List of neighbors INEIGH',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('List of neighbors INEIGH',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize the neighbor sub indices to undefined
       !-------------------------------------------------------------------------
       DO i=1,nsubsplus
-          DO j=1,ldc(1)
-              ineigh(j,i) = ppm_param_undefined
-          ENDDO
+         DO j=1,ldc(1)
+            ineigh(j,i) = ppm_param_undefined
+         ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -226,21 +213,16 @@
       !-------------------------------------------------------------------------
       !  Allocate the center point positions
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
       ldc(1) = ppm_dim
       ldc(2) = nsubsplus
-      CALL ppm_alloc(ctrs,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_find_neigh',     &
-     &        'Sub center points CTRS',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      ALLOCATE(ctrs(ldc(1),ldc(2)),STAT=info)
+      or_fail_alloc('Sub center points CTRS',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Store the center points and the max extent of any sub
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
+      SELECT CASE (ppm_dim)
+      CASE (3)
           bsize(1:3) = 0.0_MK
           DO i=1,nsubsplus
               ctrs(1,i)  = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
@@ -253,7 +235,7 @@
               IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
               IF (len_sub(3).GT.bsize(3)) bsize(3) = len_sub(3)
           ENDDO
-      ELSE
+      CASE (2)
           bsize(1:2) = 0.0_MK
           DO i=1,nsubsplus
               ctrs(1,i) = 0.5_MK*(min_sub(1,i) + max_sub(1,i))
@@ -263,7 +245,7 @@
               IF (len_sub(1).GT.bsize(1)) bsize(1) = len_sub(1)
               IF (len_sub(2).GT.bsize(2)) bsize(2) = len_sub(2)
           ENDDO
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Determine number of cells
@@ -296,30 +278,21 @@
       !-------------------------------------------------------------------------
       !  Build the cell list
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 3) THEN
-          CALL ppm_util_rank3d(ctrs,nsubsplus,min_phys,max_phys,Nm,Ngl,lpdx,  &
-     &         lhbx,info)
-      ELSE
-          CALL ppm_util_rank2d(ctrs,nsubsplus,min_phys,max_phys,Nm,Ngl,lpdx,  &
-     &         lhbx,info)
-      ENDIF
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_sub_failed,'ppm_find_neigh',     &
-     &        'Failed building the cell lists.',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      SELECT CASE (ppm_dim)
+      CASE (3)
+         CALL ppm_util_rank3d(ctrs,nsubsplus, &
+         &    min_phys,max_phys,Nm,Ngl,lpdx,lhbx,info)
+      CASE (2)
+         CALL ppm_util_rank2d(ctrs,nsubsplus, &
+         &    min_phys,max_phys,Nm,Ngl,lpdx,lhbx,info)
+      END SELECT
+      or_fail('Failed building the cell lists.',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Build cell-cell index lists
       !-------------------------------------------------------------------------
       CALL ppm_neighlist_MkNeighIdx(.TRUE.,inp,jnp,nnp,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_sub_failed,'ppm_find_neigh',  &
-     &        'Failed building the cell-cell lists.',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail('Failed building the cell-cell lists.')
 
       !-------------------------------------------------------------------------
       !  Save the current leading dimension of ineigh
@@ -511,56 +484,31 @@
       !-------------------------------------------------------------------------
       !  Free the memory again
       !-------------------------------------------------------------------------
+      DEALLOCATE(ctrs,STAT=info)
+      or_fail_dealloc('Sub center points CTRS')
+
       iopt = ppm_param_dealloc
-      CALL ppm_alloc(ctrs,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'Sub center points CTRS',__LINE__,info)
-          GOTO 9999
-      ENDIF
       CALL ppm_alloc(lpdx,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'cell list pointers LPDX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('cell list pointers LPDX')
+
       CALL ppm_alloc(lhbx,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'cell list headers LHBX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('cell list headers LHBX')
+
       CALL ppm_alloc(inp,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'cell-cell interactaion index INP',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('cell-cell interactaion index INP')
+
       CALL ppm_alloc(jnp,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'cell-cell interaction index JNP',__LINE__,info)
-          GOTO 9999
-      ENDIF
- 8888 iopt = ppm_param_dealloc
+      or_fail_dealloc('cell-cell interaction index JNP')
+
+      8888 iopt = ppm_param_dealloc
       CALL ppm_alloc(subid,ldc,iopt,info)
-      IF (info.NE.ppm_param_success) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_find_neigh',     &
-     &        'Sub IDs SUBID',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_dealloc('Sub IDs SUBID')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_find_neigh',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_find_neigh_s

@@ -262,10 +262,7 @@
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
          IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &   'Cannot make z pencils in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make z pencils in 2D!')
          ENDIF
          !-------------------------------------------------------------------
          !  pencil quadrisection using the general ppm_tree
@@ -302,16 +299,10 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &   'Cannot make x-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make x-z slabs in 2D!')
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &           'Cannot make y-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make y-z slabs in 2D!')
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
@@ -389,11 +380,9 @@
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         info = ppm_error_error
          WRITE(msg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    msg,__LINE__,info)
-         GOTO 9999
+         fail(msg)
+
       END SELECT
 
       !-------------------------------------------------------------------------

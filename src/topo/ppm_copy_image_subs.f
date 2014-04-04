@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_copy_image_subs
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -45,7 +45,7 @@
       !!! floating point numbers *but* it *works* since the value of subs
       !!! are *assigned* from the phys min/max and *not* computed (byte copy).
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -65,7 +65,7 @@
       INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:)  , INTENT(IN   ) :: min_phys
       !!! Min. extent of the physical domain
@@ -88,32 +88,34 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: len_phys
       REAL(MK)                     :: t0
       INTEGER , DIMENSION(ppm_dim) :: ldc
       INTEGER                      :: i,j,k
       INTEGER                      :: iopt,isize
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_copy_image_subs'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_copy_image_subs',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check the input arguments (if in debugging mode)
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Compute the extend of the physical system 
+      !  Compute the extend of the physical system
       !-------------------------------------------------------------------------
       DO k=1,ppm_dim
          len_phys(k) = max_phys(k) - min_phys(k)
@@ -150,20 +152,20 @@
                      ldc(1) = isize
                      CALL ppm_alloc(subid,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                    
+
                      ldc(1) = ppm_dim
                      ldc(2) = isize
                      CALL ppm_alloc(min_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i) + len_phys(1)
                   min_sub(2,j) = min_sub(2,i)
                   max_sub(1,j) = max_sub(1,i) + len_phys(1)
                   max_sub(2,j) = max_sub(2,i)
-               ENDIF 
+               ENDIF
                IF (max_sub(1,i).EQ.max_phys(1)) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
@@ -177,13 +179,13 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i) - len_phys(1)
                   min_sub(2,j) = min_sub(2,i)
                   max_sub(1,j) = max_sub(1,i) - len_phys(1)
                   max_sub(2,j) = max_sub(2,i)
-               ENDIF 
+               ENDIF
             ENDDO
             nsubsplus = j
          ELSE
@@ -205,7 +207,7 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i) + len_phys(1)
                   min_sub(2,j) = min_sub(2,i)
@@ -213,7 +215,7 @@
                   max_sub(1,j) = max_sub(1,i) + len_phys(1)
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i)
-               ENDIF 
+               ENDIF
                IF (max_sub(1,i).EQ.max_phys(1)) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
@@ -227,7 +229,7 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i) - len_phys(1)
                   min_sub(2,j) = min_sub(2,i)
@@ -235,11 +237,11 @@
                   max_sub(1,j) = max_sub(1,i) - len_phys(1)
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i)
-               ENDIF 
+               ENDIF
             ENDDO
             nsubsplus = j
-         ENDIF 
-      ENDIF 
+         ENDIF
+      ENDIF
 
       IF (bcdef(3).EQ.ppm_param_bcdef_periodic) THEN
          !----------------------------------------------------------------------
@@ -264,13 +266,13 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i)
                   min_sub(2,j) = min_sub(2,i) + len_phys(2)
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i) + len_phys(2)
-               ENDIF 
+               ENDIF
                IF (max_sub(2,i).EQ.max_phys(2)) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
@@ -284,20 +286,20 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
-                  min_sub(1,j) = min_sub(1,i) 
+                  min_sub(1,j) = min_sub(1,i)
                   min_sub(2,j) = min_sub(2,i) - len_phys(2)
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i) - len_phys(2)
-               ENDIF 
+               ENDIF
             ENDDO
             nsubsplus = j
          ELSE
             !-------------------------------------------------------------------
             !  three dimensions
             !-------------------------------------------------------------------
-            j = nsubsplus 
+            j = nsubsplus
             DO i=1,nsubsplus
                IF (min_sub(2,i).EQ.min_phys(2)) THEN
                   j            = j + 1
@@ -312,7 +314,7 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i)
                   min_sub(2,j) = min_sub(2,i) + len_phys(2)
@@ -320,7 +322,7 @@
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i) + len_phys(2)
                   max_sub(3,j) = max_sub(3,i)
-               ENDIF 
+               ENDIF
                IF (max_sub(2,i).EQ.max_phys(2)) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
@@ -334,19 +336,19 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
-                  min_sub(1,j) = min_sub(1,i) 
+                  min_sub(1,j) = min_sub(1,i)
                   min_sub(2,j) = min_sub(2,i) - len_phys(2)
                   min_sub(3,j) = min_sub(3,i)
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i) - len_phys(2)
                   max_sub(3,j) = max_sub(3,i)
-               ENDIF 
+               ENDIF
             ENDDO
             nsubsplus = j
-         ENDIF 
-      ENDIF 
+         ENDIF
+      ENDIF
 
       IF (ppm_dim.EQ.3) THEN
          IF (bcdef(5).EQ.ppm_param_bcdef_periodic) THEN
@@ -368,7 +370,7 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
                   min_sub(1,j) = min_sub(1,i)
                   min_sub(2,j) = min_sub(2,i)
@@ -376,7 +378,7 @@
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i) + len_phys(3)
-               ENDIF 
+               ENDIF
                IF (max_sub(3,i).EQ.max_phys(3)) THEN
                   j            = j + 1
                   IF (j.GT.isize) THEN
@@ -390,108 +392,76 @@
                      IF (info.NE.0) GOTO 100
                      CALL ppm_alloc(max_sub,ldc,iopt,info)
                      IF (info.NE.0) GOTO 100
-                  ENDIF 
+                  ENDIF
                   subid(j)     = subid(i)
-                  min_sub(1,j) = min_sub(1,i) 
-                  min_sub(2,j) = min_sub(2,i) 
+                  min_sub(1,j) = min_sub(1,i)
+                  min_sub(2,j) = min_sub(2,i)
                   min_sub(3,j) = min_sub(3,i) - len_phys(3)
                   max_sub(1,j) = max_sub(1,i)
                   max_sub(2,j) = max_sub(2,i)
                   max_sub(3,j) = max_sub(3,i) - len_phys(3)
-               ENDIF 
+               ENDIF
             ENDDO
             nsubsplus = j
-         ENDIF 
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Catch allocation errors
       !-------------------------------------------------------------------------
-  100 CONTINUE 
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_copy_image_subs',     &
-     &        'insufficient memory for sub domains ',__LINE__,info)
-          GOTO 9999
-      ENDIF 
+      100 CONTINUE
+      or_fail_alloc('insufficient memory for sub domains ',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_copy_image_subs',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
-       SUBROUTINE check
-            IF (.NOT. ASSOCIATED(min_sub)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'min_sub should be associated!',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (.NOT. ASSOCIATED(max_sub)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'max_sub should be associated!',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (.NOT. ASSOCIATED(subid)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'subid should be associated!',__LINE__,info)
-                GOTO 8888
-            ENDIF
+        SUBROUTINE check
+        IF (.NOT. ASSOCIATED(min_sub)) THEN
+           fail('min_sub should be associated!',exit_point=8888)
+        ENDIF
+        IF (.NOT. ASSOCIATED(max_sub)) THEN
+           fail('max_sub should be associated!',exit_point=8888)
+        ENDIF
+        IF (.NOT. ASSOCIATED(subid)) THEN
+           fail('subid should be associated!',exit_point=8888)
+        ENDIF
         !----------------------------------------------------------------------
         !  The physical boundary is sane ?
         !----------------------------------------------------------------------
-            IF (max_phys(1) .LE. min_phys(1)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'max_phys(1) must be > min_phys(1)',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (max_phys(2) .LE. min_phys(2)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'max_phys(2) must be > min_phys(2)',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (ppm_dim .GT. 2) THEN
-                IF (max_phys(3) .LE. min_phys(3)) THEN
-                    info = ppm_error_error
-                    CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',&
-     &                     'max_phys(3) must be > min_phys(3)',__LINE__,info)
-                GOTO 8888
-                ENDIF
-            ENDIF
+        IF (max_phys(1) .LE. min_phys(1)) THEN
+           fail('max_phys(1) must be > min_phys(1)',exit_point=8888)
+        ENDIF
+        IF (max_phys(2) .LE. min_phys(2)) THEN
+           fail('max_phys(2) must be > min_phys(2)',exit_point=8888)
+        ENDIF
+        IF (ppm_dim .GT. 2) THEN
+           IF (max_phys(3) .LE. min_phys(3)) THEN
+              fail('max_phys(3) must be > min_phys(3)',exit_point=8888)
+           ENDIF
+        ENDIF
 
         !----------------------------------------------------------------------
         !  The periodic BC are sane ?
         !----------------------------------------------------------------------
-            IF (bcdef(1).EQ.ppm_param_bcdef_periodic.AND. &
-     &          bcdef(2).NE.ppm_param_bcdef_periodic) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'periodic on only one x face !',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (bcdef(3).EQ.ppm_param_bcdef_periodic.AND. &
-     &          bcdef(4).NE.ppm_param_bcdef_periodic) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                     'periodic on only one y face !',__LINE__,info)
-                GOTO 8888
-            ENDIF
-            IF (ppm_dim.GT.2) THEN
-                IF (bcdef(5).EQ.ppm_param_bcdef_periodic.AND. &
-     &              bcdef(6).NE.ppm_param_bcdef_periodic) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_copy_image_subs',  &
-     &                        'periodic on only one z face !',__LINE__,info)
-                GOTO 8888
-                ENDIF
-            ENDIF
- 8888       CONTINUE
+        IF (bcdef(1).EQ.ppm_param_bcdef_periodic.AND. &
+        &   bcdef(2).NE.ppm_param_bcdef_periodic) THEN
+            fail('periodic on only one x face !',exit_point=8888)
+        ENDIF
+        IF (bcdef(3).EQ.ppm_param_bcdef_periodic.AND. &
+        &   bcdef(4).NE.ppm_param_bcdef_periodic) THEN
+            fail('periodic on only one y face !',exit_point=8888)
+        ENDIF
+        IF (ppm_dim.GT.2) THEN
+           IF (bcdef(5).EQ.ppm_param_bcdef_periodic.AND. &
+           &   bcdef(6).NE.ppm_param_bcdef_periodic) THEN
+              fail('periodic on only one z face !',exit_point=8888)
+           ENDIF
+        ENDIF
+        8888 CONTINUE
         END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE copy_imgsubs_s

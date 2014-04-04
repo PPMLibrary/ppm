@@ -2,8 +2,10 @@ minclude ppm_create_collection_procedures(DTYPE(part_prop),DTYPE(part_prop)_)
 minclude ppm_create_collection_procedures(DTYPE(neighlist),DTYPE(neighlist)_)
 minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
-      SUBROUTINE DTYPE(prop_create)(prop,datatype,parts,npart,lda,name,flags,info,field,zero)
+      SUBROUTINE DTYPE(prop_create)(prop,datatype,parts,npart,&
+      &          lda,name,flags,info,field,zero)
           !!! Constructor for particle property data structure
+          IMPLICIT NONE
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_part_prop))                               :: prop
           INTEGER,                                      INTENT(IN   ) :: datatype
@@ -20,7 +22,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           INTEGER :: iopt
 
-          LOGICAL :: is2d
           LOGICAL :: zero_data
 
           start_subroutine("prop_create")
@@ -46,13 +47,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           IF (lda.GE.2) THEN
              ldc(1) = lda
              ldc(2) = npart
-             is2d = .TRUE.
-          ELSE
-             ldc(1) = npart
-             is2d = .FALSE.
-          ENDIF
 
-          IF (is2d) THEN
              SELECT CASE (datatype)
              CASE (ppm_type_int)
                 CALL ppm_alloc(prop%data_2d_i,ldc,iopt,info)
@@ -96,6 +91,8 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                 END SELECT
              ENDIF
           ELSE
+             ldc(1) = npart
+
              SELECT CASE (datatype)
              CASE (ppm_type_int)
                 CALL ppm_alloc(prop%data_1d_i,ldc,iopt,info)
@@ -144,8 +141,9 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(prop_create)
       !DESTROY ENTRY
       SUBROUTINE DTYPE(prop_destroy)(prop,info)
-          CLASS(DTYPE(ppm_t_part_prop))      :: prop
-          INTEGER,                                INTENT(  OUT)  :: info
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_part_prop)) :: prop
+          INTEGER,       INTENT(  OUT)  :: info
           !!! Returns status, 0 upon success.
 
           start_subroutine("prop_destroy")
@@ -174,7 +172,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-----------------------------------------------------------------------
           ! Print out summary information about this property
           !-----------------------------------------------------------------------
-
+          IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
