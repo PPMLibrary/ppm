@@ -38,9 +38,9 @@
 
 
           IF (ppm_dim.EQ.2) THEN
-              nb_close_theo = 6
+             nb_close_theo = 6
           ELSE
-              nb_close_theo = 6
+             nb_close_theo = 6
           ENDIF
 
           particle_loop: DO ip = 1,Particles%Npart
@@ -49,11 +49,10 @@
               neighbour_loop: DO ineigh = 1,nvlist(ip)
                   iq = vlist(ineigh,ip)
 
-                  rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
-                      D(ip)
-                      !Dtilde(ip)
-                      !MIN(Dtilde(ip),Dtilde(iq))
-                      !MIN(D(ip),D(iq))
+                  rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / D(ip)
+                  !Dtilde(ip)
+                  !MIN(Dtilde(ip),Dtilde(iq))
+                  !MIN(D(ip),D(iq))
 
                   !compute nearest-neighbour distance for each particle
                   ! rescaled by the MIN of D(ip) and D(iq)
@@ -64,13 +63,12 @@
                       ! needed by fuse2_particles
                       vlist(ineigh,ip) = vlist(close_neigh,ip)
                       vlist(close_neigh,ip) = iq
-
                   ENDIF
 
               ENDDO neighbour_loop
 
               IF (close_neigh .LE. nb_close_theo-2) THEN
-                      adaptation_ok = .false.
+                 adaptation_ok = .false.
               ENDIF
               !IF (close_neigh .GE. 2*nb_close_theo) THEN
                       !adaptation_ok = .false.

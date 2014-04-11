@@ -1,5 +1,5 @@
       !-------------------------------------------------------------------------
-      !  Include file for checking if two subs are neighbors and adding 
+      !  Include file for checking if two subs are neighbors and adding
       !  them to the neighbor lists if they are. This uses symmetry.
       !
       !  INPUT:   INTEGER :: ip,jp -- indices of the two subs, including
@@ -78,11 +78,11 @@
                       GOTO 9999
                   ENDIF
                   !-------------------------------------------------------------
-                  !  Save the size 
+                  !  Save the size
                   !-------------------------------------------------------------
                   isize  = ldc(1)
-              ENDIF 
-      
+              ENDIF
+
               !-----------------------------------------------------------------
               !  Store the neighbour set
               !-----------------------------------------------------------------
@@ -90,6 +90,6 @@
               ineigh(nneigh(ii),ii) = jj
               nneigh(jj)            = nneigh(jj) + 1
               ineigh(nneigh(jj),jj) = ii
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
 

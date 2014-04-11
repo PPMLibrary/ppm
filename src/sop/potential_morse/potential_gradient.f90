@@ -14,14 +14,14 @@ IF (rd .GT. attractive_radius .or. no_fusion) THEN
         (-rho**(-4._mk*rd) + 0.8_mk*rho**(1._mk-5._mk*rd) &
         -Psi_at_cutoff)
     gradPsi = 2._mk* meanD * coeff * &
-        4._mk*log(rho) * (rho**(-4._mk*rd) - rho**(1._mk-5._mk*rd))
+        4._mk*LOG(rho) * (rho**(-4._mk*rd) - rho**(1._mk-5._mk*rd))
 
 ELSE
 
-    Psi_part = Psi_part + meanD**2 * (-10._MK / sqrt(rd+0.1_mk)) &
+    Psi_part = Psi_part + meanD**2 * (-10._MK / SQRT(rd+0.1_mk)) &
         + meanD**2 *(-rho**(-4._mk*attractive_radius)+&
         0.8_mk*rho**(1._mk-5._mk*attractive_radius) + &
-        10._MK/sqrt(attractive_radius+0.1_mk))
+        10._MK/SQRT(attractive_radius+0.1_mk))
     gradPsi =  2._mk*meanD * 5._MK / (rd+0.1_mk)**1.5_mk
 
     !adaptation_ok = .false.

@@ -1579,7 +1579,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              IF (.NOT.PRESENT(topoid)) THEN
                 fail("need the topoid parameter for global mapping")
              ENDIF
-             partial = MERGE(.FALSE.,.TRUE.,global)
+             partial = .NOT.global
           ELSE
              partial = .TRUE.
           ENDIF
