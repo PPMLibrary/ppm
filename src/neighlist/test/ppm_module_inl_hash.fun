@@ -1,12 +1,13 @@
 test_suite ppm_module_inl_hash
 
 #ifdef __MPI
-    INCLUDE "mpif.h"
+  include "mpif.h"
 #endif
 
-type(ppm_htable),pointer   :: ht
-integer            :: info
-integer, parameter :: size = 200
+  type(ppm_htable), pointer :: ht
+
+  integer            :: info
+  integer, parameter :: size = 200
 
   setup
   nullify(ht)
@@ -15,13 +16,16 @@ integer, parameter :: size = 200
 
   teardown
   if (associated(ht)) then
-  deallocate(ht)
-  nullify(ht)
+     deallocate(ht)
+     nullify(ht)
   endif
   end teardown
 
-
   test basic
+    use ppm_module_substart
+    use ppm_module_substop
+    implicit none
+    start_subroutine("basic")
     ! create
     call create_htable(ht, size, info)
     assert_true(info .eq. 0)
@@ -37,10 +41,15 @@ integer, parameter :: size = 200
     assert_true(info .eq. 0)
     assert_true(hash_search(ht, 7_8) .eq. 49)
 
+    call hash_remove(ht,7_8,info)
+    assert_true(info .eq. 0)
+    assert_true(hash_search(ht, 7_8) .eq. htable_null)
+
     ! destroy
     call destroy_htable(ht, info)
     assert_true(info .eq. 0)
-  end test
 
+    end_subroutine()
+  end test
 
 end test_suite

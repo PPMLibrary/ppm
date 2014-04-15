@@ -3146,8 +3146,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              Pc%flags(ppm_part_global_index) = .TRUE.
           END IF
 #ifdef __MPI
-          CALL MPI_Scan(Pc%Npart,offset,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-          offset = offset - Pc%Npart
+          CALL MPI_Exscan(Pc%Npart,offset,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
 #else
           offset = 0
 #endif

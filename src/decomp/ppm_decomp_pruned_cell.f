@@ -207,7 +207,7 @@
       !  Add up the number of particles in each box (the the total number of
       !  particles)
       !-------------------------------------------------------------------------
-      CALL MPI_AllReduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+      CALL MPI_Allreduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,info)
       DO k=1,Mm
          npbx(k) = npbxg(k)
       ENDDO
