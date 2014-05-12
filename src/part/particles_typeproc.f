@@ -1984,13 +1984,14 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
+          DEFINE_MK()
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_particles))                          :: Pc
-          DEFINE_MK()
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+
           !!! Data structure containing the particles
-          INTEGER,                            INTENT(  OUT)      :: info
+          INTEGER,   INTENT(  OUT) :: info
           !!! Return status, on success 0.
           !-------------------------------------------------------------------------
           !  Local variables

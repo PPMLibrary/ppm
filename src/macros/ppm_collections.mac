@@ -146,11 +146,12 @@ include macro ppm_create_collection_interfaces(coll_type,el_type,vec=false)
           INTEGER, OPTIONAL,             INTENT(  OUT) :: id
       END SUBROUTINE <%= collection_type %>_push
       !REMOVE ELEMENT FROM COLLECTION
-      SUBROUTINE <%= collection_type %>_remove(this,info,element)
+      SUBROUTINE <%= collection_type %>_remove(this,info,element,id)
           IMPORT <%= collection_type %>,<%= element_type %>
           CLASS(<%= collection_type %>),        INTENT(INOUT) :: this
           INTEGER,                              INTENT(  OUT) :: info
           CLASS(<%= element_type %>), OPTIONAL, INTENT(INOUT) :: element
+          INTEGER,                    OPTIONAL, INTENT(IN   ) :: id
       END SUBROUTINE <%= collection_type %>_remove
       !GROW COLLECTION SIZE
       SUBROUTINE <%= collection_type %>_grow_size(this,info)
@@ -460,7 +461,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           end_subroutine()
       END SUBROUTINE <%= collection_type %>_push
       !REMOVE
-      SUBROUTINE <%= collection_type %>_remove(this,info,element)
+      SUBROUTINE <%= collection_type %>_remove(this,info,element,id)
           !!! If element is present, remove it from the collection
           !!! else, remove the current element (as defined by the iterator pointer)
 
@@ -470,7 +471,8 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           CLASS(<%= collection_type %>),      INTENT(INOUT) :: this
           INTEGER,                            INTENT(  OUT) :: info
-          CLASS(<%= element_type %>),OPTIONAL,INTENT(INOUT) :: element
+          CLASS(<%= element_type %>), OPTIONAL, INTENT(INOUT) :: element
+          INTEGER,                  OPTIONAL, INTENT(IN   ) :: id
 
           !-------------------------------------------------------------------------
           ! local variables
@@ -483,10 +485,10 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           iter_id_save = this%iter_id
 
           IF (PRESENT(element)) THEN
-             del_id = this%get_id(element)
+             del_id = MERGE(id,this%get_id(element),PRESENT(id))
              IF (del_id.LT.0) RETURN
           ELSE
-             del_id = this%iter_id
+             del_id = MERGE(id,this%iter_id,PRESENT(id))
           ENDIF
 
 %if !vector

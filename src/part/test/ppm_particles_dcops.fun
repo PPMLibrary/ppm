@@ -38,7 +38,7 @@ integer, dimension(:,:),pointer :: vlist=>NULL()
 integer, dimension(:),allocatable:: seed,degree,order
 real(mk),dimension(:,:),allocatable:: randn
 real(mk),dimension(:),allocatable:: coeffs
-integer, dimension(:),  pointer :: gi => NULL()
+integer, dimension(:),  pointer :: gi => NULL(), energy => null(),energyt => null()
 real(mk),dimension(:),  pointer :: wp_1r => NULL()
 real(mk),dimension(:,:),pointer :: wp_2r => NULL()
 real(mk)                        :: tol_error,err
@@ -53,6 +53,7 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
 
         use ppm_module_init
         use ppm_module_mktopo
+        use ppm_module_util_qsort
         start_subroutine("init")
 
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),stat=info)
@@ -115,6 +116,23 @@ class(ppm_t_discr_data),POINTER :: prop => NULL()
         call Part1%map(info,global=.true.,topoid=topoid)
 
         call Part1%map_ghosts(info)
+
+        if (ppm_rank.eq.0) then
+        allocate(energy(5))
+        energy(1)=1000
+        energy(2)=-150
+        energy(3)=300
+        energy(4)=120
+        energy(5)=50
+        stdout("energy1",'energy')
+        call ppm_util_qsort(energy,energyt,info)
+        stdout("energy2",'energy')
+        stdout("energyt",'energyt')
+        endif
+
+        CALL MPI_FINALIZE(INFO)
+        Stop
+
 
         call SField1%discretize_on(Part1,info)
         call SField2%discretize_on(Part1,info)

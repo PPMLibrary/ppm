@@ -43,11 +43,11 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(INOUT) :: table
+      CLASS(ppm_htable)      :: table
       !!! The hashtable to create.
-      INTEGER,          INTENT(IN   ) :: nelement
+      INTEGER, INTENT(IN   ) :: nelement
       !!! Number of desired elements.
-      INTEGER,          INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
 
       !-------------------------------------------------------------------------
       !  Local variables
@@ -99,9 +99,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      TYPE(ppm_htable), INTENT(INOUT) :: table
+      CLASS(ppm_htable)      :: table
       !!! The hashtable to create. The pointer must not be NULL
-      INTEGER, INTENT(OUT)    :: info
+      INTEGER, INTENT(  OUT) :: info
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -137,7 +137,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-          TYPE(ppm_htable),        INTENT(IN   ) :: table
+          CLASS(ppm_htable),       INTENT(IN   ) :: table
           !!! The hashtable to create. The pointer must not be NULL
           INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
           !!! Input key
@@ -155,7 +155,7 @@
           !---------------------------------------------------------------------
           !  Local variables and parameters
           !---------------------------------------------------------------------
-          INTEGER(ppm_kind_int64), PARAMETER  :: m = 1431374979
+          INTEGER(ppm_kind_int64), PARAMETER  :: m = 1431374979_ppm_kind_int64
           INTEGER,                 PARAMETER  :: r = 24
           INTEGER                             :: h
           INTEGER(ppm_kind_int64)             :: data
@@ -182,22 +182,25 @@
 
               data = data + 4
               len  = len - 1
-          END DO
+          ENDDO
 
-          IF (len .EQ. 3) THEN
-              h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
-              len = len - 1
-          END IF
+          SELECT CASE (len)
+             CASE (3)
+                h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
+                h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
+                h = IEOR(h, IBITS(data, 0, 8))
+                h = h*m
 
-          IF (len .EQ. 2) THEN
-              h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-              len = len - 1
-          END IF
+             CASE (2)
+                h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
+                h = IEOR(h, IBITS(data, 0, 8))
+                h = h*m
 
-          IF (len .EQ. 1) THEN
-              h = IEOR(h, IBITS(data, 0, 8))
-              h = h*m
-          END IF
+             CASE (1)
+                h = IEOR(h, IBITS(data, 0, 8))
+                h = h*m
+
+          END SELECT
 
           h = IEOR(h, ISHFT(h, -13))
           h = h*m
@@ -214,7 +217,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_htable),        INTENT(IN   ) :: table
+      CLASS(ppm_htable),       INTENT(IN   ) :: table
       !!! The hashtable to create. The pointer must not be NULL
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Input key, which corresponds to address requested
@@ -231,8 +234,8 @@
       ! integer the resulting value might be negative and not
       ! a valid array index
 
-      int_addr = 1 + &
-      & MOD((h_func(table,key,seed1)+jump*h_func(table,key,seed2)),table%nrow)
+      int_addr = 1_ppm_kind_int64 + &
+      & MOD((table%h_func(key,seed1)+jump*table%h_func(key,seed2)),table%nrow)
       address  = int_addr
       END FUNCTION h_key
 
@@ -252,8 +255,8 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_htable),        INTENT(INOUT) :: table
-      !!! The hashtable to create. The pointer must not be NULL
+      CLASS(ppm_htable)                      :: table
+      !!! The hashtable
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Key to be stored
       INTEGER,                 INTENT(IN   ) :: value
@@ -270,39 +273,63 @@
 
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
-      CALL substart('hash_insert',t0,info)
-#endif
 
+      CALL substart('hash_insert',t0,info)
+#else
       info = 0
+#endif
       jump = 0
       ! Keep on searching withing bounds of hash table.
       DO WHILE (jump .LT. table%nrow)
           ! Get the address corresponding to given key
-          spot = h_key(table, key, jump)
+          spot = table%h_key(key, jump)
           ! If an empty slot found ...
-          IF(table%keys(spot) .EQ. htable_null)  THEN
-              ! Store the key and the corresponding value and RETURN.
-              table%keys(spot) = key
-              table%borders_pos(spot) = value
-              GOTO 9999
+          IF (table%keys(spot).EQ.htable_null) THEN
+             ! Store the key and the corresponding value and RETURN.
+             table%keys(spot) = key
+             table%borders_pos(spot) = value
+             RETURN
+          ELSE IF (table%keys(spot).EQ.key) THEN
+             table%borders_pos(spot) = value
+             RETURN
+          ENDIF
           ! If the current slot is occupied, jump to next key that results
           ! in same hash function.
-          ELSE
-              jump = jump + 1
-          END IF
-      END DO
+          jump = jump + 1
+      ENDDO
 
       ! If NOT returned within the while-loop, that means our hash table is
       ! not sufficiently large. Hence, regrowth will be needed!
       info = -1
 
- 9999 CONTINUE
-
 #ifdef __DEBUG
+      9999 CONTINUE
       CALL substop('hash_insert',t0,info)
 #endif
-
       END SUBROUTINE hash_insert
+
+      SUBROUTINE hash_insert_(table,key_,value,info)
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable)      :: table
+      !!! The hashtable
+      INTEGER, INTENT(IN   ) :: key_
+      !!! Key to be stored
+      INTEGER, INTENT(IN   ) :: value
+      !!! Value that corresponds to given key
+      INTEGER, INTENT(  OUT) :: info
+      !!! Info for whether insertion was successful or not. 0 if SUCCESSFUL
+      !!! and -1 otherwise.
+
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: key
+      key=INT(key_,KIND=ppm_kind_int64)
+      CALL table%hash_insert(key,value,info)
+      END SUBROUTINE hash_insert_
 
 #ifdef __DEBUG
       FUNCTION hash_search(table,key) RESULT(value)
@@ -324,7 +351,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_htable),        INTENT(IN   ) :: table
+      CLASS(ppm_htable),       INTENT(IN   ) :: table
       !!! The hashtable to create. The pointer must not be NULL
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Input key, which the corresponding value is asked for
@@ -349,32 +376,56 @@
       value = htable_null
       jump = 0
 
-      spot = h_key(table, key, jump)
       ! Keep on searching while we don't come across a NULL value or we don't
       ! exceed bounds of hash table.
-      DO WHILE((jump .LT. table%nrow).AND.(table%keys(spot).NE.htable_null))
-          ! If key matches ...
-          IF (table%keys(spot) .EQ. key)  THEN
-              ! Set the return value and return
-              value = table%borders_pos(spot)
-              RETURN
-          ! Otherwise, keep on incrementing jump distance
-          ELSE
-              jump = jump + 1
-          END IF
+      loop: DO WHILE(jump .LT. table%nrow)
           ! Get the other key that results in same hash key as for the input
           ! key.
-          spot = h_key(table, key, jump)
-      END DO
+          spot = table%h_key(key, jump)
+          ! If key matches ...
+          IF (table%keys(spot).EQ.key) THEN
+             ! Set the return value and return
+             value = table%borders_pos(spot)
+             RETURN
+          ELSE IF (table%keys(spot).EQ.htable_null) THEN
+             IF (.NOT.ANY(key.EQ.table%keys)) EXIT loop
+          ENDIF
+          ! Otherwise, keep on incrementing jump distance
+          jump = jump + 1
+      ENDDO loop
 
 #ifdef __DEBUG
       CALL substop('hash_search',t0,info)
 #endif
-
       END FUNCTION hash_search
+
+#ifdef __DEBUG
+      FUNCTION hash_search_(table,key_) RESULT(value)
+#else
+      ELEMENTAL FUNCTION hash_search_(table,key_) RESULT(value)
+#endif
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable), INTENT(IN   ) :: table
+      !!! The hashtable
+      INTEGER,           INTENT(IN   ) :: key_
+      !!! Input key, which the corresponding value is asked for
+      INTEGER                          :: value
+      !!! Value corresponding to the input key
+
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: key
+      key=INT(key_,KIND=ppm_kind_int64)
+      value=table%hash_search(key)
+      END FUNCTION hash_search_
 
       !TODO check this sub
       !Yaser
+      !This function definitely suffers from a bug!
       SUBROUTINE hash_remove(table, key, info)
       !!! Given the key, removes the elements in the hash table. Info is
       !!! set to -1 if the key was NOT found.
@@ -391,7 +442,7 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      TYPE(ppm_htable),        INTENT(INOUT) :: table
+      CLASS(ppm_htable)                      :: table
       !!! The hashtable
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: key
       !!! Key to be removed
@@ -403,41 +454,59 @@
       !  Local variables
       !---------------------------------------------------------------------
       INTEGER :: jump
-      INTEGER :: spot
+      INTEGER :: spot !,spot0
 
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
-      CALL substart('hash_remove',t0,info)
 
+      CALL substart('hash_remove',t0,info)
 #else
       info = 0
 #endif
-      jump = 0
-      ! Get the address corresponding to given key
-      spot = h_key(table, key, jump)
-      ! Keep on searching withing bounds of hash table.
-      DO WHILE (jump.LT.table%nrow.AND.table%keys(spot).NE.htable_null)
-          ! If an empty slot found ...
-          IF (table%keys(spot).EQ.key)  THEN
-             ! Remove the key and the corresponding value and RETURN.
-             table%borders_pos(spot) = htable_null
-             RETURN
-          END IF
-          ! If the current slot is occupied, jump to next key that results
-          ! in same hash function.
-          jump = jump + 1
-
-          spot = h_key(table, key, jump)
-
-      END DO
-
-      ! If NOT returned within the while-loop, that means the key was NOT found
-      info = -1
-
-      9999 CONTINUE
+      IF (ANY(key.EQ.table%keys)) THEN
+         jump = 0
+         ! Keep on searching withing bounds of hash table.
+         DO WHILE (jump.LT.table%nrow)
+            ! Get the address corresponding to given key
+            spot = table%h_key(key, jump)
+            ! If an empty slot found ...
+            IF(table%keys(spot).EQ.key) THEN
+               !Remove the key and the corresponding value and RETURN.
+               table%borders_pos(spot)=htable_null
+               table%keys(spot)=htable_null
+               RETURN
+            ENDIF
+            ! If the current slot is occupied, jump to next key that results
+            ! in same hash function.
+            jump = jump + 1
+         ENDDO
+         ! If NOT returned within the while-loop, that means the key was NOT found
+         info = -1
+      ENDIF
 
 #ifdef __DEBUG
+      9999 CONTINUE
       CALL substop('hash_remove',t0,info)
 #endif
-
       END SUBROUTINE hash_remove
+
+      SUBROUTINE hash_remove_(table, key_, info)
+      IMPLICIT NONE
+      !---------------------------------------------------------------------
+      !  Arguments
+      !---------------------------------------------------------------------
+      CLASS(ppm_htable)      :: table
+      !!! The hashtable
+      INTEGER, INTENT(IN   ) :: key_
+      !!! Key to be removed
+      INTEGER, INTENT(  OUT) :: info
+      !!! Info for whether removal was successful or not. 0 if SUCCESSFUL
+      !!! and -1 otherwise.
+
+      !---------------------------------------------------------------------
+      !  Local variables
+      !---------------------------------------------------------------------
+      INTEGER(ppm_kind_int64) :: key
+      key=INT(key_,KIND=ppm_kind_int64)
+      CALL table%hash_remove(key, info)
+      END SUBROUTINE hash_remove_

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_part_send
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -40,7 +40,7 @@
       !!! send/receive
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -54,9 +54,9 @@
       !-------------------------------------------------------------------------
 #ifdef __MPI
       INCLUDE 'mpif.h'
-#endif 
+#endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: Npart
       !!! The old number of particles on the processor
@@ -65,7 +65,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       INTEGER, DIMENSION(3) :: ldl,ldu
       INTEGER               :: i,j,k,idom,nbuffer,ibuffer,jbuffer,bdim,sbdim
@@ -77,11 +77,11 @@
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_map_part_send',t0,info)
       !-------------------------------------------------------------------------
@@ -139,7 +139,7 @@
      &        'particle receive counter PRECV',__LINE__,info)
               GOTO 9999
           ENDIF
-          ldu(2) = ppm_buffer_set 
+          ldu(2) = ppm_buffer_set
           CALL ppm_alloc(pp,ldu,iopt,info)
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
@@ -156,7 +156,7 @@
           ENDIF
       ENDIF
       !-------------------------------------------------------------------------
-      !  Count the total size of the buffer dimensions 
+      !  Count the total size of the buffer dimensions
       !  It is handy... simplifies many summations, avoids loops, etc...
       !-------------------------------------------------------------------------
       sbdim = 0
@@ -170,7 +170,7 @@
       ibuffer = sbdim*qpart
 
       !-------------------------------------------------------------------------
-      !  Initialize the counter for the total set of new particles 
+      !  Initialize the counter for the total set of new particles
       !JHW 20060928     IF (ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
       !-------------------------------------------------------------------------
       IF (ppm_map_type.EQ.ppm_param_map_ghost_get.OR. &
@@ -194,7 +194,7 @@
       DO k=2,ppm_nsendlist
 
          !----------------------------------------------------------------------
-         !  The number of particles send off to the k-th processor in the 
+         !  The number of particles send off to the k-th processor in the
          !  sendlist
          !----------------------------------------------------------------------
          qpart    = (ppm_psendbuffer(k+1) - ppm_psendbuffer(k))
@@ -202,7 +202,7 @@
          !----------------------------------------------------------------------
          !  Store the number of particles to send
          !----------------------------------------------------------------------
-         psend(k) = qpart ! store the number of particles to send 
+         psend(k) = qpart ! store the number of particles to send
 
          !----------------------------------------------------------------------
          !  Store the size of the data to be send
@@ -211,7 +211,7 @@
 
 #ifdef __MPI
          !----------------------------------------------------------------------
-         !  Make a send/recv of the number of particles and data size to that 
+         !  Make a send/recv of the number of particles and data size to that
          !  has to be send/recv
          !----------------------------------------------------------------------
          ! The following IF is needed in order to skip "dummy"
@@ -227,7 +227,7 @@
              CALL MPI_SendRecv(psend(k),1,MPI_INTEGER,ppm_isendlist(k),tag1, &
      &                         precv(k),1,MPI_INTEGER,ppm_irecvlist(k),tag1, &
      &                         ppm_comm,status,info)
-     
+
              ! Compute nrecv(k) from precv(k)
              nrecv(k) = sbdim*precv(k)
 
@@ -280,12 +280,12 @@
       !  Allocate the memory for the copy of the particle buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_grow
-      ldu(1) = ppm_nrecvbuffer 
+      ldu(1) = ppm_nrecvbuffer
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
       ELSE
          CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
-      ENDIF 
+      ENDIF
       IF (info .NE. 0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
@@ -307,7 +307,7 @@
              CALL ppm_alloc(recvd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(recvs,ldu,iopt,info)
-          ENDIF 
+          ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
@@ -320,7 +320,7 @@
              CALL ppm_alloc(sendd,ldu,iopt,info)
           ELSE
              CALL ppm_alloc(sends,ldu,iopt,info)
-          ENDIF 
+          ENDIF
           IF (info .NE. 0) THEN
               info = ppm_error_fatal
               CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
@@ -338,7 +338,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Compute the total number of particles to send 
+      !  Compute the total number of particles to send
       !  As it is now, this should be equal to Npart
       !-------------------------------------------------------------------------
       npart_send = 0
@@ -347,8 +347,8 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main send 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main send
+      !  buffer
       !-------------------------------------------------------------------------
       DO k=1,ppm_buffer_set
          IF (k.EQ.1) THEN
@@ -377,12 +377,12 @@
       ENDDO
 
       !-------------------------------------------------------------------------
-      !  Compute the pointer to the position of the data in the main receive 
-      !  buffer 
+      !  Compute the pointer to the position of the data in the main receive
+      !  buffer
       !-------------------------------------------------------------------------
       DO k=1,ppm_buffer_set
          IF (k.EQ.1) THEN
-            pp(1,k) = 1 
+            pp(1,k) = 1
          ELSE
             pp(1,k) = pp(1,k-1) + npart_recv*ppm_buffer_dim(k-1)
          ENDIF
@@ -409,8 +409,8 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbufferd(ibuffer) = ppm_sendbufferd(jbuffer)
-            ENDDO 
-         ENDDO 
+            ENDDO
+         ENDDO
       ELSE
          DO k=1,ppm_buffer_set
             ibuffer = pp(1,k) - 1
@@ -419,9 +419,9 @@
                ibuffer                  = ibuffer + 1
                jbuffer                  = jbuffer + 1
                ppm_recvbuffers(ibuffer) = ppm_sendbuffers(jbuffer)
-            ENDDO 
-         ENDDO 
-      ENDIF 
+            ENDDO
+         ENDDO
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  loop over the processors in the ppm_isendlist(); skip the first entry
@@ -429,7 +429,7 @@
       !-------------------------------------------------------------------------
       IF (ppm_kind.EQ.ppm_kind_double) THEN
          !----------------------------------------------------------------------
-         !  For each send/recv 
+         !  For each send/recv
          !----------------------------------------------------------------------
          DO k=2,ppm_nsendlist
             !-------------------------------------------------------------------
@@ -445,8 +445,8 @@
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
                   sendd(ibuffer) = ppm_sendbufferd(jbuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
 
             !-------------------------------------------------------------------
             !  Perform the actual send/recv
@@ -475,12 +475,12 @@
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbufferd(jbuffer) = recvd(ibuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
          ENDDO
       ELSE
          !----------------------------------------------------------------------
-         !  For each send/recv 
+         !  For each send/recv
          !----------------------------------------------------------------------
          DO k=2,ppm_nsendlist
             !-------------------------------------------------------------------
@@ -488,7 +488,7 @@
             !-------------------------------------------------------------------
             ibuffer = 0
             DO j=1,ppm_buffer_set
-               jbuffer = qq(k,j) - 1 
+               jbuffer = qq(k,j) - 1
                !----------------------------------------------------------------
                !  Collect the data into the send buffer
                !----------------------------------------------------------------
@@ -496,8 +496,8 @@
                   ibuffer        = ibuffer + 1
                   jbuffer        = jbuffer + 1
                   sends(ibuffer) = ppm_sendbuffers(jbuffer)
-               ENDDO 
-            ENDDO 
+               ENDDO
+            ENDDO
 
             !-------------------------------------------------------------------
             !  Perform the actual send/recv
@@ -509,7 +509,7 @@
             IF (ppm_isendlist(k) .GE. 0 .AND. ppm_irecvlist(k) .GE. 0) THEN
                 tag1 = 400
                 CALL MPI_SendRecv(                                    &
-     &             sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, & 
+     &             sends,nsend(k),ppm_mpi_kind,ppm_isendlist(k),tag1, &
      &             recvs,nrecv(k),ppm_mpi_kind,ppm_irecvlist(k),tag1, &
      &             ppm_comm,status,info)
             ENDIF
@@ -527,10 +527,10 @@
                   ibuffer                  = ibuffer + 1
                   jbuffer                  = jbuffer + 1
                   ppm_recvbuffers(jbuffer) = recvs(ibuffer)
-               ENDDO 
+               ENDDO
             ENDDO
          ENDDO
-      ENDIF 
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  before we through away the precv() data let us store it for later use:
@@ -578,7 +578,7 @@
           CALL ppm_error(ppm_err_alloc,'ppm_map_part_send',     &
      &        'send buffer PPM_SENDBUFFER',__LINE__,info)
       ENDIF
-    
+
       !-------------------------------------------------------------------------
       !  Deallocate
       !-------------------------------------------------------------------------
@@ -645,7 +645,7 @@
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_map_part_send',t0,info)

@@ -155,7 +155,7 @@
       clist%ncell = CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
       DO WHILE(clist%grow_htable)
           clist%grow_htable = .FALSE.     ! set insufficient_hash_table flag to 0
-          CALL create_htable(clist%lookup,clist%ncell,info) ! create hash table
+          CALL clist%lookup%create(clist%ncell,info) ! create hash table
           lda(2) = clist%lookup%nrow
           iopt = ppm_param_alloc_fit
           ! Number of rows of "borders" array depends on dimensionality.
@@ -185,7 +185,7 @@
           clist%borders_pos_max = 0
 
           clist%borders_pos = clist%borders_pos + 1
-          CALL hash_insert(clist%lookup,idx0,clist%borders_pos,info)
+          CALL clist%lookup%insert(idx0,clist%borders_pos,info)
           IF (ppm_dim .EQ. 2) THEN
               clist%borders(6, clist%borders_pos)  = clist%n_all_p
           ELSE
@@ -199,7 +199,7 @@
           ! Sort particles by their position
           CALL SortByPosition(xp,cutoff,skin,clist%rank,clist,whole_domain,idx,0)
           IF (clist%grow_htable) THEN ! If hash table is not sufficient
-              CALL destroy_htable(clist%lookup,info)        ! Destroy hash table
+              CALL clist%lookup%destroy(info)        ! Destroy hash table
               iopt = ppm_param_dealloc
               lda = 0
               ! Deallocate "borders" array
@@ -381,7 +381,7 @@
       !-------------------------------------------------------------------------
       !  Destroy hash table.
       !-------------------------------------------------------------------------
-      CALL destroy_htable(clist%lookup,info)
+      CALL clist%lookup%destroy(info)
       IF (info.NE.0) THEN
           info = ppm_error_fatal
           CALL ppm_error(ppm_err_dealloc,'create_inl_vlist',   &
@@ -451,23 +451,23 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      INTEGER(ppm_kind_int64), INTENT(IN) :: c_idx
+      INTEGER(ppm_kind_int64), INTENT(IN   ) :: c_idx
       !!! Input index
-      TYPE(ppm_htable),        INTENT(IN) :: lookup
+      TYPE(ppm_htable),        INTENT(IN   ) :: lookup
       !!! hash table
-      logical                             :: empty
+      logical                                :: empty
       !!! Logical result
       !---------------------------------------------------------------------
       !  Local variables
       !---------------------------------------------------------------------
-      INTEGER(ppm_kind_int64)             :: parentIdx
+      INTEGER(ppm_kind_int64) :: parentIdx
       ! Index of parent of input cell
-      INTEGER                             :: borders_pos
+      INTEGER                 :: borders_pos
       !position on borders array
 
       empty = .TRUE.                           ! Set empty to TRUE
       parentIdx   = parent(c_idx)              ! Get index of parent cell
-      borders_pos = hash_search(lookup,parentIdx) ! Search parent in hash table
+      borders_pos = lookup%hash_search(parentIdx) ! Search parent in hash table
       IF (borders_pos .EQ. htable_null) RETURN ! Return FALSE if not found
       empty = .FALSE.                          ! Set empty to FALSE and return
       END FUNCTION isEmpty
@@ -998,7 +998,7 @@
 
       ! Insert current cell in hash table.
       clist%borders_pos = clist%borders_pos + 1
-      CALL hash_insert(clist%lookup,idx,clist%borders_pos,info)
+      CALL clist%lookup%insert(idx,clist%borders_pos,info)
       IF (info .NE. 0) THEN
           clist%grow_htable = .TRUE.
           RETURN
@@ -1160,7 +1160,7 @@
       ! If the desired level is reached, update the entry on borders
       ! array, such that it contains border indices for children cells.
       IF(getCellDepth(idx) + 1 .GE. level)  THEN
-          clist%borders_pos = hash_search(clist%lookup,idx)
+          clist%borders_pos = clist%lookup%search(idx)
 
           IF(ppm_dim .EQ. 2)       THEN
               clist%borders(1, clist%borders_pos) = increment

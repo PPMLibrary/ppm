@@ -244,6 +244,7 @@
           CALL MPI_Alltoall(sendtim,1,MPI_DOUBLE_PRECISION,alltim,1, &
           &    MPI_DOUBLE_PRECISION,ppm_comm,info)
 #endif
+          or_fail_MPI("MPI_Alltoall")
 
           DEALLOCATE(sendtim,STAT=info)
           or_fail_dealloc('send buffer for timings SENDTIM')

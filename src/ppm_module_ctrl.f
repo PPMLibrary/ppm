@@ -391,6 +391,11 @@
           INTEGER :: info2
           INTEGER :: i
           INTEGER :: rank = 0
+#ifdef __MPI
+          INTEGER                              :: request_count,cnt
+          INTEGER, DIMENSION(:),   ALLOCATABLE :: request
+          INTEGER, DIMENSION(:,:), ALLOCATABLE :: status
+#endif
 
           CHARACTER(LEN=*), PARAMETER :: caller='parse_args'
           CHARACTER(LEN=ppm_char)     :: value
@@ -496,88 +501,136 @@
           !----------------------------------------------------------------------
           !  Exchange data
           !----------------------------------------------------------------------
-      100 CONTINUE
+          100 CONTINUE
 #ifdef __MPI
       !   CALL MPI_BCast(what, length, MPI_TYPE, 0, comm, info)
           CALL MPI_BCast(info, 1, MPI_INTEGER, 0, ppm_comm, info2)
           IF (info .NE. 0) GOTO 9999
 
+          request_count=INTEGER_args_i      + &
+          &             LONGINT_args_i      + &
+          &             SINGLE_args_i       + &
+          &             DOUBLE_args_i       + &
+          &             STRING_args_i       + &
+          &             LOGICAL_args_i      + &
+          &             COMPLEX_args_i      + &
+          &             DCOMPLEX_args_i     + &
+          &             INTEGER_array_args_i+ &
+          &             LONGINT_array_args_i+ &
+          &             SINGLE_array_args_i + &
+          &             DOUBLE_array_args_i + &
+          &             STRING_array_args_i + &
+          &             LOGICAL_array_args_i+ &
+          &             COMPLEX_array_args_i+ &
+          &             DCOMPLEX_array_args_i
+
+          ALLOCATE(status(MPI_STATUS_SIZE,request_count),request(request_count),STAT=info)
+          or_fail_MPI("status & request")
+
           ! scalar
           DO i=1,INTEGER_args_i
-             CALL MPI_BCast(INTEGER_args(i)%variable, 1, MPI_INTEGER, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(INTEGER_args(i)%variable,1, &
+             & MPI_INTEGER,0,ppm_comm,request(i),info)
+          ENDDO
+          cnt=INTEGER_args_i
           DO i=1,LONGINT_args_i
-             CALL MPI_BCast(LONGINT_args(i)%variable, 1, MPI_INTEGER8, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(LONGINT_args(i)%variable,1, &
+             & MPI_INTEGER8,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+LONGINT_args_i
           DO i=1,SINGLE_args_i
-             CALL MPI_BCast(SINGLE_args(i)%variable, 1, MPI_REAL, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(SINGLE_args(i)%variable,1, &
+             & MPI_REAL,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+SINGLE_args_i
           DO i=1,DOUBLE_args_i
-             CALL MPI_BCast(DOUBLE_args(i)%variable, 1, MPI_DOUBLE_PRECISION, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(DOUBLE_args(i)%variable,1, &
+             & MPI_DOUBLE_PRECISION,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+DOUBLE_args_i
           DO i=1,STRING_args_i
-             CALL MPI_BCast(STRING_args(i)%variable, ppm_char, MPI_CHARACTER, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(STRING_args(i)%variable,ppm_char, &
+             & MPI_CHARACTER,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+STRING_args_i
           DO i=1,LOGICAL_args_i
-             CALL MPI_BCast(LOGICAL_args(i)%variable, 1, MPI_LOGICAL, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(LOGICAL_args(i)%variable,1, &
+             & MPI_LOGICAL,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+LOGICAL_args_i
           DO i=1,COMPLEX_args_i
-             CALL MPI_BCast(COMPLEX_args(i)%variable, 1, MPI_COMPLEX, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(COMPLEX_args(i)%variable,1, &
+             & MPI_COMPLEX,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+COMPLEX_args_i
           DO i=1,DCOMPLEX_args_i
-             CALL MPI_BCast(DCOMPLEX_args(i)%variable, 1, MPI_DOUBLE_COMPLEX, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(DCOMPLEX_args(i)%variable,1, &
+             & MPI_DOUBLE_COMPLEX,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+DCOMPLEX_args_i
 
           ! array
           DO i=1,INTEGER_array_args_i
-             CALL MPI_BCast(INTEGER_array_args(i)%variable, &
+             CALL MPI_Ibcast(INTEGER_array_args(i)%variable,&
              &    SIZE(INTEGER_array_args(i)%variable),     &
-             &    MPI_INTEGER, 0, ppm_comm, info)
-          END DO
+             &    MPI_INTEGER,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+INTEGER_array_args_i
           DO i=1,LONGINT_array_args_i
-             CALL MPI_BCast(LONGINT_array_args(i)%variable, &
+             CALL MPI_Ibcast(LONGINT_array_args(i)%variable,&
              &    SIZE(LONGINT_array_args(i)%variable),     &
-             &    MPI_INTEGER8, 0, ppm_comm, info)
-          END DO
+             &    MPI_INTEGER8,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+LONGINT_array_args_i
           DO i=1,SINGLE_array_args_i
-             CALL MPI_BCast(SINGLE_array_args(i)%variable, &
+             CALL MPI_Ibcast(SINGLE_array_args(i)%variable,&
              &    SIZE(SINGLE_array_args(i)%variable),     &
-             &    MPI_REAL, 0, ppm_comm, info)
-          END DO
+             &    MPI_REAL,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+SINGLE_array_args_i
           DO i=1,DOUBLE_array_args_i
-             CALL MPI_BCast(DOUBLE_array_args(i)%variable, &
+             CALL MPI_Ibcast(DOUBLE_array_args(i)%variable,&
              &    SIZE(DOUBLE_array_args(i)%variable),     &
-             &    MPI_DOUBLE_PRECISION, 0, ppm_comm, info)
-          END DO
+             &    MPI_DOUBLE_PRECISION,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+DOUBLE_array_args_i
           DO i=1,STRING_array_args_i
-             CALL MPI_BCast(STRING_array_args(i)%variable,        &
+             CALL MPI_Ibcast(STRING_array_args(i)%variable,       &
              &    SIZE(STRING_array_args(i)%variable) * ppm_char, &
-             &    MPI_CHARACTER, 0, ppm_comm, info)
-          END DO
+             &    MPI_CHARACTER,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+STRING_array_args_i
           DO i=1,LOGICAL_array_args_i
-             CALL MPI_BCast(LOGICAL_array_args(i)%variable, &
-             &    SIZE(LOGICAL_array_args(i)%variable),     &
-             &    MPI_LOGICAL, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(LOGICAL_array_args(i)%variable, &
+             &    SIZE(LOGICAL_array_args(i)%variable),      &
+             &    MPI_LOGICAL,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+LOGICAL_array_args_i
           DO i=1,COMPLEX_array_args_i
-             CALL MPI_BCast(COMPLEX_array_args(i)%variable, &
-             &    SIZE(COMPLEX_array_args(i)%variable),     &
-             &    MPI_COMPLEX, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(COMPLEX_array_args(i)%variable, &
+             &    SIZE(COMPLEX_array_args(i)%variable),      &
+             &    MPI_COMPLEX,0,ppm_comm,request(cnt+i),info)
+          ENDDO
+          cnt=cnt+COMPLEX_array_args_i
           DO i=1,DCOMPLEX_array_args_i
-             CALL MPI_BCast(DCOMPLEX_array_args(i)%variable, &
-             &    SIZE(DCOMPLEX_array_args(i)%variable),     &
-             &    MPI_DOUBLE_COMPLEX, 0, ppm_comm, info)
-          END DO
+             CALL MPI_Ibcast(DCOMPLEX_array_args(i)%variable, &
+             &    SIZE(DCOMPLEX_array_args(i)%variable),      &
+             &    MPI_DOUBLE_COMPLEX,0,ppm_comm,request(cnt+i),info)
+          ENDDO
 
+          CALL MPI_Waitall(request_count,request,status,info)
+          or_fail_MPI("MPI_Waitall")
+
+          DEALLOCATE(request,status,STAT=info)
+          or_fail_dealloc("request,status")
 #endif
           !----------------------------------------------------------------------
           !  Error handling
           !----------------------------------------------------------------------
-      9999 CONTINUE
+        9999 CONTINUE
           ! cleanup
           CALL deallocate_memory(info .NE. 0)
-          CALL substop(caller, t0, info)
+          CALL substop(caller,t0,info)
           RETURN
         END SUBROUTINE parse_args
         !------------------------------------------------------------------------

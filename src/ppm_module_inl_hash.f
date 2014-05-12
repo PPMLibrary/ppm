@@ -35,17 +35,18 @@
          USE ppm_module_data
          USE ppm_module_alloc
          USE ppm_module_error
-
          IMPLICIT NONE
 
         !-------------------------------------------------------------------------
         !  Declaration of parameters
         !-------------------------------------------------------------------------
+        PRIVATE
+
         INTEGER,                 PARAMETER :: htable_null = -1
         !!! NULL value for hash table
-        INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926
+        INTEGER(ppm_kind_int64), PARAMETER :: seed1 = 738235926_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
-        INTEGER(ppm_kind_int64), PARAMETER :: seed2 = 1243832038
+        INTEGER(ppm_kind_int64), PARAMETER :: seed2 = 1243832038_ppm_kind_int64
         !!! Hardcoded seed value taken from MurmurHash
 
         TYPE ppm_htable
@@ -56,22 +57,32 @@
           !!! Array for keeping hash table keys.
           INTEGER,                 DIMENSION(:), POINTER :: borders_pos => NULL()
           !!! Array for keeping positions of cells on "borders" array.
-
           !---------------------------------------------------------------------
           !  Declaration of variables
           !--------------------------------------------------------------------
           INTEGER                                        :: nrow = 0
           !!! number of rows in hash table
-!          CONTAINS
-!              PROCEDURE :: create => create_htable
-!              PROCEDURE :: destroy => destroy_htable
-!              PROCEDURE :: insert => hash_insert
-!              FUNCTION :: search => hash_search
+         CONTAINS
+          PROCEDURE :: create => create_htable
+          PROCEDURE :: destroy => destroy_htable
+
+          PROCEDURE :: h_func
+          PROCEDURE :: h_key
+
+          PROCEDURE :: hash_insert
+          PROCEDURE :: hash_insert_
+          GENERIC   :: insert => hash_insert,hash_insert_
+
+          PROCEDURE :: hash_search
+          PROCEDURE :: hash_search_
+          GENERIC   :: search => hash_search,hash_search_
+
+          PROCEDURE :: hash_remove
+          PROCEDURE :: hash_remove_
+          GENERIC   :: remove => hash_remove,hash_remove_
         END TYPE
 
-        PRIVATE :: seed1, seed2
-!        PRIVATE :: create_htable, destroy_htable, hash_insert, hash_search
-!        PRIVATE :: h_func, h_key
+        PUBLIC :: ppm_htable,htable_null
 
         CONTAINS
 
