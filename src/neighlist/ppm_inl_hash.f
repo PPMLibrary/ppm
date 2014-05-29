@@ -88,7 +88,6 @@
       CALL substop(caller,t0,info)
       END SUBROUTINE create_htable
 
-
       SUBROUTINE destroy_htable(table,info)
       USE ppm_module_data
       USE ppm_module_alloc
@@ -510,3 +509,70 @@
       key=INT(key_,KIND=ppm_kind_int64)
       CALL table%hash_remove(key, info)
       END SUBROUTINE hash_remove_
+
+      SUBROUTINE grow_htable(table,info)
+      !!! Based on the number of rows of the table, creates the hash table with
+      !!! double size.
+      !!!
+      !!! [WARNING]
+      !!! If you allocate a hashtable with more than 2^31-1 elements the hash
+      !!! function will most probably produce incorrect hash keys and fail.
+      USE ppm_module_data
+      USE ppm_module_alloc
+      USE ppm_module_error
+      USE ppm_module_substart
+      USE ppm_module_substop
+      IMPLICIT NONE
+      !-------------------------------------------------------------------------
+      !  Arguments
+      !-------------------------------------------------------------------------
+      CLASS(ppm_htable)      :: table
+      !!! The hashtable to grow.
+      INTEGER, INTENT(  OUT) :: info
+
+      !-------------------------------------------------------------------------
+      !  Local variables
+      !-------------------------------------------------------------------------
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER(ppm_kind_int64), DIMENSION(:), ALLOCATABLE :: keys_tmp
+      INTEGER,                 DIMENSION(:), ALLOCATABLE :: borders_pos_tmp
+      INTEGER                                            :: nsize,i
+
+      CHARACTER(LEN=ppm_char) :: caller='grow_htable'
+
+      CALL substart(caller,t0,info)
+
+      nsize=table%nrow
+
+      ALLOCATE(keys_tmp(nsize),SOURCE=table%keys,STAT=info)
+      or_fail_alloc("keys_tmp")
+
+      ALLOCATE(borders_pos_tmp(nsize),SOURCE=table%borders_pos,STAT=info)
+      or_fail_alloc("keys_tmp & borders_pos_tmp")
+
+      nsize=table%nrow*2
+
+      IF (nsize.GE.HUGE(1)) THEN
+         !TOCHCECK
+         fail("hashtable with more than 2^31-1 elements will fail",ppm_error=ppm_error_fatal)
+      ENDIF
+
+      CALL table%destroy(info)
+      or_fail("table%destroy")
+
+      CALL table%create(nsize,info)
+      or_fail("table%create")
+
+      DO i=1,SIZE(keys_tmp)
+         IF (keys_tmp(i).EQ.htable_null) CYCLE
+         CALL table%insert(keys_tmp(i),borders_pos_tmp(i),info)
+         or_fail("table%insert")
+      ENDDO
+
+      DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
+      or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
+      END SUBROUTINE grow_htable

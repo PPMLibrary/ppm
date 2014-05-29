@@ -80,6 +80,8 @@
           PROCEDURE :: hash_remove
           PROCEDURE :: hash_remove_
           GENERIC   :: remove => hash_remove,hash_remove_
+
+          PROCEDURE :: grow => grow_htable
         END TYPE
 
         PUBLIC :: ppm_htable,htable_null

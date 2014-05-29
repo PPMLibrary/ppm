@@ -229,9 +229,8 @@
               ELSE
                   check_associated(<#this%adapt_wp_grad#>)
                   IF (.NOT.this%adapt_wp_grad%flags(ppm_ppt_partial)) THEN
-                      CALL this%realloc_prop(this%adapt_wp_grad,&
-                          info,lda=ppm_dim)
-                          or_fail("failed to reallocate property adapt_wp_grad")
+                     CALL this%realloc_prop(this%adapt_wp_grad,info,lda=ppm_dim)
+                     or_fail("failed to reallocate property adapt_wp_grad")
                   ENDIF
               ENDIF
           ENDIF

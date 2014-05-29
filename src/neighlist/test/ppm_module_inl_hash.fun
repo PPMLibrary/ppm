@@ -102,6 +102,21 @@ test_suite ppm_module_inl_hash
     assert_true(ht%search(220350_8).eq.220)
     assert_true(ht%search(13000_8).eq.130)
 
+    call ht%grow(info)
+    assert_true(info .eq. 0)
+    assert_true(ht%nrow.eq.32768)
+
+    DO i=1,9990,10
+       assert_true(ht%search(INT(i,KIND=8)) .eq. i*i+1)
+       assert_true(ht%search(i+1) .eq. i*i+1+1)
+    ENDDO
+
+    assert_true(ht%search(2_8) .eq. 3)
+    assert_true(ht%search(3_8) .eq. htable_null)
+    assert_true(ht%search(10300_8).eq.103)
+    assert_true(ht%search(220350_8).eq.220)
+    assert_true(ht%search(13000_8).eq.130)
+
     ! destroy
     call ht%destroy(info)
     assert_true(info .eq. 0)

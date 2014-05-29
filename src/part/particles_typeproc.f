@@ -1217,6 +1217,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_print_info)
 
+      !TOCHECK
+      !TODO
+      !this implementation is totally wrong
+      !as you remove particle ip the particles number will change
       SUBROUTINE DTYPE(part_del_parts)(Pc,list_del_parts,nb_del,info)
           !!! remove some particles from a Particle set
           !!! WARNING: this implementation is NOT efficient
