@@ -199,7 +199,6 @@ module Funit
     sourceflag = ''
     if ENV['FSFLAG'] then
       sourceflag = prog_source_dirs.map{|pd| ENV['FSFLAG']+pd }.join(' ')
-      print_started("sourceflag")
     end
     dependencies = Fortran::Dependencies.new(:search_paths=>prog_source_dirs)
 
