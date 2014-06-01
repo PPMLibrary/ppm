@@ -30,6 +30,7 @@ module Funit
       original_dir = Dir.pwd
       tf_dir = File.dirname(test_file)
       Dir.chdir tf_dir
+      tf_dir = Dir.pwd
       prog_source_dirs << tf_dir
       test_file = File.basename(test_file)
       tf_content = IO.read(test_file+'.fun')
