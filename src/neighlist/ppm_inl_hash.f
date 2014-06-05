@@ -273,7 +273,9 @@
 #ifdef __DEBUG
       REAL(ppm_kind_double) :: t0
 
-      CALL substart('hash_insert',t0,info)
+      CHARACTER(LEN=ppm_char) :: caller='hash_insert'
+
+      CALL substart(caller,t0,info)
 #else
       info = 0
 #endif
@@ -299,11 +301,12 @@
 
       ! If NOT returned within the while-loop, that means our hash table is
       ! not sufficiently large. Hence, regrowth will be needed!
-      info = -1
-
+      CALL table%grow(info)
 #ifdef __DEBUG
+      or_fail("table%grow")
+
       9999 CONTINUE
-      CALL substop('hash_insert',t0,info)
+      CALL substop(caller,t0,info)
 #endif
       END SUBROUTINE hash_insert
 

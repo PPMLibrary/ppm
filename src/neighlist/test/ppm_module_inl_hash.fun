@@ -121,6 +121,33 @@ test_suite ppm_module_inl_hash
     call ht%destroy(info)
     assert_true(info .eq. 0)
 
+
+    !check the table growth when the size is not big enough
+    call ht%create(5, info)
+    assert_true(info .eq. 0)
+
+    call ht%insert(385,1, info)
+    assert_true(info .eq. 0)
+    call ht%insert(96,2, info)
+    assert_true(info .eq. 0)
+    call ht%insert(420,3, info)
+    assert_true(info .eq. 0)
+    call ht%insert(122,4, info)
+    assert_true(info .eq. 0)
+    call ht%insert(432,5, info)
+    assert_true(info .eq. 0)
+    call ht%insert(131,6, info)
+    assert_true(info .eq. 0)
+    call ht%insert(470,7, info)
+    assert_true(info .eq. 0)
+    call ht%insert(157,8, info)
+    assert_true(info .eq. 0)
+
+    assert_true(ht%search(470_8) .eq. 7)
+
+    ! destroy
+    call ht%destroy(info)
+    assert_true(info .eq. 0)
     end_subroutine()
   end test
 
