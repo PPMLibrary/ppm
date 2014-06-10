@@ -90,11 +90,7 @@
 
           start_subroutine(__FUNCNAME)
 
-          IF (PRESENT(skip_checks)) THEN
-             skip = skip_checks
-          ELSE
-             skip = .FALSE.
-          ENDIF
+          skip=MERGE(skip_checks,.FALSE.,PRESENT(skip_checks))
 
           wp => NULL()
 

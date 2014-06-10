@@ -197,11 +197,7 @@
       !-------------------------------------------------------------------------
       !  Do we need to store the Verlet lists or just determine their lengths?
       !-------------------------------------------------------------------------
-      IF (PRESENT(lstore)) THEN
-         lst = lstore
-      ELSE
-         lst = .TRUE.
-      ENDIF
+      lst=MERGE(lstore,.TRUE.,PRESENT(lstore))
 
       topo => ppm_topo(topoid)%t
 

@@ -49,15 +49,15 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: errno
+      INTEGER,          INTENT(IN   ) :: errno
       !!! Error number
-      INTEGER                 , INTENT(IN   ) :: line
+      INTEGER,          INTENT(IN   ) :: line
       !!! Line number of error
-      CHARACTER(LEN=*)        , INTENT(IN   ) :: caller
+      CHARACTER(LEN=*), INTENT(IN   ) :: caller
       !!! Name of calling subroutine
-      CHARACTER(LEN=*)        , INTENT(IN   ) :: mesg
+      CHARACTER(LEN=*), INTENT(IN   ) :: mesg
       !!! Error message
-      INTEGER                 , INTENT(INOUT) :: info
+      INTEGER,          INTENT(INOUT) :: info
       !!! On entry: error severity level.
       !!!
       !!! * ppm_error_fatal
@@ -70,8 +70,9 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                                 :: info2
-      CHARACTER(LEN=ppm_char)                 :: msg
+      INTEGER :: info2
+
+      CHARACTER(LEN=ppm_char) :: msg
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -170,7 +171,7 @@
       !  If error was fatal: terminate program. All processors get killed
       !  by MPI.
       !-------------------------------------------------------------------------
-      IF (info .EQ. ppm_error_fatal) THEN
+      IF (info.EQ.ppm_error_fatal) THEN
 #ifdef __MPI
          CALL MPI_Abort(ppm_comm,1,info2)
 #endif
@@ -180,6 +181,6 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
       END SUBROUTINE ppm_error

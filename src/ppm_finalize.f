@@ -43,12 +43,11 @@
       USE ppm_module_alloc
       USE ppm_module_write
       USE ppm_module_log
-!      USE ppm_module_mesh_finalize
       IMPLICIT NONE
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER, INTENT(OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Returns 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -59,9 +58,8 @@
 
       REAL(ppm_kind_double) :: t0
 
-      LOGICAL               :: isopen
+      LOGICAL :: isopen
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_finalize'
       !-------------------------------------------------------------------------
       !  Externals
@@ -71,13 +69,13 @@
       !  Initialise
       !-------------------------------------------------------------------------
       CALL substart(caller,t0,info)
-      lda(1) = 0
+      lda(1)=0
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-         IF (.NOT. ppm_initialized) THEN
+      IF (ppm_debug.GT.0) THEN
+         IF (.NOT.ppm_initialized) THEN
             fail('Please call ppm_init first!',ppm_err_ppm_noinit)
          ENDIF
       ENDIF
@@ -112,9 +110,9 @@
       CALL ppm_alloc(ppm_proc_speed,lda,iopt,info)
       istat = istat + info
 
-      IF (istat .NE. 0) THEN
-         WRITE(mesg,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
-         fail(mesg,ppm_err_dealloc)
+      IF (istat.NE.0) THEN
+         WRITE(cbuf,'(A,I3,A)') 'for ',istat,' global arrays. Possible memory leak.'
+         fail(cbuf,ppm_err_dealloc)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -122,59 +120,33 @@
       !-------------------------------------------------------------------------
       ppm_initialized = .FALSE.
 
-      IF (ppm_rank .EQ. 0) THEN
-         WRITE(mesg,'(A)') &
-      &  "***********************************************************"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***         Parallel Particle Mesh Library (PPM)        ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***                                                     ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  Thank you for using the PPM library in your work.  ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  Please, acknowledge our efforts by including the   ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  following reference when publishing data obtained  ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  using PPM library:                                 ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***                                                     ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  I. F. Sbalzarini, J. Walther, M. Bergdorf,         ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  S. E. Hieber, E. M. Kotsalis, P. Koumoutsakos,     ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***  `J. Comput. Phys.`, 215, pp. 566-588, (2006)       ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***                                                     ***"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
-         WRITE(mesg,'(A)') &
-      &  "***********************************************************"
-         CALL ppm_log(caller,mesg,info)
-         CALL ppm_write(ppm_rank,caller,mesg,info)
+      IF (ppm_rank.EQ.0) THEN
+         stdout_f('(A)',"***********************************************************")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***         Parallel Particle Mesh Library (PPM)        ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  Thank you for using the PPM library in your work.  ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  Please, acknowledge our efforts by including the   ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  following reference when publishing data obtained  ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  using PPM library:                                 ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  I. F. Sbalzarini, J. Walther, M. Bergdorf,         ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  S. E. Hieber, E. M. Kotsalis, P. Koumoutsakos,     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***  `J. Comput. Phys.`, 215, pp. 566-588, (2006)       ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***                                                     ***")
+         CALL ppm_log(caller,cbuf,info)
+         stdout_f('(A)',"***********************************************************")
+         CALL ppm_log(caller,cbuf,info)
       ENDIF
 
       !-------------------------------------------------------------------------

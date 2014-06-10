@@ -96,6 +96,7 @@
       LOGICAL                        :: valid
       TYPE(ppm_t_topo), POINTER      :: topo
 !       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
+      CHARACTER(ppm_char) :: caller='ppm_map_part_global'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -103,35 +104,31 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_global',t0,info)
-
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+      IF (ppm_debug.GT.0) THEN
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       ! if there is still some data left in the buffer, warn the user
       IF (ppm_buffer_set .GT. 0) THEN
-        info = ppm_error_warning
-        CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_global',  &
-     &      'Buffer was not empty. Possible loss of data!',__LINE__,info)
+         fail('Buffer was not empty. Possible loss of data!',ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  map to a defined topology
       !-------------------------------------------------------------------------
-      IF (target_topoid .NE. ppm_param_topo_undefined) THEN
-        topo => ppm_topo(target_topoid)%t
+      IF (target_topoid.NE.ppm_param_topo_undefined) THEN
+         topo => ppm_topo(target_topoid)%t
 
-
-        !-----------------------------------------------------------------------
-        !  Save the map type for the subsequent calls (not used yet)
-        !-----------------------------------------------------------------------
-        ppm_map_type = ppm_param_map_global
+         !-----------------------------------------------------------------------
+         !  Save the map type for the subsequent calls (not used yet)
+         !-----------------------------------------------------------------------
+         ppm_map_type = ppm_param_map_global
 
         !------------------------------------------------------------------------
         !  Alloc memory for particle lists
@@ -139,19 +136,10 @@
         iopt   = ppm_param_alloc_fit
         ldu(1) = Npart
         CALL ppm_alloc(ilist1,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'particle list 1 ILIST1',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("particle list 1 ILIST1",ppm_error=ppm_error_fatal)
+
         CALL ppm_alloc(ilist2,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'particle list 2 ILIST2',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("particle list 2 ILIST2",ppm_error=ppm_error_fatal)
 
         !-----------------------------------------------------------------------
         !  Allocate memory for the pointer to the buffer; for the global map we
@@ -160,30 +148,16 @@
         iopt   = ppm_param_alloc_fit
         ldu(1) = ppm_nproc + 1
         CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'particle send buffer PPM_PSENDBUFFER',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("particle send buffer PPM_PSENDBUFFER",ppm_error=ppm_error_fatal)
 
         iopt   = ppm_param_alloc_fit
         ldu(1) = Npart
         CALL ppm_alloc(part2proc,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'particles-to-processor map PART2PROC',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("particles-to-processor map PART2PROC",ppm_error=ppm_error_fatal)
+
         ldu(1) = Npart
         CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("buffer-to-particles map PPM_BUFFER2PART",ppm_error=ppm_error_fatal)
 
         !-----------------------------------------------------------------------
         !  Initialize the particle list
@@ -406,19 +380,10 @@
         iopt   = ppm_param_alloc_fit
         ldu(1) = ppm_buffer_set
         CALL ppm_alloc(ppm_buffer_dim ,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("buffer dimensions PPM_BUFFER_DIM",ppm_error=ppm_error_fatal)
+
         CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'buffer types PPM_BUFFER_TYPE',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("buffer types PPM_BUFFER_TYPE",ppm_error=ppm_error_fatal)
 
         ppm_buffer_dim(ppm_buffer_set)  = ppm_dim
 #if    __KIND == __SINGLE_PRECISION
@@ -433,17 +398,13 @@
         !-----------------------------------------------------------------------
         iopt   = ppm_param_alloc_fit
         ldu(1) = ppm_dim*Npart
-        IF (ppm_kind.EQ.ppm_kind_double) THEN
+        SELECT CASE (ppm_kind)
+        CASE (ppm_kind_double)
            CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-        ELSE
+        CASE DEFAULT
            CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-        ENDIF
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'global send buffer PPM_SENDBUFFER',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        END SELECT
+        or_fail_alloc("global send buffer PPM_SENDBUFFER",ppm_error=ppm_error_fatal)
 
         !-----------------------------------------------------------------------
         !  Allocate memory for the sendlist
@@ -452,19 +413,10 @@
         ppm_nrecvlist = ppm_nproc
         ldu(1)        = ppm_nsendlist
         CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'send list PPM_ISENDLIST',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("send list PPM_ISENDLIST",ppm_error=ppm_error_fatal)
+
         CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_map_part_global',     &
-     &           'receive list PPM_IRECVLIST',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail_alloc("receive list PPM_IRECVLIST",ppm_error=ppm_error_fatal)
 
         !-----------------------------------------------------------------------
         !  Initialize the particle lists
@@ -662,77 +614,49 @@
         !-----------------------------------------------------------------------
         iopt = ppm_param_dealloc
         CALL ppm_alloc(ilist1,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,'ppm_map_part_global',     &
-     &           'particle list 1 ILIST1',__LINE__,info)
-        ENDIF
+        or_fail_dealloc('particle list 1 ILIST1',exit_point=no)
+
         CALL ppm_alloc(ilist2,ldu,iopt,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_dealloc,'ppm_map_part_global',     &
-     &           'particle list 2 ILIST2',__LINE__,info)
-        ENDIF
+        or_fail_dealloc('particle list 2 ILIST2',exit_point=no)
+
         IF (.NOT. PRESENT(userdef_part2proc)) THEN
-            CALL ppm_alloc(part2proc,ldu,iopt,info)
-            IF (info .NE. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_dealloc,'ppm_map_part_global',     &
-     &               'particle-to-processor map PART2PROC',__LINE__,info)
-            ENDIF
+           CALL ppm_alloc(part2proc,ldu,iopt,info)
+           or_fail_dealloc('particle-to-processor map PART2PROC',exit_point=no)
         ENDIF
       ELSE
         !-------------------------------------------------------------------
         ! equidistributed mapping, handled by ppm_map_part_eqdistrib
         !-------------------------------------------------------------------
         CALL ppm_map_part_eqdistrib(xp,Npart,info)
-        IF (info .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_global', &
-                'Failed to equidistribute particles',__LINE__,info)
-            GOTO 9999
-        ENDIF
+        or_fail('Failed to equidistribute particles',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_global',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_global',  &
-     &           'Npart must be >0',__LINE__,info)
-            GOTO 8888
+           fail('Npart must be >0',exit_point=8888)
         ENDIF
         IF (target_topoid .NE. ppm_param_topo_undefined) THEN
             CALL ppm_check_topoid(target_topoid,valid,info)
             IF (.NOT. valid) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_global',  &
-     &               'target_target_topoid is not valid',__LINE__,info)
-                GOTO 8888
+               fail('target_target_topoid is not valid',exit_point=8888)
             ENDIF
         ENDIF
         IF (PRESENT(userdef_part2proc)) THEN
             IF (.NOT. ASSOCIATED(userdef_part2proc)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_global', &
-     &              'userdef_part2proc has to be associated',__LINE__,info)
-                GOTO 8888
+               fail('userdef_part2proc has to be associated',exit_point=8888)
             ENDIF
             IF (SIZE(userdef_part2proc) .LT. Npart) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_map_part_global', &
-     &              'userdef_part2proc has to be at least Npart large', &
-     &              __LINE__,info)
-                GOTO 8888
+               fail('userdef_part2proc has to be at least Npart large',exit_point=8888)
             ENDIF
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_map_part_global_s

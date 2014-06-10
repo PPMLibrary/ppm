@@ -561,7 +561,8 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
              DO i=1,this%vec_size
                 this%vec(i)%t => vec_temp(i)%t
              ENDDO
-             this%vec_size = 2 * this%vec_size
+
+             this%vec_size=2*this%vec_size
 
              DEALLOCATE(vec_temp,STAT=info)
              or_fail_dealloc("could not deallocate temporary array")

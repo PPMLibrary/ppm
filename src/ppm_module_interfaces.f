@@ -69,7 +69,7 @@
       INTEGER, PARAMETER, PUBLIC :: ppm_part_cartesian         = 5
       INTEGER, PARAMETER, PUBLIC :: ppm_part_neighlists        = 6
       INTEGER, PARAMETER, PUBLIC :: ppm_part_global_index      = 7
-      INTEGER, PARAMETER, PUBLIC :: ppm_param_length_partflags = 8
+      INTEGER, PARAMETER, PUBLIC :: ppm_param_length_partflags = 7
 
       INTEGER, PARAMETER, PUBLIC :: ppm_pdata_lflags = 3
 

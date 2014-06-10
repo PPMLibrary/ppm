@@ -43,7 +43,7 @@
 
           REAL(MK), DIMENSION(ppm_dim)      :: min_phys,max_phys,len_phys
           REAL(MK), DIMENSION(:,:), POINTER :: xp
-          REAL(MK), DIMENSION(:  ), POINTER :: randnb => NULL()
+          REAL(MK), DIMENSION(:  ), POINTER :: randnb
           REAL(MK)                          :: y,z,h
           REAL(MK)                          :: shift
 
@@ -56,11 +56,7 @@
 
           start_subroutine("particles_initialize")
 
-          IF (PRESENT(distrib)) THEN
-             distribution=distrib
-          ELSE
-             distribution=ppm_param_part_init_cartesian
-          ENDIF
+          distribution=MERGE(distrib,ppm_param_part_init_cartesian,PRESENT(distrib))
 
           !Get boundaries of computational domain
           IF (PRESENT(topoid).AND.(PRESENT(minphys).OR.PRESENT(maxphys))) THEN
@@ -204,6 +200,7 @@
              Pc%flags(ppm_part_cartesian) = .TRUE.
 
           CASE (ppm_param_part_init_random)
+             NULLIFY(randnb)
              iopt = ppm_param_alloc_fit
 #ifdef same_random_sequence_nproc
              ldc(1) = ppm_dim*Npart_global
@@ -347,11 +344,7 @@
           Pc%flags(ppm_part_areinside) = .TRUE.
 
           ! set cutoff to a default value
-          IF (PRESENT(cutoff)) THEN
-             Pc%ghostlayer = cutoff
-          ELSE
-             Pc%ghostlayer = 2.1_MK * Pc%h_avg
-          ENDIF
+          Pc%ghostlayer=MERGE(cutoff,2.1_MK*Pc%h_avg,PRESENT(cutoff))
 
           IF (PRESENT(topoid)) THEN
              Pc%active_topoid = topoid

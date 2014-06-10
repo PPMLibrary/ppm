@@ -156,11 +156,7 @@
       !-------------------------------------------------------------------------
       !  The default is that we do not push the particle positions
       !-------------------------------------------------------------------------
-      IF (PRESENT(pushpp)) THEN
-         lpushpp = pushpp
-      ELSE
-         lpushpp = .FALSE.
-      ENDIF
+      lpushpp = MERGE(pushpp,.FALSE.,PRESENT(pushpp))
 
       !-------------------------------------------------------------------------
       !  Increment the buffer set

@@ -209,11 +209,8 @@
       ENDIF
 
       ! If the user defined nsubs then use those
-      IF (PRESENT(user_nsubs)) THEN
-         nsubs = user_nsubs
-      ELSE
-         nsubs = 0
-      ENDIF
+      nsubs=MERGE(user_nsubs,0,PRESENT(user_nsubs))
+
       IF (PRESENT(user_minsub)) THEN
          min_sub => user_minsub
       ENDIF
