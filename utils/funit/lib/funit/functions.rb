@@ -187,15 +187,15 @@ module Funit
     raise "\n   *Error: #{message} [#{test_suite}.fun:#$.]\n\n"
   end
 
-  def warning( message, test_suite )
-    $stderr.puts "\n *Warning: #{message} [#{test_suite}.fun:#$.]"
-  end
+  #def warning( message, test_suite )
+  #  $stderr.puts "\n *Warning: #{message} [#{test_suite}.fun:#$.]"
+  #end
 
   def compile_tests(test_suites,prog_source_dirs=['.'])
     print_sub("compile")
 
     print_started("computing dependencies")
-
+    print_started("")
     sourceflag = ''
     if ENV['FSFLAG'] then
       sourceflag = prog_source_dirs.map{|pd| ENV['FSFLAG']+pd }.join(' ')
@@ -259,6 +259,7 @@ module Funit
   @current_position = 0
 
   def print_started(text)
+    print "\n"
     OUTPUT_INDENT.times { print " " }
     print text
     @current_position = OUTPUT_INDENT + text.length

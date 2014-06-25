@@ -772,11 +772,11 @@
           Acopy = A
 
           IF (check) THEN
-              ALLOCATE(exact_b_n(n,n_eq),STAT=info)
-                  or_fail_alloc("exact_b_n")
-              exact_b_n = x_or_b
-              ALLOCATE(real_b(n),STAT=info)
-                  or_fail_alloc("real_b")
+             ALLOCATE(exact_b_n(n,n_eq),SOURCE=x_or_b,STAT=info)
+             or_fail_alloc("exact_b_n")
+
+             ALLOCATE(real_b(n),STAT=info)
+             or_fail_alloc("real_b")
           ENDIF
 
           !=======================================================================!
@@ -816,15 +816,15 @@
           IF (nnew .NE. n) THEN
 
               ALLOCATE(roworder(n),STAT=info)
-                  or_fail_alloc("roworder")
+              or_fail_alloc("roworder")
 
               DO i= 1,n
-                  roworder(i) = i
+                 roworder(i) = i
               ENDDO
               DO i= 1,n
-                  itemp = roworder(i)
-                  roworder(i) = roworder(indx(i))
-                  roworder(indx(i)) = itemp
+                 itemp = roworder(i)
+                 roworder(i) = roworder(indx(i))
+                 roworder(indx(i)) = itemp
               ENDDO
 
               !====================================================================!
@@ -832,7 +832,7 @@
 
               ! allocation
               ALLOCATE(bnew_n(nnew,n_eq),indxnew(nnew),Anew(nnew,nnew),STAT=info)
-                  or_fail_alloc("bnew_n,indexnew,Anew")
+              or_fail_alloc("bnew_n,indexnew,Anew")
 
               ! delete singular rows/columns in A
               ! delete corresponding entries in b
@@ -924,7 +924,7 @@
               ENDDO
 
               DEALLOCATE(roworder,indxnew,bnew_n,Anew,STAT=info)
-                  or_fail_dealloc("local variables")
+              or_fail_dealloc("local variables")
 
           ELSE ! no singularities
 
@@ -998,12 +998,13 @@
           !=======================================================================!
           ! dealloc
           DEALLOCATE(valid,indx,Acopy,STAT=info)
-              or_fail_dealloc("local variables")
+          or_fail_dealloc("local variables")
           IF (check) THEN
-              DEALLOCATE(exact_b_n,STAT=info)
-              or_fail_dealloc("exact_b_n")
-              DEALLOCATE(real_b,STAT=info)
-              or_fail_dealloc("real_b")
+             DEALLOCATE(exact_b_n,STAT=info)
+             or_fail_dealloc("exact_b_n")
+
+             DEALLOCATE(real_b,STAT=info)
+             or_fail_dealloc("real_b")
           ENDIF
 
           end_subroutine()
@@ -1084,7 +1085,7 @@
           or_fail("bdsqr failed")
 
           DEALLOCATE(taup,tauq,work,STAT=info)
-              or_fail_dealloc("taup,tauq,work")
+          or_fail_dealloc("taup,tauq,work")
 
           !!----------------------------------------------------------------------
           !! Raise an error if the singular value is below a threshold

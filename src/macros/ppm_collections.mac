@@ -276,7 +276,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           start_subroutine("<%= "#{collection_type}" %>_destroy")
 
@@ -364,7 +364,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           has = .TRUE.
 
@@ -398,7 +398,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(<%= element_type %>), POINTER :: p => NULL()
+          CLASS(<%= element_type %>), POINTER :: p
 
           p => this%begin()
           DO WHILE(ASSOCIATED(p))
@@ -463,6 +463,8 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
       SUBROUTINE <%= collection_type %>_remove(this,info,element)
           !!! If element is present, remove it from the collection
           !!! else, remove the current element (as defined by the iterator pointer)
+          !!! If id is present, remove it from the collection, but keep the ordering
+          !!! of the collection, the removed part willl be linked to the next item
 
           IMPLICIT NONE
           !-------------------------------------------------------------------------
@@ -470,7 +472,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           CLASS(<%= collection_type %>),      INTENT(INOUT) :: this
           INTEGER,                            INTENT(  OUT) :: info
-          CLASS(<%= element_type %>),OPTIONAL,INTENT(INOUT) :: element
+          CLASS(<%= element_type %>), OPTIONAL, INTENT(INOUT) :: element
 
           !-------------------------------------------------------------------------
           ! local variables
@@ -526,7 +528,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp => NULL()
+          TYPE(<%= element_ptr_type %>), DIMENSION(:), POINTER :: vec_temp
 
           INTEGER :: i
 
@@ -534,7 +536,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
 
           IF (this%vec_size.LE.0 .OR. .NOT.ASSOCIATED(this%vec)) THEN
              !if the array is empty, allocate with a reasonable size
-             this%vec_size = 10
+             this%vec_size = 16
              ALLOCATE(<%= element_ptr_type %>::this%vec(this%vec_size),STAT=info)
              or_fail_alloc("could not allocate collection array")
           ELSE
@@ -559,10 +561,12 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
              DO i=1,this%vec_size
                 this%vec(i)%t => vec_temp(i)%t
              ENDDO
-             this%vec_size = 2 * this%vec_size
+
+             this%vec_size=2*this%vec_size
 
              DEALLOCATE(vec_temp,STAT=info)
              or_fail_dealloc("could not deallocate temporary array")
+             NULLIFY(vec_temp)
           ENDIF
 
           end_subroutine()

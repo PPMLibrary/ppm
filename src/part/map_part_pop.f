@@ -131,8 +131,10 @@
       CHARACTER(ppm_char)   :: mesg
       CHARACTER(ppm_char)   :: caller = 'map_part_pop'
       REAL(MK)              :: t0
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_recvbuffer => NULL()
+
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+
+      REAL(MK), DIMENSION(:), POINTER :: ppm_recvbuffer
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -156,12 +158,11 @@
 
       ! skip if the buffer is empty
       IF (map%ppm_buffer_set .LT. 1) THEN
-        info = ppm_error_notice
-        IF (ppm_debug .GT. 1) THEN
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'Buffer is empty: skipping pop!',__LINE__,info)
-        ENDIF
-        GOTO 9999
+         info = ppm_error_notice
+         IF (ppm_debug .GT. 1) THEN
+            ppm_fail('Buffer is empty: skipping pop!',ppm_err_buffer_empt,exit_point=no)
+         ENDIF
+         GOTO 9999
       ENDIF
 
 
@@ -177,22 +178,16 @@
       edim = bdim
 #endif
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 #if   __DIM == 2
       IF (edim.NE.lda) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,caller,    &
-     &       'leading dimension LDA is in error',__LINE__,info)
-         GOTO 9999
+         fail('leading dimension LDA is in error',ppm_err_wrong_dim)
       ENDIF
 #elif __DIM == 1
       IF (edim.NE.1) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_dim,caller,    &
-     &       'buffer does not contain 1d data!',__LINE__,info)
-         GOTO 9999
+         fail('buffer does not contain 1d data!',ppm_err_wrong_dim)
       ENDIF
 #endif
 
@@ -202,46 +197,27 @@
       btype = map%ppm_buffer_type(map%ppm_buffer_set)
 #if    __KIND == __SINGLE_PRECISION
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single into single ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single into single ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double into double ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double into double ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single-complex into single-complex',  &
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single-complex into single-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double-complex into double-complex',  &
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double-complex into double-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __INTEGER
       IF (btype.NE.ppm_integer) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-integer into integer ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-integer into integer ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __LOGICAL
       IF (btype.NE.ppm_logical) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-logical into logical ',__LINE__,info)
+         fail('trying to pop a non-logical into logical ',ppm_err_wrong_prec)
       ENDIF
 #endif
       !-------------------------------------------------------------------------
@@ -257,20 +233,15 @@
       ldu(1) = newNpart
 #endif
       CALL ppm_alloc(pdata,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'particle data PDATA',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('particle data PDATA',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the receive buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',map%ppm_nrecvbuffer,   &
-     &        'newNpart*bdim = ',newNpart*bdim
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',map%ppm_nrecvbuffer,   &
+         & 'newNpart*bdim = ',newNpart*bdim
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
       IF (map%ppm_map_type.EQ.ppm_param_map_ghost_get) THEN
          map%ppm_nrecvbuffer = map%ppm_nrecvbuffer - (newNpart - oldNpart)*bdim
@@ -283,14 +254,14 @@
       !  multiple sequential push-send-pop cycles.
       !-------------------------------------------------------------------------
       map%ppm_nsendbuffer = map%ppm_nsendbuffer - &
-          map%ppm_buffer_dim(map%ppm_buffer_set)*  &
-     &    (map%ppm_psendbuffer(map%ppm_nsendlist+1)-1)
+      &                     map%ppm_buffer_dim(map%ppm_buffer_set)*  &
+      &                    (map%ppm_psendbuffer(map%ppm_nsendlist+1)-1)
 
       ibuffer = map%ppm_nrecvbuffer
 
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -1303,58 +1274,42 @@
       !  Deallocate the receive buffer if all sets have been poped
       !-------------------------------------------------------------------------
       IF (map%ppm_buffer_set .LT. 1) THEN
-          iopt = ppm_param_dealloc
-          CALL ppm_alloc(map%ppm_recvbuffer,ldu,iopt,info)
-          ppm_recvbuffer => map%ppm_recvbuffer
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_alloc,caller,     &
-     &            'receive buffer PPM_RECVBUFFER',__LINE__,info)
-          ENDIF
+         iopt = ppm_param_dealloc
+         CALL ppm_alloc(map%ppm_recvbuffer,ldu,iopt,info)
+
+         ppm_recvbuffer => map%ppm_recvbuffer
+
+         or_fail_dealloc('receive buffer PPM_RECVBUFFER')
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. Pc%maps%exists(mapID)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_wrong_dim,caller,    &
-                  &   'Invalid mapID: mapping does not exist.',__LINE__,info)
-              GOTO 8888
+             fail('Invalid mapID: mapping does not exist.',ppm_err_wrong_dim,exit_point=8888)
           ENDIF
           IF (Pc%maps%vec(mapID)%t%oldNpart .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'Npart must be >=0',__LINE__,info)
-              GOTO 8888
+             fail('Npart must be >=0',exit_point=8888)
           ENDIF
           IF (Pc%maps%vec(mapID)%t%newNpart .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'newNpart must be >=0',__LINE__,info)
-              GOTO 8888
+             fail('newNpart must be >=0',exit_point=8888)
           ENDIF
 #if   __DIM == 2
           IF (lda .LT. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be >0 for vector data',__LINE__,info)
-              GOTO 8888
+             fail('lda must be >0 for vector data',exit_point=8888)
           ENDIF
 #elif __DIM == 1
           IF (lda .NE. 1) THEN
+             fail('lda must be =1 for scalar data',exit_point=8888)
               info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 8888
           ENDIF
 #endif
- 8888     CONTINUE
+          8888 CONTINUE
       END SUBROUTINE check
 
 #if    __DIM == 1

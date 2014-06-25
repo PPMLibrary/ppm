@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Subroutine   :                   ppm_topo_get
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,7 +30,7 @@
       SUBROUTINE ppm_topo_get(topoid,topo,info)
       !!! This routine returns a pointer to the topology
       !!! pointed at by topoid.
-      !!! 
+      !!!
       !!! [TIP]
       !!! The user should never need to manually modify the topology structure.
       !!! If this routine is needed, then it most probably means that either the
@@ -70,7 +70,7 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)     :: t0
       LOGICAL                   :: valid
-      TYPE(ppm_t_topo), POINTER :: in_topo => NULL()
+!       TYPE(ppm_t_topo), POINTER :: in_topo => NULL()
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

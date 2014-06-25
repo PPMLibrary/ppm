@@ -44,7 +44,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
 
       INTEGER, DIMENSION(2)               :: ldu
       INTEGER, DIMENSION(ppm_dim)         :: op
@@ -59,7 +59,6 @@
       CHARACTER(ppm_char) :: mesg
 
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
-
 
       !-------------------------------------------------------------------------
       !  Externals

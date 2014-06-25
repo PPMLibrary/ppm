@@ -96,6 +96,7 @@ $(TARGET): $(OBJECTS)
 # Dont delete the given intermediate files
 .SECONDARY: #$(DEPENDENCIES)
 
+ifneq ($(MAKECMDGOALS),clean)
 # Implicit rules
 CPPCMD = $(CPP) $(CPPFLAGS) $(CPPINCLS) -traditional-cpp -P $< | $(CG) > $@
 $(OBJ_DIR)/%.f : $(SRC_DIR)/%.f
@@ -107,6 +108,7 @@ DEPCMD = $(DEPS) --ppm $< $@
 $(OBJ_DIR)/%.d : $(SRC_DIR)/%.f $(OBJ_DIR)/%.f
 	@printf "  DEP  %-42s" $<; \
 	$(ENV) $(RUN) "$(DEPCMD)" $(LOG) "Dependency Error"
+endif
 
 COMPILECMD = $(FC) $(INCLS) $(FCFLAGS) $(DEBUG) -Llib -c -o $@ $<
 $(OBJ_DIR)/%.o : $(OBJ_DIR)/%.f $(OBJ_DIR)/%.d

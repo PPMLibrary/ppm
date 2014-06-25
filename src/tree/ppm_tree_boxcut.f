@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_tree_boxcut
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -40,7 +40,7 @@
       !!! [NOTE]
       !!! The routine only works for ncut=1, 2, or 3.
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_tree
@@ -59,7 +59,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! Positions of the points.
@@ -95,18 +95,18 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                                :: t0
       INTEGER                                 :: nnbox,cd,i,j,iopt,Np,ip
       INTEGER , DIMENSION(2)                  :: ldc
       INTEGER , DIMENSION(:), POINTER         :: pbox => NULL()
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
       CALL substart('ppm_tree_boxcut',t0,info)
 
@@ -143,8 +143,8 @@
               CALL ppm_error(ppm_err_alloc,'ppm_tree_boxcut',          &
      &            'particle list pointers LPDX',__LINE__,info)
               GOTO 9999
-          ENDIF 
-      ENDIF 
+          ENDIF
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Split box into 2 pieces
@@ -174,7 +174,7 @@
 
           maxcut(cd,1) = cutpos(1)
           maxcut(cd,2) = max_box(cd)
-          
+
       !-------------------------------------------------------------------------
       !  Split box into 4 pieces
       !-------------------------------------------------------------------------
@@ -218,7 +218,7 @@
           maxcut(cd,2) = max_box(cd)
           maxcut(cd,3) = cutpos(2)
           maxcut(cd,4) = max_box(cd)
-      
+
       !-------------------------------------------------------------------------
       !  Split box into 8 pieces
       !-------------------------------------------------------------------------
@@ -303,7 +303,7 @@
           maxcut(cd,6) = max_box(cd)
           maxcut(cd,7) = max_box(cd)
           maxcut(cd,8) = max_box(cd)
-      
+
       !-------------------------------------------------------------------------
       !  Unknown cutting mode
       !-------------------------------------------------------------------------
@@ -410,7 +410,7 @@
       ENDIF           ! have_particles
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
       CALL substop('ppm_tree_boxcut',t0,info)

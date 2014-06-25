@@ -1,8 +1,6 @@
 
       SUBROUTINE DTYPE(sop_init_opts)(opts,info)
           !!! constructor for sop options derived type
-          USE ppm_module_error
-
           IMPLICIT NONE
 
           DEFINE_MK()
@@ -42,24 +40,19 @@
 
       SUBROUTINE DTYPE(sop_init_stats)(stats,info)
           !!! constructor for sop statistics derived type
-          USE ppm_module_error
-
           IMPLICIT NONE
           DEFINE_MK()
           TYPE(DTYPE(sop_t_stats)), POINTER, INTENT(INOUT) :: stats
-          INTEGER                  ,         INTENT(  OUT) :: info
+          INTEGER,                           INTENT(  OUT) :: info
+
+          CHARACTER(LEN=ppm_char) :: caller='sop_init_stats'
 
           info = 0
           ALLOCATE(stats,STAT=info)
-          IF (info.NE.0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_alloc,'sop_init_stats',       &
-                  &                  'allocation error',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc('stats allocation error')
 
           stats%nb_grad_desc_steps = 0
-          stats%min_sv = HUGE(1._mk)
+          stats%min_sv = HUGE(1._MK)
 
           9999 CONTINUE
 

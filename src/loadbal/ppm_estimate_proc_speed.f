@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :              ppm_estimate_procspeed
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE est_procspeed_s(procspeed,info,mintime,maxtime,  &
-     &    Npart)
+      SUBROUTINE est_procspeed_s(procspeed,info,mintime,maxtime,Npart)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE est_procspeed_d(procspeed,info,mintime,maxtime,  &
-     &    Npart)
+      SUBROUTINE est_procspeed_d(procspeed,info,mintime,maxtime,Npart)
 #endif
       !!! This routine can be used to estimate the relative speeds
       !!! of the processors. It is also being used in subs2proc for load
@@ -62,7 +60,7 @@
        INCLUDE 'mpif.h'
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:) , POINTER       :: procspeed
       !!! Relative speeds of all processors from 0 to ppm_nproc-1. The numbers
@@ -82,29 +80,34 @@
       INTEGER                , INTENT(  OUT) :: info
       !!! return status, 0 on success
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                         :: t0,lmyeps,tim,tim1,cutoff2
-      REAL(MK)                         :: xmax,ymax,zmax,r2,r2i,r6i,fs,en
-      REAL(MK)                         :: tmin,tmax
-      REAL(MK), DIMENSION(3)           :: rx,ri,rj,fi,fj
-      REAL(MK), DIMENSION(:), POINTER  :: alltim  => NULL()
+      REAL(MK), DIMENSION(:), ALLOCATABLE :: alltim
 #ifdef __MPI
-      REAL(MK), DIMENSION(:), POINTER  :: sendtim => NULL()
+      REAL(MK), DIMENSION(:), ALLOCATABLE :: sendtim
 #endif
-      REAL(ppm_kind_double)            :: rsum
-      INTEGER                          :: i,j,N,iopt
-      INTEGER, DIMENSION(1)            :: ldl,ldu
-      CHARACTER(LEN=ppm_char)          :: mesg
-      LOGICAL                          :: ldone
+      REAL(MK)                        :: t0,lmyeps,tim,tim1,cutoff2
+      REAL(MK)                        :: xmax,ymax,zmax,r2,r2i,r6i,fs,en
+      REAL(MK)                        :: tmin,tmax
+      REAL(MK), DIMENSION(3)          :: rx,ri,rj,fi,fj
+      REAL(ppm_kind_double)           :: rsum
+
+      INTEGER               :: i,j,N,iopt
+      INTEGER, DIMENSION(1) :: ldl,ldu
+
+      LOGICAL :: ldone
+
+      CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: caller='ppm_estimate_procspeed'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_estimate_procspeed',t0,info)
+      CALL substart(caller,t0,info)
+
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -115,38 +118,26 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_estimate_procspeed',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          IF (PRESENT(mintime)) THEN
-              IF (mintime .LT. 0.0_MK) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_estimate_procspeed',  &
-     &                'mintime must be >= 0.0',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
-          IF (PRESENT(maxtime)) THEN
-              IF (maxtime .LT. 0.0_MK) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_estimate_procspeed',  &
-     &                'maxtime must be >= 0.0',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
-          IF (PRESENT(Npart)) THEN
-              ! 0 itself is NOT permitted since it would bever increase
-              ! (multiplicative growth)
-              IF (Npart .LE. 0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_estimate_procspeed',  &
-     &                'Npart must be > 0',__LINE__,info)
-                  GOTO 9999
-              ENDIF
-          ENDIF
+         IF (.NOT. ppm_initialized) THEN
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit)
+         ENDIF
+         IF (PRESENT(mintime)) THEN
+            IF (mintime .LT. 0.0_MK) THEN
+               fail('mintime must be >= 0.0')
+            ENDIF
+         ENDIF
+         IF (PRESENT(maxtime)) THEN
+            IF (maxtime .LT. 0.0_MK) THEN
+               fail('maxtime must be >= 0.0')
+            ENDIF
+         ENDIF
+         IF (PRESENT(Npart)) THEN
+            ! 0 itself is NOT permitted since it would bever increase
+            ! (multiplicative growth)
+            IF (Npart .LE. 0) THEN
+               fail('Npart must be > 0')
+            ENDIF
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -163,8 +154,8 @@
       !  Set number of particles to start with. The user can override this if
       !  running on a very slow processor.
       !-------------------------------------------------------------------------
-      N    = 1000
-      IF (PRESENT(Npart))      N = Npart
+      N = 1000
+      IF (PRESENT(Npart)) N = Npart
 
       !-------------------------------------------------------------------------
       !  Allocate procspeed array
@@ -173,36 +164,24 @@
       ldl(1) = 0
       ldu(1) = ppm_nproc-1
       CALL ppm_alloc(procspeed,ldl,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_estimate_procspeed',    &
-     &        'relative processor speeds procspeed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('relative processor speeds procspeed',ppm_error=ppm_error_fatal)
+
       procspeed = 0.0_MK
 
       !-------------------------------------------------------------------------
       !  If there only is one processor, we are done
       !-------------------------------------------------------------------------
       IF (ppm_nproc .EQ. 1) THEN
-          procspeed(0) = 1.0_MK
-          CALL ppm_write(ppm_rank,'ppm_estimate_procspeed', &
-     &           'Only one processor found. Terminating.',info) 
-          GOTO 9999
+         procspeed(0) = 1.0_MK
+         stdout("Only one processor found. Terminating.")
+         GOTO 9999
       ENDIF
 
       !---------------------------------------------------------------------
       !  Allocate memory for all processor times
       !---------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      ldu(1) = ppm_nproc
-      CALL ppm_alloc(alltim,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_estimate_procspeed',    &
-     &        'timings from all processors ALLTIM',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      ALLOCATE(alltim(ppm_nproc),STAT=info)
+      or_fail_alloc('timings from all processors ALLTIM',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Set constants for benchmark calculation
@@ -220,17 +199,17 @@
           CALL ppm_util_time(tim)
           en = 0.0_MK
           DO i=1,N-1        ! loop over all pairs of particles
-             DO j=i+1,N 
+             DO j=i+1,N
                 CALL RANDOM_NUMBER(ri)
                 CALL RANDOM_NUMBER(rj)
                 rx(1) = rj(1) - ri(1)                 ! vector between i and j
                 rx(2) = rj(2) - ri(2)
                 rx(3) = rj(3) - ri(3)
                 rx(1) = rx(1)-xmax*NINT(rx(1)/xmax)     ! nearest image
-                rx(2) = rx(2)-ymax*NINT(rx(2)/ymax)  
-                rx(3) = rx(3)-zmax*NINT(rx(3)/zmax)  
+                rx(2) = rx(2)-ymax*NINT(rx(2)/ymax)
+                rx(3) = rx(3)-zmax*NINT(rx(3)/zmax)
                 r2 = SUM(rx(:)**2)                      ! square of distance
-                IF (r2 .LT. cutoff2) THEN 
+                IF (r2 .LT. cutoff2) THEN
                    r2i = 1.0_MK/r2
                    r6i = r2i*r2i*r2i
                    ! force factor using Lennard-Jones
@@ -254,90 +233,74 @@
           !---------------------------------------------------------------------
           !  Broadcast timings to all processors
           !---------------------------------------------------------------------
-          iopt = ppm_param_alloc_fit
-          ldu(1) = ppm_nproc
-          CALL ppm_alloc(sendtim,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_estimate_procspeed',    &
-     &            'send buffer for timings SENDTIM',__LINE__,info)
-              GOTO 9999
-          ENDIF
-          sendtim(1:ppm_nproc) = tim
+          ALLOCATE(sendtim(ppm_nproc),STAT=info)
+          or_fail_alloc('send buffer for timings SENDTIM',ppm_error=ppm_error_fatal)
+
+          sendtim = tim
+
 #if   __KIND == __SINGLE_PRECISION
           CALL MPI_Alltoall(sendtim,1,MPI_REAL,alltim,1,MPI_REAL,ppm_comm,info)
 #elif __KIND == __DOUBLE_PRECISION
-          CALL MPI_Alltoall(sendtim,1,MPI_DOUBLE_PRECISION,alltim,1,      &
-     &                      MPI_DOUBLE_PRECISION,ppm_comm,info)
+          CALL MPI_Alltoall(sendtim,1,MPI_DOUBLE_PRECISION,alltim,1, &
+          &    MPI_DOUBLE_PRECISION,ppm_comm,info)
 #endif
-          iopt = ppm_param_dealloc
-          CALL ppm_alloc(sendtim,ldu,iopt,info)
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_dealloc,'ppm_estimate_procspeed',     &
-     &            'send buffer for timings SENDTIM',__LINE__,info)
-          ENDIF
+          or_fail_MPI("MPI_Alltoall")
+
+          DEALLOCATE(sendtim,STAT=info)
+          or_fail_dealloc('send buffer for timings SENDTIM')
 #else
           alltim(1) = tim
 #endif
-          
+
           !---------------------------------------------------------------------
           !  Check if test was sufficient
           !---------------------------------------------------------------------
           DO i=1,ppm_nproc
-              IF (alltim(i) .GT. tmax) ldone = .TRUE.
+             IF (alltim(i) .GT. tmax) ldone = .TRUE.
           ENDDO
           DO i=1,ppm_nproc
-              IF (alltim(i) .LT. tmin) ldone = .FALSE.
+             IF (alltim(i) .LT. tmin) ldone = .FALSE.
           ENDDO
 
           !---------------------------------------------------------------------
           !  Go again with doubled time if needed
           !---------------------------------------------------------------------
           IF (.NOT.ldone) THEN
-              ! CEILING is needed, because it would never grow for small N
-              ! if NINT was used !
-              N = CEILING(1.414_MK*REAL(N,MK))
+             ! CEILING is needed, because it would never grow for small N
+             ! if NINT was used !
+             N = CEILING(1.414_MK*REAL(N,MK))
           ENDIF
 
-      ENDDO     ! WHILE(.NOT.ldone)
+      ENDDO  ! WHILE(.NOT.ldone)
 
       !-------------------------------------------------------------------------
       !  Convert timings to relative speeds
       !-------------------------------------------------------------------------
       DO i=0,ppm_nproc-1
-          procspeed(i) = 1.0_MK/alltim(i+1)
+         procspeed(i) = 1.0_MK/alltim(i+1)
       ENDDO
       tim = SUM(procspeed(0:ppm_nproc-1))
       DO i=0,ppm_nproc-1
-          procspeed(i) = procspeed(i)/tim
+         procspeed(i) = procspeed(i)/tim
       ENDDO
 
       !-------------------------------------------------------------------------
       !  Check that numbers add up to 1
       !-------------------------------------------------------------------------
       IF (ABS(SUM(procspeed(0:ppm_nproc-1)) - 1.0_MK) .GT. lmyeps) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_bad_sum,'ppm_estimate_procspeed', &
-     &        'procspeed must sum up to 1.0',__LINE__,info)
-          GOTO 9999
+         fail('procspeed must sum up to 1.0',ppm_err_bad_sum)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Diagnostics output
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(A,I6,A)') 'Used ',N,' Lennard-Jones particles.'
-          CALL ppm_write(ppm_rank,'ppm_estimate_procspeed',mesg,info)
-          CALL ppm_write(ppm_rank,'ppm_estimate_procspeed', &
-                 '---------------------------------------------',info)
-          DO i=0,ppm_nproc-1
-              WRITE(mesg,'(A,I4,A,F10.7)') 'rank ',i,' has relative speed ', &
-     &                    procspeed(i)
-              CALL ppm_write(ppm_rank,'ppm_estimate_procspeed',mesg,info)
-          ENDDO
-          CALL ppm_write(ppm_rank,'ppm_estimate_procspeed', &
-                 '---------------------------------------------',info)
+         stdout("Used",'N'," Lennard-Jones particles.")
+         stdout("---------------------------------------------")
+         DO i=0,ppm_nproc-1
+            stdout("rank",'i'," has relative speed ",'procspeed(i)')
+         ENDDO
+         stdout("---------------------------------------------")
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -347,19 +310,14 @@
       !-------------------------------------------------------------------------
       !  Deallocate local memory
       !-------------------------------------------------------------------------
-      iopt = ppm_param_dealloc
-      CALL ppm_alloc(alltim,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_estimate_procspeed',     &
-     &        'timings from all processors ALLTIM',__LINE__,info)
-      ENDIF
+      DEALLOCATE(alltim,STAT=info)
+      or_fail_dealloc('timings from all processors ALLTIM')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_estimate_procspeed',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE est_procspeed_s

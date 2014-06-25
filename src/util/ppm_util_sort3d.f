@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_util_sort3d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -63,7 +63,7 @@
       INTEGER, PARAMETER :: MK = ppm_kind_double
 #endif
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(INOUT) :: xp
       !!! Particle coordinates, sorted upon output
@@ -73,7 +73,7 @@
       !!! Maximum extent of mesh
       INTEGER , DIMENSION(:)  , INTENT(IN   ) :: Nm
       !!! Number of cells in each direction
-      INTEGER , DIMENSION(:)  , POINTER       :: npbx
+      INTEGER , DIMENSION(:)  , INTENT(INOUT) :: npbx
       !!! Number of particles in each box
       INTEGER                 , INTENT(IN   ) :: Np
       !!! Number of particles
@@ -81,9 +81,9 @@
       !!! Return status. If info = 1 on input
       !!! the extent of the particles will be checked.
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK), DIMENSION(:,:), POINTER      :: work => NULL()
+      REAL(MK), DIMENSION(:,:), ALLOCATABLE :: work
       ! timer
       REAL(MK)                               :: t0
       !  counters
@@ -101,23 +101,25 @@
       INTEGER, DIMENSION(6)                  :: Ngl
       ! local info level
       INTEGER                                :: info2
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_util_sort3d'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
       ! save input info level (substart will reset info to 0)
       info2 = info
-      CALL substart('ppm_util_sort3d',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -128,24 +130,8 @@
       !-------------------------------------------------------------------------
       !  Allocate memory
       !-------------------------------------------------------------------------
-      iopt = ppm_param_alloc_fit
-      lda(1) = 3
-      lda(2) = Np
-      CALL ppm_alloc(work,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_util_sort3d',     &
-     &        'work array WORK',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      lda(1) = nbox
-      CALL ppm_alloc(npbx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_util_sort3d',     &
-     &        'number of particles per box NPBX',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      ALLOCATE(work(ppm_dim,Np), STAT=info)
+      or_fail_alloc('work array WORK')
 
       !-------------------------------------------------------------------------
       !  Call ppm_util_rank3d to get the particle index arrays
@@ -157,10 +143,7 @@
 
       ! check if all particles have been ranked
       IF (info2 .GT. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_part_lost,'ppm_util_sort3d',     &
-     &        'Not all particles have been ranked',__LINE__,info)
-          GOTO 9999
+         fail('Not all particles have been ranked',ppm_error=ppm_error_error)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -191,65 +174,40 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(lpdx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort3d',     &
-     &        'particle index list LPDX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle index list LPDX')
+
       CALL ppm_alloc(lhbx,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort3d',     &
-     &        'box header pointers LHBX',__LINE__,info)
-      ENDIF
-      CALL ppm_alloc(work,lda,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_util_sort3d',     &
-     &        'work array WORK',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('box header pointers LHBX')
+
+      DEALLOCATE(work, STAT=info)
+      or_fail_dealloc('work array WORK')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
  9999 CONTINUE
-      CALL substop('ppm_util_sort3d',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
-          IF (Np .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort3d',  &
-     &            'Np must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (Nm(1) .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort3d',  &
-     &            'Nm(1) must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (Nm(2) .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort3d',  &
-     &            'Nm(2) must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          IF (Nm(3) .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,'ppm_util_sort3d',  &
-     &            'Nm(3) must be >0',__LINE__,info)
-              GOTO 8888
-          ENDIF
-          DO i=1,ppm_dim
-              IF (xmax(i) .LE. xmin(i)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_util_sort3d',  &
-     &                'xmin must be < xmax',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-          ENDDO
- 8888     CONTINUE
+        IF (Np .LT. 0) THEN
+           fail('Np must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        IF (Nm(1) .LE. 0) THEN
+           fail('Nm(1) must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        IF (Nm(2) .LE. 0) THEN
+           fail('Nm(2) must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        IF (Nm(3) .LE. 0) THEN
+           fail('Nm(3) must be >0',exit_point=8888,ppm_error=ppm_error_error)
+        ENDIF
+        DO i=1,ppm_dim
+           IF (xmax(i) .LE. xmin(i)) THEN
+              fail('xmin must be < xmax',exit_point=8888,ppm_error=ppm_error_error)
+           ENDIF
+        ENDDO
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_sort3d_s

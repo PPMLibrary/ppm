@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                ppm_util_cubeq_real.f
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -51,7 +51,7 @@
       !!! - http://mathworld.wolfram.com/CubicEquation.html
       !!! *********************************************************************
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -68,7 +68,7 @@
       !  Includes
       !-------------------------------------------------------------------------
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(4  ), INTENT(IN   ) :: coef
       !!! Coefficients. The equation being solved is:
@@ -82,7 +82,7 @@
       INTEGER                 , INTENT(  OUT) :: info
       !!! Return status, ppm_error_error if it has complex roots
       !-------------------------------------------------------------------------
-      !  Local variables 
+      !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK)                                :: t0,dis,a0,a1,a2,lmyeps,stol
       REAL(MK)                                :: SpT,SpTi2,sqrt3,Q,R
@@ -93,14 +93,15 @@
       LOGICAL                                 :: correct
       REAL(MK), PARAMETER                     :: one_third = 1.0_MK/3.0_MK
       CHARACTER(LEN=ppm_char)                 :: mesg
+      CHARACTER(LEN=ppm_char)                 :: caller='ppm_util_cubeq_real'
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_util_cubeq_real',t0,info)
+      CALL substart(caller,t0,info)
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -111,17 +112,14 @@
       !-------------------------------------------------------------------------
       !  Check that the equation is cubic
       !-------------------------------------------------------------------------
-      IF (ABS(coef(4)) .LT. lmyeps) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_util_cubeq_real',     &
-     &        'Equation is not cubic. Exiting.',__LINE__,info)
-         GOTO 9999
+      IF (ABS(coef(4)).LT.lmyeps) THEN
+         fail('Equation is not cubic. Exiting.')
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Normalize the equation
       !-------------------------------------------------------------------------
-      IF (coef(4) .NE. 1.0_MK) THEN
+      IF (ABS(coef(4)-1.0_MK).GE.lmyeps) THEN
          dis = 1.0_MK/coef(4)
          a0  = coef(1)*dis
          a1  = coef(2)*dis
@@ -149,19 +147,16 @@
       qtol = MAX(MAXVAL(res(1:2))*lmyeps,lmyeps)
       IF (ppm_debug .GT. 0) THEN
          WRITE(mesg,'(A,E12.4)') 'Numerical tolerance: ',qtol
-         CALL ppm_write(ppm_rank,'ppm_util_cubeq_real',mesg,info)
+         CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Check that the equation has only real roots
       !-------------------------------------------------------------------------
       IF (dis .GT. qtol) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_util_cubeq_real',     &
-     &        'Equation has complex roots. Exiting.',__LINE__,info)
-         GOTO 9999
+         fail('Equation has complex roots. Exiting.')
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Solve the cubic equation x^3 + a2*x^2 + a1*x + a0 = 0
       !-------------------------------------------------------------------------
@@ -214,7 +209,7 @@
             ENDIF
          ENDIF
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Check result if debug is enabled.
       !-------------------------------------------------------------------------
@@ -230,24 +225,21 @@
             stol = MAX(MAXVAL(res)*10.0_MK*lmyeps,lmyeps)
             IF (Lf .GT. stol) THEN
                correct = .FALSE.
-               info = ppm_error_warning
-               WRITE(mesg,'(A,I1,2(A,E12.4))') 'Root ',i,              &
-     &              ' is not correct. Error: ',Lf,' Tolerance: ',stol
-               CALL ppm_error(ppm_err_test_fail,'ppm_util_cubeq_real', &
-     &              mesg,__LINE__,info)
+               WRITE(mesg,'(A,I1,2(A,E12.4))') 'Root ',i, &
+               & ' is not correct. Error: ',Lf,' Tolerance: ',stol
+               fail(mesg,ppm_err_test_fail,exit_point=no,ppm_error=ppm_error_warning)
             ENDIF
          ENDDO
          IF (correct .AND. ppm_debug .GT. 0) THEN
-            CALL ppm_write(ppm_rank,'ppm_util_cubeq_real',     &
-     &           'Roots are correct to tolerance.',info)
+            CALL ppm_write(ppm_rank,caller,'Roots are correct to tolerance.',info)
          ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_util_cubeq_real',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_util_cubeq_real_s

@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_s(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,npidx,clist,lstore)
+      &          nvlist,info,pidx,npidx,clist,lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_neighlist_vlist_d(topoid,xp,np,cutoff,skin,lsymm,vlist, &
-     &               nvlist,info,pidx,npidx,clist,lstore)
+      &          nvlist,info,pidx,npidx,clist,lstore)
 #endif
       !!! Create Verlet lists for all particles of this processor.
       !!!
@@ -127,8 +127,8 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_clist), DIMENSION(:),POINTER :: cl => NULL()
-      TYPE(ppm_t_topo),               POINTER :: topo => NULL()
+      TYPE(ppm_t_clist), DIMENSION(:),POINTER :: cl
+      TYPE(ppm_t_topo),               POINTER :: topo
 
       ! timer
       REAL(MK)               :: t0
@@ -151,8 +151,8 @@
       ! start and end particle in a box
       INTEGER                          :: istart,iend,jstart,jend
       ! cell neighbor lists
-      INTEGER, DIMENSION(:,:), POINTER :: inp => NULL()
-      INTEGER, DIMENSION(:,:), POINTER :: jnp => NULL()
+      INTEGER, DIMENSION(:,:), POINTER :: inp
+      INTEGER, DIMENSION(:,:), POINTER :: jnp
       ! number of interactions for each cell
       INTEGER                          :: nnp
       ! for allocate
@@ -197,11 +197,7 @@
       !-------------------------------------------------------------------------
       !  Do we need to store the Verlet lists or just determine their lengths?
       !-------------------------------------------------------------------------
-      IF (PRESENT(lstore)) THEN
-         lst = lstore
-      ELSE
-         lst = .TRUE.
-      ENDIF
+      lst=MERGE(lstore,.TRUE.,PRESENT(lstore))
 
       topo => ppm_topo(topoid)%t
 
@@ -241,6 +237,7 @@
       !-------------------------------------------------------------------------
       !  Generate cell neighbor lists
       !-------------------------------------------------------------------------
+      NULLIFY(inp,jnp)
       CALL ppm_neighlist_MkNeighIdx(lsymm,inp,jnp,nnp,info)
       or_fail('neighlist_MkNeighIdx failed')
 
@@ -257,395 +254,384 @@
       !-------------------------------------------------------------------------
       SELECT CASE (lst)
       CASE (.False.)
-          nvlist(1:npdx) = 0
-          !-------------------------------------------------------------------------
-          !  Determine size of Verlet lists
-          !-------------------------------------------------------------------------
-          DO idom=1,topo%nsublist
-             !---------------------------------------------------------------------
-             !  Lower box bound depends on symmetry and boundary condition
-             !---------------------------------------------------------------------
-             IF (lsymm) THEN
-                 lb(:) = 0
-             ELSE
-                 lb(:) = 1
-             ENDIF
-             n1  = cl(idom)%nm(1)
-             n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
-             IF (ppm_dim.EQ.3) THEN
-                 nz  = cl(idom)%nm(3)
-             ELSE IF (ppm_dim .EQ. 2) THEN
-                 n2 = 0
-                 nz = lb(3)+2
-             ENDIF
-             ! loop over all REAL cells (the -2 at the end does this)
-             DO k=lb(3),nz-2
-                 DO j=lb(2),cl(idom)%nm(2)-2
-                     DO i=lb(1),cl(idom)%nm(1)-2
-                         ! index of the center box
-                         cbox = i + 1 + n1*j + n2*k
-                         ! loop over all box-box interactions
-                         DO iinter=1,nnp
-                             ! determine box indices for this interaction
-                             ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-                             &                          n2*inp(3,iinter))
-                             jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-                             &                          n2*jnp(3,iinter))
-                             !-----------------------------------------------------
-                             !  Read indices and check if empty
-                             !-----------------------------------------------------
-                             istart = cl(idom)%lhbx(ibox)
-                             iend   = cl(idom)%lhbx(ibox+1)-1
-                             IF (iend .LT. istart) CYCLE
-                             !-----------------------------------------------------
-                             !  Within the box itself use symmetry and avoid
-                             !  adding the particle itself to its own list
-                             !-----------------------------------------------------
-                             IF (ibox .EQ. jbox) THEN
-                                 DO ipart=istart,iend
-                                     ip = cl(idom)%lpdx(ipart)
-                                     IF (npdx.LT.ip) CYCLE
-                                     IF (lsymm) THEN
-                                         DO jpart=(ipart+1),iend
-                                             jp = cl(idom)%lpdx(jpart)
-                                             ! translate to real particle
-                                             ! index if needed
-                                             IF (lpidx) THEN
-                                                 IF (npdx.LT.jp) CYCLE
-                                                 ii = pidx(ip)
-                                                 jj = pidx(jp)
-                                             ELSE
-                                                 ii = ip
-                                                 jj = jp
-                                             ENDIF
-                                             dx = xp(1,ii) - xp(1,jj)
-                                             dy = xp(2,ii) - xp(2,jj)
-                                             IF (ppm_dim .GT. 2) THEN
-                                                 dz = xp(3,ii) - xp(3,jj)
-                                                 dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                             ELSE
-                                                 dz = 0.0_MK
-                                                 dij= (dx*dx)+(dy*dy)
-                                             ENDIF
-                                             IF (dij .GT. cut2) CYCLE
-                                             ! add particle jp to list of
-                                             ! particle ip
-                                             nvlist(ip) = nvlist(ip) + 1
-                                         ENDDO
-                                     ELSE
+         nvlist = 0
+         !-------------------------------------------------------------------------
+         !  Determine size of Verlet lists
+         !-------------------------------------------------------------------------
+         DO idom=1,topo%nsublist
+            !---------------------------------------------------------------------
+            !  Lower box bound depends on symmetry and boundary condition
+            !---------------------------------------------------------------------
+            lb=MERGE(0,1,lsymm)
+
+            n1  = cl(idom)%nm(1)
+            n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
+            IF (ppm_dim.EQ.3) THEN
+               nz  = cl(idom)%nm(3)
+            ELSE IF (ppm_dim .EQ. 2) THEN
+               n2 = 0
+               nz = lb(3)+2
+            ENDIF
+            ! loop over all REAL cells (the -2 at the end does this)
+            DO k=lb(3),nz-2
+               DO j=lb(2),cl(idom)%nm(2)-2
+                  DO i=lb(1),cl(idom)%nm(1)-2
+                     ! index of the center box
+                     cbox = i + 1 + n1*j + n2*k
+                     ! loop over all box-box interactions
+                     DO iinter=1,nnp
+                        ! determine box indices for this interaction
+                        ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
+                        &                          n2*inp(3,iinter))
+                        jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
+                        &                          n2*jnp(3,iinter))
+                        !-----------------------------------------------------
+                        !  Read indices and check if empty
+                        !-----------------------------------------------------
+                        istart = cl(idom)%lhbx(ibox)
+                        iend   = cl(idom)%lhbx(ibox+1)-1
+                        IF (iend .LT. istart) CYCLE
+                        !-----------------------------------------------------
+                        !  Within the box itself use symmetry and avoid
+                        !  adding the particle itself to its own list
+                        !-----------------------------------------------------
+                        IF (ibox .EQ. jbox) THEN
+                           DO ipart=istart,iend
+                              ip = cl(idom)%lpdx(ipart)
+                              IF (npdx.LT.ip) CYCLE
+                              IF (lsymm) THEN
+                                 DO jpart=(ipart+1),iend
+                                    jp = cl(idom)%lpdx(jpart)
+                                    ! translate to real particle
+                                    ! index if needed
+                                    IF (lpidx) THEN
+                                       IF (npdx.LT.jp) CYCLE
+                                       ii = pidx(ip)
+                                       jj = pidx(jp)
+                                    ELSE
+                                       ii = ip
+                                       jj = jp
+                                    ENDIF
+                                    dx = xp(1,ii) - xp(1,jj)
+                                    dy = xp(2,ii) - xp(2,jj)
+                                    IF (ppm_dim .GT. 2) THEN
+                                       dz = xp(3,ii) - xp(3,jj)
+                                       dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                    ELSE
+                                       dz = 0.0_MK
+                                       dij= (dx*dx)+(dy*dy)
+                                    ENDIF
+                                    IF (dij .GT. cut2) CYCLE
+                                    ! add particle jp to list of
+                                    ! particle ip
+                                    nvlist(ip) = nvlist(ip) + 1
+                                 ENDDO
+                              ELSE
 #ifdef __VECTOR
-                                         DO jpart=istart,iend
-                                             jp = cl(idom)%lpdx(jpart)
-                                             IF (jp .EQ. ip) CYCLE
+                                 DO jpart=istart,iend
+                                    jp = cl(idom)%lpdx(jpart)
+                                    IF (jp .EQ. ip) CYCLE
 #else
-                                         DO jpart=(ipart+1),iend
-                                             jp = cl(idom)%lpdx(jpart)
+                                 DO jpart=(ipart+1),iend
+                                    jp = cl(idom)%lpdx(jpart)
 #endif
-                                             ! translate to real particle
-                                             ! index if needed
-                                             IF (lpidx) THEN
-                                                 IF (npdx.LT.jp) CYCLE
-                                                 ii = pidx(ip)
-                                                 jj = pidx(jp)
-                                             ELSE
-                                                 ii = ip
-                                                 jj = jp
-                                             ENDIF
-                                             dx = xp(1,ii) - xp(1,jj)
-                                             dy = xp(2,ii) - xp(2,jj)
-                                             IF (ppm_dim .GT. 2) THEN
-                                                 dz = xp(3,ii) - xp(3,jj)
-                                                 dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                             ELSE
-                                                 dz = 0.0_MK
-                                                 dij= (dx*dx)+(dy*dy)
-                                             ENDIF
-                                             IF (dij .GT. cut2) CYCLE
-                                             ! add particle jp to list of
-                                             ! particle ip
-                                             nvlist(ip) = nvlist(ip) + 1
+                                    ! translate to real particle
+                                    ! index if needed
+                                    IF (lpidx) THEN
+                                       IF (npdx.LT.jp) CYCLE
+                                       ii = pidx(ip)
+                                       jj = pidx(jp)
+                                    ELSE
+                                       ii = ip
+                                       jj = jp
+                                    ENDIF
+                                    dx = xp(1,ii) - xp(1,jj)
+                                    dy = xp(2,ii) - xp(2,jj)
+                                    IF (ppm_dim .GT. 2) THEN
+                                       dz = xp(3,ii) - xp(3,jj)
+                                       dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                    ELSE
+                                       dz = 0.0_MK
+                                       dij= (dx*dx)+(dy*dy)
+                                    ENDIF
+                                    IF (dij .GT. cut2) CYCLE
+                                    ! add particle jp to list of
+                                    ! particle ip
+                                    nvlist(ip) = nvlist(ip) + 1
 #ifndef __VECTOR
-                                             nvlist(jp) = nvlist(jp) + 1
+                                    nvlist(jp) = nvlist(jp) + 1
 #endif
-                                         ENDDO
-                                     ENDIF
                                  ENDDO
-                             !-----------------------------------------------------
-                             !  For the other boxes check all particles
-                             !-----------------------------------------------------
-                             ELSE
-                                 ! get pointers to first and last particle
-                                 jstart = cl(idom)%lhbx(jbox)
-                                 jend   = cl(idom)%lhbx(jbox+1)-1
-                                 ! skip this iinter if empty
-                                 If (jend .LT. jstart) CYCLE
-                                 ! loop over all particles inside this cell
-                                 DO ipart=istart,iend
-                                     ip = cl(idom)%lpdx(ipart)
-                                     ! check against all particles
-                                     ! in the other cell
-                                     DO jpart=jstart,jend
-                                         jp = cl(idom)%lpdx(jpart)
-                                         ! translate to real particle
-                                         ! index if needed
-                                         IF (lpidx) THEN
-                                             ii = pidx(ip)
-                                             jj = pidx(jp)
-                                         ELSE
-                                             ii = ip
-                                             jj = jp
-                                         ENDIF
-                                         dx = xp(1,ii) - xp(1,jj)
-                                         dy = xp(2,ii) - xp(2,jj)
-                                         IF (ppm_dim .GT. 2) THEN
-                                             dz = xp(3,ii) - xp(3,jj)
-                                             dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                         ELSE
-                                             dz = 0.0_MK
-                                             dij= (dx*dx)+(dy*dy)
-                                         ENDIF
-                                         IF (dij .GT. cut2) CYCLE
-                                         ! add particle jp to Verlet
-                                         ! list of particle ip
-                                         nvlist(ip) = nvlist(ip) + 1
-                                     ENDDO
-                                 ENDDO
-                             ENDIF       ! ibox .EQ. jbox
-                         ENDDO           ! iinter
-                     ENDDO               ! i
-                 ENDDO                   ! j
-             ENDDO                       ! k
-          ENDDO                          ! idom
+                              ENDIF
+                           ENDDO
+                        !-----------------------------------------------------
+                        !  For the other boxes check all particles
+                        !-----------------------------------------------------
+                        ELSE
+                           ! get pointers to first and last particle
+                           jstart = cl(idom)%lhbx(jbox)
+                           jend   = cl(idom)%lhbx(jbox+1)-1
+                           ! skip this iinter if empty
+                           If (jend .LT. jstart) CYCLE
+                           ! loop over all particles inside this cell
+                           DO ipart=istart,iend
+                              ip = cl(idom)%lpdx(ipart)
+                              ! check against all particles
+                              ! in the other cell
+                              DO jpart=jstart,jend
+                                 jp = cl(idom)%lpdx(jpart)
+                                 ! translate to real particle
+                                 ! index if needed
+                                 IF (lpidx) THEN
+                                    ii = pidx(ip)
+                                    jj = pidx(jp)
+                                 ELSE
+                                    ii = ip
+                                    jj = jp
+                                 ENDIF
+                                 dx = xp(1,ii) - xp(1,jj)
+                                 dy = xp(2,ii) - xp(2,jj)
+                                 IF (ppm_dim .GT. 2) THEN
+                                    dz = xp(3,ii) - xp(3,jj)
+                                    dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                 ELSE
+                                    dz = 0.0_MK
+                                    dij= (dx*dx)+(dy*dy)
+                                 ENDIF
+                                 IF (dij .GT. cut2) CYCLE
+                                 ! add particle jp to Verlet
+                                 ! list of particle ip
+                                 nvlist(ip) = nvlist(ip) + 1
+                              ENDDO
+                           ENDDO
+                        ENDIF  ! ibox .EQ. jbox
+                     ENDDO  ! iinter
+                  ENDDO  ! i
+               ENDDO  ! j
+            ENDDO  ! k
+         ENDDO  ! idom
 
       CASE (.TRUE.)       ! IF (lst) THEN
-          !-------------------------------------------------------------------------
-          !  Determine the aproximate size of Verlet lists
-          !-------------------------------------------------------------------------
-          maxvlen  = 0
-          DO idom=1,topo%nsublist
-             maxvlen1 = MAXVAL(CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx)
-             maxvlen  = MAX(maxvlen,maxvlen1)
-          ENDDO ! idom
+         !-------------------------------------------------------------------------
+         !  Determine the aproximate size of Verlet lists
+         !-------------------------------------------------------------------------
+         maxvlen = 0
+         DO idom=1,topo%nsublist
+            maxvlen1 = MAXVAL(CSHIFT(cl(idom)%lhbx,1)-cl(idom)%lhbx)
+            maxvlen  = MAX(maxvlen,maxvlen1)
+         ENDDO ! idom
 
-          ! Maximum Verlet list length is computed as
-          ! the maximum density per cell times volume of
-          ! a sphere (or an area of a 2D circle) with
-          ! radius equlas to cutoff radius
-          IF (ppm_dim.EQ.3) THEN
-             maxvlen = INT(4.18*maxvlen)
-          Else If (ppm_dim.EQ.2) THEN
-             maxvlen = INT(3.14*maxvlen)
-          ENDIF
+         ! Maximum Verlet list length is computed as
+         ! the maximum density per cell times volume of
+         ! a sphere (or an area of a 2D circle) with
+         ! radius equlas to cutoff radius
+         IF (ppm_dim.EQ.3) THEN
+            maxvlen = INT(4.18*maxvlen)
+         Else If (ppm_dim.EQ.2) THEN
+            maxvlen = INT(3.14*maxvlen)
+         ENDIF
 
-          !---------------------------------------------------------------------
-          !  Allocate memory for Verlet lists
-          !---------------------------------------------------------------------
-          iopt = ppm_param_alloc_grow
-          lda(1) = maxvlen
-          lda(2) = npdx
-          CALL ppm_alloc(vlist,lda,iopt,info)
-          or_fail_alloc('Verlet list VLIST')
+         !---------------------------------------------------------------------
+         !  Allocate memory for Verlet lists
+         !---------------------------------------------------------------------
+         iopt = ppm_param_alloc_grow
+         lda(1) = maxvlen
+         lda(2) = npdx
+         CALL ppm_alloc(vlist,lda,iopt,info)
+         or_fail_alloc('Verlet list VLIST')
 
-          nvlist(1:npdx) = 0
-          !---------------------------------------------------------------------
-          !  BUILD VERLET LISTS
-          !---------------------------------------------------------------------
-          DO idom=1,topo%nsublist
+         nvlist = 0
+         !---------------------------------------------------------------------
+         !  BUILD VERLET LISTS
+         !---------------------------------------------------------------------
+         DO idom=1,topo%nsublist
 
-              !---------------------------------------------------------------------
-              !  Lower box bound depends on symmetry and boundary condition
-              !---------------------------------------------------------------------
-              IF (lsymm) THEN
-                 lb(:) = 0
-              ELSE
-                 lb(:) = 1
-              ENDIF
+            !---------------------------------------------------------------------
+            !  Lower box bound depends on symmetry and boundary condition
+            !---------------------------------------------------------------------
+            lb = MERGE(0,1,lsymm)
 
-              n1  = cl(idom)%nm(1)
-              n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
-              IF (ppm_dim.EQ.3) THEN
-                 nz  = cl(idom)%nm(3)
-              ELSE IF (ppm_dim .EQ. 2) THEN
-                 n2 = 0
-                 nz = lb(3)+2
-              ENDIF
-              ! loop over all REAL cells (the -2 at the end does this)
-              DO k=lb(3),nz-2
-                  DO j=lb(2),cl(idom)%nm(2)-2
-                      DO i=lb(1),cl(idom)%nm(1)-2
-                          ! index of the center box
-                          cbox = i + 1 + n1*j + n2*k
-                          ! loop over all box-box interactions
-                          DO iinter=1,nnp
-                              ! determine box indices for this interaction
-                              ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
-                              &                          n2*inp(3,iinter))
-                              jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
-                              &                          n2*jnp(3,iinter))
-                              !-------------------------------------------------
-                              !  Read indices and check if empty
-                              !-------------------------------------------------
-                              istart = cl(idom)%lhbx(ibox)
-                              iend   = cl(idom)%lhbx(ibox+1)-1
-                              IF (iend .LT. istart) CYCLE
-                              !-------------------------------------------------
-                              !  Within the box itself use symmetry and avoid
-                              !  adding the particle itself to its own list
-                              !-------------------------------------------------
-                              IF (ibox .EQ. jbox) THEN
-                                  DO ipart=istart,iend
-                                      ip = cl(idom)%lpdx(ipart)
-                                      kk = nvlist(ip)
-                                      IF (lsymm) THEN
-                                          DO jpart=(ipart+1),iend
-                                              jp = cl(idom)%lpdx(jpart)
-                                              ! translate to real particle
-                                              ! index if needed
-                                              IF (lpidx) THEN
-                                                  ii = pidx(ip)
-                                                  jj = pidx(jp)
-                                              ELSE
-                                                  ii = ip
-                                                  jj = jp
-                                              ENDIF
-                                              dx = xp(1,ii) - xp(1,jj)
-                                              dy = xp(2,ii) - xp(2,jj)
-                                              IF (ppm_dim .GT. 2) THEN
-                                                  dz = xp(3,ii) - xp(3,jj)
-                                                  dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                              ELSE
-                                                  dz = 0.0_MK
-                                                  dij= (dx*dx)+(dy*dy)
-                                              ENDIF
-                                              IF (dij .GT. cut2) CYCLE
-                                              ! add particle jp to list of
-                                              ! particle ip
-                                              kk = kk + 1
-                                              vlist(kk,ip) = jp
-                                          ENDDO
-                                      ELSE
-#ifdef __VECTOR
-                                          DO jpart=istart,iend
-                                              jp = cl(idom)%lpdx(jpart)
-                                              IF (jp .EQ. ip) CYCLE
-#else
-                                          DO jpart=(ipart+1),iend
-                                              jp = cl(idom)%lpdx(jpart)
-#endif
-                                              ! translate to real particle
-                                              ! index if needed
-                                              IF (lpidx) THEN
-                                                  ii = pidx(ip)
-                                                  jj = pidx(jp)
-                                              ELSE
-                                                  ii = ip
-                                                  jj = jp
-                                              ENDIF
-                                              dx = xp(1,ii) - xp(1,jj)
-                                              dy = xp(2,ii) - xp(2,jj)
-                                              IF (ppm_dim .GT. 2) THEN
-                                                  dz = xp(3,ii) - xp(3,jj)
-                                                  dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                              ELSE
-                                                  dz = 0.0_MK
-                                                  dij= (dx*dx)+(dy*dy)
-                                              ENDIF
-                                              IF (dij .GT. cut2) CYCLE
-                                              kk = kk + 1
-                                              ! add particle jp to list of
-                                              ! particle ip
-                                              vlist(kk,ip) = jp
-#ifndef __VECTOR
-                                              ! add particle ip to list of
-                                              ! particle jp
-                                              nvlist(jp) = nvlist(jp) + 1
-                                              vlist(nvlist(jp),jp) = ip
-#endif
-                                          ENDDO
-                                      ENDIF
-                                      nvlist(ip) = kk
-                                  ENDDO
-                              !-------------------------------------------------
-                              !  For the other boxes check all particles
-                              !-------------------------------------------------
+            n1  = cl(idom)%nm(1)
+            n2  = cl(idom)%nm(1)*cl(idom)%nm(2)
+            IF (ppm_dim.EQ.3) THEN
+               nz  = cl(idom)%nm(3)
+            ELSE IF (ppm_dim .EQ. 2) THEN
+               n2 = 0
+               nz = lb(3)+2
+            ENDIF
+            ! loop over all REAL cells (the -2 at the end does this)
+            DO k=lb(3),nz-2
+               DO j=lb(2),cl(idom)%nm(2)-2
+                  DO i=lb(1),cl(idom)%nm(1)-2
+                     ! index of the center box
+                     cbox = i + 1 + n1*j + n2*k
+                     ! loop over all box-box interactions
+                     DO iinter=1,nnp
+                        ! determine box indices for this interaction
+                        ibox = cbox+(inp(1,iinter)+n1*inp(2,iinter)+ &
+                        &                          n2*inp(3,iinter))
+                        jbox = cbox+(jnp(1,iinter)+n1*jnp(2,iinter)+ &
+                        &                          n2*jnp(3,iinter))
+                        !-------------------------------------------------
+                        !  Read indices and check if empty
+                        !-------------------------------------------------
+                        istart = cl(idom)%lhbx(ibox)
+                        iend   = cl(idom)%lhbx(ibox+1)-1
+                        IF (iend .LT. istart) CYCLE
+                        !-------------------------------------------------
+                        !  Within the box itself use symmetry and avoid
+                        !  adding the particle itself to its own list
+                        !-------------------------------------------------
+                        IF (ibox .EQ. jbox) THEN
+                           DO ipart=istart,iend
+                              ip = cl(idom)%lpdx(ipart)
+                              kk = nvlist(ip)
+                              IF (lsymm) THEN
+                                 DO jpart=(ipart+1),iend
+                                    jp = cl(idom)%lpdx(jpart)
+                                    ! translate to real particle
+                                    ! index if needed
+                                    IF (lpidx) THEN
+                                       ii = pidx(ip)
+                                       jj = pidx(jp)
+                                    ELSE
+                                       ii = ip
+                                       jj = jp
+                                    ENDIF
+                                    dx = xp(1,ii) - xp(1,jj)
+                                    dy = xp(2,ii) - xp(2,jj)
+                                    IF (ppm_dim .GT. 2) THEN
+                                       dz = xp(3,ii) - xp(3,jj)
+                                       dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                    ELSE
+                                       dz = 0.0_MK
+                                       dij= (dx*dx)+(dy*dy)
+                                    ENDIF
+                                    IF (dij .GT. cut2) CYCLE
+                                    ! add particle jp to list of
+                                    ! particle ip
+                                    kk = kk + 1
+                                    vlist(kk,ip) = jp
+                                 ENDDO
                               ELSE
-                                  ! get pointers to first and last particle
-                                  jstart = cl(idom)%lhbx(jbox)
-                                  jend   = cl(idom)%lhbx(jbox+1)-1
-                                  ! skip this iinter if empty
-                                  IF (jend .LT. jstart) CYCLE
-                                  ! loop over all particles inside this cell
-                                  DO ipart=istart,iend
-                                      ip = cl(idom)%lpdx(ipart)
-                                      kk = nvlist(ip)
-                                      ! check against all particles
-                                      ! in the other cell
-                                      DO jpart=jstart,jend
-                                          jp = cl(idom)%lpdx(jpart)
-                                          ! translate to real particle
-                                          ! index if needed
-                                          IF (lpidx) THEN
-                                              ii = pidx(ip)
-                                              jj = pidx(jp)
-                                          ELSE
-                                              ii = ip
-                                              jj = jp
-                                          ENDIF
-                                          dx = xp(1,ii) - xp(1,jj)
-                                          dy = xp(2,ii) - xp(2,jj)
-                                          IF (ppm_dim .GT. 2) THEN
-                                              dz = xp(3,ii) - xp(3,jj)
-                                              dij= (dx*dx)+(dy*dy)+(dz*dz)
-                                          ELSE
-                                              dz = 0.0_MK
-                                              dij= (dx*dx)+(dy*dy)
-                                          ENDIF
-                                          IF (dij .GT. cut2) CYCLE
-                                          ! add particle jp to Verlet
-                                          ! list of particle ip
-                                          kk = kk + 1
-                                          vlist(kk,ip) = jp
-                                      ENDDO
-                                      nvlist(ip) = kk
-                                  ENDDO
-                              ENDIF       ! ibox .EQ. jbox
-                          ENDDO           ! iinter
-                      ENDDO               ! i
-                  ENDDO                   ! j
-              ENDDO                       ! k
-          ENDDO                           ! idom
+#ifdef __VECTOR
+                                 DO jpart=istart,iend
+                                    jp = cl(idom)%lpdx(jpart)
+                                    IF (jp .EQ. ip) CYCLE
+#else
+                                 DO jpart=(ipart+1),iend
+                                    jp = cl(idom)%lpdx(jpart)
+#endif
+                                    ! translate to real particle
+                                    ! index if needed
+                                    IF (lpidx) THEN
+                                       ii = pidx(ip)
+                                       jj = pidx(jp)
+                                    ELSE
+                                       ii = ip
+                                       jj = jp
+                                    ENDIF
+                                    dx = xp(1,ii) - xp(1,jj)
+                                    dy = xp(2,ii) - xp(2,jj)
+                                    IF (ppm_dim .GT. 2) THEN
+                                       dz = xp(3,ii) - xp(3,jj)
+                                       dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                    ELSE
+                                       dij= (dx*dx)+(dy*dy)
+                                    ENDIF
+                                    IF (dij .GT. cut2) CYCLE
+                                    kk = kk + 1
+                                    ! add particle jp to list of
+                                    ! particle ip
+                                    vlist(kk,ip) = jp
+#ifndef __VECTOR
+                                    ! add particle ip to list of
+                                    ! particle jp
+                                    nvlist(jp) = nvlist(jp) + 1
+                                    vlist(nvlist(jp),jp) = ip
+#endif
+                                 ENDDO
+                              ENDIF
+                              nvlist(ip) = kk
+                           ENDDO
+                           !-------------------------------------------------
+                           !  For the other boxes check all particles
+                           !-------------------------------------------------
+                        ELSE
+                           ! get pointers to first and last particle
+                           jstart = cl(idom)%lhbx(jbox)
+                           jend   = cl(idom)%lhbx(jbox+1)-1
+                           ! skip this iinter if empty
+                           IF (jend .LT. jstart) CYCLE
+                           ! loop over all particles inside this cell
+                           DO ipart=istart,iend
+                              ip = cl(idom)%lpdx(ipart)
+                              kk = nvlist(ip)
+                              ! check against all particles
+                              ! in the other cell
+                              DO jpart=jstart,jend
+                                 jp = cl(idom)%lpdx(jpart)
+                                 ! translate to real particle
+                                 ! index if needed
+                                 IF (lpidx) THEN
+                                    ii = pidx(ip)
+                                    jj = pidx(jp)
+                                 ELSE
+                                    ii = ip
+                                    jj = jp
+                                 ENDIF
+                                 dx = xp(1,ii) - xp(1,jj)
+                                 dy = xp(2,ii) - xp(2,jj)
+                                 IF (ppm_dim .GT. 2) THEN
+                                    dz = xp(3,ii) - xp(3,jj)
+                                    dij= (dx*dx)+(dy*dy)+(dz*dz)
+                                 ELSE
+                                    dij= (dx*dx)+(dy*dy)
+                                 ENDIF
+                                 IF (dij .GT. cut2) CYCLE
+                                 ! add particle jp to Verlet
+                                 ! list of particle ip
+                                 kk = kk + 1
+                                 vlist(kk,ip) = jp
+                              ENDDO
+                              nvlist(ip) = kk
+                           ENDDO
+                        ENDIF  ! ibox .EQ. jbox
+                     ENDDO  ! iinter
+                  ENDDO  ! i
+               ENDDO  ! j
+            ENDDO  ! k
+         ENDDO  ! idom
 
-          !---------------------------------------------------------------------
-          !  Highest particle index with non-zero nvlist
-          !---------------------------------------------------------------------
-          ii=npdx
-          DO ipart=npdx,1,-1
-             IF (nvlist(ipart) .GT. 0) THEN
-                ii = ipart
-                EXIT
-             ENDIF
-          ENDDO
-          !-------------------------------------------------------------------------
-          !  Maximum Verlet list length
-          !-------------------------------------------------------------------------
-          maxvlen = MAXVAL(nvlist)
-          IF (ppm_debug .GT. 0) THEN
-             WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
-             CALL ppm_write(ppm_rank,caller,mesg,info)
-          ENDIF
+         !---------------------------------------------------------------------
+         !  Highest particle index with non-zero nvlist
+         !---------------------------------------------------------------------
+         ii=npdx
+         DO ipart=npdx,1,-1
+            IF (nvlist(ipart) .GT. 0) THEN
+               ii = ipart
+               EXIT
+            ENDIF
+         ENDDO
+         !-------------------------------------------------------------------------
+         !  Maximum Verlet list length
+         !-------------------------------------------------------------------------
+         maxvlen = MAXVAL(nvlist)
+         IF (ppm_debug .GT. 0) THEN
+            WRITE(mesg,'(A,I8)') 'Maximum length of Verlet lists: ',maxvlen
+            CALL ppm_write(ppm_rank,caller,mesg,info)
+         ENDIF
 
-          iopt = ppm_param_alloc_fit_preserve
-          lda(2) = ii
-          CALL ppm_alloc(nvlist,lda(2:2),iopt,info)
-          or_fail_alloc('Verlet list sizes NVLIST')
+         iopt = ppm_param_alloc_fit_preserve
+         lda(2) = ii
+         CALL ppm_alloc(nvlist,lda(2:2),iopt,info)
+         or_fail_alloc('Verlet list sizes NVLIST')
+         !nvlist => nvlist(1:ii)
 
-!           nvlist=>nvlist(1:ii)
-
-          lda(1) = maxvlen
-          CALL ppm_alloc(vlist,lda,iopt,info)
-          or_fail_alloc('Verlet list sizes NVLIST')
-
-!           vlist=>vlist(1:maxvlen,1:ii)
+         lda(1) = maxvlen
+         CALL ppm_alloc(vlist,lda,iopt,info)
+         or_fail_alloc('Verlet list sizes NVLIST')
+         !vlist => vlist(1:maxvlen,1:ii)
 
       END SELECT ! lstore
 
@@ -675,51 +661,33 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,caller,  &
-              &    'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
+             fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
           ENDIF
           IF (cutoff .LE. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-              &    'cutoff must be >0',__LINE__,info)
-              GOTO 8888
+             fail('cutoff must be >0',exit_point=8888)
           ENDIF
           IF (skin .LT. 0.0_MK) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-              &    'skin must be >= 0',__LINE__,info)
-              GOTO 8888
+             fail('skin must be >= 0',exit_point=8888)
           ENDIF
           IF (npdx .LE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-              &    'np must be >0',__LINE__,info)
-              GOTO 8888
+             fail('np must be >0',exit_point=8888)
           ENDIF
           IF (topoid .EQ. ppm_param_topo_undefined) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-              &    'Geometric topology required',__LINE__,info)
-              GOTO 8888
+             fail('Geometric topology required',exit_point=8888)
           ENDIF
           IF (topoid .NE. ppm_param_topo_undefined) THEN
-              CALL ppm_check_topoid(topoid,valid,info)
-              IF (.NOT. valid) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-                  &    'topoid out of range',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             CALL ppm_check_topoid(topoid,valid,info)
+             IF (.NOT. valid) THEN
+                fail('topoid out of range',exit_point=8888)
+             ENDIF
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_neighlist_vlist_s

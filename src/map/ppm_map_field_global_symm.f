@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_global_symm
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -58,7 +58,7 @@
       !-------------------------------------------------------------------------
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_data_mesh
@@ -74,7 +74,7 @@
       !  Arguments
       !-------------------------------------------------------------------------
       INTEGER                 , INTENT(IN   ) :: topoid
-      !!! Topology ID of source 
+      !!! Topology ID of source
       !!!
       !!! CAUTION: used to be target topo ID
       INTEGER                 , INTENT(IN   ) :: target_topoid
@@ -99,10 +99,10 @@
       REAL(ppm_kind_double)            :: t0
       LOGICAL, DIMENSION(3)            :: lsymm
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -123,17 +123,16 @@
 
       topo => ppm_topo(topoid)%t
       target_topo => ppm_topo(target_topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          mesh => t
+         mesh => t
       END SELECT
 
       SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          target_mesh => t
+         target_mesh => t
       END SELECT
-
-
 
       IF (ppm_buffer_set .GT. 0) THEN
         info = ppm_error_warning

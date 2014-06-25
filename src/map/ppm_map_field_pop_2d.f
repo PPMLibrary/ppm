@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_map_field_pop_2d
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -132,7 +132,7 @@
       !!! Field data.
       !!!
       !!! 1st index: lda                                                       +
-      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub 
+      !!! 2nd-3th index: mesh (i,j) relative to istart-1 of the sub
       !!! (i.e. (i,j)=(1,1) corresponds to istart)                             +
       !!! 4th: isub 1...nsublist (all subs on this processor).
       !!!
@@ -175,8 +175,8 @@
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-      TYPE(ppm_t_topo)     , POINTER  :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER  :: target_mesh => NULL()
+      TYPE(ppm_t_topo)     , POINTER  :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER  :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -209,9 +209,10 @@
       !  set the local pointers to the topology and mesh
       !-------------------------------------------------------------------------
       target_topo => ppm_topo(target_topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          target_mesh => t
+         target_mesh => t
       END SELECT
 
       IF (ppm_debug .GT. 0) THEN

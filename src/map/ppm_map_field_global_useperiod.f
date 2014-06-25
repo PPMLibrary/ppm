@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_global_useperiod
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -29,11 +29,11 @@
 
       SUBROUTINE ppm_map_field_global_useperiod(topoid,target_topoid,  &
      &                                meshid,target_meshid,info)
-      !!! This routine maps field data between two topologies (which however 
-      !!! need compatible meshes defined on them) using a global mapping (i.e. 
+      !!! This routine maps field data between two topologies (which however
+      !!! need compatible meshes defined on them) using a global mapping (i.e.
       !!! every processor communicates with every other). Source mesh must be on
       !!! the current field topology. Global lists with all mesh blocks that have
-      !!! to be send and/or received are built in this routine. Push, pop and 
+      !!! to be send and/or received are built in this routine. Push, pop and
       !!! send will use these lists.
       !!!
       !!! [WARNING]
@@ -101,10 +101,10 @@
       LOGICAL                          :: lsouth,lnorth,least,lwest,ltop,lbottom
       LOGICAL, DIMENSION(3)            :: lsymm
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -125,14 +125,15 @@
 
       topo => ppm_topo(topoid)%t
       target_topo => ppm_topo(target_topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          mesh => t
+         mesh => t
       END SELECT
 
       SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          target_mesh => t
+         target_mesh => t
       END SELECT
 
 
@@ -161,7 +162,7 @@
               ENDIF
           ENDDO
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Pre-calculate shift offsets for periodic ghost images of subs
       !-------------------------------------------------------------------------
@@ -238,7 +239,7 @@
      &        (topo%subs_bc(4,idom) .NE. 0)) lsymm(2) = .FALSE.
           IF ((topo%bcdef(6) .NE. ppm_param_bcdef_periodic) .AND. &
      &        (topo%subs_bc(6,idom) .NE. 0)) lsymm(3) = .FALSE.
-          
+
           lwest  = .FALSE.
           least  = .FALSE.
           IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
@@ -253,7 +254,7 @@
               IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
      &            (topo%subs_bc(5,idom) .NE. 0)) lbottom = .TRUE.
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Determine number of shifts and actual shift indices needed
           !---------------------------------------------------------------------
@@ -392,7 +393,7 @@
                   ENDIF
               ENDIF
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Do the shifting and compute mesh blocks
           !---------------------------------------------------------------------
@@ -468,7 +469,7 @@
      &        (topo%subs_bc(4,j) .NE. 0)) lsymm(2) = .FALSE.
           IF ((topo%bcdef(6) .NE. ppm_param_bcdef_periodic) .AND. &
      &        (topo%subs_bc(6,j) .NE. 0)) lsymm(3) = .FALSE.
-          
+
           lwest  = .FALSE.
           least  = .FALSE.
           IF ((topo%bcdef(1) .EQ. ppm_param_bcdef_periodic) .AND. &
@@ -483,7 +484,7 @@
               IF ((topo%bcdef(5) .EQ. ppm_param_bcdef_periodic) .AND. &
      &            (topo%subs_bc(5,j) .NE. 0)) lbottom = .TRUE.
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Determine number of shifts and actual shift indices needed
           !---------------------------------------------------------------------
@@ -622,7 +623,7 @@
                   ENDIF
               ENDIF
           ENDIF
-          
+
           !---------------------------------------------------------------------
           !  Do the shifting and compute mesh blocks
           !---------------------------------------------------------------------
@@ -635,7 +636,7 @@
      &                ioffset,info,lsymm)
                  IF (info .NE. 0) GOTO 9999
               ENDDO
-          ENDDO          
+          ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------

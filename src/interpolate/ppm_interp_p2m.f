@@ -1,16 +1,16 @@
       !------------------------------------------------------------------------!
       !     Subroutine   :                 ppm_interp_p2m
       !------------------------------------------------------------------------!
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -66,7 +66,7 @@
 #endif
 #endif
       !!! This subroutine carries out particle to mesh interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
@@ -155,12 +155,12 @@
      !-------------------------------------------------------------------------!
      ! Local variables
      !-------------------------------------------------------------------------!
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata    => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
+      INTEGER,  DIMENSION(:,:)     , POINTER :: ndata
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1 => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2 => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(mk), DIMENSION(ppm_dim)           :: dxi,dx
       REAL(mk)                               :: dxx,dxy,dxz,dxxi,dxyi,dxzi
       REAL(mk), DIMENSION(ppm_dim)           :: len_phys
@@ -177,12 +177,12 @@
       INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER                                :: nsubs
-      INTEGER, DIMENSION(6)                  :: bcdef
+      INTEGER, DIMENSION(2*ppm_dim)          :: bcdef
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
       REAL(mk)                               :: xp1,xp2,xp3
@@ -191,8 +191,8 @@
       REAL(mk)                               :: x01,x02,x03
       INTEGER                                :: ldn
       CHARACTER(len=256)                     :: msg
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
 
 
 
@@ -215,21 +215,23 @@
      !  Check arguments
      !-------------------------------------------------------------------------!
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
+
       topo => ppm_topo(topoid)%t
+
       !-------------------------------------------------------------------------
       !  Get the meshid
       !-------------------------------------------------------------------------
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
+
       !-------------------------------------------------------------------------
       !  Get istart
       !-------------------------------------------------------------------------
-
       istart => p_mesh%istart
 
      !-------------------------------------------------------------------------!
@@ -685,7 +687,7 @@
             IF (topo%subs_bc(2,idoml).EQ.1) THEN
                xlo = ndata(1,idoml) - ghostsize(1)
                ylo = 1
-               xhi = ndata(1,idoml) 
+               xhi = ndata(1,idoml)
                yhi = ndata(2,idoml)
                SELECT CASE(p2m_bcdef(2))
                CASE(ppm_param_bcdef_symmetry)
@@ -729,7 +731,7 @@
             IF (topo%subs_bc(4,idoml).EQ.1) THEN
                xlo = 1
                ylo = ndata(2,idoml) - ghostsize(2)
-               xhi = ndata(1,idoml) 
+               xhi = ndata(1,idoml)
                yhi = ndata(2,idoml)
                SELECT CASE(p2m_bcdef(4))
                CASE(ppm_param_bcdef_symmetry)
@@ -780,7 +782,7 @@
                DO l=1,lda
                   xlo = ndata(1,idoml) - ghostsize(1)
                   ylo = 1
-                  xhi = ndata(1,idoml) 
+                  xhi = ndata(1,idoml)
                   yhi = ndata(2,idoml)
                   SELECT CASE(p2m_bcdef(2,l))
                   CASE(ppm_param_bcdef_symmetry)
@@ -886,7 +888,7 @@
                xlo = ndata(1,idoml) - ghostsize(1)
                ylo = 1
                zlo = 1
-               xhi = ndata(1,idoml) 
+               xhi = ndata(1,idoml)
                yhi = ndata(2,idoml)
                zhi = ndata(3,idoml)
                SELECT CASE(p2m_bcdef(2))
@@ -942,7 +944,7 @@
                xlo = 1
                ylo = ndata(2,idoml) - ghostsize(2)
                zlo = 1
-               xhi = ndata(1,idoml) 
+               xhi = ndata(1,idoml)
                yhi = ndata(2,idoml)
                zhi = ndata(3,idoml)
                SELECT CASE(p2m_bcdef(4))
@@ -998,7 +1000,7 @@
                xlo = 1
                ylo = 1
                zlo = ndata(3,idoml) - ghostsize(3)
-               xhi = ndata(1,idoml) 
+               xhi = ndata(1,idoml)
                yhi = ndata(2,idoml)
                zhi = ndata(3,idoml)
                SELECT CASE(p2m_bcdef(6))
@@ -1061,7 +1063,7 @@
                   xlo = ndata(1,idoml) - ghostsize(1)
                   ylo = 1
                   zlo = 1
-                  xhi = ndata(1,idoml) 
+                  xhi = ndata(1,idoml)
                   yhi = ndata(2,idoml)
                   zhi = ndata(3,idoml)
                   SELECT CASE(p2m_bcdef(2,l))
@@ -1121,7 +1123,7 @@
                   xlo = 1
                   ylo = ndata(2,idoml) - ghostsize(2)
                   zlo = 1
-                  xhi = ndata(1,idoml) 
+                  xhi = ndata(1,idoml)
                   yhi = ndata(2,idoml)
                   zhi = ndata(3,idoml)
                   SELECT CASE(p2m_bcdef(4,l))
@@ -1181,7 +1183,7 @@
                   xlo = 1
                   ylo = 1
                   zlo = ndata(3,idoml) - ghostsize(3)
-                  xhi = ndata(1,idoml) 
+                  xhi = ndata(1,idoml)
                   yhi = ndata(2,idoml)
                   zhi = ndata(3,idoml)
                   SELECT CASE(p2m_bcdef(6,l))
@@ -1208,7 +1210,7 @@
             END IF
          END DO
 #endif
-#endif 
+#endif
      END IF
 
      IF(np.EQ.0) GOTO 9999

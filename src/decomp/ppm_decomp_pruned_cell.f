@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE decomp_pcell_s(xp,Npart,min_phys,max_phys, &
-     &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
+      &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE decomp_pcell_d(xp,Npart,min_phys,max_phys, &
-     &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
+      &   ghostsize,min_sub,max_sub,nsubs,info,pcost)
 #endif
       !!! This routine performs a domain decomposition using a
       !!! pruned (incomplete) cell index list.
@@ -89,12 +89,18 @@
       !  Local variables
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(ppm_dim) :: dmx
+      REAL(MK):: rdx,rdy,rdz,x0,y0,z0,rmean_npbx
+      REAL(MK):: t0
+
       INTEGER , DIMENSION(ppm_dim) :: Nm
       INTEGER , DIMENSION(3)       :: ldc
       INTEGER :: i,j,k,iopt,Mm,ibox,idx,jdx,kdx,ipart
       INTEGER :: istat,n1,n2
-      REAL(MK):: rdx,rdy,rdz,x0,y0,z0,rmean_npbx
-      REAL(MK):: t0
+#ifdef __MPI
+      INTEGER                             :: request
+      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
+#endif
+
       CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller = 'ppm_decomp_pruned_cell'
       !-------------------------------------------------------------------------
@@ -110,8 +116,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -119,8 +125,8 @@
       !-------------------------------------------------------------------------
       Mm = 1
       DO k=1,ppm_dim
-         Nm(k)  = INT((max_phys(k) - min_phys(k))/ghostsize)
-         dmx(k) = (max_phys(k) - min_phys(k))/REAL(Nm(k),MK)
+         Nm(k) =INT((max_phys(k) - min_phys(k))/ghostsize)
+         dmx(k)=(max_phys(k) - min_phys(k))/REAL(Nm(k),MK)
 
          !check for round-off problems and fix them if necessary
          DO WHILE (min_phys(k)+(Nm(k)-1)*dmx(k).LT.max_phys(k))
@@ -129,7 +135,7 @@
 
          check_true(<#(min_phys(k)+(Nm(k)-1)*dmx(k).GE.max_phys(k))#>,"round-off problem")
 
-         Mm     = Mm*Nm(k)
+         Mm=Mm*Nm(k)
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -138,12 +144,7 @@
       iopt = ppm_param_alloc_fit
       ldc = Mm
       CALL ppm_alloc(npbx,ldc,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,caller,     &
-     &                  'allocation of npbx failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('allocation of npbx failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize the array
@@ -172,7 +173,8 @@
       !  (this will and cannot vectorize; of course you can sort them e.g.,
       !  using a cell lists, but then the cell list does not vectorize)
       !-------------------------------------------------------------------------
-      IF     (ppm_dim.EQ.2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
          rdx = 1.0_MK/dmx(1)
          rdy = 1.0_MK/dmx(2)
          x0  = min_phys(1)*rdx
@@ -184,7 +186,8 @@
             ibox = idx + 1 + jdx*n1
             npbx(ibox) = npbx(ibox) + 1
          ENDDO
-      ELSEIF (ppm_dim.EQ.3) THEN
+
+      CASE (3)
          rdx = 1.0_MK/dmx(1)
          rdy = 1.0_MK/dmx(2)
          rdz = 1.0_MK/dmx(3)
@@ -200,17 +203,16 @@
             ibox = idx + 1 + jdx*n1 + kdx*n2
             npbx(ibox) = npbx(ibox) + 1
          ENDDO
-      ENDIF
+
+      END SELECT
 
 #ifdef __MPI
       !-------------------------------------------------------------------------
       !  Add up the number of particles in each box (the the total number of
       !  particles)
       !-------------------------------------------------------------------------
-      CALL MPI_AllReduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-      DO k=1,Mm
-         npbx(k) = npbxg(k)
-      ENDDO
+      CALL MPI_Iallreduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,request,info)
+      or_fail_MPI("MPI_Iallreduce")
 #endif
 
       !-------------------------------------------------------------------------
@@ -225,11 +227,21 @@
       CALL ppm_alloc(max_sub,ldc,iopt,info)
       or_fail_alloc('allocation of max_sub failed')
 
+#ifdef __MPI
+      CALL MPI_Wait(request,status,info)
+      or_fail_MPI("MPI_Wait")
+
+      DO k=1,Mm
+         npbx(k)=npbxg(k)
+      ENDDO
+#endif
+
       !-------------------------------------------------------------------------
       !  loop over the boxes and collect non-empty ones
       !-------------------------------------------------------------------------
       nsubs = 0
-      IF     (ppm_dim.EQ.2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
          !----------------------------------------------------------------------
          !  In two dimensions
          !----------------------------------------------------------------------
@@ -248,7 +260,8 @@
                ENDIF
             ENDDO
          ENDDO
-      ELSEIF (ppm_dim.EQ.3) THEN
+
+      CASE (3)
          !----------------------------------------------------------------------
          !  In three dimensions
          !----------------------------------------------------------------------
@@ -268,7 +281,8 @@
                ENDDO
             ENDDO
          ENDDO
-      ENDIF
+
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Let us shrink the memory to fix exactly the nsubs found
@@ -297,26 +311,20 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (ghostsize.LE.0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,  &
-     &                     'the fifth argument must be > 0',__LINE__,info)
-            GOTO 8888
+           fail('the fifth argument must be > 0',exit_point=8888)
         ENDIF
         DO k=1,ppm_dim
             IF (max_phys(k).LE. min_phys(k)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,  &
-     &                       'min_phys must be < max_phys',__LINE__,info)
-               GOTO 8888
+               fail('min_phys must be < max_phys',exit_point=8888)
             ENDIF
         ENDDO
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_pcell_s

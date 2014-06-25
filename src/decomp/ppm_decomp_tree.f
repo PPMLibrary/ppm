@@ -95,19 +95,22 @@
       REAL(MK), DIMENSION(2)            :: vector_in,vector_out
       REAL(MK)                          :: mean_npbx,var_npbx
       REAL(MK)                          :: t0
-      REAL(MK), DIMENSION(:,:), POINTER :: min_box => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: max_box => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: work    => NULL()
-      INTEGER , DIMENSION(:), POINTER   :: npbx    => NULL()
-      INTEGER , DIMENSION(:), POINTER   :: npbxg   => NULL()
-      INTEGER , DIMENSION(:), POINTER   :: ppb     => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: min_box
+      REAL(MK), DIMENSION(:,:), POINTER :: max_box
+      REAL(MK), DIMENSION(:,:), POINTER :: work
+      INTEGER , DIMENSION(:),   POINTER :: npbx
+      INTEGER , DIMENSION(:),   POINTER :: npbxg
+      INTEGER , DIMENSION(:),   POINTER :: ppb
       INTEGER , DIMENSION(ppm_dim) :: ldc,ldd
       INTEGER :: ibox,fbox,jbox,kbox,lbox,nbox,ilevel,nlevel,isize
       INTEGER :: i,j,k,iopt,ipart,ii,jj,mem_req
-      INTEGER :: istat,n1,n2,Npartg
-      LOGICAL :: lcontinue
+      INTEGER :: istat,n1,n2  !,Npartg
+
       CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller = 'ppm_decomp_tree'
+
+      LOGICAL :: lcontinue
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -129,6 +132,8 @@
       !  Allocate memory for a copy of the particles (the copy is needed since
       !  the particles will be rearranged in the process of creating the tree)
       !-------------------------------------------------------------------------
+      NULLIFY(work)
+
       iopt   = ppm_param_alloc_fit
       ldc(1) = ppm_dim
       ldc(2) = Npart
@@ -152,14 +157,17 @@
          ENDDO
       ENDIF
 
-#ifdef __MPI
-      !-------------------------------------------------------------------------
-      !  Count the total number of particles
-      !-------------------------------------------------------------------------
-      CALL MPI_AllReduce(Npart,Npartg,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
-#else
-      Npartg = Npart
-#endif
+      !Yaser
+      !no use in this routine so I just commented them
+
+! #ifdef __MPI
+!       !-------------------------------------------------------------------------
+!       !  Count the total number of particles
+!       !-------------------------------------------------------------------------
+!       CALL MPI_AllReduce(Npart,Npartg,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+! #else
+!       Npartg = Npart
+! #endif
 
       !-------------------------------------------------------------------------
       !  Allocate some memory for the tree
@@ -167,6 +175,8 @@
       iopt   = ppm_param_alloc_grow
       ldc(1) = ppm_dim
       ldc(2) = 2000
+
+      NULLIFY(min_box,max_box,npbx,npbxg,ppb)
 
       CALL ppm_alloc(min_box,ldc,iopt,info)
       or_fail_alloc('alloc of min_box failed!')
@@ -262,7 +272,7 @@
          !----------------------------------------------------------------------
          !  Catch errors in ppm_decomp_boxsplit
          !----------------------------------------------------------------------
-     100 CONTINUE
+         100 CONTINUE
 #ifdef __MPI
          IF (ppm_debug.GT.0) THEN
             !-------------------------------------------------------------------
@@ -277,7 +287,7 @@
          !----------------------------------------------------------------------
          !  Catch errors in ppm_alloc
          !----------------------------------------------------------------------
-     200 CONTINUE
+         200 CONTINUE
 #ifdef __MPI
          IF (ppm_debug.GT.0) THEN
             !-------------------------------------------------------------------
@@ -290,12 +300,7 @@
          !----------------------------------------------------------------------
          !  Write detailed error message for the allocation
          !----------------------------------------------------------------------
-         IF (info.NE.0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,caller,                  &
-     &                     'reallocating the tree failed (1)!',__LINE__,info)
-            GOTO 9999
-         ENDIF
+         or_fail_alloc('reallocating the tree failed (1)!',ppm_error_fatal)
 
          !----------------------------------------------------------------------
          !  Update the level counter and boxes ie. consider now the new boxes
@@ -308,8 +313,8 @@
          !  Communicate the number of particles found in the boxes of the new
          !  boxes at the next level (this will be expensive for nproc >> 1)
          !----------------------------------------------------------------------
-         CALL MPI_AllReduce(npbx(fbox),npbxg(fbox),lbox-fbox+1,MPI_INTEGER, &
-     &                      MPI_SUM,ppm_comm,info)
+         CALL MPI_Allreduce(npbx(fbox),npbxg(fbox),lbox-fbox+1, &
+         &    MPI_INTEGER,MPI_SUM,ppm_comm,info)
 #else
          !----------------------------------------------------------------------
          !  Copy the global npbx from the local (the same in serial, but to
@@ -357,10 +362,10 @@
                vector_in(2) =  var_npbx
 #if __KIND == __SINGLE_PRECISION
                CALL MPI_AllReduce(vector_in,vector_out,2,MPI_REAL, &
-     &                            MPI_SUM,ppm_comm,info)
+               &    MPI_SUM,ppm_comm,info)
 #else
                CALL MPI_AllReduce(vector_in,vector_out,2,MPI_DOUBLE_PRECISION, &
-     &                            MPI_SUM,ppm_comm,info)
+               &    MPI_SUM,ppm_comm,info)
 #endif
                mean_npbx = vector_out(1)
                 var_npbx = vector_out(2)
@@ -420,7 +425,7 @@
             !-------------------------------------------------------------------
             !  Catch errors in ppm_alloc in debugging mode
             !-------------------------------------------------------------------
-     300    CONTINUE
+            300 CONTINUE
 #ifdef __MPI
             IF (ppm_debug.GT.0) THEN
                !----------------------------------------------------------------
@@ -430,14 +435,10 @@
                info = i
             ENDIF
 #endif
-            IF (info.NE.0) THEN
-               info = ppm_error_fatal
-               CALL ppm_error(ppm_err_alloc,caller,                 &
-     &                        'reallocating the tree failed (2)!',__LINE__,info)
-               GOTO 9999
-            ENDIF
-         ENDIF
 
+            or_fail_alloc('reallocating the tree failed (2)!',ppm_error_fatal)
+
+         ENDIF
       ENDDO ! end of main DO WHILE loop
 
       !-------------------------------------------------------------------------
@@ -459,13 +460,8 @@
          IF (info.NE.0) GOTO 400
 
          ldc(1) = mem_req
- 400     CONTINUE
-         IF (info.NE.0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,caller,                  &
-     &                     'reallocating the subs failed!',__LINE__,info)
-            GOTO 9999
-         ENDIF
+         400 CONTINUE
+         or_fail_alloc('reallocating the subs failed!',ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -541,43 +537,30 @@
       CALL ppm_alloc(work   ,ldc,iopt,info)
       IF (info.NE.0) GOTO 500
 
- 500  CONTINUE
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,caller,                  &
-     &                  'deallocating work arrays failed!',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      500 CONTINUE
+
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (minboxsize .LE. 0.0_MK) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'the minimum box size must be > 0 !',__LINE__,info)
-            GOTO 8888
+            fail('the minimum box size must be > 0 !',exit_point=8888)
          ENDIF
          IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller,     &
-     &          'the number of particles must be >= 0 !',__LINE__,info)
-            GOTO 8888
+            fail('the number of particles must be >= 0 !',exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
             IF (min_phys(i) .GT. max_phys(i)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,     &
-     &             'min_phys must be <= max_phys !',__LINE__,info)
-                GOTO 8888
+               fail('min_phys must be <= max_phys !',exit_point=8888)
             ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_tree_s

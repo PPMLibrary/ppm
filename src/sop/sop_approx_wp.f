@@ -19,177 +19,173 @@
 
 #if   __LDA == 1
       SUBROUTINE DTYPE(sop_approx_wp_1d)(xp_old,wp_old,scale_old,xp,wp,&
-              Npart,Mpart,nvlist_cross,vlist_cross,info)
+      &          Npart,Mpart,nvlist_cross,vlist_cross,info)
 #elif __LDA == 2
       SUBROUTINE DTYPE(sop_approx_wp_2d)(xp_old,wp_old,lda,scale_old,xp,wp,&
-              Npart,Mpart,nvlist_cross,vlist_cross,info)
+      &          Npart,Mpart,nvlist_cross,vlist_cross,info)
 #endif
 
-          USE ppm_module_map_part
-          IMPLICIT NONE
+        USE ppm_module_map_part
+        IMPLICIT NONE
 
 #ifdef __MPI
-          INCLUDE 'mpif.h'
+        INCLUDE 'mpif.h'
 #endif
 
-          DEFINE_MK()
-          ! arguments
-          REAL(MK),     DIMENSION(:,:),         INTENT(IN   )   :: xp_old
-          REAL(MK),     DIMENSION(:,:),POINTER, INTENT(IN   )   :: xp
+        DEFINE_MK()
+        ! arguments
+        REAL(MK),     DIMENSION(:,:),         INTENT(IN   )   :: xp_old
+        REAL(MK),     DIMENSION(:,:),POINTER, INTENT(IN   )   :: xp
 #if   __LDA == 1
-          REAL(MK),     DIMENSION(:),           INTENT(IN   )   :: wp_old
-          REAL(MK),     DIMENSION(:),  POINTER, INTENT(INOUT)   :: wp
+        REAL(MK),     DIMENSION(:),           INTENT(IN   )   :: wp_old
+        REAL(MK),     DIMENSION(:),  POINTER, INTENT(INOUT)   :: wp
 #elif __LDA == 2
-          REAL(MK),     DIMENSION(:,:),         INTENT(IN   )   :: wp_old
-          REAL(MK),     DIMENSION(:,:),POINTER, INTENT(INOUT)   :: wp
-          INTEGER,                              INTENT(IN   )   :: lda
+        REAL(MK),     DIMENSION(:,:),         INTENT(IN   )   :: wp_old
+        REAL(MK),     DIMENSION(:,:),POINTER, INTENT(INOUT)   :: wp
+        INTEGER,                              INTENT(IN   )   :: lda
 #endif
-          REAL(MK),     DIMENSION(:),           INTENT(IN   )   :: scale_old
-          INTEGER,                              INTENT(IN   )   :: Npart
-          INTEGER,                              INTENT(INOUT)   :: Mpart
-          INTEGER,      DIMENSION(:),  POINTER, INTENT(IN   )   :: nvlist_cross
-          INTEGER,      DIMENSION(:,:),POINTER, INTENT(IN   )   :: vlist_cross
-          INTEGER,                              INTENT(  OUT)   :: info
+        REAL(MK),     DIMENSION(:),           INTENT(IN   )   :: scale_old
+        INTEGER,                              INTENT(IN   )   :: Npart
+        INTEGER,                              INTENT(INOUT)   :: Mpart
+        INTEGER,      DIMENSION(:),  POINTER, INTENT(IN   )   :: nvlist_cross
+        INTEGER,      DIMENSION(:,:),POINTER, INTENT(IN   )   :: vlist_cross
+        INTEGER,                              INTENT(  OUT)   :: info
 
+        ! local variables
+        REAL(KIND(1.d0)) :: t0
+        REAL(MK)         :: weight,weight_sum
+        REAL(MK)         :: almostzero,h_local
 
-              ! local variables
-              INTEGER                         :: ip,iq,ineigh, count
-              REAL(KIND(1.d0))                :: t0
-              CHARACTER(LEN=256)              :: filename,cbuf
+        INTEGER :: ip,iq,ineigh, count
+
+        CHARACTER(LEN=ppm_char) :: filename
 #if   __LDA == 1
-              CHARACTER(LEN=256)              :: caller = 'sop_approx_wp_1d'
+        CHARACTER(LEN=ppm_char) :: caller = 'sop_approx_wp_1d'
 #elif __LDA == 2
-              CHARACTER(LEN=256)              :: caller = 'sop_approx_wp_2d'
+        CHARACTER(LEN=ppm_char) :: caller = 'sop_approx_wp_2d'
 #endif
-              REAL(MK)                      :: weight,weight_sum
-              REAL(MK)                      :: almostzero,h_local
-
-              !!---------------------------------------------------------------------!
-              !! Initialise
-              !!---------------------------------------------------------------------!
-              info = 0
+        !!---------------------------------------------------------------------!
+        !! Initialise
+        !!---------------------------------------------------------------------!
 #if debug_verbosity > 0
-              CALL substart(caller,t0,info)
+        CALL substart(caller,t0,info)
+#else
+        info = 0
 #endif
-              almostzero = 100._MK*EPSILON(1._MK)
+        almostzero = 100._MK*EPSILON(1._MK)
 
-              !!---------------------------------------------------------------------!
-              !! Approximate wp as the weighted sum of wp_old
-              !! The weights are taken as the squared distances beween xp and xp_old
-              !! EDIT: take the 4th power instead.
-              !!---------------------------------------------------------------------!
-              DO ip = 1,Npart
+        !!---------------------------------------------------------------------!
+        !! Approximate wp as the weighted sum of wp_old
+        !! The weights are taken as the squared distances beween xp and xp_old
+        !! EDIT: take the 4th power instead.
+        !!---------------------------------------------------------------------!
+        DO ip = 1,Npart
 #if   __LDA == 1
-                  wp(ip) = 0._MK
+           wp(ip) = 0._MK
 #elif __LDA == 2
-                  wp(1:lda,ip) = 0._MK
+           wp(1:lda,ip) = 0._MK
 #endif
-              ENDDO
+        ENDDO
 
-              particle_loop: DO ip = 1,Npart
+        particle_loop: DO ip = 1,Npart
+           IF ( nvlist_cross(ip) .EQ. 0) THEN
+              !CYCLE particle_loop ! D is not updated for this particle
+              stdout("error in sop_approx_D.Cross lists should not be empty")
+              info = -1
+              GOTO 9999
+           ENDIF
 
-                  IF( nvlist_cross(ip) .EQ. 0) THEN
-                      !CYCLE particle_loop ! D is not updated for this particle
-                      WRITE(cbuf,*) 'error in sop_approx_D.',&
-                          ' Cross lists should not be empty'
-                      CALL ppm_write(ppm_rank,caller,cbuf,info)
-                      info = -1
-                      GOTO 9999
-                  ENDIF
+           weight_sum = 0._MK
 
-                  weight_sum = 0._MK
+           h_local = 0._MK
+           DO ineigh = 1,nvlist_cross(ip)
+              h_local = h_local + scale_old(vlist_cross(ineigh,ip))
+           ENDDO
+           h_local = h_local / nvlist_cross(ip)
 
-                  h_local = 0._MK
-                  DO ineigh = 1,nvlist_cross(ip)
-                      h_local = h_local + scale_old(vlist_cross(ineigh,ip))
-                  ENDDO
-                  h_local = h_local / nvlist_cross(ip)
-                  neighbour_loop: DO ineigh = 1,nvlist_cross(ip)
-
-                      iq = vlist_cross(ineigh,ip)
-                      weight = SUM(((xp_old(1:ppm_dim,iq)-xp(1:ppm_dim,ip))/h_local)**2) ** 2
-                      IF (weight .LT. almostzero) THEN
+           neighbour_loop: DO ineigh = 1,nvlist_cross(ip)
+              iq = vlist_cross(ineigh,ip)
+              weight = SUM(((xp_old(1:ppm_dim,iq)-xp(1:ppm_dim,ip))/h_local)**2) ** 2
+              IF (weight .LT. almostzero) THEN
 #if   __LDA == 1
-                          wp(ip) = wp_old(iq)
+                 wp(ip) = wp_old(iq)
 #elif __LDA == 2
-                          wp(1:lda,ip) = wp_old(1:lda,iq)
+                 wp(1:lda,ip) = wp_old(1:lda,iq)
 #endif
-                          CYCLE particle_loop
-                      ELSE
-                          weight_sum = weight_sum + 1._MK / weight
+                 CYCLE particle_loop
+              ELSE
+                 weight_sum = weight_sum + 1._MK / weight
 #if   __LDA == 1
-                          wp(ip) = wp(ip) + wp_old(iq) / weight
+                 wp(ip) = wp(ip) + wp_old(iq) / weight
 #elif __LDA == 2
-                          wp(1:lda,ip) = wp(1:lda,ip) + wp_old(1:lda,iq) / weight
+                 wp(1:lda,ip) = wp(1:lda,ip) + wp_old(1:lda,iq) / weight
 #endif
-                      ENDIF
-
-                  ENDDO neighbour_loop
-
+              ENDIF
+           ENDDO neighbour_loop
 #if   __LDA == 1
-                  wp(ip) = wp(ip) / weight_sum
+           wp(ip) = wp(ip) / weight_sum
 #elif __LDA == 2
-                  wp(1:lda,ip) = wp(1:lda,ip) / weight_sum
+           wp(1:lda,ip) = wp(1:lda,ip) / weight_sum
 #endif
 
-              ENDDO particle_loop
+        ENDDO particle_loop
 
-              !!---------------------------------------------------------------------!
-              !! Get ghost values
-              !!---------------------------------------------------------------------!
+        !!---------------------------------------------------------------------!
+        !! Get ghost values
+        !!---------------------------------------------------------------------!
 #if   __LDA == 1
-              CALL ppm_map_part_push(wp,Npart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (push) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              CALL ppm_map_part_send(Npart,Mpart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (send) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              CALL ppm_map_part_pop(wp,Npart,Mpart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (pop) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
+        CALL ppm_map_part_push(wp,Npart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (push) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
+        CALL ppm_map_part_send(Npart,Mpart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (send) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
+        CALL ppm_map_part_pop(wp,Npart,Mpart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (pop) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
 #elif __LDA == 2
-              CALL ppm_map_part_push(wp,lda,Npart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (push) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              CALL ppm_map_part_send(Npart,Mpart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (send) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
-              CALL ppm_map_part_pop(wp,lda,Npart,Mpart,info)
-              IF (info .NE. 0) THEN
-                  CALL ppm_write(ppm_rank,caller,'ppm_map_part_ghost (pop) failed.',info)
-                  info = -1
-                  GOTO 9999
-              ENDIF
+        CALL ppm_map_part_push(wp,lda,Npart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (push) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
+        CALL ppm_map_part_send(Npart,Mpart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (send) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
+        CALL ppm_map_part_pop(wp,lda,Npart,Mpart,info)
+        IF (info .NE. 0) THEN
+           stdout("ppm_map_part_ghost (pop) failed.")
+           info = -1
+           GOTO 9999
+        ENDIF
 #endif
 
-              !!---------------------------------------------------------------------!
-              !! Finalize
-              !!---------------------------------------------------------------------!
+        !!---------------------------------------------------------------------!
+        !! Finalize
+        !!---------------------------------------------------------------------!
 #if debug_verbosity > 0
-              CALL substop(caller,t0,info)
+        CALL substop(caller,t0,info)
 #endif
 
-              9999  CONTINUE ! jump here upon error
+        9999 CONTINUE ! jump here upon error
 
 #if   __LDA == 1
-          END SUBROUTINE DTYPE(sop_approx_wp_1d)
+        END SUBROUTINE DTYPE(sop_approx_wp_1d)
 #elif __LDA == 2
-      END SUBROUTINE DTYPE(sop_approx_wp_2d)
+        END SUBROUTINE DTYPE(sop_approx_wp_2d)
 #endif
 
 #undef __LDA

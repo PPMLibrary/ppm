@@ -161,7 +161,7 @@
           !----------------------------------------------------------------------
           !  Local variables
           !----------------------------------------------------------------------
-          TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER :: temp => NULL()
+          TYPE(WRAP(DTYPE)_arg), DIMENSION(:), POINTER :: temp
           TYPE(WRAP(DTYPE)_arg)                        :: def
           INTEGER                                      :: len
           !----------------------------------------------------------------------
@@ -178,8 +178,7 @@
           WRAP(DTYPE)_args_i = WRAP(DTYPE)_args_i + 1
           ! grow storage by di if needed
           IF (WRAP(DTYPE)_args_i .GT. SIZE(WRAP(DTYPE)_args)) THEN
-             ALLOCATE(temp(1:SIZE(WRAP(DTYPE)_args)+di))
-             temp(1:SIZE(WRAP(DTYPE)_args)) = WRAP(DTYPE)_args
+             ALLOCATE(temp(1:SIZE(WRAP(DTYPE)_args)+di),SOURCE=WRAP(DTYPE)_args)
              DEALLOCATE(WRAP(DTYPE)_args)
              WRAP(DTYPE)_args => temp
           END IF

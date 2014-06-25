@@ -55,6 +55,7 @@
 
           !re-initialize the few fields that are specific to VBP
           Pc%adaptive = .FALSE.
+          !yaser
           Pc%rcp => NULL()
 
           !Call the parent function
@@ -93,10 +94,10 @@
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
-          REAL(MK)   :: max_cutoff
-          REAL(MK),DIMENSION(:),POINTER       :: rcp => NULL()
-          REAL(MK),DIMENSION(:),ALLOCATABLE   :: cutoff_v
+!           CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
+          REAL(MK) :: max_cutoff
+!           REAL(MK),DIMENSION(:),POINTER       :: rcp => NULL()
+          REAL(MK), DIMENSION(:), ALLOCATABLE :: cutoff_v
 
           start_subroutine("vbp_set_cutoff")
 
@@ -147,7 +148,7 @@
           !-------------------------------------------------------------------------
           DEFINE_MK()
           CLASS(DTYPE(ppm_t_vbp))                  :: Pc
-          REAL(MK),DIMENSION(:),    INTENT(IN   )  :: cutoff
+          REAL(MK), DIMENSION(:),   INTENT(IN   )  :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
           INTEGER,                  INTENT(   OUT) :: info
           !!! return status. On success, 0
@@ -159,10 +160,12 @@
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
-          REAL(MK)                                  :: max_cutoff
-          REAL(MK),DIMENSION(:),POINTER             :: rcp => NULL()
-          INTEGER                                   :: ip
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
+
+          REAL(MK),DIMENSION(:), POINTER :: rcp
+          REAL(MK)                       :: max_cutoff
+
+          INTEGER :: ip
 
           start_subroutine("vbp_set_varying_cutoff")
 
@@ -173,6 +176,8 @@
              CALL Pc%create_prop(info,part_prop=Pc%rcp,dtype=ppm_type_real,name='rcp')
              or_fail("could not create property for varying cutoff radius rcp")
           ENDIF
+
+          NULLIFY(rcp)
 
           CALL Pc%get(Pc%rcp,rcp,info)
           or_fail("could not access varying cutoff radius rcp")
@@ -189,10 +194,10 @@
              IF (max_cutoff .LT. NList%cutoff) NList%uptodate = .FALSE.
              NList%cutoff = max_cutoff
           ELSE
-             nl => Pc%get_neighlist()
-             check_associated(nl,"Compute neighbour lists first")
-             IF (max_cutoff .LT. nl%cutoff) nl%uptodate = .FALSE.
-             nl%cutoff = max_cutoff
+             Nl => Pc%get_neighlist()
+             check_associated(Nl,"Compute neighbour lists first")
+             IF (max_cutoff .LT. Nl%cutoff) Nl%uptodate = .FALSE.
+             Nl%cutoff = max_cutoff
           ENDIF
 
 
@@ -207,12 +212,12 @@
              !Else, we find the new maximum cutoff radius amongst
              !all existing neighbor lists on this Particle set
              Pc%ghostlayer = 0._mk
-             nl => Pc%neighs%begin()
-             DO WHILE (ASSOCIATED(nl))
-                IF (nl%cutoff .GT. Pc%ghostlayer) THEN
-                   Pc%ghostlayer = nl%cutoff
+             Nl => Pc%neighs%begin()
+             DO WHILE (ASSOCIATED(Nl))
+                IF (Nl%cutoff .GT. Pc%ghostlayer) THEN
+                   Pc%ghostlayer = Nl%cutoff
                 ENDIF
-                nl => Pc%neighs%next()
+                Nl => Pc%neighs%next()
              ENDDO
              !no need to update states: ghosts are still ok.
           ENDIF
@@ -242,9 +247,9 @@
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER, OPTIONAL, INTENT(  OUT) :: Nlist
           !!! returns a pointer to the newly created verlet list
 
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nl => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
 
-          REAL(MK), DIMENSION(:), POINTER :: rcp => NULL()
+          REAL(MK), DIMENSION(:), POINTER :: rcp
 
           INTEGER :: vec_size,i
 
@@ -271,6 +276,8 @@
                 &    dtype=ppm_type_real,name='rcp',with_ghosts=ghosts)
                 or_fail("Creating property for rcp failed")
              ENDIF
+
+             NULLIFY(rcp)
 
              !yaser: I added read_only=.TRUE. otherwise
              !discr_data%flags(ppm_ppt_ghosts) will be set to false
@@ -311,8 +318,8 @@
           Nl%nneighmin = 0
           Nl%nneighmax = 0
 
-          !returning a pointer to the neighbour list, before it is pushed
-          ! into the collection.
+          !returning a pointer to the neighbour list,
+          !before it is pushed into the collection.
           IF (PRESENT(Nlist)) Nlist => Nl
 
           CALL this%neighs%push(Nl,info)
@@ -380,20 +387,21 @@
           !-------------------------------------------------------------------------
           !  Local variables
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_operator_discr_),   POINTER :: op => NULL()
-          CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src => NULL()
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nlist => NULL()
+          TYPE(ppm_t_topo), POINTER :: topo
 
-          TYPE(ppm_t_topo),                          POINTER     :: topo => NULL()
 #ifdef __WITH_KDTREE
-          TYPE(DTYPE(kdtree2)),                      POINTER     :: tree => NULL()
+          TYPE(DTYPE(kdtree2)),                      POINTER     :: tree
           TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE :: results
 #endif
 
-          REAL(MK),DIMENSION(:), POINTER :: rcp  => NULL()
-          REAL(MK),DIMENSION(2*ppm_dim)  :: ghostlayer
-          REAL(KIND(1.D0))               :: t1,t2
-          REAL(MK)                       :: lskin
+          CLASS(ppm_t_operator_discr_),   POINTER :: op
+          CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nlist => NULL()
+
+          REAL(MK), DIMENSION(:), POINTER :: rcp  => NULL()
+          REAL(MK), DIMENSION(2*ppm_dim)  :: ghostlayer
+          REAL(KIND(1.D0))                :: t1,t2
+          REAL(MK)                        :: lskin
 
           INTEGER :: topoid
           INTEGER :: nneighmin,nneighmax
@@ -502,13 +510,16 @@
                 IF (incl_ghosts) THEN
                    np_target = this%Mpart
                    topo => ppm_topo(topoid)%t
-                   IF (MK.EQ.ppm_kind_single) THEN
+                   SELECT CASE (MK)
+                   CASE (ppm_kind_single)
                       topo%min_subs(:,:) = topo%min_subs(:,:) - topo%ghostsizes
                       topo%max_subs(:,:) = topo%max_subs(:,:) + topo%ghostsizes
-                   ELSE IF (MK.EQ.ppm_kind_double) THEN
+
+                   CASE (ppm_kind_double)
                       topo%min_subd(:,:) = topo%min_subd(:,:) - topo%ghostsized
                       topo%max_subd(:,:) = topo%max_subd(:,:) + topo%ghostsized
-                   ENDIF
+
+                   END SELECT
                 ENDIF
              ENDIF
 
@@ -635,13 +646,16 @@
               !restore subdomain sizes (revert hack)
               IF (PRESENT(incl_ghosts)) THEN
                  IF (incl_ghosts) THEN
-                    IF (MK.EQ.ppm_kind_single) THEN
+                    SELECT CASE (MK)
+                    CASE (ppm_kind_single)
                        topo%min_subs(:,:) = topo%min_subs(:,:) + topo%ghostsizes
                        topo%max_subs(:,:) = topo%max_subs(:,:) - topo%ghostsizes
-                    ELSE IF (MK.EQ.ppm_kind_double) THEN
+
+                    CASE (ppm_kind_double)
                        topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
                        topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
-                    ENDIF
+
+                    END SELECT
                     topo => NULL()
                  ENDIF
               ENDIF
@@ -701,7 +715,7 @@
           !-------------------------------------------------------------------------
           ! local variables
           !-------------------------------------------------------------------------
-          CLASS(DTYPE(ppm_t_neighlist)_),   POINTER :: nl => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: nl
 
           start_subroutine("part_updated_cutoff")
 

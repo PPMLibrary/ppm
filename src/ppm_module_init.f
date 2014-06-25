@@ -30,19 +30,19 @@
       MODULE ppm_module_init
       !!! This module provides the init routine - callable from the outside.
 
-         IMPLICIT NONE
+      IMPLICIT NONE
 
-         !----------------------------------------------------------------------
-         !  Define interface to ppm_init
-         !----------------------------------------------------------------------
-         INTERFACE ppm_init
-            MODULE PROCEDURE ppm_init
-         END INTERFACE
+      !----------------------------------------------------------------------
+      !  Define interface to ppm_init
+      !----------------------------------------------------------------------
+      INTERFACE ppm_init
+        MODULE PROCEDURE ppm_init
+      END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  include the source
-         !----------------------------------------------------------------------
-         CONTAINS
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
 
 #include "ppm_init.f"
 

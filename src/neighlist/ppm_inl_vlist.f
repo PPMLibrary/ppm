@@ -82,7 +82,7 @@
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo),         POINTER :: topo       => NULL()
+      TYPE(ppm_t_topo),         POINTER :: topo
 
       REAL(MK), DIMENSION(2*ppm_dim)    :: actual_subdomain
       REAL(MK), DIMENSION(:,:), POINTER :: xp_sub     => NULL()

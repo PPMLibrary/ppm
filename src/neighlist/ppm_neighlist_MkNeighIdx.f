@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :               ppm_neighlist_MkNeighIdx
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -57,8 +57,7 @@
       USE ppm_module_error
       USE ppm_module_alloc
       IMPLICIT NONE
-      
-      INTEGER, PARAMETER :: MK = ppm_kind_double
+
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
@@ -71,7 +70,7 @@
       !!! 2nd index: interaction number 1...nnd.
       INTEGER, DIMENSION(:,:), POINTER       :: jnd
       !!! Second interaction partner (box which *is interacted with*).
-      !!! 
+      !!!
       !!! 1st index: 1...3 (x,y,[z]) index shift.                              +
       !!! 2nd index: interaction number 1...nnd.
       INTEGER                , INTENT(  OUT) :: nnd
@@ -81,27 +80,27 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER                              :: i,j,k,l,ibox,nz
-      REAL(MK)                             :: t0
+      REAL(ppm_kind_double) :: t0
+
       ! alloc
-      INTEGER, DIMENSION(2)                :: lda
-      INTEGER                              :: iopt
+      INTEGER, DIMENSION(2) :: lda
+      INTEGER               :: iopt
+      INTEGER               :: i,j,k,l,ibox,nz
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_neighlist_MkNeighIdx'
 
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_neighlist_MkNeighIdx',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_neighlist_MkNeighIdx',  &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 9999
-          ENDIF
+         IF (.NOT. ppm_initialized) THEN
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -125,35 +124,25 @@
       lda(2) = nnd
       CALL ppm_alloc(ind,lda,iopt,i)
       IF (i .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_neighlist_MkNeighIdx',    &
-     &        'Interaction list IND',__LINE__,info)
-          GOTO 9999
+         fail('Interaction list IND',ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
       CALL ppm_alloc(jnd,lda,iopt,i)
       IF (i .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_neighlist_MkNeighIdx',    &
-     &        'Interaction list JND',__LINE__,info)
-          GOTO 9999
+         fail('Interaction list JND',ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Initialize ind and jnd
       !-------------------------------------------------------------------------
-      DO j=1,nnd
-          DO i=1,3
-              ind(i,j) = 0
-              jnd(i,j) = 0
-          ENDDO
-      ENDDO
+      ind = 0
+      jnd = 0
 
       !-------------------------------------------------------------------------
       !  Set z direction according to dimensionality
       !-------------------------------------------------------------------------
       nz = 0
       IF (ppm_dim .EQ. 3) THEN
-          nz = 1
+         nz = 1
       ENDIF
 
       !---------------------------------------------------------------------
@@ -236,7 +225,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_neighlist_MkNeighIdx',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_neighlist_MkNeighIdx

@@ -61,7 +61,11 @@
 
       INTEGER, DIMENSION(1) :: ldc
       LOGICAL               :: lalloc,ldealloc
+
       REAL(ppm_kind_double) :: t0
+
+      CHARACTER(LEN=*), PARAMETER :: caller='ppm_alloc_topo'
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -69,7 +73,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_alloc_topo',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
@@ -88,6 +92,7 @@
          !----------------------------------------------------------------------
          IF (ASSOCIATED(topo)) ldealloc = .TRUE.
          lalloc   = .TRUE.
+
       CASE (ppm_param_dealloc)
          ldealloc = .TRUE.
 
@@ -95,10 +100,8 @@
          !----------------------------------------------------------------------
          !  Unknown iopt
          !----------------------------------------------------------------------
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_alloc_topo', &
-         &    'unknown iopt',__LINE__,info)
-         GOTO 9999
+         fail('unknown iopt')
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -130,11 +133,7 @@
             IF (ASSOCIATED(topo%icommseq))   DEALLOCATE(topo%icommseq,  STAT=info)
             DEALLOCATE(topo,stat=info)
             NULLIFY(topo)
-            IF (info .NE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_dealloc,'ppm_alloc_topo',   &
-               & 'Deallocating topo',__LINE__,info)
-            ENDIF
+            or_fail_dealloc('Deallocating topo',exit_point=no)
          ENDIF
       ENDIF
 
@@ -143,12 +142,8 @@
       !-------------------------------------------------------------------------
       IF (lalloc) THEN
          ALLOCATE(topo,STAT=info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_alloc_topo',   &
-             & 'Allocating topo',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('Allocating topo',ppm_error=ppm_error_fatal)
+
          NULLIFY(topo%min_physs)
          NULLIFY(topo%min_physd)
          NULLIFY(topo%max_physs)
@@ -177,8 +172,8 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_alloc_topo',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_alloc_topo
 

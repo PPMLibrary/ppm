@@ -588,7 +588,7 @@
           parentIdx  = parent(cell_idx)
 
           ! Get position on borders array that the parent is located in.
-          border_idx = hash_search(clist%lookup,parentIdx)
+          border_idx = clist%lookup%search(parentIdx)
 
           ! Initialize number of particles to 0.
           nlist = 0
@@ -596,8 +596,8 @@
           ! If this cell is not found in hash table, then put the cell index in
           ! empty list and return.
           IF (border_idx .EQ. htable_null)  THEN
-              CALL putInEmptyList(cell_idx)
-              RETURN
+             CALL putInEmptyList(cell_idx)
+             RETURN
           END IF
 
           ! For 2D case

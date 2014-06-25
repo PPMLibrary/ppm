@@ -140,7 +140,7 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
       !------------------------------------------------------------------------
 
 #ifdef __MPI
-      IF (ppm_rank.eq.0) THEN
+      IF (ppm_rank.EQ.0) THEN
 #endif
       CALL ppm_topo_get(topoid,topo,info)
       OPEN(iunit,file=sfname)
@@ -182,10 +182,10 @@ SUBROUTINE dbg_print_vec_d(topoid,ghostlayer,step,colortag,info,xp,np,mp,append)
               GOTO 9999
           ENDIF
           ! gather the np and mp at the root
-          CALL mpi_gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
-          CALL mpi_gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
+          CALL MPI_Gather(np,1,MPI_INTEGER,allnp,1,MPI_INTEGER,0,ppm_comm,info)
+          CALL MPI_Gather(mpart,1,MPI_INTEGER,allmp,1,MPI_INTEGER,0,ppm_comm,info)
 #if   __CTAG == __SCALAR
-          CALL mpi_gather(colortag,1,MPI_INTEGER,allctag,1,MPI_INTEGER,0,&
+          CALL MPI_Gather(colortag,1,MPI_INTEGER,allctag,1,MPI_INTEGER,0,&
           &               ppm_comm,info)
 #endif
           IF (info .NE. 0) THEN

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   ppm_interp_m2p
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -66,7 +66,7 @@
 #endif
 #endif
       !!! This subroutine carries out mesh to particle interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
@@ -142,11 +142,11 @@
       !-------------------------------------------------------------------------
       ! Local variables
       !-------------------------------------------------------------------------
-      INTEGER,  DIMENSION(:,:)     , POINTER :: istart   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)       , POINTER :: ilist2   => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: min_phys => NULL()
-      REAL(mk), DIMENSION(:)       , POINTER :: max_phys => NULL()
+      INTEGER,  DIMENSION(:,:)     , POINTER :: istart
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist1 => NULL()
+      INTEGER,  DIMENSION(:)       , POINTER :: ilist2 => NULL()
+      REAL(mk), DIMENSION(:)       , POINTER :: min_phys
+      REAL(mk), DIMENSION(:)       , POINTER :: max_phys
       REAL(MK),  DIMENSION(ppm_dim)          :: dxi,dx
       REAL(MK),  DIMENSION(ppm_dim)          :: len_phys
       REAL(MK)                               :: x1,x2,x3,epsilon
@@ -161,19 +161,16 @@
       INTEGER                                :: max_partnumber,idom,nlist2,idoml
       INTEGER, DIMENSION(ppm_dim)            :: Nm
       INTEGER                                :: nsubs
-      INTEGER, DIMENSION(6)                  :: bcdef
+      INTEGER, DIMENSION(2*ppm_dim)          :: bcdef
       INTEGER                                :: iq
       LOGICAL                                :: internal_weights,lok
       ! aliases
-      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub => NULL()
-      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub => NULL()
+      REAL(mk), DIMENSION(:,:),      POINTER :: min_sub
+      REAL(mk), DIMENSION(:,:),      POINTER :: max_sub
       REAL(mk)                               :: myeps
       REAL(mk)                               :: tim1s, tim1e
-      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER         :: topo   => NULL()
-
-
-
+      TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
+      TYPE(ppm_t_topo)     , POINTER         :: topo
 
       !-------------------------------------------------------------------------
       !  Initialize
@@ -197,7 +194,7 @@
         IF (info .NE. 0) GOTO 9999
       ENDIF
 
-      IF(Np.EQ.0) GOTO 9999
+      IF (Np.EQ.0) GOTO 9999
 
       topo => ppm_topo(topoid)%t
 
@@ -206,7 +203,7 @@
       !-------------------------------------------------------------------------
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
       !-------------------------------------------------------------------------
       !  Get istart
@@ -228,7 +225,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldu(1) = Np
-      IF(nsubs.NE.1) CALL ppm_alloc(ilist1,ldu,iopt,info)
+      IF (nsubs.NE.1) CALL ppm_alloc(ilist1,ldu,iopt,info)
       IF (info.NE.0) THEN
          info = ppm_error_fatal
          CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
@@ -274,7 +271,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the particle list
       !-------------------------------------------------------------------------
-      IF(nsubs.NE.1) THEN
+      IF (nsubs.NE.1) THEN
          nlist1     = 0
          store_info = 0
          DO ipart=1,Np
@@ -297,7 +294,7 @@
       !  to be empty, we look backwards to reduce the number of elements in
       !  nlist2 as fast as possible)
       !-------------------------------------------------------------------------
-      IF(nsubs.NE.1) THEN
+      IF (nsubs.NE.1) THEN
          DO idom = topo%nsublist,1,-1
             idoml = topo%isublist(idom)
             !-------------------------------------------------------------------

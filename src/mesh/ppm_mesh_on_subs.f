@@ -171,24 +171,20 @@
           IF (ppm_dim .LT. 3) THEN
               DO i=1,nsubs
                   WRITE(mesg,'(I4,A,2I8)') i,' istart: ',istart(1:2,i)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    mesg,info)
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
                   WRITE(mesg,'(I4,A,2I8)') i,' ndata : ',ndata(1:2,i)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    mesg,info)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    '------------------------------------',info)
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
+                  WRITE(mesg,'(A)')'------------------------------------'
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
               ENDDO
           ELSE
               DO i=1,nsubs
                   WRITE(mesg,'(I4,A,3I8)') i,' istart: ',istart(1:3,i)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    mesg,info)
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
                   WRITE(mesg,'(I4,A,3I8)') i,' ndata : ',ndata(1:3,i)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    mesg,info)
-                  CALL ppm_write(ppm_rank,caller,  &
-                  &    '------------------------------------',info)
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
+                  WRITE(mesg,'(A)')'------------------------------------'
+                  CALL ppm_write(ppm_rank,caller,mesg,info)
               ENDDO
           ENDIF
       ENDIF

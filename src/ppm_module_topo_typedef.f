@@ -180,7 +180,7 @@
       !----------------------------------------------------------------------
       ! DATA STORAGE for the topologies
       !----------------------------------------------------------------------
-      TYPE(ppm_t_ptr_topo), DIMENSION(:), POINTER :: ppm_topo => null()
+      TYPE(ppm_t_ptr_topo), DIMENSION(:), POINTER :: ppm_topo => NULL()
       !!! the ppm topologies array
 
       INTEGER :: ppm_next_avail_topo

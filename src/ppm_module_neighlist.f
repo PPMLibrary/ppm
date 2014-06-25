@@ -41,7 +41,7 @@
 
          IMPLICIT NONE
 
-         TYPE(ppm_t_clist), DIMENSION(:), POINTER, PRIVATE :: ppm_clist
+         TYPE(ppm_t_clist), DIMENSION(:), POINTER, PRIVATE :: ppm_clist => NULL()
 
          !----------------------------------------------------------------------
          !  Define interface to ppm_clist_destroy

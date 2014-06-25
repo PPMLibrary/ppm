@@ -24,13 +24,13 @@
           REAL(KIND(1.D0))                      :: t0
           CHARACTER (LEN=256)                   :: caller='sop_voronoi_MC'
           CHARACTER (LEN=256)                   :: filename,cbuf
-          REAL(MK),DIMENSION(:,:),POINTER       :: xp => NULL()
-          REAL(MK),DIMENSION(:  ),POINTER       :: D => NULL()
-          REAL(MK),DIMENSION(:  ),POINTER       :: rcp => NULL()
-          INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
-          INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
+          REAL(MK),DIMENSION(:,:),POINTER       :: xp
+          REAL(MK),DIMENSION(:  ),POINTER       :: D
+          REAL(MK),DIMENSION(:  ),POINTER       :: rcp
+!           INTEGER, DIMENSION(:  ),POINTER       :: nvlist => NULL()
+!           INTEGER, DIMENSION(:,:),POINTER       :: vlist => NULL()
 
-          REAL(MK),DIMENSION(:  ),POINTER       :: vor => NULL()
+          REAL(MK),DIMENSION(:  ),POINTER       :: vor
           INTEGER, PARAMETER                    :: nsamples = 50
           REAL(MK), PARAMETER                   :: twopi = 2._MK*ACOS(-1._MK)
           REAL(MK), PARAMETER                   :: pi = ACOS(-1._MK)
@@ -79,18 +79,18 @@
           D  => Get_wps(Particles,Particles%D_id,with_ghosts=.TRUE.)
           vor  => Get_wps(Particles,voronoi_id)
 
-          CALL random_number(xsamples)
+          CALL RANDOM_NUMBER(xsamples)
           DO ip=1,Particles%Npart
               DO j=1,nsamples
-                  x_s = sqrt(D(ip)*xsamples(1,ip,j))*cos(twopi*xsamples(2,ip,j))
-                  y_s = sqrt(D(ip)*xsamples(1,ip,j))*sin(twopi*xsamples(2,ip,j))
+                  x_s = SQRT(D(ip)*xsamples(1,ip,j))*COS(twopi*xsamples(2,ip,j))
+                  y_s = SQRT(D(ip)*xsamples(1,ip,j))*SIN(twopi*xsamples(2,ip,j))
                   xsamples(1,ip,j)= x_s + xp(1,ip)
                   xsamples(2,ip,j)= y_s + xp(2,ip)
               ENDDO
           ENDDO
 
           tree => kdtree2_create(Particles%xp(1:ppm_dim,1:Particles%Mpart),&
-              sort=.true.,rearrange=.true.)
+              sort=.TRUE.,rearrange=.TRUE.)
           allocate(results(knn+1))
 
           !Find nearest particle of each query point
@@ -115,8 +115,8 @@
           D  => Set_wps(Particles,Particles%D_id,read_only=.TRUE.)
           rcp  => Set_wps(Particles,Particles%rcp_id,read_only=.TRUE.)
           vor  => Set_wps(Particles,voronoi_id)
-          nvlist => NULL()
-          vlist => NULL()
+!           nvlist => NULL()
+!           vlist => NULL()
 
 
           !!-------------------------------------------------------------------------!

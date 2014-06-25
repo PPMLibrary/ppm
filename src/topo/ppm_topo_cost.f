@@ -104,7 +104,7 @@
       INTEGER                           :: iopt,nlist1,nlist2,idom
       INTEGER, DIMENSION(:), POINTER    :: ilist1 => NULL()
       INTEGER, DIMENSION(:), POINTER    :: ilist2 => NULL()
-      INTEGER, DIMENSION(:), POINTER    :: ilist3 => NULL()
+      INTEGER, DIMENSION(:), POINTER    :: ilist3
       CHARACTER(LEN=ppm_char)           :: mesg
       !-------------------------------------------------------------------------
       !  Externals

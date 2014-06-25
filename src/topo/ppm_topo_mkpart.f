@@ -334,20 +334,20 @@
          !  recursive bisection using the general ppm_tree
          !-------------------------------------------------------------------
          ! build a binary tree
-         treetype         = ppm_param_tree_bin
+         treetype = ppm_param_tree_bin
          ! particles have unit weight
-         weights(1,1)   = 1.0_MK
-         weights(1,2)   = 1.0_MK
+         weights(1,1) = 1.0_MK
+         weights(1,2) = 1.0_MK
          ! mesh and geometry are not considered
-         weights(2,1)   = 0.0_MK
-         weights(2,2)   = 0.0_MK
-         weights(3,1)   = 0.0_MK
-         weights(3,2)   = 0.0_MK
+         weights(2,1) = 0.0_MK
+         weights(2,2) = 0.0_MK
+         weights(3,1) = 0.0_MK
+         weights(3,2) = 0.0_MK
          ! all directions can be cut
          fixed(1:ppm_dim) = .FALSE.
          gsvec(1:ppm_dim) = ghostsize
          ! no mesh
-         Nm(1:ppm_dim)    = 0
+         Nm(1:ppm_dim) = 0
          ! build tree
          IF (PRESENT(pcost)) THEN
             CALL ppm_tree(xp,Npart,Nm,min_phys,max_phys,treetype,       &

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                 ppm_map_field_global
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -49,7 +49,7 @@
       !!!
       !!! [NOTE]
       !!! A map_field_partial could be constructed as follows: every processor
-      !!! known both `isendlist` and `irecvlist`. They could now use 
+      !!! known both `isendlist` and `irecvlist`. They could now use
       !!! `ppm_util_commopt` to find a good communication sequence and compress
       !!! the send/recv loop. Also, the loop when building the local send/recv
       !!! lists below would just need to go over the neighbors of a sub
@@ -101,10 +101,10 @@
       CHARACTER(ppm_char)              :: mesg
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: mesh        => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
+      TYPE(ppm_t_equi_mesh), POINTER   :: mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: target_mesh
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -128,12 +128,12 @@
 
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          mesh => t
+         mesh => t
       END SELECT
 
       SELECT TYPE (t => ppm_mesh%vec(target_meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          target_mesh => t
+         target_mesh => t
       END SELECT
 
       IF (ppm_buffer_set .GT. 0) THEN

@@ -203,11 +203,11 @@
         ppm_tstats(istat)%tmean = 0.0_MK
 
 #ifdef __MPI
-        call MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmin,&
+        CALL MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmin,&
         &         nsamples,ppm_mpi_kind,MPI_MIN,0,ppm_comm,info)
-        call MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmax,&
+        CALL MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmax,&
         &         nsamples,ppm_mpi_kind,MPI_MAX,0,ppm_comm,info)
-        call MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmean,&
+        CALL MPI_Reduce(ppm_tstats(istat)%times,ppm_tstats(istat)%tmean,&
         &         nsamples,ppm_mpi_kind,MPI_SUM,0,ppm_comm,info)
         ppm_tstats(istat)%tmean(1:nsamples) = ppm_tstats(istat)%tmean(1:nsamples)&
         &                                   / ppm_nproc
@@ -221,11 +221,11 @@
       ENDDO
       IF (ppm_rank.EQ.0) THEN
 
-        OPEN(iunit,file=filename)
+        OPEN(iunit,FILE=filename)
         ! write header
         DO istat = 1,ppm_ntstats
           IF (istat.LT.ppm_ntstats) THEN
-            WRITE(iunit,'(6A)',advance='no') &
+            WRITE(iunit,'(6A)',ADVANCE='NO') &
             &     '"',ppm_tstats(istat)%label(1:LEN_TRIM(ppm_tstats(istat)%label)),'"'&
             &     ,tab,tab,tab
           ELSE
@@ -236,12 +236,12 @@
         ! write timings
         DO istep = 1,nsamples
           DO istat = 1,ppm_ntstats
-            WRITE(iunit,'(E14.6,A)',advance='no') ppm_tstats(istat)%tmin(istep),tab
-            WRITE(iunit,'(E14.6,A)',advance='no') ppm_tstats(istat)%tmax(istep),tab
+            WRITE(iunit,'(E14.6,A)',ADVANCE='NO') ppm_tstats(istat)%tmin(istep),tab
+            WRITE(iunit,'(E14.6,A)',ADVANCE='NO') ppm_tstats(istat)%tmax(istep),tab
             IF (istat.LT.ppm_ntstats) THEN
-              WRITE(iunit,'(E14.6,A)',advance='no') ppm_tstats(istat)%tmean(istep),tab
+              WRITE(iunit,'(E14.6,A)',ADVANCE='NO') ppm_tstats(istat)%tmean(istep),tab
             ELSE
-              WRITE(iunit,'(E14.6)',advance='no') ppm_tstats(istat)%tmean(istep)
+              WRITE(iunit,'(E14.6)',ADVANCE='NO') ppm_tstats(istat)%tmean(istep)
             ENDIF
           ENDDO
           WRITE(iunit,'(A)') ''

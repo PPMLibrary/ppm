@@ -81,12 +81,14 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                        :: t0
-      REAL(MK), DIMENSION(ppm_dim)    :: cen_box
-      INTEGER , DIMENSION(:), POINTER :: npbx_temp => NULL()
-      INTEGER , DIMENSION(ppm_dim)    :: Nm
-      INTEGER                         :: idx,jdx,k,iopt
-      INTEGER , DIMENSION(1)          :: lda ! dummy for ppm_alloc
+      REAL(MK)                     :: t0
+      REAL(MK), DIMENSION(ppm_dim) :: cen_box
+
+      INTEGER , DIMENSION(:), ALLOCATABLE :: npbx_temp
+      INTEGER , DIMENSION(ppm_dim)        :: Nm
+      INTEGER                             :: idx,jdx,k
+
+      CHARACTER(LEN=ppm_char) :: caller = 'ppm_decomp_boxsplit'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -94,14 +96,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_decomp_boxsplit',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -117,17 +119,21 @@
       Nm  = 2
       idx = ppb(kbox)
 
+      ALLOCATE(npbx_temp(PRODUCT(Nm)), STAT=info)
+      or_fail_alloc("Allocation of npbx_temp array failed.")
+
       !-------------------------------------------------------------------------
       !  Sort the particle in two dimensions
       !-------------------------------------------------------------------------
-      IF (ppm_dim.EQ.2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
          !----------------------------------------------------------------------
          !  in two dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox),            &
-     &                        min_box(1:2,kbox),max_box(1:2,kbox), &
-     &                        Nm,npbx_temp,info)
+         CALL ppm_util_sort2d(xp(1:2,idx:jdx),npbx(kbox),          &
+         &                    min_box(1:2,kbox),max_box(1:2,kbox), &
+         &                    Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          !----------------------------------------------------------------------
@@ -168,14 +174,15 @@
          !  Update the box count
          !----------------------------------------------------------------------
          nbox = nbox + 4
-      ELSE
+
+      CASE DEFAULT
          !----------------------------------------------------------------------
          !  in three dimensions
          !----------------------------------------------------------------------
          jdx = idx + npbx(kbox) - 1
-         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox),            &
-     &                        min_box(1:3,kbox),max_box(1:3,kbox), &
-     &                        Nm,npbx_temp,info)
+         CALL ppm_util_sort3d(xp(1:3,idx:jdx),npbx(kbox),          &
+         &                    min_box(1:3,kbox),max_box(1:3,kbox), &
+         &                    Nm,npbx_temp,info)
          IF (info.NE.0) GOTO 9999
 
          ppb(nbox+1)  = ppb(kbox)
@@ -248,35 +255,26 @@
          !  Update the box count
          !----------------------------------------------------------------------
          nbox = nbox + 8
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Deallocate local arrays
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
-      lda(1) = 0 ! dummy
-      CALL ppm_alloc(npbx_temp,lda,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_decomp_boxsplit',     &
-     &        'deallocation of decomp_boxsplit failed',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      DEALLOCATE(npbx_temp, STAT=info)
+      or_fail_dealloc('deallocation of npbx_temp failed')
+
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_decomp_boxsplit',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (kbox.LT.1.OR.kbox.GT.nbox) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_decomp_boxsplit', &
-     &       'kbox must satisfy: 0 < kbox <= nbox',__LINE__,info)
-             GOTO 8888
+           fail('kbox must satisfy: 0 < kbox <= nbox',exit_point=8888,ppm_error=ppm_error_error)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE decomp_bsplit_s

@@ -85,7 +85,7 @@ integer                                        :: nterms
         !----------------
         ! make topology
         !----------------
-        decomp = ppm_param_decomp_cuboid
+        decomp =  ppm_param_decomp_cuboid
         !decomp = ppm_param_decomp_xpencil
         assig  = ppm_param_assign_internal
 
@@ -106,17 +106,12 @@ integer                                        :: nterms
         call ppm_finalize(info)
 
         deallocate(min_phys,max_phys,len_phys)
-
     end finalize
 
-
     setup
-
     end setup
 
-
     teardown
-
     end teardown
 
     test ghost_mappings
@@ -286,20 +281,16 @@ integer                                        :: nterms
         end_subroutine()
     end test
 
-!-------------------------------------------------------------
-! test function
-!-------------------------------------------------------------
-pure function f0_test(pos,ndim)
-
+    !-------------------------------------------------------------
+    ! test function
+    !-------------------------------------------------------------
+    pure function f0_test(pos,ndim)
     real(mk)                              :: f0_test
     integer                 ,  intent(in) :: ndim
     real(mk), dimension(ndim), intent(in) :: pos
-
     f0_test =  sin(2._mk*pi*pos(1)) * cos(2._mk*pi*pos(2)) * &
         & sin(2._mk*pi*pos(ndim))
-
     return
-
-end function f0_test
+    end function f0_test
 
 end test_suite

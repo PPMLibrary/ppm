@@ -65,18 +65,17 @@
       INTEGER                     ,     INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
       INTEGER, DIMENSION(:  )     , POINTER, OPTIONAL :: p2m_bcdef
-     !!! Boundary conditions used for this interpolation routine, they may be
-     !!! different than the boundary conditions set in the topology.
-     !!! The values in this array can be one of:
-     !!!
-     !!! - ppm_param_bcdef_symmetry
-     !!! - ppm_param_bcdef_antisymmetry
-     !-------------------------------------------------------------------------!
-     ! Local variables
-     !-------------------------------------------------------------------------!
+      !!! Boundary conditions used for this interpolation routine, they may be
+      !!! different than the boundary conditions set in the topology.
+      !!! The values in this array can be one of:
+      !!!
+      !!! - ppm_param_bcdef_symmetry
+      !!! - ppm_param_bcdef_antisymmetry
+      !-------------------------------------------------------------------------!
+      ! Local variables
+      !-------------------------------------------------------------------------!
       REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
-      INTEGER,  DIMENSION(:)        , POINTER  :: ilist1   => NULL()
-      INTEGER,  DIMENSION(:)        , POINTER  :: ilist2   => NULL()
+      INTEGER,  DIMENSION(:), ALLOCATABLE :: ilist1,ilist2
       INTEGER                                  :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)           :: ldu
       INTEGER                                  :: i,j,k,l,nsubpatch,ipatch
@@ -85,7 +84,7 @@
       INTEGER                                  :: dim,iopt,max_partnumber
       LOGICAL                                  :: internal_weights
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
+      CLASS(ppm_t_subpatch_),POINTER           :: p
       CLASS(ppm_t_discr_data),POINTER         :: prop => NULL()
 
       REAL(MK) , DIMENSION(:      ) , POINTER  :: up_1d => NULL()
@@ -97,25 +96,25 @@
 
       start_subroutine("ppm_interp_p2m")
 
-     !-------------------------------------------------------------------------!
-     !  This is a hack! Somehow having trouble with constructors in the
-     !  ppm_module_data_rmsh module
-     !-------------------------------------------------------------------------!
+      !-------------------------------------------------------------------------!
+      !  This is a hack! Somehow having trouble with constructors in the
+      !  ppm_module_data_rmsh module
+      !-------------------------------------------------------------------------!
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
       dim = ppm_dim
       internal_weights = .FALSE.
 
-     !-------------------------------------------------------------------------!
-     !  Check arguments
-     !-------------------------------------------------------------------------!
+      !-------------------------------------------------------------------------!
+      !  Check arguments
+      !-------------------------------------------------------------------------!
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       CALL this%get_xp(xp,info)
-        or_fail("Get_xp failed")
+      or_fail("Get_xp failed")
 
       !-------------------------------------------------------------------------!
       !  If there is nothing to do, do nearly nothing
@@ -132,34 +131,32 @@
       !  The awesome ppm_alloc will (re)allocate them, so we dont need an init
       !  or a finalize routine.
       !-------------------------------------------------------------------------!
-      iopt   = ppm_param_alloc_fit
       ldu(1) = this%Npart
-      CALL ppm_alloc(ilist1,ldu,iopt,info)
-        or_fail_alloc("ilist1")
-      CALL ppm_alloc(ilist2,ldu,iopt,info)
-        or_fail_alloc("ilist2")
+      ALLOCATE(ilist1(ldu(1)),ilist2(ldu(1)),STAT=info)
+      or_fail_alloc("ilist1 & ilist2")
+
 
       iopt   = ppm_param_alloc_fit
       ldu(1) = nsubpatch
       CALL ppm_alloc(store_info,ldu,iopt,info)
-        or_fail_alloc("store_info")
+      or_fail_alloc("store_info")
 
-     !-------------------------------------------------------------------------!
-     !  Initialize the particle list
-     !-------------------------------------------------------------------------!
+      !-------------------------------------------------------------------------!
+      !  Initialize the particle list
+      !-------------------------------------------------------------------------!
       store_info = 0
 
       DO ipart=1,this%Npart
-        ilist1(ipart) = ipart
+         ilist1(ipart)=ipart
       ENDDO
-      nlist1 = this%Npart
+      nlist1=this%Npart
 
-     !-------------------------------------------------------------------------!
-     !  Loop over the subpatches in each subdomain
-     !  (since the first domains are most likely
-     !  to be empty, we look backwards to reduce the number of elements in
-     !  nlist2 as fast as possible)
-     !-------------------------------------------------------------------------!
+      !-------------------------------------------------------------------------!
+      !  Loop over the subpatches in each subdomain
+      !  (since the first domains are most likely
+      !  to be empty, we look backwards to reduce the number of elements in
+      !  nlist2 as fast as possible)
+      !-------------------------------------------------------------------------!
       p => Mesh%subpatch%begin()
       ipatch = 1
       DO WHILE (ASSOCIATED(p))
@@ -169,7 +166,7 @@
         nlist2 = 0
         npart = 0
         DO i=1,nlist1
-            ipart = ilist1(i)
+            ipart=ilist1(i)
 
             !-------------------------------------------------------------------!
             !  If the particle is inside the current subdomain, assign it
@@ -247,156 +244,155 @@
         p => Mesh%subpatch%next()
         ipatch = ipatch + 1
 
-     ENDDO !subpatch
+      ENDDO !subpatch
 
-     !-------------------------------------------------------------------------!
-     !  Check whether we sold all the particles
-     !-------------------------------------------------------------------------!
-     IF (ppm_debug.GT.1) THEN
+      !-------------------------------------------------------------------------!
+      !  Check whether we sold all the particles
+      !-------------------------------------------------------------------------!
+      IF (ppm_debug.GT.1) THEN
          IF (nlist2.GT.0) THEN
             stdout("Some particles seem to be well outside of all subpatches",&
                     " They will not take part in the p2m interpolation")
          ENDIF
-     ENDIF
+      ENDIF
 
-     max_partnumber = 0
-     DO ipatch=1,nsubpatch
-        IF(store_info(ipatch).GE.max_partnumber) THEN
-           max_partnumber = store_info(ipatch)
-        END IF
-     END DO
+      max_partnumber = 0
+      DO ipatch=1,nsubpatch
+         IF(store_info(ipatch).GE.max_partnumber) THEN
+            max_partnumber = store_info(ipatch)
+         END IF
+      ENDDO
 
-     !----------------------------------------------------------------------
-     !  Allocate particle list
-     !----------------------------------------------------------------------
-     iopt   = ppm_param_alloc_fit
-     ldu(1) = nsubpatch
-     ldu(2) = max_partnumber
+      !----------------------------------------------------------------------
+      !  Allocate particle list
+      !----------------------------------------------------------------------
+      iopt   = ppm_param_alloc_fit
+      ldu(1) = nsubpatch
+      ldu(2) = max_partnumber
 
-     CALL ppm_alloc(list_sub,ldu,iopt,info)
-        or_fail_alloc("list_sub")
+      CALL ppm_alloc(list_sub,ldu,iopt,info)
+      or_fail_alloc("list_sub")
 
-     list_sub=0
+      list_sub=0
 
-     !-------------------------------------------------------------------------!
-     !  Initialize the particle list
-     !-------------------------------------------------------------------------!
-     DO ipart=1,this%Npart
-        ilist1(ipart) = ipart
-     ENDDO
-     nlist1 = this%Npart
+      !-------------------------------------------------------------------------!
+      !  Initialize the particle list
+      !-------------------------------------------------------------------------!
+      DO ipart=1,this%Npart
+         ilist1(ipart) = ipart
+      ENDDO
+      nlist1 = this%Npart
 
-     !----------------------------------------------------------------------
-     !  Loop over the subpatches (since the first domains are most likely
-     !  to be empty, we look backwards to reduce the number of elements in
-     !  nlist2 as fast as possible)
-     !----------------------------------------------------------------------
-     p => Mesh%subpatch%begin()
-     ipatch = 1
-     DO WHILE (ASSOCIATED(p))
+      !----------------------------------------------------------------------
+      !  Loop over the subpatches (since the first domains are most likely
+      !  to be empty, we look backwards to reduce the number of elements in
+      !  nlist2 as fast as possible)
+      !----------------------------------------------------------------------
+      p => Mesh%subpatch%begin()
+      ipatch = 1
+      DO WHILE (ASSOCIATED(p))
          !-------------------------------------------------------------------
          !  loop over the remaining particles
          !-------------------------------------------------------------------
          nlist2 = 0
          npart = 0
          DO i=1,nlist1
-             ipart = ilist1(i)
-             !----------------------------------------------------------------
-             !  If the particle is inside the current subdomain, assign it
-             !----------------------------------------------------------------
-             IF(ppm_dim.EQ.3) THEN
-                 IF( ( xp(1,ipart).GE.p%start_ext(1) .AND. &
- &                     xp(2,ipart).GE.p%start_ext(2) .AND. &
- &                     xp(3,ipart).GE.p%start_ext(3) .AND. &
- &                     xp(1,ipart).LT.p%end_ext(1) .AND. &
- &                     xp(2,ipart).LT.p%end_ext(2) .AND. &
- &                     xp(3,ipart).LT.p%end_ext(3) ) ) THEN
+            ipart = ilist1(i)
+            !----------------------------------------------------------------
+            !  If the particle is inside the current subdomain, assign it
+            !----------------------------------------------------------------
+            IF (ppm_dim.EQ.3) THEN
+               IF ((xp(1,ipart).GE.p%start_ext(1) .AND. &
+               &    xp(2,ipart).GE.p%start_ext(2) .AND. &
+               &    xp(3,ipart).GE.p%start_ext(3) .AND. &
+               &    xp(1,ipart).LT.p%end_ext(1) .AND. &
+               &    xp(2,ipart).LT.p%end_ext(2) .AND. &
+               &    xp(3,ipart).LT.p%end_ext(3) ) ) THEN
 
-                      IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
- &                           (p%bc(2).GE.0   .AND.    &
- &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
- &                          (xp(2,ipart).LT.p%end(2) .OR.  &
- &                           (p%bc(4).GE.0   .AND.    &
- &                           p%bc(4).NE. ppm_param_bcdef_periodic)).AND.&
- &                          (xp(3,ipart).LT.p%end(3) .OR.  &
- &                           (p%bc(6).GE.0   .AND.    &
- &                           p%bc(6).NE. ppm_param_bcdef_periodic))   ) THEN
+                      IF ((xp(1,ipart).LT.p%end(1) .OR.  &
+                      &   (p%bc(2).GE.0   .AND.    &
+                      &    p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
+                      &   (xp(2,ipart).LT.p%end(2) .OR.  &
+                      &   (p%bc(4).GE.0   .AND.    &
+                      &    p%bc(4).NE. ppm_param_bcdef_periodic)).AND.&
+                      &   (xp(3,ipart).LT.p%end(3) .OR.  &
+                      &   (p%bc(6).GE.0   .AND.    &
+                      &    p%bc(6).NE. ppm_param_bcdef_periodic))   ) THEN
 
-                         npart = npart + 1
-                         list_sub(ipatch,npart) = ipart
-                      ELSE
-                         nlist2         = nlist2 + 1
-                         ilist2(nlist2) = ipart
-                     ENDIF
-                 ELSE
+                          npart = npart + 1
+                          list_sub(ipatch,npart) = ipart
+                       ELSE
+                          nlist2         = nlist2 + 1
+                          ilist2(nlist2) = ipart
+                       ENDIF
+               ELSE
+                  nlist2         = nlist2 + 1
+                  ilist2(nlist2) = ipart
+               ENDIF
+            ELSEIF (ppm_dim.EQ.2) THEN
+               IF ((xp(1,ipart).GE.p%start_ext(1) .AND. &
+               &    xp(2,ipart).GE.p%start_ext(2) .AND. &
+               &    xp(1,ipart).LT.p%end_ext(1) .AND. &
+               &    xp(2,ipart).LT.p%end_ext(2) ) ) THEN
+                  IF ((xp(1,ipart).LT.p%end(1) .OR.  &
+                  &   (p%bc(2).GE.0   .AND.    &
+                  &    p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
+                  &   (xp(2,ipart).LT.p%end(2) .OR.  &
+                  &   (p%bc(4).GE.0   .AND.    &
+                  &    p%bc(4).NE. ppm_param_bcdef_periodic))) THEN
+                     npart = npart + 1
+                     list_sub(ipatch,npart) = ipart
+                  ELSE
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
-                 ENDIF
-             ELSEIF (ppm_dim.EQ.2) THEN
-              IF( (      xp(1,ipart).GE.p%start_ext(1) .AND. &
- &                       xp(2,ipart).GE.p%start_ext(2) .AND. &
- &                       xp(1,ipart).LT.p%end_ext(1) .AND. &
- &                       xp(2,ipart).LT.p%end_ext(2) ) ) THEN
-                      IF(   (xp(1,ipart).LT.p%end(1) .OR.  &
- &                           (p%bc(2).GE.0   .AND.    &
- &                           p%bc(2).NE. ppm_param_bcdef_periodic)).AND.&
- &                          (xp(2,ipart).LT.p%end(2) .OR.  &
- &                           (p%bc(4).GE.0   .AND.    &
- &                           p%bc(4).NE. ppm_param_bcdef_periodic))) THEN
-                    npart = npart + 1
-                    list_sub(ipatch,npart) = ipart
-                 ELSE
-                    nlist2         = nlist2 + 1
-                    ilist2(nlist2) = ipart
-                 ENDIF
-              ELSE
+                  ENDIF
+               ELSE
                  nlist2         = nlist2 + 1
                  ilist2(nlist2) = ipart
-              ENDIF
-           ENDIF
-        ENDDO ! i
-        !-------------------------------------------------------------------
-        !  Copy the lists (well, only if nlist2 changed - decreased)
-        !-------------------------------------------------------------------
-        IF (nlist2.NE.nlist1) THEN
-           nlist1 = nlist2
-           DO i=1,nlist1
-              ilist1(i) = ilist2(i)
-           ENDDO
-        ENDIF
+               ENDIF
+            ENDIF
+         ENDDO ! i
+         !-------------------------------------------------------------------
+         !  Copy the lists (well, only if nlist2 changed - decreased)
+         !-------------------------------------------------------------------
+         IF (nlist2.NE.nlist1) THEN
+            nlist1 = nlist2
+            DO i=1,nlist1
+               ilist1(i) = ilist2(i)
+            ENDDO
+         ENDIF
 
-        !-------------------------------------------------------------------
-        !  Exit if the list is empty
-        !-------------------------------------------------------------------
-        IF (nlist1.EQ.0) EXIT
+         !-------------------------------------------------------------------
+         !  Exit if the list is empty
+         !-------------------------------------------------------------------
+         IF (nlist1.EQ.0) EXIT
 
-        p => Mesh%subpatch%next()
-        ipatch = ipatch + 1
-     ENDDO !supatch
+         p => Mesh%subpatch%next()
+         ipatch = ipatch + 1
+      ENDDO !supatch
 
-     !----------------------------------------------------------------------
-     !  Check if we sold all the particles
-     !----------------------------------------------------------------------
-     IF (ppm_debug.GT.1) THEN
+      !----------------------------------------------------------------------
+      !  Check if we sold all the particles
+      !----------------------------------------------------------------------
+      IF (ppm_debug.GT.1) THEN
          IF (nlist2.GT.0) THEN
             stdout("Some particles seem to be outside from all subpatches",&
                     " They will not take part in the m2p interpolation")
          ENDIF
-     ENDIF
+      ENDIF
 
 
-     !-------------------------------------------------------------------------!
-     !  Allocate and alias the weights if we need them.
-     !-------------------------------------------------------------------------!
-     max_partnumber = 0
-     DO ipatch = 1,nsubpatch
-        IF(store_info(ipatch).GE.max_partnumber) THEN
-           max_partnumber = store_info(ipatch)
-        END IF
-     END DO
+      !-------------------------------------------------------------------------!
+      !  Allocate and alias the weights if we need them.
+      !-------------------------------------------------------------------------!
+      max_partnumber = 0
+      DO ipatch = 1,nsubpatch
+         IF (store_info(ipatch).GE.max_partnumber) THEN
+            max_partnumber = store_info(ipatch)
+         ENDIF
+      ENDDO
 
-9998 CONTINUE
-
+      9998 CONTINUE
       !-------------------------------------------------------------------------
       !  Create the discretization on the Mesh if it doesnt exist yet
       !-------------------------------------------------------------------------
@@ -406,30 +402,29 @@
       ENDIF
 
 
-     CALL Mesh%zero(Field,info)
-        or_fail("this%zero(): Failed to zero the field on this Mesh")
+      CALL Mesh%zero(Field,info)
+      or_fail("this%zero(): Failed to zero the field on this Mesh")
 
       IF(this%Npart.EQ.0) GOTO 9997
 
       !Get a pointer to the data on the particles
       IF (Field%lda.EQ.1) THEN
-          CALL this%get_field(Field,up_1d,info,read_only=.TRUE.)
+         CALL this%get_field(Field,up_1d,info,read_only=.TRUE.)
       ELSE
-          CALL this%get_field(Field,up_2d,info,read_only=.TRUE.)
+         CALL this%get_field(Field,up_2d,info,read_only=.TRUE.)
       ENDIF
-        or_fail("Could not get pointer to discretized data on the particles")
+      or_fail("Could not get pointer to discretized data on the particles")
 
       !For checking only - display warnings, but should in principle fail
       !gracefully
       CALL Field%get_discr(this,prop,info)
-        or_fail("Could not get pointer to discretization object on the particles")
+      or_fail("Could not get pointer to discretization object on the particles")
       IF (.NOT. prop%flags(ppm_ppt_partial)) THEN
-        stdout("WARNING: property has not been partial-mapped. This can produce garbage data")
+         stdout("WARNING: property has not been partial-mapped. This can produce garbage data")
       ENDIF
       !
 
       SELECT CASE(kernel)
-
       CASE(ppm_param_rmsh_kernel_mp4)
           IF (Field%lda.EQ.1) THEN
               IF (ppm_dim.EQ.2) THEN
@@ -445,6 +440,7 @@
               ENDIF
           ENDIF
             or_fail("p2m_interp_mp4 failed")
+
       CASE(ppm_param_rmsh_kernel_bsp2)
           !IF (Field%lda.EQ.1) THEN
               !IF (ppm_dim.EQ.2) THEN
@@ -460,15 +456,17 @@
               !ENDIF
           !ENDIF
           fail("BSp2 has not been implemented yet - but thats quick to do...")
+
      CASE DEFAULT
         info = ppm_error_error
         fail("This scheme is not available. Use ppm_rmsh_remesh for other kernels")
+
      END SELECT         ! kernel type
 
 
 
 
-9997 CONTINUE
+     9997 CONTINUE
      !-------------------------------------------------------------------------!
      !  Now map the ghosts in order to get consistent values at the border of
      !  the subdomains.
@@ -507,16 +505,16 @@
      !-------------------------------------------------------------------------!
      ! Deallocation of the arrays....
      !-------------------------------------------------------------------------!
+     DEALLOCATE(ilist1,ilist2,STAT=info)
+     or_fail_dealloc("ilist1 & ilist2")
+
      iopt = ppm_param_dealloc
      ldu(1) = 0
-     CALL ppm_alloc(ilist1,ldu,iopt,info)
-        or_fail_dealloc("ilist1")
-     CALL ppm_alloc(ilist2,ldu,iopt,info)
-        or_fail_dealloc("ilist2")
+
      CALL ppm_alloc(store_info,ldu,iopt,info)
-        or_fail_dealloc("store_info")
+     or_fail_dealloc("store_info")
      CALL ppm_alloc(list_sub,ldu,iopt,info)
-        or_fail_dealloc("list_sub")
+     or_fail_dealloc("list_sub")
 
       !Updating internal state variables
       CALL this%set_xp(xp,info,read_only=.true.)

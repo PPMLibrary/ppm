@@ -1,16 +1,16 @@
       !------------------------------------------------------------------------!
       !     Subroutine   :                 ppm_interp_to_mesh_all
       !------------------------------------------------------------------------!
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -30,13 +30,13 @@
       SUBROUTINE DTYPE(part_interp_to_mesh_all)(this,Mesh,kernel,info,p2m_bcdef)
       !!! This subroutine interpolate all the fields discretized on the particle set to
       !!! a mesh.  It calls this%interp to carry out particle to mesh interpolation.
-      !!! 
+      !!!
       !!! Currently 2 interpolation schemes are supported:
       !!!
       !!! * ppm_param_rmsh_kernel_bsp2
       !!! * ppm_param_rmsh_kernel_mp4
       !!!
-      !!! 
+      !!!
       !!! [TIP]
       !!! There is no need to perform a `ghost_get` before calling this routine
       !!! as the routine calls itself a `ghost_put` to the field after
@@ -70,18 +70,18 @@
      !-------------------------------------------------------------------------!
      ! Local variables
      !-------------------------------------------------------------------------!
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
-      REAL(MK) , DIMENSION(:)       , POINTER  :: wp_s => NULL()
-      REAL(MK) , DIMENSION(:,:)     , POINTER  :: wp_v => NULL()
+!       REAL(MK) , DIMENSION(:,:)     , POINTER  :: xp => NULL()
+!       REAL(MK) , DIMENSION(:)       , POINTER  :: wp_s => NULL()
+!       REAL(MK) , DIMENSION(:,:)     , POINTER  :: wp_v => NULL()
       INTEGER                                  :: kernel_support
       INTEGER,  DIMENSION(ppm_dim+2)           :: ldu
       INTEGER                                  :: ip,ndim
       INTEGER                                  :: nb_part
       ! aliases
-      CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
-      CLASS(ppm_t_main_abstr),POINTER          :: abstr=> NULL()
-      CLASS(ppm_t_field_),   POINTER           :: field=> NULL()
-      CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
+!       CLASS(ppm_t_subpatch_),POINTER           :: p    => NULL()
+      CLASS(ppm_t_main_abstr),POINTER          :: abstr
+      CLASS(ppm_t_field_),   POINTER           :: field
+!       CLASS(DTYPE(ppm_t_part_prop)_),POINTER   :: prop => NULL()
 
       start_subroutine("ppm_remesh")
 
@@ -92,7 +92,6 @@
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
       ndim = ppm_dim
-
 
      !-------------------------------------------------------------------------!
      !  Check arguments
@@ -106,7 +105,6 @@
       !  If there is nothing to do, do nothing
       !-------------------------------------------------------------------------!
       IF(this%Npart.EQ.0) GOTO 9999
-
 
       !-------------------------------------------------------------------------
       !  Loop through all the fields that are discretized on the

@@ -28,17 +28,17 @@ logical                         :: ok
 
         use ppm_module_data
         use ppm_module_init
-        
+
         allocate(min_phys(ndim),max_phys(ndim),len_phys(ndim),&
             &         stat=info)
-        
+
         min_phys(1:ndim) = 0.0_mk
         max_phys(1:ndim) = 1.0_mk
         len_phys(1:ndim) = max_phys-min_phys
         bcdef(1:6) = ppm_param_bcdef_periodic
         tol = epsilon(1.0_mk)
         tolexp = int(log10(epsilon(1.0_mk)))
-        
+
         nullify(xp)
 
 #ifdef __MPI
@@ -65,14 +65,14 @@ logical                         :: ok
 
 
     setup
-        
+
         allocate(xp(ndim,np),stat=info)
 
     end setup
-        
+
 
     teardown
-        
+
         deallocate(xp,stat=info)
 
     end teardown
@@ -104,26 +104,31 @@ logical                         :: ok
         topoid = 0
 
         call ppm_tstats_setup(2,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_tstats_add('test1',test1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_tstats_add('test2',test2,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call ppm_tstats_tic(test1,1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_tstats_tic(test2,1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_mktopo(topoid,xp,np,decomp,assig,min_phys,max_phys,bcdef, &
         &               0.1_mk,cost,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_tstats_toc(test2,1,time,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call ppm_tstats_toc(test1,1,time,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call ppm_tstats_collect('time.dat',info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
+
+        if (ppm_rank.EQ.0) then
+           Open(unit=42, file='time.dat')
+           Close(unit=42, status='Delete')
+        endif
 
     end test
 

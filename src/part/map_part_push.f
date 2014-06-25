@@ -115,19 +115,24 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)   :: ldu
-      INTEGER                 :: i,j,k,ipart,ibuffer,icount
-      INTEGER                 :: iopt,ldb,incr
-      REAL(MK)                :: t0
-      LOGICAL                 :: lpushpp
-      CHARACTER(LEN=ppm_char) :: caller ='map_part_push'
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+
+      REAL(MK), DIMENSION(:), POINTER :: ppm_sendbuffer
+      REAL(MK), DIMENSION(:), POINTER :: ppm_ghost_offset
+      REAL(MK)                        :: t0
+
+      INTEGER, DIMENSION(:), POINTER :: ppm_buffer2part
+      INTEGER, DIMENSION(3)          :: ldu
+      INTEGER                        :: i,j,k,ipart,ibuffer,icount
+      INTEGER                        :: iopt,ldb,incr
 #if   __DIM == 1
-      INTEGER, PARAMETER      :: lda = 1
+      INTEGER, PARAMETER             :: lda = 1
 #endif
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_sendbuffer => NULL()
-      INTEGER, DIMENSION(:),POINTER :: ppm_buffer2part => NULL()
-      REAL(MK),DIMENSION(:),POINTER :: ppm_ghost_offset => NULL()
+
+      CHARACTER(LEN=ppm_char) :: caller ='map_part_push'
+
+      LOGICAL :: lpushpp
+
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -151,11 +156,7 @@
       !-------------------------------------------------------------------------
       !  The default is that we do not push the particle positions
       !-------------------------------------------------------------------------
-      IF (PRESENT(pushpp)) THEN
-         lpushpp = pushpp
-      ELSE
-         lpushpp = .FALSE.
-      ENDIF
+      lpushpp = MERGE(pushpp,.FALSE.,PRESENT(pushpp))
 
       !-------------------------------------------------------------------------
       !  Increment the buffer set
@@ -168,19 +169,10 @@
       iopt = ppm_param_alloc_grow_preserve
       ldu(1)  = map%ppm_buffer_set
       CALL ppm_alloc(map%ppm_buffer_dim ,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'buffer dimensions ppm_buffer_dim',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('buffer dimensions ppm_buffer_dim',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(map%ppm_buffer_type,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('buffer types PPM_BUFFER_TYPE',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  A complex number is treated as two reals. Cannot change lda
@@ -218,16 +210,13 @@
      DO i=1,map%ppm_nsendlist
         incr = incr + (map%ppm_psendbuffer(i+1)-map%ppm_psendbuffer(i))*ldb
      ENDDO
-     ldu(1) = map%ppm_nsendbuffer + incr
-     iopt   = ppm_param_alloc_grow_preserve
+
+     iopt  =ppm_param_alloc_grow_preserve
+     ldu(1)=map%ppm_nsendbuffer + incr
      CALL ppm_alloc(map%ppm_sendbuffer,ldu,iopt,info)
+     or_fail_alloc('global send buffer ppm_sendbuffer',ppm_error=ppm_error_fatal)
+
      ppm_sendbuffer => map%ppm_sendbuffer
-     IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,caller,     &
- &           'global send buffer ppm_sendbuffer',__LINE__,info)
-         GOTO 9999
-     ENDIF
 
      DO i=1,map%ppm_nsendlist
         !-------------------------------------------------------------------
@@ -740,39 +729,27 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           IF (.NOT. Pc%maps%exists(mapID)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_wrong_dim,caller,    &
-                  &   'Invalid mapID: mapping does not exist.',__LINE__,info)
-              GOTO 8888
+             fail('Invalid mapID: mapping does not exist.',ppm_err_wrong_dim,exit_point=8888)
           ENDIF
 #if   __DIM == 2
           IF (lda .LT. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be >0 for vector data',__LINE__,info)
-              GOTO 8888
+             fail('lda must be >0 for vector data',exit_point=8888)
           ENDIF
 #elif __DIM == 1
           IF (lda .NE. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 8888
+             fail('lda must be =1 for scalar data',exit_point=8888)
           ENDIF
 #endif
           IF (Pc%maps%vec(mapID)%t%oldNpart .LT. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'Npart must be >=0',__LINE__,info)
-              GOTO 8888
+             fail('Npart must be >=0',exit_point=8888)
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 
 #if    __DIM == 1

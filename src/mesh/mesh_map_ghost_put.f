@@ -30,14 +30,14 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
 
       INTEGER, DIMENSION(2) :: ldu
       INTEGER               :: i,j,lb,ub
       INTEGER               :: iopt,ibuffer,pdim
       INTEGER               :: nsendlist,nrecvlist
 
-      LOGICAL               :: valid
+      LOGICAL :: valid
 
       !-------------------------------------------------------------------------
       !  Externals

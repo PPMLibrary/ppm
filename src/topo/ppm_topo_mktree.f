@@ -201,7 +201,7 @@
       INTEGER                           :: i,nbox,iopt,isub
       INTEGER, DIMENSION(2  )           :: ldc
       INTEGER, DIMENSION(:,:), POINTER  :: ineigh  => NULL()
-      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc => NULL()
+      INTEGER, DIMENSION(:,:), POINTER  :: subs_bc
       INTEGER, DIMENSION(:  ), POINTER  :: nneigh  => NULL()
       INTEGER, DIMENSION(:  ), POINTER  :: nchld   => NULL()
       REAL(MK)                          :: t0,lmyeps

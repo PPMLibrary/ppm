@@ -105,7 +105,7 @@
       !-------------------------------------------------------------------------
       !  Local variables, arrays and counters
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo),         POINTER     :: topo       => NULL()
+      TYPE(ppm_t_topo),         POINTER     :: topo
 
       REAL(MK), DIMENSION(2*ppm_dim)        :: curr_sub
       REAL(MK), DIMENSION(:,:), POINTER     :: red_sub    => NULL()

@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !     Subroutine   :                   p2m_interp_mp4
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -61,11 +61,11 @@
      !!! The interpolation scheme is only implemented for 2D and 3D spaces. To
      !!! increase performance the inner loops over the number of properties to
      !!! be interpolated are unrolled for 2,3,4 and 5-vectors.
-     !!! 
+     !!!
      !!! [NOTE]
      !!! This routine only performs the actual interpolation. It should not be
      !!! called directly by the user but instead the `ppm_interp_m2p`
-     !!! routine should be used with the kernel argument set to 
+     !!! routine should be used with the kernel argument set to
      !!! `ppm_param_rmsh_kernel_mp4`.
 
 
@@ -107,12 +107,12 @@
       INTEGER                       , INTENT(IN)   :: lda
       !!! leading dimension of up
 #endif
-      REAL(MK), DIMENSION(:,:), POINTER,INTENT(IN)   :: xp 
+      REAL(MK), DIMENSION(:,:), POINTER,INTENT(IN)   :: xp
       !!! particle positions
 #if   __MODE == __SCA
       REAL(MK) , DIMENSION(:),  POINTER,INTENT(IN)   :: up
 #elif __MODE == __VEC
-      REAL(MK) , DIMENSION(:,:),POINTER,INTENT(IN)   :: up 
+      REAL(MK) , DIMENSION(:,:),POINTER,INTENT(IN)   :: up
 #endif
       INTEGER                       , INTENT( OUT) :: info
       !!! Returns status, 0 upon success
@@ -124,7 +124,6 @@
       INTEGER                                :: i,j,k,l,ii,jj,kk
       INTEGER                                :: ip1,ip2,ip3
       INTEGER                                :: ip
-      INTEGER, DIMENSION(6)                  :: bcdef
       INTEGER                                :: iq,nsubpatch,ipatch
       ! aliases
       REAL(mk)                               :: tim1s, tim1e
@@ -133,7 +132,7 @@
       REAL(mk), DIMENSION(ppm_dim)           :: x0
       REAL(mk)                               :: x01,x02,x03
       CHARACTER(len=256)                     :: msg
-      CLASS(ppm_t_subpatch_),POINTER         :: p => NULL()
+      CLASS(ppm_t_subpatch_),POINTER         :: p
       INTEGER,PARAMETER                      :: one=1
       INTEGER                                :: ip10l,ip20l,ip03l
       INTEGER                                :: ip10h,ip20h,ip03h

@@ -208,16 +208,16 @@
       !-------------------------------------------------------------------------
       INTEGER                                          :: isub, isubl
       INTEGER                                          :: dim
-      INTEGER ,  DIMENSION(:,:),        POINTER        :: istart => NULL()
-      INTEGER ,  DIMENSION(:,:),        POINTER        :: ndata  => NULL()
+      INTEGER ,  DIMENSION(:,:),        POINTER        :: istart
+      INTEGER ,  DIMENSION(:,:),        POINTER        :: ndata
       LOGICAL                                          :: reset
       INTEGER ,  DIMENSION(2  )                        :: ldu, ldl
       INTEGER                                          :: iopt
-      REAL(mk) , DIMENSION(:,:),        POINTER        :: min_sub => NULL()
-      REAL(mk) , DIMENSION(:),          POINTER        :: min_phys => NULL()
-      REAL(mk) , DIMENSION(:),          POINTER        :: max_phys => NULL()
+      REAL(mk) , DIMENSION(:,:),        POINTER        :: min_sub
+      REAL(mk) , DIMENSION(:),          POINTER        :: min_phys
+      REAL(mk) , DIMENSION(:),          POINTER        :: max_phys
       REAL(mk)                                         :: dx,dy,dz
-      INTEGER,   DIMENSION(:  ),        POINTER        :: nm => NULL()
+      INTEGER,   DIMENSION(:  ),        POINTER        :: nm
       INTEGER                                          :: inp, nnx, nny, nnz
       INTEGER                                          :: startx, starty, startz
       INTEGER                                          :: i,j,k
@@ -229,8 +229,8 @@
       REAL(mk)                                         :: strength
       LOGICAL                                          :: lok,lslave
       LOGICAL                                          :: with_vol
-      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh => NULL()
-      TYPE(ppm_t_topo)     , POINTER                   :: topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER                   :: p_mesh)
+      TYPE(ppm_t_topo)     , POINTER                   :: topo
 #if  __MODE == __VEC
       LOGICAL                                          :: with_weighting
 #endif
@@ -280,10 +280,12 @@
       !  Get istart
       !-------------------------------------------------------------------------
       topo   => ppm_topo(topoid)%t
+
       SELECT TYPE (t => ppm_mesh%vec(meshid)%t)
       TYPE IS (ppm_t_equi_mesh)
-          p_mesh => t
+         p_mesh => t
       END SELECT
+
       istart => p_mesh%istart
       nm     => p_mesh%nm
       ndata  => p_mesh%nnodes

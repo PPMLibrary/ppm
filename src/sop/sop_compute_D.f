@@ -100,12 +100,12 @@
           INTEGER                                    :: i,ip,ineigh,iq
           CHARACTER(LEN=64)                          :: myformat
 
-          REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
-          REAL(MK),     DIMENSION(:),   POINTER      :: wp_old => NULL()
-          REAL(MK),     DIMENSION(:),   POINTER      :: D_old => NULL()
-          REAL(MK),     DIMENSION(:),   POINTER      :: rcp_old => NULL()
-          REAL(MK),     DIMENSION(:),   POINTER      :: level_old => NULL()
-          REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad_old => NULL()
+!           REAL(MK),     DIMENSION(:,:), POINTER      :: xp_old => NULL()
+!           REAL(MK),     DIMENSION(:),   POINTER      :: wp_old => NULL()
+!           REAL(MK),     DIMENSION(:),   POINTER      :: D_old => NULL()
+!           REAL(MK),     DIMENSION(:),   POINTER      :: rcp_old => NULL()
+!           REAL(MK),     DIMENSION(:),   POINTER      :: level_old => NULL()
+!           REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad_old => NULL()
 
           REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
           REAL(MK),     DIMENSION(:),   POINTER      :: rcp => NULL()
@@ -116,17 +116,17 @@
           REAL(MK),     DIMENSION(:),   POINTER      :: level => NULL()
           REAL(MK),     DIMENSION(:,:), POINTER      :: level_grad => NULL()
 
-          REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
+!           REAL(MK),     DIMENSION(:,:), POINTER      :: eta => NULL()
           REAL(MK)                                   :: min_D
           LOGICAL                                    :: need_derivatives
           REAL(MK),     DIMENSION(ppm_dim)           :: dummy_grad
-          INTEGER                                    :: topo_id,eta_id
+          INTEGER                                    :: topo_id !,eta_id
           REAL(ppm_kind_double),     DIMENSION(ppm_dim)           :: coeffs
           INTEGER,      DIMENSION(ppm_dim)           :: order
           INTEGER,      DIMENSION(ppm_dim*ppm_dim)   :: degree
           REAL(MK),     DIMENSION(ppm_dim)           :: wp_grad_fun0
           REAL(MK)                                   :: alpha
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER:: NList => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER:: NList
           TYPE(ppm_t_operator)                  :: Op
           TYPE(ppm_t_options_op)                :: opts_op
           CLASS(ppm_t_operator_discr),POINTER   :: DCop => NULL()
@@ -229,9 +229,8 @@
               ELSE
                   check_associated(<#this%adapt_wp_grad#>)
                   IF (.NOT.this%adapt_wp_grad%flags(ppm_ppt_partial)) THEN
-                      CALL this%realloc_prop(this%adapt_wp_grad,&
-                          info,lda=ppm_dim)
-                          or_fail("failed to reallocate property adapt_wp_grad")
+                     CALL this%realloc_prop(this%adapt_wp_grad,info,lda=ppm_dim)
+                     or_fail("failed to reallocate property adapt_wp_grad")
                   ENDIF
               ENDIF
           ENDIF
@@ -271,13 +270,13 @@
               coeffs=1.D0; degree = 0
               FORALL(i=1:ppm_dim) degree((i-1)*ppm_dim+i)=1 !Gradient
 
-              call Op%create(ppm_dim,coeffs,degree,info,name="Gradient")
-                  or_fail("Failed to create Gradient operator")
-              call opts_op%create(ppm_param_op_dcpse,info,order=3,&
+              CALL Op%create(ppm_dim,coeffs,degree,info,name="Gradient")
+              or_fail("Failed to create Gradient operator")
+              CALL opts_op%create(ppm_param_op_dcpse,info,order=3,&
                   c=REAL(opts%c,ppm_kind_double),vector=.true.)
-                  or_fail("failed to initialize option object for operator")
-              call Op%discretize_on(this,DCop,opts_op,info)
-                  or_fail("Failed to discretize Gradient operator on particle set")
+              or_fail("failed to initialize option object for operator")
+              CALL Op%discretize_on(this,DCop,opts_op,info)
+              or_fail("Failed to discretize Gradient operator on particle set")
 
           ENDIF if_needs_derivatives
 
@@ -292,10 +291,10 @@
               IF (.NOT.PRESENT(wp_grad_fun)) THEN
                   !Compute gradients
                   CALL DCop%compute(this%adapt_wp,this%adapt_wp_grad,info)
-                      or_fail("Failed to compute gradient of adapt field")
+                  or_fail("Failed to compute gradient of adapt field")
 
                   CALL DCop%destroy(info)
-                      or_fail("Failed to destroy DC operator")
+                  or_fail("Failed to destroy DC operator")
               ENDIF
 
               !Compute Dtilde on real particles

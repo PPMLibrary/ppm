@@ -115,10 +115,10 @@
       LOGICAL                          :: dosend
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: valid
-      TYPE(ppm_t_equi_mesh), POINTER   :: from_mesh => NULL()
-      TYPE(ppm_t_equi_mesh), POINTER   :: to_mesh   => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: from_topo => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: to_topo   => NULL()
+      TYPE(ppm_t_equi_mesh), POINTER   :: from_mesh
+      TYPE(ppm_t_equi_mesh), POINTER   :: to_mesh
+      TYPE(ppm_t_topo),      POINTER   :: from_topo
+      TYPE(ppm_t_topo),      POINTER   :: to_topo
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

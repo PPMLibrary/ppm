@@ -57,30 +57,30 @@
       !-------------------------------------------------------------------------
       !  Variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
 
-      CLASS(ppm_t_subpatch_),      POINTER :: p     => NULL()
-      CLASS(ppm_t_subpatch_data_), POINTER :: pdat  => NULL()
-      CLASS(ppm_t_discr_data),     POINTER :: field => NULL()
+!       CLASS(ppm_t_subpatch_),      POINTER :: p     => NULL()
+      CLASS(ppm_t_subpatch_data_), POINTER :: pdat
+      CLASS(ppm_t_discr_data),     POINTER :: field
 
 #if   __DIM  == __2D
-      REAL(MKS), DIMENSION(:,:),     POINTER :: fdata2_rs => NULL()
-      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs => NULL()
+      REAL(MKS), DIMENSION(:,:),     POINTER :: fdata2_rs
+      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs
 
-      REAL(MK),  DIMENSION(:,:),     POINTER :: fdata2_rd => NULL()
-      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd => NULL()
+      REAL(MK),  DIMENSION(:,:),     POINTER :: fdata2_rd
+      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd
 
-      INTEGER,   DIMENSION(:,:),     POINTER :: fdata2_i  => NULL()
-      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i  => NULL()
+      INTEGER,   DIMENSION(:,:),     POINTER :: fdata2_i
+      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i
 #elif   __DIM  == __3D
-      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs => NULL()
-      REAL(MKS), DIMENSION(:,:,:,:), POINTER :: fdata4_rs => NULL()
+      REAL(MKS), DIMENSION(:,:,:),   POINTER :: fdata3_rs
+      REAL(MKS), DIMENSION(:,:,:,:), POINTER :: fdata4_rs
 
-      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd => NULL()
-      REAL(MK),  DIMENSION(:,:,:,:), POINTER :: fdata4_rd => NULL()
+      REAL(MK),  DIMENSION(:,:,:),   POINTER :: fdata3_rd
+      REAL(MK),  DIMENSION(:,:,:,:), POINTER :: fdata4_rd
 
-      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i  => NULL()
-      INTEGER,   DIMENSION(:,:,:,:), POINTER :: fdata4_i  => NULL()
+      INTEGER,   DIMENSION(:,:,:),   POINTER :: fdata3_i
+      INTEGER,   DIMENSION(:,:,:,:), POINTER :: fdata4_i
 #endif
       REAL(MK), DIMENSION(3) :: min_phys,max_phys
       REAL(MK), DIMENSION(3) :: h
@@ -202,6 +202,9 @@
                   WRITE(iUnit,'(A)', ADVANCE='NO')     "    <Piece"
                   WRITE(iUnit, '(A)', ADVANCE='NO') " Extent='"
                   DO i=1,ppm_dim
+                     !TODO
+                     !check the boundary condition
+                     !it has been implemented in a wrong way
                      IF (p%bc(2*i).EQ.ppm_param_bcdef_periodic.OR. &
                      &   p%bc(2*i).EQ.-1) THEN
                         WRITE(scratch, '(I0,A,I0)') p%istart(i)-1,' ',&

@@ -58,8 +58,8 @@
       CHARACTER(ppm_char)              :: mesg
       REAL(ppm_kind_double)            :: t0
       LOGICAL                          :: valid
-      TYPE(ppm_t_topo),      POINTER   :: topo        => NULL()
-      TYPE(ppm_t_topo),      POINTER   :: target_topo => NULL()
+      TYPE(ppm_t_topo),      POINTER   :: topo
+      TYPE(ppm_t_topo),      POINTER   :: target_topo
 
       CHARACTER(ppm_char)              :: caller='mesh_map_field_global'
       !-------------------------------------------------------------------------

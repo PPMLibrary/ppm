@@ -71,11 +71,11 @@
           REAL(MK)                              :: c_value
           REAL(MK)                              :: min_sv_p
 
-          CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_to => NULL()
-          CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_src => NULL()
+          CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_to
+          CLASS(DTYPE(ppm_t_particles)_),POINTER :: Part_src
 
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist => NULL()
-          CLASS(ppm_t_operator_),        POINTER :: op => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_),POINTER :: Nlist
+          CLASS(ppm_t_operator_),        POINTER :: op
 
 #if   __DIM == 2
           start_subroutine("op_comp_weights_2d")
@@ -90,6 +90,7 @@
           CLASS IS(DTYPE(ppm_t_particles)_)
               Part_to => ds
           END SELECT
+
           SELECT TYPE(dt => this%discr_to)
           CLASS IS(DTYPE(ppm_t_particles)_)
               Part_src => dt

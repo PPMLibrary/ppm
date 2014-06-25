@@ -72,11 +72,11 @@
 #ifdef __MPI
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
-      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map => NULL()
-      REAL(MK), DIMENSION(:), POINTER  :: send => NULL()
-      REAL(MK), DIMENSION(:), POINTER  :: recv => NULL()
-      INTEGER, DIMENSION(:,:),POINTER  :: pp    => NULL()
-      INTEGER, DIMENSION(:,:),POINTER  :: qq    => NULL()
+      TYPE(DTYPE(ppm_t_part_mapping)), POINTER :: map
+      REAL(MK), DIMENSION(:), POINTER  :: send
+      REAL(MK), DIMENSION(:), POINTER  :: recv
+      INTEGER, DIMENSION(:,:),POINTER  :: pp
+      INTEGER, DIMENSION(:,:),POINTER  :: qq
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------

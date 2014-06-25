@@ -29,10 +29,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE ppm_topo_box2subs_s(min_box,max_box,nchld,nbox,   &
-     &    min_sub,max_sub,nsubs,info,boxid,level,blevel,child)
+      &    min_sub,max_sub,nsubs,info,boxid,level,blevel,child)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE ppm_topo_box2subs_d(min_box,max_box,nchld,nbox,   &
-     &    min_sub,max_sub,nsubs,info,boxid,level,blevel,child)
+      &    min_sub,max_sub,nsubs,info,boxid,level,blevel,child)
 #endif
       !!! This routine converts boxes from a ppm tree
       !!! (created by `ppm_tree`) to a set of subdomains which
@@ -106,11 +106,14 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(MK)                                :: t0
-      INTEGER                                 :: iopt,i,j,istack
-      INTEGER, DIMENSION(2)                   :: ldc
-      INTEGER, DIMENSION(:), POINTER          :: subbox   => NULL()
-      INTEGER, DIMENSION(:), POINTER          :: boxstack => NULL()
+      REAL(MK) :: t0
+
+      INTEGER                        :: iopt,i,j,istack
+      INTEGER, DIMENSION(2)          :: ldc
+      INTEGER, DIMENSION(:), POINTER :: subbox   => NULL()
+      INTEGER, DIMENSION(:), POINTER :: boxstack => NULL()
+
+      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_box2subs'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -118,29 +121,25 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_box2subs',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check input arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Allocate memory for list
       !-------------------------------------------------------------------------
-      iopt     = ppm_param_alloc_fit
-      ldc(1)   = nbox
+      iopt   = ppm_param_alloc_fit
+      ldc(1) = nbox
       CALL ppm_alloc(subbox,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &        'list of box IDs SUBBOX',__LINE__,info)
-          GOTO 9999
-      ENDIF
-      subbox   = ppm_param_undefined
+      or_fail_alloc('list of box IDs SUBBOX',ppm_error=ppm_error_fatal)
+
+      subbox = ppm_param_undefined
 
       !-------------------------------------------------------------------------
       !  Count the number of subs and build a list
@@ -161,15 +160,10 @@
               !-----------------------------------------------------------------
               !  Traverse tree at most down to the specified level
               !-----------------------------------------------------------------
-              iopt     = ppm_param_alloc_fit
-              ldc(1)   = MIN((-level-2)*(nchld(1)-1) + nchld(1),1)
+              iopt   = ppm_param_alloc_fit
+              ldc(1) = MIN((-level-2)*(nchld(1)-1) + nchld(1),1)
               CALL ppm_alloc(boxstack,ldc,iopt,info)
-              IF (info.NE.0) THEN
-                  info = ppm_error_fatal
-                  CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-                  & 'stack of boxes to traverse BOXSTACK',__LINE__,info)
-                  GOTO 9999
-              ENDIF
+              or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
 
               ! push root box
               istack = 1
@@ -190,13 +184,7 @@
                           ldc(1) = ldc(1) + nchld(i)
                           iopt     = ppm_param_alloc_grow_preserve
                           CALL ppm_alloc(boxstack,ldc,iopt,info)
-                          IF (info.NE.0) THEN
-                              info = ppm_error_fatal
-                              CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',&
-                              &  'stack of boxes to traverse BOXSTACK',   &
-                              &   __LINE__,info)
-                              GOTO 9999
-                          ENDIF
+                          or_fail_alloc('stack of boxes to traverse BOXSTACK',ppm_error=ppm_error_fatal)
                       ENDIF
                       ! push all its children to the stack
                       DO j=1,nchld(i)
@@ -207,13 +195,9 @@
               ENDDO
 
               ! deallocate stack
-              iopt     = ppm_param_dealloc
+              iopt = ppm_param_dealloc
               CALL ppm_alloc(boxstack,ldc,iopt,info)
-              IF (info.NE.0) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_dealloc,'ppm_topo_box2subs',        &
-                  & 'stack of boxes to traverse BOXSTACK',__LINE__,info)
-              ENDIF
+              or_fail_dealloc('stack of boxes to traverse BOXSTACK')
           ENDIF
       ELSE
           !---------------------------------------------------------------------
@@ -230,33 +214,19 @@
       !-------------------------------------------------------------------------
       !  Allocate memory for subs
       !-------------------------------------------------------------------------
-      iopt     = ppm_param_alloc_fit
-      ldc(1)   = ppm_dim
-      ldc(2)   = nsubs
+      iopt   = ppm_param_alloc_fit
+      ldc(1) = ppm_dim
+      ldc(2) = nsubs
       CALL ppm_alloc(min_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &        'minimum extent of subs MIN_SUB',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('minimum extent of subs MIN_SUB',ppm_error=ppm_error_fatal)
 
       CALL ppm_alloc(max_sub,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &        'maximum extent of subs MAX_SUB',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('maximum extent of subs MAX_SUB',ppm_error=ppm_error_fatal)
+
       IF (PRESENT(boxid)) THEN
           ldc(1) = nsubs
           CALL ppm_alloc(boxid,ldc,iopt,info)
-          IF (info.NE.0) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs',          &
-     &            'box ID of subs BOXID',__LINE__,info)
-              GOTO 9999
-          ENDIF
+          or_fail_alloc('box ID of subs BOXID',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -287,59 +257,43 @@
       !-------------------------------------------------------------------------
       IF (PRESENT(boxid)) THEN
           DO i=1,nsubs
-              boxid(i) = subbox(i)
+             boxid(i) = subbox(i)
           ENDDO
       ENDIF
       !-------------------------------------------------------------------------
       !  Deallocate list
       !-------------------------------------------------------------------------
-      iopt     = ppm_param_dealloc
+      iopt = ppm_param_dealloc
       CALL ppm_alloc(subbox,ldc,iopt,info)
-      IF (info.NE.0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_box2subs', &
-          & 'list of box IDs SUBBOX',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('list of box IDs SUBBOX')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_box2subs',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (nbox .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_topo_box2subs',     &
-     &          'Number of boxes must be >= 0',__LINE__,info)
-            GOTO 8888
+            fail('Number of boxes must be >= 0',exit_point=8888)
          ENDIF
          DO i=1,ppm_dim
             DO j=1,nbox
                IF (min_box(i,j) .GT. max_box(i,j)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,'ppm_topo_box2subs',   &
-     &                'min_box must be <= max_box !',__LINE__,info)
-                  GOTO 8888
+                  fail('min_box must be <= max_box !',exit_point=8888)
                ENDIF
             ENDDO
          ENDDO
          IF (PRESENT(level)) THEN
              IF (.NOT.PRESENT(blevel)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_topo_box2subs',     &
-     &              'blevel must be present if level is.',__LINE__,info)
-                GOTO 8888
+                fail('blevel must be present if level is.',exit_point=8888)
              ENDIF
              IF (.NOT.PRESENT(child)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_topo_box2subs',     &
-     &              'child must be present if level is.',__LINE__,info)
-                GOTO 8888
+                fail('child must be present if level is.',exit_point=8888)
              ENDIF
          ENDIF
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_box2subs_s

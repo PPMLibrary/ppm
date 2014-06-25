@@ -11,19 +11,19 @@
           INTEGER,                              INTENT(  OUT)   :: info
           !local variables
 
-          REAL(MK),DIMENSION(:,:), POINTER      :: xp=>NULL()
-          INTEGER,DIMENSION(:),    POINTER      :: nvlist=>NULL()
-          INTEGER,DIMENSION(:,:),  POINTER      :: vlist=>NULL()
+          REAL(MK),DIMENSION(:,:), POINTER      :: xp
+          INTEGER,DIMENSION(:),    POINTER      :: nvlist
+          INTEGER,DIMENSION(:,:),  POINTER      :: vlist
           INTEGER                               :: ip,iq,ineigh
-          REAL(MK),DIMENSION(:), POINTER        :: D=>NULL()
-          REAL(MK),DIMENSION(:), POINTER        :: Dtilde=>NULL()
+          REAL(MK),DIMENSION(:), POINTER        :: D
+          REAL(MK),DIMENSION(:), POINTER        :: Dtilde
           REAL(MK)                              :: rr
           REAL(MK)                              :: nn,max_nn,avg_nn
           INTEGER                               :: close_neigh
           INTEGER                               :: very_close_neigh
           CHARACTER(LEN=ppm_char)               :: cbuf
           CHARACTER(LEN=ppm_char)               :: caller = 'sop_close_neighbours'
-          INTEGER,DIMENSION(:),POINTER          :: nb_neigh => NULL()
+          INTEGER,DIMENSION(:),POINTER          :: nb_neigh
           INTEGER                               :: nb_close_theo, nb_fuse_neigh
 
           info = 0
@@ -38,9 +38,9 @@
 
 
           IF (ppm_dim.EQ.2) THEN
-              nb_close_theo = 6
+             nb_close_theo = 6
           ELSE
-              nb_close_theo = 6
+             nb_close_theo = 6
           ENDIF
 
           particle_loop: DO ip = 1,Particles%Npart
@@ -49,11 +49,10 @@
               neighbour_loop: DO ineigh = 1,nvlist(ip)
                   iq = vlist(ineigh,ip)
 
-                  rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / &
-                      D(ip)
-                      !Dtilde(ip)
-                      !MIN(Dtilde(ip),Dtilde(iq))
-                      !MIN(D(ip),D(iq))
+                  rr = SQRT(SUM((xp(1:ppm_dim,ip) - xp(1:ppm_dim,iq))**2)) / D(ip)
+                  !Dtilde(ip)
+                  !MIN(Dtilde(ip),Dtilde(iq))
+                  !MIN(D(ip),D(iq))
 
                   !compute nearest-neighbour distance for each particle
                   ! rescaled by the MIN of D(ip) and D(iq)
@@ -64,13 +63,12 @@
                       ! needed by fuse2_particles
                       vlist(ineigh,ip) = vlist(close_neigh,ip)
                       vlist(close_neigh,ip) = iq
-
                   ENDIF
 
               ENDDO neighbour_loop
 
               IF (close_neigh .LE. nb_close_theo-2) THEN
-                      adaptation_ok = .false.
+                 adaptation_ok = .false.
               ENDIF
               !IF (close_neigh .GE. 2*nb_close_theo) THEN
                       !adaptation_ok = .false.

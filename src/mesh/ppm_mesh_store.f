@@ -77,7 +77,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh_), POINTER :: mesh => NULL()
+      CLASS(ppm_t_equi_mesh_), POINTER :: mesh
 
       REAL(MK)                        :: t0
       REAL(MK),  DIMENSION(1:ppm_dim) :: Offst
@@ -169,33 +169,24 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
           CALL ppm_check_topoid(topoid,valid,info)
           IF (.NOT. valid) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-             &   'topoid not valid',__LINE__,info)
-             GOTO 8888
+             fail('topoid not valid',exit_point=8888)
           ENDIF
           IF (ppm_topo(topoid)%t%nsubs .LE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-             &   'nsubs must be >0',__LINE__,info)
-             GOTO 8888
+             fail('nsubs must be >0',exit_point=8888)
           ENDIF
           DO i=1,ppm_dim
              IF (Nm(i) .LT. 2) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,'ppm_mesh_store',  &
-                &   'Nm must be >1 in all space dimensions',__LINE__,info)
-                GOTO 8888
+                fail('Nm must be >1 in all space dimensions',exit_point=8888)
              ENDIF
           ENDDO
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 
       END SUBROUTINE ppm_mesh_store

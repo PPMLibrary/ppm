@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                   ppm_alloc_argcheck
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -64,7 +64,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER               :: i
+      INTEGER :: i
 
       !-------------------------------------------------------------------------
       !  Initialise
@@ -73,35 +73,27 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (iopt .NE. ppm_param_alloc_fit           .AND.                       &
-     &    iopt .NE. ppm_param_alloc_fit_preserve  .AND.                       &
-     &    iopt .NE. ppm_param_alloc_grow          .AND.                       &
-     &    iopt .NE. ppm_param_alloc_grow_preserve .AND.                       &
-     &    iopt .NE. ppm_param_dealloc) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,'unknown iopt',__LINE__,info)
-        GOTO 9999
+      IF (iopt .NE. ppm_param_alloc_fit           .AND. &
+      &   iopt .NE. ppm_param_alloc_fit_preserve  .AND. &
+      &   iopt .NE. ppm_param_alloc_grow          .AND. &
+      &   iopt .NE. ppm_param_alloc_grow_preserve .AND. &
+      &   iopt .NE. ppm_param_dealloc) THEN
+         fail('unknown iopt')
       ENDIF
       IF (iopt .NE. ppm_param_dealloc) THEN
-        IF (PRESENT(ldu)) THEN
+         IF (PRESENT(ldu)) THEN
             DO i=1,dimension
-                IF (ldl(i) .GT. ldu(i)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,  &
-     &              'ldu() must be >= ldl()',__LINE__,info)
-                GOTO 9999
-                ENDIF
+               IF (ldl(i) .GT. ldu(i)) THEN
+                  fail('ldu() must be >= ldl()')
+               ENDIF
             ENDDO
-        ELSE
+         ELSE
             DO i=1,dimension
-                IF (ldl(i) .LT. 0) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller,  &
-     &              'ldl() must be >= 0',__LINE__,info)
-                GOTO 9999
-                ENDIF
+               IF (ldl(i) .LT. 0) THEN
+                  fail('ldl() must be >= 0')
+               ENDIF
             ENDDO
-        ENDIF
+         ENDIF
       ENDIF
       !-------------------------------------------------------------------------
       !  Return

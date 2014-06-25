@@ -66,7 +66,7 @@
       INTEGER                :: nsubs,nsublist,maxneigh,prec,i,j,iopt
       INTEGER, DIMENSION(1)  :: ldc
 
-      LOGICAL                :: valid
+      CHARACTER(LEN=ppm_char) :: caller='ppm_topo_copy'
 
       !-------------------------------------------------------------------------
       !  Externals
@@ -75,14 +75,14 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_copy',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -98,10 +98,7 @@
       !-------------------------------------------------------------------------
       CALL ppm_topo_alloc(outtopo%ID,nsubs,nsublist,maxneigh,prec,info)
       IF (info .NE. ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &
-     &        'result topology OUTTOPO',__LINE__,info)
-          GOTO 9999
+          fail('result topology OUTTOPO',ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -284,13 +281,10 @@
       ldc(1) = intopo%nneighproc
       CALL ppm_alloc(outtopo%ineighproc,ldc,iopt,info)
       IF (info .NE. ppm_param_success) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &
-     &        'list of neighboring proc OUTTOPO%INEIGHPROC',__LINE__,info)
-          GOTO 9999
+         fail('list of neighboring proc OUTTOPO%INEIGHPROC',ppm_err_alloc,ppm_error=ppm_error_fatal)
       ENDIF
       DO i=1,intopo%nneighproc
-          outtopo%ineighproc(i) = intopo%ineighproc(i)
+         outtopo%ineighproc(i) = intopo%ineighproc(i)
       ENDDO
 
       IF (intopo%isoptimized) THEN
@@ -298,16 +292,12 @@
           ldc(1) = intopo%ncommseq
           CALL ppm_alloc(outtopo%icommseq,ldc,iopt,info)
           IF (info .NE. ppm_param_success) THEN
-              info = ppm_error_fatal
-              CALL ppm_error(ppm_err_alloc,'ppm_topo_copy',     &
-         &        'communication sequence OUTTOPO%ICOMMSEQ',__LINE__,info)
-              GOTO 9999
+             fail('communication sequence OUTTOPO%ICOMMSEQ',ppm_err_alloc,ppm_error=ppm_error_fatal)
           ENDIF
           DO i=1,intopo%ncommseq
-              outtopo%icommseq(i) = intopo%icommseq(i)
+             outtopo%icommseq(i) = intopo%icommseq(i)
           ENDDO
       ENDIF
-
 
       !-------------------------------------------------------------------------
       !  Set outtopo to defined
@@ -317,17 +307,14 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_copy',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_ppm_noinit,'ppm_topo_copy',       &
-     &            'Please call ppm_init first!',__LINE__,info)
-              GOTO 8888
-          ENDIF
- 8888     CONTINUE
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
+         ENDIF
+      8888 CONTINUE
       END SUBROUTINE check
       END SUBROUTINE ppm_topo_copy

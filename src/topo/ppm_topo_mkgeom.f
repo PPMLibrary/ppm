@@ -181,7 +181,7 @@
       INTEGER, DIMENSION(  :), POINTER :: isublist => NULL()
       INTEGER, DIMENSION(:  ), POINTER :: sub2proc => NULL()
 
-      CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: msg
       CHARACTER(LEN=ppm_char) :: caller='ppm_topo_mkgeom'
 
       LOGICAL, DIMENSION(ppm_dim) :: fixed
@@ -209,11 +209,8 @@
       ENDIF
 
       ! If the user defined nsubs then use those
-      IF (PRESENT(user_nsubs)) THEN
-         nsubs = user_nsubs
-      ELSE
-         nsubs = 0
-      ENDIF
+      nsubs=MERGE(user_nsubs,0,PRESENT(user_nsubs))
+
       IF (PRESENT(user_minsub)) THEN
          min_sub => user_minsub
       ENDIF
@@ -248,7 +245,7 @@
          ! build tree
          CALL ppm_tree(xpdummy,0,Nmdummy,min_phys,max_phys,treetype, &
          &    ppm_nproc,.FALSE.,gsvec,0.1_MK,-1.0_MK,fixed,weights,  &
-         &   min_box, max_box,nbox,nchld,info)
+         &    min_box, max_box,nbox,nchld,info)
          or_fail('Bisection decomposition failed')
 
          ! convert tree to subs
@@ -262,10 +259,7 @@
       &     ppm_param_decomp_ypencil, &
       &     ppm_param_decomp_zpencil)
          IF (decomp.EQ.ppm_param_decomp_zpencil.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &   'Cannot make z pencils in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make z pencils in 2D!')
          ENDIF
          !-------------------------------------------------------------------
          !  pencil quadrisection using the general ppm_tree
@@ -302,16 +296,10 @@
       &     ppm_param_decomp_xz_slab, &
       &     ppm_param_decomp_yz_slab)
          IF (decomp.EQ.ppm_param_decomp_xz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &   'Cannot make x-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make x-z slabs in 2D!')
          ENDIF
          IF (decomp.EQ.ppm_param_decomp_yz_slab.AND.ppm_dim.LT.3) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,caller,  &
-             &           'Cannot make y-z slabs in 2D!',__LINE__,info)
-             GOTO 9999
+            fail('Cannot make y-z slabs in 2D!')
          ENDIF
          !-------------------------------------------------------------------
          !  slab bisection using the general ppm_tree
@@ -389,11 +377,9 @@
       !  Unknown decomposition type
       !-------------------------------------------------------------------------
       CASE DEFAULT
-         info = ppm_error_error
-         WRITE(mesg,'(A,I5)') 'Unknown decomposition type: ',decomp
-         CALL ppm_error(ppm_err_argument,caller,   &
-         &    mesg,__LINE__,info)
-         GOTO 9999
+         WRITE(msg,'(A,I5)') 'Unknown decomposition type: ',decomp
+         fail(msg)
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -452,15 +438,14 @@
                isublist(nsublist) = isub
             ENDIF
          ENDDO
+
       CASE DEFAULT
          !-------------------------------------------------------------------
          !  unknown assignment scheme
          !-------------------------------------------------------------------
-         info = ppm_error_error
-         WRITE(mesg,'(A,I5)') 'Unknown assignment scheme: ',assig
-         CALL ppm_error(ppm_err_argument,caller,   &
-     &       mesg,__LINE__,info)
-         GOTO 9999
+         WRITE(msg,'(A,I5)') 'Unknown assignment scheme: ',assig
+         fail(msg)
+
       END SELECT
 
       !-------------------------------------------------------------------------
@@ -483,8 +468,8 @@
       !  Dump out disgnostic files
       !-------------------------------------------------------------------------
       !IF (ppm_debug .GT. 0) THEN
-      !    WRITE(mesg,'(A,I4.4)') 'part',ppm_rank
-      !    OPEN(10,FILE=mesg)
+      !    WRITE(msg,'(A,I4.4)') 'part',ppm_rank
+      !    OPEN(10,FILE=msg)
       !
       !    DO j=1,nsublist
       !        i = isublist(j)
@@ -571,77 +556,45 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (.NOT. ppm_initialized) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_ppm_noinit,caller,  &
-     &           'Please call ppm_init first!',__LINE__,info)
-             GOTO 8888
+            fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
          ENDIF
-         IF(ghostsize .LT. 0.0_MK) THEN
+         IF (ghostsize .LT. 0.0_MK) THEN
+            fail('ghostsize must be >= 0.0',exit_point=8888)
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,caller, &
-     &          'ghostsize must be >= 0.0',__LINE__, info)
-            GOTO 8888
          ENDIF
          DO i=1,ppm_dim
-            IF(max_phys(i).LE.min_phys(i)) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'max_phys must be > min_phys',__LINE__, info)
-               GOTO 8888
+            IF (max_phys(i).LE.min_phys(i)) THEN
+               fail('max_phys must be > min_phys',exit_point=8888)
             ENDIF
          ENDDO
          IF (assig .EQ. ppm_param_assign_user_defined) THEN
             IF (decomp .NE. ppm_param_decomp_user_defined) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'decomp type is set to user_defined for this assignment',&
-     &             __LINE__, info)
-               GOTO 8888
+               fail('decomp type is set to user_defined for this assignment',exit_point=8888)
             ENDIF
-            IF(user_nsubs .LE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'no subs defined in user_defined assignment',&
-     &             __LINE__, info)
-               GOTO 8888
+            IF (user_nsubs .LE. 0) THEN
+               fail('no subs defined in user_defined assignment',exit_point=8888)
             ENDIF
             IF (.NOT.ASSOCIATED(sub2proc)) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller, &
-     &              'sub2proc must be allocated for user defined assignment',&
-     &              __LINE__, info)
-                GOTO 8888
+               fail('sub2proc must be allocated for user defined assignment',exit_point=8888)
             ENDIF
             DO i=1,user_nsubs
-                IF ((sub2proc(i).LT.0).OR.(sub2proc(i).GE.ppm_nproc)) THEN
-                   info = ppm_error_error
-                   CALL ppm_error(ppm_err_argument,caller, &
-     &                 'invalid processor specified in sub2proc',&
-     &                 __LINE__, info)
-                   GOTO 8888
-                ENDIF
+               IF ((sub2proc(i).LT.0).OR.(sub2proc(i).GE.ppm_nproc)) THEN
+                  fail('invalid processor specified in sub2proc',exit_point=8888)
+               ENDIF
             ENDDO
          ENDIF
          IF (decomp .EQ. ppm_param_decomp_user_defined) THEN
             IF ((.NOT.ASSOCIATED(min_sub)).OR.(.NOT.ASSOCIATED(max_sub))) THEN
-                info = ppm_error_error
-                CALL ppm_error(ppm_err_argument,caller, &
-     &              'min_sub/max_sub must be allocated for user def. decomp',&
-     &              __LINE__, info)
-                GOTO 8888
+               fail('min_sub/max_sub must be allocated for user def. decomp',exit_point=8888)
             ENDIF
-            IF(user_nsubs .LE. 0) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller, &
-     &             'no subs defined in user_defined decomposition',&
-     &             __LINE__, info)
-               GOTO 8888
+            IF (user_nsubs .LE. 0) THEN
+               fail('no subs defined in user_defined decomposition',exit_point=8888)
             ENDIF
             !-------------------------------------------------------------------
             !  Check that the user-defined subs add up to the whole
@@ -649,27 +602,23 @@
             !  ONE COULD DO MORE TESTS HERE.
             !-------------------------------------------------------------------
             parea = (max_phys(1)-min_phys(1))*(max_phys(2)-min_phys(2))
-            IF(ppm_dim.EQ.3) THEN
+            IF (ppm_dim.EQ.3) THEN
                parea = parea*(max_phys(3)-min_phys(3))
             ENDIF
             sarea = 0.0_MK
             DO i=1,user_nsubs
                larea = (max_sub(1,i)-min_sub(1,i))*(max_sub(2,i)-min_sub(2,i))
-               IF(ppm_dim.EQ.3) THEN
+               IF (ppm_dim.EQ.3) THEN
                   larea = larea * (max_sub(3,i)-min_sub(3,i))
                END IF
                sarea = sarea + larea
             ENDDO
-            IF(ABS(sarea-parea)/parea.GE.lmyeps) THEN
+            IF (ABS(sarea-parea)/parea.GE.lmyeps) THEN
                !----------------------------------------------------------------
                !  Mismatch!
                !----------------------------------------------------------------
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_argument,caller,   &
-     &              'faulty subdomains defined',__LINE__,info)
-               GOTO 8888
+               fail('faulty subdomains defined',exit_point=8888)
             ENDIF
-
          ENDIF
          !----------------------------------------------------------------------
          ! Check bcdef
@@ -683,7 +632,7 @@
          !  Will be accounted for as soon as the structure of
          !  the field type is better defined
          !----------------------------------------------------------------------
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_mkgeom_s

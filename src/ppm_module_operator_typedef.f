@@ -177,7 +177,7 @@ minclude ppm_create_collection_procedures(operator,operator_)
           !!! operators)
 
           !Local variables
-          CLASS(ppm_t_discr_kind),POINTER     :: Discr2 => NULL()
+          CLASS(ppm_t_discr_kind), POINTER :: Discr2
 
           start_subroutine("operator_discretize_on")
 

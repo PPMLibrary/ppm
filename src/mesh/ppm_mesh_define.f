@@ -75,7 +75,7 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      TYPE(ppm_t_topo), POINTER  :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
 
       REAL(MK)                     :: t0
       REAL(MK), DIMENSION(ppm_dim) :: Offst

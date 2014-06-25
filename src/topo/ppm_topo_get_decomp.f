@@ -98,7 +98,7 @@
       !-------------------------------------------------------------------------
       REAL(ppm_kind_double)     :: t0
       LOGICAL                   :: valid
-      TYPE(ppm_t_topo), POINTER :: topo => NULL()
+      TYPE(ppm_t_topo), POINTER :: topo
       INTEGER, DIMENSION(2)     :: lda
       !-------------------------------------------------------------------------
       !  Externals
