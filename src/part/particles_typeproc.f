@@ -387,8 +387,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                    lda2 = lda
                 ENDIF
              ENDIF
-             name2   =MERGE(name,"default_ppt_name",PRESENT(name))
-             datatype=MERGE(dtype,ppm_type_real,    PRESENT(dtype))
+             IF (PRESENT(name)) THEN
+                name2=TRIM(ADJUSTL(name))
+             ELSE
+                name2="default_ppt_name"
+             ENDIF
+             datatype=MERGE(dtype,ppm_type_real,PRESENT(dtype))
 
              SELECT CASE (PRESENT(zero))
              CASE (.TRUE.)
@@ -2119,13 +2123,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 #ifdef __MPI
                 t1 = MPI_WTIME(info)
 #endif
-
                 CALL ppm_map_part_ghost_get(topoid,Pc%xp,ppm_dim,&
                 &    Pc%Npart,Pc%isymm,cutoff,info)
                 or_fail("ppm_map_part_ghost_get failed")
-                call mpi_finalize(info)
-                stop
-stdout("yasssssss_3")
+
 #ifdef __MPI
                 t2 = MPI_WTIME(info)
                 Pc%stats%t_ghost_get = Pc%stats%t_ghost_get + (t2-t1)
@@ -2134,7 +2135,7 @@ stdout("yasssssss_3")
              ELSE
                 !skip ghost get
              ENDIF
-stdout("yasssssss_4")
+
              !Update the ghost for the properties if
              ! 1) they have been mapped to this topology,
              ! 2) the ghosts have not yet been updated, and
@@ -2142,11 +2143,8 @@ stdout("yasssssss_4")
              prop => Pc%props%begin()
              DO WHILE (ASSOCIATED(prop))
                 IF (prop%flags(ppm_ppt_map_ghosts)) THEN
-stdout("yasssssss_5",'Pc%props%iter_id')
                    IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
-stdout("yasssssss_6")
                       IF (prop%flags(ppm_ppt_partial)) THEN
-stdout("yasssssss_7")
                          Pc%stats%nb_ghost_push = Pc%stats%nb_ghost_push + 1
 #ifdef __MPI
                          t1 = MPI_WTIME(info)
@@ -2169,18 +2167,15 @@ stdout("yasssssss_7")
              ENDDO
 
              IF (.NOT.skip_send) THEN
-stdout("yasssssss_8")
                 CALL ppm_map_part_send(Pc%Npart,Pc%Mpart,info)
                 or_fail("ppm_map_part_send")
-stdout("yasssssss_9")
                 prop => Pc%props%last()
                 DO WHILE (ASSOCIATED(prop))
 
                    IF (prop%flags(ppm_ppt_map_ghosts)) THEN
                       IF (.NOT.prop%flags(ppm_ppt_ghosts)) THEN
                          IF (prop%flags(ppm_ppt_partial)) THEN
-                            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,&
-                            &    Pc%Mpart,info)
+                            CALL Pc%map_part_pop_legacy(Pc%props%iter_id,Pc%Mpart,info)
                             or_fail("map_part_pop")
                             prop%flags(ppm_ppt_ghosts) = .TRUE.
                          ENDIF
@@ -2189,16 +2184,13 @@ stdout("yasssssss_9")
 
                    prop => Pc%props%prev()
                 ENDDO
-stdout("yasssssss_10")
                 IF (.NOT.skip_ghost_get) THEN
-                   CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,&
-                   &    Pc%Mpart,info)
+                   CALL ppm_map_part_pop(Pc%xp,ppm_dim,Pc%Npart,Pc%Mpart,info)
                    or_fail("map_part_pop")
                 ENDIF
              ENDIF !.NOT.skip_send
 
           ELSE ! if cutoff .le. 0
-stdout("yasssssss_11")
              !stdout("cutoff = 0, nothing to do")
              !stdout("setting all %has_ghost properties to true")
 
@@ -2210,7 +2202,6 @@ stdout("yasssssss_11")
                 prop => Pc%props%next()
              ENDDO
           ENDIF
-stdout("yasssssss_12")
           ! Update states
           !   ghosts have been computed
           Pc%flags(ppm_part_ghosts) = .TRUE.

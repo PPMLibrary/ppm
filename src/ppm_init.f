@@ -136,10 +136,13 @@
       !-------------------------------------------------------------------------
       CALL MPI_Comm_dup(comm,ppm_comm,info)
       or_fail_MPI("MPI_Comm_dup")
+
       CALL MPI_Comm_size(ppm_comm,ppm_nproc,info)
       or_fail_MPI("MPI_Comm_size")
+
       CALL MPI_Comm_rank(ppm_comm,ppm_rank,info)
       or_fail_MPI("MPI_Comm_rank")
+
       CALL MPI_Get_processor_name(mesg,ilen,info)
       or_fail_MPI("MPI_Get_processor_name")
 #else
@@ -265,14 +268,14 @@
       !-------------------------------------------------------------------------
       ppm_kind = prec
       SELECT CASE (ppm_kind)
-         CASE (ppm_kind_single)
-            WRITE(cbuf,'(A)') 'Precision set to SINGLE'
+      CASE (ppm_kind_single)
+         WRITE(cbuf,'(A)') 'Precision set to SINGLE'
 
-         CASE (ppm_kind_double)
-            WRITE(cbuf,'(A)') 'Precision set to DOUBLE'
+      CASE (ppm_kind_double)
+         WRITE(cbuf,'(A)') 'Precision set to DOUBLE'
 
-         CASE DEFAULT
-            WRITE(cbuf,'(A)') 'Precision set to UNKNOWN'
+      CASE DEFAULT
+         WRITE(cbuf,'(A)') 'Precision set to UNKNOWN'
 
       END SELECT
       CALL ppm_log(caller,cbuf,info)
@@ -284,31 +287,29 @@
       !  Save the tolerance
       !-------------------------------------------------------------------------
       SELECT CASE (ppm_kind)
-         CASE (ppm_kind_double)
-            IF (tolexp.LT.-20.OR.tolexp.GT.-3) THEN
-               info = ppm_error_warning
-               ppm_fail('Usual values are between 10^(-20) and 10^(-3)',ppm_err_tol_warn,exit_point=no)
-            ENDIF
-            IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepsd)))) THEN
-               fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
-            ENDIF
-            ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
-            ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-            WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',  &
-            & ppm_myepsd
+      CASE (ppm_kind_double)
+         IF (tolexp.LT.-20.OR.tolexp.GT.-3) THEN
+            info = ppm_error_warning
+            ppm_fail('Usual values are between 10^(-20) and 10^(-3)',ppm_err_tol_warn,exit_point=no)
+         ENDIF
+         IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepsd)))) THEN
+            fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
+         ENDIF
+         ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
+         ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
+         WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',ppm_myepsd
 
-         CASE DEFAULT
-            IF (tolexp.LT.-12.OR.tolexp.GT.-3) THEN
-               info = ppm_error_warning
-               ppm_fail('Usual values are between 10^(-12) and 10^(-3)',ppm_err_tol_warn,exit_point=no)
-            ENDIF
-            IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepss)))) THEN
-               fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
-            ENDIF
-            ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
-            ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
-            WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',   &
-            & ppm_myepss
+      CASE DEFAULT
+         IF (tolexp.LT.-12.OR.tolexp.GT.-3) THEN
+            info = ppm_error_warning
+            ppm_fail('Usual values are between 10^(-12) and 10^(-3)',ppm_err_tol_warn,exit_point=no)
+         ENDIF
+         IF (tolexp.LT.INT(LOG10(EPSILON(ppm_myepss)))) THEN
+            fail('Tolerance must not be smaller than machine epsilon',ppm_err_tol_warn,ppm_error=ppm_error_fatal)
+         ENDIF
+         ppm_myepsd = 10.0_ppm_kind_double**REAL(tolexp,ppm_kind_double)
+         ppm_myepss = REAL(ppm_myepsd,ppm_kind_single)
+         WRITE(cbuf,'(A,E17.10)') 'Floating point tolerance set to ',ppm_myepss
 
       END SELECT
       CALL ppm_log(caller,cbuf,info)
@@ -320,14 +321,7 @@
       !-------------------------------------------------------------------------
       !  Save the MPI precision
       !-------------------------------------------------------------------------
-      SELECT CASE (ppm_kind)
-         CASE (ppm_kind_double)
-            ppm_mpi_kind = MPI_DOUBLE_PRECISION
-
-         CASE DEFAULT
-            ppm_mpi_kind = MPI_REAL
-
-      END SELECT
+      ppm_mpi_kind = MERGE(MPI_DOUBLE_PRECISION,MPI_REAL,ppm_kind.EQ.ppm_kind_double)
 #endif
 
       !-------------------------------------------------------------------------
@@ -369,6 +363,6 @@
           IF (ppm_initialized) THEN
              fail('Please call ppm_finalize first!',ppm_err_multipleinit,exit_point=8888)
           ENDIF
-        8888 CONTINUE
+      8888 CONTINUE
         END SUBROUTINE check
       END SUBROUTINE ppm_init

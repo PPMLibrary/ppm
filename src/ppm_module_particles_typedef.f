@@ -122,7 +122,7 @@
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-# define DEFINE_MK() parameter(MK,<#INTEGER#>,ppm_kind_single)
+#define DEFINE_MK() parameter(MK,INTEGER,ppm_kind_single)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"
@@ -185,7 +185,7 @@
 #include "part/ppm_part_neighlists_get.f"
 #include "part/part_interp_to_mesh.f"
 #undef  DEFINE_MK
-# define DEFINE_MK() parameter(MK,<#INTEGER#>,ppm_kind_double)
+#define DEFINE_MK() parameter(MK,INTEGER,ppm_kind_double)
 #include "part/part_remesh.f"
 #include "part/part_interp_to_mesh_all.f"
 #include "part/particles_from_mesh.f"

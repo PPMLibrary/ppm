@@ -119,11 +119,10 @@
              ENDIF
 
              IF (skip.OR.discr_data%flags(ppm_ppt_partial)) THEN
-                wp =>  &
 #if   __DIM == 1
-                &  discr_data%WRAP(DATANAME)(1:np)
+                wp => discr_data%WRAP(DATANAME)(1:np)
 #elif __DIM == 2
-                &  discr_data%WRAP(DATANAME)(:,1:np)
+                wp => discr_data%WRAP(DATANAME)(:,1:np)
 #endif
              ELSE
                 WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
@@ -221,7 +220,7 @@
           LOGICAL,                              OPTIONAL, INTENT(IN   ) :: skip_checks
           !!! Only for users with huge cojones
 
-          CLASS(ppm_t_discr_data), POINTER :: discr_data => NULL()
+          CLASS(ppm_t_discr_data), POINTER :: discr_data
 
           INTEGER :: np
 
@@ -229,13 +228,9 @@
 
           start_subroutine(__FUNCNAME)
 
-          IF (PRESENT(skip_checks)) THEN
-             skip = skip_checks
-          ELSE
-             skip = .FALSE.
-          ENDIF
+          skip=MERGE(skip_checks,.FALSE.,PRESENT(skip_checks))
 
-          wp => NULL()
+          NULLIFY(wp,discr_data)
 
           CALL Field%get_discr(this,discr_data,info)
           or_fail("could not get discr data for this field on that particle set")
@@ -265,11 +260,10 @@
               ENDIF
 
               IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
-                 wp => &
 #if   __DIM == 1
-                 &  prop%WRAP(DATANAME)(1:np)
+                 wp => prop%WRAP(DATANAME)(1:np)
 #elif __DIM == 2
-                 &  prop%WRAP(DATANAME)(:,1:np)
+                 wp => prop%WRAP(DATANAME)(:,1:np)
 #endif
               ELSE
                   WRITE(cbuf,*) 'ERROR: tried to get DATANAME (name = ', &
@@ -382,18 +376,10 @@
 
           start_subroutine(__FUNCNAME)
 
-          IF (PRESENT(skip_checks)) THEN
-             skip = skip_checks
-          ELSE
-             skip = .FALSE.
-          ENDIF
+          skip=MERGE(skip_checks,.FALSE.,PRESENT(skip_checks))
+          lghosts =MERGE(with_ghosts,.FALSE.,PRESENT(with_ghosts))
 
           wp => NULL()
-
-          lghosts = .FALSE.
-          IF (PRESENT(with_ghosts)) THEN
-             IF (with_ghosts) lghosts = .TRUE.
-          ENDIF
 
           IF (ppt_id .LE. 0) THEN
              stdout("ERROR: failed to get DATANAME for property with ppt_id = ",ppt_id)
@@ -405,11 +391,10 @@
                 IF (skip.OR.prop%flags(ppm_ppt_partial)) THEN
                    IF (lghosts) THEN
                       IF (skip.OR.prop%flags(ppm_ppt_ghosts)) THEN
-                         wp => &
 #if   __DIM == 1
-                         &  prop%WRAP(DATANAME)(1:Pc%Mpart)
+                         wp => prop%WRAP(DATANAME)(1:Pc%Mpart)
 #elif __DIM == 2
-                         &  prop%WRAP(DATANAME)(:,1:Pc%Mpart)
+                         wp => prop%WRAP(DATANAME)(:,1:Pc%Mpart)
 #endif
                       ELSE
                          stdout("ERROR: tried to get DATANAME (name = ",     &
@@ -420,11 +405,10 @@
                          fail("Ghosts not up-to-date. Call map_ghosts()?")
                       ENDIF
                    ELSE
-                      wp => &
 #if   __DIM == 1
-                      &  prop%WRAP(DATANAME)(1:Pc%Npart)
+                      wp => prop%WRAP(DATANAME)(1:Pc%Npart)
 #elif __DIM == 2
-                      &  prop%WRAP(DATANAME)(:,1:Pc%Npart)
+                      wp => prop%WRAP(DATANAME)(:,1:Pc%Npart)
 #endif
                    ENDIF
                 ELSE

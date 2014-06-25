@@ -578,8 +578,12 @@
                   !need_deriv=need_derivatives,stats=stats)
           !ENDIF
 
-          IF (PRESENT(stats)) &
-              stats%nb_grad_desc_steps = stats%nb_grad_desc_steps + num_it
+          !TODO
+          !num_it is uninitialized
+          !yaser
+          IF (PRESENT(stats)) THEN
+             stats%nb_grad_desc_steps = stats%nb_grad_desc_steps !+ num_it
+          ENDIF
 
           !!-------------------------------------------------------------------------!
           !! Compute field values at new particle locations

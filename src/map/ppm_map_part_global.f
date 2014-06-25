@@ -189,35 +189,35 @@
                  !  If the particle is inside the current subdomain, assign it
                  !--------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                 IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.   &
-     &                xp(1,ipart).LE.topo%max_subs(1,idom).AND.   &
-     &                xp(2,ipart).GE.topo%min_subs(2,idom).AND.   &
-     &                xp(2,ipart).LE.topo%max_subs(2,idom)) THEN
+                 IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND. &
+                 &   xp(1,ipart).LE.topo%max_subs(1,idom).AND. &
+                 &   xp(2,ipart).GE.topo%min_subs(2,idom).AND. &
+                 &   xp(2,ipart).LE.topo%max_subs(2,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
                      !----------------------------------------------------------
-                     IF((xp(1,ipart).LT.topo%max_subs(1,idom) .OR.  &
-     &                   (topo%subs_bc(2,idom).EQ.1           .AND.  &
-     &                   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
-     &                   (xp(2,ipart).LT.topo%max_subs(2,idom) .OR.  &
-     &                   (topo%subs_bc(4,idom).EQ.1           .AND.  &
-     &                   topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+                     IF ((xp(1,ipart).LT.topo%max_subs(1,idom) .OR. &
+                     &  (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                     &  topo%bcdef(2).NE.ppm_param_bcdef_periodic)) .AND.  &
+                     &  (xp(2,ipart).LT.topo%max_subs(2,idom) .OR.  &
+                     &  (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                     &  topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
 #elif  __KIND == __DOUBLE_PRECISION
                  IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
-     &                xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
-     &                xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
-     &                xp(2,ipart).LE.topo%max_subd(2,idom)) THEN
+                 &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
+                 &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
+                 &   xp(2,ipart).LE.topo%max_subd(2,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
                      !----------------------------------------------------------
-                     IF((xp(1,ipart).LT.topo%max_subd(1,idom) .OR.  &
-     &                   (topo%subs_bc(2,idom).EQ.1           .AND.  &
-     &                   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND.  &
-     &                   (xp(2,ipart).LT.topo%max_subd(2,idom) .OR.  &
-     &                   (topo%subs_bc(4,idom).EQ.1           .AND.  &
-     &                   topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
+                     IF ((xp(1,ipart).LT.topo%max_subd(1,idom) .OR. &
+                     &  (topo%subs_bc(2,idom).EQ.1           .AND.  &
+                     &  topo%bcdef(2).NE.ppm_param_bcdef_periodic)) .AND.  &
+                     &  (xp(2,ipart).LT.topo%max_subd(2,idom) .OR.  &
+                     &  (topo%subs_bc(4,idom).EQ.1           .AND.  &
+                     &  topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
 #endif
                         part2proc(ipart) = sendrank
                      ELSE
@@ -273,44 +273,44 @@
                  !--------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
                  IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.   &
-     &                xp(1,ipart).LE.topo%max_subs(1,idom).AND.   &
-     &                xp(2,ipart).GE.topo%min_subs(2,idom).AND.   &
-     &                xp(2,ipart).LE.topo%max_subs(2,idom).AND.   &
-     &                xp(3,ipart).GE.topo%min_subs(3,idom).AND.   &
-     &                xp(3,ipart).LE.topo%max_subs(3,idom)) THEN
+                 &   xp(1,ipart).LE.topo%max_subs(1,idom).AND.   &
+                 &   xp(2,ipart).GE.topo%min_subs(2,idom).AND.   &
+                 &   xp(2,ipart).LE.topo%max_subs(2,idom).AND.   &
+                 &   xp(3,ipart).GE.topo%min_subs(3,idom).AND.   &
+                 &   xp(3,ipart).LE.topo%max_subs(3,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
                      !----------------------------------------------------------
-                     IF((xp(1,ipart).LT.topo%max_subs(1,idom) .OR. &
-     &                   (topo%subs_bc(2,idom).EQ.1           .AND. &
-     &                   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND. &
-     &                   (xp(2,ipart).LT.topo%max_subs(2,idom) .OR. &
-     &                   (topo%subs_bc(4,idom).EQ.1           .AND. &
-     &                   topo%bcdef(4).NE. ppm_param_bcdef_periodic))    .AND. &
-     &                   (xp(3,ipart).LT.topo%max_subs(3,idom) .OR. &
-     &                   (topo%subs_bc(6,idom).EQ.1           .AND. &
-     &                   topo%bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
+                     IF ((xp(1,ipart).LT.topo%max_subs(1,idom) .OR. &
+                     &  (topo%subs_bc(2,idom).EQ.1           .AND. &
+                     &   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND. &
+                     &  (xp(2,ipart).LT.topo%max_subs(2,idom) .OR. &
+                     &  (topo%subs_bc(4,idom).EQ.1           .AND. &
+                     &   topo%bcdef(4).NE. ppm_param_bcdef_periodic))    .AND. &
+                     &  (xp(3,ipart).LT.topo%max_subs(3,idom) .OR. &
+                     &  (topo%subs_bc(6,idom).EQ.1           .AND. &
+                     &  topo%bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
 #elif  __KIND == __DOUBLE_PRECISION
                  IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
-     &                xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
-     &                xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
-     &                xp(2,ipart).LE.topo%max_subd(2,idom).AND.   &
-     &                xp(3,ipart).GE.topo%min_subd(3,idom).AND.   &
-     &                xp(3,ipart).LE.topo%max_subd(3,idom)) THEN
+                 &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
+                 &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
+                 &   xp(2,ipart).LE.topo%max_subd(2,idom).AND.   &
+                 &   xp(3,ipart).GE.topo%min_subd(3,idom).AND.   &
+                 &   xp(3,ipart).LE.topo%max_subd(3,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
                      !----------------------------------------------------------
-                     IF((xp(1,ipart).LT.topo%max_subd(1,idom) .OR. &
-     &                   (topo%subs_bc(2,idom).EQ.1           .AND. &
-     &                   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND. &
-     &                   (xp(2,ipart).LT.topo%max_subd(2,idom) .OR. &
-     &                   (topo%subs_bc(4,idom).EQ.1           .AND. &
-     &                   topo%bcdef(4).NE. ppm_param_bcdef_periodic))    .AND. &
-     &                   (xp(3,ipart).LT.topo%max_subd(3,idom) .OR. &
-     &                   (topo%subs_bc(6,idom).EQ.1           .AND. &
-     &                   topo%bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
+                     IF ((xp(1,ipart).LT.topo%max_subd(1,idom) .OR. &
+                     &  (topo%subs_bc(2,idom).EQ.1           .AND. &
+                     &   topo%bcdef(2).NE. ppm_param_bcdef_periodic))    .AND. &
+                     &  (xp(2,ipart).LT.topo%max_subd(2,idom) .OR. &
+                     &  (topo%subs_bc(4,idom).EQ.1           .AND. &
+                     &   topo%bcdef(4).NE. ppm_param_bcdef_periodic))    .AND. &
+                     &  (xp(3,ipart).LT.topo%max_subd(3,idom) .OR. &
+                     &  (topo%subs_bc(6,idom).EQ.1           .AND. &
+                     &   topo%bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
 #endif
                         part2proc(ipart) = sendrank
                      ELSE
@@ -362,7 +362,7 @@
       !  Send the particles to the target processors
       !-----------------------------------------------------------------------
       IF (.NOT.((target_topoid.EQ.ppm_param_topo_undefined).AND. &
-     &          (.NOT.PRESENT(userdef_part2proc)))) THEN
+      &   (.NOT.PRESENT(userdef_part2proc)))) THEN
         !-----------------------------------------------------------------------
         !  We have a particle processor mapping
         !-----------------------------------------------------------------------
@@ -484,11 +484,9 @@
                     IF (ppm_kind .EQ. ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),   &
-     &                      ppm_kind_double)
+                       ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),ppm_kind_double)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),   &
-     &                      ppm_kind_double)
+                       ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),ppm_kind_double)
 #else
                        ibuffer                  = ibuffer + 1
                        ppm_sendbufferd(ibuffer) = xp(1,ipart)
@@ -503,11 +501,9 @@
                        ppm_sendbuffers(ibuffer) = xp(2,ipart)
 #else
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),   &
-     &                      ppm_kind_single)
+                       ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),ppm_kind_single)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),   &
-     &                      ppm_kind_single)
+                       ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),ppm_kind_single)
 #endif
                     ENDIF
                  ELSE
@@ -535,14 +531,11 @@
                     IF (ppm_kind .EQ. ppm_kind_double) THEN
 #if    __KIND == __SINGLE_PRECISION
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),   &
-     &                      ppm_kind_double)
+                       ppm_sendbufferd(ibuffer) = REAL(xp(1,ipart),ppm_kind_double)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),   &
-     &                      ppm_kind_double)
+                       ppm_sendbufferd(ibuffer) = REAL(xp(2,ipart),ppm_kind_double)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbufferd(ibuffer) = REAL(xp(3,ipart),   &
-     &                      ppm_kind_double)
+                       ppm_sendbufferd(ibuffer) = REAL(xp(3,ipart),ppm_kind_double)
 #else
                        ibuffer                  = ibuffer + 1
                        ppm_sendbufferd(ibuffer) = xp(1,ipart)
@@ -561,14 +554,11 @@
                        ppm_sendbuffers(ibuffer) = xp(3,ipart)
 #else
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),   &
-     &                      ppm_kind_single)
+                       ppm_sendbuffers(ibuffer) = REAL(xp(1,ipart),ppm_kind_single)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),   &
-     &                      ppm_kind_single)
+                       ppm_sendbuffers(ibuffer) = REAL(xp(2,ipart),ppm_kind_single)
                        ibuffer                  = ibuffer + 1
-                       ppm_sendbuffers(ibuffer) = REAL(xp(3,ipart),   &
-     &                      ppm_kind_single)
+                       ppm_sendbuffers(ibuffer) = REAL(xp(3,ipart),ppm_kind_single)
 #endif
                     ENDIF
                  ELSE

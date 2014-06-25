@@ -295,9 +295,9 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 !           CLASS(ppm_t_subpatch_data_),POINTER :: subpdat => NULL()
           INTEGER                             :: dtype,p_idx
           LOGICAL                             :: lghosts
-          CLASS(ppm_t_mesh_discr_data_),POINTER :: mddata => NULL()
+          CLASS(ppm_t_mesh_discr_data_),POINTER :: mddata
           !CLASS(ppm_t_part_prop_d_),    POINTER :: pddata => NULL()
-          CLASS(ppm_t_discr_data),    POINTER :: pddata => NULL()
+          CLASS(ppm_t_discr_data),    POINTER :: pddata
           CLASS(ppm_t_main_abstr),      POINTER :: el
 
           start_subroutine("field_discretize_on")
@@ -305,12 +305,12 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           IF (PRESENT(datatype)) THEN
              dtype = datatype
           ELSE
+             check_true(<#this%data_type.NE.0#>,"field data type has not been initialized. Fix constructor.")
              dtype = this%data_type
-             check_true(<#this%data_type .NE. 0#>,"field data type has not been initialized. Fix constructor.")
           END IF
 
           !Check whether this field has already been initialized
-          check_true(<#this%ID.GT.0 .AND. this%lda.GT.0#>,&
+          check_true(<#this%ID.GT.0.AND.this%lda.GT.0#>,&
           "Field needs to be initialized before calling discretized. Call ThisField%create() first")
 
           check_false(<#this%is_discretized_on(discr)#>,&
@@ -318,62 +318,60 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           SELECT TYPE(discr)
           CLASS IS (ppm_t_equi_mesh_)
-              !Check that the mesh contains patches onto which the data
-              ! should be allocated. If not, create a single patch that
-              ! covers the whole domain.
-              IF (.NOT.ASSOCIATED(discr%subpatch)) THEN
-                 fail("Mesh not allocated. Use mesh%create() first.")
-              ELSE
-                 IF (discr%npatch.LE.0) THEN
-                    CALL discr%def_uniform(info)
-                    or_fail("failed to create a uniform patch data structure")
-                 ENDIF
-              ENDIF
+             !Check that the mesh contains patches onto which the data
+             ! should be allocated. If not, create a single patch that
+             ! covers the whole domain.
+             IF (.NOT.ASSOCIATED(discr%subpatch)) THEN
+                fail("Mesh not allocated. Use mesh%create() first.")
+             ELSE
+                IF (discr%npatch.LE.0) THEN
+                   CALL discr%def_uniform(info)
+                   or_fail("failed to create a uniform patch data structure")
+                ENDIF
+             ENDIF
 
-              CALL discr%create_prop(this,mddata,info,p_idx)
-              or_fail("discr%create_prop()")
+             NULLIFY(mddata)
+             CALL discr%create_prop(this,mddata,info,p_idx)
+             or_fail("discr%create_prop()")
 
-              !Update the bookkeeping table to store the relationship between
-              !the mesh and the field.
-              CALL this%set_rel_discr(discr,mddata,info,p_idx)
-              or_fail("failed to log the relationship between this field and that mesh")
+             !Update the bookkeeping table to store the relationship between
+             !the mesh and the field.
+             CALL this%set_rel_discr(discr,mddata,info,p_idx)
+             or_fail("failed to log the relationship between this field and that mesh")
 
-              !CALL discr%set_rel(this,info)
-              IF (PRESENT(discr_info)) THEN
-                 discr_info => this%discr_info%last()
-              ENDIF
+             !CALL discr%set_rel(this,info)
+             IF (PRESENT(discr_info)) THEN
+                discr_info => this%discr_info%last()
+             ENDIF
 
-              el => this
-              CALL discr%field_ptr%push(el,info)
-              or_fail("failed to log the relationship between this mesh and that field")
+             el => this
+             CALL discr%field_ptr%push(el,info)
+             or_fail("failed to log the relationship between this mesh and that field")
 
           CLASS IS (ppm_t_particles_d_)
+             lghosts =MERGE(with_ghosts,discr%flags(ppm_part_ghosts),PRESENT(with_ghosts))
 
-              IF (PRESENT(with_ghosts)) THEN
-                  lghosts = with_ghosts
-              ELSE
-                  lghosts = discr%flags(ppm_part_ghosts)
-              ENDIF
-              !Create a new property data structure in the particle set to store this field
-              CALL discr%create_prop(info,this,discr_data=pddata,with_ghosts=lghosts)
-              or_fail("discr%create_prop")
+             NULLIFY(pddata)
+             !Create a new property data structure in the particle set to store this field
+             CALL discr%create_prop(info,this,discr_data=pddata,with_ghosts=lghosts)
+             or_fail("discr%create_prop")
 
-              !Update the bookkeeping table to store the relationship between
-              ! the particle and the field.
-              CALL this%set_rel_discr(discr,pddata,info)
-              or_fail("failed to log the relationship between this field and that particle set")
-              !CALL this%set_rel(discr,p_idx,info)
+             !Update the bookkeeping table to store the relationship between
+             ! the particle and the field.
+             CALL this%set_rel_discr(discr,pddata,info)
+             or_fail("failed to log the relationship between this field and that particle set")
+             !CALL this%set_rel(discr,p_idx,info)
 
-              IF (PRESENT(discr_info)) THEN
-                 discr_info => this%discr_info%last()
-              ENDIF
+             IF (PRESENT(discr_info)) THEN
+                discr_info => this%discr_info%last()
+             ENDIF
 
-              el => this
-              CALL discr%field_ptr%push(el,info)
-              or_fail("failed to log the relationship between this particle set and that field")
+             el => this
+             CALL discr%field_ptr%push(el,info)
+             or_fail("failed to log the relationship between this particle set and that field")
 
           CLASS DEFAULT
-              fail("support for this discretization type is missing")
+             fail("support for this discretization type is missing")
 
           END SELECT
 

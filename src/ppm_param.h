@@ -65,20 +65,17 @@
       INTEGER, PARAMETER :: ppm_param_map_remap           = 8
       INTEGER, PARAMETER :: ppm_param_map_cancel          = 9
       INTEGER, PARAMETER :: ppm_param_map_init            = 10
-
       !-------------------------------------------------------------------------
       !  Connection options
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_connect_distribute  = 1
       INTEGER, PARAMETER :: ppm_param_connect_send        = 2
       INTEGER, PARAMETER :: ppm_param_connect_prune       = 3
-
       !-------------------------------------------------------------------------
       !  Define data receive options (map_pop)
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_pop_replace         = 1
       INTEGER, PARAMETER :: ppm_param_pop_add             = 2
-
       !-------------------------------------------------------------------------
       !  Define ppm-internal PP interaction kernels
       !-------------------------------------------------------------------------
@@ -95,19 +92,16 @@
       INTEGER, PARAMETER :: ppm_param_kernel_fast3d_dy    = 11
       INTEGER, PARAMETER :: ppm_param_kernel_fast3d_dz    = 12
       INTEGER, PARAMETER :: ppm_param_kernel_fast3d_lap   = 13
-
       !-------------------------------------------------------------------------
       !  Define decision heuristics for dynamic load balancing
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_loadbal_sar         = 1
-
       !-------------------------------------------------------------------------
       !  Define statistics update methods
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_update_replace      = 1
       INTEGER, PARAMETER :: ppm_param_update_average      = 2
       INTEGER, PARAMETER :: ppm_param_update_expfavg      = 3
-
       !-------------------------------------------------------------------------
       !  Define domain decomposition techniques
       !-------------------------------------------------------------------------
@@ -123,14 +117,12 @@
       INTEGER, PARAMETER :: ppm_param_decomp_xz_slab      = 11
       INTEGER, PARAMETER :: ppm_param_decomp_yz_slab      = 12
       INTEGER, PARAMETER :: ppm_param_decomp_cartesian    = 13
-
       !-------------------------------------------------------------------------
       !  Define tree types
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_tree_bin            = 1
       INTEGER, PARAMETER :: ppm_param_tree_quad           = 2
       INTEGER, PARAMETER :: ppm_param_tree_oct            = 3
-
       !-------------------------------------------------------------------------
       !  Define subdomain-to-processor assignment schemes
       !-------------------------------------------------------------------------
@@ -140,7 +132,6 @@
       INTEGER, PARAMETER :: ppm_param_assign_dual_cut     = 4
       INTEGER, PARAMETER :: ppm_param_assign_dual_comm    = 5
       INTEGER, PARAMETER :: ppm_param_assign_user_defined = 6
-
       !-------------------------------------------------------------------------
       !  Define particle-mesh schemes
       !-------------------------------------------------------------------------
@@ -149,13 +140,11 @@
       INTEGER, PARAMETER :: ppm_param_assign_tcs          = 2
       INTEGER, PARAMETER :: ppm_param_assign_mp4          = 3
       INTEGER, PARAMETER :: ppm_param_assign_m3p6         = 4
-
       !-------------------------------------------------------------------------
       !  Define mesh operations
       !-------------------------------------------------------------------------
       INTEGER, PARAMETER :: ppm_param_mesh_refine         = 0
       INTEGER, PARAMETER :: ppm_param_mesh_coarsen        = 1
-
       !-------------------------------------------------------------------------
       !  Define boundary conditions
       !-------------------------------------------------------------------------
@@ -166,7 +155,6 @@
       INTEGER, PARAMETER :: ppm_param_bcdef_neumann       = 4
       INTEGER, PARAMETER :: ppm_param_bcdef_dirichlet     = 5
       INTEGER, PARAMETER :: ppm_param_bcdef_robin         = 6
-
       !-------------------------------------------------------------------------
       !  memory allocation options
       !-------------------------------------------------------------------------
@@ -175,7 +163,6 @@
       INTEGER, PARAMETER :: ppm_param_alloc_grow          = 3
       INTEGER, PARAMETER :: ppm_param_alloc_grow_preserve = 4
       INTEGER, PARAMETER :: ppm_param_dealloc             = 5
-
       !-------------------------------------------------------------------------
       !  I/O parameters
       !-------------------------------------------------------------------------
@@ -196,7 +183,6 @@
       INTEGER, PARAMETER :: ppm_param_io_single           = 15
       INTEGER, PARAMETER :: ppm_param_io_double           = 16
       INTEGER, PARAMETER :: ppm_param_io_hdf5             = 17
-
       !-------------------------------------------------------------------------
       !  error severity levels
       !-------------------------------------------------------------------------
@@ -204,7 +190,6 @@
       INTEGER, PARAMETER :: ppm_error_warning             = -2
       INTEGER, PARAMETER :: ppm_error_error               = -3
       INTEGER, PARAMETER :: ppm_error_fatal               = -4
-
       !-------------------------------------------------------------------------
       !  Toplogy parameters
       !-------------------------------------------------------------------------
@@ -212,7 +197,6 @@
       INTEGER, PARAMETER :: ppm_param_topo_field          = 2
       INTEGER, PARAMETER :: ppm_param_id_internal         = 3
       INTEGER, PARAMETER :: ppm_param_id_user             = 4
-
       !-------------------------------------------------------------------------
       !  Misc parameters
       !-------------------------------------------------------------------------
@@ -228,7 +212,7 @@
       !-------------------------------------------------------------------------
       !  Operators
       !-------------------------------------------------------------------------
-      INTEGER, PARAMETER :: ppm_param_op_fd       = 1
-      INTEGER, PARAMETER :: ppm_param_op_pse      = 2
-      INTEGER, PARAMETER :: ppm_param_op_dcpse    = 3
+      INTEGER, PARAMETER :: ppm_param_op_fd               = 1
+      INTEGER, PARAMETER :: ppm_param_op_pse              = 2
+      INTEGER, PARAMETER :: ppm_param_op_dcpse            = 3
 
