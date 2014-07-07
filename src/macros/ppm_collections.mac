@@ -591,7 +591,7 @@ include macro ppm_create_collection_procedures(coll_type,el_type,vec=false,ptr_t
           !  Local variables
           !-------------------------------------------------------------------------
 
-          IF (i.GE.this%min_id .AND. i.LE.this%max_id) THEN
+          IF (i.GE.this%min_id.AND.i.LE.this%max_id.AND.i.NE.0) THEN
              element => this%vec(i)%t
              this%iter_id=i
              DO WHILE (.NOT.ASSOCIATED(element))

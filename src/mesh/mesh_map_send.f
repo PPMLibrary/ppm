@@ -396,9 +396,9 @@
                 tag1 = k
                 IF (psend(k) .GT. 0 .AND. precv(k) .GT. 0) THEN
                     IF (ppm_debug .GT. 1) THEN
-                        WRITE(mesg,'(2(A,I3))') 'SendRecv to ',ppm_isendlist(k),&
-     &                      ' from ',ppm_irecvlist(k)
-                        CALL ppm_write(ppm_rank,caller,mesg,info)
+                       WRITE(mesg,'(2(A,I3))') 'SendRecv to ',ppm_isendlist(k),&
+                       & ' from ',ppm_irecvlist(k)
+                       CALL ppm_write(ppm_rank,caller,mesg,info)
                     ENDIF
                     CALL MPI_SendRecv(sendd,nsend(k),ppm_mpi_kind,  &
      &                 ppm_isendlist(k),tag1,recvd,nrecv(k),ppm_mpi_kind,  &

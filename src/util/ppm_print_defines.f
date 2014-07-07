@@ -36,12 +36,11 @@
             !-------------------------------------------------------------------------
             !  Modules
             !-------------------------------------------------------------------------
-            USE ppm_module_data, ONLY: ppm_kind_double, ppm_rank, ppm_debug
+            USE ppm_module_data, ONLY: ppm_kind_double,ppm_rank,ppm_debug,ppm_char
             USE ppm_module_substart
             USE ppm_module_substop
             USE ppm_module_write
             USE ppm_module_log
-
             IMPLICIT NONE
 
             !-------------------------------------------------------------------------
@@ -54,6 +53,8 @@
             !-------------------------------------------------------------------------
             ! timer
             REAL(ppm_kind_double) :: t0
+
+            CHARACTER(LEN=ppm_char) :: caller='ppm_print_defines'
             !-------------------------------------------------------------------------
             !  Externals
             !-------------------------------------------------------------------------
@@ -61,7 +62,7 @@
             !-------------------------------------------------------------------------
             !  Initialise
             !-------------------------------------------------------------------------
-            CALL substart('ppm_print_defines',t0,info)
+            CALL substart(caller,t0,info)
 
             !-------------------------------------------------------------------------
             !  Check arguments
@@ -72,81 +73,81 @@
             !-------------------------------------------------------------------------
 #ifdef __MPI
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__MPI defined',info)
+               CALL ppm_write(ppm_rank,caller,'__MPI defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__MPI defined',info)
+            CALL ppm_log(caller,'__MPI defined',info)
 #endif
 #ifdef __Linux
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__Linux defined',info)
+               CALL ppm_write(ppm_rank,caller,'__Linux defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__Linux defined',info)
+            CALL ppm_log(caller,'__Linux defined',info)
 #endif
 #ifdef __VECTOR
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__VECTOR defined',info)
+               CALL ppm_write(ppm_rank,caller,'__VECTOR defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__VECTOR defined',info)
+            CALL ppm_log(caller,'__VECTOR defined',info)
 #endif
 #ifdef __SXF90
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__SXF90 defined',info)
+               CALL ppm_write(ppm_rank,caller,'__SXF90 defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__SXF90 defined',info)
+            CALL ppm_log(caller,'__SXF90 defined',info)
 #endif
 #ifdef __ETIME
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__ETIME defined',info)
+               CALL ppm_write(ppm_rank,caller,'__ETIME defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__ETIME defined',info)
+            CALL ppm_log(caller,'__ETIME defined',info)
 #endif
 #ifdef __METIS
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__METIS defined',info)
+               CALL ppm_write(ppm_rank,caller,'__METIS defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__METIS defined',info)
+            CALL ppm_log(caller,'__METIS defined',info)
 #endif
 #ifdef __FFTW
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__FFTW defined',info)
+               CALL ppm_write(ppm_rank,caller,'__FFTW defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__FFTW defined',info)
+            CALL ppm_log(caller,'__FFTW defined',info)
 #endif
 #ifdef __HYPRE
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__HYPRE defined',info)
+               CALL ppm_write(ppm_rank,caller,'__HYPRE defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__HYPRE defined',info)
+            CALL ppm_log(caller,'__HYPRE defined',info)
 #endif
 #ifdef __XLF
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines','__XLF defined',info)
+               CALL ppm_write(ppm_rank,caller,'__XLF defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__XLF defined',info)
+            CALL ppm_log(caller,'__XLF defined',info)
 #endif
 #ifdef __MATHKEISAN
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines',    &
+               CALL ppm_write(ppm_rank,caller,    &
                & '__MATHKEISAN defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__MATHKEISAN defined',info)
+            CALL ppm_log(caller,'__MATHKEISAN defined',info)
 #endif
 #ifdef __CRAYFISHPACK
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines',    &
+               CALL ppm_write(ppm_rank,caller,    &
                &  '__CRAYFISHPACK defined',info)
             ENDIF
-            CALL ppm_log('ppm_print_defines','__CRAYFISHPACK defined',info)
+            CALL ppm_log(caller,'__CRAYFISHPACK defined',info)
 #endif
             IF (ppm_debug .GT. 0) THEN
-               CALL ppm_write(ppm_rank,'ppm_print_defines',    &
+               CALL ppm_write(ppm_rank,caller,    &
                &    'See ppm_define.h for descriptions.',info)
             ENDIF
 
             !-------------------------------------------------------------------------
             !  Return
             !-------------------------------------------------------------------------
-9999     CONTINUE
-            CALL substop('ppm_print_defines',t0,info)
+         9999 CONTINUE
+            CALL substop(caller,t0,info)
             RETURN
          END SUBROUTINE ppm_print_defines

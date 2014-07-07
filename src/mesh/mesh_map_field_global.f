@@ -84,9 +84,8 @@
       target_topo => ppm_topo(target_mesh%topoid)%t
 
       IF (ppm_buffer_set .GT. 0) THEN
-         info = ppm_error_warning
-         CALL ppm_error(ppm_err_map_incomp,caller,  &
-         & 'Buffer was not empty. Possible loss of data!',__LINE__,info)
+         fail('Buffer was not empty. Possible loss of data!', &
+         & ppm_err_map_incomp,exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -100,9 +99,8 @@
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
          IF (ANY(this%Nm .NE. target_mesh%Nm)) THEN
-            info = ppm_error_notice
-            CALL ppm_write(ppm_rank,caller,   &
-            &   'Source and destination meshes are of different size',info)
+            fail('Source and destination meshes are of different size', &
+            & exit_point=no,ppm_error=ppm_error_notice)
          ENDIF
       ENDIF
 
@@ -199,10 +197,6 @@
              &    isendtosub,isendpatchid,isendblkstart, &
              &    isendblksize,ioffset,info)
              or_fail("block_intersect failed")
-
-
-
-
           ENDDO
       ENDDO
 
@@ -212,28 +206,15 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = nsendlist
       CALL ppm_alloc(ppm_mesh_isendfromsub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'source send sub list PPM_MESH_ISENDFROMSUB',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('source send sub list PPM_MESH_ISENDFROMSUB',ppm_error=ppm_error_fatal)
+
       ldu(1) = pdim
       ldu(2) = nsendlist
       CALL ppm_alloc(ppm_mesh_isendblkstart,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'send block start list PPM_MESH_ISENDBLKSTART',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('send block start list PPM_MESH_ISENDBLKSTART',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_mesh_isendblksize,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'send block size list PPM_MESH_ISENDBLKSIZE',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('send block size list PPM_MESH_ISENDBLKSIZE',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global mesh receive lists
@@ -241,62 +222,32 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = nrecvlist
       CALL ppm_alloc(ppm_mesh_irecvtosub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'destination recv sub list PPM_MESH_IRECVTOSUB',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('destination recv sub list PPM_MESH_IRECVTOSUB',ppm_error=ppm_error_fatal)
+
       ldu(1) = pdim
       ldu(2) = nrecvlist
       CALL ppm_alloc(ppm_mesh_irecvblkstart,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'recv block start list PPM_MESH_IRECVBLKSTART',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('recv block start list PPM_MESH_IRECVBLKSTART',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_mesh_irecvblksize,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'recv block size list PPM_MESH_IRECVBLKSIZE',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('recv block size list PPM_MESH_IRECVBLKSIZE',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the global send/recv lists
       !-------------------------------------------------------------------------
       ldu(1) = ppm_nproc
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'global send rank list PPM_ISENDLIST',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('global send rank list PPM_ISENDLIST',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'global recv rank list PPM_IRECVLIST',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('global recv rank list PPM_IRECVLIST',ppm_error=ppm_error_fatal)
+
       ldu(1) = ppm_nproc + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'global send buffer pointer PPM_PSENDBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('global send buffer pointer PPM_PSENDBUFFER',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_precvbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,caller,     &
-     &        'global recv buffer pointer PPM_PRECVBUFFER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('global recv buffer pointer PPM_PRECVBUFFER',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Reset the number of buffer entries
@@ -416,92 +367,52 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(isendfromsub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send source sub list ISENDFROMSUB',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local send source sub list ISENDFROMSUB')
+
       CALL ppm_alloc(isendtosub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send destination sub list ISENDTOSUB',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local send destination sub list ISENDTOSUB')
+
       CALL ppm_alloc(isendblkstart,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send block start list ISENDBLKSTART',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local send block start list ISENDBLKSTART')
+
       CALL ppm_alloc(isendblksize,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local send block size list ISENDBLKSIZE',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local send block size list ISENDBLKSIZE')
+
       CALL ppm_alloc(irecvfromsub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local recv source sub list IRECVFROMSUB',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local recv source sub list IRECVFROMSUB')
+
       CALL ppm_alloc(irecvtosub,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local recv destination sub list IRECVTOSUB',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local recv destination sub list IRECVTOSUB')
+
       CALL ppm_alloc(irecvblkstart,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local recv block start list IRECVBLKSTART',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local recv block start list IRECVBLKSTART')
+
       CALL ppm_alloc(irecvblksize,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local recv block size list IRECVBLKSIZE',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local recv block size list IRECVBLKSIZE')
+
       CALL ppm_alloc(ioffset,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,caller,     &
-     &        'local recv block offset list IOFFSET',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('local recv block offset list IOFFSET')
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-
       CONTAINS
-
       SUBROUTINE check
           CALL ppm_check_topoid(target_topoid,valid,info)
           IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'target topoid not valid',__LINE__,info)
-              GOTO 8888
+             fail('target topoid not valid',exit_point=8888)
           ENDIF
           CALL ppm_check_meshid(topoid,meshid,valid,info)
           IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'source meshid not valid',__LINE__,info)
-              GOTO 8888
+             fail('source meshid not valid',exit_point=8888)
           ENDIF
           CALL ppm_check_meshid(target_topoid,target_meshid,valid,info)
           IF (.NOT. valid) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'destination meshid not valid',__LINE__,info)
-              GOTO 8888
+             fail('destination meshid not valid',exit_point=8888)
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
-
       END SUBROUTINE equi_mesh_map_field_global

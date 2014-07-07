@@ -157,11 +157,7 @@
       !-------------------------------------------------------------------------
       !  Number of subdomains
       !-------------------------------------------------------------------------
-      IF (PRESENT(ndom)) THEN
-         nsubs = ndom
-      ELSE
-         nsubs = ppm_nproc
-      ENDIF
+      nsubs=MERGE(ndom,ppm_nproc,PRESENT(ndom))
 
       !-------------------------------------------------------------------------
       !  Mesh spacing
@@ -281,11 +277,7 @@
             !-----------------------------------------------------------------
             rc = 2**nblocks(cutdim)
             IF (MINVAL(Npx(cutdim,1:rc)) .LE. 2) THEN
-               info = ppm_error_error
-               CALL ppm_error(ppm_err_bad_mesh,caller,&
-               &    'Too little grid points for this number of subs.',&
-               &    __LINE__,info)
-               GOTO 9999
+               fail('Too little grid points for this number of subs.',ppm_err_bad_mesh)
             ENDIF
 
             !-----------------------------------------------------------------

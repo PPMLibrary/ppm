@@ -171,29 +171,16 @@
       !  Count the size of the buffer that will not be send
       !-------------------------------------------------------------------------
       Ndata = 0
-      IF (ppm_dim .LT. 3) THEN
-          !---------------------------------------------------------------------
-          !  access mesh blocks belonging to the 1st processor
-          !---------------------------------------------------------------------
-          DO j=ppm_psendbuffer(1),ppm_psendbuffer(2)-1
-             !------------------------------------------------------------------
-             !  Get the number of mesh points in this block
-             !------------------------------------------------------------------
-             Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-     &                ppm_mesh_isendblksize(2,j))
-          ENDDO
-      ELSE
-          !---------------------------------------------------------------------
-          !  access mesh blocks belonging to the 1st processor
-          !---------------------------------------------------------------------
-          DO j=ppm_psendbuffer(1),ppm_psendbuffer(2)-1
-             !------------------------------------------------------------------
-             !  Get the number of mesh points in this block
-             !------------------------------------------------------------------
-             Ndata = Ndata + (ppm_mesh_isendblksize(1,j)*    &
-     &                ppm_mesh_isendblksize(2,j)*ppm_mesh_isendblksize(3,j))
-          ENDDO
-      ENDIF
+      !---------------------------------------------------------------------
+      !  access mesh blocks belonging to the 1st processor
+      !---------------------------------------------------------------------
+      DO j=ppm_psendbuffer(1),ppm_psendbuffer(2)-1
+         !------------------------------------------------------------------
+         !  Get the number of mesh points in this block
+         !------------------------------------------------------------------
+         Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,j))
+      ENDDO
+
       ibuffer = 0
       DO j=1,ppm_buffer_set
          bdim     = ppm_buffer_dim(j)
@@ -223,17 +210,9 @@
           !  Number of mesh points to be sent off to the k-th processor in
           !  the sendlist
           !---------------------------------------------------------------------
-          IF (ppm_dim .LT. 3) THEN
-              DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-     &                ppm_mesh_isendblksize(2,i))
-              ENDDO
-          ELSE
-              DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_isendblksize(1,i)*    &
-     &                ppm_mesh_isendblksize(2,i)*ppm_mesh_isendblksize(3,i))
-              ENDDO
-          ENDIF
+          DO i=ppm_psendbuffer(k),ppm_psendbuffer(k+1)-1
+             Ndata = Ndata + PRODUCT(ppm_mesh_isendblksize(1:ppm_dim,i))
+          ENDDO
 
           !---------------------------------------------------------------------
           !  Store the number of mesh points in psend
@@ -271,17 +250,9 @@
           !  Number of mesh points to be received from the k-th processor in
           !  the recvlist
           !---------------------------------------------------------------------
-          IF (ppm_dim .LT. 3) THEN
-              DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-     &                ppm_mesh_irecvblksize(2,i))
-              ENDDO
-          ELSE
-              DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
-                  Ndata = Ndata + (ppm_mesh_irecvblksize(1,i)*    &
-     &                ppm_mesh_irecvblksize(2,i)*ppm_mesh_irecvblksize(3,i))
-              ENDDO
-          ENDIF
+          DO i=ppm_precvbuffer(k),ppm_precvbuffer(k+1)-1
+             Ndata = Ndata + PRODUCT(ppm_mesh_irecvblksize(1:ppm_dim,i))
+          ENDDO
 
           !---------------------------------------------------------------------
           !  Store the number of mesh points in precv
@@ -292,7 +263,7 @@
           !  Store the size of the data to be received
           !---------------------------------------------------------------------
           DO j=1,ppm_buffer_set
-              nrecv(k) = nrecv(k) + (ppm_buffer_dim(j)*Ndata)
+             nrecv(k) = nrecv(k) + (ppm_buffer_dim(j)*Ndata)
           ENDDO
 
           !---------------------------------------------------------------------

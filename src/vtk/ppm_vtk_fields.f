@@ -138,11 +138,9 @@
          OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
          & IOSTAT=info, ACTION='WRITE')
          IF (info.NE.0) THEN
-            info = ppm_error_fatal
             WRITE(errtxt,'(2A)') 'Failed to open file: ', &
-            scratch(1:LEN_TRIM(scratch))
-            CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
-            GOTO 9999
+            & scratch(1:LEN_TRIM(scratch))
+            fail(errtxt,ppm_error=ppm_error_fatal)
          END IF
 #define VTK_FILE_TYPE "PImageData"
 #define VTK_WHOLE_EXTENT whole_ext
@@ -243,11 +241,9 @@
             OPEN(iUnit, FILE=scratch(1:LEN_TRIM(scratch)), &
             & IOSTAT=info, ACTION='WRITE')
             IF (info.NE.0) THEN
-               info = ppm_error_fatal
                WRITE(errtxt,'(2A)') 'Failed to open file: ', &
                & scratch(1:LEN_TRIM(scratch))
-               CALL ppm_error(ppm_err_argument, caller, errtxt, __LINE__, info)
-               GOTO 9999
+               fail(errtxt,ppm_error=ppm_error_fatal)
             END IF
 #define VTK_FILE_TYPE "ImageData"
 #define VTK_WHOLE_EXTENT whole_ext
@@ -320,14 +316,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata2_rs =>  pdat%data_2d_rs
+                        fdata2_rs => pdat%data_2d_rs
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata3_rs =>  pdat%data_3d_rs
+                        fdata3_rs => pdat%data_3d_rs
 #endif
 
 #define VTK_NAME pdat%discr_data%name
@@ -357,14 +353,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata3_rs =>  pdat%data_3d_rs
+                        fdata3_rs => pdat%data_3d_rs
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata4_rs =>  pdat%data_4d_rs
+                        fdata4_rs => pdat%data_4d_rs
 #endif
                         DO icomp=1,pdat%discr_data%lda
                            WRITE(vname,'(2A,I0)') &
@@ -400,14 +396,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata2_rd =>  pdat%data_2d_rd
+                        fdata2_rd => pdat%data_2d_rd
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata3_rd =>  pdat%data_3d_rd
+                        fdata3_rd => pdat%data_3d_rd
 #endif
 
 #define VTK_NAME pdat%discr_data%name
@@ -437,14 +433,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata3_rd =>  pdat%data_3d_rd
+                        fdata3_rd => pdat%data_3d_rd
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata4_rd =>  pdat%data_4d_rd
+                        fdata4_rd => pdat%data_4d_rd
 #endif
                         DO icomp=1,pdat%discr_data%lda
                            WRITE(vname,'(2A,I0)') &
@@ -480,14 +476,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata2_i =>  pdat%data_2d_i
+                        fdata2_i => pdat%data_2d_i
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata3_i =>  pdat%data_3d_i
+                        fdata3_i => pdat%data_3d_i
 #endif
 
 #define VTK_NAME pdat%discr_data%name
@@ -517,14 +513,14 @@
                         END SELECT
 
 #if   __DIM == __2D
-                        fdata3_i =>  pdat%data_3d_i
+                        fdata3_i => pdat%data_3d_i
 #elif   __DIM == __3D
                         SELECT CASE (p%bc(6))
                         CASE (ppm_param_bcdef_periodic,-1)
                            nc(3)=1
                         END SELECT
 
-                        fdata4_i =>  pdat%data_4d_i
+                        fdata4_i => pdat%data_4d_i
 #endif
                         DO icomp=1,pdat%discr_data%lda
                            WRITE(vname,'(2A,I0)') &

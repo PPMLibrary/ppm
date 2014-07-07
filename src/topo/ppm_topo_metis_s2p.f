@@ -122,10 +122,14 @@
       INTEGER                             :: nnodes,numtype,nparts,edgecut
       INTEGER                             :: j,k,i
       INTEGER                             :: jsub,jj,ident,nvert,wgtflag,volume
-      CHARACTER(ppm_char)                 :: mesg
+
       REAL(MK)                            :: t0,lmyeps
       REAL(ppm_kind_double)               :: minsp,maxsp,meansp
       LOGICAL                             :: lasymm
+
+
+      CHARACTER(ppm_char) :: mesg
+      CHARACTER(ppm_char) :: caller='ppm_topo_metis_s2p'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -133,7 +137,7 @@
       !-------------------------------------------------------------------------
       !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_topo_metis_s2p',t0,info)
+      CALL substart(caller,t0,info)
 #if   __KIND == __SINGLE_PRECISION
       lmyeps = ppm_myepss
 #elif __KIND == __DOUBLE_PRECISION
@@ -144,19 +148,16 @@
       !  Error if METIS library support is not available
       !-------------------------------------------------------------------------
 #ifndef __METIS
-      info = ppm_error_error
-      CALL ppm_error(ppm_err_nometis,'ppm_topo_metis_s2p',  &
-     &    'PPM was compiled without Metis support',__LINE__,info)
       nsublist = 0
-      GOTO 9999
+      fail('PPM was compiled without Metis support',ppm_err_nometis)
 #else
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -165,13 +166,7 @@
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsubs
       CALL ppm_alloc(sub2proc,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' sub2procs failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &                   mesg,__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('sub2procs allocation failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Check if we only have one processor, we are done
@@ -183,13 +178,8 @@
          iopt   = ppm_param_alloc_fit
          ldc(1) = nsubs
          CALL ppm_alloc(isublist,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             WRITE (mesg,'(A,I10,A)') 'allocating ',nsubs,' isublist failed'
-             CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &           mesg,__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc("isublist allocation failed",ppm_error=ppm_error_fatal)
+
          !----------------------------------------------------------------------
          !  Assign all subdomains to the processor and return
          !----------------------------------------------------------------------
@@ -207,8 +197,8 @@
       points = 8
       etype  = 3   ! METIS type hexahedra
       IF (ppm_dim .EQ. 2) THEN
-          points = 4
-          etype  = 4   ! METIS type quadrilaterals
+         points = 4
+         etype  = 4   ! METIS type quadrilaterals
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -219,83 +209,71 @@
       ldc(2) = points
       ldc(3) = nsubs
       CALL ppm_alloc(corner,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'subdomain corner list CORNER',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('subdomain corner list CORNER',ppm_error=ppm_error_fatal)
+
       ldc(1) = points
       ldc(2) = nsubs
       CALL ppm_alloc(cornerno,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'subdomain corner numbers CORNERNO',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('subdomain corner numbers CORNERNO',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Initialize corner numbers
       !-------------------------------------------------------------------------
-      DO isub=1,nsubs
-          DO j=1,points
-              cornerno(j,isub) = 0
-          ENDDO
-      ENDDO
+      FORALL (isub=1:nsubs,j=1:points) cornerno(j,isub) = 0
 
       !-------------------------------------------------------------------------
       !  Store sub corners in METIS numbering order
       !-------------------------------------------------------------------------
-      IF (ppm_dim .EQ. 2) THEN
-          DO isub=1,nsubs
-              corner(1,1,isub) = min_sub(1,isub)
-              corner(2,1,isub) = min_sub(2,isub)
+      SELECT CASE (ppm_dim)
+      CASE (2)
+         DO isub=1,nsubs
+            corner(1,1,isub) = min_sub(1,isub)
+            corner(2,1,isub) = min_sub(2,isub)
 
-              corner(1,2,isub) = min_sub(1,isub)
-              corner(2,2,isub) = max_sub(2,isub)
+            corner(1,2,isub) = min_sub(1,isub)
+            corner(2,2,isub) = max_sub(2,isub)
 
-              corner(1,3,isub) = max_sub(1,isub)
-              corner(2,3,isub) = max_sub(2,isub)
+            corner(1,3,isub) = max_sub(1,isub)
+            corner(2,3,isub) = max_sub(2,isub)
 
-              corner(1,4,isub) = max_sub(1,isub)
-              corner(2,4,isub) = min_sub(2,isub)
-          ENDDO
-      ELSE
-          DO isub=1,nsubs
-              corner(1,1,isub) = min_sub(1,isub)
-              corner(2,1,isub) = min_sub(2,isub)
-              corner(3,1,isub) = max_sub(3,isub)
+            corner(1,4,isub) = max_sub(1,isub)
+            corner(2,4,isub) = min_sub(2,isub)
+         ENDDO
+      CASE DEFAULT
+         DO isub=1,nsubs
+            corner(1,1,isub) = min_sub(1,isub)
+            corner(2,1,isub) = min_sub(2,isub)
+            corner(3,1,isub) = max_sub(3,isub)
 
-              corner(1,2,isub) = min_sub(1,isub)
-              corner(2,2,isub) = max_sub(2,isub)
-              corner(3,2,isub) = max_sub(3,isub)
+            corner(1,2,isub) = min_sub(1,isub)
+            corner(2,2,isub) = max_sub(2,isub)
+            corner(3,2,isub) = max_sub(3,isub)
 
-              corner(1,3,isub) = max_sub(1,isub)
-              corner(2,3,isub) = max_sub(2,isub)
-              corner(3,3,isub) = max_sub(3,isub)
+            corner(1,3,isub) = max_sub(1,isub)
+            corner(2,3,isub) = max_sub(2,isub)
+            corner(3,3,isub) = max_sub(3,isub)
 
-              corner(1,4,isub) = max_sub(1,isub)
-              corner(2,4,isub) = min_sub(2,isub)
-              corner(3,4,isub) = max_sub(3,isub)
+            corner(1,4,isub) = max_sub(1,isub)
+            corner(2,4,isub) = min_sub(2,isub)
+            corner(3,4,isub) = max_sub(3,isub)
 
-              corner(1,5,isub) = min_sub(1,isub)
-              corner(2,5,isub) = min_sub(2,isub)
-              corner(3,5,isub) = min_sub(3,isub)
+            corner(1,5,isub) = min_sub(1,isub)
+            corner(2,5,isub) = min_sub(2,isub)
+            corner(3,5,isub) = min_sub(3,isub)
 
-              corner(1,6,isub) = min_sub(1,isub)
-              corner(2,6,isub) = max_sub(2,isub)
-              corner(3,6,isub) = min_sub(3,isub)
+            corner(1,6,isub) = min_sub(1,isub)
+            corner(2,6,isub) = max_sub(2,isub)
+            corner(3,6,isub) = min_sub(3,isub)
 
-              corner(1,7,isub) = max_sub(1,isub)
-              corner(2,7,isub) = max_sub(2,isub)
-              corner(3,7,isub) = min_sub(3,isub)
+            corner(1,7,isub) = max_sub(1,isub)
+            corner(2,7,isub) = max_sub(2,isub)
+            corner(3,7,isub) = min_sub(3,isub)
 
-              corner(1,8,isub) = max_sub(1,isub)
-              corner(2,8,isub) = min_sub(2,isub)
-              corner(3,8,isub) = min_sub(3,isub)
-          ENDDO
-      ENDIF
+            corner(1,8,isub) = max_sub(1,isub)
+            corner(2,8,isub) = min_sub(2,isub)
+            corner(3,8,isub) = min_sub(3,isub)
+         ENDDO
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Number corners with same point in space having same number
@@ -305,7 +283,8 @@
       cornerno(3,1) = 3
       cornerno(4,1) = 4
       nnodes = 4
-      IF (ppm_dim .EQ. 2) THEN
+      SELECT CASE (ppm_dim)
+      CASE (2)
          DO isub=2,nsubs
             DO j=1,points
                ident = 0
@@ -318,10 +297,10 @@
                      !----------------------------------------------------------
                      !  If points coincide, store point number
                      !----------------------------------------------------------
-                     IF((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
-     &                  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
-     &                  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT. &
-     &                  lmyeps*(max_sub(2,isub)-min_sub(2,isub)))) THEN
+                     IF ((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
+                     &  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
+                     &  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT. &
+                     &  lmyeps*(max_sub(2,isub)-min_sub(2,isub)))) THEN
                         IF (cornerno(jj,jsub) .GT. 0) ident = cornerno(jj,jsub)
                      ENDIF
                   ENDDO
@@ -331,14 +310,14 @@
                !  increase counter of distinct nodes and get new number
                !----------------------------------------------------------------
                IF (ident .GT. 0) THEN
-                   cornerno(j,isub) = ident
+                  cornerno(j,isub) = ident
                ELSE
-                   nnodes = nnodes + 1
-                   cornerno(j,isub) = nnodes
+                  nnodes = nnodes + 1
+                  cornerno(j,isub) = nnodes
                ENDIF
             ENDDO
          ENDDO
-      ELSE
+      CASE DEFAULT
          cornerno(5,1) = 5
          cornerno(6,1) = 6
          cornerno(7,1) = 7
@@ -356,12 +335,12 @@
                      !----------------------------------------------------------
                      !  If points coincide, store point number
                      !----------------------------------------------------------
-                     IF((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
-     &                  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
-     &                  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT.   &
-     &                  lmyeps*(max_sub(2,isub)-min_sub(2,isub))).AND. &
-     &                  (ABS(corner(3,j,isub)-corner(3,jj,jsub)).LT.   &
-     &                  lmyeps*(max_sub(3,isub)-min_sub(3,isub)))) THEN
+                     IF ((ABS(corner(1,j,isub)-corner(1,jj,jsub)).LT.   &
+                     &  lmyeps*(max_sub(1,isub)-min_sub(1,isub))).AND. &
+                     &  (ABS(corner(2,j,isub)-corner(2,jj,jsub)).LT.   &
+                     &  lmyeps*(max_sub(2,isub)-min_sub(2,isub))).AND. &
+                     &  (ABS(corner(3,j,isub)-corner(3,jj,jsub)).LT.   &
+                     &  lmyeps*(max_sub(3,isub)-min_sub(3,isub)))) THEN
                         IF (cornerno(jj,jsub) .GT. 0) ident = cornerno(jj,jsub)
                      ENDIF
                   ENDDO
@@ -371,25 +350,22 @@
                !  increase counter of distinct nodes and get new number
                !----------------------------------------------------------------
                IF (ident .GT. 0) THEN
-                   cornerno(j,isub) = ident
+                  cornerno(j,isub) = ident
                ELSE
-                   nnodes = nnodes + 1
-                   cornerno(j,isub) = nnodes
+                  nnodes = nnodes + 1
+                  cornerno(j,isub) = nnodes
                ENDIF
             ENDDO
          ENDDO
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  Sanity check
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-          IF (MAXVAL(cornerno) .NE. nnodes .OR. MINVAL(cornerno) .NE. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_node_number,'ppm_topo_metis_s2p', &
-     &             'Nodes were missed or counted twice',__LINE__,info)
-              GOTO 9999
-          ENDIF
+      IF (ppm_debug.GT.0) THEN
+         IF (MAXVAL(cornerno).NE.nnodes.OR.MINVAL(cornerno).NE.1) THEN
+            fail('Nodes were missed or counted twice',ppm_err_node_number)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -397,11 +373,7 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_dealloc
       CALL ppm_alloc(corner,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',          &
-     &        'subdomain corner list CORNER',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('subdomain corner list CORNER',exit_point=no,ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Check if we need asymmetric partitions or not
@@ -415,29 +387,27 @@
       IF (meansp .GT. 0.05_ppm_kind_double) lasymm = .TRUE.
 
       IF (ppm_debug .GT. 0) THEN
-          WRITE(mesg,'(A,F7.4)') 'Slowest processor: ',minsp
-          CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
-          WRITE(mesg,'(A,F7.4)') 'Fastest processor: ',maxsp
-          CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
-          WRITE(mesg,'(A,F7.4)') 'Processor speed imbalance: ',meansp
-          CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
-          IF (lasymm) THEN
-             CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p', &
-     &          'Doing asymmetric assignment',info)
-          ELSE
-             CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p', &
-     &          'Doing symmetric assignment',info)
-          ENDIF
+         WRITE(mesg,'(A,F7.4)') 'Slowest processor: ',minsp
+         CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(A,F7.4)') 'Fastest processor: ',maxsp
+         CALL ppm_write(ppm_rank,caller,mesg,info)
+         WRITE(mesg,'(A,F7.4)') 'Processor speed imbalance: ',meansp
+         CALL ppm_write(ppm_rank,caller,mesg,info)
+         IF (lasymm) THEN
+            CALL ppm_write(ppm_rank,caller,'Doing asymmetric assignment',info)
+         ELSE
+            CALL ppm_write(ppm_rank,caller,'Doing symmetric assignment',info)
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Number of vertices in the graph
       !-------------------------------------------------------------------------
-      IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-     &    assig .EQ. ppm_param_assign_nodal_comm) THEN
-          nvert = nnodes
+      IF (assig .EQ. ppm_param_assign_nodal_cut .OR. &
+      &  assig .EQ. ppm_param_assign_nodal_comm) THEN
+         nvert = nnodes
       ELSE
-          nvert = nsubs
+         nvert = nsubs
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -451,70 +421,37 @@
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsubs*points
       CALL ppm_alloc(elmnts,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS mesh data array ELMNTS',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS mesh data array ELMNTS',ppm_error=ppm_error_fatal)
+
       ldc(1) = nvert
       CALL ppm_alloc(npart,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS node partition vector NODEPART',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS node partition vector NODEPART',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(vwgt,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS vertex weight vector VWGT',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS vertex weight vector VWGT',ppm_error=ppm_error_fatal)
+
       ldc(1) = 1
       CALL ppm_alloc(adjwgt,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS vertex weight vector ADJWGT',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS vertex weight vector ADJWGT',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(vsize,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS vertex weight vector VSIZE',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS vertex weight vector VSIZE',ppm_error=ppm_error_fatal)
+
   !    NULLIFY(adjwgt)   ! we make no use of link weights
   !    NULLIFY(vsize)    ! we make no use of communication weights
       ldc(1) = nvert+1
       CALL ppm_alloc(nxadj,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph structure array NXADJ',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS graph structure array NXADJ',ppm_error=ppm_error_fatal)
+
       ldc(1) = 6*nvert
       IF (ppm_dim .EQ. 2) ldc(1) = 4*nvert
       CALL ppm_alloc(nadjncy,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph adjacency array NADJNCY',__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('METIS graph adjacency array NADJNCY',ppm_error=ppm_error_fatal)
+
       IF (lasymm) THEN
          ldc(1) = nparts
          CALL ppm_alloc(tpwgt,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',         &
-     &           'METIS partition weights TPWGT',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('METIS partition weights TPWGT',ppm_error=ppm_error_fatal)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -525,18 +462,18 @@
       !  For long vector length: inner loop is over subs
       !-------------------------------------------------------------------------
       DO j=1,points
-          DO isub=1,nsubs
-              elmnts((isub-1)*points+j) = cornerno(j,isub)
-          ENDDO
+         DO isub=1,nsubs
+            elmnts((isub-1)*points+j) = cornerno(j,isub)
+         ENDDO
       ENDDO
 #else
       !-------------------------------------------------------------------------
       !  For memory stride: inner loop is over points
       !-------------------------------------------------------------------------
       DO isub=1,nsubs
-          DO j=1,points
-              elmnts((isub-1)*points+j) = cornerno(j,isub)
-          ENDDO
+         DO j=1,points
+            elmnts((isub-1)*points+j) = cornerno(j,isub)
+         ENDDO
       ENDDO
 #endif
 
@@ -555,9 +492,8 @@
       ! use Frotran numbering (starting from 1)
       numtype = 1
       IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-     &    assig .EQ. ppm_param_assign_nodal_comm) THEN
-         CALL METIS_MeshToNodal(nsubs,nnodes,elmnts,etype,numtype,nxadj,  &
-     &      nadjncy)
+      &  assig .EQ. ppm_param_assign_nodal_comm) THEN
+         CALL METIS_MeshToNodal(nsubs,nnodes,elmnts,etype,numtype,nxadj,nadjncy)
          wgtflag = 2  ! weights on vertices only / comput. weights only
          DO i=1,nvert
             vwgt(i)  = 0
@@ -569,19 +505,15 @@
             ENDDO
          ENDDO
       ELSEIF (assig .EQ. ppm_param_assign_dual_cut .OR.   &
-     &        assig .EQ. ppm_param_assign_dual_comm) THEN
-         CALL METIS_MeshToDual(nsubs,nnodes,elmnts,etype,numtype,nxadj,  &
-     &      nadjncy)
+      &       assig .EQ. ppm_param_assign_dual_comm) THEN
+         CALL METIS_MeshToDual(nsubs,nnodes,elmnts,etype,numtype,nxadj,nadjncy)
          wgtflag = 2  ! weights on vertices only / comput. weights only
          DO i=1,nsubs
             ! computation weights
             vwgt(i)  = INT(cost(i))
          ENDDO
       ELSE
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &      'Unknown METIS assignment scheme. Bailing out.',__LINE__,info)
-         GOTO 9999
+         fail('Unknown METIS assignment scheme. Bailing out.')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -589,7 +521,7 @@
       !  edgecut objective
       !-------------------------------------------------------------------------
       IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-     &    assig .EQ. ppm_param_assign_dual_cut) THEN
+      &    assig .EQ. ppm_param_assign_dual_cut) THEN
          IF (nparts .LE. 8) THEN
             !-------------------------------------------------------------------
             !  Use recursive algorithm since it produces better partitions
@@ -601,10 +533,10 @@
             metis_options(5) = 0 ! no debugging
             IF (lasymm) THEN
                CALL METIS_WPartGraphRecursive(nvert,nxadj,nadjncy,vwgt,adjwgt, &
-     &            wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
+               &    wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
             ELSE
                CALL METIS_PartGraphRecursive(nvert,nxadj,nadjncy,vwgt,adjwgt, &
-     &            wgtflag,numtype,nparts,metis_options,edgecut,npart)
+               &    wgtflag,numtype,nparts,metis_options,edgecut,npart)
             ENDIF
          ELSE
             !-------------------------------------------------------------------
@@ -617,10 +549,10 @@
             metis_options(5) = 0 ! no debugging
             IF (lasymm) THEN
                CALL METIS_WPartGraphKway(nvert,nxadj,nadjncy,vwgt,adjwgt,   &
-     &            wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
+               &  wgtflag,numtype,nparts,tpwgt,metis_options,edgecut,npart)
             ELSE
                CALL METIS_PartGraphKway(nvert,nxadj,nadjncy,vwgt,adjwgt,   &
-     &            wgtflag,numtype,nparts,metis_options,edgecut,npart)
+               &  wgtflag,numtype,nparts,metis_options,edgecut,npart)
             ENDIF
          ENDIF
 
@@ -631,7 +563,7 @@
          ! partition.
          IF (ppm_debug .GT. 0) THEN
             WRITE(mesg,'(A,I6)') 'METIS returned edgecut = ',edgecut
-            CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
+            CALL ppm_write(ppm_rank,caller,mesg,info)
          ENDIF
 
       !-------------------------------------------------------------------------
@@ -639,7 +571,7 @@
       !  communication volume objective
       !-------------------------------------------------------------------------
       ELSEIF (assig .EQ. ppm_param_assign_nodal_comm .OR.   &
-     &        assig .EQ. ppm_param_assign_dual_comm) THEN
+      &       assig .EQ. ppm_param_assign_dual_comm) THEN
          !----------------------------------------------------------------------
          !  For this objective METIS only has the multilevel algorithm
          !----------------------------------------------------------------------
@@ -650,10 +582,10 @@
          metis_options(5) = 0 ! no debugging
          IF (lasymm) THEN
             CALL METIS_WPartGraphVKway(nvert,nxadj,nadjncy,vwgt,vsize,   &
-     &         wgtflag,numtype,nparts,tpwgt,metis_options,volume,npart)
+            &    wgtflag,numtype,nparts,tpwgt,metis_options,volume,npart)
          ELSE
             CALL METIS_PartGraphVKway(nvert,nxadj,nadjncy,vwgt,vsize,   &
-     &         wgtflag,numtype,nparts,metis_options,volume,npart)
+            &    wgtflag,numtype,nparts,metis_options,volume,npart)
          ENDIF
 
          !----------------------------------------------------------------------
@@ -663,30 +595,23 @@
          ! partition.
          IF (ppm_debug .GT. 0) THEN
             WRITE(mesg,'(A,I6)') 'METIS returned communication volume = ',volume
-            CALL ppm_write(ppm_rank,'ppm_topo_metis_s2p',mesg,info)
+            CALL ppm_write(ppm_rank,caller,mesg,info)
          ENDIF
       ELSE
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &      'Unknown METIS assignment scheme. Bailing out.',__LINE__,info)
-         GOTO 9999
+         fail('Unknown METIS assignment scheme. Bailing out.')
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Find subs2proc assignment based on graph decomposition
       !-------------------------------------------------------------------------
       IF (assig .EQ. ppm_param_assign_nodal_cut .OR.   &
-     &    assig .EQ. ppm_param_assign_nodal_comm) THEN
+      &   assig .EQ. ppm_param_assign_nodal_comm) THEN
          ! a vertex is a mesh node: take a majority vote of all corners of
          ! a sub to determine its processor affiliation
          ldc(1) = nparts
          CALL ppm_alloc(vote,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',         &
-     &           'majority vote count VOTE',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('majority vote count VOTE',ppm_error=ppm_error_fatal)
+
          DO i=1,nsubs
             vote(1:nparts) = 0
             DO j=1,points
@@ -699,16 +624,13 @@
             sub2proc(i) = maxvote(1)-1  ! MPI ranks start at 0
          ENDDO
       ELSEIF (assig .EQ. ppm_param_assign_dual_cut .OR.   &
-     &        assig .EQ. ppm_param_assign_dual_comm) THEN
+      &        assig .EQ. ppm_param_assign_dual_comm) THEN
          ! a graph vertex is a sub
          DO i=1,nsubs
             sub2proc(i) = npart(i)-1    ! MPI ranks start at 0
          ENDDO
       ELSE
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &      'Unknown METIS assignment scheme. Bailing out.',__LINE__,info)
-         GOTO 9999
+         fail('Unknown METIS assignment scheme. Bailing out.')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -717,72 +639,41 @@
       iopt   = ppm_param_dealloc
       IF (lasymm) THEN
          CALL ppm_alloc(tpwgt,ldc,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',         &
-     &           'METIS graph adjacency array TPWGT',__LINE__,info)
-         ENDIF
+         or_fail_dealloc('METIS graph adjacency array TPWGT',exit_point=no)
       ENDIF
       CALL ppm_alloc(nadjncy,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph adjacency array NADJNCY',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS graph adjacency array NADJNCY',exit_point=no)
+
       CALL ppm_alloc(nxadj,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph structure array NXADJ',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS graph structure array NXADJ',exit_point=no)
+
       CALL ppm_alloc(vsize,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph structure array VSIZE',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS graph structure array VSIZE',exit_point=no)
+
       CALL ppm_alloc(adjwgt,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS graph structure array ADJWGT',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS graph structure array ADJWGT',exit_point=no)
+
       CALL ppm_alloc(vwgt,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS vertex weight vector VWGT',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS vertex weight vector VWGT',exit_point=no)
+
       CALL ppm_alloc(npart,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS node partition vector NODEPART',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS node partition vector NODEPART',exit_point=no)
+
       CALL ppm_alloc(elmnts,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'METIS mesh data array ELMNTS',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('METIS mesh data array ELMNTS',exit_point=no)
 
       !-------------------------------------------------------------------------
       !  Deallocate corner numbers
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_dealloc
       CALL ppm_alloc(cornerno,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_error
-          CALL ppm_error(ppm_err_dealloc,'ppm_topo_metis_s2p',            &
-     &        'subdomain corner numbers CORNERNO',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('subdomain corner numbers CORNERNO',exit_point=no)
 
       !-------------------------------------------------------------------------
       !  Count number of subs assigned to local processor
       !-------------------------------------------------------------------------
       nsublist = 0
       DO isub=1,nsubs
-          IF (sub2proc(isub) .EQ. ppm_rank) nsublist = nsublist + 1
+         IF (sub2proc(isub) .EQ. ppm_rank) nsublist = nsublist + 1
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -791,64 +682,46 @@
       iopt   = ppm_param_alloc_fit
       ldc(1) = nsublist
       CALL ppm_alloc(isublist,ldc,iopt,info)
-      IF (info .NE. 0) THEN
-          info = ppm_error_fatal
-          WRITE (mesg,'(A,I10,A)') 'allocating ',nsublist,' isublist failed'
-          CALL ppm_error(ppm_err_alloc,'ppm_topo_metis_s2p',            &
-     &                   mesg,__LINE__,info)
-          GOTO 9999
-      ENDIF
+      or_fail_alloc('isublist allocation failed',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Fill list of local subs
       !-------------------------------------------------------------------------
       nsublist = 0
       DO isub=1,nsubs
-          IF (sub2proc(isub) .EQ. ppm_rank) THEN
-              nsublist = nsublist + 1
-              isublist(nsublist) = isub
-          ENDIF
+         IF (sub2proc(isub) .EQ. ppm_rank) THEN
+            nsublist = nsublist + 1
+            isublist(nsublist) = isub
+         ENDIF
       ENDDO
 #endif
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_topo_metis_s2p',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
          IF (nsubs .LE. 0) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &           'nsubs must be > 0',__LINE__,info)
-            GOTO 8888
+            fail('nsubs must be > 0',exit_point=8888)
          ENDIF
          IF (assig .NE. ppm_param_assign_nodal_cut .AND.  &
-     &       assig .NE. ppm_param_assign_nodal_comm .AND. &
-     &       assig .NE. ppm_param_assign_dual_cut   .AND. &
-     &       assig .NE. ppm_param_assign_dual_comm) THEN
-             info = ppm_error_error
-             CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &           'Invalid assignment type for METIS passed',__LINE__,info)
-            GOTO 8888
+         &   assig .NE. ppm_param_assign_nodal_comm .AND. &
+         &   assig .NE. ppm_param_assign_dual_cut   .AND. &
+         &   assig .NE. ppm_param_assign_dual_comm) THEN
+            fail('Invalid assignment type for METIS passed',exit_point=8888)
          ENDIF
          DO isub=1,nsubs
-             IF (nneigh(isub) .LT. 0) THEN
-                 info = ppm_error_error
-                 CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &               'nneigh must be >= 0 for all subs',__LINE__,info)
-                GOTO 8888
-             ENDIF
-             IF (cost(isub) .LT. 0) THEN
-                 info = ppm_error_error
-                 CALL ppm_error(ppm_err_argument,'ppm_topo_metis_s2p', &
-     &               'costs must be >= 0 for all subs',__LINE__,info)
-                GOTO 8888
-             ENDIF
+            IF (nneigh(isub) .LT. 0) THEN
+               fail('nneigh must be >= 0 for all subs',exit_point=8888)
+            ENDIF
+            IF (cost(isub) .LT. 0) THEN
+               fail('costs must be >= 0 for all subs',exit_point=8888)
+            ENDIF
          ENDDO
- 8888    CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE ppm_topo_metis_s2p_s
