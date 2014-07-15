@@ -1,3 +1,33 @@
+      !-------------------------------------------------------------------------
+      !  Subroutine   :                 equi_mesh_map_isend
+      !-------------------------------------------------------------------------
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (Max Planck
+      ! Institute of Molecular Cell Biology and Genetics), Center for Fluid
+      ! Dynamics (DTU)
+      !
+      !
+      ! This file is part of the Parallel Particle Mesh Library (PPM).
+      !
+      ! PPM is free software: you can redistribute it and/or modify
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
+      ! version.
+      !
+      ! PPM is distributed in the hope that it will be useful,
+      ! but WITHOUT ANY WARRANTY; without even the implied warranty of
+      ! MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+      ! GNU General Public License for more details.
+      !
+      ! You should have received a copy of the GNU General Public License
+      ! and the GNU Lesser General Public License along with PPM. If not,
+      ! see <http://www.gnu.org/licenses/>.
+      !
+      !-------------------------------------------------------------------------
+      !  MOSAIC Group
+      !  Max Planck Institute of Molecular Cell Biology and Genetics
+      !  Pfotenhauerstr. 108, 01307 Dresden, Germany
+      !-------------------------------------------------------------------------
       SUBROUTINE equi_mesh_map_isend(this,info)
       !!! This routine performs the actual send/recv of the
       !!! mesh blocks and all pushed data.
@@ -10,7 +40,13 @@
       !!! and recover the new mask. First 3 (2 for 2D meshes)
       !!! indices are mesh (i,j[,k]), last one is subid for all subs on
       !!! the local processor.
-
+      !!!
+      !!! [WARNING] Yaser:
+      !!! This is not the best implementation
+      !!! I could not figure out the general derive type to use for MPI_Iscatterv
+      !!! to avoid several mpi call, so this implementation will call mpi for each
+      !!! ppm_buffer_set, but using MPI_Iscatterv it will prevent several buffer
+      !!! copy which is very useful on big data !
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -71,6 +107,7 @@
       CALL ppm_alloc(precv,ldu,iopt,info)
       or_fail_alloc("precv")
 
+#ifdef __MPI
       ldu(1) = ppm_nrecvlist
       ldu(2) = ppm_buffer_set
       CALL ppm_alloc(pp,ldu,iopt,info)
@@ -80,7 +117,7 @@
       ldu(2) = ppm_buffer_set
       CALL ppm_alloc(qq,ldu,iopt,info)
       or_fail_alloc("qq")
-
+#endif
       !-------------------------------------------------------------------------
       !  Initialize the buffer counters
       !-------------------------------------------------------------------------
@@ -149,6 +186,7 @@
       ENDIF
       or_fail_alloc("global receive buffer PPM_RECVBUFFER")
 
+#ifdef __MPI
       !-------------------------------------------------------------------------
       !  Sum of all mesh points that will be sent and received
       !-------------------------------------------------------------------------
@@ -192,7 +230,6 @@
          ENDDO
       ENDDO
 
-#ifdef __MPI
       ALLOCATE(senddispls(ppm_nsendlist,ppm_buffer_set), &
       &        recvdispls(ppm_nrecvlist,ppm_buffer_set), &
       &        sendcounts(ppm_nsendlist,ppm_buffer_set), &
@@ -203,7 +240,7 @@
       or_fail_alloc("request")
 
       !-------------------------------------------------------------------------
-      ! Compute the real processor displacements and counts
+      ! Compute real processor displacements and counts
       !-------------------------------------------------------------------------
       DO k=1,ppm_buffer_set
          bdim = ppm_buffer_dim(k)
@@ -327,12 +364,12 @@
       or_fail_dealloc("psend")
       CALL ppm_alloc(precv,ldu,iopt,info)
       or_fail_dealloc("precv")
+#ifdef __MPI
       CALL ppm_alloc(   pp,ldu,iopt,info)
       or_fail_dealloc("pp")
       CALL ppm_alloc(   qq,ldu,iopt,info)
       or_fail_dealloc("qq")
 
-#ifdef __MPI
       DEALLOCATE(senddispls,recvdispls,sendcounts,recvcounts,request,STAT=info)
       or_fail_dealloc("senddispls,recvdispls,sendcounts,recvcounts & request")
 #endif

@@ -206,10 +206,8 @@
          IF (map%ppm_isendlist(k) .GE. 0 .AND. map%ppm_irecvlist(k) .GE. 0) THEN
              tag1 = 100
              IF (ppm_debug .GT. 1) THEN
-                 WRITE(mesg,'(A,I5,2(A,I9))') 'sending to ',   &
-                 & map%ppm_isendlist(k),', nsend=',map%nsend(k),', psend=',&
-                 & map%psend(k)
-                 CALL ppm_write(ppm_rank,caller,mesg,info)
+                stdout_f('(A,I5,2(A,I9))',"sending to ",'map%ppm_isendlist(k)', &
+                & ", nsend=",'map%nsend(k)',", psend=",'map%psend(k)')
              ENDIF
              CALL MPI_SendRecv(map%psend(k),1,MPI_INTEGER,map%ppm_isendlist(k),tag1, &
              & map%precv(k),1,MPI_INTEGER,map%ppm_irecvlist(k),tag1, &
@@ -220,10 +218,8 @@
              map%nrecv(k) = sbdim*map%precv(k)
 
              IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I5,2(A,I9))') 'received from ',   &
-                & map%ppm_irecvlist(k),', nrecv=',map%nrecv(k),&
-                & ', precv=',map%precv(k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+                stdout_f('(A,I5,2(A,I9))',"received from ",'map%ppm_irecvlist(k)', &
+                & ", nrecv=",'map%nrecv(k)',", precv=",'map%precv(k)')
              ENDIF
          ELSE
              ! skip this round, i.e. neither send nor receive any
@@ -253,18 +249,16 @@
       !  Increment the total number of particle to receive
       !----------------------------------------------------------------------
       DO k=2,map%ppm_nsendlist
-         Mpart           = Mpart           + map%precv(k)
+         Mpart = Mpart + map%precv(k)
       ENDDO
-      IF (ppm_debug .GT. 1) THEN
-          WRITE(mesg,'(2(A,I9))') 'mrecv=',mrecv,', msend=',msend
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-          WRITE(mesg,'(A,I9)') 'ppm_nrecvbuffer=',map%ppm_nrecvbuffer
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-          WRITE(mesg,'(A,I9)') 'Mpart=',Mpart
-          CALL ppm_write(ppm_rank,caller,mesg,info)
-      ENDIF
-      map%newNpart = Mpart
 
+      IF (ppm_debug .GT. 1) THEN
+         stdout_f('(2(A,I9))',"mrecv=",mrecv,", msend=",msend)
+         stdout_f('(A,I9)',"ppm_nrecvbuffer=",'map%ppm_nrecvbuffer')
+         stdout_f('(A,I9)',"Mpart=",Mpart)
+      ENDIF
+
+      map%newNpart = Mpart
 
       !-------------------------------------------------------------------------
       !  Allocate the memory for the copy of the particle buffer
@@ -300,8 +294,7 @@
       !  Debugging print of the number of sets in the buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 1) THEN
-         WRITE(mesg,'(A,I9)') 'ppm_buffer_set=',map%ppm_buffer_set
-         CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I9)',"ppm_buffer_set=",'map%ppm_buffer_set')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -324,8 +317,7 @@
          DO j=2,map%ppm_nsendlist
             qq(j,k) = qq(j-1,k) + map%psend(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I9)') 'qq(j,k)=',qq(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"qq(j,k)=",'qq(j,k)')
             ENDIF
          ENDDO
       ENDDO
@@ -350,11 +342,8 @@
          DO j=2,map%ppm_nsendlist
             pp(j,k) = pp(j-1,k) + map%precv(j-1)*bdim
             IF (ppm_debug .GT. 1) THEN
-                WRITE(mesg,'(A,I9)') 'pp(j,k)=',pp(j,k)
-                CALL ppm_write(ppm_rank,caller,mesg,info)
-                WRITE(mesg,'(A,I9,A,I4)') 'precv(j-1)=',map%precv(j-1),&
-                    ', bdim=',bdim
-                CALL ppm_write(ppm_rank,caller,mesg,info)
+               stdout_f('(A,I9)',"pp(j,k)=",'pp(j,k)')
+               stdout_f('(A,I9,A,I4)',"precv(j-1)=",'map%precv(j-1)',", bdim=",bdim)
             ENDIF
          ENDDO
       ENDDO
@@ -363,13 +352,13 @@
       !  First copy the on processor data - which is in the first buffer
       !-------------------------------------------------------------------------
       DO k=1,map%ppm_buffer_set
-          ibuffer = pp(1,k) - 1
-          jbuffer = qq(1,k) - 1
-          DO j=1,map%psend(1)*map%ppm_buffer_dim(k)
-              ibuffer                  = ibuffer + 1
-              jbuffer                  = jbuffer + 1
-              map%ppm_recvbuffer(ibuffer) = map%ppm_sendbuffer(jbuffer)
-          ENDDO
+         ibuffer = pp(1,k) - 1
+         jbuffer = qq(1,k) - 1
+         DO j=1,map%psend(1)*map%ppm_buffer_dim(k)
+            ibuffer                  = ibuffer + 1
+            jbuffer                  = jbuffer + 1
+            map%ppm_recvbuffer(ibuffer) = map%ppm_sendbuffer(jbuffer)
+         ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------
@@ -380,52 +369,52 @@
       !  For each send/recv
       !----------------------------------------------------------------------
       DO k=2,map%ppm_nsendlist
-          !-------------------------------------------------------------------
-          !  Collect each data type (xp, vp, etc)
-          !-------------------------------------------------------------------
-          ibuffer = 0
-          DO j=1,map%ppm_buffer_set
-              jbuffer = qq(k,j) - 1
-              !----------------------------------------------------------------
-              !  Collect the data into the send buffer
-              !----------------------------------------------------------------
-              DO i=1,map%psend(k)*map%ppm_buffer_dim(j)
-                  ibuffer        = ibuffer + 1
-                  jbuffer        = jbuffer + 1
-                  send(ibuffer) = map%ppm_sendbuffer(jbuffer)
-              ENDDO
-          ENDDO
+         !-------------------------------------------------------------------
+         !  Collect each data type (xp, vp, etc)
+         !-------------------------------------------------------------------
+         ibuffer = 0
+         DO j=1,map%ppm_buffer_set
+            jbuffer = qq(k,j) - 1
+            !----------------------------------------------------------------
+            !  Collect the data into the send buffer
+            !----------------------------------------------------------------
+            DO i=1,map%psend(k)*map%ppm_buffer_dim(j)
+               ibuffer        = ibuffer + 1
+               jbuffer        = jbuffer + 1
+               send(ibuffer) = map%ppm_sendbuffer(jbuffer)
+            ENDDO
+         ENDDO
 
-          !-------------------------------------------------------------------
-          !  Perform the actual send/recv
-          !-------------------------------------------------------------------
+         !-------------------------------------------------------------------
+         !  Perform the actual send/recv
+         !-------------------------------------------------------------------
 #ifdef __MPI
-          ! The following IF is needed in order to skip "dummy"
-          ! communication rounds where the current processor has to wait
-          ! (only needed in the partial mapping).
-          IF (map%ppm_isendlist(k) .GE. 0 .AND. map%ppm_irecvlist(k) .GE. 0) THEN
-             tag1 = 300
-             CALL MPI_SendRecv(send,map%nsend(k),ppm_mpi_kind, &
-             &    map%ppm_isendlist(k),tag1,recv,map%nrecv(k), &
-             &    ppm_mpi_kind,map%ppm_irecvlist(k),tag1,      &
-             &    ppm_comm,status,info)
-             or_fail_MPI("MPI_SendRecv")
-          ENDIF
+         ! The following IF is needed in order to skip "dummy"
+         ! communication rounds where the current processor has to wait
+         ! (only needed in the partial mapping).
+         IF (map%ppm_isendlist(k) .GE. 0 .AND. map%ppm_irecvlist(k) .GE. 0) THEN
+            tag1 = 300
+            CALL MPI_SendRecv(send,map%nsend(k),ppm_mpi_kind, &
+            &    map%ppm_isendlist(k),tag1,recv,map%nrecv(k), &
+            &    ppm_mpi_kind,map%ppm_irecvlist(k),tag1,      &
+            &    ppm_comm,status,info)
+            or_fail_MPI("MPI_SendRecv")
+         ENDIF
 #else
-          recv = send
+         recv = send
 #endif
-          !-------------------------------------------------------------------
-          !  Store the data back in the recv buffer
-          !-------------------------------------------------------------------
-          ibuffer = 0
-          DO j=1,map%ppm_buffer_set
-              jbuffer = pp(k,j) - 1
-              DO i=1,map%precv(k)*map%ppm_buffer_dim(j)
-                  ibuffer                  = ibuffer + 1
-                  jbuffer                  = jbuffer + 1
-                  map%ppm_recvbuffer(jbuffer) = recv(ibuffer)
-              ENDDO
-          ENDDO
+         !-------------------------------------------------------------------
+         !  Store the data back in the recv buffer
+         !-------------------------------------------------------------------
+         ibuffer = 0
+         DO j=1,map%ppm_buffer_set
+            jbuffer = pp(k,j) - 1
+            DO i=1,map%precv(k)*map%ppm_buffer_dim(j)
+               ibuffer                  = ibuffer + 1
+               jbuffer                  = jbuffer + 1
+               map%ppm_recvbuffer(jbuffer) = recv(ibuffer)
+           ENDDO
+         ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------
