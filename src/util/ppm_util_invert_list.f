@@ -58,12 +58,14 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      REAL(ppm_kind_double)                 :: t0
-      INTEGER, DIMENSION(1)                 :: ldl,ldu
-      INTEGER                               :: iopt
-      INTEGER                               :: i,j,inmin,inmax,outmin,outmax
-      CHARACTER(LEN=ppm_char)               :: mesg
-      CHARACTER(LEN=ppm_char)               :: caller='ppm_util_invert_list'
+      REAL(ppm_kind_double) :: t0
+
+      INTEGER, DIMENSION(1) :: ldl,ldu
+      INTEGER               :: iopt
+      INTEGER               :: i,j,inmin,inmax,outmin,outmax
+
+      CHARACTER(LEN=ppm_char) :: mesg
+      CHARACTER(LEN=ppm_char) :: caller='ppm_util_invert_list'
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -76,8 +78,7 @@
       inmax = UBOUND(inlist,1)
       IF (ppm_debug .GE. 2) THEN
           WRITE(mesg,'(A,2I10)') 'Input list bounds ', inmin, inmax
-          CALL ppm_write(ppm_rank,caller,  &
-          &    mesg,info)
+          CALL ppm_write(ppm_rank,caller,mesg,info)
       ENDIF
       !-------------------------------------------------------------------------
       !  Determine min and max value in inlist
@@ -131,7 +132,7 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
       END SUBROUTINE ppm_util_invert_list

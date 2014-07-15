@@ -52,14 +52,13 @@
 
       REAL(ppm_kind_double) :: t0
 
+      INTEGER, DIMENSION(ppm_dim) :: Offset
       INTEGER, DIMENSION(2)       :: ldu
-      INTEGER, DIMENSION(ppm_dim) :: offset
       INTEGER                     :: i,j,isub,sendrank,recvrank
       INTEGER                     :: iopt,iset,ibuffer,pdim
       INTEGER                     :: nsendlist
       INTEGER                     :: nrecvlist
 
-      CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller='mesh_map_global'
 
       LOGICAL :: valid
@@ -77,18 +76,17 @@
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
+      IF (ppm_debug.GT.0) THEN
          CALL check
-         IF (info .NE. 0) GOTO 9999
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       topo        => ppm_topo(this%topoid)%t
       target_topo => ppm_topo(target_mesh%topoid)%t
 
-      IF (ppm_buffer_set .GT. 0) THEN
-         info = ppm_error_warning
-         CALL ppm_error(ppm_err_map_incomp,caller,  &
-         & 'Buffer was not empty. Possible loss of data!',__LINE__,info)
+      IF (ppm_buffer_set.GT.0) THEN
+         fail('Buffer was not empty. Possible loss of data!',ppm_err_map_incomp, &
+         & exit_point=no,ppm_error=ppm_error_warning)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -100,11 +98,9 @@
       !  Check if origin and target meshes are compatible (i.e. have the
       !  same number of grid points in the whole comput. domain)
       !-------------------------------------------------------------------------
-      IF (ppm_debug .GT. 0) THEN
-         IF (ANY(this%Nm .NE. target_mesh%Nm)) THEN
-            info = ppm_error_notice
-            CALL ppm_write(ppm_rank,caller,   &
-            &   'Source and destination meshes are of different size',info)
+      IF (ppm_debug.GT.0) THEN
+         IF (ANY(this%Nm.NE.target_mesh%Nm)) THEN
+            stdout("Source and destination meshes are of different size",ppm_error_notice)
          ENDIF
       ENDIF
 
@@ -137,11 +133,12 @@
       !  Find intersecting mesh domains to be sent
       !-------------------------------------------------------------------------
       nsendlist = 0
-      offset    = 0
+      !TOCHECK
+      Offset    = 0
       DO i=1,topo%nsublist
          isub = topo%isublist(i)
          DO j=1,target_topo%nsubs
-            CALL this%block_intersect(target_mesh,isub,j,offset, &
+            CALL this%block_intersect(target_mesh,isub,j,Offset, &
             &    nsendlist,isendfromsub,isendtosub,isendpatchid, &
             &    isendblkstart,isendblksize,ioffset,info)
             or_fail("block_intersect failed")
@@ -308,15 +305,12 @@
                IF (ppm_debug .GT. 1) THEN
                   SELECT CASE (ppm_dim)
                   CASE (2)
-                     WRITE(mesg,'(2(A,2I4),A,I3)') ' sending ',  &
-                     & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-                     & ' to ',sendrank
+                     stdout_f('(2(A,2I4),A,I3)'," sending ",'isendblkstart(1:2,j)', &
+                     & " of size ",'isendblksize(1:2,j)'," to ",sendrank)
                   CASE (3)
-                     WRITE(mesg,'(2(A,3I4),A,I3)') ' sending ',  &
-                     & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-                     & ' to ',sendrank
+                     stdout_f('(2(A,3I4),A,I3)'," sending ",'isendblkstart(1:3,j)', &
+                     & " of size ",'isendblksize(1:3,j)'," to ",sendrank)
                   END SELECT
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
                ENDIF
             ENDIF
          ENDDO
@@ -347,15 +341,12 @@
                IF (ppm_debug .GT. 1) THEN
                   SELECT CASE (ppm_dim)
                   CASE (2)
-                     WRITE(mesg,'(2(A,2I4),A,I3)') ' recving ',  &
-                     & irecvblkstart(1:2,j),' of size ',irecvblksize(1:2,j),&
-                     & ' from ',recvrank
+                     stdout_f('(2(A,2I4),A,I3)'," recving ",'irecvblksize(1:2,j)', &
+                     & " of size ",'irecvblkstart(1:2,j)'," from ",recvrank)
                   CASE (3)
-                     WRITE(mesg,'(2(A,3I4),A,I3)') ' recving ',  &
-                     & irecvblkstart(1:3,j),' of size ',irecvblksize(1:3,j),&
-                     & ' from ',recvrank
+                     stdout_f('(2(A,3I4),A,I3)'," recving ",'irecvblksize(1:3,j)', &
+                     & " of size ",'irecvblkstart(1:3,j)'," from ",recvrank)
                   END SELECT
-                  CALL ppm_write(ppm_rank,caller,mesg,info)
                ENDIF
             ENDIF
          ENDDO
@@ -402,24 +393,21 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       CALL substop(caller,t0,info)
       RETURN
-
       CONTAINS
-
       SUBROUTINE check
-          USE ppm_module_check_id
-          IMPLICIT NONE
-          CALL ppm_check_topoid(this%topoid,valid,info)
-          IF (.NOT. valid) THEN
-             fail("topoid not valid",ppm_err_argument,info,8888)
-          ENDIF
-          CALL ppm_check_topoid(target_mesh%topoid,valid,info)
-          IF (.NOT. valid) THEN
-             fail("target topoid not valid",ppm_err_argument,info,8888)
-          ENDIF
- 8888     CONTINUE
+        USE ppm_module_check_id
+        IMPLICIT NONE
+        CALL ppm_check_topoid(this%topoid,valid,info)
+        IF (.NOT. valid) THEN
+           fail("topoid not valid",ppm_err_argument,exit_point=8888)
+        ENDIF
+        CALL ppm_check_topoid(target_mesh%topoid,valid,info)
+        IF (.NOT. valid) THEN
+           fail("target topoid not valid",ppm_err_argument,exit_point=8888)
+        ENDIF
+      8888 CONTINUE
       END SUBROUTINE check
-
       END SUBROUTINE equi_mesh_map_global

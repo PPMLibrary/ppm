@@ -6,8 +6,8 @@
 
       TYPE,EXTENDS(DTYPE(ppm_t_part_mapping)_) :: DTYPE(ppm_t_part_mapping)
       CONTAINS
-          PROCEDURE     :: create => DTYPE(map_create)
-          PROCEDURE     :: destroy => DTYPE(map_destroy)
+          PROCEDURE :: create => DTYPE(map_create)
+          PROCEDURE :: destroy => DTYPE(map_destroy)
       END TYPE
       !----------------------------------------------------------------------
       ! Container for particle mappings

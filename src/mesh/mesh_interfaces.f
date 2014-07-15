@@ -293,6 +293,16 @@ minclude ppm_get_field_interface_template(4,l)
           INTEGER,               INTENT(  OUT) :: info
       END SUBROUTINE
 
+      SUBROUTINE equi_mesh_map_isend_(this,info)
+          IMPORT ppm_t_equi_mesh_
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh_)              :: this
+          INTEGER,               INTENT(  OUT) :: info
+      END SUBROUTINE
+
       SUBROUTINE equi_mesh_map_pop_(this,field,info,poptype)
           IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE

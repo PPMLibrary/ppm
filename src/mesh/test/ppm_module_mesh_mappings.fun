@@ -271,8 +271,10 @@ real(mk),dimension(ndim)         :: offset
         call Field2%map_ghost_push(Mesh1,info)
             Assert_Equal(info,0)
 
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
+        !call Mesh1%map_send(info)
+        !non-blocking send
+        call Mesh1%map_isend(info)
+        Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
             Assert_Equal(info,0)
@@ -555,25 +557,27 @@ real(mk),dimension(ndim)         :: offset
 
         !Do a ghost mapping
         call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif
 
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
+        !call Mesh1%map_send(info)
+        !non-blocking send
+        call Mesh1%map_isend(info)
+        Assert_Equal(info,0)
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif
         call Field2%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif

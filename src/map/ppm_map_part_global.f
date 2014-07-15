@@ -28,11 +28,9 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_global_s(target_topoid,xp,Npart,info, &
-     &                                 userdef_part2proc)
+      SUBROUTINE ppm_map_part_global_s(target_topoid,xp,Npart,info,userdef_part2proc)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_global_d(target_topoid,xp,Npart,info, &
-     &                                 userdef_part2proc)
+      SUBROUTINE ppm_map_part_global_d(target_topoid,xp,Npart,info,userdef_part2proc)
 #endif
       !!! This routine maps the particles onto the given
       !!! topology using a global mapping (i.e. every
@@ -79,24 +77,28 @@
       !!! If the user supplies `ppm_param_topo_undefined` an optional parameter
       !!! userdef_part2proc can be used to specify explicitly which particle
       !!! should be moved to which processor.
-      INTEGER, DIMENSION(:), OPTIONAL, POINTER :: userdef_part2proc
+      INTEGER, DIMENSION(:), OPTIONAL, POINTER       :: userdef_part2proc
       !!! The processor assignment for each particle
       INTEGER                        , INTENT(  OUT) :: info
       !!! Return status, 0 on success
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)          :: ldu
-!       INTEGER, DIMENSION(:), POINTER :: bcdef
-      INTEGER                        :: i,j,k,idom,ipart,nlist1,nlist2
-      INTEGER                        :: sendrank,recvrank
-      INTEGER                        :: iopt,iset,ibuffer
-      CHARACTER(ppm_char)            :: mesg
-      REAL(MK)                       :: t0
-      LOGICAL                        :: valid
-      TYPE(ppm_t_topo), POINTER      :: topo
+      TYPE(ppm_t_topo), POINTER :: topo
 !       TYPE(ppm_t_topo), POINTER      :: target_topo => NULL()
+
+      REAL(MK) :: t0
+
+      INTEGER, DIMENSION(3) :: ldu
+!       INTEGER, DIMENSION(:), POINTER :: bcdef
+      INTEGER               :: i,j,k,idom,ipart,nlist1,nlist2
+      INTEGER               :: sendrank,recvrank
+      INTEGER               :: iopt,iset,ibuffer
+
+      CHARACTER(ppm_char) :: mesg
       CHARACTER(ppm_char) :: caller='ppm_map_part_global'
+
+      LOGICAL :: valid
       !-------------------------------------------------------------------------
       !  Externals
       !-------------------------------------------------------------------------
@@ -130,69 +132,66 @@
          !-----------------------------------------------------------------------
          ppm_map_type = ppm_param_map_global
 
-        !------------------------------------------------------------------------
-        !  Alloc memory for particle lists
-        !-----------------------------------------------------------------------
-        iopt   = ppm_param_alloc_fit
-        ldu(1) = Npart
-        CALL ppm_alloc(ilist1,ldu,iopt,info)
-        or_fail_alloc("particle list 1 ILIST1",ppm_error=ppm_error_fatal)
+         !------------------------------------------------------------------------
+         !  Alloc memory for particle lists
+         !-----------------------------------------------------------------------
+         iopt   = ppm_param_alloc_fit
+         ldu(1) = Npart
+         CALL ppm_alloc(ilist1,ldu,iopt,info)
+         or_fail_alloc("particle list 1 ILIST1",ppm_error=ppm_error_fatal)
 
-        CALL ppm_alloc(ilist2,ldu,iopt,info)
-        or_fail_alloc("particle list 2 ILIST2",ppm_error=ppm_error_fatal)
+         CALL ppm_alloc(ilist2,ldu,iopt,info)
+         or_fail_alloc("particle list 2 ILIST2",ppm_error=ppm_error_fatal)
 
-        !-----------------------------------------------------------------------
-        !  Allocate memory for the pointer to the buffer; for the global map we
-        !  need entries for each processor, thus ldu(1) = ppm_nproc
-        !-----------------------------------------------------------------------
-        iopt   = ppm_param_alloc_fit
-        ldu(1) = ppm_nproc + 1
-        CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-        or_fail_alloc("particle send buffer PPM_PSENDBUFFER",ppm_error=ppm_error_fatal)
+         !-----------------------------------------------------------------------
+         !  Allocate memory for the pointer to the buffer; for the global map we
+         !  need entries for each processor, thus ldu(1) = ppm_nproc
+         !-----------------------------------------------------------------------
+         iopt   = ppm_param_alloc_fit
+         ldu(1) = ppm_nproc + 1
+         CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
+         or_fail_alloc("particle send buffer PPM_PSENDBUFFER",ppm_error=ppm_error_fatal)
 
-        iopt   = ppm_param_alloc_fit
-        ldu(1) = Npart
-        CALL ppm_alloc(part2proc,ldu,iopt,info)
-        or_fail_alloc("particles-to-processor map PART2PROC",ppm_error=ppm_error_fatal)
+         iopt   = ppm_param_alloc_fit
+         ldu(1) = Npart
+         CALL ppm_alloc(part2proc,ldu,iopt,info)
+         or_fail_alloc("particles-to-processor map PART2PROC",ppm_error=ppm_error_fatal)
 
-        ldu(1) = Npart
-        CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
-        or_fail_alloc("buffer-to-particles map PPM_BUFFER2PART",ppm_error=ppm_error_fatal)
+         ldu(1) = Npart
+         CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
+         or_fail_alloc("buffer-to-particles map PPM_BUFFER2PART",ppm_error=ppm_error_fatal)
 
-        !-----------------------------------------------------------------------
-        !  Initialize the particle list
-        !-----------------------------------------------------------------------
-        nlist1 = 0
-        DO ipart=1,Npart
-           nlist1         = nlist1 + 1
-           ilist1(nlist1) = ipart
-        ENDDO
+         !-----------------------------------------------------------------------
+         !  Initialize the particle list
+         !-----------------------------------------------------------------------
+         FORALL (ipart=1:Npart) ilist1(ipart) = ipart
+         nlist1 = Npart
 
-        !-----------------------------------------------------------------------
-        !  Then of these exclude the particles that on the current processor
-        !-----------------------------------------------------------------------
-        IF (ppm_dim.EQ.2) THEN
-           !--------------------------------------------------------------------
-           !  Loop over the subdomains
-           !--------------------------------------------------------------------
-  !        DO idom=1,ppm_nsubs(target_topoid)
-           DO idom=topo%nsubs,1,-1
-              sendrank = topo%sub2proc(idom)
+         !-----------------------------------------------------------------------
+         !  Then of these exclude the particles that on the current processor
+         !-----------------------------------------------------------------------
+         IF (ppm_dim.EQ.2) THEN
+            !--------------------------------------------------------------------
+            !  Loop over the subdomains
+            !--------------------------------------------------------------------
+  !         DO idom=1,ppm_nsubs(target_topoid)
+            DO idom=topo%nsubs,1,-1
+               sendrank = topo%sub2proc(idom)
 
-            !-------------------------------------------------------------------
-            !  Loop over the remaining particles not yet assigned to a processor
-            !-------------------------------------------------------------------
-              nlist2 = 0
-              DO i=1,nlist1
-                 ipart = ilist1(i)
-                 !--------------------------------------------------------------
-                 !  If the particle is inside the current subdomain, assign it
-                 !--------------------------------------------------------------
+               !-------------------------------------------------------------------
+               !  Loop over the remaining particles not yet assigned to a processor
+               !-------------------------------------------------------------------
+               nlist2 = 0
+               DO i=1,nlist1
+                  ipart = ilist1(i)
+                  !--------------------------------------------------------------
+                  !  If the particle is inside the current subdomain, assign it
+                  !--------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                 IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND. &
-                 &   xp(1,ipart).LE.topo%max_subs(1,idom).AND. &
-                 &   xp(2,ipart).GE.topo%min_subs(2,idom).AND. &
-                 &   xp(2,ipart).LE.topo%max_subs(2,idom)) THEN
+                  IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND. &
+                  &   xp(1,ipart).LE.topo%max_subs(1,idom).AND. &
+                  &   xp(2,ipart).GE.topo%min_subs(2,idom).AND. &
+                  &   xp(2,ipart).LE.topo%max_subs(2,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
@@ -204,10 +203,10 @@
                      &  (topo%subs_bc(4,idom).EQ.1           .AND.  &
                      &  topo%bcdef(4).NE. ppm_param_bcdef_periodic))) THEN
 #elif  __KIND == __DOUBLE_PRECISION
-                 IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
-                 &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
-                 &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
-                 &   xp(2,ipart).LE.topo%max_subd(2,idom)) THEN
+                  IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
+                  &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
+                  &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
+                  &   xp(2,ipart).LE.topo%max_subd(2,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
@@ -235,49 +234,46 @@
                      ilist2(nlist2) = ipart
                   ENDIF
 
-              ENDDO
+               ENDDO
 
-              !-----------------------------------------------------------------
-              !  Copy the lists (well, only if nlist2 changed - decreased)
-              !-----------------------------------------------------------------
-              IF (nlist2.NE.nlist1) THEN
-                 nlist1 = nlist2
-                 DO i=1,nlist1
-                    ilist1(i) = ilist2(i)
-                 ENDDO
-              ENDIF
+               !-----------------------------------------------------------------
+               !  Copy the lists (well, only if nlist2 changed - decreased)
+               !-----------------------------------------------------------------
+               IF (nlist2.NE.nlist1) THEN
+                  nlist1 = nlist2
+                  FORALL (i=1:nlist1) ilist1(i)=ilist2(i)
+               ENDIF
 
-              !-----------------------------------------------------------------
-              !  Exit if the list is empty
-              !-----------------------------------------------------------------
-              IF (nlist1.EQ.0) EXIT
-           ENDDO
-
-        ELSE
-           !--------------------------------------------------------------------
-           !  Loop over the subdomains (since the first domains are most likely
-           !  to be empty, we look backwards to reduce the number of elements in
-           !  nlist2 as fast as possible)
-           !--------------------------------------------------------------------
-  !        DO idom=1,ppm_nsubs(target_topoid)
-           DO idom=topo%nsubs,1,-1
-              sendrank   = topo%sub2proc(idom)
-              !-----------------------------------------------------------------
-              !  Loop over the remaining particles
-              !-----------------------------------------------------------------
-              nlist2 = 0
-              DO i=1,nlist1
-                 ipart = ilist1(i)
-                 !--------------------------------------------------------------
-                 !  If the particle is inside the current subdomain, assign it
-                 !--------------------------------------------------------------
+               !-----------------------------------------------------------------
+               !  Exit if the list is empty
+               !-----------------------------------------------------------------
+               IF (nlist1.EQ.0) EXIT
+            ENDDO
+         ELSE
+            !--------------------------------------------------------------------
+            !  Loop over the subdomains (since the first domains are most likely
+            !  to be empty, we look backwards to reduce the number of elements in
+            !  nlist2 as fast as possible)
+            !--------------------------------------------------------------------
+  !         DO idom=1,ppm_nsubs(target_topoid)
+            DO idom=topo%nsubs,1,-1
+               sendrank   = topo%sub2proc(idom)
+               !-----------------------------------------------------------------
+               !  Loop over the remaining particles
+               !-----------------------------------------------------------------
+               nlist2 = 0
+               DO i=1,nlist1
+                  ipart = ilist1(i)
+                  !--------------------------------------------------------------
+                  !  If the particle is inside the current subdomain, assign it
+                  !--------------------------------------------------------------
 #if    __KIND == __SINGLE_PRECISION
-                 IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.   &
-                 &   xp(1,ipart).LE.topo%max_subs(1,idom).AND.   &
-                 &   xp(2,ipart).GE.topo%min_subs(2,idom).AND.   &
-                 &   xp(2,ipart).LE.topo%max_subs(2,idom).AND.   &
-                 &   xp(3,ipart).GE.topo%min_subs(3,idom).AND.   &
-                 &   xp(3,ipart).LE.topo%max_subs(3,idom)) THEN
+                  IF (xp(1,ipart).GE.topo%min_subs(1,idom).AND.   &
+                  &   xp(1,ipart).LE.topo%max_subs(1,idom).AND.   &
+                  &   xp(2,ipart).GE.topo%min_subs(2,idom).AND.   &
+                  &   xp(2,ipart).LE.topo%max_subs(2,idom).AND.   &
+                  &   xp(3,ipart).GE.topo%min_subs(3,idom).AND.   &
+                  &   xp(3,ipart).LE.topo%max_subs(3,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
@@ -292,12 +288,12 @@
                      &  (topo%subs_bc(6,idom).EQ.1           .AND. &
                      &  topo%bcdef(6).NE. ppm_param_bcdef_periodic))   ) THEN
 #elif  __KIND == __DOUBLE_PRECISION
-                 IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
-                 &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
-                 &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
-                 &   xp(2,ipart).LE.topo%max_subd(2,idom).AND.   &
-                 &   xp(3,ipart).GE.topo%min_subd(3,idom).AND.   &
-                 &   xp(3,ipart).LE.topo%max_subd(3,idom)) THEN
+                  IF (xp(1,ipart).GE.topo%min_subd(1,idom).AND.   &
+                  &   xp(1,ipart).LE.topo%max_subd(1,idom).AND.   &
+                  &   xp(2,ipart).GE.topo%min_subd(2,idom).AND.   &
+                  &   xp(2,ipart).LE.topo%max_subd(2,idom).AND.   &
+                  &   xp(3,ipart).GE.topo%min_subd(3,idom).AND.   &
+                  &   xp(3,ipart).LE.topo%max_subd(3,idom)) THEN
                      !----------------------------------------------------------
                      !  In the non-periodic case, allow particles that are
                      !  exactly ON an upper EXTERNAL boundary.
@@ -321,41 +317,37 @@
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
                   ENDIF
+               ENDDO
+               !-----------------------------------------------------------------
+               !  Copy the lists (well, only if nlist2 changed - decreased)
+               !-----------------------------------------------------------------
+               IF (nlist2.NE.nlist1) THEN
+                  nlist1 = nlist2
+                  FORALL (i=1:nlist1) ilist1(i)=ilist2(i)
+               ENDIF
 
-              ENDDO
+               !-----------------------------------------------------------------
+               !  Exit if the list is empty
+               !-----------------------------------------------------------------
+               IF (nlist1.EQ.0) EXIT
+            ENDDO
+         ENDIF
 
-              !-----------------------------------------------------------------
-              !  Copy the lists (well, only if nlist2 changed - decreased)
-              !-----------------------------------------------------------------
-              IF (nlist2.NE.nlist1) THEN
-                 nlist1 = nlist2
-                 DO i=1,nlist1
-                    ilist1(i) = ilist2(i)
-                 ENDDO
-              ENDIF
-
-              !-----------------------------------------------------------------
-              !  Exit if the list is empty
-              !-----------------------------------------------------------------
-              IF (nlist1.EQ.0) EXIT
-           ENDDO
-        ENDIF
-
-        !-----------------------------------------------------------------------
-        !  Here we could check that we sold all the particles, but if we use
-        !  Dirichlet BCs we might just want to loose the particles outside of the
-        !  domain. So just skip them in the map. This is also consistent with the
-        !  map_partial where particles are also lost (there are no periodic sub
-        !  images in this case).
-        !-----------------------------------------------------------------------
+         !-----------------------------------------------------------------------
+         !  Here we could check that we sold all the particles, but if we use
+         !  Dirichlet BCs we might just want to loose the particles outside of the
+         !  domain. So just skip them in the map. This is also consistent with the
+         !  map_partial where particles are also lost (there are no periodic sub
+         !  images in this case).
+         !-----------------------------------------------------------------------
       ELSE
-        !-----------------------------------------------------------------------
-        ! Non geometric mappings
-        !-----------------------------------------------------------------------
-        IF (PRESENT(userdef_part2proc)) THEN
+         !-----------------------------------------------------------------------
+         ! Non geometric mappings
+         !-----------------------------------------------------------------------
+         IF (PRESENT(userdef_part2proc)) THEN
             ! just let part2proc point to the user defined mapping
             part2proc => userdef_part2proc
-        ENDIF
+         ENDIF
       ENDIF
 
       !-----------------------------------------------------------------------
@@ -421,10 +413,8 @@
         !-----------------------------------------------------------------------
         !  Initialize the particle lists
         !-----------------------------------------------------------------------
-        nlist1 = npart
-        DO ipart=1,Npart
-           ilist1(ipart) = ipart
-        ENDDO
+        nlist1 = Npart
+        FORALL (ipart=1:Npart) ilist1(ipart) = ipart
 
         !-----------------------------------------------------------------------
         !  loop over all processors, starting with the processor itself
@@ -436,7 +426,6 @@
         ppm_nrecvlist      = 0
         iset               = 0
         ibuffer            = 0
-
 
         DO i=1,ppm_nproc
            !--------------------------------------------------------------------

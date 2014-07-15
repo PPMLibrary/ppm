@@ -88,11 +88,11 @@
       TYPE(ppm_t_topo)     , POINTER         :: topo
       CLASS(ppm_t_subpatch_),POINTER         :: p
 
-      REAL(MK) , DIMENSION(:      ) , POINTER :: up_1d => NULL()
-      REAL(MK) , DIMENSION(:,:    ) , POINTER :: up_2d => NULL()
-      REAL(MK) , DIMENSION(:,:    ) , POINTER :: dummy_2d => NULL()
-      REAL(MK) , DIMENSION(:,:,:  ) , POINTER :: dummy_3d => NULL()
-      REAL(MK) , DIMENSION(:,:,:,:) , POINTER :: dummy_4d => NULL()
+      REAL(MK) , DIMENSION(:      ) , POINTER :: up_1d
+      REAL(MK) , DIMENSION(:,:    ) , POINTER :: up_2d
+      REAL(MK) , DIMENSION(:,:    ) , POINTER :: dummy_2d
+      REAL(MK) , DIMENSION(:,:,:  ) , POINTER :: dummy_3d
+      REAL(MK) , DIMENSION(:,:,:,:) , POINTER :: dummy_4d
 
       start_subroutine("m2p")
 
@@ -109,8 +109,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
       check_associated(<#Part%xp#>,"Position array xp not initialized")
 
@@ -118,7 +118,7 @@
       CALL Part%get_xp(xp,info)
       or_fail("Get_xp failed")
 
-      IF(Np.EQ.0) GOTO 9999
+      IF (Np.EQ.0) GOTO 9999
 
       check_associated(<#this%subpatch#>,&
       "Mesh not allocated. Call Mesh%create() first?")
@@ -152,7 +152,7 @@
       !-------------------------------------------------------------------------
       !  Initialize the particle list
       !-------------------------------------------------------------------------
-      IF(nsubpatch.GE.1) THEN
+      IF (nsubpatch.GE.1) THEN
          nlist1     = 0
          store_info = 0
          DO ipart=1,Np
@@ -266,7 +266,7 @@
          IF (ppm_debug.GT.1) THEN
              IF (nlist2.GT.0) THEN
                 stdout("Some particles seem to be outside from all subpatches",&
-                        " They will not take part in the m2p interpolation")
+                &      " They will not take part in the m2p interpolation")
              ENDIF
          ENDIF
 
@@ -275,7 +275,7 @@
          !----------------------------------------------------------------------
          max_partnumber = 0
          DO ipatch=1,nsubpatch
-            IF(store_info(ipatch).GE.max_partnumber) THEN
+            IF (store_info(ipatch).GE.max_partnumber) THEN
                max_partnumber = store_info(ipatch)
             END IF
          END DO
@@ -396,7 +396,7 @@
          IF (ppm_debug.GT.1) THEN
              IF (nlist2.GT.0) THEN
                 stdout("Some particles seem to be outside from all subpatches",&
-                        " They will not take part in the m2p interpolation")
+                &      " They will not take part in the m2p interpolation")
              ENDIF
          ENDIF
 
@@ -429,97 +429,107 @@
       !  Get a pointer to the data array and reset quantity to zero
       !-------------------------------------------------------------------------
       IF (Field%lda.EQ.1) THEN
-          CALL Part%get(Field,up_1d,info)
-          or_fail("Part%get_field")
-          DO ip=1,np
-              up_1d(ip) = 0.0_mk
-          END DO
+         NULLIFY(up_1d)
+         CALL Part%get(Field,up_1d,info)
+         or_fail("Part%get_field")
+         DO ip=1,np
+            up_1d(ip) = 0.0_mk
+         END DO
       ELSE
-          CALL Part%get(Field,up_2d,info)
-          or_fail("Part%get_field")
+         NULLIFY(up_2d)
+         CALL Part%get(Field,up_2d,info)
+         or_fail("Part%get_field")
 
-          SELECT CASE(Field%lda)
-          CASE (1)
-              DO ip=1,np
-                  up_2d(1,ip) = 0.0_mk
-              END DO
-          CASE (2)
-              DO ip=1,np
-                  up_2d(1,ip) = 0.0_mk
-                  up_2d(2,ip) = 0.0_mk
-              END DO
-          CASE (3)
-              DO ip=1,np
-                  up_2d(1,ip) = 0.0_mk
-                  up_2d(2,ip) = 0.0_mk
-                  up_2d(3,ip) = 0.0_mk
-              END DO
-          CASE (4)
-              DO ip=1,np
-                  up_2d(1,ip) = 0.0_mk
-                  up_2d(2,ip) = 0.0_mk
-                  up_2d(3,ip) = 0.0_mk
-                  up_2d(4,ip) = 0.0_mk
-              END DO
-          CASE (5)
-              DO ip=1,np
-                  up_2d(1,ip) = 0.0_mk
-                  up_2d(2,ip) = 0.0_mk
-                  up_2d(3,ip) = 0.0_mk
-                  up_2d(4,ip) = 0.0_mk
-                  up_2d(5,ip) = 0.0_mk
-              END DO
-          CASE DEFAULT
-              up_2d = 0.0_mk
-          END SELECT
+         SELECT CASE(Field%lda)
+         CASE (1)
+            DO ip=1,np
+               up_2d(1,ip) = 0.0_mk
+            END DO
+
+         CASE (2)
+            DO ip=1,np
+               up_2d(1,ip) = 0.0_mk
+               up_2d(2,ip) = 0.0_mk
+            END DO
+
+         CASE (3)
+            DO ip=1,np
+               up_2d(1,ip) = 0.0_mk
+               up_2d(2,ip) = 0.0_mk
+               up_2d(3,ip) = 0.0_mk
+            END DO
+
+         CASE (4)
+            DO ip=1,np
+               up_2d(1,ip) = 0.0_mk
+               up_2d(2,ip) = 0.0_mk
+               up_2d(3,ip) = 0.0_mk
+               up_2d(4,ip) = 0.0_mk
+            END DO
+
+         CASE (5)
+            DO ip=1,np
+               up_2d(1,ip) = 0.0_mk
+               up_2d(2,ip) = 0.0_mk
+               up_2d(3,ip) = 0.0_mk
+               up_2d(4,ip) = 0.0_mk
+               up_2d(5,ip) = 0.0_mk
+            END DO
+
+         CASE DEFAULT
+            up_2d = 0.0_mk
+         END SELECT
       ENDIF
-
 
       !-------------------------------------------------------------------------
       !  Beginning of the computation
       !-------------------------------------------------------------------------
 
-      SELECT CASE(kernel)
+      SELECT CASE (kernel)
+      CASE (ppm_param_rmsh_kernel_mp4)
+         IF (Field%lda.EQ.1) THEN
+            IF (ppm_dim .EQ. 2) THEN
+               NULLIFY(dummy_2d)
+               CALL m2p_interp_mp4(this,Field,dummy_2d,xp,up_1d,info)
+            ELSE
+               NULLIFY(dummy_3d)
+               CALL m2p_interp_mp4(this,Field,dummy_3d,xp,up_1d,info)
+            ENDIF
+         ELSE
+            IF (ppm_dim .EQ. 2) THEN
+               NULLIFY(dummy_3d)
+               CALL m2p_interp_mp4(this,Field,dummy_3d,Field%lda,xp,up_2d,info)
+            ELSE
+               NULLIFY(dummy_4d)
+               CALL m2p_interp_mp4(this,Field,dummy_4d,Field%lda,xp,up_2d,info)
+            ENDIF
+         ENDIF
+         or_fail("m2p_interp_mp4")
 
-      CASE(ppm_param_rmsh_kernel_mp4)
-          IF (Field%lda.EQ.1) THEN
-              IF (ppm_dim .EQ. 2) THEN
-                  CALL m2p_interp_mp4(this,Field,dummy_2d,xp,up_1d,info)
-              ELSE
-                  CALL m2p_interp_mp4(this,Field,dummy_3d,xp,up_1d,info)
-              ENDIF
-          ELSE
-              IF (ppm_dim .EQ. 2) THEN
-                  CALL m2p_interp_mp4(this,Field,dummy_3d,Field%lda,&
-                  &    xp,up_2d,info)
-              ELSE
-                  CALL m2p_interp_mp4(this,Field,dummy_4d,Field%lda,&
-                  &    xp,up_2d,info)
-              ENDIF
-          ENDIF
-          or_fail("m2p_interp_mp4")
+      CASE (ppm_param_rmsh_kernel_bsp2)
+         IF (Field%lda.EQ.1) THEN
+            IF (ppm_dim .EQ. 2) THEN
+               NULLIFY(dummy_2d)
+               CALL m2p_interp_bsp2(this,Field,dummy_2d,xp,up_1d,info)
+            ELSE
+               NULLIFY(dummy_3d)
+               CALL m2p_interp_bsp2(this,Field,dummy_3d,xp,up_1d,info)
+            ENDIF
+         ELSE
+            IF (ppm_dim .EQ. 2) THEN
+               NULLIFY(dummy_3d)
+               CALL m2p_interp_bsp2(this,Field,dummy_3d,Field%lda,xp,up_2d,info)
+            ELSE
+               NULLIFY(dummy_4d)
+               CALL m2p_interp_bsp2(this,Field,dummy_4d,Field%lda,xp,up_2d,info)
+            ENDIF
+         ENDIF
+         or_fail("m2p_interp_bsp2")
 
-      CASE(ppm_param_rmsh_kernel_bsp2)
-          IF (Field%lda.EQ.1) THEN
-              IF (ppm_dim .EQ. 2) THEN
-                  CALL m2p_interp_bsp2(this,Field,dummy_2d,xp,up_1d,info)
-              ELSE
-                  CALL m2p_interp_bsp2(this,Field,dummy_3d,xp,up_1d,info)
-              ENDIF
-          ELSE
-              IF (ppm_dim .EQ. 2) THEN
-                  CALL m2p_interp_bsp2(this,Field,dummy_3d,Field%lda,&
-                      xp,up_2d,info)
-              ELSE
-                  CALL m2p_interp_bsp2(this,Field,dummy_4d,Field%lda,&
-                      xp,up_2d,info)
-              ENDIF
-          ENDIF
-          or_fail("m2p_interp_bsp2")
       CASE DEFAULT
-          fail(&
-          "Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.",&
-          ppm_err_argument)
+         fail("Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.", &
+         & ppm_err_argument)
+
       END SELECT ! kernel type
 
       !----------------------------------------------------------
@@ -545,28 +555,23 @@
       CALL Part%set_xp(xp,info,read_only=.true.)
       or_fail("Set_xp failed")
 
-
       end_subroutine()
       RETURN
       CONTAINS
-
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-            fail("Please call ppm_init first!",&
-            ppm_err_ppm_noinit,exit_point=8888)
+           fail("Please call ppm_init first!",ppm_err_ppm_noinit,exit_point=8888)
         ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
-            fail("Wrong kernel definition",&
-                ppm_err_ppm_noinit,exit_point=8888)
-        END IF
+           fail("Wrong kernel definition",ppm_err_ppm_noinit,exit_point=8888)
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
-        IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
-     &               .OR.(kernel_support.EQ.6))) THEN
-            fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
+        IF (.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
+        &   .OR.(kernel_support.EQ.6))) THEN
+           fail("Wrong kernel support",ppm_err_argument,exit_point=8888)
         END IF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
-
       END SUBROUTINE equi_mesh_m2p
 
 

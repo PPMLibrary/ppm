@@ -468,7 +468,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
 
           start_subroutine("field_map_push")
 
-
           CALL mesh%map_push(this,info)
           or_fail("mesh%map_push")
 

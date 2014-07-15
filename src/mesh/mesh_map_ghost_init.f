@@ -56,8 +56,6 @@
       INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
 #endif
 
-      CHARACTER(ppm_char) :: mesg
-
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
 
       !-------------------------------------------------------------------------
@@ -75,21 +73,19 @@
       !  topology
       !-------------------------------------------------------------------------
       IF (.NOT.topo%isoptimized) THEN
-        !-----------------------------------------------------------------------
-        !  if not: determine it before calling map_field_ghost_init
-        !-----------------------------------------------------------------------
-        CALL ppm_util_commopt(this%topoid,info)
-        IF (info.NE.0) GOTO 9999
-        IF (ppm_debug .GT. 1) THEN
-           DO i=1,topo%nneighproc
-              WRITE(mesg,'(A,I4)') 'have neighbor: ',topo%ineighproc(i)
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-           END DO
-           DO i=1,topo%ncommseq
-              WRITE(mesg,'(A,I4)') 'communicate: ',topo%icommseq(i)
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-           END DO
-        ENDIF
+         !-----------------------------------------------------------------------
+         !  if not: determine it before calling map_field_ghost_init
+         !-----------------------------------------------------------------------
+         CALL ppm_util_commopt(this%topoid,info)
+         IF (info.NE.0) GOTO 9999
+         IF (ppm_debug .GT. 1) THEN
+            DO i=1,topo%nneighproc
+               stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
+            ENDDO
+            DO i=1,topo%ncommseq
+               stdout_f('(A,I4)',"communicate: ",'topo%icommseq(i)')
+            ENDDO
+         ENDIF
       ENDIF
 
 
@@ -433,17 +429,14 @@
                   mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
                   IF (ppm_debug .GT. 1) THEN
                      IF (ppm_dim .EQ. 2) THEN
-                        WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
-                        & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-                        & ' on sub ',isendfromsub(j),&
-                        & ' to sub ',isendtosub(j),' on proc ',sendrank
+                        stdout_f('(2(A,2I4),3(A,I0))'," sending ",'isendblkstart(1:2,j)', &
+                        & " of size ",'isendblksize(1:2,j)'," on sub ",'isendfromsub(j)', &
+                        & " to sub ",'isendtosub(j)'," on proc ",sendrank)
                      ELSEIF (ppm_dim .EQ. 3) THEN
-                        WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
-                        & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-                        & ' on sub ',isendfromsub(j),&
-                        & ' to sub ',isendtosub(j),' on proc ',sendrank
+                        stdout_f('(2(A,3I4),3(A,I0))'," sending ",'isendblkstart(1:3,j)', &
+                        & " of size ",'isendblksize(1:3,j)'," on sub ",'isendfromsub(j)', &
+                        & " to sub ",'isendtosub(j)'," on proc ",sendrank)
                      ENDIF
-                     CALL ppm_write(ppm_rank,caller,mesg,info)
                   ENDIF
                ENDIF
             ENDDO

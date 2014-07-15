@@ -96,14 +96,14 @@
           INTEGER, DIMENSION(:), POINTER :: ppm_irecvlist => NULL()
       END TYPE DTYPE(ppm_t_mapping)_
 
-      TYPE,ABSTRACT, EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_part_mapping)_
+      TYPE,ABSTRACT,EXTENDS(DTYPE(ppm_t_mapping)_) :: DTYPE(ppm_t_part_mapping)_
           INTEGER :: oldNpart
           INTEGER :: newNpart
 
           CONTAINS
 
-          PROCEDURE(DTYPE(map_create)_),DEFERRED     :: create
-          PROCEDURE(DTYPE(map_destroy)_),DEFERRED     :: destroy
+          PROCEDURE(DTYPE(map_create)_),DEFERRED  :: create
+          PROCEDURE(DTYPE(map_destroy)_),DEFERRED :: destroy
 
       END TYPE DTYPE(ppm_t_part_mapping)_
 minclude ppm_create_collection(DTYPE(part_mapping)_,DTYPE(part_mapping)_,generate="abstract")

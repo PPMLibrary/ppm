@@ -479,6 +479,9 @@
 
      CALL Mesh%map_send(info)
      or_fail("map_send")
+     !non-blocking send
+     !CALL Mesh%map_isend(info)
+     !or_fail("map_isend")
 
      CALL Field%map_ghost_pop(Mesh,info)
      or_fail("map_ghost_pop")

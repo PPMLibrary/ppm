@@ -150,8 +150,8 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         Nm = 35
         Nm(ndim) = 65
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
-            ghostsize=ighostsize,name='Test_Mesh_1')
-            Assert_Equal(info,0)
+        &   ghostsize=ighostsize,name='Test_Mesh_1')
+        Assert_Equal(info,0)
 
         call Part1%initialize(np_global,info,topoid=topoid,name="Part1")
         Assert_Equal(info,0)
@@ -189,13 +189,13 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
         Assert_Equal(info,0)
 
         call Field1%create(3,info,name='vecField')
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%create(1,info,name='scaField')
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
 
         p => Mesh1%subpatch%begin()
@@ -217,16 +217,17 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
             p => Mesh1%subpatch%next()
         enddo
 
-
         if (ppm_debug.GT.0) then
 #ifdef __MPI
             call MPI_BARRIER(comm,info)
 #endif
+            topo => ppm_topo(topoid)%t
+
             stdout("NB subdomains =  ",topo%nsubs)
             do i = 1,topo%nsublist
-                isub = topo%isublist(i)
-                stdout("coordinates subs Min =  ",'topo%min_subd(1:ndim,isub)')
-                stdout("coordinates subs Max =  ",'topo%max_subd(1:ndim,isub)')
+               isub = topo%isublist(i)
+               stdout("coordinates subs Min =  ",'topo%min_subd(1:ndim,isub)')
+               stdout("coordinates subs Max =  ",'topo%max_subd(1:ndim,isub)')
             enddo
 #ifdef __MPI
             call MPI_BARRIER(comm,info)
@@ -234,12 +235,12 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
             stdout("NB patch =  ",Mesh1%npatch)
             stdout("NB subpatch =  ",Mesh1%subpatch%nb)
             p => Mesh1%subpatch%begin()
-                if(associated(p)) then
-                    stdout("********************************")
-                    stdout("patch     istart_p ",'p%istart_p(1:ndim)')
-                    stdout("patch     iend_p ",'p%iend_p(1:ndim)')
-                    stdout("********************************")
-                endif
+            if (associated(p)) then
+               stdout("********************************")
+               stdout("patch     istart_p ",'p%istart_p(1:ndim)')
+               stdout("patch     iend_p ",'p%iend_p(1:ndim)')
+               stdout("********************************")
+            endif
             do while (ASSOCIATED(p))
                 stdout("--------------------------------")
                 stdout("patch     istart ",'p%istart(1:ndim)')
@@ -274,31 +275,34 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 
         !Do a ghost mapping
         call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif
 
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
+        !CALL Mesh1%map_send(info)
+        !non-blocking send
+        CALL Mesh1%map_isend(info)
+        Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
         ! theoretical values.
         nb_errors = 0
         foreach n in equi_mesh(Mesh1) with sca_fields(Field2) vec_fields(Field1) indices(i,j)
-            for real_and_ghosts
+            for all
+            !for real_and_ghosts
                 pos(1:ndim) = sbpitr%get_pos(i,j)
                 IF (Field2_n .lt. 0._mk) then
                     nb_errors = nb_errors + 1
@@ -314,13 +318,13 @@ logical, dimension(:),   pointer               :: wp_1l => NULL()
 #endif
 
         call Mesh1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Part1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         end_subroutine()
     end test

@@ -89,23 +89,23 @@
 
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:),    POINTER         :: fdata
+      INTEGER , DIMENSION(:,:),    POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:),    POINTER         :: fdata
+      LOGICAL , DIMENSION(:,:),    POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), POINTER         :: fdata
+      COMPLEX(MK), DIMENSION(:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:),    POINTER         :: fdata
+      REAL(MK), DIMENSION(:,:),    POINTER :: fdata
 #endif
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:),    POINTER       :: fdata
+      INTEGER , DIMENSION(:,:,:),    POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:),    POINTER       :: fdata
+      LOGICAL , DIMENSION(:,:,:),    POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:), POINTER       :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:),    POINTER       :: fdata
+      REAL(MK), DIMENSION(:,:,:),    POINTER :: fdata
 #endif
 #endif
       !!! Field data.
@@ -128,8 +128,6 @@
       INTEGER, PARAMETER    :: lda = 1
 #endif
 
-      CHARACTER(LEN=ppm_char) :: mesg
-
       LOGICAL :: found_patch
 
       !-------------------------------------------------------------------------
@@ -151,13 +149,12 @@
 
       ! skip if buffer empty
       IF (ppm_buffer_set .LT. 1) THEN
-        IF (ppm_debug.GT.1) THEN
-            info = ppm_error_notice
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'Buffer is empty: skipping pop!',__LINE__,info)
-             info = 0
-        ENDIF
-        GOTO 9999
+         IF (ppm_debug.GT.1) THEN
+            fail('Buffer is empty: skipping pop!',ppm_err_buffer_empt, &
+            & exit_point=no,ppm_error=ppm_error_notice)
+            info = 0
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -177,22 +174,18 @@
       !  Check what kind of pop is needed (replace or add)
       !-------------------------------------------------------------------------
       IF (ppm_map_type .EQ. ppm_param_map_init) THEN
-        info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,caller,  &
-     &       'map_field_pop cannot be called after ghost_init',__LINE__,info)
-        CALL ppm_error(ppm_err_argument,caller,  &
-     &       'ghost_init must not be called directly by the user',__LINE__,info)
-        GOTO 9999
+         fail('mesh_map_pop cannot be called after ghost_init',exit_point=no)
+         fail('mesh_map_ghost_init must not be called directly by the user')
       ELSE
-          IF (PRESENT(poptype)) THEN
-             rtype = poptype
-          ELSE
-             IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
-                rtype = ppm_param_pop_add
-             ELSE
-                rtype = ppm_param_pop_replace
-             ENDIF
-          ENDIF
+         IF (PRESENT(poptype)) THEN
+            rtype = poptype
+         ELSE
+            IF (ppm_map_type .EQ. ppm_param_map_ghost_put) THEN
+               rtype = ppm_param_pop_add
+            ELSE
+               rtype = ppm_param_pop_replace
+            ENDIF
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -206,12 +199,11 @@
       edim = bdim
 #endif
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(2(A,I3))',"bdim=",edim,"    lda=",lda)
       ENDIF
 #if   __DIM == __VFIELD
       IF (edim.NE.lda) THEN
-          fail("leading dimension LDA is in error",ppm_err_wrong_dim)
+         fail("leading dimension LDA is in error",ppm_err_wrong_dim)
       ENDIF
 #elif __DIM == __SFIELD
       IF (edim.NE.1) THEN
@@ -225,46 +217,27 @@
       btype = ppm_buffer_type(ppm_buffer_set)
 #if    __KIND == __SINGLE_PRECISION
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single into single ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single into single ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double into double ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double into double ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single-complex into single-complex',&
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single-complex into single-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double-complex into double-complex',&
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double-complex into double-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __INTEGER
       IF (btype.NE.ppm_integer) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-integer into integer ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-integer into integer ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __LOGICAL
       IF (btype.NE.ppm_logical) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-logical into logical ',__LINE__,info)
+         fail('trying to pop a non-logical into logical ',ppm_err_wrong_prec)
       ENDIF
 #endif
 
@@ -293,44 +266,40 @@
       !-------------------------------------------------------------------------
       Mdata = 0
       DO i=1,ppm_nrecvlist
-          !-------------------------------------------------------------------
-          !  access mesh blocks belonging to the i-th processor in the
-          !  recvlist
-          !-------------------------------------------------------------------
-          DO j=ppm_precvbuffer(i),ppm_precvbuffer(i+1)-1
-              !----------------------------------------------------------------
-              !  Get the number of mesh points in this block
-              !----------------------------------------------------------------
-              Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*  &
-              &                ppm_mesh_irecvblksize(2,j))
-          ENDDO
+         !-------------------------------------------------------------------
+         !  access mesh blocks belonging to the i-th processor in the
+         !  recvlist
+         !-------------------------------------------------------------------
+         DO j=ppm_precvbuffer(i),ppm_precvbuffer(i+1)-1
+            !----------------------------------------------------------------
+            !  Get the number of mesh points in this block
+            !----------------------------------------------------------------
+            Mdata = Mdata + (ppm_mesh_irecvblksize(1,j)*  &
+            &                ppm_mesh_irecvblksize(2,j))
+         ENDDO
       ENDDO
 
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
       IF (Mdata .EQ. 0) THEN
-          IF (ppm_debug.GT.0) THEN
-              CALL ppm_write(ppm_rank,caller,   &
-              & 'There is no data to be received',info)
-          ENDIF
-          GOTO 8888
+         IF (ppm_debug.GT.0) THEN
+            stdout("There is no data to be received")
+         ENDIF
+         GOTO 8888
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the receive buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-          & ' / Mdata*bdim = ',Mdata*bdim
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(2(A,I9))',"ppm_nrecvbuffer = ",ppm_nrecvbuffer," / Mdata*bdim = ",'Mdata*bdim')
       ENDIF
       ppm_nrecvbuffer = ppm_nrecvbuffer - Mdata*bdim
 
       ibuffer = ppm_nrecvbuffer
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I9)',"ibuffer = ",ibuffer)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -357,13 +326,11 @@
       !  Debug output
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-          IF (rtype .EQ. ppm_param_pop_replace) THEN
-              CALL ppm_write(ppm_rank,caller,     &
-     &           'Replacing current field values',info)
-          ELSEIF(rtype .EQ. ppm_param_pop_add) THEN
-              CALL ppm_write(ppm_rank,caller,     &
-     &           'Adding to current field values',info)
-          ENDIF
+         IF (rtype .EQ. ppm_param_pop_replace) THEN
+            stdout("Replacing current field values")
+         ELSEIF(rtype .EQ. ppm_param_pop_add) THEN
+            stdout("Adding to current field values")
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -488,24 +455,13 @@
                            stdout("p%istart",'p%istart')
                            stdout("p%iend",'p%iend')
                            stdout("patchid = ",patchid)
-                           WRITE(mesg,'(A,2I4)') 'start: ',             &
-                           &    ppm_mesh_irecvblkstart(1,j),&
-                           &    ppm_mesh_irecvblkstart(2,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'size: ',             &
-                           & ppm_mesh_irecvblksize(1,j),&
-                           & ppm_mesh_irecvblksize(2,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'size_b: ',xhi-xlo+1,yhi-ylo+1
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
+                           stdout_f('(A,2I4)',"start: ",'ppm_mesh_irecvblkstart(1:2,j)')
+                           stdout_f('(A,2I4)',"size: ",'ppm_mesh_irecvblksize(1:2,j)')
+                           stdout_f('(A,2I4)',"size_b: ",'xhi-xlo+1','yhi-ylo+1')
+                           stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,I1)',"buffer dim: ",edim)
                         ENDIF
                         !For ghost_get:
                         !check that real mesh nodes are not touched
@@ -531,7 +487,7 @@
                    stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
                    stdout("h = ",'this%h(1:ppm_dim)')
                    stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
-                          'this%subpatch_by_sub(jsub)%nsubpatch')
+                   &      'this%subpatch_by_sub(jsub)%nsubpatch')
                    stdout("min_sub(jsub)=",'target_topo%min_subd(1:ppm_dim,jsub)')
                    stdout("max_sub(jsub)=",'target_topo%max_subd(1:ppm_dim,jsub)')
                    fail("could not find a patch on this sub with the right global id")
@@ -1856,28 +1812,16 @@
                xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
                yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
                IF (ppm_debug.GT.1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,2I4)',"start: ",'ppm_mesh_irecvblkstart(1:2,j)')
+                  stdout_f('(A,2I4)',"size: ",'ppm_mesh_irecvblksize(1:2,j)')
+                  stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                  stdout_f('(A,I1)',"buffer dim: ",edim)
 #if   __DIM == __VFIELD
-                   WRITE(mesg,'(A,2I4)') 'SIZE(fdata): ',SIZE(fdata,2),  &
-     &                 SIZE(fdata,3)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,2I4)',"SIZE(fdata): ",'SIZE(fdata,2)','SIZE(fdata,3)')
 #elif __DIM == __SFIELD
-                   WRITE(mesg,'(A,2I4)') 'SIZE(fdata): ',SIZE(fdata,1),  &
-     &                 SIZE(fdata,2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,2I4)',"SIZE(fdata): ",'SIZE(fdata,1)','SIZE(fdata,2)')
 #endif
                ENDIF
 #if   __DIM == __VFIELD
@@ -3180,8 +3124,7 @@
          ENDDO                ! ppm_nrecvlist
       END SELECT  ! ppm_kind
 
-
- 8888 CONTINUE
+      8888 CONTINUE
       !-------------------------------------------------------------------------
       !  Decrement the set counter
       !-------------------------------------------------------------------------
@@ -3191,17 +3134,13 @@
       !  Deallocate the receive buffer if all sets have been poped
       !-------------------------------------------------------------------------
       IF (ppm_buffer_set .LT. 1) THEN
-          iopt = ppm_param_dealloc
-          IF (ppm_kind .EQ. ppm_kind_single) THEN
-              CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
-          ELSE
-              CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
-          ENDIF
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_alloc,caller,     &
-     &            'receive buffer PPM_RECVBUFFER',__LINE__,info)
-          ENDIF
+         iopt = ppm_param_dealloc
+         IF (ppm_kind .EQ. ppm_kind_single) THEN
+            CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+         ELSE
+            CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+         ENDIF
+         or_fail_dealloc('receive buffer PPM_RECVBUFFER')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -3220,41 +3159,26 @@
       SUBROUTINE check
 #if   __DIM == __VFIELD
           IF (lda .LT. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be >0 for vector data',__LINE__,info)
-              GOTO 7777
+             fail('lda must be >0 for vector data',exit_point=7777)
           ENDIF
 #elif __DIM == __SFIELD
           IF (lda .NE. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 7777
+             fail('lda must be =0 for scalar data',exit_point=7777)
           ENDIF
 #endif
           IF (SIZE(this%ghostsize,1) .LT. 2) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must be given for all dimensions',__LINE__,info)
-              GOTO 7777
+             fail('ghostsize must be given for all dimensions',exit_point=7777)
           ENDIF
           IF ((this%ghostsize(1) .LT. 0) .OR. (this%ghostsize(2) .LT. 0)) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'ghostsize must be >=0 in all dimensions',__LINE__,info)
-              GOTO 7777
+             fail('ghostsize must be >=0 in all dimensions',exit_point=7777)
           ENDIF
           IF (PRESENT(poptype)) THEN
-              IF ((poptype .NE. ppm_param_pop_replace) .AND.     &
-     &            (poptype .NE. ppm_param_pop_add)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'Unknown pop type specified',__LINE__,info)
-                  GOTO 7777
-              ENDIF
+             IF ((poptype.NE.ppm_param_pop_replace) .AND.     &
+             &  (poptype.NE.ppm_param_pop_add)) THEN
+                fail('Unknown pop type specified',exit_point=7777)
+             ENDIF
           ENDIF
- 7777     CONTINUE
+      7777 CONTINUE
       END SUBROUTINE check
       SUBROUTINE check_two
           IF (PRESENT(mask)) THEN
@@ -3270,16 +3194,16 @@
                   ENDIF
               ENDDO
               IF (SIZE(mask,1) .LT. xhi) THEN
-                  fail("x dimension of mask does not match mesh",exit_point=6666)
+                 fail("x dimension of mask does not match mesh",exit_point=6666)
               ENDIF
               IF (SIZE(mask,2) .LT. yhi) THEN
-                  fail("y dimension of mask does not match mesh",exit_point=6666)
+                 fail("y dimension of mask does not match mesh",exit_point=6666)
               ENDIF
               IF (SIZE(mask,3) .LT. target_topo%nsublist) THEN
-                  fail("mask data for some subs is missing",exit_point=6666)
+                 fail("mask data for some subs is missing",exit_point=6666)
               ENDIF
           ENDIF
- 6666     CONTINUE
+     6666 CONTINUE
      END SUBROUTINE check_two
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION

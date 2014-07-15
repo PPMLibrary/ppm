@@ -25,6 +25,8 @@
       SUBROUTINE mesh_map_push_2d_vec_i(this,lda,p_idx,info,mask)
 #elif  __KIND == __LOGICAL
       SUBROUTINE mesh_map_push_2d_vec_l(this,lda,p_idx,info,mask)
+#endif
+#endif
       !!! This routine pushes field data onto the send buffer for 2D meshes.
       !!!
       !!! [NOTE]
@@ -52,8 +54,7 @@
       !!! [WARNING]
       !!! DIM is the dimension of the fdata array and not the space
       !!! dimension ppm_dim!
-#endif
-#endif
+
       !-------------------------------------------------------------------------
       !  Includes
       !-------------------------------------------------------------------------
@@ -101,24 +102,24 @@
 
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:)   , POINTER         :: fdata
+      INTEGER , DIMENSION(:,:)   , POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:)   , POINTER         :: fdata
+      LOGICAL , DIMENSION(:,:)   , POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:), POINTER         :: fdata
+      COMPLEX(MK), DIMENSION(:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:)   , POINTER         :: fdata
+      REAL(MK), DIMENSION(:,:)   , POINTER :: fdata
 #endif
 
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:)   , POINTER       :: fdata
+      INTEGER , DIMENSION(:,:,:)   , POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:)   , POINTER       :: fdata
+      LOGICAL , DIMENSION(:,:,:)   , POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:), POINTER       :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:)   , POINTER       :: fdata
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: fdata
 #endif
 #endif
       !!! Field data.
@@ -138,8 +139,6 @@
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-
-      CHARACTER(LEN=ppm_char) :: mesg
 
       LOGICAL :: ldo,found_patch
 
@@ -183,14 +182,12 @@
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
-      IF (Ndata .EQ. 0) THEN
-        IF (ppm_debug.GT.1) THEN
-            info = ppm_error_notice
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'There is no data to be sent. Skipping push.',__LINE__,info)
-             info = 0
-        ENDIF
-        GOTO 9999
+      IF (Ndata.EQ.0) THEN
+         IF (ppm_debug.GT.1) THEN
+            fail('There is no data to be sent. Skipping push.',ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            info=0
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -352,22 +349,12 @@
 
                             IF (ppm_debug.GT.2) THEN
                                 stdout("isub = ",isub," jsub = ",jsub)
-                                WRITE(mesg,'(A,2I4)') 'start: ',             &
-                                    &       ppm_mesh_isendblkstart(1,j),&
-                                    &       ppm_mesh_isendblkstart(2,j)
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
-                                WRITE(mesg,'(A,2I4)') 'size: ',             &
-                                    &       ppm_mesh_isendblksize(1,j),&
-                                    &       ppm_mesh_isendblksize(2,j)
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
-                                WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
-                                WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
-                                WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
-                                WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                                CALL ppm_write(ppm_rank,caller,mesg,info)
+                                stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
+                                stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
+                                stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                                stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                                stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                                stdout_f('(A,I1)',"buffer dim: ",lda)
                                 stdout("p%lo_a",'p%lo_a')
                                 stdout("p%hi_a",'p%hi_a')
                                 stdout("p%istart",'p%istart')
@@ -958,12 +945,7 @@
          iopt   = ppm_param_alloc_grow_preserve
          ldu(1) = ppm_nsendbuffer + ldb*Ndata
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-         IF (info.NE.0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,caller,     &
-     &           'global send buffer PPM_SENDBUFFERS',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_alloc('global send buffer PPM_SENDBUFFERS',ppm_error=ppm_error_fatal)
 
          DO i=1,ppm_nsendlist
             !-------------------------------------------------------------------
@@ -995,20 +977,12 @@
                xhi = xlo+ppm_mesh_isendblksize(1,j)-1
                yhi = ylo+ppm_mesh_isendblksize(2,j)-1
                IF (ppm_debug.GT.1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_isendblkstart(1,j),ppm_mesh_isendblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_isendblksize(1,j),ppm_mesh_isendblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,2I4)',"start: ",'ppm_mesh_isendblkstart(1:2,j)')
+                  stdout_f('(A,2I4)',"size: ",'ppm_mesh_isendblksize(1:2,j)')
+                  stdout_f('(A,2I4)',"mesh offset: ",'mofs(1:2)')
+                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                  stdout_f('(A,I1)',"buffer dim: ",lda)
                ENDIF
                !----------------------------------------------------------------
                !  Loop over all mesh points of this block and append data
@@ -1606,34 +1580,22 @@
           !ENDDO
 #if   __DIM == __VFIELD
           IF (lda.LT.1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be >=1 for vector data',__LINE__,info)
-              GOTO 8888
+             fail('lda must be >=1 for vector data',exit_point=8888)
           ENDIF
 #elif __DIM == __SFIELD
           IF (lda.NE.1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 8888
+             fail('lda must be =1 for scalar data',exit_point=8888)
           ENDIF
 #endif
           IF (PRESENT(mask)) THEN
-              IF (SIZE(mask,1).LT.xhi) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'x dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 8888
-              ENDIF
-              IF (SIZE(mask,2).LT.yhi) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'y dimension of mask does not match mesh',__LINE__,info)
-                  GOTO 8888
-              ENDIF
+             IF (SIZE(mask,1).LT.xhi) THEN
+                fail('x dimension of mask does not match mesh',exit_point=8888)
+             ENDIF
+             IF (SIZE(mask,2).LT.yhi) THEN
+                fail('y dimension of mask does not match mesh',exit_point=8888)
+             ENDIF
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION
