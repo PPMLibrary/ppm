@@ -143,7 +143,14 @@ test_suite ppm_module_inl_hash
     call ht%insert(157,8, info)
     assert_true(info .eq. 0)
 
+    assert_true(ht%search(385_8) .eq. 1)
+    assert_true(ht%search(96_8)  .eq. 2)
+    assert_true(ht%search(420_8) .eq. 3)
+    assert_true(ht%search(122_8) .eq. 4)
+    assert_true(ht%search(432_8) .eq. 5)
+    assert_true(ht%search(131_8) .eq. 6)
     assert_true(ht%search(470_8) .eq. 7)
+    assert_true(ht%search(157_8) .eq. 8)
 
     ! destroy
     call ht%destroy(info)

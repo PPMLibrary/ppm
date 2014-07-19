@@ -277,9 +277,9 @@ real(mk),dimension(ndim)         :: offset
         Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif

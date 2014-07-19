@@ -29,18 +29,18 @@
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE count_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
-      &               red, rcred, blue, rcblue, skin, nvlist)
+      &          red, rcred, blue, rcblue, skin, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE count_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
-      &               red, rcred, blue, rcblue, skin, nvlist)
+      &          red, rcred, blue, rcblue, skin, nvlist)
 #endif
 #elif __ACTION == __GET
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE get_xset_neigh_s(red_refidx, red_clist, blue_clist, domain, &
-      &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+      &          red, rcred, blue, rcblue, skin, vlist, nvlist)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE get_xset_neigh_d(red_refidx, red_clist, blue_clist, domain, &
-      &               red, rcred, blue, rcblue, skin, vlist, nvlist)
+      &          red, rcred, blue, rcblue, skin, vlist, nvlist)
 #endif
 #endif
       !!! Given the particle index, this subroutine locates the cell that this
@@ -157,8 +157,8 @@
           offset_coor(1) = (domain(2) - domain(1))/(2**(c_depth-1))
           offset_coor(2) = (domain(4) - domain(3))/(2**(c_depth-1))
           DO i = 3,ppm_dim
-              offset_coor(i) = (domain(2*i) - domain(2*i-1))/(2**(c_depth-1))
-          END DO
+             offset_coor(i) = (domain(2*i) - domain(2*i-1))/(2**(c_depth-1))
+          ENDDO
 
           !---------------------------------------------------------------------
           !  From first cell until center cell, check whether they are empty
@@ -167,22 +167,22 @@
           !---------------------------------------------------------------------
           ! From first cell to (center-1)th cell
           DO i = 1, ((3**ppm_dim - 1)/2)
-              ! Compute midpoints of neighbor cell
-              n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
-              n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
-              DO j = 3, ppm_dim
-                  n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
-              END DO
+             ! Compute midpoints of neighbor cell
+             n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
+             n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
+             DO j = 3, ppm_dim
+                n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
+             ENDDO
 
-              ! If found coordinates are not inside domain, skip!
-              IF(.NOT. inDomain(n_coor, domain))   cycle
+             ! If found coordinates are not inside domain, skip!
+             IF (.NOT. inDomain(n_coor, domain)) CYCLE
 
-              ! Get index of the neighbor cell
-              n_idx = getCellIdx(n_coor, c_depth, domain)
+             ! Get index of the neighbor cell
+             n_idx = getCellIdx(n_coor, c_depth, domain)
 
               ! Store in empty list if empty - we check for blue particles
-              IF(isEmpty(n_idx,blue_clist%lookup)) CALL putInEmptyList(n_idx)
-          END DO
+              IF (isEmpty(n_idx,blue_clist%lookup)) CALL putInEmptyList(n_idx)
+          ENDDO
 
           !---------------------------------------------------------------------
           !  Get red particles that are in the same cell with input particle.
@@ -200,26 +200,26 @@
           !---------------------------------------------------------------------
           ! For each particle in the same cell
           DO i = 1, own_nred
-              ! Pick a reference particle
-              red_idx = own_red(i)
-              ! For each particle up to the reference particle
-              DO j = 1, own_nblue
-                  ! Pick a candidate for neighbor particle
-                  blue_idx = own_blue(j)
-                  ! If they are neighbors and ...
-                  IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, &
-                  &                    blue, rcblue, skin)) THEN
-                      ! If the reference particle is a real particle ...
-                      IF (red_idx .LE. red_clist%n_real_p) THEN
-                          ! Store neighbor particle in verlet list of reference
-                          ! particle
-                          nvlist(red_idx) = nvlist(red_idx) + 1
+             ! Pick a reference particle
+             red_idx = own_red(i)
+             ! For each particle up to the reference particle
+             DO j = 1, own_nblue
+                ! Pick a candidate for neighbor particle
+                blue_idx = own_blue(j)
+                ! If they are neighbors and ...
+                IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, &
+                &  blue, rcblue, skin)) THEN
+                   ! If the reference particle is a real particle ...
+                   IF (red_idx .LE. red_clist%n_real_p) THEN
+                      ! Store neighbor particle in verlet list of reference
+                      ! particle
+                      nvlist(red_idx) = nvlist(red_idx) + 1
 #if __ACTION == __GET
-                          vlist(nvlist(red_idx), red_idx) = blue_idx
+                      vlist(nvlist(red_idx), red_idx) = blue_idx
 #endif
-                      ENDIF
-                  ENDIF
-              ENDDO
+                   ENDIF
+                ENDIF
+             ENDDO
           ENDDO
 
           !---------------------------------------------------------------------
@@ -230,46 +230,46 @@
           !---------------------------------------------------------------------
           ! For each neighbor cell
           DO i = ((3**ppm_dim + 1)/2) + 1, 3**ppm_dim
-              ! Compute midpoint coordinates of the neighbor cell
-              n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
-              n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
-              DO j = 3, ppm_dim
-                  n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
-              END DO
+             ! Compute midpoint coordinates of the neighbor cell
+             n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
+             n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
+             DO j = 3, ppm_dim
+                n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
+             ENDDO
 
-              ! If computed coordinates are not inside the domain, skip!
-              IF(.NOT. inDomain(n_coor, domain))   cycle
+             ! If computed coordinates are not inside the domain, skip!
+             IF (.NOT. inDomain(n_coor, domain)) CYCLE
 
-              ! Get index of the neighbor cell.
-              n_idx = getCellIdx(n_coor, c_depth, domain)
+             ! Get index of the neighbor cell.
+             n_idx = getCellIdx(n_coor, c_depth, domain)
 
-              ! Get particles in the neighbor cell
-              CALL getParticlesInCell(n_idx, blue, blue_clist, &
-              &    neigh_blue, neigh_nblue)
-              ! For each particle in the reference cell
-              DO m = 1, own_nred
-                  ! Pick a reference particle
-                  red_idx = own_red(m)
-                  ! For each particle in the neighbor cell
-                  DO n = 1, neigh_nblue
-                      ! Pick a candidate for neighbor particle
-                      blue_idx = neigh_blue(n)
-                      ! If particles are neighbors and ...
-                      IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, blue, &
-                      &   rcblue, skin)) THEN
-                          ! If reference particle is a real particle ...
-                          IF(red_idx .LE. red_clist%n_real_p)   THEN
-                              ! Store neighbor particle in verlet list of
-                              ! reference particle
-                              nvlist(red_idx)   = nvlist(red_idx)   + 1
+             ! Get particles in the neighbor cell
+             CALL getParticlesInCell(n_idx, blue, blue_clist, &
+             &    neigh_blue, neigh_nblue)
+             ! For each particle in the reference cell
+             DO m = 1, own_nred
+                ! Pick a reference particle
+                red_idx = own_red(m)
+                ! For each particle in the neighbor cell
+                DO n = 1, neigh_nblue
+                   ! Pick a candidate for neighbor particle
+                   blue_idx = neigh_blue(n)
+                   ! If particles are neighbors and ...
+                   IF (is_xset_Neighbor(red_idx, blue_idx, red, rcred, blue, &
+                   &   rcblue, skin)) THEN
+                      ! If reference particle is a real particle ...
+                      IF (red_idx .LE. red_clist%n_real_p)   THEN
+                         ! Store neighbor particle in verlet list of
+                         ! reference particle
+                         nvlist(red_idx)   = nvlist(red_idx)   + 1
 #if __ACTION == __GET
-                              vlist(nvlist(red_idx), red_idx) = blue_idx
+                         vlist(nvlist(red_idx), red_idx) = blue_idx
 #endif
-                          END IF
-                      END IF
-                  END DO
-              END DO
-          END DO
+                      ENDIF
+                   ENDIF
+                ENDDO
+             ENDDO
+          ENDDO
 
           !---------------------------------------------------------------------
           !  For each reference particle, get coordinates and depth and increment
@@ -282,53 +282,52 @@
           !---------------------------------------------------------------------
           ! For each reference particle
           DO m = 1, own_nred
-              ! Pick a reference particle
-              red_idx = own_red(m)
-              ! Get coordinates and depth of this particle
-              CALL getParticleCoorDepth(red_idx, domain, red_coor, red_depth, &
- &                                      red, rcred, skin)
+             ! Pick a reference particle
+             red_idx = own_red(m)
+             ! Get coordinates and depth of this particle
+             CALL getParticleCoorDepth(red_idx,domain,red_coor, &
+             &    red_depth,red,rcred,skin)
 
-              ! Increment the depth of the particle by 1 to look down at deeper cells
-              red_depth = red_depth + 1
+             ! Increment the depth of the particle by 1 to look down at deeper cells
+             red_depth = red_depth + 1
 
-              ! Until we reach the maximum depth in blue...
-              DO WHILE(red_depth .LE. blue_clist%max_depth)
-                  ! Get the child cell this particle is located in
-                  c_idx = getCellIdx(red_coor, red_depth, domain)
-                  ! Get index of parent cell to check whether parent is empty or not
-                  parentIdx = parent(c_idx)
+             ! Until we reach the maximum depth in blue...
+             DO WHILE(red_depth .LE. blue_clist%max_depth)
+                ! Get the child cell this particle is located in
+                c_idx = getCellIdx(red_coor, red_depth, domain)
+                ! Get index of parent cell to check whether parent is empty or not
+                parentIdx = parent(c_idx)
 
-                  ! If the parent is empty, also put the child in the empty list.
+                ! If the parent is empty, also put the child in the empty list.
 !                  IF (inEmptyList(parentIdx)) THEN
 !                     CALL putInEmptyList(c_idx)
 !                  ENDIF
                   ! Get cell coordinates and depth
-                  CALL getCellCoor_Depth(c_idx, domain, c_coor, c_depth, &
- &                                       blue_clist%max_depth, info)
+                CALL getCellCoor_Depth(c_idx,domain,c_coor, &
+                &    c_depth,blue_clist%max_depth,info)
 
-                  ! Compute offset coordinates to compute midpoint coordinates
-                  ! of neighbor cells at this depth.
-                  offset_coor(1) = (domain(2) - domain(1))/(2**(c_depth-1))
-                  offset_coor(2) = (domain(4) - domain(3))/(2**(c_depth-1))
-                  DO i = 3, ppm_dim
-                      offset_coor(i) = (domain(2*i) - domain(2*i-1))/&
- &                                     (2**(c_depth-1))
-                  END DO
+                ! Compute offset coordinates to compute midpoint coordinates
+                ! of neighbor cells at this depth.
+                offset_coor(1) = (domain(2) - domain(1))/(2**(c_depth-1))
+                offset_coor(2) = (domain(4) - domain(3))/(2**(c_depth-1))
+                DO i = 3, ppm_dim
+                   offset_coor(i) = (domain(2*i) - domain(2*i-1))/(2**(c_depth-1))
+                ENDDO
 
-                  ! For each neighbor
-                  DO i = 1, 3**ppm_dim
-                      ! Compute midpoint coordinates of the neighbor
-                      n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
-                      n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
-                      DO j = 3,ppm_dim
-                          n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
-                      END DO
+                ! For each neighbor
+                DO i = 1, 3**ppm_dim
+                   ! Compute midpoint coordinates of the neighbor
+                   n_coor(1) = c_coor(1) + (ncells(i,1)*offset_coor(1))
+                   n_coor(2) = c_coor(2) + (ncells(i,2)*offset_coor(2))
+                   DO j = 3,ppm_dim
+                      n_coor(j) = c_coor(j) + (ncells(i,j)*offset_coor(j))
+                   ENDDO
 
-                      ! If coordinates are not inside the domain, skip!
-                      IF(.NOT. inDomain(n_coor, domain))   cycle
+                   ! If coordinates are not inside the domain, skip!
+                   IF (.NOT. inDomain(n_coor, domain)) CYCLE
 
-                      ! Get index of the neighbor cell
-                      n_idx = getCellIdx(n_coor, c_depth, domain)
+                   ! Get index of the neighbor cell
+                   n_idx = getCellIdx(n_coor, c_depth, domain)
 
                       ! if parent of neighbor is empty,
                       ! add to emptylist and skip
@@ -338,44 +337,43 @@
 !                          CYCLE
 !                      ENDIF
 
-                      ! Get particles in the neighbor cell
-                      !-----------------------------------------------------
-                      ! REMARK: If this cell has no particles, it will be stored
-                      !         in empty cell inside getParticlesInCell
-                      !         subroutine. If it has particles only at this
-                      !         depth, but no deeper particles, it will again
-                      !         be saved in the empty list just  before returning.
-                      !-----------------------------------------------------
-                      CALL getParticlesInCell(n_idx, blue, blue_clist, &
- &                                            neigh_blue, neigh_nblue)
-                      ! For each neighbor element
-                      DO n = 1, neigh_nblue
-                          ! Pick a candidate for neighbor particle
-                          blue_idx = neigh_blue(n)
-                          ! If they are neighbors and ...
-                          IF(is_xset_Neighbor(red_idx,blue_idx,red,rcred,&
- &                                            blue,rcblue,skin))  THEN
-                              ! If reference particle is real ...
-                              IF(red_idx .LE. red_clist%n_real_p) THEN
-                                  ! Store neighbor particle in verlet list
-                                  ! of reference particle
-                                  nvlist(red_idx) = nvlist(red_idx) + 1
+                   ! Get particles in the neighbor cell
+                   !-----------------------------------------------------
+                   ! REMARK: If this cell has no particles, it will be stored
+                   !         in empty cell inside getParticlesInCell
+                   !         subroutine. If it has particles only at this
+                   !         depth, but no deeper particles, it will again
+                   !         be saved in the empty list just  before returning.
+                   !-----------------------------------------------------
+                   CALL getParticlesInCell(n_idx,blue,blue_clist,neigh_blue,neigh_nblue)
+
+                   ! For each neighbor element
+                   DO n = 1, neigh_nblue
+                      ! Pick a candidate for neighbor particle
+                      blue_idx = neigh_blue(n)
+                      ! If they are neighbors and ...
+                      IF (is_xset_Neighbor(red_idx,blue_idx,red,rcred,blue,rcblue,skin)) THEN
+                         ! If reference particle is real ...
+                         IF (red_idx .LE. red_clist%n_real_p) THEN
+                            ! Store neighbor particle in verlet list
+                            ! of reference particle
+                            nvlist(red_idx) = nvlist(red_idx) + 1
 #if __ACTION == __GET
-                                  vlist(nvlist(red_idx), red_idx) = blue_idx
+                            vlist(nvlist(red_idx), red_idx) = blue_idx
 #endif
-                              END IF
-                          END IF
-                      END DO
-                 END DO
-                 ! To search for deeper particles, increment depth of particle by 1.
-                 red_depth = red_depth + 1
-              END DO
-          END DO
+                         ENDIF
+                      ENDIF
+                   ENDDO
+                ENDDO
+                ! To search for deeper particles, increment depth of particle by 1.
+                red_depth = red_depth + 1
+             ENDDO
+          ENDDO
 
           ! Label all reference particles as USED so that they wont be visited again.
           DO i = 1, own_nred
-              used(own_red(i)) = .TRUE.
-          END DO
+             used(own_red(i)) = .TRUE.
+          ENDDO
 #if   __ACTION == __COUNT
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE count_xset_neigh_s

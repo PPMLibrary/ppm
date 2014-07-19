@@ -112,9 +112,8 @@
 
       CALL substart(caller,t0,info)
 
-      lda = 0
       iopt = ppm_param_dealloc
-
+      lda = 0
       !---------------------------------------------------------------------
       !  Deallocate array for hash table keys.
       !---------------------------------------------------------------------
@@ -166,7 +165,7 @@
           h = IEOR(seed, len)
           data = key
 
-          DO WHILE(len .GE. 4)
+          DO WHILE (len .GE. 4)
               k = IBITS(data, 0, 8) !data, pos, len. len = 1 always!
               k = IOR(k, ISHFT(IBITS(data, 8, 8),  8))
               k = IOR(k, ISHFT(IBITS(data, 16, 8), 16))
@@ -184,20 +183,20 @@
           ENDDO
 
           SELECT CASE (len)
-             CASE (3)
-                h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
-                h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-                h = IEOR(h, IBITS(data, 0, 8))
-                h = h*m
+          CASE (3)
+             h = IEOR(h, ISHFT(IBITS(data, 16, 8), 16))
+             h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
+             h = IEOR(h, IBITS(data, 0, 8))
+             h = h*m
 
-             CASE (2)
-                h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
-                h = IEOR(h, IBITS(data, 0, 8))
-                h = h*m
+          CASE (2)
+             h = IEOR(h, ISHFT(IBITS(data,  8, 8),  8))
+             h = IEOR(h, IBITS(data, 0, 8))
+             h = h*m
 
-             CASE (1)
-                h = IEOR(h, IBITS(data, 0, 8))
-                h = h*m
+          CASE (1)
+             h = IEOR(h, IBITS(data, 0, 8))
+             h = h*m
 
           END SELECT
 
@@ -282,26 +281,27 @@
       jump = 0
       ! Keep on searching withing bounds of hash table.
       DO WHILE (jump .LT. table%nrow)
-          ! Get the address corresponding to given key
-          spot = table%h_key(key, jump)
-          ! If an empty slot found ...
-          IF (table%keys(spot).EQ.htable_null) THEN
-             ! Store the key and the corresponding value and RETURN.
-             table%keys(spot) = key
-             table%borders_pos(spot) = value
-             RETURN
-          ELSE IF (table%keys(spot).EQ.key) THEN
-             table%borders_pos(spot) = value
-             RETURN
-          ENDIF
-          ! If the current slot is occupied, jump to next key that results
-          ! in same hash function.
-          jump = jump + 1
+         ! Get the address corresponding to given key
+         spot = table%h_key(key, jump)
+         ! If an empty slot found ...
+         IF (table%keys(spot).EQ.htable_null) THEN
+            ! Store the key and the corresponding value and RETURN.
+            table%keys(spot) = key
+            table%borders_pos(spot) = value
+            RETURN
+         !If the key is the same the value should be updated
+         ELSE IF (table%keys(spot).EQ.key) THEN
+            table%borders_pos(spot) = value
+            RETURN
+         ENDIF
+         ! If the current slot is occupied, jump to next key that results
+         ! in same hash function.
+         jump = jump + 1
       ENDDO
 
       ! If NOT returned within the while-loop, that means our hash table is
       ! not sufficiently large. Hence, regrowth will be needed!
-      CALL table%grow(info)
+      CALL table%grow(info,key,value)
 #ifdef __DEBUG
       or_fail("table%grow")
 
@@ -472,7 +472,7 @@
             ! Get the address corresponding to given key
             spot = table%h_key(key, jump)
             ! If an empty slot found ...
-            IF(table%keys(spot).EQ.key) THEN
+            IF (table%keys(spot).EQ.key) THEN
                !Remove the key and the corresponding value and RETURN.
                table%borders_pos(spot)=htable_null
                table%keys(spot)=htable_null
@@ -513,7 +513,7 @@
       CALL table%hash_remove(key, info)
       END SUBROUTINE hash_remove_
 
-      SUBROUTINE grow_htable(table,info)
+      SUBROUTINE grow_htable(table,info,key_,value_)
       !!! Based on the number of rows of the table, creates the hash table with
       !!! double size.
       !!!
@@ -529,10 +529,13 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_htable)      :: table
+      CLASS(ppm_htable)                                :: table
       !!! The hashtable to grow.
-      INTEGER, INTENT(  OUT) :: info
-
+      INTEGER,                           INTENT(  OUT) :: info
+      INTEGER(ppm_kind_int64), OPTIONAL, INTENT(IN   ) :: key_
+      !!! Key to be stored
+      INTEGER,                 OPTIONAL, INTENT(IN   ) :: value_
+      !!! Value that corresponds to given key
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
@@ -556,7 +559,7 @@
 
       nsize=table%nrow*2
 
-      IF (nsize.GE.HUGE(1)) THEN
+      IF (nsize.GE.HUGE(1)-1) THEN
          !TOCHCECK
          fail("hashtable with more than 2^31-1 elements will fail",ppm_error=ppm_error_fatal)
       ENDIF
@@ -570,11 +573,16 @@
       DO i=1,SIZE(keys_tmp)
          IF (keys_tmp(i).EQ.htable_null) CYCLE
          CALL table%insert(keys_tmp(i),borders_pos_tmp(i),info)
-         or_fail("table%insert")
       ENDDO
 
       DEALLOCATE(keys_tmp,borders_pos_tmp,STAT=info)
       or_fail_dealloc("keys_tmp & borders_pos_tmp")
+
+      IF (PRESENT(key_)) THEN
+         IF (PRESENT(value_)) THEN
+            CALL table%insert(key_,value_,info)
+         ENDIF
+      ENDIF
 
       9999 CONTINUE
       CALL substop(caller,t0,info)

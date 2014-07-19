@@ -626,12 +626,10 @@
          lda(2) = ii
          CALL ppm_alloc(nvlist,lda(2:2),iopt,info)
          or_fail_alloc('Verlet list sizes NVLIST')
-         !nvlist => nvlist(1:ii)
 
          lda(1) = maxvlen
          CALL ppm_alloc(vlist,lda,iopt,info)
          or_fail_alloc('Verlet list sizes NVLIST')
-         !vlist => vlist(1:maxvlen,1:ii)
 
       END SELECT ! lstore
 

@@ -41,12 +41,12 @@
       !!! indices are mesh (i,j[,k]), last one is subid for all subs on
       !!! the local processor.
       !!!
-      !!! [WARNING] Yaser:
+      !!! [TIP] Yaser:
       !!! This is not the best implementation
-      !!! I could not figure out the general derive type to use for MPI_Iscatterv
-      !!! to avoid several mpi call, so this implementation will call mpi for each
-      !!! ppm_buffer_set, but using MPI_Iscatterv it will prevent several buffer
-      !!! copy which is very useful on big data !
+      !!! I could not figure out the general derive type to use for MPI_Isend &
+      !!! MPI_Irecv to avoid several mpi call, so this implementation will call
+      !!! mpi for each ppm_buffer_set, but using nonblocking send & recv it will
+      !!! prevent several buffer copy which is very useful on big data !
       !-------------------------------------------------------------------------
       !  Modules
       !-------------------------------------------------------------------------
@@ -68,14 +68,13 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
-      INTEGER, DIMENSION(3)                :: ldu
-      INTEGER                              :: i,j,k,bdim,offs
-      INTEGER                              :: iopt,Ndata
-      INTEGER                              :: allsend,allrecv
+      INTEGER, DIMENSION(3)              :: ldu
+      INTEGER                            :: i,j,k,l,m,nsr,tag
+      INTEGER                            :: bdim,offs
+      INTEGER                            :: iopt,Ndata
+      INTEGER                            :: allsend,allrecv
 #ifdef __MPI
-      INTEGER, DIMENSION(:,:), ALLOCATABLE :: request
-      INTEGER, DIMENSION(:,:), ALLOCATABLE :: senddispls,recvdispls
-      INTEGER, DIMENSION(:,:), ALLOCATABLE :: sendcounts,recvcounts
+      INTEGER, DIMENSION(:), ALLOCATABLE :: request
 #endif
       !-------------------------------------------------------------------------
       !  Externals
@@ -230,31 +229,11 @@
          ENDDO
       ENDDO
 
-      ALLOCATE(senddispls(ppm_nsendlist,ppm_buffer_set), &
-      &        recvdispls(ppm_nrecvlist,ppm_buffer_set), &
-      &        sendcounts(ppm_nsendlist,ppm_buffer_set), &
-      &        recvcounts(ppm_nrecvlist,ppm_buffer_set),STAT=info)
-      or_fail_alloc("senddispls, recvdispls, sendcounts & recvcounts")
-
-      ALLOCATE(request(ppm_nproc,ppm_buffer_set),STAT=info)
+      ALLOCATE(request(ppm_nproc*ppm_buffer_set*2),STAT=info)
       or_fail_alloc("request")
 
-      !-------------------------------------------------------------------------
-      ! Compute real processor displacements and counts
-      !-------------------------------------------------------------------------
-      DO k=1,ppm_buffer_set
-         bdim = ppm_buffer_dim(k)
-         DO i=1,ppm_nsendlist
-            j=ppm_isendlist(i)+1
-            senddispls(j,k)=qq(i,k)-1
-            sendcounts(j,k)=psend(i)*bdim
-         ENDDO
-         DO i=1,ppm_nrecvlist
-            j=ppm_irecvlist(i)+1
-            recvdispls(j,k)=pp(i,K)
-            recvcounts(j,k)=precv(i)*bdim
-         ENDDO
-      ENDDO
+      !counter for number of send & recv
+      nsr=0
 
 #endif
       IF (ppm_kind.EQ.ppm_kind_double) THEN
@@ -262,24 +241,47 @@
          DO k=1,ppm_buffer_set
             !----------------------------------------------------------------------
             !  For each processor
-            !  The outcome is as if the root executed n send operations for each
-            !  ppm_buffer_set.
-            !  The send buffer is ignored for all the nonroot processes.
-            !  All arguments to the function are significant on process root,
-            !  while on the other processes, only arguments ppm_recvbufferd,
-            !  recvcounts, ppm_mpi_kind, root, ppm_comm are significant.
             !----------------------------------------------------------------------
-            DO i=1,ppm_nproc
-               IF (i-1.NE.ppm_rank.AND.recvcounts(i,k).EQ.0) THEN
-                  request(i,k)=MPI_SUCCESS
-               ELSE
-                  CALL MPI_Iscatterv(ppm_sendbufferd,sendcounts(:,k),senddispls(:,k), &
-                  &    ppm_mpi_kind,ppm_recvbufferd(recvdispls(i,k)),recvcounts(i,k), &
-                  &    ppm_mpi_kind,i-1,ppm_comm,request(i,k),info)
-                  or_fail_MPI("MPI_Iscatterv")
+            bdim = ppm_buffer_dim(k)
+            l=qq(1,k)-1
+            m=pp(1,k)-1
+            DO j=1,psend(1)*bdim
+               ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
+            ENDDO
+
+            DO i=2,ppm_nsendlist
+               !----------------------------------------------------------------------
+               ! The following IF is needed in order to skip "dummy"
+               ! communication rounds where the current processor has to wait
+               ! (only needed in the partial mapping).
+               !----------------------------------------------------------------------
+               IF (ppm_isendlist(i).LT.0.OR.ppm_irecvlist(i).LT.0) CYCLE
+               IF (psend(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
+                  ELSE
+                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Isend(ppm_sendbufferd(qq(i,k)),psend(i)*bdim,ppm_mpi_kind, &
+                  &    ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Isend")
+               ENDIF
+               IF (precv(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_irecvlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(i)+k
+                  ELSE
+                     tag=ppm_irecvlist(i)*(ppm_irecvlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Irecv(ppm_recvbufferd(pp(i,k)),precv(i)*bdim,ppm_mpi_kind, &
+                  &    ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Irecv")
                ENDIF
             ENDDO
-         ENDDO
+         ENDDO !k=1,ppm_buffer_set
 #else
          ppm_recvbufferd=ppm_sendbufferd
 #endif
@@ -288,24 +290,47 @@
          DO k=1,ppm_buffer_set
             !----------------------------------------------------------------------
             !  For each processor
-            !  The outcome is as if the root executed n send operations for each
-            !  ppm_buffer_set.
-            !  The send buffer is ignored for all the nonroot processes.
-            !  All arguments to the function are significant on process root,
-            !  while on the other processes, only arguments ppm_recvbuffers,
-            !  recvcounts, ppm_mpi_kind, root, ppm_comm are significant.
             !----------------------------------------------------------------------
-            DO i=1,ppm_nproc
-               IF (i-1.NE.ppm_rank.AND.recvcounts(i,k).EQ.0) THEN
-                  request(i,k)=MPI_SUCCESS
-               ELSE
-                  CALL MPI_Iscatterv(ppm_sendbuffers,sendcounts(:,k),senddispls(:,k), &
-                  &    ppm_mpi_kind,ppm_recvbuffers(recvdispls(i,k)),recvcounts(i,k), &
-                  &    ppm_mpi_kind,i-1,ppm_comm,request(i,k),info)
-                  or_fail_MPI("MPI_Iscatterv")
+            bdim = ppm_buffer_dim(k)
+            l=qq(1,k)-1
+            m=pp(1,k)-1
+            DO j=1,psend(1)*bdim
+               ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
+            ENDDO
+
+            DO i=2,ppm_nsendlist
+               !----------------------------------------------------------------------
+               ! The following IF is needed in order to skip "dummy"
+               ! communication rounds where the current processor has to wait
+               ! (only needed in the partial mapping).
+               !----------------------------------------------------------------------
+               IF (ppm_isendlist(i).LT.0.OR.ppm_irecvlist(i).LT.0) CYCLE
+               IF (psend(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_isendlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_isendlist(i)+k
+                  ELSE
+                     tag=ppm_isendlist(i)*(ppm_isendlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Isend(ppm_sendbuffers(qq(i,k)),psend(i)*bdim,ppm_mpi_kind, &
+                  &    ppm_isendlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Isend")
+               ENDIF
+               IF (precv(i).GT.0) THEN
+                  IF (ppm_rank.GT.ppm_irecvlist(i)) THEN
+                     tag=ppm_rank*(ppm_rank-1)/2+ppm_irecvlist(i)+k
+                  ELSE
+                     tag=ppm_irecvlist(i)*(ppm_irecvlist(i)-1)/2+ppm_rank+k
+                  ENDIF
+
+                  nsr=nsr+1
+                  CALL MPI_Irecv(ppm_recvbuffers(pp(i,k)),precv(i)*bdim,ppm_mpi_kind, &
+                  &    ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
+                  or_fail_MPI("MPI_Irecv")
                ENDIF
             ENDDO
-         ENDDO
+         ENDDO !k=1,ppm_buffer_set
 #else
          ppm_recvbuffers=ppm_sendbuffers
 #endif
@@ -335,13 +360,33 @@
       iopt = ppm_param_dealloc
       CALL ppm_alloc(nsend,ldu,iopt,info)
       or_fail_dealloc("nsend")
+
       CALL ppm_alloc(nrecv,ldu,iopt,info)
       or_fail_dealloc("nrecv")
 
+      CALL ppm_alloc(psend,ldu,iopt,info)
+      or_fail_dealloc("psend")
+
+      CALL ppm_alloc(precv,ldu,iopt,info)
+      or_fail_dealloc("precv")
+
 #ifdef __MPI
-      k=ppm_buffer_set*ppm_nproc
-      CALL MPI_Waitall(k,RESHAPE(request,(/k/)),MPI_STATUSES_IGNORE,info)
-      or_fail_MPI("MPI_Waitall")
+      CALL ppm_alloc(   pp,ldu,iopt,info)
+      or_fail_dealloc("pp")
+
+      CALL ppm_alloc(   qq,ldu,iopt,info)
+      or_fail_dealloc("qq")
+
+      IF (nsr.GT.0) THEN
+         CALL MPI_Waitall(nsr,request(1:nsr),MPI_STATUSES_IGNORE,info)
+         or_fail_MPI("MPI_Waitall")
+      ENDIF
+
+      !-------------------------------------------------------------------------
+      !  Deallocate
+      !-------------------------------------------------------------------------
+      DEALLOCATE(request,STAT=info)
+      or_fail_dealloc("request")
 #endif
 
       !-------------------------------------------------------------------------
@@ -356,23 +401,6 @@
          or_fail_dealloc("ppm_sendbuffer")
       ENDIF
 
-      !-------------------------------------------------------------------------
-      !  Deallocate
-      !-------------------------------------------------------------------------
-      iopt = ppm_param_dealloc
-      CALL ppm_alloc(psend,ldu,iopt,info)
-      or_fail_dealloc("psend")
-      CALL ppm_alloc(precv,ldu,iopt,info)
-      or_fail_dealloc("precv")
-#ifdef __MPI
-      CALL ppm_alloc(   pp,ldu,iopt,info)
-      or_fail_dealloc("pp")
-      CALL ppm_alloc(   qq,ldu,iopt,info)
-      or_fail_dealloc("qq")
-
-      DEALLOCATE(senddispls,recvdispls,sendcounts,recvcounts,request,STAT=info)
-      or_fail_dealloc("senddispls,recvdispls,sendcounts,recvcounts & request")
-#endif
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
