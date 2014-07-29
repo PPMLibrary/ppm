@@ -58,11 +58,11 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      INTEGER                 , INTENT(IN   ) :: Npart
+      INTEGER, INTENT(IN   ) :: Npart
       !!! The old number of particles on the processor
-      INTEGER                 , INTENT(  OUT) :: Mpart
+      INTEGER, INTENT(  OUT) :: Mpart
       !!! The new number of particles on processor after the send/recv
-      INTEGER                 , INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables

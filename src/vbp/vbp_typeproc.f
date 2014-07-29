@@ -32,8 +32,10 @@
 
           !and update the few fields that are specific to VBP
           Pc%adaptive = .FALSE.
+
           check_false(<#ASSOCIATED(Pc%rcp)#>,&
-          "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
+          & "The rcp property (cutoff radii) is already defined for that particle set. Use destroy() before create()")
+
           Pc%rcp => NULL()
 
           end_subroutine()
@@ -147,12 +149,12 @@
           ! Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_vbp))                  :: Pc
-          REAL(MK), DIMENSION(:),   INTENT(IN   )  :: cutoff
+          CLASS(DTYPE(ppm_t_vbp))                                 :: Pc
+          REAL(MK), DIMENSION(:),                   INTENT(IN   ) :: cutoff
           !!! cutoff radius (same number of elements as we have particles)
-          INTEGER,                  INTENT(   OUT) :: info
+          INTEGER,                                  INTENT(  OUT) :: info
           !!! return status. On success, 0
-          CLASS(DTYPE(ppm_t_neighlist)_),OPTIONAL,INTENT(INOUT) :: NList
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, INTENT(INOUT) :: NList
           !!! Neighbor list for which this cutoff radius
           !!! applies. By default, this is the "standard" Verlet list, with neighbours
           !!! sought within the particle set itself.
@@ -162,8 +164,8 @@
           !-------------------------------------------------------------------------
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl
 
-          REAL(MK),DIMENSION(:), POINTER :: rcp
-          REAL(MK)                       :: max_cutoff
+          REAL(MK), DIMENSION(:), POINTER :: rcp
+          REAL(MK)                        :: max_cutoff
 
           INTEGER :: ip
 
@@ -200,7 +202,6 @@
              Nl%cutoff = max_cutoff
           ENDIF
 
-
           ! Compute ghostlayer sizes
           IF (max_cutoff.GT.Pc%ghostlayer) THEN
              !If the new cutoff is larger than the current ghostsize
@@ -211,7 +212,7 @@
           ELSE IF (max_cutoff .LT. Pc%ghostlayer) THEN
              !Else, we find the new maximum cutoff radius amongst
              !all existing neighbor lists on this Particle set
-             Pc%ghostlayer = 0._mk
+             Pc%ghostlayer = 0._MK
              Nl => Pc%neighs%begin()
              DO WHILE (ASSOCIATED(Nl))
                 IF (Nl%cutoff .GT. Pc%ghostlayer) THEN
@@ -279,30 +280,37 @@
 
              NULLIFY(rcp)
 
-             !yaser: I added read_only=.TRUE. otherwise
-             !discr_data%flags(ppm_ppt_ghosts) will be set to false
-             CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts,read_only=.TRUE.)
-             or_fail("Cannot access this%rcp")
-
+             !yaser serious bug
              IF (PRESENT(cutoff)) THEN
+                CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts)
+                or_fail("Cannot access this%rcp")
+
                 rcp = cutoff
+
+                CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts)
+                or_fail("Cannot set this%rcp pointer free")
              ELSE
+                !yaser: I added read_only=.TRUE. otherwise
+                !discr_data%flags(ppm_ppt_ghosts) will be set to false
+                !in this case, it should not be, as the vbp cutoff values
+                !are available as this%ghostlayer in each domain
+                CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts,read_only=.TRUE.)
+                or_fail("Cannot access this%rcp")
+
                 rcp = this%ghostlayer
+
+                !yaser: I added read_only=.TRUE. otherwise
+                !discr_data%flags(ppm_ppt_ghosts) will be set to false
+                CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts,read_only=.TRUE.)
+                or_fail("Cannot set this%rcp pointer free")
              ENDIF
 
-             !yaser: I added read_only=.TRUE. otherwise
-             !discr_data%flags(ppm_ppt_ghosts) will be set to false
-             CALL this%set(this%rcp,rcp,info,ghosts_ok=ghosts,read_only=.TRUE.)
           END ASSOCIATE
 
           Nl%cutoff = -1._MK
           !this field should not be used with adaptive particles
 
-          IF (PRESENT(skin)) THEN
-             Nl%skin = skin
-          ELSE
-             Nl%skin = 0._mk
-          ENDIF
+          Nl%skin = MERGE(skin,0.0_MK,PRESENT(skin))
 
           IF (PRESENT(symmetry)) THEN
              IF (symmetry) THEN
@@ -326,6 +334,7 @@
           or_fail("pushing new neighbour list into collection failed")
 
           end_subroutine()
+
       END SUBROUTINE DTYPE(vbp_neigh_create)
 
       SUBROUTINE DTYPE(vbp_neighlist)(this,info,P_xset,name,skin, &
@@ -474,17 +483,8 @@
           CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.TRUE.)
           or_fail("could not access cutoff radii")
 
-          IF (Nlist%isymm.EQ.1) THEN
-             lsymm =.TRUE.
-          ELSE
-             lsymm = .FALSE.
-          ENDIF
-
-          IF (PRESENT(knn)) THEN
-             ensure_knn = .TRUE.
-          ELSE
-             ensure_knn = .FALSE.
-          ENDIF
+          lsymm     =MERGE(.TRUE.,.FALSE.,Nlist%isymm.EQ.1)
+          ensure_knn=MERGE(.TRUE.,.FALSE.,PRESENT(knn))
 
           lskin = Nlist%skin
           topoid = this%active_topoid
@@ -493,10 +493,7 @@
              !neighbor lists are already up-to-date, or no particles on this proc
              !nothing to do
              IF (Nlist%uptodate) THEN
-                info = ppm_error_notice
-                CALL ppm_error(999,caller,   &
-                &  'neighlists are already up-to-date, NOTHING to do',&
-                &  __LINE__,info)
+                fail('neighlists are already up-to-date, NOTHING to do',999,exit_point=no,ppm_error=ppm_error_notice)
                 info = 0
              ELSE
                 Nlist%nneighmin = 0
@@ -534,7 +531,7 @@
                 & sort=.TRUE.,rearrange=.TRUE.)
 
                 ALLOCATE(results(knn+1),STAT=info)
-                r_fail_alloc("results")
+                or_fail_alloc("results")
 
                 ldc(1) = knn
                 ldc(2) = this%Npart
@@ -570,123 +567,122 @@
 #else
                 fail("option required the kdtree module.")
 #endif
-              !__WITH_KDTREE
-              ELSE
-
-                 !FIXME: when adaptive ghost layers are available
-                 ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
+             !__WITH_KDTREE
+             ELSE
+                !FIXME: when adaptive ghost layers are available
+                ghostlayer(1:2*ppm_dim)=Part_src%ghostlayer
 
 #ifdef __WITH_CNL
-                 conventionalinl: IF (this%conventionalinl) THEN
-                    this%stats%nb_cinl = this%stats%nb_cinl+1
+                conventionalinl: IF (this%conventionalinl) THEN
+                   this%stats%nb_cinl = this%stats%nb_cinl+1
 
 #ifdef __MPI
-                    t1 = MPI_WTIME(info)
+                   t1 = MPI_WTIME(info)
 #endif
-                    !HUGLY HACK to make CNL routines work on a topology with
-                    !several subdomains
+                   !HUGLY HACK to make CNL routines work on a topology with
+                   !several subdomains
 #if   __KIND == __SINGLE_PRECISION
-                    CALL cnl_vlist(this%xp,                                &
-                    &    rcp,this%Npart,this%Mpart,                        &
-                    &    ppm_topo(topoid)%t%min_subs(:,1)-this%ghostlayer, &
-                    &    ppm_topo(topoid)%t%max_subs(:,1)+this%ghostlayer, &
-                    &    this%nvlist,this%vlist,ppm_dim,info)
+                   CALL cnl_vlist(this%xp,                                &
+                   &    rcp,this%Npart,this%Mpart,                        &
+                   &    ppm_topo(topoid)%t%min_subs(:,1)-this%ghostlayer, &
+                   &    ppm_topo(topoid)%t%max_subs(:,1)+this%ghostlayer, &
+                   &    this%nvlist,this%vlist,ppm_dim,info)
 #elif __KIND == __DOUBLE_PRECISION
-                    CALL cnl_vlist(this%xp,                                &
-                    &    rcp,this%Npart,this%Mpart,                        &
-                    &    ppm_topo(topoid)%t%min_subd(:,1)-this%ghostlayer, &
-                    &    ppm_topo(topoid)%t%max_subd(:,1)+this%ghostlayer, &
-                    &    this%nvlist,this%vlist,ppm_dim,info)
+                   CALL cnl_vlist(this%xp,                                &
+                   &    rcp,this%Npart,this%Mpart,                        &
+                   &    ppm_topo(topoid)%t%min_subd(:,1)-this%ghostlayer, &
+                   &    ppm_topo(topoid)%t%max_subd(:,1)+this%ghostlayer, &
+                   &    this%nvlist,this%vlist,ppm_dim,info)
 #endif
-                    or_fail("ppm_cinl_vlist failed")
-                    !end HUGLY HACK
+                   or_fail("ppm_cinl_vlist failed")
+                   !end HUGLY HACK
 #ifdef __MPI
-                    t2 = MPI_WTIME(info)
-                    this%stats%t_cinl = this%stats%t_cinl + (t2 - t1)
+                   t2 = MPI_WTIME(info)
+                   this%stats%t_cinl = this%stats%t_cinl + (t2 - t1)
 #endif
-                 ELSE
+                ELSE
 #endif
-                    !__WITH_CNL
-                    IF (xset_neighlists) THEN
+                   !__WITH_CNL
+                   IF (xset_neighlists) THEN
+                      this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
+#ifdef __MPI
+                      t1 = MPI_WTIME(info)
+#endif
+                      CALL ppm_inl_xset_vlist(topoid,this%xp,                &
+                      &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart, &
+                      &    Part_src%Mpart,rcp,                               &
+                      &    lskin,ghostlayer,info,Nlist%vlist,                &
+                      &    Nlist%nvlist,lstore)
+                      or_fail("ppm_inl_xset_vlist failed")
+#ifdef __MPI
+                      t2 = MPI_WTIME(info)
+                      this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
+#endif
+                   ELSE
+                      this%stats%nb_inl = this%stats%nb_inl+1
+#ifdef __MPI
+                      t1 = MPI_WTIME(info)
+#endif
+                      CALL ppm_inl_vlist(topoid,this%xp,np_target,     &
+                      &    this%Mpart,rcp,lskin,lsymm,ghostlayer,info, &
+                      &    Nlist%vlist,Nlist%nvlist)
+                      or_fail("ppm_inl_vlist failed")
 
-                       this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
 #ifdef __MPI
-                       t1 = MPI_WTIME(info)
+                      t2 = MPI_WTIME(info)
+                      this%stats%t_inl = this%stats%t_inl + (t2 - t1)
 #endif
-                       CALL ppm_inl_xset_vlist(topoid,this%xp,                &
-                       &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart, &
-                       &    Part_src%Mpart,rcp,                               &
-                       &    lskin,ghostlayer,info,Nlist%vlist,                &
-                       &    Nlist%nvlist,lstore)
-                       or_fail("ppm_inl_xset_vlist failed")
-#ifdef __MPI
-                       t2 = MPI_WTIME(info)
-                       this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
-#endif
-                    ELSE
-                       this%stats%nb_inl = this%stats%nb_inl+1
-#ifdef __MPI
-                       t1 = MPI_WTIME(info)
-#endif
-                       CALL ppm_inl_vlist(topoid,this%xp,np_target,     &
-                       &    this%Mpart,rcp,lskin,lsymm,ghostlayer,info, &
-                       &    Nlist%vlist,Nlist%nvlist)
-                       or_fail("ppm_inl_vlist failed")
-#ifdef __MPI
-                       t2 = MPI_WTIME(info)
-                       this%stats%t_inl = this%stats%t_inl + (t2 - t1)
-#endif
-                    ENDIF ! XSET
+                   ENDIF ! XSET
 #ifdef __WITH_CNL
-                 ENDIF conventionalinl
+                ENDIF conventionalinl
 #endif
 
-              ENDIF
+             ENDIF
 
-              !restore subdomain sizes (revert hack)
-              IF (PRESENT(incl_ghosts)) THEN
-                 IF (incl_ghosts) THEN
-                    SELECT CASE (MK)
-                    CASE (ppm_kind_single)
-                       topo%min_subs(:,:) = topo%min_subs(:,:) + topo%ghostsizes
-                       topo%max_subs(:,:) = topo%max_subs(:,:) - topo%ghostsizes
+             !restore subdomain sizes (revert hack)
+             IF (PRESENT(incl_ghosts)) THEN
+                IF (incl_ghosts) THEN
+                   SELECT CASE (MK)
+                   CASE (ppm_kind_single)
+                      topo%min_subs(:,:) = topo%min_subs(:,:) + topo%ghostsizes
+                      topo%max_subs(:,:) = topo%max_subs(:,:) - topo%ghostsizes
 
-                    CASE (ppm_kind_double)
-                       topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
-                       topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
+                   CASE (ppm_kind_double)
+                      topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
+                      topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
 
-                    END SELECT
-                    topo => NULL()
-                 ENDIF
-              ENDIF
+                   END SELECT
+                   topo => NULL()
+                ENDIF
+             ENDIF
 
-              !-----------------------------------------------------------------------
-              !Update state
-              !-----------------------------------------------------------------------
-              Nlist%uptodate = .TRUE.
+             !-----------------------------------------------------------------------
+             !Update state
+             !-----------------------------------------------------------------------
+             Nlist%uptodate = .TRUE.
 
-              Nlist%nneighmin = MINVAL(Nlist%nvlist(1:this%Npart))
-              Nlist%nneighmax = MAXVAL(Nlist%nvlist(1:np_target))
+             Nlist%nneighmin = MINVAL(Nlist%nvlist(1:this%Npart))
+             Nlist%nneighmax = MAXVAL(Nlist%nvlist(1:np_target))
 
-              ! DC operators that do not use a xset neighbour list, if they exist,
-              ! are no longer valid (they depend on the neighbour lists)
-              IF (ASSOCIATED(this%ops)) THEN
-                 op => this%ops%begin()
-                 DO WHILE (ASSOCIATED(op))
-                    IF (.NOT.op%flags(ppm_ops_interp)) THEN
-                       op%flags(ppm_ops_iscomputed) = .FALSE.
-                    ENDIF
-                    op => this%ops%next()
-                 ENDDO
-              ENDIF
+             ! DC operators that do not use a xset neighbour list, if they exist,
+             ! are no longer valid (they depend on the neighbour lists)
+             IF (ASSOCIATED(this%ops)) THEN
+                op => this%ops%begin()
+                DO WHILE (ASSOCIATED(op))
+                   IF (.NOT.op%flags(ppm_ops_interp)) THEN
+                      op%flags(ppm_ops_iscomputed) = .FALSE.
+                   ENDIF
+                   op => this%ops%next()
+                ENDDO
+             ENDIF
 
-              ! We want to distinguish between "self" neighbour lists
-              ! and cross-set ones.
-              IF (ASSOCIATED(Nlist%Part,this)) THEN
-                 this%flags(ppm_part_neighlists) = .TRUE.
-              ENDIF
+             ! We want to distinguish between "self" neighbour lists
+             ! and cross-set ones.
+             IF (ASSOCIATED(Nlist%Part,this)) THEN
+                this%flags(ppm_part_neighlists) = .TRUE.
+             ENDIF
 
-              Nlist => NULL()
+             Nlist => NULL()
 
           ENDIF do_something
 

@@ -80,7 +80,6 @@
       REAL(MK)                       :: t0
       REAL(MK)                       :: max_size
       REAL(MK)                       :: size_diff
-
       REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
       ! Physical extent of whole domain including ghost layers.
 
@@ -193,12 +192,12 @@
       !-------------------------------------------------------------------------
       !  Sort particles by their cutoff radii in descending order.
       !-------------------------------------------------------------------------
-      CALL sortByRC(cutoff, clist%rank)
+      CALL sortByRC(cutoff,clist%rank)
 
       !-------------------------------------------------------------------------
       !  Get maximum depth in the cell list.
       !-------------------------------------------------------------------------
-      clist%max_depth = MAX(getMaxDepth(cutoff, clist, whole_domain),1)
+      clist%max_depth = MAX(getMaxDepth(cutoff,clist,whole_domain),1)
 
       !-------------------------------------------------------------------------
       !  Allocate rc_borders array, in order to store borders on rank
@@ -218,7 +217,7 @@
       !  indices on the rank array, which will contain particles of that
       !  level.
       !-------------------------------------------------------------------------
-      CALL getRC_Borders(cutoff, skin, clist, whole_domain, info)
+      CALL getRC_Borders(cutoff,skin,clist,whole_domain,info)
 
       !-------------------------------------------------------------------------
       !  For every level of depth, sort particles by their cutoff radii and
@@ -364,7 +363,7 @@
 
 #if __KIND == __SINGLE_PRECISION
       PURE FUNCTION child(idx) RESULT(child_idx)
-      !!! Given the index of child cell, returns the index of its first child.
+      !!! Given the index of parent cell, returns the index of its first child.
       !!! Works for nD.
       IMPLICIT NONE
       !---------------------------------------------------------------------
@@ -381,9 +380,9 @@
 
 #if __KIND == __SINGLE_PRECISION
 #ifdef __DEBUG
-      FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
+      FUNCTION isEmpty(c_idx,lookup_) RESULT(empty)
 #else
-      PURE FUNCTION isEmpty(c_idx,lookup) RESULT(empty)
+      PURE FUNCTION isEmpty(c_idx,lookup_) RESULT(empty)
 #endif
       !!! Given the index of the cell, returns whether the cell is
       !!! empty or not.
@@ -393,7 +392,7 @@
       !---------------------------------------------------------------------
       INTEGER(ppm_kind_int64), INTENT(IN   ) :: c_idx
       !!! Input index
-      TYPE(ppm_htable),        INTENT(IN   ) :: lookup
+      TYPE(ppm_htable),        INTENT(IN   ) :: lookup_
       !!! hash table
       logical                                :: empty
       !!! Logical result
@@ -405,11 +404,10 @@
       INTEGER                 :: borders_pos
       !position on borders array
 
-      empty = .TRUE.                           ! Set empty to TRUE
+                                ! Set empty to TRUE
       parentIdx   = parent(c_idx)              ! Get index of parent cell
-      borders_pos = lookup%hash_search(parentIdx) ! Search parent in hash table
-      IF (borders_pos.EQ.htable_null) RETURN ! Return FALSE if not found
-      empty = .FALSE.                          ! Set empty to FALSE and return
+      borders_pos = lookup_%search(parentIdx) ! Search parent in hash table
+      empty =MERGE(.TRUE.,.FALSE.,borders_pos.EQ.htable_null)
       END FUNCTION isEmpty
 #endif
 
@@ -693,13 +691,13 @@
       !---------------------------------------------------------------------
       !  Arguments
       !---------------------------------------------------------------------
-      REAL(MK), DIMENSION(:), INTENT(IN) :: cutoff
+      REAL(MK), DIMENSION(:), INTENT(IN   ) :: cutoff
       !!! Cutoff radii array
-      REAL(MK),               INTENT(IN) :: skin
+      REAL(MK),               INTENT(IN   ) :: skin
       !!! Skin parameter
-      INTEGER, DIMENSION(:),  INTENT(IN) :: rank
+      INTEGER, DIMENSION(:),  INTENT(IN   ) :: rank
       !!! Rank array, containing particles ranks
-      REAL(MK)                           :: minRC
+      REAL(MK)                              :: minRC
       !!! Minimum cutoff radius to be returned
 
       !---------------------------------------------------------------------
@@ -909,28 +907,28 @@
 
       ! Divide particles to 2, that are on the left of midpoint
       ! x-coordinate and on the right of it.
-      CALL partition(xp, rank, mid_coor(1), bx, 1)
+      CALL partition(xp,rank,mid_coor(1),bx,1)
 
       ! Divide particles that are on the left of midpoint x-coordinate
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
-      CALL partition(xp, rank(1:bx-1), mid_coor(2), byLeft,  2)
+      CALL partition(xp,rank(1:bx-1),mid_coor(2),byLeft,2)
 
       ! Divide particles that are on the right of midpoint x-coordinate
       ! to 2, as on bottom of midpoint y-coordinate and on top of it.
-      CALL partition(xp, rank(bx:),    mid_coor(2), byRight, 2)
+      CALL partition(xp,rank(bx:),mid_coor(2),byRight,2)
 
       ! Increment border for upper-right portion
       byRight = byRight + bx - 1
 
       ! If in 3D, keep on subdividing
       IF (ppm_dim.EQ.3)  THEN
-         CALL partition(xp, rank(1:byLeft-1),   mid_coor(3), bzBottomLeft,  3)
+         CALL partition(xp,rank(1:byLeft-1),mid_coor(3),bzBottomLeft,3)
 
-         CALL partition(xp, rank(byLeft:bx-1),  mid_coor(3), bzBottomRight, 3)
+         CALL partition(xp,rank(byLeft:bx-1),mid_coor(3),bzBottomRight,3)
 
-         CALL partition(xp, rank(bx:byRight-1), mid_coor(3), bzTopLeft,     3)
+         CALL partition(xp,rank(bx:byRight-1),mid_coor(3),bzTopLeft,3)
 
-         CALL partition(xp, rank(byRight:),     mid_coor(3), bzTopRight,    3)
+         CALL partition(xp,rank(byRight:),mid_coor(3),bzTopRight,3)
 
           ! Increment border indices accordingly.
           bzBottomRight = bzBottomRight + byLeft  - 1
@@ -939,14 +937,14 @@
       ENDIF
 
       ! Subdivide the current region, later to be assigned to recursive calls.
-      CALL setSubregions(ownregion, subregions,info)
+      CALL setSubregions(ownregion,subregions,info)
 
       ! Insert current cell in hash table.
       clist%borders_pos = clist%borders_pos + 1
 
       CALL clist%lookup%insert(idx,clist%borders_pos,info)
 
-      ! htable has been grown
+      ! In case that htable has been grown
       s=SIZE(clist%borders,DIM=2)
       IF (clist%lookup%nrow.GT.s) THEN
          iopt = ppm_param_alloc_grow_preserve
@@ -955,12 +953,12 @@
          IF (ppm_dim.EQ.2) THEN
             lda(1) = 6
             ! Allocate "borders" array for 2D case
-            CALL ppm_alloc(clist%borders, lda, iopt, info)
+            CALL ppm_alloc(clist%borders,lda,iopt,info)
             or_fail_alloc("borders",exit_point=no,ppm_error=ppm_error_fatal)
          ELSEIF (ppm_dim.EQ.3) THEN
             lda(1) = 10
             ! Allocate "borders" array for 3D case
-            CALL ppm_alloc(clist%borders, lda, iopt, info)
+            CALL ppm_alloc(clist%borders,lda,iopt,info)
             or_fail_alloc("borders",exit_point=no,ppm_error=ppm_error_fatal)
          ENDIF
 
@@ -970,7 +968,7 @@
       ENDIF
 
       ! Keep track of maximum number of cells, to be used later.
-      IF (clist%borders_pos.GT.clist%borders_pos_max)   THEN
+      IF (clist%borders_pos.GT.clist%borders_pos_max) THEN
          clist%borders_pos_max = clist%borders_pos
       ENDIF
 
@@ -978,9 +976,9 @@
       ! of the cell, later to be used to understand whether the cell has
       ! particles in deeper levels or not.
       IF     (ppm_dim.EQ.2) THEN
-          clist%borders(6, clist%borders_pos) = SIZE(rank)
+          clist%borders(6,clist%borders_pos) = SIZE(rank)
       ELSEIF (ppm_dim.EQ.3) THEN
-          clist%borders(10, clist%borders_pos) = SIZE(rank)
+          clist%borders(10,clist%borders_pos) = SIZE(rank)
       ENDIF
 
       ! Set increment parameters for recursive calls. This one is done
@@ -999,31 +997,31 @@
 
       ! Call recursive calls
       IF     (ppm_dim.EQ.2) THEN
-         CALL SortByPosition(xp, cutoff, skin, rank(1:byLeft-1), clist, &
-         &                    subregions(1,:), 4*idx-2, incArray(1))
-         CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bx-1), clist, &
-         &                    subregions(2,:), 4*idx-1, incArray(2))
-         CALL SortByPosition(xp, cutoff, skin, rank(bx:byRight-1), clist, &
-         &                    subregions(3,:), 4*idx,   incArray(3))
-         CALL SortByPosition(xp, cutoff, skin, rank(byRight:), clist, &
-         &                    subregions(4,:), 4*idx+1, incArray(4))
+         CALL SortByPosition(xp,cutoff,skin,rank(1:byLeft-1),clist, &
+         &    subregions(1,:),4*idx-2,incArray(1))
+         CALL SortByPosition(xp,cutoff,skin,rank(byLeft:bx-1),clist, &
+         &    subregions(2,:),4*idx-1,incArray(2))
+         CALL SortByPosition(xp,cutoff,skin,rank(bx:byRight-1),clist, &
+         &    subregions(3,:),4*idx,incArray(3))
+         CALL SortByPosition(xp,cutoff,skin,rank(byRight:),clist, &
+         &    subregions(4,:),4*idx+1,incArray(4))
       ELSEIF (ppm_dim.EQ.3)   THEN
-         CALL SortByPosition(xp, cutoff, skin, rank(1:bzBottomLeft-1),clist, &
-         &                    subregions(1,:), 8*idx-6, incArray(1))
-         CALL SortByPosition(xp, cutoff, skin, rank(bzBottomLeft:byLeft-1),clist, &
-         &                    subregions(2,:), 8*idx-5, incArray(2))
-         CALL SortByPosition(xp, cutoff, skin, rank(byLeft:bzBottomRight-1),clist, &
-         &                    subregions(3,:), 8*idx-4, incArray(3))
-         CALL SortByPosition(xp, cutoff, skin, rank(bzBottomRight:bx-1),clist, &
-         &                    subregions(4,:), 8*idx-3, incArray(4))
-         CALL SortByPosition(xp, cutoff, skin, rank(bx:bzTopLeft-1),clist, &
-         &                    subregions(5,:), 8*idx-2, incArray(5))
-         CALL SortByPosition(xp, cutoff, skin, rank(bzTopLeft:byRight-1),clist, &
-         &                    subregions(6,:), 8*idx-1, incArray(6))
-         CALL SortByPosition(xp, cutoff, skin, rank(byRight:bzTopRight-1),clist, &
-         &                    subregions(7,:), 8*idx  , incArray(7))
-         CALL SortByPosition(xp, cutoff, skin, rank(bzTopRight:),clist, &
-         &                    subregions(8,:), 8*idx+1, incArray(8))
+         CALL SortByPosition(xp,cutoff,skin,rank(1:bzBottomLeft-1),clist, &
+         &    subregions(1,:),8*idx-6,incArray(1))
+         CALL SortByPosition(xp,cutoff,skin,rank(bzBottomLeft:byLeft-1),clist, &
+         &    subregions(2,:),8*idx-5,incArray(2))
+         CALL SortByPosition(xp,cutoff,skin,rank(byLeft:bzBottomRight-1),clist, &
+         &    subregions(3,:),8*idx-4,incArray(3))
+         CALL SortByPosition(xp,cutoff,skin,rank(bzBottomRight:bx-1),clist, &
+         &    subregions(4,:),8*idx-3,incArray(4))
+         CALL SortByPosition(xp,cutoff,skin,rank(bx:bzTopLeft-1),clist, &
+         &    subregions(5,:),8*idx-2,incArray(5))
+         CALL SortByPosition(xp,cutoff,skin,rank(bzTopLeft:byRight-1),clist, &
+         &    subregions(6,:),8*idx-1,incArray(6))
+         CALL SortByPosition(xp,cutoff,skin,rank(byRight:bzTopRight-1),clist, &
+         &    subregions(7,:),8*idx  ,incArray(7))
+         CALL SortByPosition(xp,cutoff,skin,rank(bzTopRight:),clist, &
+         &    subregions(8,:),8*idx+1,incArray(8))
       ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE SortByPosition_s
@@ -1032,11 +1030,11 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      RECURSIVE SUBROUTINE SortByRC_Pos_s(xp, cutoff, skin, rank,clist, ownregion, &
-      &                    idx, level, increment)
+      RECURSIVE SUBROUTINE SortByRC_Pos_s(xp,cutoff,skin,rank,clist,ownregion, &
+      &                    idx,level,increment)
 #elif __KIND == __DOUBLE_PRECISION
-      RECURSIVE SUBROUTINE SortByRC_Pos_d(xp, cutoff, skin, rank,clist, ownregion, &
-      &                    idx, level, increment)
+      RECURSIVE SUBROUTINE SortByRC_Pos_d(xp,cutoff,skin,rank,clist,ownregion, &
+      &                    idx,level,increment)
 #endif
       !!! The recursive subroutine which sorts the particles by their position
       !!! and their cutoff radii; given particles coordinates, their cutoff
@@ -1077,6 +1075,8 @@
       !---------------------------------------------------------------------
       REAL(MK), DIMENSION(2**ppm_dim, 2*ppm_dim) :: subregions
       REAL(MK), DIMENSION(ppm_dim)               :: mid_coor
+      REAL(MK)                                   :: minRC
+      REAL(MK)                                   :: minSideLength
 
       INTEGER,  DIMENSION(2**ppm_dim) :: incArray
       INTEGER                         :: bx
@@ -1092,6 +1092,17 @@
       ! If no particles are assigned, return
       s=SIZE(rank)
       IF (s.LT.1) RETURN
+
+      !Yaser
+      !it seems a subtle bug in the code, so I added this part here
+      ! Get minimum side length
+      minSideLength = getMinimumSideLength(ownregion)
+
+      ! Get the minimum cutoff radius + skin
+      minRC = cutoff(s)+skin
+
+      ! If the cell is small enough, stop recursion for this cell.
+      IF (minRC.GE.minSideLength) RETURN
 
       ! Set midpoint coordinates
       DO i = 1, ppm_dim
@@ -1273,9 +1284,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      RECURSIVE SUBROUTINE sortByRC_s(cutoff, rank)
+      RECURSIVE SUBROUTINE sortByRC_s(cutoff,rank)
 #elif __KIND == __DOUBLE_PRECISION
-      RECURSIVE SUBROUTINE sortByRC_d(cutoff, rank)
+      RECURSIVE SUBROUTINE sortByRC_d(cutoff,rank)
 #endif
       !!! Recursive algorithm which sorts particles by their cutoff
       !!! radii in descending order; given cutoff radii, and the
@@ -1300,9 +1311,9 @@
 
       ! Keep on partitioning and sorting, recursively.
       IF (SIZE(rank).GT.1) THEN
-         CALL partitionByRC(cutoff, rank, marker)
-         CALL sortByRC(cutoff, rank(:marker-1))
-         CALL sortByRC(cutoff, rank(marker:))
+         CALL partitionByRC(cutoff,rank,marker)
+         CALL sortByRC(cutoff,rank(:marker-1))
+         CALL sortByRC(cutoff,rank(marker:))
       ENDIF
 #if   __KIND == __SINGLE_PRECISION
       END SUBROUTINE sortByRC_s
@@ -1311,9 +1322,9 @@
 #endif
 
 #if   __KIND == __SINGLE_PRECISION
-      SUBROUTINE partitionByRC_s(cutoff, rank, marker)
+      SUBROUTINE partitionByRC_s(cutoff,rank,marker)
 #elif __KIND == __DOUBLE_PRECISION
-      SUBROUTINE partitionByRC_d(cutoff, rank, marker)
+      SUBROUTINE partitionByRC_d(cutoff,rank,marker)
 #endif
       !!! This subroutine partitions particles by their cutoff radii and
       !!! updates marker; given cutoff radii, skin parameter and rank array.
@@ -1525,7 +1536,7 @@
          ! minimum cutoff radius has to be greater than
          ! half of the maximum side length
          rc_limit  = minSideLength/2._MK
-         rc_border = lastIdxForRC(cutoff, skin, clist, rc_limit)
+         rc_border = lastIdxForRC(cutoff,skin,clist,rc_limit)
          clist%rc_borders(i) = rc_border
          ! minimum side length after a subdivision
          minSideLength = minSideLength/2._MK

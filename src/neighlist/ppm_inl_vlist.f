@@ -70,9 +70,9 @@
       !!! ghost layers.
       INTEGER,                           INTENT(  OUT) :: info
       !!! Info to be RETURNed. 0 if SUCCESSFUL.
-      INTEGER,  DIMENSION(:,:), POINTER, INTENT(INOUT) :: vlist
+      INTEGER,  DIMENSION(:,:),          POINTER       :: vlist
       !!! verlet lists. vlist(3, 6) is the 3rd neighbor of particle 6.
-      INTEGER,  DIMENSION(:),   POINTER, INTENT(INOUT) :: nvlist
+      INTEGER,  DIMENSION(:),            POINTER       :: nvlist
       !!! number of neighbors of particles. nvlist(i) is number of
       !!! neighbors particle i has.
       LOGICAL,                 OPTIONAL, INTENT(IN   ) :: lstore
@@ -237,10 +237,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE create_inl_vlist_s(xp, Np, Mp, cutoff, skin, lsymm, &
-      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      & actual_domain, ghostlayer, info, vlist_, nvlist_, lstore)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE create_inl_vlist_d(xp, Np, Mp, cutoff, skin, lsymm, &
-      & actual_domain, ghostlayer, info, vlist, nvlist, lstore)
+      & actual_domain, ghostlayer, info, vlist_, nvlist_, lstore)
 #endif
         !!! This subroutine creates verlet lists for particles whose coordinates
         !!! and cutoff radii are provided by xp and cutoff, respectively.
@@ -249,6 +249,8 @@
         !!! others that are required, this subroutine allocates and fills nvlist.
         !!! If the OPTIONAL parameter lstore is set to TRUE or not passed,
         !!! vlist is also allocated and filled.
+        use ppm_module_util_time
+        use ppm_module_write
         IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
         INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -279,9 +281,9 @@
         !!! ghost layers.
         INTEGER,                        INTENT(  OUT) :: info
         !!! Info to be RETURNed. 0 if SUCCESSFUL.
-        INTEGER,  DIMENSION(:, :),      POINTER :: vlist
+        INTEGER,  DIMENSION(:, :),      POINTER       :: vlist_
         !!! verlet lists. vlist(3, 6) is the 3rd neighbor of particle 6.
-        INTEGER,  DIMENSION(:),         POINTER :: nvlist
+        INTEGER,  DIMENSION(:),         POINTER       :: nvlist_
         !!! number of neighbors of particles. nvlist(i) is number of
         !!! neighbors particle i has.
         LOGICAL,              OPTIONAL, INTENT(IN   ) :: lstore
@@ -293,7 +295,7 @@
         !---------------------------------------------------------------------
         REAL(MK), DIMENSION(2*ppm_dim) :: whole_domain
         ! Physical extent of whole domain including ghost layers.
-        REAL(MK)                       :: t0
+        REAL(MK)                       :: t0,t1,t2
         REAL(MK)                       :: max_size
         REAL(MK)                       :: size_diff
 
@@ -334,11 +336,14 @@
            ENDIF
         ENDDO
 
+        call ppm_util_time(t1)
         !-------------------------------------------------------------------------
         !  Create inhomogeneous cell list
         !-------------------------------------------------------------------------
         CALL ppm_create_inl_clist(xp, Np, Mp, cutoff, skin, actual_domain, &
         &    ghostlayer, lsymm, clist, info)
+        call ppm_util_time(t2)
+        stdout("creation of cell list took : ", 't2-t1', " secs")
         or_fail('ppm_create_inl_clist')
 
         !-------------------------------------------------------------------------
@@ -398,7 +403,7 @@
         lst=MERGE(lstore,.TRUE.,PRESENT(lstore))
 
         CALL getVerletLists(xp, cutoff, clist, skin, lsymm, whole_domain, &
-        &    actual_domain, vlist, nvlist, lst, info)
+        &    actual_domain, vlist_, nvlist_, lst, info)
         or_fail('getVerletLists')
 
         !-------------------------------------------------------------------------
@@ -440,10 +445,10 @@
 
 #if   __KIND == __SINGLE_PRECISION
       SUBROUTINE getVerletLists_s(xp, cutoff, clist, skin, lsymm, whole_domain, &
-      &                           actual_domain, vlist, nvlist, lstore, info)
+      &                           actual_domain, vlist_, nvlist_, lstore, info)
 #elif __KIND == __DOUBLE_PRECISION
       SUBROUTINE getVerletLists_d(xp, cutoff, clist, skin, lsymm, whole_domain, &
-      &                           actual_domain, vlist, nvlist, lstore, info)
+      &                           actual_domain, vlist_, nvlist_, lstore, info)
 #endif
         !!! This subroutine allocates nvlist and fills it with number of
         !!! neighbors of each particle. Then, if lstore is TRUE, it also allocates
@@ -476,10 +481,10 @@
         !!! Physical extent of whole domain including ghost layers.
         REAL(MK), DIMENSION(2*ppm_dim), INTENT(IN   ) :: actual_domain
         !!! Physical extent of actual domain without ghost layers.
-        INTEGER,  DIMENSION(:, :),      POINTER       :: vlist
+        INTEGER,  DIMENSION(:, :),      POINTER       :: vlist_
         !!! Verlet lists of particles. vlist(j, i) corresponds to jth neighbor
         !!! of particle i.
-        INTEGER,  DIMENSION(: ),        POINTER       :: nvlist
+        INTEGER,  DIMENSION(: ),        POINTER       :: nvlist_
         !!! Number of neighbors that particles have. nvlist(i) is the
         !!! number of neighbor particle i has.
         LOGICAL,                        INTENT(IN   ) :: lstore
@@ -524,10 +529,10 @@
         !-------------------------------------------------------------------------
         !  Allocate nvlist array and initialize it to 0.
         !-------------------------------------------------------------------------
-        CALL ppm_alloc(nvlist, lda, iopt, info)
+        CALL ppm_alloc(nvlist_, lda, iopt, info)
         or_fail_alloc('nvlist',ppm_error=ppm_error_fatal)
 
-        nvlist = 0
+        nvlist_ = 0
 
         !-------------------------------------------------------------------------
         !  Fill nvlist array with number of neighbors.
@@ -535,15 +540,16 @@
         IF (lsymm) THEN ! If lists are symmetric
            DO p_idx = 1, clist%n_all_p
               CALL count_neigh_sym(clist%rank(p_idx), clist, whole_domain, &
-              &    actual_domain, xp, cutoff, skin, nvlist)
+              &    actual_domain, xp, cutoff, skin, nvlist_)
            ENDDO
         ELSE ! If lists are not symmetric
+
            ! Yaser: I think this has a mistake, as we are in the non symmetric
            ! and the SIZE(nvlist) = clist%n_real_p, so I corrected it from clist%n_all_p
            !   DO p_idx = 1, clist%n_all_p
            DO p_idx = 1, clist%n_real_p
               CALL count_neigh(clist%rank(p_idx), clist, whole_domain, &
-              &    xp, cutoff, skin, nvlist)
+              &    xp, cutoff, skin, nvlist_)
            ENDDO
         ENDIF
 
@@ -554,12 +560,12 @@
            !-----------------------------------------------------------------
            !  Get maximum number of neighbors, for allocation of vlist
            !-----------------------------------------------------------------
-           max_nneigh = MAXVAL(nvlist)
+           max_nneigh = MAXVAL(nvlist_)
            !-----------------------------------------------------------------
            !  Initialize nvlist to 0, since it will be used again to
            !  keep track of where to put the next neighbor on vlist array.
            !-----------------------------------------------------------------
-           nvlist = 0
+           nvlist_ = 0
            !-----------------------------------------------------------------
            !  Initialize used to FALSE, since particles should be visited
            !  again.
@@ -579,7 +585,7 @@
            !-----------------------------------------------------------------
            !  Allocate vlist
            !-----------------------------------------------------------------
-           CALL ppm_alloc(vlist, lda, iopt, info)
+           CALL ppm_alloc(vlist_, lda, iopt, info)
            or_fail_alloc('vlist',ppm_error=ppm_error_fatal)
 
            !-----------------------------------------------------------------
@@ -589,7 +595,7 @@
            IF (lsymm) THEN ! If symmetric
               DO p_idx = 1, clist%n_all_p
                  CALL get_neigh_sym(clist%rank(p_idx), clist, whole_domain, &
-                 &    actual_domain, xp, cutoff, skin, vlist, nvlist)
+                 &    actual_domain, xp, cutoff, skin, vlist_, nvlist_)
               ENDDO
            ELSE            ! If not symmetric
               ! Yaser: I think this has a mistake, as we are in the non symmetric
@@ -597,7 +603,7 @@
               !   DO p_idx = 1, clist%n_all_p
               DO p_idx = 1, clist%n_real_p
                  CALL get_neigh(clist%rank(p_idx), clist, whole_domain,  &
-                 &    xp, cutoff, skin, vlist, nvlist)
+                 &    xp, cutoff, skin, vlist_, nvlist_)
               ENDDO
            ENDIF
         ENDIF

@@ -233,18 +233,18 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
       SUBROUTINE DTYPE(get_vlist)_(this,nvlist,vlist,info,NList)
           IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
           IMPLICIT NONE
-          CLASS(DTYPE(ppm_t_particles)_)                   :: this
-          INTEGER, DIMENSION(:),   POINTER,  INTENT(  OUT) :: nvlist
-          INTEGER, DIMENSION(:,:), POINTER,  INTENT(  OUT) :: vlist
-          INTEGER,                           INTENT(INOUT) :: info
-          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET :: NList
+          CLASS(DTYPE(ppm_t_particles)_)                          :: this
+          INTEGER, DIMENSION(:),                    POINTER       :: nvlist
+          INTEGER, DIMENSION(:,:),                  POINTER       :: vlist
+          INTEGER,                                  INTENT(INOUT) :: info
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET        :: NList
       END SUBROUTINE
 
       SUBROUTINE DTYPE(get_nvlist)_(this,nvlist,info,NList)
           IMPORT DTYPE(ppm_t_particles)_,DTYPE(ppm_t_neighlist)_
           IMPLICIT NONE
           CLASS(DTYPE(ppm_t_particles)_)                   :: this
-          INTEGER, DIMENSION(:), POINTER,    INTENT(  OUT) :: nvlist
+          INTEGER, DIMENSION(:),             POINTER       :: nvlist
           INTEGER,                           INTENT(INOUT) :: info
           CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, TARGET :: NList
       END SUBROUTINE
