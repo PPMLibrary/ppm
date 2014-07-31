@@ -44,8 +44,8 @@ test_suite ppm_module_vbp_particles
 
     ALLOCATE(min_phys(ndim),max_phys(ndim),len_phys(ndim),STAT=info)
 
-    min_phys(1:ndim) = (/-2.5E-16_MK,-2.5E-16_MK /)  !0.0_MK
-    max_phys(1:ndim) = (/9.596_MK,5.996_MK/)  !(/1.0_MK,0.64_MK/)
+    min_phys(1:ndim) = 0.0_MK
+    max_phys(1:ndim) = (/1.0_MK,0.64_MK/)
     len_phys(1:ndim) = max_phys-min_phys
     bcdef = ppm_param_bcdef_freespace
 
@@ -74,8 +74,7 @@ test_suite ppm_module_vbp_particles
     assig =ppm_param_assign_internal
 
     topoid = 0
-    !CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
-    CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,1.5_MK,cost,info)
+    CALL ppm_mktopo(topoid,decomp,assig,min_phys,max_phys,bcdef,0.1_MK,cost,info)
   end init
 
   finalize
@@ -92,7 +91,7 @@ test_suite ppm_module_vbp_particles
   teardown
   end teardown
 
-  test neighlists
+  test 2D_neighlists
     USE ppm_module_util_time
     USE ppm_module_io_vtk
 
@@ -112,7 +111,7 @@ test_suite ppm_module_vbp_particles
     !--------------------------
 
     IF (rank.EQ.0) THEN
-       np_global = 16756  !61649
+       np_global = 61649
 
        CALL Part1%create(np_global,info,name="Part1")
        Assert_Equal(info,0)
@@ -122,14 +121,9 @@ test_suite ppm_module_vbp_particles
        CALL ppm_alloc(cutoff,ldu,iopt,info)
        Assert_Equal(info,0)
 
-       !OPEN(UNIT=100,FILE="src/vbp/test/x.txt",STATUS='OLD')
-       !OPEN(UNIT=200,FILE="src/vbp/test/y.txt",STATUS='OLD')
-       !OPEN(UNIT=300,FILE="src/vbp/test/r.txt",STATUS='OLD')
-
-       OPEN(UNIT=100,FILE="/Users/afshar/Documents/Others/Bevan/Test_Yaser/nuc75_x.txt",STATUS='OLD')
-       OPEN(UNIT=200,FILE="/Users/afshar/Documents/Others/Bevan/Test_Yaser/nuc75_y.txt",STATUS='OLD')
-       OPEN(UNIT=300,FILE="/Users/afshar/Documents/Others/Bevan/Test_Yaser/nuc75_r.txt",STATUS='OLD')
-
+       OPEN(UNIT=100,FILE="src/vbp/test/x.txt",STATUS='OLD')
+       OPEN(UNIT=200,FILE="src/vbp/test/y.txt",STATUS='OLD')
+       OPEN(UNIT=300,FILE="src/vbp/test/r.txt",STATUS='OLD')
 
        CALL Part1%get_xp(xp,info)
        Assert_Equal(info,0)
@@ -197,8 +191,8 @@ test_suite ppm_module_vbp_particles
     stdout("It took: ",'t2-t1'," secs")
 
     ! print particles to a VTK file
-    CALL ppm_vtk_particles("output",Part1,info)
-    Assert_Equal(info,0)
+    !CALL ppm_vtk_particles("output",Part1,info)
+    !Assert_Equal(info,0)
 
     CALL Part1%destroy(info)
     Assert_Equal(info,0)

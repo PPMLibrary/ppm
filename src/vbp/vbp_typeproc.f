@@ -280,7 +280,8 @@
 
              NULLIFY(rcp)
 
-             !yaser serious bug
+             !yaser I resolved the bug, by if conditional
+             !TOCHECK
              IF (PRESENT(cutoff)) THEN
                 CALL this%get(this%rcp,rcp,info,with_ghosts=ghosts)
                 or_fail("Cannot access this%rcp")
@@ -313,11 +314,7 @@
           Nl%skin = MERGE(skin,0.0_MK,PRESENT(skin))
 
           IF (PRESENT(symmetry)) THEN
-             IF (symmetry) THEN
-                Nl%isymm = 1
-             ELSE
-                Nl%isymm = 0
-             ENDIF
+             Nl%isymm = MERGE(1,0,symmetry)
           ELSE
              Nl%isymm = 0
           ENDIF
@@ -410,7 +407,7 @@
           REAL(MK), DIMENSION(:), POINTER :: rcp  => NULL()
           REAL(MK), DIMENSION(2*ppm_dim)  :: ghostlayer
           REAL(KIND(1.D0))                :: t1,t2
-          REAL(MK)                        :: lskin
+          REAL(MK)                        :: tskin
 
           INTEGER :: topoid
           INTEGER :: nneighmin,nneighmax
@@ -418,7 +415,7 @@
           INTEGER :: ip,ineigh
           !!! index variable
 
-          LOGICAL :: ensure_knn,lsymm
+          LOGICAL :: lknn,lsymm
           !!! uses a neighbour-finding algorithm that finds enough neighbours
           LOGICAL :: xset_neighlists
 
@@ -483,11 +480,10 @@
           CALL this%get(this%rcp,rcp,info,with_ghosts=.TRUE.,read_only=.TRUE.)
           or_fail("could not access cutoff radii")
 
-          lsymm     =MERGE(.TRUE.,.FALSE.,Nlist%isymm.EQ.1)
-          ensure_knn=MERGE(.TRUE.,.FALSE.,PRESENT(knn))
-
-          lskin = Nlist%skin
-          topoid = this%active_topoid
+          lsymm =MERGE(.TRUE.,.FALSE.,Nlist%isymm.EQ.1)
+          lknn  =MERGE(.TRUE.,.FALSE.,PRESENT(knn))
+          tskin =Nlist%skin
+          topoid=this%active_topoid
 
           do_something: IF (Nlist%uptodate .OR. this%Npart.EQ.0) THEN
              !neighbor lists are already up-to-date, or no particles on this proc
@@ -520,7 +516,7 @@
                 ENDIF
              ENDIF
 
-             IF (ensure_knn) THEN
+             IF (lknn) THEN
 #ifdef __WITH_KDTREE
                 this%stats%nb_kdtree = this%stats%nb_kdtree+1
 #ifdef __MPI
@@ -611,7 +607,7 @@
                       CALL ppm_inl_xset_vlist(topoid,this%xp,                &
                       &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart, &
                       &    Part_src%Mpart,rcp,                               &
-                      &    lskin,ghostlayer,info,Nlist%vlist,                &
+                      &    tskin,ghostlayer,info,Nlist%vlist,                &
                       &    Nlist%nvlist,lstore)
                       or_fail("ppm_inl_xset_vlist failed")
 #ifdef __MPI
@@ -624,7 +620,7 @@
                       t1 = MPI_WTIME(info)
 #endif
                       CALL ppm_inl_vlist(topoid,this%xp,np_target,     &
-                      &    this%Mpart,rcp,lskin,lsymm,ghostlayer,info, &
+                      &    this%Mpart,rcp,tskin,lsymm,ghostlayer,info, &
                       &    Nlist%vlist,Nlist%nvlist)
                       or_fail("ppm_inl_vlist failed")
 

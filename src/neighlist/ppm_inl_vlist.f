@@ -249,8 +249,10 @@
         !!! others that are required, this subroutine allocates and fills nvlist.
         !!! If the OPTIONAL parameter lstore is set to TRUE or not passed,
         !!! vlist is also allocated and filled.
-        use ppm_module_util_time
-        use ppm_module_write
+#ifdef __DEBUG
+        USE ppm_module_util_time
+        USE ppm_module_write
+#endif
         IMPLICIT NONE
 #if   __KIND == __SINGLE_PRECISION
         INTEGER, PARAMETER :: MK = ppm_kind_single
@@ -336,16 +338,21 @@
            ENDIF
         ENDDO
 
-        call ppm_util_time(t1)
         !-------------------------------------------------------------------------
         !  Create inhomogeneous cell list
         !-------------------------------------------------------------------------
+#ifdef __DEBUG
+        CALL ppm_util_time(t1)
+#endif
+
         CALL ppm_create_inl_clist(xp, Np, Mp, cutoff, skin, actual_domain, &
         &    ghostlayer, lsymm, clist, info)
-        call ppm_util_time(t2)
-        stdout("creation of cell list took : ", 't2-t1', " secs")
         or_fail('ppm_create_inl_clist')
 
+#ifdef __DEBUG
+        CALL ppm_util_time(t2)
+        stdout("creation of cell list took : ", 't2-t1', " secs")
+#endif
         !-------------------------------------------------------------------------
         !  Allocate own_plist array, which will be used to get list of particles
         !  that are located in the same cell. Even though its a temporary array,
