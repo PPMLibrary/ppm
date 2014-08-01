@@ -26,7 +26,6 @@
       USE ppm_module_data
       USE ppm_module_util_functions
       USE ppm_module_options
-
       IMPLICIT NONE
 
       !----------------------------------------------------------------------
@@ -104,7 +103,6 @@
       !----------------------------------------------------------------------
       ! Type declaration
       !----------------------------------------------------------------------
-
 
       TYPE, ABSTRACT :: ppm_t_main_abstr
           !!! Generic type for all main PPM types

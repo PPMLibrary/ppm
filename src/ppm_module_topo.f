@@ -1,16 +1,16 @@
       !--*- f90 -*--------------------------------------------------------------
       !  Module       :                ppm_module_topo
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -33,10 +33,12 @@
          !----------------------------------------------------------------------
          !  PPM modules
          !----------------------------------------------------------------------
-         USE ppm_module_mktopo
-         USE ppm_module_topo_check
-         USE ppm_module_mesh_define
-         USE ppm_module_scale_domain
-         USE ppm_module_topo_get
+         USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo
+         USE ppm_module_mktopo,       ONLY : ppm_mktopo
+         USE ppm_module_topo_check,   ONLY : ppm_topo_check
+         USE ppm_module_mesh_define,  ONLY : ppm_mesh_define
+         USE ppm_module_scale_domain, ONLY : ppm_scale_domain
+         USE ppm_module_topo_get,     ONLY : ppm_topo_get, &
+         &   ppm_topo_get_decomp
 
       END MODULE ppm_module_topo

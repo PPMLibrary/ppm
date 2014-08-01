@@ -37,7 +37,6 @@
       !!! This module provides the interface to the routines that create
       !!! topologies.
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
 
          !----------------------------------------------------------------------

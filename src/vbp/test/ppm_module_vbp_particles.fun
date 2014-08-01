@@ -60,13 +60,6 @@ test_suite ppm_module_vbp_particles
     tolexp = INT(LOG10(EPSILON(1._MK)))+10
     CALL ppm_init(ndim,mk,tolexp,0,debug,info,99)
 
-    CALL random_seed(size=seedsize)
-    ALLOCATE(seed(seedsize))
-    DO i=1,seedsize
-       seed(i)=10+i*i*(rank+1)
-    ENDDO
-    CALL RANDOM_SEED(put=seed)
-
     !----------------
     ! make topology
     !----------------
@@ -91,7 +84,7 @@ test_suite ppm_module_vbp_particles
   teardown
   end teardown
 
-  test 2D_neighlists
+  test neighlists
     USE ppm_module_util_time
     USE ppm_module_io_vtk
 
@@ -191,8 +184,8 @@ test_suite ppm_module_vbp_particles
     stdout("It took: ",'t2-t1'," secs")
 
     ! print particles to a VTK file
-    !CALL ppm_vtk_particles("output",Part1,info)
-    !Assert_Equal(info,0)
+    CALL ppm_vtk_particles("output",Part1,info)
+    Assert_Equal(info,0)
 
     CALL Part1%destroy(info)
     Assert_Equal(info,0)

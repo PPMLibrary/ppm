@@ -146,7 +146,7 @@
 
       !yaser
       !TOCHECK
-      clist%ncell = 128  !CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
+      clist%ncell = 64  !CEILING(clist%n_all_p/1.0) !Hardcoded estimation of number of cells
 
       CALL clist%lookup%create(clist%ncell,info) ! create hash table
       or_fail("create hash table clist%lookup failed.")

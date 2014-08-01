@@ -32,6 +32,8 @@
 
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
@@ -45,10 +47,6 @@
          INTEGER, DIMENSION(:)  , POINTER :: tempbuffer => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: cd_local   => NULL()
          INTEGER, DIMENSION(:,:), POINTER :: psend      => NULL()
-
-         PRIVATE :: id_send,id_temp,id_inv,csend,crecv
-         PRIVATE :: sendbuffer,recvbuffer,tempbuffer
-         PRIVATE :: psend,cd_local
 
          !----------------------------------------------------------------------
          !  Define inferface to ppm_map_connect_distrib
@@ -70,6 +68,10 @@
          INTERFACE ppm_map_connect_send
             MODULE PROCEDURE ppm_map_connect_send
          END INTERFACE
+
+         PUBLIC :: ppm_map_connect_distrib, &
+         &         ppm_map_connect_prune,   &
+         &         ppm_map_connect_send
 
          !----------------------------------------------------------------------
          !  include the source

@@ -43,6 +43,8 @@
 
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
@@ -57,9 +59,6 @@
          INTEGER ,DIMENSION(:), POINTER :: ilist3    => NULL()
          INTEGER ,DIMENSION(:), POINTER :: ilist4    => NULL()
 
-         PRIVATE :: plist_des,plist_act,plist_exc,srlist1,srlist2
-         PRIVATE :: nlist1,nlist2,nlist3,nlist4
-         PRIvATE :: ilist1,ilist2,ilist3,ilist4
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_eqdistrib
          !----------------------------------------------------------------------
@@ -104,6 +103,13 @@
          INTERFACE ppm_map_part_store
             MODULE PROCEDURE ppm_map_part_store
          END INTERFACE
+
+         PUBLIC :: ppm_map_part_eqdistrib,  &
+         &         ppm_map_part_cancel,     &
+         &         ppm_map_part_get_sub,    &
+         &         ppm_map_part_load,       &
+         &         ppm_map_part_ring_shift, &
+         &         ppm_map_part_store
 
          !----------------------------------------------------------------------
          !  include the source

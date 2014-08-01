@@ -43,15 +43,17 @@
 
          IMPLICIT NONE
 
+         PRIVATE
+
          !----------------------------------------------------------------------
          !  Work lists
          !----------------------------------------------------------------------
          INTEGER, DIMENSION(:), POINTER :: ilist1 => NULL()
          INTEGER, DIMENSION(:), POINTER :: ilist2 => NULL()
          INTEGER, DIMENSION(:), POINTER :: ighost => NULL()
-         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
          INTEGER                        :: prev_allocsize
-         PRIVATE :: ilist1,ilist2,ighost,lghost,prev_allocsize
+
+         LOGICAL, DIMENSION(:), POINTER :: lghost => NULL()
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_ghost_get
@@ -88,6 +90,10 @@
          INTERFACE ppm_map_part_ghost_put
             MODULE PROCEDURE ppm_map_part_ghost_put
          END INTERFACE
+
+         PUBLIC :: ppm_map_part_ghost_get, &
+         &         ppm_map_part_ghost_pop, &
+         &         ppm_map_part_ghost_put
 
          !----------------------------------------------------------------------
          !  include the source

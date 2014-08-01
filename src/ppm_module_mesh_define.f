@@ -42,7 +42,6 @@
       !!! same mesh. Meshes are defined as ppm-internal TYPES, whereas
       !!! fields are user-provided arrays.
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
 
          !----------------------------------------------------------------------

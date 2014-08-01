@@ -38,7 +38,6 @@
       !!! search routines (cell lists, Verlet lists).
 
          USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_t_clist
-
          IMPLICIT NONE
 
          TYPE(ppm_t_clist), DIMENSION(:), POINTER, PRIVATE :: ppm_clist => NULL()

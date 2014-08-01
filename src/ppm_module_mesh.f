@@ -35,10 +35,10 @@
          !----------------------------------------------------------------------
       !   USE ppm_module_mesh_alloc
       !   USE ppm_module_mesh_block_intersect
-         USE ppm_module_mesh_define
-         USE ppm_module_mesh_derive
+         USE ppm_module_mesh_define,  ONLY : ppm_mesh_define
+         USE ppm_module_mesh_derive,  ONLY : ppm_mesh_derive
       !   USE ppm_module_mesh_finalize
-         USE ppm_module_mesh_on_subs
-         USE ppm_module_mesh_store
+         USE ppm_module_mesh_on_subs, ONLY : ppm_mesh_on_subs
+         USE ppm_module_mesh_store,   ONLY : ppm_mesh_store
 
       END MODULE ppm_module_mesh

@@ -19,7 +19,6 @@
       USE ppm_module_interfaces
       USE ppm_module_topo_typedef
       USE ppm_module_mapping_typedef
-
       IMPLICIT NONE
 
       !----------------------------------------------------------------------

@@ -94,7 +94,6 @@
 
       INTEGER :: i
 
-      CHARACTER(LEN=ppm_char) :: mesg
       CHARACTER(LEN=ppm_char) :: caller='ppm_impose_part_bc'
 
       LOGICAL :: valid

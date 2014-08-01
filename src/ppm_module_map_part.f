@@ -49,7 +49,6 @@
          USE ppm_module_map_part_ghost
          USE ppm_module_map_part_global
          USE ppm_module_map_part_partial
-
          IMPLICIT NONE
 
          PRIVATE :: ppm_kind_single,ppm_kind_double

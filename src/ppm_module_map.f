@@ -39,11 +39,17 @@
          !  PPM modules
          !----------------------------------------------------------------------
 
-         USE ppm_module_map_connect
+         USE ppm_module_map_connect,    ONLY : ppm_map_connect_distrib, &
+         &   ppm_map_connect_prune,ppm_map_connect_send
       !   USE ppm_module_map_field
-         USE ppm_module_map_part
-         USE ppm_module_impose_part_bc
-
+         USE ppm_module_map_part,       ONLY : ppm_map_part_pop,          &
+         &   ppm_map_part_push,ppm_map_part_send,ppm_map_part_ghost_get,  &
+         &   ppm_map_part_ghost_pop,ppm_map_part_ghost_put,               &
+         &   ppm_map_part_global,ppm_map_part_remap,ppm_map_part_partial, &
+         &   ppm_map_part_eqdistrib,ppm_map_part_cancel,                  &
+         &   ppm_map_part_get_sub,ppm_map_part_load,                      &
+         &   ppm_map_part_ring_shift,ppm_map_part_store
+         USE ppm_module_impose_part_bc, ONLY : ppm_impose_part_bc
          IMPLICIT NONE
 
       CONTAINS
