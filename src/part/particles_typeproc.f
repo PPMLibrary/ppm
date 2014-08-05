@@ -1881,6 +1881,50 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_send)
 
+      SUBROUTINE DTYPE(part_map_isend)(Pc,info)
+          !!!  Send buffer during partial mappings
+          !!!  Assumptions:
+          !!! * Particles positions need to have been mapped onto the topology
+          !!!
+          USE ppm_module_map
+#ifdef __MPI
+          INCLUDE "mpif.h"
+#endif
+
+          !-------------------------------------------------------------------------
+          !  Arguments
+          !-------------------------------------------------------------------------
+          CLASS(DTYPE(ppm_t_particles)) :: Pc
+          DEFINE_MK()
+          !!! Data structure containing the particles
+          INTEGER,        INTENT(  OUT) :: info
+          !!! Return status, on success 0.
+          !-------------------------------------------------------------------------
+          !  Optional Arguments
+          !-------------------------------------------------------------------------
+          !-------------------------------------------------------------------------
+          !  Local variables
+          !-------------------------------------------------------------------------
+          REAL(KIND(1.D0)) :: t1,t2
+
+          start_subroutine("part_map_isend")
+
+          !-----------------------------------------------------------------
+          !  Checks
+          !-----------------------------------------------------------------
+          !check that particles are allocated
+          check_associated(<#Pc%xp#>,&
+          "Particles structure had not been defined. Call allocate first")
+
+          !-----------------------------------------------------------------
+          !  Send the buffer
+          !-----------------------------------------------------------------
+          CALL ppm_map_part_isend(Pc%Npart,Pc%NewNpart,info)
+          or_fail("ppm_map_part_isend")
+
+          end_subroutine()
+      END SUBROUTINE DTYPE(part_map_isend)
+
 
       SUBROUTINE DTYPE(part_map_pop)(Pc,info,Field)
 
@@ -1948,7 +1992,6 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           end_subroutine()
       END SUBROUTINE DTYPE(part_map_pop)
-
 
 
       SUBROUTINE DTYPE(part_map_pop_positions)(Pc,info)
@@ -3102,7 +3145,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           INTEGER                             :: i,offset
           INTEGER, DIMENSION(:),      POINTER :: wp => NULL()
-#ifdef __MPI
+#ifdef __MPI3
           INTEGER                             :: request
           INTEGER, DIMENSION(MPI_STATUS_SIZE) :: status
 #endif
@@ -3111,18 +3154,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           start_subroutine("part_comp_global_index")
 
-          IF (.NOT.Pc%flags(ppm_part_global_index)) THEN
-             CALL Pc%create_prop(info,part_prop=Pc%gi,dtype=ppm_type_int,&
-             &    name="GlobalIndex")
-             Pc%flags(ppm_part_global_index)=.TRUE.
-          END IF
           offset=0
 #ifdef __MPI
+#ifdef __MPI3
           CALL MPI_Iexscan(Pc%Npart,offset,1,MPI_INTEGER,MPI_SUM,ppm_comm,request,info)
+          or_fail_MPI("MPI_Iexscan")
+#else
+          CALL MPI_Exscan(Pc%Npart,offset,1,MPI_INTEGER,MPI_SUM,ppm_comm,info)
           or_fail_MPI("MPI_Exscan")
 #endif
+#endif
+
+          IF (.NOT.Pc%flags(ppm_part_global_index)) THEN
+             CALL Pc%create_prop(info,part_prop=Pc%gi, &
+             &    dtype=ppm_type_int,name="GlobalIndex")
+             Pc%flags(ppm_part_global_index)=.TRUE.
+          END IF
+
           CALL Pc%get(Pc%gi,wp,info)
-#ifdef __MPI
+#ifdef __MPI3
           CALL MPI_Wait(request,status,info)
           or_fail_MPI("MPI_Wait")
 #endif

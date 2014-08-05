@@ -239,16 +239,7 @@
       IF (ppm_kind.EQ.ppm_kind_double) THEN
 #ifdef __MPI
          DO k=1,ppm_buffer_set
-            !----------------------------------------------------------------------
-            !  For each processor
-            !----------------------------------------------------------------------
             bdim = ppm_buffer_dim(k)
-            l=qq(1,k)-1
-            m=pp(1,k)-1
-            DO j=1,psend(1)*bdim
-               ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
-            ENDDO
-
             DO i=2,ppm_nsendlist
                !----------------------------------------------------------------------
                ! The following IF is needed in order to skip "dummy"
@@ -280,13 +271,8 @@
                   &    ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
                ENDIF
-            ENDDO
+            ENDDO !i=2,ppm_nsendlist
          ENDDO !k=1,ppm_buffer_set
-#else
-         ppm_recvbufferd=ppm_sendbufferd
-#endif
-      ELSE
-#ifdef __MPI
          DO k=1,ppm_buffer_set
             !----------------------------------------------------------------------
             !  For each processor
@@ -295,9 +281,16 @@
             l=qq(1,k)-1
             m=pp(1,k)-1
             DO j=1,psend(1)*bdim
-               ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
+               ppm_recvbufferd(m+j)=ppm_sendbufferd(l+j)
             ENDDO
-
+         ENDDO !k=1,ppm_buffer_set
+#else
+         ppm_recvbufferd=ppm_sendbufferd
+#endif
+      ELSE
+#ifdef __MPI
+         DO k=1,ppm_buffer_set
+            bdim = ppm_buffer_dim(k)
             DO i=2,ppm_nsendlist
                !----------------------------------------------------------------------
                ! The following IF is needed in order to skip "dummy"
@@ -329,6 +322,17 @@
                   &    ppm_irecvlist(i),tag,ppm_comm,request(nsr),info)
                   or_fail_MPI("MPI_Irecv")
                ENDIF
+            ENDDO
+         ENDDO !k=1,ppm_buffer_set
+         DO k=1,ppm_buffer_set
+            !----------------------------------------------------------------------
+            !  For each processor
+            !----------------------------------------------------------------------
+            bdim = ppm_buffer_dim(k)
+            l=qq(1,k)-1
+            m=pp(1,k)-1
+            DO j=1,psend(1)*bdim
+               ppm_recvbuffers(m+j)=ppm_sendbuffers(l+j)
             ENDDO
          ENDDO !k=1,ppm_buffer_set
 #else

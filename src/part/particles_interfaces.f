@@ -282,6 +282,13 @@ minclude ppm_create_collection_interfaces(DTYPE(particles)_,DTYPE(particles)_)
           INTEGER,                            INTENT(  OUT)   :: info
       END SUBROUTINE
 
+      SUBROUTINE DTYPE(part_map_isend)_(Pc,info)
+          IMPORT DTYPE(ppm_t_particles)_
+          IMPLICIT NONE
+          CLASS(DTYPE(ppm_t_particles)_) :: Pc
+          INTEGER,         INTENT(  OUT) :: info
+      END SUBROUTINE
+
       SUBROUTINE DTYPE(part_map_pop)_(Pc,info,Field)
           IMPORT DTYPE(ppm_t_particles)_,ppm_t_field_
           IMPLICIT NONE

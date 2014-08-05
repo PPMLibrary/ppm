@@ -121,6 +121,10 @@
             MODULE PROCEDURE ppm_map_part_send
          END INTERFACE
 
+         INTERFACE ppm_map_part_isend
+            MODULE PROCEDURE ppm_map_part_isend
+         END INTERFACE
+
          !----------------------------------------------------------------------
          !  include the source
          !----------------------------------------------------------------------
@@ -211,5 +215,6 @@
 #undef __DIM
 
 #include "map/ppm_map_part_send.f"
+#include "map/ppm_map_part_isend.f"
 
       END MODULE ppm_module_map_part

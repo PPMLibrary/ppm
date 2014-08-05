@@ -275,6 +275,8 @@ minclude ppm_create_collection(DTYPE(neighlist)_,DTYPE(neighlist)_,generate="abs
           !!! Push property onto the buffer
           PROCEDURE(DTYPE(part_map_send)_),          DEFERRED :: map_send
           !!! Perform communication rounds to send the buffer between processors
+          PROCEDURE(DTYPE(part_map_isend)_),         DEFERRED :: map_isend
+          !!! Perform communication rounds to send the buffer between processors
           PROCEDURE(DTYPE(part_map_pop)_),           DEFERRED :: map_pop
           !!! Pop property fromm the buffer
           PROCEDURE(DTYPE(part_map_pop_positions)_), DEFERRED :: map_pop_positions

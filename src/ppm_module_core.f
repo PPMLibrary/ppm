@@ -33,6 +33,11 @@
          !----------------------------------------------------------------------
          !  PPM modules
          !----------------------------------------------------------------------
+         USE ppm_module_data
+         USE ppm_module_substart
+         USE ppm_module_substop
+         USE ppm_module_write
+         USE ppm_module_error
          USE ppm_module_map
          USE ppm_module_core_util
          USE ppm_module_loadbal, ONLY : ppm_loadbal_inquire,          &

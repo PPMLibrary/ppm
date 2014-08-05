@@ -293,7 +293,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_send(npart,mpart,info)
@@ -301,8 +301,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
-
+        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
 
@@ -367,7 +366,7 @@ real(mk)                         :: t0,t1,t2,t3
         npart=newnpart
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_push(w,npart,info)
@@ -377,7 +376,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         call ppm_map_part_store(info)
 
         call ppm_map_part_ghost_put(topoid,info)
@@ -392,7 +391,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,4+3*4) ! check number of ghosts
 
@@ -523,7 +522,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_send(npart,mpart,info)
@@ -531,7 +530,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
 
     end test
 
@@ -595,7 +594,7 @@ real(mk)                         :: t0,t1,t2,t3
         assert_equal(mpart-npart,104)
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart,mpart)
 
 
     end test
@@ -655,7 +654,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_push(w,npart,info)
@@ -665,7 +664,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         call ppm_map_part_store(info)
 
         call ppm_map_part_ghost_put(topoid,info)
@@ -685,7 +684,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,2) ! check number of ghosts
 
@@ -756,7 +755,7 @@ real(mk)                         :: t0,t1,t2,t3
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,0,gl,info)
         call ppm_map_part_push(w,npart,info)
@@ -766,7 +765,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,2,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,2,1,info,p,npart,mpart)
         call ppm_map_part_store(info)
 
         call ppm_map_part_ghost_put(topoid,info)
@@ -786,7 +785,7 @@ real(mk)                         :: t0,t1,t2,t3
 
         call ppm_topo_check(topoid,p,npart,ok,info)
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,3,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl,3,1,info,p,npart,mpart)
 
         assert_equal(mpart-npart,2) ! check number of ghosts
 
