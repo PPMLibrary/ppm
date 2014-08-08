@@ -602,11 +602,12 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 #endif
           USE ppm_module_inl_vlist
           USE ppm_module_inl_xset_vlist
-#ifdef __WITH_KDTREE
           USE ppm_module_inl_k_vlist
           USE ppm_module_kdtree
-#endif
-
+          IMPLICIT NONE
+          !-------------------------------------------------------------------------
+          !  Includes
+          !-------------------------------------------------------------------------
 #ifdef __MPI
           INCLUDE "mpif.h"
 #endif
@@ -644,18 +645,17 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !-------------------------------------------------------------------------
           CLASS(ppm_t_operator_discr_),   POINTER :: op
           CLASS(DTYPE(ppm_t_particles)_), POINTER :: Part_src
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nlist => NULL()
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nlist
 
-          TYPE(ppm_t_topo),                          POINTER     :: topo
-#ifdef __WITH_KDTREE
-          TYPE(DTYPE(kdtree2)),                      POINTER     :: tree
-          TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE :: results
-#endif
+          TYPE(ppm_t_topo), POINTER :: topo
 
-          REAL(MK)                       :: lskin
-!           REAL(MK),DIMENSION(:), POINTER :: rcp  => NULL()
-          REAL(MK),DIMENSION(2*ppm_dim)  :: ghostlayer
-          REAL(KIND(1.D0))               :: t1,t2
+          TYPE(DTYPE(kdtree2)), POINTER :: tree
+
+          TYPE(DTYPE(kdtree2_result)), DIMENSION(:), ALLOCATABLE, TARGET :: results
+
+          REAL(MK)                      :: lskin
+          REAL(MK),DIMENSION(2*ppm_dim) :: ghostlayer
+          REAL(KIND(1.D0))              :: t1,t2
 
           INTEGER :: topoid
           INTEGER :: nneighmin,nneighmax
@@ -663,7 +663,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           INTEGER :: ip,ineigh
           !!! index variable
 
-          LOGICAL :: ensure_knn,lsymm
+          LOGICAL :: lknn,lsymm
           !!! uses a neighbour-finding algorithm that finds enough neighbours
           LOGICAL :: xset_neighlists
 
@@ -673,20 +673,20 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
           !  Checks
           !-----------------------------------------------------------------
           check_associated(<#this%xp#>,&
-          "Particles structure had not been defined. Call allocate first")
+          & "Particles structure had not been defined. Call allocate first")
 
           check_true(<#this%flags(ppm_part_partial)#>,&
-          "Particles not mapped. Do a partial/global mapping")
+          & "Particles not mapped. Do a partial/global mapping")
 
           xset_neighlists = .FALSE.
           IF (PRESENT(P_xset)) THEN
              Part_src => P_xset
 
              check_associated(<#Part_src%xp#>,&
-             "Cross-Set particles have not been defined. Call allocate first")
+             & "Cross-Set particles have not been defined. Call allocate first")
 
              check_true(<#Part_src%flags(ppm_part_partial)#>,&
-             "Particles not mapped. Do a partial/global mapping")
+             & "Particles not mapped. Do a partial/global mapping")
 
              IF (.NOT.ASSOCIATED(Part_src,this)) THEN
                 xset_neighlists = .TRUE.
@@ -697,7 +697,7 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
 
           check_true(<#Part_src%flags(ppm_part_ghosts)#>,&
-          "Ghosts have not been updated. They are needed for neighlists")
+          & "Ghosts have not been updated. They are needed for neighlists")
 
           check_associated(<#this%neighs#>)
 
@@ -706,12 +706,13 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
              Nlist => this%get_neighlist(Part_src)
              IF (PRESENT(skin).OR.PRESENT(symmetry).OR.PRESENT(cutoff)) THEN
                 stdout("the optional arguments skin,",&
-                "symmetry or cutoff will not be used",&
-                " because the neighbour list already exists. We",&
-                " should perhaps change the API?  ")
+                & "symmetry or cutoff will not be used",&
+                & " because the neighbour list already exists. We",&
+                & " should perhaps change the API?  ")
                 fail("Need to destroy/re-create this neighbour list first")
              ENDIF
           ELSE
+             NULLIFY(Nlist)
              CALL this%create_neighlist(Part_src,info,name=name,skin=skin,&
              &    symmetry=symmetry,cutoff=cutoff,Nlist=Nlist)
              or_fail("failed to create neighbour list")
@@ -721,37 +722,25 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
           !check that we have a cutoff radius
           check_true(<#Nlist%cutoff.GT.0#>,&
-          "cutoff is negative or zero - do we really want neighbour lists?")
+          & "cutoff is negative or zero - do we really want neighbour lists?")
 
-          IF (Nlist%isymm.EQ.1) THEN
-             lsymm =.TRUE.
-          ELSE
-             lsymm = .FALSE.
-          ENDIF
-
-          IF (PRESENT(knn)) THEN
-             ensure_knn = .TRUE.
-          ELSE
-             ensure_knn = .FALSE.
-          ENDIF
-
-          lskin = Nlist%skin
-          topoid = this%active_topoid
+          lsymm =Nlist%isymm.EQ.1
+          lknn  =PRESENT(knn)
+          lskin =Nlist%skin
+          topoid=this%active_topoid
 
           do_something: IF (Nlist%uptodate .OR. this%Npart.EQ.0) THEN
               !neighbor lists are already up-to-date, or no particles on this proc
               !nothing to do
               IF (Nlist%uptodate) THEN
-                  info = ppm_error_notice
-                  CALL ppm_error(999,caller,   &
-                  &  'neighlists are already up-to-date, NOTHING to do',&
-                  &  __LINE__,info)
-                  info = 0
+                 fail('neighlists are already up-to-date, NOTHING to do', &
+                 & 999,exit_point=no,ppm_error=ppm_error_notice)
+                 info = 0
               ELSE
-                  Nlist%nneighmin = 0
-                  Nlist%nneighmax = 0
+                 Nlist%nneighmin = 0
+                 Nlist%nneighmax = 0
               ENDIF
-          ELSE
+          ELSE do_something
               !hack to build (potentially incomplete) neighbour lists even
               !for ghost particles
               np_target = this%Npart
@@ -769,102 +758,108 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
                   ENDIF
               ENDIF
 
-              IF (ensure_knn) THEN
-#ifdef __WITH_KDTREE
-
-                      this%stats%nb_kdtree = this%stats%nb_kdtree+1
+              IF (lknn) THEN
+                 this%stats%nb_kdtree = this%stats%nb_kdtree+1
 #ifdef __MPI
-                      t1 = MPI_WTIME(info)
+                 t1 = MPI_WTIME(info)
 #endif
 
-                      tree => kdtree2_create(Part_src%xp(1:ppm_dim,1:Part_src%Mpart),&
-                      & sort=.TRUE.,rearrange=.TRUE.)
+                 AllOCATE(tree,STAT=info)
+                 or_fail_alloc("tree")
 
-                      ALLOCATE(results(knn+1),STAT=info)
-                      or_fail_alloc("results")
+                 CALL tree%create(Part_src%xp(1:ppm_dim,1:Part_src%Mpart), &
+                 &    info,sort=.TRUE.,rearrange=.TRUE.)
+                 or_fail("tree%create")
 
-                      ldc(1) = knn
-                      ldc(2) = this%Npart
-                      CALL ppm_alloc(Nlist%vlist,ldc,ppm_param_alloc_grow,info)
-                      or_fail_alloc("Nlist%vlist")
+                 ALLOCATE(results(knn+1),STAT=info)
+                 or_fail_alloc("results")
 
-                      ldc(1) = this%Npart
-                      CALL ppm_alloc(Nlist%nvlist,ldc,ppm_param_alloc_grow,info)
-                      or_fail_alloc("Nlist%nvlist")
+                 ldc(1) = knn
+                 ldc(2) = this%Npart
+                 CALL ppm_alloc(Nlist%vlist,ldc,ppm_param_alloc_grow,info)
+                 or_fail_alloc("Nlist%vlist")
 
-                      DO ip=1,this%Npart
-                          CALL kdtree2_n_nearest(tp=tree,qv=this%xp(1:ppm_dim,ip),&
-                              nn=knn+1,results=results)
-                          !remove ip from the list
-                          ineigh=0
-                          DO i=1,knn+1
-                              IF(results(i)%idx.NE.ip) THEN
-                                  ineigh=ineigh+1
-                                  Nlist%vlist(ineigh,ip)=results(i)%idx
-                              ENDIF
-                          ENDDO
-                          Nlist%nvlist(ip)=knn
-                      ENDDO
+                 DO ip=1,this%Npart
+                    CALL kdtree2_n_nearest(tree,this%xp(1:ppm_dim,ip),&
+                    &    knn+1,results,info)
+                    or_fail("kdtree2_n_nearest")
 
-                      CALL kdtree2_destroy(tree)
+                    ! If the tree is not sorted you need to remove the
+                    ! particle ip from the list of neighbors
+                    Nlist%vlist(1:knn,ip)=results(2:knn+1)%idx
+!                     !remove ip from the list
+!                     ineigh=0
+!                     DO i=1,knn+1
+!                        IF (results(i)%idx.NE.ip) THEN
+!                           ineigh=ineigh+1
+!                           Nlist%vlist(ineigh,ip)=results(i)%idx
+!                        ENDIF
+!                     ENDDO
+                 ENDDO
 
-                      DEALLOCATE(results,STAT=info)
-                      or_fail_dealloc("results")
+                 ldc(1) = this%Npart
+                 CALL ppm_alloc(Nlist%nvlist,ldc,ppm_param_alloc_grow,info)
+                 or_fail_alloc("Nlist%nvlist")
+
+                 Nlist%nvlist=knn
+
+                 CALL tree%destroy(info)
+                 or_fail("tree%destroy")
+
+                 DEALLOCATE(tree,STAT=info)
+                 or_fail_dealloc("tree")
+                 NULLIFY(tree)
+
+                 DEALLOCATE(results,STAT=info)
+                 or_fail_dealloc("results")
 #ifdef __MPI
-                      t2 = MPI_WTIME(info)
-                      this%stats%t_kdtree = this%stats%t_kdtree+(t2-t1)
+                 t2 = MPI_WTIME(info)
+                 this%stats%t_kdtree = this%stats%t_kdtree+(t2-t1)
 #endif
-#else
-                      fail("option required the kdtree module.")
-#endif
-      !__WITH_KDTREE
               ELSE
-
-                      IF (xset_neighlists) THEN
-
-                          this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
+                 IF (xset_neighlists) THEN
+                    this%stats%nb_xset_nl = this%stats%nb_xset_nl + 1
 #ifdef __MPI
-                          t1 = MPI_WTIME(info)
+                    t1 = MPI_WTIME(info)
 #endif
-                          CALL ppm_inl_xset_vlist(topoid,this%xp,&
-                          &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart,&
-                          &    Part_src%Mpart,Nlist%cutoff,&
-                          &    lskin,ghostlayer,info,Nlist%vlist,&
-                          &    Nlist%nvlist,lstore)
-                          or_fail("ppm_inl_xset_vlist failed")
+                    CALL ppm_inl_xset_vlist(topoid,this%xp,&
+                    &    this%Npart,this%Mpart,Part_src%xp,Part_src%Npart,&
+                    &    Part_src%Mpart,Nlist%cutoff,&
+                    &    lskin,ghostlayer,info,Nlist%vlist,&
+                    &    Nlist%nvlist,lstore)
+                    or_fail("ppm_inl_xset_vlist failed")
 #ifdef __MPI
-                          t2 = MPI_WTIME(info)
-                          this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
+                    t2 = MPI_WTIME(info)
+                    this%stats%t_xset_nl = this%stats%t_xset_nl + (t2 - t1)
 #endif
-                      ELSE
-                          this%stats%nb_nl = this%stats%nb_nl+1
-
+                 ELSE
+                    this%stats%nb_nl = this%stats%nb_nl+1
 #ifdef __MPI
-                          t1 = MPI_WTIME(info)
+                    t1 = MPI_WTIME(info)
 #endif
-                          CALL ppm_neighlist_vlist(topoid,this%xp,this%Mpart,&
-                          &    Nlist%cutoff,lskin,lsymm,Nlist%vlist,&
-                          &    Nlist%nvlist,info,lstore=lstore)
-                          or_fail("ppm_neighlist_vlist failed")
+                    CALL ppm_neighlist_vlist(topoid,this%xp,this%Mpart,&
+                    &    Nlist%cutoff,lskin,lsymm,Nlist%vlist,&
+                    &    Nlist%nvlist,info,lstore=lstore)
+                    or_fail("ppm_neighlist_vlist failed")
 #ifdef __MPI
-                          t2 = MPI_WTIME(info)
-                          this%stats%t_nl = this%stats%t_nl + (t2 - t1)
+                    t2 = MPI_WTIME(info)
+                    this%stats%t_nl = this%stats%t_nl + (t2 - t1)
 #endif
-                      ENDIF ! XSET
+                 ENDIF ! XSET
               ENDIF
 
               !restore subdomain sizes (revert hack)
               IF (PRESENT(incl_ghosts)) THEN
-                  IF (incl_ghosts) THEN
-                      IF (MK.EQ.ppm_kind_single) THEN
-                          topo%min_subs(:,:) = topo%min_subs(:,:) + topo%ghostsizes
-                          topo%max_subs(:,:) = topo%max_subs(:,:) - topo%ghostsizes
-                      ELSE IF (MK.EQ.ppm_kind_double) THEN
-                          topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
-                          topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
-                      ENDIF
-                      topo => NULL()
-                  ENDIF
+                 IF (incl_ghosts) THEN
+                    IF (MK.EQ.ppm_kind_single) THEN
+                       topo%min_subs(:,:) = topo%min_subs(:,:) + topo%ghostsizes
+                       topo%max_subs(:,:) = topo%max_subs(:,:) - topo%ghostsizes
+                    ELSE IF (MK.EQ.ppm_kind_double) THEN
+                       topo%min_subd(:,:) = topo%min_subd(:,:) + topo%ghostsized
+                       topo%max_subd(:,:) = topo%max_subd(:,:) - topo%ghostsized
+                    ENDIF
+                    topo => NULL()
+                 ENDIF
               ENDIF
 
               !-----------------------------------------------------------------------
@@ -878,19 +873,19 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
               ! DC operators that do not use a xset neighbour list, if they exist,
               ! are no longer valid (they depend on the neighbour lists)
               IF (ASSOCIATED(this%ops)) THEN
-                  op => this%ops%begin()
-                  DO WHILE (ASSOCIATED(op))
-                      IF (.NOT.op%flags(ppm_ops_interp)) THEN
-                          op%flags(ppm_ops_iscomputed) = .FALSE.
-                      ENDIF
-                      op => this%ops%next()
-                  ENDDO
+                 op => this%ops%begin()
+                 DO WHILE (ASSOCIATED(op))
+                    IF (.NOT.op%flags(ppm_ops_interp)) THEN
+                       op%flags(ppm_ops_iscomputed) = .FALSE.
+                    ENDIF
+                    op => this%ops%next()
+                 ENDDO
               ENDIF
 
               ! We want to distinguish between "self" neighbour lists
               ! and cross-set ones.
               IF (ASSOCIATED(Nlist%Part,this)) THEN
-                  this%flags(ppm_part_neighlists) = .TRUE.
+                 this%flags(ppm_part_neighlists) = .TRUE.
               ENDIF
 
               Nlist => NULL()

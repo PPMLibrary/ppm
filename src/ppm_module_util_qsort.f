@@ -43,6 +43,11 @@
             MODULE PROCEDURE ppm_util_qsort_s
             MODULE PROCEDURE ppm_util_qsort_d
             MODULE PROCEDURE ppm_util_qsort_i
+            ! From a list of values generates a sort permutation list
+            MODULE PROCEDURE ppm_util_qsort2_s
+            MODULE PROCEDURE ppm_util_qsort2_d
+            MODULE PROCEDURE ppm_util_qsort2_i
+            ! From a list of values sorts them into ascending order.
          END INTERFACE
 
          !----------------------------------------------------------------------
