@@ -507,7 +507,10 @@
       check_false(<#SIZE(results,1).LT.nn#>, &
       & "KD_TREE_TRANS:  you did not provide enough storage for results(1:nn)")
 
-      CALL sr%pq%create(results)
+      !This part is done only for intel compiler
+      ASSOCIATE(pq_ => sr%pq)
+        CALL pq_%create(results)
+      END ASSOCIATE
 
       CALL DTYPE(search)(tp%root)
 
@@ -580,7 +583,10 @@
       check_false(<#SIZE(results,1).LT.nn#>, &
       & "KD_TREE_TRANS:  you did not provide enough storage for results(1:nn)")
 
-      CALL sr%pq%create(results)
+      !This part is done only for intel compiler
+      ASSOCIATE(pq_ => sr%pq)
+        CALL pq_%create(results)
+      END ASSOCIATE
 
       CALL DTYPE(search)(tp%root)
 
