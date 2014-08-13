@@ -173,8 +173,6 @@ test_suite ppm_module_neighlist_kdtree
     CALL tree%destroy(info)
     Assert_Equal(info,0)
 
-
-
     CALL ppm_util_time(t0)
     CALL Part%create_neighlist(Part,info,skin=0.0_MK)
     CALL ppm_util_time(t1)
@@ -188,6 +186,21 @@ test_suite ppm_module_neighlist_kdtree
 
     Nlist => Part%get_neighlist()
 
+    CALL Part%destroy_neighlist(Nlist,info)
+    Assert_Equal(info,0)
+
+    CALL ppm_util_time(t0)
+    CALL Part%create_neighlist(Part,info,skin=0.0_MK)
+    CALL ppm_util_time(t1)
+    CALL Part%comp_neighlist(info,incl_ghosts=.FALSE.,knn=50)
+    CALL ppm_util_time(t2)
+    stdout('t1-t0'," seconds to create the neighlist.")
+    stdout('t2-t1'," seconds to create Verlet list using the tree.")
+    Assert_Equal(info,0)
+
+    Assert_true(Part%has_neighlist())
+
+    Nlist => Part%get_neighlist()
     knn=50
     ALLOCATE(results(knn+1),resultsb(knn+1),STAT=info)
     Assert_Equal(info,0)

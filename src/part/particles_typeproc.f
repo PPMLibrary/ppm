@@ -573,9 +573,10 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
 
       SUBROUTINE DTYPE(part_neigh_destroy)(this,Nlist,info)
           !!! Destroy a property from an existing particle set
-          CLASS(DTYPE(ppm_t_particles))                        :: this
-          CLASS(DTYPE(ppm_t_neighlist)_),POINTER,INTENT(INOUT) :: Nlist
-          INTEGER,                               INTENT(OUT)   :: info
+          CLASS(DTYPE(ppm_t_particles))                          :: this
+          CLASS(DTYPE(ppm_t_neighlist)_), POINTER, INTENT(INOUT) :: Nlist
+
+          INTEGER,                                 INTENT(  OUT) :: info
 
           start_subroutine("part_neigh_destroy")
 
@@ -3297,16 +3298,34 @@ minclude ppm_create_collection_procedures(DTYPE(particles),DTYPE(particles)_)
       END SUBROUTINE DTYPE(part_map_destroy)
 
 
+      !Yaser
+      !TOCHECK
+      !destroy the link in particle data
       !DESTROY ENTRY
       SUBROUTINE DTYPE(neigh_destroy)(neigh,info)
-          CLASS(DTYPE(ppm_t_neighlist))      :: neigh
-          INTEGER,                                INTENT(  OUT)  :: info
+          CLASS(DTYPE(ppm_t_neighlist))               :: neigh
+
+          INTEGER,                     INTENT(  OUT)  :: info
           !!! Returns status, 0 upon success.
+
+          INTEGER :: ldu(2)
 
           start_subroutine("neigh_destroy")
 
-          IF (ASSOCIATED(neigh%nvlist)) DEALLOCATE(neigh%nvlist,STAT=info)
-          IF (ASSOCIATED(neigh%vlist))  DEALLOCATE(neigh%vlist,STAT=info)
+          IF (ASSOCIATED(neigh%nvlist)) THEN
+             CALL ppm_alloc(neigh%nvlist,ldu,ppm_param_dealloc,info)
+             or_fail_dealloc("neigh%nvlist")
+          ENDIF
+          IF (ASSOCIATED(neigh%vlist)) THEN
+             CALL ppm_alloc(neigh%vlist,ldu,ppm_param_dealloc,info)
+             or_fail_dealloc("neigh%vlist")
+          ENDIF
+
+          neigh%name=''
+          NULLIFY(neigh%Part)
+          neigh%uptodate = .FALSE.
+          neigh%nneighmin=0
+          neigh%nneighmax=0
 
           end_subroutine()
       END SUBROUTINE DTYPE(neigh_destroy)
