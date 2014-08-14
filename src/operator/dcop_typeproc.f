@@ -34,7 +34,7 @@
           INTEGER,      DIMENSION(:,:), POINTER      :: vlist
           REAL(MK),     DIMENSION(:),   POINTER      :: nn2
           REAL(MK),     DIMENSION(:,:), POINTER      :: xp => NULL()
-          INTEGER   :: ip,iq,ineigh
+          INTEGER   :: ipart,iq,ineigh
           REAL(MK)  :: dist2
           !nearest-neighbor distance, for interpolating operators. Either they
           !were computed already, or this has to be done now.
@@ -95,12 +95,12 @@
                    CALL Part_src%get_vlist(nvlist,vlist,info)
                    or_fail("could not get pointer to Verlet lists")
 
-                   DO ip=1,Part_src%Npart
-                      nn2(ip) = HUGE(1._MK)
-                      DO ineigh=1,nvlist(ip)
-                         iq=vlist(ineigh,ip)
-                         dist2 = SUM((xp(1:ppm_dim,iq)-xp(1:ppm_dim,ip))**2)
-                         nn2(ip) = MIN(nn2(ip),dist2)
+                   DO ipart=1,Part_src%Npart
+                      nn2(ipart) = HUGE(1._MK)
+                      DO ineigh=1,nvlist(ipart)
+                         iq=vlist(ineigh,ipart)
+                         dist2 = SUM((xp(1:ppm_dim,iq)-xp(1:ppm_dim,ipart))**2)
+                         nn2(ipart) = MIN(nn2(ipart),dist2)
                       ENDDO
                    ENDDO
 
@@ -234,7 +234,7 @@
 
         INTEGER, DIMENSION(:),   POINTER :: nvlist
         INTEGER, DIMENSION(:,:), POINTER :: vlist
-        INTEGER                          :: ip,iq,j
+        INTEGER                          :: ipart,iq,j
         INTEGER                          :: ineigh,lda,np_target
 
         LOGICAL                                    :: vector_operator
@@ -387,13 +387,13 @@
                  CALL Part_to%get(data_to,dwpv,info,with_ghosts=with_ghosts)
                  or_fail("Cannot access data_to on this particle set")
 
-                 FORALL (j=1:lda,ip=1:np_target) dwpv(j,ip) = 0._MK
+                 FORALL (j=1:lda,ipart=1:np_target) dwpv(j,ipart) = 0._MK
               ELSE
                  NULLIFY(dwps)
                  CALL Part_to%get(data_to,dwps,info,with_ghosts=with_ghosts)
                  or_fail("Cannot access data_to on this particle set")
 
-                 FORALL (ip=1:np_target) dwps(ip)=0._MK
+                 FORALL (ipart=1:np_target) dwps(ipart)=0._MK
               ENDIF
 
               eta => this%ker(:,1:np_target)
@@ -409,11 +409,12 @@
                        CALL Part_src%get(data_src,wpv2,info,&
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wpv2")
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip) = dwpv(j,ip)+wpv2(j,iq) * eta(j+(ineigh-1)*lda,ip)
+                                dwpv(j,ipart) = dwpv(j,ipart)+ &
+                                & wpv2(j,iq) * eta(j+(ineigh-1)*lda,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -422,11 +423,11 @@
                        CALL Part_src%get(data_src,wps2,info,&
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wps2")
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip) = dwpv(j,ip)+wps2(iq) * eta(j+(ineigh-1)*lda,ip)
+                                dwpv(j,ipart) = dwpv(j,ipart)+wps2(iq) * eta(j+(ineigh-1)*lda,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -438,11 +439,11 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wpv2")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip) = dwpv(j,ip) + wpv2(j,iq) * eta(ineigh,ip)
+                                dwpv(j,ipart) = dwpv(j,ipart) + wpv2(j,iq) * eta(ineigh,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -452,10 +453,10 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wps2")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
-                             dwps(ip) = dwps(ip) + wps2(iq) * eta(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
+                             dwps(ipart) = dwps(ipart) + wps2(iq) * eta(ineigh,ipart)
                           ENDDO
                        ENDDO
                     ENDIF
@@ -471,12 +472,12 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wpv1")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip) = dwpv(j,ip)+(wpv1(j,iq)+ &
-                                & sig*(wpv1(j,ip)))*eta(j+(ineigh-1)*lda,ip)
+                                dwpv(j,ipart) = dwpv(j,ipart)+(wpv1(j,iq)+ &
+                                & sig*(wpv1(j,ipart)))*eta(j+(ineigh-1)*lda,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -486,12 +487,12 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wps1")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip)=dwpv(j,ip)+(wps1(iq)+sig*(wps1(ip)))* &
-                                & eta(j+(ineigh-1)*lda,ip)
+                                dwpv(j,ipart)=dwpv(j,ipart)+(wps1(iq)+sig*(wps1(ipart)))* &
+                                & eta(j+(ineigh-1)*lda,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -503,12 +504,12 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wpv1")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
                              DO j=1,lda
-                                dwpv(j,ip) = dwpv(j,ip)+(wpv1(j,iq)+sig*(wpv1(j,ip)))* &
-                                & eta(ineigh,ip)
+                                dwpv(j,ipart) = dwpv(j,ipart)+(wpv1(j,iq)+sig*(wpv1(j,ipart)))* &
+                                & eta(ineigh,ipart)
                              ENDDO
                           ENDDO
                        ENDDO
@@ -518,10 +519,10 @@
                        &    with_ghosts=.TRUE.,read_only=.TRUE.)
                        or_fail("could not access wps1")
 
-                       DO ip = 1,np_target
-                          DO ineigh = 1,nvlist(ip)
-                             iq = vlist(ineigh,ip)
-                             dwps(ip) = dwps(ip)+(wps1(iq)+sig*(wps1(ip)))*eta(ineigh,ip)
+                       DO ipart = 1,np_target
+                          DO ineigh = 1,nvlist(ipart)
+                             iq = vlist(ineigh,ipart)
+                             dwps(ipart) = dwps(ipart)+(wps1(iq)+sig*(wps1(ipart)))*eta(ineigh,ipart)
                           ENDDO
                        ENDDO
                     ENDIF
