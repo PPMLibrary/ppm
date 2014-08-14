@@ -164,7 +164,7 @@ real(mk)                         :: eps
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
         allocate(pidx(npart))
         forall(k=1:npart) pidx(k) = k
@@ -232,7 +232,7 @@ real(mk)                         :: eps
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
         allocate(pidx(npart))
         forall(k=1:npart) pidx(k) = k
@@ -301,7 +301,7 @@ real(mk)                         :: eps
         call ppm_topo_check(topoid,p,npart,ok,info)
 
         assert_true(ok)
-        !call ppm_dbg_print_d(topoid,gl,1,1,info,p,npart)
+        !call ppm_dbg_print(topoid,gl,1,1,info,p,npart)
 
         call ppm_map_part_ghost_get(topoid,p,ndim,npart,1,gl,info)
         call ppm_map_part_push(w,npart,info)
@@ -383,7 +383,7 @@ real(mk)                         :: eps
         call ppm_map_part_pop(p,ndim,npart,mpart,info)
 
         call ppm_topo_check(topoid,p,npart,ok,info)
-        !call ppm_dbg_print_d(topoid,gl+skin,1,1,info,p,npart,mpart)
+        !call ppm_dbg_print(topoid,gl+skin,1,1,info,p,npart,mpart)
 
         call ppm_neighlist_vlist(topoid,p,mpart,gl,skin,.TRUE.,&
         &                        vlist,nvlist,info)

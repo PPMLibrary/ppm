@@ -222,7 +222,9 @@ real(mk),dimension(ndim)         :: offset
         call Field2%map_ghost_push(Mesh1,info)
         Assert_Equal(info,0)
 
-        call Mesh1%map_send(info)
+        !call Mesh1%map_send(info)
+        !non-blocking send
+        CALL Mesh1%map_isend(info)
         Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
@@ -281,7 +283,9 @@ real(mk),dimension(ndim)         :: offset
         CALL Field2%map_push(Mesh1,info)
         Assert_Equal(info,0)
 
-        CALL Mesh1%map_send(info)
+        !CALL Mesh1%map_send(info)
+        !non-blocking send
+        CALL Mesh1%map_isend(info)
         Assert_Equal(info,0)
 
         CALL Field2%map_pop(Mesh2,info)
@@ -300,7 +304,9 @@ real(mk),dimension(ndim)         :: offset
         call Field2%map_ghost_push(Mesh2,info)
         Assert_Equal(info,0)
 
-        call Mesh2%map_send(info)
+        !call Mesh2%map_send(info)
+        !non-blocking send
+        CALL Mesh2%map_isend(info)
         Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh2,info)

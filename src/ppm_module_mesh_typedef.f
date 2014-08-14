@@ -103,10 +103,11 @@ minclude ppm_create_collection(A_subpatch,A_subpatch,generate="extend")
           PROCEDURE :: map_ghost_put         => equi_mesh_map_ghost_put
           PROCEDURE :: map_ghost_push        => equi_mesh_map_push
           PROCEDURE :: map_ghost_pop         => equi_mesh_map_pop
-          PROCEDURE :: map_send              => equi_mesh_map_send
 
           PROCEDURE :: map                   => equi_mesh_map_global
           PROCEDURE :: map_push              => equi_mesh_map_push
+          PROCEDURE :: map_send              => equi_mesh_map_send
+          PROCEDURE :: map_isend             => equi_mesh_map_isend
           PROCEDURE :: map_pop               => equi_mesh_map_pop
 
           PROCEDURE :: print_vtk             => equi_mesh_print_vtk
@@ -1673,6 +1674,9 @@ minclude ppm_get_field_template(4,l)
           !p_idx = field%M%vec(this%ID)%t%p_idx
           p_idx = field%get_pid(this)
 
+          !TODO
+          !TOCHCEK
+          !complete the datatype
           SELECT CASE (ppm_dim)
           CASE (2)
               IF (field%lda.EQ.1) THEN
@@ -1707,7 +1711,7 @@ minclude ppm_get_field_template(4,l)
                  END SELECT
               ENDIF
 
-          CASE DEFAULT
+          CASE (3)
               IF (field%lda.EQ.1) THEN
                  SELECT CASE (field%data_type)
                  CASE (ppm_type_real_single)
@@ -1744,7 +1748,6 @@ minclude ppm_get_field_template(4,l)
 
           end_subroutine()
       END SUBROUTINE equi_mesh_map_push
-
 
       SUBROUTINE equi_mesh_map_pop(this,field,info,poptype)
           !!! Push field data onto the mesh mappings buffers
@@ -1976,6 +1979,7 @@ minclude ppm_get_field_template(4,l)
 #include "mesh/mesh_map_ghost_get.f"
 #include "mesh/mesh_map_ghost_put.f"
 #include "mesh/mesh_map_send.f"
+#include "mesh/mesh_map_isend.f"
 #include "mesh/mesh_map_global.f"
 
 #define __SFIELD 1

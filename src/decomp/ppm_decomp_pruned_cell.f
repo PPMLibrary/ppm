@@ -205,14 +205,25 @@
          ENDDO
 
       END SELECT
-
 #ifdef __MPI
+#ifdef __MPI3
       !-------------------------------------------------------------------------
       !  Add up the number of particles in each box (the the total number of
       !  particles)
       !-------------------------------------------------------------------------
       CALL MPI_Iallreduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,request,info)
       or_fail_MPI("MPI_Iallreduce")
+#else
+      !-------------------------------------------------------------------------
+      !  Add up the number of particles in each box (the the total number of
+      !  particles)
+      !-------------------------------------------------------------------------
+      CALL MPI_AllReduce(npbx,npbxg,Mm,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+      or_fail_MPI("MPI_Allreduce")
+      DO k=1,Mm
+         npbx(k) = npbxg(k)
+      ENDDO
+#endif
 #endif
 
       !-------------------------------------------------------------------------
@@ -227,7 +238,7 @@
       CALL ppm_alloc(max_sub,ldc,iopt,info)
       or_fail_alloc('allocation of max_sub failed')
 
-#ifdef __MPI
+#ifdef __MPI3
       CALL MPI_Wait(request,status,info)
       or_fail_MPI("MPI_Wait")
 

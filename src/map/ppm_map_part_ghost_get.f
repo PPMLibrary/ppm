@@ -140,7 +140,7 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK), DIMENSION(:,:), POINTER :: xt  => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: xt => NULL()
       ! position of potential ghosts
       REAL(MK), DIMENSION(:,:), POINTER :: xt_offset => NULL()
       REAL(MK), DIMENSION(:,:), POINTER :: xt_off_fac => NULL()
@@ -1040,15 +1040,15 @@
             CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
             or_fail_alloc('global send buffer ppm_ghost_offset_facd',ppm_error=ppm_error_fatal)
 
-        CASE DEFAULT
-           IF (SIZE(ppm_ghost_offsetd).NE.SIZE(ppm_sendbufferd)) THEN
-              iopt=ppm_param_alloc_fit_preserve
-              ldu(1)=SIZE(ppm_sendbufferd)
-              CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
-              or_fail_alloc('global send buffer ppm_ghost_offsetd',ppm_error=ppm_error_fatal)
-              CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
-              or_fail_alloc('global send buffer ppm_ghost_offset_facd',ppm_error=ppm_error_fatal)
-           ENDIF
+         CASE DEFAULT
+            IF (SIZE(ppm_ghost_offsetd).NE.SIZE(ppm_sendbufferd)) THEN
+               iopt=ppm_param_alloc_fit_preserve
+               ldu(1)=SIZE(ppm_sendbufferd)
+               CALL ppm_alloc(ppm_ghost_offsetd,ldu,iopt,info)
+               or_fail_alloc('global send buffer ppm_ghost_offsetd',ppm_error=ppm_error_fatal)
+               CALL ppm_alloc(ppm_ghost_offset_facd,ldu,iopt,info)
+               or_fail_alloc('global send buffer ppm_ghost_offset_facd',ppm_error=ppm_error_fatal)
+            ENDIF
 
         END SELECT
 

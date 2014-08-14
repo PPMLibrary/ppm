@@ -36,7 +36,6 @@
       MODULE ppm_module_topo_get
       !!! This module provides the routines to read an internally stored topology.
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
 
          !----------------------------------------------------------------------

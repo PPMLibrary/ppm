@@ -88,23 +88,23 @@
 
 #if   __DIM == __SFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:)   , POINTER         :: fdata
+      INTEGER , DIMENSION(:,:,:)   , POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:)   , POINTER         :: fdata
+      LOGICAL , DIMENSION(:,:,:)   , POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:), POINTER         :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:)   , POINTER         :: fdata
+      REAL(MK), DIMENSION(:,:,:)   , POINTER :: fdata
 #endif
 #elif __DIM == __VFIELD
 #if   __KIND == __INTEGER
-      INTEGER , DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      INTEGER , DIMENSION(:,:,:,:)   , POINTER :: fdata
 #elif __KIND == __LOGICAL
-      LOGICAL , DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      LOGICAL , DIMENSION(:,:,:,:)   , POINTER :: fdata
 #elif __KIND == __SINGLE_PRECISION_COMPLEX | __KIND == __DOUBLE_PRECISION_COMPLEX
-      COMPLEX(MK), DIMENSION(:,:,:,:), POINTER       :: fdata
+      COMPLEX(MK), DIMENSION(:,:,:,:), POINTER :: fdata
 #else
-      REAL(MK), DIMENSION(:,:,:,:)   , POINTER       :: fdata
+      REAL(MK), DIMENSION(:,:,:,:)   , POINTER :: fdata
 #endif
 #endif
       !!! Field data.
@@ -132,8 +132,6 @@
       INTEGER, PARAMETER    :: lda = 1
 #endif
 
-      CHARACTER(LEN=ppm_char) :: mesg
-
       LOGICAL :: found_patch
       !-------------------------------------------------------------------------
       !  Externals
@@ -148,19 +146,18 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info.NE.0) GOTO 9999
       ENDIF
 
       ! skip if buffer empty
-      IF (ppm_buffer_set .LT. 1) THEN
-        IF (ppm_debug.GT.1) THEN
-            info = ppm_error_notice
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-     &          'Buffer is empty: skipping pop!',__LINE__,info)
-             info = 0
-        ENDIF
-        GOTO 9999
+      IF (ppm_buffer_set.LT.1) THEN
+         IF (ppm_debug.GT.1) THEN
+            fail('Buffer is empty: skipping pop!',ppm_err_buffer_empt, &
+            & exit_point=no,ppm_error=ppm_error_notice)
+            info = 0
+         ENDIF
+         GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -178,13 +175,9 @@
       !-------------------------------------------------------------------------
       !  Check what kind of pop is needed (replace or add)
       !-------------------------------------------------------------------------
-      IF (ppm_map_type .EQ. ppm_param_map_init) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,caller,  &
-         & 'mesh_map_pop cannot be called after ghost_init',__LINE__,info)
-         CALL ppm_error(ppm_err_argument,caller,  &
-         &  'mesh_map_ghost_init must not be called directly by the user',__LINE__,info)
-         GOTO 9999
+      IF (ppm_map_type.EQ.ppm_param_map_init) THEN
+         fail('mesh_map_pop cannot be called after ghost_init',exit_point=no)
+         fail('mesh_map_ghost_init must not be called directly by the user')
       ELSE
          IF (PRESENT(poptype)) THEN
             rtype = poptype
@@ -208,8 +201,7 @@
       edim = bdim
 #endif
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(2(A,I3))') 'bdim=',edim,'    lda=',lda
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(2(A,I3))',"bdim=",edim,"    lda=",lda)
       ENDIF
 #if   __DIM == __VFIELD
       IF (edim.NE.lda) THEN
@@ -227,46 +219,27 @@
       btype = ppm_buffer_type(ppm_buffer_set)
 #if    __KIND == __SINGLE_PRECISION
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single into single ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single into single ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double into double ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double into double ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_single) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-single-complex into single-complex',&
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-single-complex into single-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
       IF (btype.NE.ppm_kind_double) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-double-complex into double-complex',&
-     &       __LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-double-complex into double-complex',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __INTEGER
       IF (btype.NE.ppm_integer) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-integer into integer ',__LINE__,info)
-         GOTO 9999
+         fail('trying to pop a non-integer into integer ',ppm_err_wrong_prec)
       ENDIF
 #elif  __KIND == __LOGICAL
       IF (btype.NE.ppm_logical) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_wrong_prec,caller,    &
-     &       'trying to pop a non-logical into logical ',__LINE__,info)
+         fail('trying to pop a non-logical into logical ',ppm_err_wrong_prec)
       ENDIF
 #endif
 
@@ -310,28 +283,24 @@
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
-      IF (Mdata .EQ. 0) THEN
-          IF (ppm_debug.GT.0) THEN
-              CALL ppm_write(ppm_rank,caller,   &
-     &            'There is no data to be received',info)
-          ENDIF
-          GOTO 8888
+      IF (Mdata.EQ.0) THEN
+         IF (ppm_debug.GT.0) THEN
+            stdout("There is no data to be received")
+         ENDIF
+         GOTO 8888
       ENDIF
 
       !-------------------------------------------------------------------------
       !  Decrement the pointer into the receive buffer
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(2(A,I9))') 'ppm_nrecvbuffer = ',ppm_nrecvbuffer,   &
-     &        ' / Mdata*bdim = ',Mdata*bdim
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(2(A,I9))',"ppm_nrecvbuffer = ",ppm_nrecvbuffer," / Mdata*bdim = ",'Mdata*bdim')
       ENDIF
       ppm_nrecvbuffer = ppm_nrecvbuffer - Mdata*bdim
 
       ibuffer = ppm_nrecvbuffer
       IF (ppm_debug.GT.1) THEN
-          WRITE(mesg,'(A,I9)') 'ibuffer = ',ibuffer
-          CALL ppm_write(ppm_rank,caller,mesg,info)
+         stdout_f('(A,I9)',"ibuffer = ",ibuffer)
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -348,8 +317,9 @@
             !-------------------------------------------------------------------
             !  Get the number of mesh points in this block
             !-------------------------------------------------------------------
-            Mdata = Mdata + (ppm_mesh_isendblksize(1,j)*         &
-     &         ppm_mesh_isendblksize(2,j) * ppm_mesh_isendblksize(3,j))
+            Mdata = Mdata + (ppm_mesh_isendblksize(1,j)* &
+            &                ppm_mesh_isendblksize(2,j)* &
+            &                ppm_mesh_isendblksize(3,j))
          ENDDO
       ENDDO
       ppm_nsendbuffer = ppm_nsendbuffer - ppm_buffer_dim(ppm_buffer_set)*Mdata
@@ -358,13 +328,11 @@
       !  Debug output
       !-------------------------------------------------------------------------
       IF (ppm_debug.GT.0) THEN
-          IF (rtype .EQ. ppm_param_pop_replace) THEN
-              CALL ppm_write(ppm_rank,caller,     &
-     &           'Replacing current field values',info)
-          ELSEIF(rtype .EQ. ppm_param_pop_add) THEN
-              CALL ppm_write(ppm_rank,caller,     &
-     &           'Adding to current field values',info)
-          ENDIF
+         IF (rtype .EQ. ppm_param_pop_replace) THEN
+            stdout("Replacing current field values")
+         ELSEIF(rtype .EQ. ppm_param_pop_add) THEN
+            stdout("Adding to current field values")
+         ENDIF
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -418,11 +386,11 @@
                         !------------------------------------------------
                         !  Reallocate array if needed
                         !------------------------------------------------
-                        IF ((ppm_map_type .EQ. ppm_param_map_ghost_get) &
+                        IF ((ppm_map_type.EQ.ppm_param_map_ghost_get) &
                         & .OR.   &
-                        &   (ppm_map_type .EQ. ppm_param_map_ghost_put) &
+                        &   (ppm_map_type.EQ.ppm_param_map_ghost_put) &
                         & .OR.   &
-                        &    (rtype .EQ. ppm_param_pop_add)) THEN
+                        &    (rtype.EQ.ppm_param_pop_add)) THEN
                         !------------------------------------------------
                         !  Preserve old fields if this is to receive ghosts
                         !  or to add contributions
@@ -489,38 +457,22 @@
                            stdout("p%istart",'p%istart')
                            stdout("p%iend",'p%iend')
                            stdout("patchid = ",patchid)
-                           WRITE(mesg,'(A,3I4)') 'start: ',             &
-                           &  ppm_mesh_irecvblkstart(1,j),&
-                           &  ppm_mesh_irecvblkstart(2,j),&
-                           &  ppm_mesh_irecvblkstart(3,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,3I4)') 'size: ',             &
-                           &  ppm_mesh_irecvblksize(1,j),&
-                           &  ppm_mesh_irecvblksize(2,j),&
-                           &  ppm_mesh_irecvblksize(3,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,3I4)')'size_b: ',&
-                           xhi-xlo+1,yhi-ylo+1,zhi-zlo+1
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,3I4)') 'mesh offset: ',&
-                           mofs(1),mofs(2),mofs(3)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
+                           stdout_f('(A,3I4)',"start: ",'ppm_mesh_irecvblkstart(1:3,j)')
+                           stdout_f('(A,3I4)',"size: ",'ppm_mesh_irecvblksize(1:3,j)')
+                           stdout_f('(A,3I4)',"size_b: ",'xhi-xlo+1','yhi-ylo+1','zhi-zlo+1')
+                           stdout_f('(A,3I4)',"mesh offset: ",'mofs(1:3)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,2I4)',"zlo, zhi: ",zlo,zhi)
+                           stdout_f('(A,I1)',"buffer dim: ",edim)
                         ENDIF
 
                         !For ghost_get:
                         !check that real mesh nodes are not touched
-                        check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_get .AND. (xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2) .AND. zhi.GE.1 .AND. zlo.LE.p%nnodes(3))#>)
+                        check_false(<#ppm_map_type.EQ.ppm_param_map_ghost_get .AND. (xhi.GE.1 .AND. xlo.LE.p%nnodes(1) .AND. yhi.GE.1 .AND. ylo.LE.p%nnodes(2) .AND. zhi.GE.1 .AND. zlo.LE.p%nnodes(3))#>)
                         !for ghost_put:
                         !check that ghost mesh nodes are not touched
-                        check_false(<#ppm_map_type .EQ. ppm_param_map_ghost_put .AND.  (xhi.LT.1 .OR. xlo.GT.p%nnodes(1) .OR. yhi.LT.1 .OR. ylo.GT.p%nnodes(2) .OR. zhi.LT.1 .OR. zlo.GT.p%nnodes(3))#>)
+                        check_false(<#ppm_map_type.EQ.ppm_param_map_ghost_put .AND.  (xhi.LT.1 .OR. xlo.GT.p%nnodes(1) .OR. yhi.LT.1 .OR. ylo.GT.p%nnodes(2) .OR. zhi.LT.1 .OR. zlo.GT.p%nnodes(3))#>)
                         !check that we dont access out-of-bounds elements
                         check_true(<#(xlo.GE.p%lo_a(1))#>)
                         check_true(<#(xhi.LE.p%hi_a(1))#>)
@@ -540,8 +492,8 @@
                    stdout("patchid = ",patchid)
                    stdout("patchid/h = ",'(patchid-1._mk)*this%h(1:ppm_dim)')
                    stdout("h = ",'this%h(1:ppm_dim)')
-                   stdout("this%subpatch_by_sub(jsub)%nsubpatch = ",&
-                          'this%subpatch_by_sub(jsub)%nsubpatch')
+                   stdout("this%subpatch_by_sub(jsub)%nsubpatch = ", &
+                   &      'this%subpatch_by_sub(jsub)%nsubpatch')
                    stdout("min_sub(jsub)=",'target_topo%min_subd(1:ppm_dim,jsub)')
                    stdout("max_sub(jsub)=",'target_topo%max_subd(1:ppm_dim,jsub)')
                    fail("could not find a patch on this sub with the right global id")
@@ -555,8 +507,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=1
                   !-------------------------------------------------------------
-                  IF (edim .EQ. 1) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  IF (edim.EQ.1) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -593,7 +545,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -641,8 +593,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=2
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 2) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.2) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -703,7 +655,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -782,8 +734,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=3
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 3) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.3) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -868,7 +820,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -978,8 +930,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=4
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 4) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.4) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1088,7 +1040,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1229,8 +1181,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=5
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 5) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.5) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1363,7 +1315,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1536,7 +1488,7 @@
                   !  For edim.GT.5 the vector length will be edim !!
                   !-------------------------------------------------------------
                   ELSE
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1575,7 +1527,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1637,7 +1589,7 @@
 #else
                               ibuffer = ibuffer + 1
 #endif
-                              IF (rtype .EQ. ppm_param_pop_replace) THEN
+                              IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __SINGLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =     &
      &                              REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -1663,7 +1615,7 @@
                                     fdata(k,imesh,jmesh,kmesh) = .FALSE.
                                  ENDIF
 #endif
-                              ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                              ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
 #if    __KIND == __SINGLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =   &
      &                              fdata(k,imesh,jmesh,kmesh)+ &
@@ -1711,7 +1663,7 @@
                ENDIF            ! PRESENT(mask)
 #elif __DIM == __SFIELD
                IF (.NOT.PRESENT(mask)) THEN
-                  IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
@@ -1747,7 +1699,7 @@
                         ENDDO
                      ENDDO
                         ENDDO
-                  ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                  ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
@@ -1797,7 +1749,7 @@
 #else
                            ibuffer = ibuffer + 1
 #endif
-                           IF (rtype .EQ. ppm_param_pop_replace) THEN
+                           IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __SINGLE_PRECISION
                               fdata(imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -1822,7 +1774,7 @@
                                  fdata(imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
 #endif
-                           ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                           ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
 #if    __KIND == __SINGLE_PRECISION
                               fdata(imesh,jmesh,kmesh) = fdata(imesh,jmesh,kmesh)+&
      &                           REAL(ppm_recvbufferd(ibuffer),ppm_kind_single)
@@ -1897,28 +1849,17 @@
                xhi = xlo+ppm_mesh_irecvblksize(1,j)-1
                yhi = ylo+ppm_mesh_irecvblksize(2,j)-1
                IF (ppm_debug.GT.1) THEN
-                   WRITE(mesg,'(A,2I4)') 'start: ',             &
-     &                 ppm_mesh_irecvblkstart(1,j),ppm_mesh_irecvblkstart(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'size: ',             &
-     &                 ppm_mesh_irecvblksize(1,j),ppm_mesh_irecvblksize(2,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'mesh offset: ',mofs(1),mofs(2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',edim
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,3I4)',"start: ",'ppm_mesh_irecvblkstart(1:3,j)')
+                  stdout_f('(A,3I4)',"size: ",'ppm_mesh_irecvblksize(1:3,j)')
+                  stdout_f('(A,3I4)',"mesh offset: ",'mofs(1:3)')
+                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                  stdout_f('(A,2I4)',"zlo, zhi: ",zlo,zhi)
+                  stdout_f('(A,I1)',"buffer dim: ",edim)
 #if   __DIM == __VFIELD
-                   WRITE(mesg,'(A,2I4)') 'SIZE(fdata): ',SIZE(fdata,2),  &
-     &                 SIZE(fdata,3)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,3I4)',"SIZE(fdata): ",'SIZE(fdata,2)','SIZE(fdata,3)','SIZE(fdata,4)')
 #elif __DIM == __SFIELD
-                   WRITE(mesg,'(A,2I4)') 'SIZE(fdata): ',SIZE(fdata,1),  &
-     &                 SIZE(fdata,2)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,3I4)',"SIZE(fdata): ",'SIZE(fdata,1)','SIZE(fdata,2)','SIZE(fdata,3)')
 #endif
                ENDIF
 #if   __DIM == __VFIELD
@@ -1929,8 +1870,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=1
                   !-------------------------------------------------------------
-                  IF (edim .EQ. 1) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  IF (edim.EQ.1) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -1967,7 +1908,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2015,8 +1956,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=2
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 2) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.2) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2077,7 +2018,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2156,8 +2097,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=3
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 3) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.3) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2242,7 +2183,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2352,8 +2293,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=4
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 4) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.4) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2462,7 +2403,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2603,8 +2544,8 @@
                   !-------------------------------------------------------------
                   !  Unrolled for edim=5
                   !-------------------------------------------------------------
-                  ELSEIF (edim .EQ. 5) THEN
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  ELSEIF (edim.EQ.5) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2737,7 +2678,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2910,7 +2851,7 @@
                   !  For edim.GT.5 the vector length will be edim !!
                   !-------------------------------------------------------------
                   ELSE
-                     IF (rtype .EQ. ppm_param_pop_replace) THEN
+                     IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -2949,7 +2890,7 @@
                            ENDDO
                         ENDDO
                         ENDDO
-                     ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                     ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                         DO jmesh=ylo,yhi
                            DO imesh=xlo,xhi
@@ -3011,7 +2952,7 @@
 #else
                               ibuffer = ibuffer + 1
 #endif
-                              IF (rtype .EQ. ppm_param_pop_replace) THEN
+                              IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __DOUBLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =     &
      &                              REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -3037,7 +2978,7 @@
                                     fdata(k,imesh,jmesh,kmesh) = .FALSE.
                                  ENDIF
 #endif
-                              ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                              ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
 #if    __KIND == __DOUBLE_PRECISION
                                  fdata(k,imesh,jmesh,kmesh) =    &
      &                              fdata(k,imesh,jmesh,kmesh) + &
@@ -3085,7 +3026,7 @@
                ENDIF            ! PRESENT(mask)
 #elif __DIM == __SFIELD
                IF (.NOT.PRESENT(mask)) THEN
-                  IF (rtype .EQ. ppm_param_pop_replace) THEN
+                  IF (rtype.EQ.ppm_param_pop_replace) THEN
                         DO kmesh=zlo,zhi
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
@@ -3122,7 +3063,7 @@
                         ENDDO
                      ENDDO
                         ENDDO
-                  ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                  ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
                         DO kmesh=zlo,zhi
                      DO jmesh=ylo,yhi
                         DO imesh=xlo,xhi
@@ -3177,7 +3118,7 @@
 #else
                            ibuffer = ibuffer + 1
 #endif
-                           IF (rtype .EQ. ppm_param_pop_replace) THEN
+                           IF (rtype.EQ.ppm_param_pop_replace) THEN
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(imesh,jmesh,kmesh) =     &
      &                           REAL(ppm_recvbuffers(ibuffer),ppm_kind_double)
@@ -3203,7 +3144,7 @@
                                  fdata(imesh,jmesh,kmesh) = .FALSE.
                               ENDIF
 #endif
-                           ELSEIF (rtype .EQ. ppm_param_pop_add) THEN
+                           ELSEIF (rtype.EQ.ppm_param_pop_add) THEN
 #if    __KIND == __DOUBLE_PRECISION
                               fdata(imesh,jmesh,kmesh) =    &
      &                           fdata(imesh,jmesh,kmesh) + &
@@ -3263,18 +3204,14 @@
       !-------------------------------------------------------------------------
       !  Deallocate the receive buffer if all sets have been poped
       !-------------------------------------------------------------------------
-      IF (ppm_buffer_set .LT. 1) THEN
-          iopt = ppm_param_dealloc
-          IF (ppm_kind .EQ. ppm_kind_single) THEN
-              CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
-          ELSE
-              CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
-          ENDIF
-          IF (info .NE. 0) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_alloc,caller,     &
-     &            'receive buffer PPM_RECVBUFFER',__LINE__,info)
-          ENDIF
+      IF (ppm_buffer_set.LT.1) THEN
+         iopt = ppm_param_dealloc
+         IF (ppm_kind.EQ.ppm_kind_single) THEN
+            CALL ppm_alloc(ppm_recvbuffers,ldu,iopt,info)
+         ELSE
+            CALL ppm_alloc(ppm_recvbufferd,ldu,iopt,info)
+         ENDIF
+         or_fail_dealloc('receive buffer PPM_RECVBUFFER')
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -3292,30 +3229,21 @@
       CONTAINS
       SUBROUTINE check
 #if   __DIM == __VFIELD
-          IF (lda .LT. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be >0 for vector data',__LINE__,info)
-              GOTO 7777
+          IF (lda.LT.1) THEN
+             fail('lda must be >0 for vector data',exit_point=7777)
           ENDIF
 #elif __DIM == __SFIELD
-          IF (lda .NE. 1) THEN
-              info = ppm_error_error
-              CALL ppm_error(ppm_err_argument,caller,  &
-     &            'lda must be =1 for scalar data',__LINE__,info)
-              GOTO 7777
+          IF (lda.NE.1) THEN
+             fail('lda must be =0 for scalar data',exit_point=7777)
           ENDIF
 #endif
           IF (PRESENT(poptype)) THEN
-              IF ((poptype .NE. ppm_param_pop_replace) .AND.     &
-     &            (poptype .NE. ppm_param_pop_add)) THEN
-                  info = ppm_error_error
-                  CALL ppm_error(ppm_err_argument,caller,  &
-     &                'Unknown pop type specified',__LINE__,info)
-                  GOTO 7777
-              ENDIF
+             IF ((poptype.NE.ppm_param_pop_replace) .AND.     &
+             &  (poptype.NE.ppm_param_pop_add)) THEN
+                fail('Unknown pop type specified',exit_point=7777)
+             ENDIF
           ENDIF
- 7777     CONTINUE
+      7777 CONTINUE
       END SUBROUTINE check
       SUBROUTINE check_two
           IF (PRESENT(mask)) THEN
@@ -3334,17 +3262,17 @@
                       zhi = this%nnodes(3,isub)
                   ENDIF
               ENDDO
-              IF (SIZE(mask,1) .LT. xhi) THEN
-                  fail("x dimension of mask does not match mesh",exit_point=6666)
+              IF (SIZE(mask,1).LT.xhi) THEN
+                 fail("x dimension of mask does not match mesh",exit_point=6666)
               ENDIF
-              IF (SIZE(mask,2) .LT. yhi) THEN
-                  fail("y dimension of mask does not match mesh",exit_point=6666)
+              IF (SIZE(mask,2).LT.yhi) THEN
+                 fail("y dimension of mask does not match mesh",exit_point=6666)
               ENDIF
-              IF (SIZE(mask,3) .LT. zhi) THEN
-                  fail("z dimension of mask does not match mesh",exit_point=6666)
+              IF (SIZE(mask,3).LT.zhi) THEN
+                 fail("z dimension of mask does not match mesh",exit_point=6666)
               ENDIF
           ENDIF
- 6666     CONTINUE
+     6666 CONTINUE
      END SUBROUTINE check_two
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION

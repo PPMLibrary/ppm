@@ -81,6 +81,7 @@ minclude ppm_create_collection(DTYPE(neighlist),DTYPE(neighlist),generate="exten
           PROCEDURE :: map_positions            => DTYPE(part_map_positions)
           PROCEDURE :: map_push                 => DTYPE(part_map_push)
           PROCEDURE :: map_send                 => DTYPE(part_map_send)
+          PROCEDURE :: map_isend                => DTYPE(part_map_isend)
           PROCEDURE :: map_pop                  => DTYPE(part_map_pop)
           PROCEDURE :: map_pop_positions        => DTYPE(part_map_pop_positions)
 

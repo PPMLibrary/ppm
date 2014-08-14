@@ -27,7 +27,6 @@
       ! CH-8092 Zurich, Switzerland
       !-------------------------------------------------------------------------
 
-
 #if   __DIME == __2D
 #if   __MODE == __SCA
 #if   __KIND == __SINGLE_PRECISION
@@ -172,10 +171,12 @@
       TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
       TYPE(ppm_t_topo)     , POINTER         :: topo
 
+      CHARACTER(LEN=ppm_char) :: caller='ppm_interp_m2p'
+
       !-------------------------------------------------------------------------
       !  Initialize
       !-------------------------------------------------------------------------
-      CALL substart('ppm_interp_m2p',t0,info)
+      CALL substart(caller,t0,info)
 
       !-------------------------------------------------------------------------
       !  Some compilers have problems initializing constants that are declared
@@ -190,8 +191,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       IF (Np.EQ.0) GOTO 9999
@@ -225,30 +226,22 @@
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldu(1) = Np
-      IF (nsubs.NE.1) CALL ppm_alloc(ilist1,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                       'particle list 1 ILIST1',__LINE__,info)
-         GOTO 9999
-      END IF
-      IF(nsubs.NE.1) CALL ppm_alloc(ilist2,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                       'particle list 2 ILIST2',__LINE__,info)
-         GOTO 9999
-      END IF
+      IF (nsubs.NE.1) THEN
+         CALL ppm_alloc(ilist1,ldu,iopt,info)
+         or_fail_alloc('particle list 1 ILIST1',ppm_error=ppm_error_fatal)
+      ENDIF
+
+      IF (nsubs.NE.1) THEN
+         CALL ppm_alloc(ilist2,ldu,iopt,info)
+         or_fail_alloc('particle list 2 ILIST2',ppm_error=ppm_error_fatal)
+      ENDIF
 
       iopt   = ppm_param_alloc_fit
       ldu(1) = nsubs
-      IF(nsubs.NE.1) CALL ppm_alloc(store_info,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                       'store_info allocation : problem',__LINE__,info)
-         GOTO 9999
-      END IF
+      IF (nsubs.NE.1) THEN
+         CALL ppm_alloc(store_info,ldu,iopt,info)
+         or_fail_alloc('store_info allocation : problem',ppm_error=ppm_error_fatal)
+      ENDIF
 
       !-------------------------------------------------------------------------
       !  Mesh spacing
@@ -265,20 +258,17 @@
          Nc(i)       = Nm(i) - 1
          len_phys(i) = max_phys(i) - min_phys(i)
          dx(i)       = len_phys(i)/REAL(Nc(i),MK)
-      END DO
-      dxi = 1.0_mk/dx
+      ENDDO
+      dxi = 1.0_MK/dx
 
       !-------------------------------------------------------------------------
       !  Initialize the particle list
       !-------------------------------------------------------------------------
       IF (nsubs.NE.1) THEN
-         nlist1     = 0
+         nlist1     = Np
          store_info = 0
-         DO ipart=1,Np
-            nlist1         = nlist1 + 1
-            ilist1(nlist1) = ipart
-         END DO
-      END IF
+         FORALL (ipart=1:Np) ilist1(ipart) = ipart
+      ENDIF
 #if   __KIND == __SINGLE_PRECISION
       myeps = ppm_myepss
       min_sub => topo%min_subs
@@ -338,7 +328,7 @@
                   ELSE
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
-                  END IF
+                  ENDIF
                ELSEIF (ppm_dim.EQ.2) THEN
                   IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
      &                       xp(2,ipart).GE.min_sub(2,idoml) .AND. &
@@ -356,13 +346,13 @@
                      ELSE
                         nlist2         = nlist2 + 1
                         ilist2(nlist2) = ipart
-                     END IF
+                     ENDIF
                   ELSE
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
-                  END IF
-               END IF
-            END DO ! end loop over remaining parts in ilist1
+                  ENDIF
+               ENDIF
+            ENDDO ! end loop over remaining parts in ilist1
             !-------------------------------------------------------------------
             !  Copy the lists (well, only if nlist2 changed - decreased)
             !-------------------------------------------------------------------
@@ -370,23 +360,20 @@
                nlist1 = nlist2
                DO i=1,nlist1
                   ilist1(i) = ilist2(i)
-               END DO
+               ENDDO
             ENDIF
 
             !-------------------------------------------------------------------
             !  Exit if the list is empty
             !-------------------------------------------------------------------
             IF (nlist1.EQ.0) EXIT
-         END DO ! end loop over subs
+         ENDDO ! end loop over subs
          !----------------------------------------------------------------------
          !  Check that we sold all the particles
          !----------------------------------------------------------------------
          IF (nlist2.GT.0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_part_unass,'ppm_interp_m2p',  &
-     &                        'MAJOR PROBLEM',__LINE__,info)
-            GOTO 9999
-         END IF
+            fail('MAJOR PROBLEM',ppm_err_part_unass,ppm_error=ppm_error_fatal)
+         ENDIF
 
          !----------------------------------------------------------------------
          !  Whats the maximum number of particles per subdomain
@@ -395,8 +382,8 @@
          DO idom=1,topo%nsublist
             IF(store_info(idom).GE.max_partnumber) THEN
                max_partnumber = store_info(idom)
-            END IF
-         END DO
+            ENDIF
+         ENDDO
          iopt   = ppm_param_alloc_fit
          ldu(1) = topo%nsublist
          ldu(2) = max_partnumber
@@ -405,22 +392,14 @@
          !  Allocate particle list
          !----------------------------------------------------------------------
          CALL ppm_alloc(list_sub,ldu,iopt,info)
-         IF(info.NE.0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                         'problem in internal allocation',__LINE__,info)
-            GOTO 9999
-         END IF
+         or_fail_alloc('problem in internal allocation',ppm_error=ppm_error_fatal)
 
          list_sub = 0
          !----------------------------------------------------------------------
          !  Initialize the particle list
          !----------------------------------------------------------------------
-         nlist1     = 0
-         DO ipart=1,Np
-            nlist1         = nlist1 + 1
-            ilist1(nlist1) = ipart
-         ENDDO
+         nlist1 = Np
+         FORALL (ipart=1:Np) ilist1(ipart) = ipart
 
          !----------------------------------------------------------------------
          !  Loop over the subdomains (since the first domains are most likely
@@ -466,7 +445,7 @@
                   ELSE
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
-                  END IF
+                  ENDIF
                ELSEIF (ppm_dim.EQ.2) THEN
                   IF( ( xp(1,ipart).GE.min_sub(1,idoml) .AND. &
      &                       xp(2,ipart).GE.min_sub(2,idoml) .AND. &
@@ -483,37 +462,32 @@
                      ELSE
                         nlist2         = nlist2 + 1
                         ilist2(nlist2) = ipart
-                     END IF
+                     ENDIF
                   ELSE
                      nlist2         = nlist2 + 1
                      ilist2(nlist2) = ipart
-                  END IF
-               END IF
-            END DO ! end loop over subs
+                  ENDIF
+               ENDIF
+            ENDDO ! end loop over subs
             !-------------------------------------------------------------------
             !  Copy the lists (well, only if nlist2 changed - decreased)
             !-------------------------------------------------------------------
             IF (nlist2.NE.nlist1) THEN
                nlist1 = nlist2
-               DO i=1,nlist1
-                  ilist1(i) = ilist2(i)
-               END DO
-            END IF
+               FORALL (i=1:nlist1) ilist1(i) = ilist2(i)
+            ENDIF
 
             !-------------------------------------------------------------------
             !  Exit if the list is empty
             !-------------------------------------------------------------------
             IF (nlist1.EQ.0) EXIT
-         END DO
+         ENDDO
 
          !----------------------------------------------------------------------
          !  Check that we sold all the particles
          !----------------------------------------------------------------------
          IF (nlist2.GT.0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_part_unass,'ppm_interp_m2p_3d',  &
-     &                        'MAJOR PROBLEM',__LINE__,info)
-            GOTO 9999
+            fail('MAJOR PROBLEM',ppm_err_part_unass,ppm_error=ppm_error_fatal)
          ENDIF
 
          !----------------------------------------------------------------------
@@ -521,33 +495,27 @@
          !----------------------------------------------------------------------
          max_partnumber = 0
          DO idom = 1,topo%nsublist
-            IF(store_info(idom).GE.max_partnumber) THEN
+            IF (store_info(idom).GE.max_partnumber) THEN
                max_partnumber = store_info(idom)
-            END IF
-         END DO
+            ENDIF
+         ENDDO
       ELSE ! now the case of one subdomain on this processor
          max_partnumber = np
          iopt = ppm_param_alloc_fit
          ldu(1) = 1
          CALL ppm_alloc(store_info,ldu,iopt,info)
-         IF(info.NE.0) THEN
-            CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                         'problem in internal allocation',__LINE__,info)
-            GOTO 9999
-         END IF
+         or_fail_alloc('problem in internal allocation')
+
          store_info(1) = max_partnumber
          ldu(1) = 1
          ldu(2) = max_partnumber
          CALL ppm_alloc(list_sub,ldu,iopt,info)
-         IF(info.NE.0) THEN
-            CALL ppm_error(ppm_err_alloc,'ppm_interp_m2p_3d',     &
-     &                         'problem in internal allocation',__LINE__,info)
-            GOTO 9999
-         END IF
+         or_fail_alloc('problem in internal allocation')
+
          DO i=1,max_partnumber
             list_sub(1,i) = i
-         END DO
-      END IF
+         ENDDO
+      ENDIF
 
 
       !-------------------------------------------------------------------------
@@ -556,46 +524,45 @@
       ! Particle quantity reset
 #if   __MODE == __SCA
       DO ip=1,np
-         up(ip) = 0.0_mk
-      END DO
+         up(ip) = 0.0_MK
+      ENDDO
 #elif __MODE == __VEC
-      IF(lda.EQ.3) THEN
+      IF (lda.EQ.3) THEN
          DO ip=1,np
-            up(1,ip) = 0.0_mk
-            up(2,ip) = 0.0_mk
-            up(3,ip) = 0.0_mk
-         END DO
-      ELSEIF(lda.EQ.5) THEN
+            up(1,ip) = 0.0_MK
+            up(2,ip) = 0.0_MK
+            up(3,ip) = 0.0_MK
+         ENDDO
+      ELSE IF(lda.EQ.5) THEN
          DO ip=1,np
-            up(1,ip) = 0.0_mk
-            up(2,ip) = 0.0_mk
-            up(3,ip) = 0.0_mk
-            up(4,ip) = 0.0_mk
-            up(5,ip) = 0.0_mk
-         END DO
+            up(1,ip) = 0.0_MK
+            up(2,ip) = 0.0_MK
+            up(3,ip) = 0.0_MK
+            up(4,ip) = 0.0_MK
+            up(5,ip) = 0.0_MK
+         ENDDO
       ELSE
-         up = 0.0_mk
-      END IF
+         up = 0.0_MK
+      ENDIF
 #endif
-      SELECT CASE(kernel)
+      SELECT CASE (kernel)
+      CASE (ppm_param_rmsh_kernel_mp4)
+#if __MODE == __SCA
+         CALL m2p_interp_mp4(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+#elif __MODE == __VEC
+         CALL m2p_interp_mp4(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+#endif
 
-      CASE(ppm_param_rmsh_kernel_mp4)
+      CASE (ppm_param_rmsh_kernel_bsp2)
 #if __MODE == __SCA
-            CALL m2p_interp_mp4(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
+         CALL m2p_interp_bsp2(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
 #elif __MODE == __VEC
-            CALL m2p_interp_mp4(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
+         CALL m2p_interp_bsp2(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
 #endif
-      CASE(ppm_param_rmsh_kernel_bsp2)
-#if __MODE == __SCA
-            CALL m2p_interp_bsp2(topoid,meshid,field_up,xp,up,dx,ghostsize,info)
-#elif __MODE == __VEC
-            CALL m2p_interp_bsp2(topoid,meshid,field_up,lda,xp,up,dx,ghostsize,info)
-#endif
+
       CASE DEFAULT
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',    &
-     & 'Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.', &
-     &                     __LINE__,info)
+         fail('Only Mp4 and BSp2 are avail. Use ppm_rmsh_remesh for other kernels.',exit_point=no)
+
       END SELECT ! kernel type
 
       !-------------------------------------------------------------------------
@@ -609,104 +576,64 @@
       iopt = ppm_param_dealloc
       ldu(1) = 0
       CALL ppm_alloc(ilist1,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-     &               'ppm_interp_m2p', &
-     &               'pb in ilist1 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist1 deallocation')
+
       CALL ppm_alloc(ilist2,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-     &               'ppm_interp_m2p',  &
-     &               'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in ilist2 deallocation')
+
       CALL ppm_alloc(store_info,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-     &               'ppm_interp_m2p',  &
-     &               'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in store_info deallocation')
+      NULLIFY(store_info)
+
       CALL ppm_alloc(list_sub,ldu,iopt,info)
-      IF (info.NE.0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc, &
-     &               'ppm_interp_m2p',  &
-     &               'pb in ilist2 deallocation',__LINE__,info)
-         GOTO 9999
-      END IF
+      or_fail_dealloc('pb in list_sub deallocation')
+      NULLIFY(list_sub)
 
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
-9999  CONTINUE
-      CALL substop('ppm_interp_m2p',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_ppm_noinit,'ppm_interp_m2p',  &
-     &               'Please call ppm_init first!',__LINE__,info)
-            GOTO 8888
+          fail('Please call ppm_init first!',ppm_err_ppm_noinit,exit_point=8888)
         ENDIF
         IF (Np .GT. 0) THEN
            IF (SIZE(xp,2) .LT. Np) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                     'not enough particles contained in xp',__LINE__,info)
-            GOTO 8888
+              fail('not enough particles contained in xp',exit_point=8888)
            ENDIF
            IF (SIZE(xp,1) .LT.dim) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                     'leading dimension of xp insufficient',__LINE__,info)
-            GOTO 8888
+              fail('leading dimension of xp insufficient',exit_point=8888)
            ENDIF
         ENDIF
         IF (Np .LE. 0) THEN
            IF (Np .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                     'particles must be specified',__LINE__,info)
-            GOTO 8888
-           END IF
+              fail('particles must be specified',exit_point=8888)
+           ENDIF
            GOTO 8888
-        END IF
+        ENDIF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                     'wrong kernel definition',__LINE__,info)
-           GOTO 8888
-        END IF
+           fail('wrong kernel definition',exit_point=8888)
+        ENDIF
         kernel_support = ppm_rmsh_kernelsize(kernel)*2
-        IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
-     &               .OR.(kernel_support.EQ.6))) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                     'wrong kernel support',__LINE__,info)
-           GOTO 8888
-        END IF
+        IF (.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
+        &  .OR.(kernel_support.EQ.6))) THEN
+           fail('wrong kernel support',exit_point=8888)
+        ENDIF
         CALL ppm_check_topoid(topoid,lok,info)
         IF (.NOT.lok) THEN
-           info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
-     &                 'topo_id is invalid!',__LINE__,info)
-           GOTO 8888
+           fail('topo_id is invalid!',exit_point=8888)
         ENDIF
         !CALL ppm_check_meshid(topoid,meshid,lok,info)
         !IF (.NOT.lok) THEN
            !info = ppm_error_error
-           !CALL ppm_error(ppm_err_argument,'ppm_interp_m2p',  &
+           !CALL ppm_error(ppm_err_argument,caller,  &
      !&                 'mesh_id is invalid!',__LINE__,info)
            !GOTO 8888
         !ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if   __DIME == __2D
 #if   __MODE == __SCA

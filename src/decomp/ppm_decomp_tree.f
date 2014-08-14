@@ -520,25 +520,21 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(ppb    ,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       CALL ppm_alloc(npbx   ,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       CALL ppm_alloc(npbxg  ,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       CALL ppm_alloc(min_box,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       CALL ppm_alloc(max_box,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
+      or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       CALL ppm_alloc(work   ,ldc,iopt,info)
-      IF (info.NE.0) GOTO 500
-
-      500 CONTINUE
-
       or_fail_dealloc('deallocating work arrays failed!',ppm_error_fatal)
 
       !-------------------------------------------------------------------------

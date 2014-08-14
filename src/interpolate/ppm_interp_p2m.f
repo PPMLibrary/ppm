@@ -194,8 +194,7 @@
       TYPE(ppm_t_equi_mesh), POINTER         :: p_mesh
       TYPE(ppm_t_topo)     , POINTER         :: topo
 
-
-
+      CHARACTER(LEN=ppm_char) :: caller='ppm_interp_p2m'
      !-------------------------------------------------------------------------!
      !  Initialise
      !-------------------------------------------------------------------------!
@@ -206,7 +205,7 @@
      !-------------------------------------------------------------------------!
       ppm_rmsh_kernelsize = (/1,2,2,4/)
 
-      CALL substart('ppm_interp_p2m',t0,info)
+      CALL substart(caller,t0,info)
 
       dim = ppm_dim
       internal_weights = .FALSE.
@@ -410,7 +409,7 @@
      !-------------------------------------------------------------------------!
      IF (nlist2.GT.0) THEN
         info = ppm_error_fatal
-        CALL ppm_error(ppm_err_part_unass,'ppm_interp_p2m',  &
+        CALL ppm_error(ppm_err_part_unass,caller,  &
      &                    'MAJOR PROBLEM',__LINE__,info)
         GOTO 9999
      ENDIF
@@ -624,7 +623,7 @@
 #endif
      CASE DEFAULT
         info = ppm_error_error
-        CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',    &
+        CALL ppm_error(ppm_err_argument,caller,    &
      &                    'This scheme is currently not available. Use ppm_rmsh_remesh for other kernels.', &
      &                    __LINE__,info)
      END SELECT         ! kernel type
@@ -1223,7 +1222,7 @@
      IF (info.NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_dealloc, &
-     &              'ppm_interp_p2m', &
+     &              caller, &
      &              'pb in ilist1 deallocation',__LINE__,info)
         GOTO 9999
      END IF
@@ -1231,7 +1230,7 @@
      IF (info.NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_dealloc, &
-     &              'ppm_interp_p2m',  &
+     &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
      END IF
@@ -1239,7 +1238,7 @@
      IF (info.NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_dealloc, &
-     &              'ppm_interp_p2m',  &
+     &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
      END IF
@@ -1247,7 +1246,7 @@
      IF (info.NE.0) THEN
         info = ppm_error_error
         CALL ppm_error(ppm_err_dealloc, &
-     &              'ppm_interp_p2m',  &
+     &              caller,  &
      &              'pb in ilist2 deallocation',__LINE__,info)
         GOTO 9999
      END IF
@@ -1256,26 +1255,26 @@
      !  Return
      !-------------------------------------------------------------------------!
  9999 CONTINUE
-      CALL substop('ppm_interp_p2m',t0,info)
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (.NOT. ppm_initialized) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_ppm_noinit,'ppm_interp_p2m',  &
+            CALL ppm_error(ppm_err_ppm_noinit,caller,  &
      &               'Please call ppm_init first!',__LINE__,info)
             GOTO 8888
         ENDIF
         IF (Np .GT. 0) THEN
            IF (SIZE(xp,2) .LT. Np) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'not enough particles contained in xp',__LINE__,info)
             GOTO 8888
            ENDIF
            IF (SIZE(xp,1) .LT.dim) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'leading dimension of xp insufficient',__LINE__,info)
             GOTO 8888
            ENDIF
@@ -1283,7 +1282,7 @@
         IF (Np .LE. 0) THEN
            IF (Np .LT. 0) THEN
             info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+            CALL ppm_error(ppm_err_argument,caller,  &
      &                     'particles must be specified',__LINE__,info)
             GOTO 8888
            END IF
@@ -1291,7 +1290,7 @@
         END IF
         IF ((kernel.LT.1).OR.(kernel.GT.4)) THEN
            info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+           CALL ppm_error(ppm_err_argument,caller,  &
      &                     'wrong kernel definition',__LINE__,info)
            GOTO 8888
         END IF
@@ -1299,21 +1298,21 @@
         IF(.NOT.((kernel_support.EQ.2).OR.(kernel_support.EQ.4) &
      &               .OR.(kernel_support.EQ.6))) THEN
            info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+           CALL ppm_error(ppm_err_argument,caller,  &
      &                     'wrong kernel support',__LINE__,info)
            GOTO 8888
         END IF
         CALL ppm_check_topoid(topoid,lok,info)
         IF (.NOT.lok) THEN
            info = ppm_error_error
-           CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+           CALL ppm_error(ppm_err_argument,caller,  &
      &                 'topo_id is invalid!',__LINE__,info)
            GOTO 8888
         ENDIF
         !CALL ppm_check_meshid(topoid,meshid,lok,info)
         !IF (.NOT.lok) THEN
            !info = ppm_error_error
-           !CALL ppm_error(ppm_err_argument,'ppm_interp_p2m',  &
+           !CALL ppm_error(ppm_err_argument,caller,  &
      !&                 'mesh_id is invalid!',__LINE__,info)
            !GOTO 8888
         !ENDIF

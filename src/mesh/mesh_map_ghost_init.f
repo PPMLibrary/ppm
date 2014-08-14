@@ -46,17 +46,16 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      INTEGER, DIMENSION(2)               :: ldu
-      INTEGER, DIMENSION(ppm_dim)         :: op
-      INTEGER, DIMENSION(ppm_dim,26)      :: ond
-      INTEGER                             :: i,j,sendrank,recvrank,isub,jsub,k
-      INTEGER                             :: iopt,iset,ibuffer,pdim,isize,nnd
-      INTEGER                             :: nsendlist,nsend,tag1,lb,ub,nrecv
+      INTEGER, DIMENSION(2)          :: ldu
+      INTEGER, DIMENSION(ppm_dim)    :: op
+      INTEGER, DIMENSION(ppm_dim,26) :: ond
+      INTEGER                        :: i,j,sendrank,recvrank,isub,jsub,k
+      INTEGER                        :: iopt,iset,ibuffer,pdim,isize,nnd
+      INTEGER                        :: nsendlist,nsend,tag1,lb,ub,nrecv
 #ifdef __MPI
-      INTEGER, DIMENSION(MPI_STATUS_SIZE) :: commstat
+      INTEGER                        :: sendrequest1,sendrequest2
+      INTEGER                        :: recvrequest1,recvrequest2
 #endif
-
-      CHARACTER(ppm_char) :: mesg
 
       LOGICAL :: lsouth,lnorth,least,lwest,ltop,lbottom
 
@@ -75,21 +74,19 @@
       !  topology
       !-------------------------------------------------------------------------
       IF (.NOT.topo%isoptimized) THEN
-        !-----------------------------------------------------------------------
-        !  if not: determine it before calling map_field_ghost_init
-        !-----------------------------------------------------------------------
-        CALL ppm_util_commopt(this%topoid,info)
-        IF (info.NE.0) GOTO 9999
-        IF (ppm_debug .GT. 1) THEN
-           DO i=1,topo%nneighproc
-              WRITE(mesg,'(A,I4)') 'have neighbor: ',topo%ineighproc(i)
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-           END DO
-           DO i=1,topo%ncommseq
-              WRITE(mesg,'(A,I4)') 'communicate: ',topo%icommseq(i)
-              CALL ppm_write(ppm_rank,caller,mesg,info)
-           END DO
-        ENDIF
+         !-----------------------------------------------------------------------
+         !  if not: determine it before calling map_field_ghost_init
+         !-----------------------------------------------------------------------
+         CALL ppm_util_commopt(this%topoid,info)
+         IF (info.NE.0) GOTO 9999
+         IF (ppm_debug .GT. 1) THEN
+            DO i=1,topo%nneighproc
+               stdout_f('(A,I4)',"have neighbor: ",'topo%ineighproc(i)')
+            ENDDO
+            DO i=1,topo%ncommseq
+               stdout_f('(A,I4)',"communicate: ",'topo%icommseq(i)')
+            ENDDO
+         ENDIF
       ENDIF
 
 
@@ -433,131 +430,145 @@
                   mesh_ghost_offset(1:pdim,iset) = ioffset(1:pdim,j)
                   IF (ppm_debug .GT. 1) THEN
                      IF (ppm_dim .EQ. 2) THEN
-                        WRITE(mesg,'(2(A,2I4),3(A,I0))') ' sending ',  &
-                        & isendblkstart(1:2,j),' of size ',isendblksize(1:2,j),&
-                        & ' on sub ',isendfromsub(j),&
-                        & ' to sub ',isendtosub(j),' on proc ',sendrank
+                        stdout_f('(2(A,2I4),3(A,I0))'," sending ",'isendblkstart(1:2,j)', &
+                        & " of size ",'isendblksize(1:2,j)'," on sub ",'isendfromsub(j)', &
+                        & " to sub ",'isendtosub(j)'," on proc ",sendrank)
                      ELSEIF (ppm_dim .EQ. 3) THEN
-                        WRITE(mesg,'(2(A,3I4),3(A,I0))') ' sending ',  &
-                        & isendblkstart(1:3,j),' of size ',isendblksize(1:3,j),&
-                        & ' on sub ',isendfromsub(j),&
-                        & ' to sub ',isendtosub(j),' on proc ',sendrank
+                        stdout_f('(2(A,3I4),3(A,I0))'," sending ",'isendblkstart(1:3,j)', &
+                        & " of size ",'isendblksize(1:3,j)'," on sub ",'isendfromsub(j)', &
+                        & " to sub ",'isendtosub(j)'," on proc ",sendrank)
                      ENDIF
-                     CALL ppm_write(ppm_rank,caller,mesg,info)
                   ENDIF
                ENDIF
             ENDDO
 
-             !------------------------------------------------------------------
-             !  Build receive lists for the on-processor part of the data
-             !------------------------------------------------------------------
-             IF (sendrank .EQ. ppm_rank) THEN
-                ub = this%ghost_blk(2)
-                this%ghost_nrecv = ub - 1
-                this%ghost_recvblk(2) = ub
-                DO j=1,ub-1
-                   this%ghost_recvtosub(j)           = this%ghost_tosub(j)
-                   this%ghost_recvpatchid(1:pdim,j)  = this%ghost_patchid(1:pdim,j)
-                   this%ghost_recvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j) &
-                   &                                 + mesh_ghost_offset(1:pdim,j)
-                   this%ghost_recvblksize(1:pdim,j)  = this%ghost_blksize(1:pdim,j)
-                ENDDO
+            !------------------------------------------------------------------
+            !  Build receive lists for the on-processor part of the data
+            !------------------------------------------------------------------
+            IF (sendrank .EQ. ppm_rank) THEN
+               ub = this%ghost_blk(2)
+               this%ghost_nrecv = ub - 1
+               this%ghost_recvblk(2) = ub
+               DO j=1,ub-1
+                  this%ghost_recvtosub(j)           = this%ghost_tosub(j)
+                  this%ghost_recvpatchid(1:pdim,j)  = this%ghost_patchid(1:pdim,j)
+                  this%ghost_recvblkstart(1:pdim,j) = this%ghost_blkstart(1:pdim,j) &
+                  &                                 + mesh_ghost_offset(1:pdim,j)
+                  this%ghost_recvblksize(1:pdim,j)  = this%ghost_blksize(1:pdim,j)
+               ENDDO
 #ifdef __MPI
-             ELSE
-                !--------------------------------------------------------------
-                !  Communicate the block indices
-                !--------------------------------------------------------------
-                lb = this%ghost_blk(i)
-                ub = this%ghost_blk(ibuffer)
-                ! How many blocks am I sending to that guy
-                nsend = ub - lb
-                tag1 = 100
-                CALL MPI_SendRecv(nsend,1,MPI_INTEGER,sendrank,tag1,nrecv,1,  &
-                &    MPI_INTEGER,recvrank,tag1,ppm_comm,commstat,info)
-                or_fail_MPI("MPI_SendRecv")
-                ! How many blocks will I receive from the guy?
-                this%ghost_nrecv            = this%ghost_nrecv      + nrecv
-                this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
+            ELSE
+               !--------------------------------------------------------------
+               !  Communicate the block indices
+               !--------------------------------------------------------------
+               lb = this%ghost_blk(i)
+               ub = this%ghost_blk(ibuffer)
+               ! How many blocks am I sending to that guy
+               nsend = ub - lb
+               tag1 = 100
+               CALL MPI_Isend(nsend,1,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest1,info)
+               or_fail_MPI("MPI_Isend")
 
-                !--------------------------------------------------------------
-                !  Check if receive lists are large enough
-                !--------------------------------------------------------------
-                IF (this%ghost_nrecv .GT. isize) THEN
-                   !----------------------------------------------------------
-                   !  Grow receive lists if needed
-                   !----------------------------------------------------------
-                   isize = this%ghost_nrecv
-                   iopt = ppm_param_alloc_grow_preserve
-                   ldu(1) = isize
-                   CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
-                   or_fail_alloc("this%ghost_recvtosub")
+               CALL MPI_Irecv(nrecv,1,MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest1,info)
+               or_fail_MPI("MPI_Irecv")
 
-                   ldu(1) = pdim
-                   ldu(2) = isize
-                   CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
-                   or_fail_alloc("this%ghost_recvblkstart")
+               !--------------------------------------------------------------
+               !  Allocate memory for block data send and recv buffers
+               !--------------------------------------------------------------
+               iopt   = ppm_param_alloc_grow
+               ldu(1) = nsend*(3*pdim+1)
+               CALL ppm_alloc(sendbuf,ldu,iopt,info)
+               or_fail_alloc("sendbuf")
 
-                   CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
-                   or_fail_alloc("this%ghost_recvblksize")
+               !--------------------------------------------------------------
+               !  Pack and send all the ghost mesh block data
+               !--------------------------------------------------------------
+               ! Pack all the send data
+               iset = 0
+               DO j=lb,ub-1
+                  iset = iset + 1
+                  sendbuf(iset) = this%ghost_tosub(j)
+                  sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
 
-                   CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
-                   or_fail_alloc("this%recvghost_patchid")
-                ENDIF
+                  iset = iset + pdim
+                  sendbuf(iset+1:iset+pdim) = this%ghost_blkstart(1:pdim,j) &
+                  &                         + mesh_ghost_offset(1:pdim,j)
 
-                !--------------------------------------------------------------
-                !  Allocate memory for block data send and recv buffers
-                !--------------------------------------------------------------
-                iopt   = ppm_param_alloc_grow
-                ldu(1) = nsend*(3*pdim+1)
-                CALL ppm_alloc(sendbuf,ldu,iopt,info)
-                or_fail_alloc("sendbuf")
+                  iset = iset + pdim
+                  sendbuf(iset+1:iset+pdim) = this%ghost_blksize(1:pdim,j)
 
-                ldu(1) = nrecv*(3*pdim+1)
-                CALL ppm_alloc(recvbuf,ldu,iopt,info)
-                or_fail_alloc("recvbuf")
+                  iset = iset + pdim
+               ENDDO
 
-                !--------------------------------------------------------------
-                !  Pack and send all the ghost mesh block data
-                !--------------------------------------------------------------
-                ! Pack all the send data
-                iset = 0
-                DO j=lb,ub-1
-                   iset = iset + 1
-                   sendbuf(iset) = this%ghost_tosub(j)
-                   sendbuf(iset+1:iset+pdim) = this%ghost_patchid(1:pdim,j)
+               ! Send it to the destination processor and get my stuff
+               tag1 = 200
+               CALL MPI_Isend(sendbuf,iset,MPI_INTEGER,sendrank,tag1,ppm_comm,sendrequest2,info)
+               or_fail_MPI("MPI_Isend")
 
-                   iset = iset + pdim
-                   sendbuf(iset+1:iset+pdim) = this%ghost_blkstart(1:pdim,j) &
-                   &                         + mesh_ghost_offset(1:pdim,j)
+               CALL MPI_Waitall(2,(/sendrequest1,recvrequest1/),MPI_STATUSES_IGNORE,info)
+               or_fail_MPI("MPI_Waitall")
 
-                   iset = iset + pdim
-                   sendbuf(iset+1:iset+pdim) = this%ghost_blksize(1:pdim,j)
+               ! How many blocks will I receive from the guy?
+               this%ghost_nrecv            = this%ghost_nrecv      + nrecv
+               this%ghost_recvblk(ibuffer) = this%ghost_recvblk(i) + nrecv
+               !--------------------------------------------------------------
+               !  Check if receive lists are large enough
+               !--------------------------------------------------------------
+               IF (this%ghost_nrecv .GT. isize) THEN
+                  !----------------------------------------------------------
+                  !  Grow receive lists if needed
+                  !----------------------------------------------------------
+                  isize = this%ghost_nrecv
+                  iopt = ppm_param_alloc_grow_preserve
+                  ldu(1) = isize
+                  CALL ppm_alloc(this%ghost_recvtosub,ldu,iopt,info)
+                  or_fail_alloc("this%ghost_recvtosub")
+                  ldu(1) = pdim
+                  ldu(2) = isize
+                  CALL ppm_alloc(this%ghost_recvblkstart,ldu,iopt,info)
+                  or_fail_alloc("this%ghost_recvblkstart")
 
-                   iset = iset + pdim
-                ENDDO
-                ! Send it to the destination processor and get my stuff
-                tag1 = 200
-                CALL MPI_SendRecv(sendbuf,iset,MPI_INTEGER,sendrank,tag1, &
-                &    recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,   &
-                &    recvrank,tag1,ppm_comm,commstat,info)
-                or_fail_MPI("MPI_SendRecv")
-                ! Unpack the received data
-                lb = this%ghost_recvblk(i)
-                ub = this%ghost_recvblk(ibuffer)
-                iset = 0
-                DO j=lb,ub-1
-                   iset = iset + 1
-                   this%ghost_recvtosub(j)           = recvbuf(iset)
-                   this%ghost_recvpatchid(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+                  CALL ppm_alloc(this%ghost_recvblksize,ldu,iopt,info)
+                  or_fail_alloc("this%ghost_recvblksize")
 
-                   iset = iset + pdim
-                   this%ghost_recvblkstart(1:pdim,j) = recvbuf(iset+1:iset+pdim)
+                  CALL ppm_alloc(this%ghost_recvpatchid,ldu,iopt,info)
+                  or_fail_alloc("this%recvghost_patchid")
+               ENDIF
 
-                   iset = iset + pdim
-                   this%ghost_recvblksize(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+               !--------------------------------------------------------------
+               !  Allocate memory for block data send and recv buffers
+               !--------------------------------------------------------------
+               iopt   = ppm_param_alloc_grow
+               ldu(1) = nrecv*(3*pdim+1)
+               CALL ppm_alloc(recvbuf,ldu,iopt,info)
+               or_fail_alloc("recvbuf")
 
-                   iset = iset + pdim
-                ENDDO
+               ! Send it to the destination processor and get my stuff
+               tag1 = 200
+               CALL MPI_Irecv(recvbuf,nrecv*(3*pdim+1),MPI_INTEGER,recvrank,tag1,ppm_comm,recvrequest2,info)
+               or_fail_MPI("MPI_Irecv")
+
+               ! Unpack the received data
+               lb = this%ghost_recvblk(i)
+               ub = this%ghost_recvblk(ibuffer)
+
+               CALL MPI_Waitall(2,(/sendrequest2,recvrequest2/),MPI_STATUSES_IGNORE,info)
+               or_fail_MPI("MPI_Waitall")
+
+               iset = 0
+               DO j=lb,ub-1
+                  iset = iset + 1
+                  this%ghost_recvtosub(j)           = recvbuf(iset)
+                  this%ghost_recvpatchid(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+
+                  iset = iset + pdim
+                  this%ghost_recvblkstart(1:pdim,j) = recvbuf(iset+1:iset+pdim)
+
+                  iset = iset + pdim
+                  this%ghost_recvblksize(1:pdim,j)  = recvbuf(iset+1:iset+pdim)
+
+                  iset = iset + pdim
+               ENDDO
 #endif
              ENDIF ! sendrank.EQ.ppm_rank
          ENDIF ! sendrank .GE. 0

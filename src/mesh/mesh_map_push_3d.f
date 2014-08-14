@@ -131,14 +131,13 @@
       !!! accordingly).
 
       INTEGER, DIMENSION(3) :: ldu,mofs,patchid
-      INTEGER               :: i,j,k,ibuffer,isub,imesh,jmesh,kmesh,jsub
+      INTEGER               :: i,j,k,ibuffer,isub
+      INTEGER               :: imesh,jmesh,kmesh,jsub
       INTEGER               :: ipatch
       INTEGER               :: iopt,Ndata,xlo,xhi,ylo,yhi,zlo,zhi,ldb
 #if   __DIM == __SFIELD
       INTEGER, PARAMETER    :: lda = 1
 #endif
-
-      CHARACTER(LEN=ppm_char) :: mesg
 
       LOGICAL :: ldo,found_patch
 
@@ -155,8 +154,8 @@
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       topo => ppm_topo(this%topoid)%t
@@ -182,12 +181,10 @@
       !-------------------------------------------------------------------------
       !  If there is nothing to be sent we are done
       !-------------------------------------------------------------------------
-      IF (Ndata .EQ. 0) THEN
-         IF (ppm_debug .GT. 1) THEN
-            info = ppm_error_notice
-            CALL ppm_error(ppm_err_buffer_empt,caller,    &
-            & 'There is no data to be sent. Skipping push.',__LINE__,info)
-            info = 0
+      IF (Ndata.EQ.0) THEN
+         IF (ppm_debug.GT.1) THEN
+            fail('There is no data to be sent. Skipping push.',ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            info=0
          ENDIF
          GOTO 9999
       ENDIF
@@ -349,27 +346,13 @@
                         zhi = zlo+ppm_mesh_isendblksize(3,j)-1
                         IF (ppm_debug.GT.2) THEN
                            stdout("isub = ",isub," jsub = ",jsub)
-                           WRITE(mesg,'(A,3I4)') 'start: ',             &
-                           &  ppm_mesh_isendblkstart(1,j),&
-                           &  ppm_mesh_isendblkstart(2,j),&
-                           &  ppm_mesh_isendblkstart(3,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,3I4)') 'size: ',             &
-                           &  ppm_mesh_isendblksize(1,j),&
-                           &  ppm_mesh_isendblksize(2,j),&
-                           &  ppm_mesh_isendblksize(3,j)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,3I4)') 'mesh offset: ',&
-                           mofs(1),mofs(2),mofs(3)
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
-                           WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                           CALL ppm_write(ppm_rank,caller,mesg,info)
+                           stdout_f('(A,3I4)',"start: ",'ppm_mesh_isendblkstart(1:3,j)')
+                           stdout_f('(A,3I4)',"size: ",'ppm_mesh_isendblksize(1:3,j)')
+                           stdout_f('(A,3I4)',"mesh offset: ",'mofs(1:3)')
+                           stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                           stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                           stdout_f('(A,2I4)',"zlo, zhi: ",zlo,zhi)
+                           stdout_f('(A,I1)',"buffer dim: ",lda)
                            stdout("p%lo_a",'p%lo_a')
                            stdout("p%hi_a",'p%hi_a')
                            stdout("p%istart",'p%istart')
@@ -410,27 +393,20 @@
                      DO imesh=xlo,xhi
                         ibuffer = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
+                        ppm_sendbufferd(ibuffer)=REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      fdata(1,imesh,jmesh,kmesh)
+                        ppm_sendbufferd(ibuffer)=     fdata(1,imesh,jmesh,kmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
+                        ppm_sendbufferd(ibuffer)=REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
                         ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(AIMAG(fdata(1,imesh,jmesh,kmesh)),   &
-     &                      ppm_kind_double)
+                        ppm_sendbufferd(ibuffer)=REAL(AIMAG(fdata(1,imesh,jmesh,kmesh)), &
+                        &  ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
+                        ppm_sendbufferd(ibuffer)=REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
                         ibuffer = ibuffer + 1
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      AIMAG(fdata(1,imesh,jmesh,kmesh))
+                        ppm_sendbufferd(ibuffer)=AIMAG(fdata(1,imesh,jmesh,kmesh))
 #elif  __KIND == __INTEGER
-                        ppm_sendbufferd(ibuffer) =    &
-     &                      REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
+                        ppm_sendbufferd(ibuffer)=REAL(fdata(1,imesh,jmesh,kmesh),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                         IF (fdata(1,imesh,jmesh,kmesh)) THEN
                            ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -933,25 +909,20 @@
                   DO imesh=xlo,xhi
                      ibuffer = ibuffer + 1
 #if    __KIND == __SINGLE_PRECISION
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
+                     ppm_sendbufferd(ibuffer)=REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION
-                     ppm_sendbufferd(ibuffer) = fdata(imesh,jmesh,kmesh)
+                     ppm_sendbufferd(ibuffer)=fdata(imesh,jmesh,kmesh)
 #elif  __KIND == __SINGLE_PRECISION_COMPLEX
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
+                     ppm_sendbufferd(ibuffer)=REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
                      ibuffer = ibuffer + 1
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(AIMAG(fdata(imesh,jmesh,kmesh)),   &
-     &                   ppm_kind_double)
+                     ppm_sendbufferd(ibuffer)=REAL(AIMAG(fdata(imesh,jmesh,kmesh)), &
+                     & ppm_kind_double)
 #elif  __KIND == __DOUBLE_PRECISION_COMPLEX
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
+                     ppm_sendbufferd(ibuffer)=REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
                      ibuffer = ibuffer + 1
-                     ppm_sendbufferd(ibuffer) = AIMAG(fdata(imesh,jmesh,kmesh))
+                     ppm_sendbufferd(ibuffer)=AIMAG(fdata(imesh,jmesh,kmesh))
 #elif  __KIND == __INTEGER
-                     ppm_sendbufferd(ibuffer) =    &
-     &                   REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
+                     ppm_sendbufferd(ibuffer)=REAL(fdata(imesh,jmesh,kmesh),ppm_kind_double)
 #elif  __KIND == __LOGICAL
                      IF (fdata(imesh,jmesh,kmesh)) THEN
                         ppm_sendbufferd(ibuffer) = 1.0_ppm_kind_double
@@ -975,12 +946,7 @@
          iopt   = ppm_param_alloc_grow_preserve
          ldu(1) = ppm_nsendbuffer + ldb*Ndata
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-         IF (info .NE. 0) THEN
-             info = ppm_error_fatal
-             CALL ppm_error(ppm_err_alloc,caller,     &
-     &           'global send buffer PPM_SENDBUFFERS',__LINE__,info)
-             GOTO 9999
-         ENDIF
+         or_fail_dealloc('global send buffer PPM_SENDBUFFERS',ppm_error=ppm_error_fatal)
 
          DO i=1,ppm_nsendlist
             !-------------------------------------------------------------------
@@ -1015,24 +981,13 @@
                yhi = ylo+ppm_mesh_isendblksize(2,j)-1
                zhi = zlo+ppm_mesh_isendblksize(3,j)-1
                IF (ppm_debug .GT. 1) THEN
-                   WRITE(mesg,'(A,3I4)') 'start: ',             &
-     &                 ppm_mesh_isendblkstart(1,j),ppm_mesh_isendblkstart(2,j),&
-     &                 ppm_mesh_isendblkstart(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'size: ',             &
-     &                 ppm_mesh_isendblksize(1,j),ppm_mesh_isendblksize(2,j),&
-     &                 ppm_mesh_isendblksize(3,j)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,3I4)') 'mesh offset: ',mofs(1),mofs(2),mofs(3)
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'xlo, xhi: ',xlo,xhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'ylo, yhi: ',ylo,yhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,2I4)') 'zlo, zhi: ',zlo,zhi
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
-                   WRITE(mesg,'(A,I1)') 'buffer dim: ',lda
-                   CALL ppm_write(ppm_rank,caller,mesg,info)
+                  stdout_f('(A,3I4)',"start: ",'ppm_mesh_isendblkstart(1:3,j)')
+                  stdout_f('(A,3I4)',"size: ",'ppm_mesh_isendblksize(1:3,j)')
+                  stdout_f('(A,3I4)',"mesh offset: ",'mofs(1:3)')
+                  stdout_f('(A,2I4)',"xlo, xhi: ",xlo,xhi)
+                  stdout_f('(A,2I4)',"ylo, yhi: ",ylo,yhi)
+                  stdout_f('(A,2I4)',"zlo, zhi: ",zlo,zhi)
+                  stdout_f('(A,I1)',"buffer dim: ",lda)
                ENDIF
                !----------------------------------------------------------------
                !  Loop over all mesh points of this block and append data
@@ -1646,25 +1601,25 @@
           !ENDDO
 #if   __DIM == __VFIELD
           IF (lda .LT. 1) THEN
-              fail("lda must be >=1 for scalar data",exit_point=8888)
+             fail("lda must be >=1 for scalar data",exit_point=8888)
           ENDIF
 #elif __DIM == __SFIELD
           IF (lda .NE. 1) THEN
-              fail("lda must be =1 for scalar data",exit_point=8888)
+             fail("lda must be =1 for scalar data",exit_point=8888)
           ENDIF
 #endif
           IF (PRESENT(mask)) THEN
-              IF (SIZE(mask,1) .LT. xhi) THEN
-                  fail("x dimension of mask does not match mesh",exit_point=8888)
-              ENDIF
-              IF (SIZE(mask,2) .LT. yhi) THEN
-                  fail("y dimension of mask does not match mesh",exit_point=8888)
-              ENDIF
-              IF (SIZE(mask,3) .LT. zhi) THEN
-                  fail("z dimension of mask does not match mesh",exit_point=8888)
-              ENDIF
+             IF (SIZE(mask,1) .LT. xhi) THEN
+                fail("x dimension of mask does not match mesh",exit_point=8888)
+             ENDIF
+             IF (SIZE(mask,2) .LT. yhi) THEN
+                fail("y dimension of mask does not match mesh",exit_point=8888)
+             ENDIF
+             IF (SIZE(mask,3) .LT. zhi) THEN
+                fail("z dimension of mask does not match mesh",exit_point=8888)
+             ENDIF
           ENDIF
- 8888     CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 #if    __DIM == __SFIELD
 #if    __KIND == __SINGLE_PRECISION

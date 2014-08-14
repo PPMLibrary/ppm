@@ -249,6 +249,10 @@ integer                                        :: nterms
 
         call Part1%map_send(info)
         Assert_Equal(info,0)
+        !non-blocking
+        !call Part1%map_isend(info)
+        !Assert_Equal(info,0)
+
 
         call Part1%map_pop(info,Field3)
         Assert_Equal(info,0)

@@ -44,7 +44,6 @@
         USE ppm_module_substart
         USE ppm_module_substop
         USE ppm_module_mktopo
-
         IMPLICIT NONE
 
         !-------------------------------------------------------------------------
@@ -56,7 +55,7 @@
         !-------------------------------------------------------------------------
         TYPE ppm_clist
 
-            INTEGER, DIMENSION(:,:), POINTER :: borders  => NULL()
+            INTEGER, DIMENSION(:,:), POINTER :: borders => NULL()
             !!! contains the boundaries in the particle rank array separating the
             !!! particles belonging to different cells.
             !!!
@@ -89,7 +88,6 @@
             INTEGER :: ncell            = 0
             INTEGER :: n_real_p         = 0
             INTEGER :: n_all_p          = 0
-            LOGICAL :: grow_htable      = .TRUE.
 
             TYPE(ppm_htable) :: lookup
 

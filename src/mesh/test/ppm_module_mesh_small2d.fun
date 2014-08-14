@@ -283,22 +283,24 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         !Do a ghost mapping
         call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 #ifdef __MPI
         call MPI_BARRIER(comm,info)
 #endif
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
+        !call Mesh1%map_send(info)
+        !non-blocking send
+        CALL Mesh1%map_isend(info)
+        Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the
@@ -328,11 +330,11 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         call MPI_BARRIER(comm,info)
 #endif
         call Mesh1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%destroy(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         end_subroutine()
     end test

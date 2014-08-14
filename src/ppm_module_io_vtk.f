@@ -36,18 +36,16 @@
 
       MODULE ppm_module_io_vtk
          USE ppm_module_data,      ONLY: ppm_char, ppm_error_fatal, &
-                                         ppm_kind_single, ppm_kind_double,&
-                                         ppm_error_error, ppm_rank, &
-                                         ppm_nproc, ppm_comm
+         &   ppm_kind_single, ppm_kind_double,ppm_error_error,      &
+         &   ppm_rank,ppm_nproc, ppm_comm
          USE ppm_module_error,     ONLY: ppm_error, ppm_err_argument
          USE ppm_module_substart,  ONLY: substart
          USE ppm_module_substop,   ONLY: substop
          USE ppm_module_interfaces
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
 
-         PUBLIC :: ppm_vtk_particles, ppm_vtk_fields_2d,ppm_vtk_fields_3d
+         PUBLIC :: ppm_vtk_particles,ppm_vtk_fields_2d,ppm_vtk_fields_3d
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes

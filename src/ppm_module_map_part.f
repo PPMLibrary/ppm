@@ -49,7 +49,6 @@
          USE ppm_module_map_part_ghost
          USE ppm_module_map_part_global
          USE ppm_module_map_part_partial
-
          IMPLICIT NONE
 
          PRIVATE :: ppm_kind_single,ppm_kind_double
@@ -61,14 +60,15 @@
          REAL(ppm_kind_single), DIMENSION(:), POINTER :: recvs => NULL()
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: sendd => NULL()
          REAL(ppm_kind_double), DIMENSION(:), POINTER :: recvd => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nsend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: nrecv => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: psend => NULL()
-         INTEGER, DIMENSION(:), POINTER   :: precv => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: pp    => NULL()
-         INTEGER, DIMENSION(:,:), POINTER :: qq    => NULL()
-         INTEGER                          :: old_nsendlist = 0
-         INTEGER                          :: old_buffer_set = 0
+
+         INTEGER, DIMENSION(:),               POINTER :: nsend => NULL()
+         INTEGER, DIMENSION(:),               POINTER :: nrecv => NULL()
+         INTEGER, DIMENSION(:),               POINTER :: psend => NULL()
+         INTEGER, DIMENSION(:),               POINTER :: precv => NULL()
+         INTEGER, DIMENSION(:,:),             POINTER :: pp    => NULL()
+         INTEGER, DIMENSION(:,:),             POINTER :: qq    => NULL()
+         INTEGER                                      :: old_nsendlist = 0
+         INTEGER                                      :: old_buffer_set = 0
 
          PRIVATE :: sends,recvs,sendd,recvd,nsend,nrecv,psend,precv,pp,qq
          PRIVATE :: old_nsendlist,old_buffer_set
@@ -119,6 +119,10 @@
          !----------------------------------------------------------------------
          INTERFACE ppm_map_part_send
             MODULE PROCEDURE ppm_map_part_send
+         END INTERFACE
+
+         INTERFACE ppm_map_part_isend
+            MODULE PROCEDURE ppm_map_part_isend
          END INTERFACE
 
          !----------------------------------------------------------------------
@@ -211,5 +215,6 @@
 #undef __DIM
 
 #include "map/ppm_map_part_send.f"
+#include "map/ppm_map_part_isend.f"
 
       END MODULE ppm_module_map_part

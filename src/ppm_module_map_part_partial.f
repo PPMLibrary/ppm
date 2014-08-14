@@ -37,8 +37,9 @@
       !!! This module provides the mapping routines for partial particle
       !!! mapping
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
+
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Work lists
@@ -48,8 +49,6 @@
          INTEGER, DIMENSION(:), POINTER :: part2proc  => NULL()
          INTEGER, DIMENSION(:), POINTER :: ineighsubs => NULL()
 
-         PRIVATE :: ilist1,ilist2,part2proc,ineighsubs
-
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_partial
          !----------------------------------------------------------------------
@@ -57,6 +56,8 @@
             MODULE PROCEDURE ppm_map_part_partial_d
             MODULE PROCEDURE ppm_map_part_partial_s
          END INTERFACE
+
+         PUBLIC :: ppm_map_part_partial
 
          !----------------------------------------------------------------------
          !  include the source

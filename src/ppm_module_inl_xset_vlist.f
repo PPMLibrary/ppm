@@ -45,19 +45,18 @@
         USE ppm_module_error
         USE ppm_module_substart
         USE ppm_module_substop
-
         IMPLICIT NONE
 
         !-------------------------------------------------------------------------
         !  Declaration of arrays
         !-------------------------------------------------------------------------
-        INTEGER,                 DIMENSION(:),   POINTER :: own_red => NULL()
-        INTEGER,                 DIMENSION(:),   POINTER :: neigh_red => NULL()
-        INTEGER,                 DIMENSION(:),   POINTER :: own_blue => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: own_red    => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: neigh_red  => NULL()
+        INTEGER,                 DIMENSION(:),   POINTER :: own_blue   => NULL()
         INTEGER,                 DIMENSION(:),   POINTER :: neigh_blue => NULL()
         INTEGER(ppm_kind_int64), DIMENSION(:),   POINTER :: empty_list => NULL()
-        INTEGER,                 DIMENSION(:,:), POINTER :: ncells => NULL()
-        LOGICAL,                 DIMENSION(:) ,  POINTER :: used => NULL()
+        INTEGER,                 DIMENSION(:,:), POINTER :: ncells     => NULL()
+        LOGICAL,                 DIMENSION(:) ,  POINTER :: used       => NULL()
 
         !-------------------------------------------------------------------------
         !  Declaration of variables
@@ -136,7 +135,6 @@
         PRIVATE :: getParticleCoorDepth
         PRIVATE :: inDomain
         PRIVATE :: is_xset_Neighbor
-
 
         !-------------------------------------------------------------------------
         !  Privatizing arrays, variables and parameters

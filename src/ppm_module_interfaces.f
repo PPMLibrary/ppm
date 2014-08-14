@@ -26,7 +26,6 @@
       USE ppm_module_data
       USE ppm_module_util_functions
       USE ppm_module_options
-
       IMPLICIT NONE
 
       !----------------------------------------------------------------------
@@ -104,7 +103,6 @@
       !----------------------------------------------------------------------
       ! Type declaration
       !----------------------------------------------------------------------
-
 
       TYPE, ABSTRACT :: ppm_t_main_abstr
           !!! Generic type for all main PPM types
@@ -682,6 +680,7 @@ minclude ppm_create_collection(A_subpatch_,A_subpatch_,generate="abstract")
           PROCEDURE(equi_mesh_map_push_),       DEFERRED :: map_ghost_push
           PROCEDURE(equi_mesh_map_pop_),        DEFERRED :: map_ghost_pop
           PROCEDURE(equi_mesh_map_send_),       DEFERRED :: map_send
+          PROCEDURE(equi_mesh_map_isend_),      DEFERRED :: map_isend
 
           PROCEDURE(equi_mesh_map_global_),     DEFERRED :: map
           PROCEDURE(equi_mesh_map_push_),       DEFERRED :: map_push

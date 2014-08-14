@@ -1,16 +1,16 @@
       !-------------------------------------------------------------------------
       !  Subroutine   :                  ppm_map_part_eqdistrib
       !-------------------------------------------------------------------------
-      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich), 
+      ! Copyright (c) 2012 CSE Lab (ETH Zurich), MOSAIC Group (ETH Zurich),
       !                    Center for Fluid Dynamics (DTU)
       !
       !
       ! This file is part of the Parallel Particle Mesh Library (PPM).
       !
       ! PPM is free software: you can redistribute it and/or modify
-      ! it under the terms of the GNU Lesser General Public License 
-      ! as published by the Free Software Foundation, either 
-      ! version 3 of the License, or (at your option) any later 
+      ! it under the terms of the GNU Lesser General Public License
+      ! as published by the Free Software Foundation, either
+      ! version 3 of the License, or (at your option) any later
       ! version.
       !
       ! PPM is distributed in the hope that it will be useful,
@@ -44,7 +44,7 @@
       !!! NOTE: The storing of `ppm_map_type` is not used (yet)
 
       !-------------------------------------------------------------------------
-      !  Modules 
+      !  Modules
       !-------------------------------------------------------------------------
       USE ppm_module_data
       USE ppm_module_substart
@@ -66,7 +66,7 @@
 #endif
 
       !-------------------------------------------------------------------------
-      !  Arguments     
+      !  Arguments
       !-------------------------------------------------------------------------
       REAL(MK), DIMENSION(:,:), INTENT(IN   ) :: xp
       !!! The positions of the particles
@@ -77,28 +77,31 @@
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
+      REAL(MK) :: t0
+
       INTEGER, DIMENSION(3) :: ldu
       INTEGER               :: i,j,k,ipart
       INTEGER               :: iopt,iset,ibuffer,dim,totalpart
       INTEGER               :: ipos,max_val,max_exc,min_val,min_exc,temp_val
-      CHARACTER(ppm_char)   :: mesg
-      REAL(MK)              :: t0
+
+      CHARACTER(ppm_char) :: caller='ppm_map_part_eqdistrib'
+      CHARACTER(ppm_char) :: mesg
       !-------------------------------------------------------------------------
-      !  Externals 
+      !  Externals
       !-------------------------------------------------------------------------
-      
+
       !-------------------------------------------------------------------------
-      !  Initialise 
+      !  Initialise
       !-------------------------------------------------------------------------
-      CALL substart('ppm_map_part_eqdistrib',t0,info)
+      CALL substart(caller,t0,info)
       dim = ppm_dim
 
       !-------------------------------------------------------------------------
       !  Check arguments
       !-------------------------------------------------------------------------
       IF (ppm_debug .GT. 0) THEN
-        CALL check
-        IF (info .NE. 0) GOTO 9999
+         CALL check
+         IF (info .NE. 0) GOTO 9999
       ENDIF
 
       !-------------------------------------------------------------------------
@@ -112,73 +115,36 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_nproc
       CALL ppm_alloc(plist_des,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',  &
-     &        'particle per processor desired list PLIST_DES',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("particle per processor desired list PLIST_DES",ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(plist_act,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',  &
-     &        'particle per processor actual list PLIST_ACT',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("particle per processor actual list PLIST_ACT",ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(plist_exc,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',  &
-     &        'particle per processor excess list PLIST_EXC',__LINE__,info)
-         GOTO 9999
-      ENDIF
-      
+      or_fail_alloc("particle per processor excess list PLIST_EXC",ppm_error=ppm_error_fatal)
+
       !-------------------------------------------------------------------------
       !  Allocate memory for particle to/from processor lists
       !-------------------------------------------------------------------------
-      iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_nproc - 1
       CALL ppm_alloc(srlist1,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',  &
-     &        'particle to/from processor list 1 SRLIST1',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("particle to/from processor list 1 SRLIST1",ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(srlist2,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',  &
-     &        'particle to/from processor list 2 SRLIST2',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc("particle to/from processor list 2 SRLIST2",ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Find out how many particles are on each processor
       !-------------------------------------------------------------------------
       plist_act(:) = 0
-      plist_des(:) = 0
-
       plist_act(ppm_rank + 1) = Npart
 
 #ifdef __MPI
-      CALL MPI_AllReduce(plist_act,plist_des,ppm_nproc,MPI_INTEGER, &
-     &                   MPI_SUM,ppm_comm,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_mpi_fail,'ppm_map_part_eqdistrib', &
-     &        'MPI_AllReduce failed',__LINE__,info)
-         GOTO 9999
-      ENDIF
-#else
-      plist_des(ppm_rank + 1) = Npart
+      CALL MPI_AllReduce(MPI_IN_PLACE,plist_act,ppm_nproc,MPI_INTEGER,MPI_SUM,ppm_comm,info)
+      or_fail_MPI('MPI_AllReduce failed',ppm_error=ppm_error_fatal)
 #endif
 
-      totalpart = 0
-      DO j = 1,ppm_nproc
-         plist_act(j) = plist_des(j)
-         totalpart = totalpart + plist_act(j)
-      ENDDO
+      totalpart = SUM(plist_act(1:ppm_nproc))
 
       !-------------------------------------------------------------------------
       !  Calculate the desired number of particles per processor based
@@ -186,8 +152,7 @@
       !-------------------------------------------------------------------------
       ipart = 0
       DO j = 1,ppm_nproc
-         plist_des(j) = INT(REAL(totalpart,ppm_kind_double) * &
-     &                  ppm_proc_speed(j - 1))
+         plist_des(j) = INT(REAL(totalpart,ppm_kind_double)*ppm_proc_speed(j - 1))
          ipart = ipart + plist_des(j)
       ENDDO
 
@@ -201,7 +166,7 @@
             j = j + 1
          ENDDO
       ENDIF
-      
+
       !-------------------------------------------------------------------------
       !  Calculate the particle excess (too much or too little particles) of
       !  each processor
@@ -209,7 +174,7 @@
       DO j = 1,ppm_nproc
          plist_exc(j) = plist_act(j) - plist_des(j)
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Now lets do some magic. Here we have to figure out how many particles
       !  have to be send to whom or received from. srlist1 contains the
@@ -217,7 +182,7 @@
       !  particles
       !-------------------------------------------------------------------------
       ipos = 0
-      
+
       DO
          max_exc = 1
          max_val = plist_exc(max_exc)
@@ -283,17 +248,14 @@
          plist_exc(max_exc) = plist_exc(max_exc) - temp_val
          plist_exc(min_exc) = plist_exc(min_exc) + temp_val
       ENDDO
-      
+
       !-------------------------------------------------------------------------
       !  Consistency check: all entries in plist_exc should be zero
       !-------------------------------------------------------------------------
       DO j = 1,ppm_nproc
          IF (plist_exc(j) .NE. 0) THEN
-            info = ppm_error_fatal
-            CALL ppm_error(ppm_err_map_incomp,'ppm_map_part_eqdistrib', &
-     &           'Could not distribute all particles to processors', &
-     &           __LINE__,info)
-            GOTO 9999
+            fail('Could not distribute all particles to processors', &
+            & ppm_err_map_incomp,ppm_error=ppm_error_fatal)
          ENDIF
       ENDDO
 
@@ -313,22 +275,11 @@
       iopt   = ppm_param_alloc_fit
       ldu(1) = ipos + 2
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'particle send buffer PPM_PSENDBUFFER',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('particle send buffer PPM_PSENDBUFFER',ppm_error=ppm_error_fatal)
 
-      iopt   = ppm_param_alloc_fit
       ldu(1) = Npart
       CALL ppm_alloc(ppm_buffer2part,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'buffer-to-particles map PPM_BUFFER2PART',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('buffer-to-particles map PPM_BUFFER2PART',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Store the number of buffer entries (this is the first)
@@ -336,49 +287,37 @@
       ppm_buffer_set = 1
 
       !-------------------------------------------------------------------------
-      !  Allocate memory for the field registers that holds the dimension and 
+      !  Allocate memory for the field registers that holds the dimension and
       !  type of the data
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldu(1) = ppm_buffer_set
       CALL ppm_alloc(ppm_buffer_dim,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'buffer dimensions PPM_BUFFER_DIM',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('buffer dimensions PPM_BUFFER_DIM',ppm_error=ppm_error_fatal)
+
       CALL ppm_alloc(ppm_buffer_type,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'buffer types PPM_BUFFER_TYPE',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('buffer types PPM_BUFFER_TYPE',ppm_error=ppm_error_fatal)
 
       ppm_buffer_dim(ppm_buffer_set)  = dim
-      IF (ppm_kind .EQ. ppm_kind_single) THEN
+      SELECT CASE (ppm_kind)
+      CASE (ppm_kind_single)
          ppm_buffer_type(ppm_buffer_set) = ppm_kind_single
-      ELSE
+      CASE DEFAULT
          ppm_buffer_type(ppm_buffer_set) = ppm_kind_double
-      ENDIF
+      END SELECT
 
       !-------------------------------------------------------------------------
       !  (Re)allocate memory for the buffer
       !-------------------------------------------------------------------------
       iopt   = ppm_param_alloc_fit
       ldu(1) = dim * Npart
-      IF (ppm_kind .EQ. ppm_kind_double) THEN
-         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
-      ELSE
+      SELECT CASE (ppm_kind)
+      CASE (ppm_kind_single)
          CALL ppm_alloc(ppm_sendbuffers,ldu,iopt,info)
-      ENDIF
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'global send buffer PPM_SENDBUFFER',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      CASE DEFAULT
+         CALL ppm_alloc(ppm_sendbufferd,ldu,iopt,info)
+      END SELECT
+      or_fail_alloc('global send buffer PPM_SENDBUFFER',ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the sendlist
@@ -389,22 +328,12 @@
       iopt = ppm_param_alloc_fit
       ldu(1) = ppm_nsendlist
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'send list PPM_ISENDLIST',__LINE__,info)
-         GOTO 9999
-      ENDIF
+      or_fail_alloc('send list PPM_ISENDLIST',ppm_error=ppm_error_fatal)
 
       ldu(1) = ppm_nrecvlist
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_fatal
-         CALL ppm_error(ppm_err_alloc,'ppm_map_part_eqdistrib',     &
-     &        'receive list PPM_IRECVLIST',__LINE__,info)
-         GOTO 9999
-      ENDIF
-      
+      or_fail_alloc('receive list PPM_IRECVLIST',ppm_error=ppm_error_fatal)
+
       !-------------------------------------------------------------------------
       !  Fill the sendbuffer with the particles that will stay on this
       !  processor
@@ -412,16 +341,16 @@
       ppm_psendbuffer(1) = 1
       iset               = 0
       ibuffer            = 0
-      
+
       ppm_isendlist(1) = ppm_rank
       ppm_irecvlist(1) = ppm_rank
-      
+
       IF (plist_exc(ppm_rank + 1) .LE. 0) THEN
          temp_val = Npart
       ELSE
          temp_val = plist_des(ppm_rank + 1)
       ENDIF
-      
+
       DO ipart = 1,temp_val
          !----------------------------------------------------------------------
          !  Store the id of the particle
@@ -492,51 +421,32 @@
       !-------------------------------------------------------------------------
       iopt = ppm_param_dealloc
       CALL ppm_alloc(srlist1,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_eqdistrib',     &
-     &        'particle to/from processor list 1 SRLIST1',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle to/from processor list 1 SRLIST1',exit_point=no)
+
       CALL ppm_alloc(srlist2,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_eqdistrib',     &
-     &        'particle to/from processor list 2 SRLIST2',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle to/from processor list 2 SRLIST2',exit_point=no)
+
       CALL ppm_alloc(plist_des,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_eqdistrib',     &
-     &        'particle per processor desired list PLIST_DES',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle per processor desired list PLIST_DES',exit_point=no)
+
       CALL ppm_alloc(plist_act,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_eqdistrib',     &
-     &        'particle per processor actual list PLIST_ACT',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle per processor actual list PLIST_ACT',exit_point=no)
+
       CALL ppm_alloc(plist_exc,ldu,iopt,info)
-      IF (info .NE. 0) THEN
-         info = ppm_error_error
-         CALL ppm_error(ppm_err_dealloc,'ppm_map_part_eqdistrib',     &
-     &        'particle per processor excess list PLIST_EXC',__LINE__,info)
-      ENDIF
+      or_fail_dealloc('particle per processor excess list PLIST_EXC',exit_point=no)
 
       !-------------------------------------------------------------------------
-      !  Return 
+      !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
-      CALL substop('ppm_map_part_eqdistrib',t0,info)
+      9999 CONTINUE
+      CALL substop(caller,t0,info)
       RETURN
       CONTAINS
       SUBROUTINE check
         IF (Npart .LT. 0) THEN
-            info = ppm_error_error
-            CALL ppm_error(ppm_err_argument,'ppm_map_part_eqdistrib',  &
-     &           'Npart must be >=0',__LINE__,info)
-            GOTO 8888
+           fail("Npart must be >=0",exit_point=8888)
         ENDIF
- 8888   CONTINUE
+      8888 CONTINUE
       END SUBROUTINE check
 
 #if    __KIND == __SINGLE_PRECISION

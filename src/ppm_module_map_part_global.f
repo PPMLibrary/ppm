@@ -38,8 +38,9 @@
       !!! for global particle mapping
 
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
+
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Work lists
@@ -47,8 +48,6 @@
          INTEGER, DIMENSION(:), POINTER :: ilist1    => NULL()
          INTEGER, DIMENSION(:), POINTER :: ilist2    => NULL()
          INTEGER, DIMENSION(:), POINTER :: part2proc => NULL()
-
-         PRIVATE :: ilist1,ilist2,part2proc
 
          !----------------------------------------------------------------------
          !  Define interfaces to ppm_map_part_global
@@ -65,6 +64,9 @@
             MODULE PROCEDURE ppm_map_part_remap_d
             MODULE PROCEDURE ppm_map_part_remap_s
          END INTERFACE
+
+         PUBLIC :: ppm_map_part_global, &
+         &         ppm_map_part_remap
 
          !----------------------------------------------------------------------
          !  include the source

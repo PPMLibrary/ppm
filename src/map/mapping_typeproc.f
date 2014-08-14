@@ -3,10 +3,10 @@ minclude ppm_create_collection_procedures(DTYPE(part_mapping),DTYPE(part_mapping
 SUBROUTINE DTYPE(map_create)(map,source_topoid,target_topoid,info)
     !!! Constructor for particle mapping data structure
     DEFINE_MK()
-    CLASS(DTYPE(ppm_t_part_mapping))   :: map
-    INTEGER,                INTENT(IN) :: source_topoid
-    INTEGER,                INTENT(IN) :: target_topoid
-    INTEGER,               INTENT(OUT) :: info
+    CLASS(DTYPE(ppm_t_part_mapping)) :: map
+    INTEGER,                INTENT(IN   ) :: source_topoid
+    INTEGER,                INTENT(IN   ) :: target_topoid
+    INTEGER,                INTENT(  OUT) :: info
 
     start_subroutine("map_create")
 

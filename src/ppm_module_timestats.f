@@ -35,7 +35,6 @@
                                        & ppm_error_error
          USE ppm_module_substart, ONLY : substart
          USE ppm_module_substop,  ONLY : substop
-
          IMPLICIT NONE
 
          TYPE ppm_t_tstats

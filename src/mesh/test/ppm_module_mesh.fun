@@ -278,26 +278,26 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
         Nm = 25
         Nm(ndim) = 45
         call Mesh1%create(topoid,offset,info,Nm=Nm,&
-            ghostsize=ighostsize,name='Test_Mesh_1')
-            Assert_Equal(info,0)
+        & ghostsize=ighostsize,name='Test_Mesh_1')
+        Assert_Equal(info,0)
 
         if (ndim.eq.2) then
-            my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
+           my_patch(1:4) = (/0.15_mk,0.10_mk,0.99_mk,0.7_mk/)
         else
-            my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
+           my_patch(1:6) = (/0.15_mk,0.10_mk,0.51_mk,0.99_mk,0.7_mk,0.78_mk/)
         endif
 
         call Mesh1%def_patch(my_patch,info)
         Assert_Equal(info,0)
 
         call Field1%create(2,info,name='vecField')
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%create(1,info,name='scaField')
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%discretize_on(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
 
         p => Mesh1%subpatch%begin()
@@ -397,20 +397,22 @@ real(mk),dimension(:,:,:,:),pointer:: field4d_1,field4d_2
 
         !Do a ghost mapping
         call Mesh1%map_ghost_get(info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         call Field1%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field2%map_ghost_push(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
-        call Mesh1%map_send(info)
-            Assert_Equal(info,0)
+        !call Mesh1%map_send(info)
+        !non-blocking send
+        call Mesh1%map_isend(info)
+        Assert_Equal(info,0)
 
         call Field2%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
         call Field1%map_ghost_pop(Mesh1,info)
-            Assert_Equal(info,0)
+        Assert_Equal(info,0)
 
         !Now check that the ghost mapping has been done correctly
         ! by comparing the values of all nodes (incl. ghosts) to the

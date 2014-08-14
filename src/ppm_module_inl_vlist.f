@@ -43,7 +43,6 @@
         USE ppm_module_error
         USE ppm_module_substart
         USE ppm_module_substop
-
         IMPLICIT NONE
 
         !-------------------------------------------------------------------------
@@ -59,12 +58,12 @@
         !-------------------------------------------------------------------------
         !  Declaration of variables
         !-------------------------------------------------------------------------
-        TYPE(ppm_clist), SAVE :: clist
+        TYPE(ppm_clist),                            SAVE :: clist
 
-        INTEGER               :: own_nplist
-        INTEGER               :: neigh_nplist
-        INTEGER               :: empty_pos
-        INTEGER               :: max_nneigh
+        INTEGER                                          :: own_nplist
+        INTEGER                                          :: neigh_nplist
+        INTEGER                                          :: empty_pos
+        INTEGER                                          :: max_nneigh
 
         !-------------------------------------------------------------------------
         !  Declaration of interfaces
@@ -134,7 +133,9 @@
             MODULE PROCEDURE getSubdomainParticles_d
         END INTERFACE
 
-
+        !-------------------------------------------------------------------------
+        !  Privatizing arrays, variables and parameters
+        !-------------------------------------------------------------------------
         PRIVATE :: create_inl_vlist
         PRIVATE :: getVerletLists
         PRIVATE :: count_neigh, count_neigh_sym
@@ -144,9 +145,7 @@
         PRIVATE :: getParticleCoorDepth
         PRIVATE :: inDomain
         PRIVATE :: isNeighbor
-        !-------------------------------------------------------------------------
-        !  Privatizing arrays, variables and parameters
-        !-------------------------------------------------------------------------
+
 !!! to be completed when test driver is removed!
 
         CONTAINS

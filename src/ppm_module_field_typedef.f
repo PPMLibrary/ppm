@@ -14,7 +14,6 @@
       USE ppm_module_alloc
       USE ppm_module_error
       USE ppm_module_util_functions
-
       IMPLICIT NONE
 
       !----------------------------------------------------------------------
@@ -467,7 +466,6 @@ minclude ppm_create_collection_procedures(field,field_,vec=true)
           INTEGER,                INTENT(OUT) :: info
 
           start_subroutine("field_map_push")
-
 
           CALL mesh%map_push(this,info)
           or_fail("mesh%map_push")

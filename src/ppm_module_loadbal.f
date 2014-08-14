@@ -40,7 +40,6 @@
       !!! redecomposed.
 
          USE ppm_module_topo_typedef
-
          IMPLICIT NONE
 
          !----------------------------------------------------------------------

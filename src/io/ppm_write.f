@@ -80,28 +80,19 @@
       !-------------------------------------------------------------------------
       IF     (rank.LT.0) THEN
          cformat = '(4A)'
-      ELSEIF (rank.LT.10) THEN
-         cformat = '(A,I1,4A)'
-      ELSEIF (rank.LT.100) THEN
-         cformat = '(A,I2,4A)'
-      ELSEIF (rank.LT.1000) THEN
-         cformat = '(A,I3,4A)'
-      ELSE
-         cformat = '(A,I4,4A)'
-      ENDIF
-
-      !-------------------------------------------------------------------------
-      !  Do the print
-      !-------------------------------------------------------------------------
-      IF (rank.LT.0) THEN
+         !----------------------------------------------------------------------
+         !  Do the print
+         !----------------------------------------------------------------------
          IF (iu .GE. 0) THEN
-            WRITE(iu,cformat,IOSTAT=ios) &
-            & '(', caller(1:icaller), ') : ', cbuf(1:ibuf)
+            WRITE(iu,cformat,IOSTAT=ios)'(', caller(1:icaller), ') : ', cbuf(1:ibuf)
          ENDIF
       ELSE
+         cformat = '(A,I0,4A)'
+         !----------------------------------------------------------------------
+         !  Do the print
+         !----------------------------------------------------------------------
          IF (iu .GE. 0) THEN
-            WRITE(iu,cformat,IOSTAT=ios) &
-            & '[',rank,'] (', caller(1:icaller), ') : ', cbuf(1:ibuf)
+            WRITE(iu,cformat,IOSTAT=ios)'[',rank,'] (', caller(1:icaller), ') : ', cbuf(1:ibuf)
          ENDIF
       ENDIF
 
@@ -110,6 +101,6 @@
       !-------------------------------------------------------------------------
       !  Return
       !-------------------------------------------------------------------------
- 9999 CONTINUE
+      9999 CONTINUE
       RETURN
       END SUBROUTINE ppm_write
