@@ -45,7 +45,7 @@
          USE ppm_module_topo_typedef
          IMPLICIT NONE
 
-         PUBLIC :: ppm_vtk_particles,ppm_vtk_fields_2d,ppm_vtk_fields_3d
+         PUBLIC :: ppm_vtk_particles,ppm_vtk_mesh_2d,ppm_vtk_mesh_3d
          PRIVATE
          !----------------------------------------------------------------------
          !  Includes
@@ -92,10 +92,10 @@
 #undef __KIND
 
 #define __DIM __2D
-#include "vtk/ppm_vtk_fields.f"
+#include "vtk/ppm_vtk_mesh.f"
 #undef __DIM
 #define __DIM __3D
-#include "vtk/ppm_vtk_fields.f"
+#include "vtk/ppm_vtk_mesh.f"
 #undef __DIM
          !----------------------------------------------------------------------
          !  Parallel VTK output

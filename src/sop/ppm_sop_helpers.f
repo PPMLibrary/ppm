@@ -4,8 +4,9 @@
           IMPLICIT NONE
 
           DEFINE_MK()
-          TYPE(DTYPE(ppm_t_options_sop)),INTENT(INOUT) :: opts
-          INTEGER                  ,     INTENT(  OUT) :: info
+
+          TYPE(DTYPE(ppm_t_options_sop)), INTENT(INOUT) :: opts
+          INTEGER,                        INTENT(  OUT) :: info
 
           info = 0
 
@@ -41,7 +42,9 @@
       SUBROUTINE DTYPE(sop_init_stats)(stats,info)
           !!! constructor for sop statistics derived type
           IMPLICIT NONE
+
           DEFINE_MK()
+
           TYPE(DTYPE(sop_t_stats)), POINTER, INTENT(INOUT) :: stats
           INTEGER,                           INTENT(  OUT) :: info
 
@@ -54,6 +57,6 @@
           stats%nb_grad_desc_steps = 0
           stats%min_sv = HUGE(1._MK)
 
-          9999 CONTINUE
+      9999 CONTINUE
 
       END SUBROUTINE DTYPE(sop_init_stats)

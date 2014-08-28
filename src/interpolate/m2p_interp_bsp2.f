@@ -218,8 +218,8 @@
       p => Mesh%subpatch%begin()
       ipatch = 1
       DO WHILE (ASSOCIATED(p))
-          CALL p%get_field(Field,field_up,info)
-            or_fail("get_field failed for this subpatch")
+         CALL p%get_field(Field,field_up,info)
+         or_fail("get_field failed for this subpatch")
 
 #if  __DIME == __2D
             !-------------------------------------------------------------------

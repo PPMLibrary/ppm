@@ -68,8 +68,6 @@
      !!! routine should be used with the kernel argument set to
      !!! `ppm_param_rmsh_kernel_bsp2`.
 
-
-
       USE ppm_module_error
       USE ppm_module_alloc
       USE ppm_module_substart
@@ -79,9 +77,8 @@
       USE ppm_module_data_mesh
       USE ppm_module_write
       USE ppm_module_map
-
-
       IMPLICIT NONE
+
 #if   __KIND == __SINGLE_PRECISION
       INTEGER, PARAMETER :: MK = ppm_kind_single
 #elif __KIND == __DOUBLE_PRECISION
