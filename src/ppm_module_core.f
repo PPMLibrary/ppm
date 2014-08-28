@@ -51,8 +51,8 @@
          &   ppm_neighlist_clist,ppm_neighlist_vlist
          USE ppm_module_tree, ONLY : ppm_tree
          USE ppm_module_mesh
-         USE ppm_module_io_vtk, ONLY : ppm_vtk_particles,ppm_vtk_fields_2d, &
-         &   ppm_vtk_fields_3d
+         USE ppm_module_io_vtk, ONLY : ppm_vtk_particles,ppm_vtk_mesh_2d, &
+         &   ppm_vtk_mesh_3d
          USE ppm_module_topo_typedef, ONLY : ppm_t_topo,ppm_topo,ppm_t_clist
          USE ppm_module_mesh_typedef, ONLY : ppm_t_subpatch,ppm_t_equi_mesh
          USE ppm_module_particles_typedef, ONLY : ppm_t_particles_s,ppm_t_particles_d, &
@@ -64,7 +64,15 @@
          &   ppm_t_discr_data,ppm_t_operator_,ppm_t_operator_discr_,ppm_t_operator_discr, &
          &   ppm_t_discr_info_,ppm_t_field_,ppm_t_subpatch_,ppm_t_mesh_maplist, &
          &   ppm_t_equi_mesh_,ppm_t_neighlist_s_,ppm_t_neighlist_d_,particles_stats_s_, &
-         &   particles_stats_d_,ppm_t_particles_s_,ppm_t_particles_d_
+         &   particles_stats_d_,ppm_t_particles_s_,ppm_t_particles_d_, &
+         &   ppm_param_part_init_cartesian,ppm_param_part_init_random, &
+         &   ppm_mesh_ghosts,ppm_mesh_reqput,ppm_mesh_cartesian, &
+         &   ppm_param_length_meshflags,ppm_part_ghosts,ppm_part_partial, &
+         &   ppm_part_reqput,ppm_part_areinside,ppm_part_cartesian, &
+         &   ppm_part_neighlists,ppm_part_global_index,ppm_param_length_partflags, &
+         &   ppm_ppt_ghosts,ppm_ppt_partial,ppm_ppt_reqput,ppm_ppt_map_parts, &
+         &   ppm_ppt_map_ghosts,ppm_param_length_pptflags,ppm_ops_inc_ghosts, &
+         &   ppm_ops_interp,ppm_ops_iscomputed,ppm_ops_vector,ppm_param_length_opsflags
          USE ppm_module_timestats, ONLY : ppm_t_tstats
       !   USE ppm_module_rmsh
          USE ppm_module_ctrl, ONLY : arg, arg_group, parse_args,      &

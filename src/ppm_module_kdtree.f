@@ -23,8 +23,6 @@
       ! see <http://www.gnu.org/licenses/>.
       !
       !-------------------------------------------------------------------------
-      ! Parallel Particle Mesh Library (PPM)
-      !-------------------------------------------------------------------------
       !  MOSAIC Group
       !  Max Planck Institute of Molecular Cell Biology and Genetics
       !  Pfotenhauerstr. 108, 01307 Dresden, Germany
@@ -37,6 +35,11 @@
       ! reference: http://arxiv.org/abs/physics/0408067
       !
       ! It has been adapted and amended for PPM library by Yaser Afshar.
+      !
+      ![NOTE]
+      ! In this adaptation the maximum query vector size has been set to three
+      ! in case of future development and higher dimensionality this routine
+      ! needs to be modified
       !----------------------------------------------------------------------
 #define __SINGLE_PRECISION 1
 #define __DOUBLE_PRECISION 2

@@ -39,7 +39,6 @@
       !!! support 2nd order B-spline and MP4 interpolation schemes.
         USE ppm_module_topo_typedef
         USE ppm_module_interfaces
-
         IMPLICIT NONE
 
         !-----------------------------------------------------------------------
@@ -68,10 +67,7 @@
             MODULE PROCEDURE m2p_interp_mp4_dv_3d
         END INTERFACE
 
-
-
       CONTAINS
-
 
 #define __KIND  __SINGLE_PRECISION
 #define __DIME  __2D
@@ -129,9 +125,6 @@
 #undef  __MODE
 #undef  __DIME
 #undef  __KIND
-
-
-
 
 
 #undef __SINGLE_PRECISION

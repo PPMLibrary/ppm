@@ -336,15 +336,16 @@ minclude ppm_get_field_interface_template(4,l)
           INTEGER,                       INTENT(  OUT) :: info
       END SUBROUTINE
 
-      SUBROUTINE equi_mesh_print_vtk_(this,filename,info)
-          IMPORT ppm_t_equi_mesh_
+      SUBROUTINE equi_mesh_print_vtk_(this,filename,info,Field)
+          IMPORT ppm_t_equi_mesh_,ppm_t_field_
           IMPLICIT NONE
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
-          CLASS(ppm_t_equi_mesh_), INTENT(INOUT) ::  this
-          CHARACTER(LEN=*),        INTENT(IN   ) :: filename
-          INTEGER,                 INTENT(  OUT) :: info
+          CLASS(ppm_t_equi_mesh_)                      ::  this
+          CHARACTER(LEN=*),              INTENT(IN   ) :: filename
+          INTEGER,                       INTENT(  OUT) :: info
+          CLASS(ppm_t_field_), OPTIONAL, TARGET        :: Field
       END SUBROUTINE
 
       SUBROUTINE equi_mesh_m2p_(this,Part,Field,kernel,info)

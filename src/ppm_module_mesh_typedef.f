@@ -1948,27 +1948,40 @@ minclude ppm_get_field_template(4,l)
           end_subroutine()
       END SUBROUTINE
 
-      SUBROUTINE equi_mesh_print_vtk(this,filename,info)
+      SUBROUTINE equi_mesh_print_vtk(this,filename,info,Field)
 
           USE ppm_module_io_vtk
-
           IMPLICIT NONE
+
           !-------------------------------------------------------------------------
           !  Arguments
           !-------------------------------------------------------------------------
+          CLASS(ppm_t_equi_mesh)                       :: this
 
-          CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
-          CHARACTER(LEN=*),       INTENT(IN   ) :: filename
-          INTEGER,                INTENT(  OUT) :: info
+          CHARACTER(LEN=*),              INTENT(IN   ) :: filename
+
+          INTEGER,                       INTENT(  OUT) :: info
+
+          CLASS(ppm_t_field_), OPTIONAL, TARGET        :: Field
 
           start_subroutine("equi_mesh_print_vtk")
 
           IF (ppm_dim.EQ.2) THEN
-             CALL ppm_vtk_fields_2d(filename,this,info)
-             or_fail("ppm_vtk_fields_2d")
+             IF (PRESENT(Field)) THEN
+                CALL ppm_vtk_mesh_2d(filename,this,info,Field=Field)
+                or_fail("ppm_vtk_mesh_2d")
+             ELSE
+                CALL ppm_vtk_mesh_2d(filename,this,info)
+                or_fail("ppm_vtk_mesh_2d")
+             ENDIF
           ELSE
-             CALL ppm_vtk_fields_3d(filename,this,info)
-             or_fail("ppm_vtk_fields_3d")
+             IF (PRESENT(Field)) THEN
+                CALL ppm_vtk_mesh_3d(filename,this,info,Field=Field)
+                or_fail("ppm_vtk_mesh_3d")
+             ELSE
+                CALL ppm_vtk_mesh_3d(filename,this,info)
+                or_fail("ppm_vtk_mesh_3d")
+             ENDIF
           ENDIF
 
           end_subroutine()

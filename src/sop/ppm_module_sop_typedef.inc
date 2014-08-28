@@ -3,11 +3,11 @@
          !!! The latter is assumed to be a linear combination
          !!! of multivariate derivatives
 
-         INTEGER                           :: nterms
+         INTEGER                             :: nterms
          !!! number of terms
-         REAL(prec),DIMENSION(:),  POINTER :: coeffs
+         REAL(prec), DIMENSION(:),   POINTER :: coeffs => NULL()
          !!! coefficients in front of each term
-         REAL(prec),DIMENSION(:,:),POINTER :: order_d
+         REAL(prec), DIMENSION(:,:), POINTER :: order_d => NULL()
          !!! degree of the derivative for each term
 
      END TYPE DTYPE(sop_t_diff_eq)
@@ -44,25 +44,25 @@
          !!! The monitor function depends on the fields gradient
          REAL(prec)                            :: scale_D        ! resolution scale
          ! maximum scaling distance allowed
-         REAL(prec)                            :: maximum_D      
+         REAL(prec)                            :: maximum_D
          ! minimum resolution
-         REAL(prec)                            :: minimum_D      
+         REAL(prec)                            :: minimum_D
          ! stopping criterion for particle adaptation
-         REAL(prec)                            :: adaptivity_criterion    
+         REAL(prec)                            :: adaptivity_criterion
          !counter for the number of gradient descent steps performed
-         INTEGER                               :: nb_grad_desc_steps 
+         INTEGER                               :: nb_grad_desc_steps
          !separation distance below which 2 particles fuse
-         REAL(prec)                            :: fuse_radius 
+         REAL(prec)                            :: fuse_radius
 
          !some parameters used in various functions
          REAL(prec)                            :: param_a !used in module_funcs
-         REAL(prec)                            :: param_d0, param_d1,param_p0 
+         REAL(prec)                            :: param_d0, param_d1,param_p0
          REAL(prec)                            :: param_morse ! rho in the Morse
          !potential
          !new particles are generated at distance equal to spawn_radius * D(ip)
          REAL(prec)                            :: spawn_radius
 
-         REAL(prec)                            :: attractive_radius0 
+         REAL(prec)                            :: attractive_radius0
          !distance below which particles attract each other
 
          REAL(prec)                            :: rcp_over_D
