@@ -331,12 +331,18 @@ minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_pt
           !!! Pointer to a data structure that contains all information about
           !!! the discretization of a given field on this mesh (it has pointers to all
           !!! subpatches, for example)
-          INTEGER,                  DIMENSION(:,:),     POINTER :: data_2d_i => NULL()
+          INTEGER,                  DIMENSION(:,:),     POINTER :: data_2d_i  => NULL()
           !!! if the data is 2d int
-          INTEGER,                  DIMENSION(:,:,:),   POINTER :: data_3d_i => NULL()
+          INTEGER,                  DIMENSION(:,:,:),   POINTER :: data_3d_i  => NULL()
           !!! if the data is 3d int
-          INTEGER,                  DIMENSION(:,:,:,:), POINTER :: data_4d_i => NULL()
+          INTEGER,                  DIMENSION(:,:,:,:), POINTER :: data_4d_i  => NULL()
           !!! if the data is 4d int
+          INTEGER(ppm_kind_int64),  DIMENSION(:,:),     POINTER :: data_2d_li => NULL()
+          !!! if the data is 2d longint
+          INTEGER(ppm_kind_int64),  DIMENSION(:,:,:),   POINTER :: data_3d_li => NULL()
+          !!! if the data is 3d longint
+          INTEGER(ppm_kind_int64),  DIMENSION(:,:,:,:), POINTER :: data_4d_li => NULL()
+          !!! if the data is 4d longint
           REAL(ppm_kind_single),    DIMENSION(:,:),     POINTER :: data_2d_rs => NULL()
           !!! if the data is 2d real
           REAL(ppm_kind_single),    DIMENSION(:,:,:),   POINTER :: data_3d_rs => NULL()
@@ -361,11 +367,11 @@ minclude ppm_create_collection(field_,field_,generate="abstract",vec=true,def_pt
           !!! if the data is 3d complex
           COMPLEX(ppm_kind_double), DIMENSION(:,:,:,:), POINTER :: data_4d_cd => NULL()
           !!! if the data is 4d complex
-          LOGICAL,                  DIMENSION(:,:),     POINTER :: data_2d_l => NULL()
+          LOGICAL,                  DIMENSION(:,:),     POINTER :: data_2d_l  => NULL()
           !!! if the data is 2d logical
-          LOGICAL,                  DIMENSION(:,:,:),   POINTER :: data_3d_l => NULL()
+          LOGICAL,                  DIMENSION(:,:,:),   POINTER :: data_3d_l  => NULL()
           !!! if the data is 3d logical
-          LOGICAL,                  DIMENSION(:,:,:,:), POINTER :: data_4d_l => NULL()
+          LOGICAL,                  DIMENSION(:,:,:,:), POINTER :: data_4d_l  => NULL()
           !!! if the data is 4d logical
 
       CONTAINS
@@ -472,6 +478,9 @@ minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstr
           PROCEDURE(subpatch_get_field_2d_i_),  DEFERRED :: subpatch_get_field_2d_i
           PROCEDURE(subpatch_get_field_3d_i_),  DEFERRED :: subpatch_get_field_3d_i
           PROCEDURE(subpatch_get_field_4d_i_),  DEFERRED :: subpatch_get_field_4d_i
+          PROCEDURE(subpatch_get_field_2d_li_), DEFERRED :: subpatch_get_field_2d_li
+          PROCEDURE(subpatch_get_field_3d_li_), DEFERRED :: subpatch_get_field_3d_li
+          PROCEDURE(subpatch_get_field_4d_li_), DEFERRED :: subpatch_get_field_4d_li
           PROCEDURE(subpatch_get_field_2d_rs_), DEFERRED :: subpatch_get_field_2d_rs
           PROCEDURE(subpatch_get_field_3d_rs_), DEFERRED :: subpatch_get_field_3d_rs
           PROCEDURE(subpatch_get_field_4d_rs_), DEFERRED :: subpatch_get_field_4d_rs
@@ -492,6 +501,9 @@ minclude ppm_create_collection(mesh_discr_data_,mesh_discr_data_,generate="abstr
           &          subpatch_get_field_2d_i,  &
           &          subpatch_get_field_3d_i,  &
           &          subpatch_get_field_4d_i,  &
+          &          subpatch_get_field_2d_li, &
+          &          subpatch_get_field_3d_li, &
+          &          subpatch_get_field_4d_li, &
           &          subpatch_get_field_2d_rs, &
           &          subpatch_get_field_3d_rs, &
           &          subpatch_get_field_4d_rs, &

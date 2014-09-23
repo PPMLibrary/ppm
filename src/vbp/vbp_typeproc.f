@@ -236,16 +236,16 @@
           ! Arguments
           !-------------------------------------------------------------------------
           DEFINE_MK()
-          CLASS(DTYPE(ppm_t_vbp))                                          :: this
-          CLASS(DTYPE(ppm_t_particles)_), TARGET,            INTENT(IN   ) :: Part_src
+          CLASS(DTYPE(ppm_t_vbp))                                 :: this
+          CLASS(DTYPE(ppm_t_particles)_),           TARGET        :: Part_src
           !!! Particle set to which the neighbours belong (can be the same as this)
-          INTEGER,                                           INTENT(  OUT) :: info
-          CHARACTER(LEN=*),                        OPTIONAL, INTENT(IN   ) :: name
+          INTEGER,                                  INTENT(  OUT) :: info
+          CHARACTER(LEN=*),               OPTIONAL, INTENT(IN   ) :: name
           !!! name of this neighbour list
-          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: skin
-          REAL(MK),                                OPTIONAL, INTENT(IN   ) :: cutoff
-          LOGICAL,                                 OPTIONAL, INTENT(IN   ) :: symmetry
-          CLASS(DTYPE(ppm_t_neighlist)_), POINTER, OPTIONAL, INTENT(  OUT) :: Nlist
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: skin
+          REAL(MK),                       OPTIONAL, INTENT(IN   ) :: cutoff
+          LOGICAL,                        OPTIONAL, INTENT(IN   ) :: symmetry
+          CLASS(DTYPE(ppm_t_neighlist)_), OPTIONAL, POINTER       :: Nlist
           !!! returns a pointer to the newly created verlet list
 
           CLASS(DTYPE(ppm_t_neighlist)_), POINTER :: Nl

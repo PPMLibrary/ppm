@@ -28,9 +28,9 @@
       !-------------------------------------------------------------------------
 
 #define __SINGLE_PRECISION 1
-#define __DOUBLE_PRECISION 2
-#define __2D               3
-#define __3D               4
+#define __DOUBLE_PRECISION 4
+#define __2D               2
+#define __3D               3
 #define __VEC              5
 #define __SCA              6
 

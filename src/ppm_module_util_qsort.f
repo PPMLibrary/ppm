@@ -30,11 +30,13 @@
 #define __SINGLE_PRECISION           1
 #define __DOUBLE_PRECISION           2
 #define __INTEGER                    3
+#define __LONGINT                    4
 
       MODULE ppm_module_util_qsort
       !!! This module provides the utility quicksort routines.
 
          IMPLICIT NONE
+         PRIVATE
 
          !----------------------------------------------------------------------
          !  Define interface to the list sorting routine
@@ -43,17 +45,21 @@
             MODULE PROCEDURE ppm_util_qsort_s
             MODULE PROCEDURE ppm_util_qsort_d
             MODULE PROCEDURE ppm_util_qsort_i
+            MODULE PROCEDURE ppm_util_qsort_li
             ! From a list of values generates a sort permutation list
             MODULE PROCEDURE ppm_util_qsort2_s
             MODULE PROCEDURE ppm_util_qsort2_d
             MODULE PROCEDURE ppm_util_qsort2_i
+            MODULE PROCEDURE ppm_util_qsort2_li
             ! From a list of values sorts them into ascending order.
          END INTERFACE
 
-         !----------------------------------------------------------------------
-         !  include the source
-         !----------------------------------------------------------------------
-         CONTAINS
+         PUBLIC :: ppm_util_qsort
+
+      !----------------------------------------------------------------------
+      !  include the source
+      !----------------------------------------------------------------------
+      CONTAINS
 #define __KIND __SINGLE_PRECISION
 #include "util/ppm_util_qsort.f"
 #undef __KIND
@@ -63,6 +69,10 @@
 #undef __KIND
 
 #define __KIND __INTEGER
+#include "util/ppm_util_qsort.f"
+#undef __KIND
+
+#define __KIND __LONGINT
 #include "util/ppm_util_qsort.f"
 #undef __KIND
 

@@ -27,7 +27,8 @@
       ! CH-8092 Zurich, Switzerland
       !------------------------------------------------------------------------!
 
-      SUBROUTINE DTYPE(particles_from_mesh)(this,Mesh,info,cutoff_val,cutoff_field)
+      SUBROUTINE DTYPE(particles_from_mesh)(this, &
+      &          Mesh,info,cutoff_val,cutoff_field)
       !!! This subroutine re-initialize a particle set from its discretization
       !!! on a mesh. The particle positions becomes the mesh nodes and the
       !!! properties are initialized to their values on the mesh.
@@ -51,14 +52,14 @@
       ! Arguments
       !-------------------------------------------------------------------------!
       CLASS(DTYPE(ppm_t_particles))                   :: this
-      CLASS(ppm_t_equi_mesh_)                         :: Mesh
-      INTEGER                     ,     INTENT(  OUT) :: info
+      CLASS(ppm_t_equi_mesh_),          INTENT(INOUT) :: Mesh
+      INTEGER,                          INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
-      REAL(MK), DIMENSION(2),  OPTIONAL, INTENT(IN)   :: cutoff_val
+      REAL(MK), DIMENSION(2), OPTIONAL, INTENT(IN   ) :: cutoff_val
       !!! Lower (element 1) and upper (element 2) bound of particle
       !!! strengths. Only particles with strengths in this band
       !!! will be created.
-      CLASS(ppm_t_field_),    OPTIONAL, INTENT(IN)    :: cutoff_field
+      CLASS(ppm_t_field_),    OPTIONAL, INTENT(IN   ) :: cutoff_field
       !!! Field that the above cutoff values apply on (this is usually the field
       !!! that represents the strength of the particles)
      !-------------------------------------------------------------------------!

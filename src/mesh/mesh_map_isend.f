@@ -61,9 +61,9 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh)               :: this
+      CLASS(ppm_t_equi_mesh) :: this
       !!!
-      INTEGER,               INTENT(  OUT) :: info
+      INTEGER, INTENT(  OUT) :: info
       !!! Return status, 0 upon success
       !-------------------------------------------------------------------------
       !  Local variables
@@ -84,7 +84,9 @@
       ! warn if buffer is empty
       IF (ppm_buffer_set.LT.1) THEN
          IF (ppm_debug.GT.1) THEN
-            fail('Buffer is empty: skipping send!',ppm_err_buffer_empt,exit_point=no,ppm_error=ppm_error_notice)
+            fail('Buffer is empty: skipping send!', &
+            & ppm_err_buffer_empt,exit_point=no,    &
+            & ppm_error=ppm_error_notice)
             info = 0
          ENDIF
          GOTO 9999

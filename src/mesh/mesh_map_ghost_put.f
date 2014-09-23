@@ -1,4 +1,4 @@
-      SUBROUTINE equi_mesh_map_ghost_put(this,info)
+      SUBROUTINE equi_mesh_map_ghost_put(this,info,ghostsize)
       !!! This routine sends the values of ghost mesh points
       !!! back to their origin in order to add their contribution to the
       !!! corresponding real mesh point.
@@ -24,18 +24,22 @@
       !-------------------------------------------------------------------------
       !  Arguments
       !-------------------------------------------------------------------------
-      CLASS(ppm_t_equi_mesh), INTENT(INOUT) :: this
-      INTEGER,                INTENT(  OUT) :: info
+      CLASS(ppm_t_equi_mesh)                         :: this
+      INTEGER,                         INTENT(  OUT) :: info
       !!! Returns status, 0 upon success
+      INTEGER, DIMENSION(:), OPTIONAL, INTENT(IN   ) :: ghostsize
+      !!! Size of the ghost layer in numbers of grid points in all space
+      !!! dimensions (1...ppm_dim).
       !-------------------------------------------------------------------------
       !  Local variables
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      INTEGER, DIMENSION(2) :: ldu
-      INTEGER               :: i,j,lb,ub
-      INTEGER               :: iopt,ibuffer,pdim
-      INTEGER               :: nsendlist,nrecvlist
+      INTEGER, DIMENSION(2)       :: ldu
+      INTEGER, DIMENSION(ppm_dim) :: ghostsize_
+      INTEGER                     :: i,j,lb,ub
+      INTEGER                     :: iopt,ibuffer,pdim
+      INTEGER                     :: nsendlist,nrecvlist
 
       LOGICAL :: valid
 
@@ -49,11 +53,17 @@
 
       topo => ppm_topo(this%topoid)%t
 
+      IF (PRESENT(ghostsize)) THEN
+         ghostsize_=MIN(ghostsize,this%ghostsize)
+      ELSE
+         ghostsize_=this%ghostsize
+      ENDIF
+
       !-------------------------------------------------------------------------
       !  Check if ghost mappings have been initalized, if no do so now.
       !-------------------------------------------------------------------------
       IF (.NOT. this%ghost_initialized) THEN
-         CALL this%map_ghost_init(info)
+         CALL this%map_ghost_init(info,ghostsize=ghostsize_)
          or_fail("map_field_ghost_init failed")
       ENDIF
 

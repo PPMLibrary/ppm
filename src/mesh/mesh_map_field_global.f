@@ -3,8 +3,8 @@
       !!! mapping (i.e. every processor communicates with every other).
       !!! Source mesh must be on the current field topology. Global lists
       !!! with all mesh blocks that have to be sent and/or received are
-      !!! built in this routine. `ppm_map_field_push`, `ppm_map_field_pop` and
-      !!! `ppm_map_field_send` will use these lists.
+      !!! built in this routine. `mesh_map_push`, `mesh_map_pop` and
+      !!! `mesh_map_send` will use these lists.
       !!!
       !!! [NOTE]
       !!! The first part of the send/recv lists contains on-processor data.

@@ -28,11 +28,11 @@
       !-------------------------------------------------------------------------
 
 #if    __KIND == __SINGLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_s(topoid,xp,lda,Npart,isymm,   &
-     &                                    ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_s(topoid, &
+      &          xp,lda,Npart,isymm,ghostsize,info)
 #elif  __KIND == __DOUBLE_PRECISION
-      SUBROUTINE ppm_map_part_ghost_get_d(topoid,xp,lda,Npart,isymm,   &
-     &                                    ghostsize,info)
+      SUBROUTINE ppm_map_part_ghost_get_d(topoid, &
+      &          xp,lda,Npart,isymm,ghostsize,info)
 #endif
       !!! This routine maps/adds the ghost particles on the current topology.
       !!! This routine is similar to the partial mapping routine
@@ -140,10 +140,10 @@
       !-------------------------------------------------------------------------
       TYPE(ppm_t_topo), POINTER :: topo
 
-      REAL(MK), DIMENSION(:,:), POINTER :: xt => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: xt
       ! position of potential ghosts
-      REAL(MK), DIMENSION(:,:), POINTER :: xt_offset => NULL()
-      REAL(MK), DIMENSION(:,:), POINTER :: xt_off_fac => NULL()
+      REAL(MK), DIMENSION(:,:), POINTER :: xt_offset
+      REAL(MK), DIMENSION(:,:), POINTER :: xt_off_fac
       ! offset of pot. ghosts
       REAL(MK)                          :: xminf,yminf,zminf ! full domain
       REAL(MK)                          :: xmaxf,ymaxf,zmaxf ! full domain
@@ -301,6 +301,8 @@
       !-------------------------------------------------------------------------
       !  Allocate memory for their positions
       !-------------------------------------------------------------------------
+      NULLIFY(xt,xt_offset,xt_off_fac)
+
       ldu(1) = ppm_dim
       ldu(2) = Npart
       CALL ppm_alloc(xt,ldu,iopt,info)
@@ -317,9 +319,8 @@
       !  List ilist2() holds the particles that have not yet been associated
       !  with a sub, and ghost() holds the ghosts
       !-------------------------------------------------------------------------
-      DO i=1,Npart
-         ilist1(i) = i
-      ENDDO
+      FORALL (i=1:Npart) ilist1(i) = i
+
       nlist1  = Npart
       nlist2  = 0
       nghost  = 0
@@ -378,7 +379,6 @@
             !  sub cannot be ghosts on other processors. Thus the ghosts must
             !  be found at the lower/left of the sub
             !-------------------------------------------------------------------
-
             xmini = xminf + ghostsize
             IF ((ABS(xmaxf - max_phys(1)).LT. eps).AND.lextra(2)) THEN
                 xmaxi = xmaxf - ghostsize
@@ -595,10 +595,12 @@
       !-------------------------------------------------------------------------
       ldu(1) = topo%ncommseq
       CALL ppm_alloc(ppm_isendlist,ldu,iopt,info)
-      or_fail_alloc('global send rank list PPM_ISENDLIST',ppm_error=ppm_error_fatal)
+      or_fail_alloc('global send rank list PPM_ISENDLIST', &
+      & ppm_error=ppm_error_fatal)
 
       CALL ppm_alloc(ppm_irecvlist,ldu,iopt,info)
-      or_fail_alloc('global recv rank list PPM_IRECVLIST',ppm_error=ppm_error_fatal)
+      or_fail_alloc('global recv rank list PPM_IRECVLIST', &
+      & ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Allocate memory for the pointers to the particles that will be send
@@ -608,7 +610,8 @@
       !-------------------------------------------------------------------------
       ldu(1) = topo%ncommseq + 1
       CALL ppm_alloc(ppm_psendbuffer,ldu,iopt,info)
-      or_fail_alloc('global send buffer pointer PPM_PSENDBUFFER',ppm_error=ppm_error_fatal)
+      or_fail_alloc('global send buffer pointer PPM_PSENDBUFFER', &
+      & ppm_error=ppm_error_fatal)
 
       !-------------------------------------------------------------------------
       !  Step 1:
@@ -710,9 +713,7 @@
          !----------------------------------------------------------------------
          !  flag all ghosts as not yet taken
          !----------------------------------------------------------------------
-         DO j=1,nghostplus
-            lghost(j) = .TRUE.
-         ENDDO
+         FORALL (j=1:nghostplus) lghost(j) = .TRUE.
 
          !----------------------------------------------------------------------
          !  loop over the subs on the local processor
@@ -865,7 +866,7 @@
                      !----------------------------------------------------------
                      !  found one - increment the buffer counter
                      !----------------------------------------------------------
-                     iset                  = iset + 1
+                     iset = iset + 1
 
                      !----------------------------------------------------------
                      !  store the ID of the particles
